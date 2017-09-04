@@ -534,18 +534,6 @@ int Mdrunner::mdrunner()
                 }
                 tryUsePhysicalGpu = false;
             }
-            /* TODO This logic could run later, e.g. after inputrec,
-               mtop, and state have been communicated, but before DD
-               is initialized. In particular, -ntmpi 0 only needs to
-               know whether the Verlet scheme is active in order to
-               choose the number of ranks (because GPUs might be
-               usable).*/
-            bool makeGpuPairList = (forceUsePhysicalGpu ||
-                                    tryUsePhysicalGpu ||
-                                    emulateGpu);
-            prepare_verlet_scheme(fplog, cr,
-                                  inputrec, nstlist_cmdline, mtop, state->box,
-                                  makeGpuPairList, *hwinfo->cpuInfo);
         }
         else
         {
@@ -560,13 +548,6 @@ int Mdrunner::mdrunner()
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
             }
-
-#if GMX_TARGET_BGQ
-            md_print_warn(cr, fplog,
-                          "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
-                          "      BlueGene/Q. You will observe better performance from using the\n"
-                          "      Verlet cut-off scheme.\n");
-#endif
             tryUsePhysicalGpu = false;
         }
     }
@@ -777,6 +758,13 @@ int Mdrunner::mdrunner()
     if (PAR(cr))
     {
         gmx_bcast(sizeof(box), box, cr);
+    }
+
+    /* Update rlist and nstlist. */
+    if (inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, mtop,
+                              state->box, nonbondedOnGpu || emulateGpu, *hwinfo->cpuInfo);
     }
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
