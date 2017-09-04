@@ -2437,6 +2437,14 @@ void init_forcerec(FILE                *fp,
         {
             fprintf(fp, "\n%s\n", note);
         }
+
+        if (GMX_TARGET_BGQ)
+        {
+            GMX_LOG(mdlog.warning).asParagraph()
+                .appendText("There is no SIMD implementation of the group scheme kernels on "
+                            "BlueGene/Q. You will observe better performance from using the "
+                            "Verlet cut-off scheme.");
+        }
     }
 
     /* Determine if we will do PBC for distances in bonded interactions */
