@@ -741,7 +741,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bUseGPU       = fr->nbv->bUseGPU;
-    bUseOrEmulGPU = bUseGPU || fr->nbv->emulateGpu;
+    bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
