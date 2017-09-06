@@ -62,7 +62,7 @@ class MDLogger;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
-void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
+void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
                        const gmx_mtop_t *mtop, rvec x[]);
 
 void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
