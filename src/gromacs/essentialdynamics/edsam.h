@@ -65,6 +65,7 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
+class t_state;
 
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
  *
@@ -88,8 +89,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * \param ir                MD input parameter record.
  * \param cr                Data needed for MPI communication.
  * \param constr            Data structure keeping the constraint information.
- * \param x                 Positions of the whole MD system.
- * \param box               The simulation box.
+ * \param globalState       The global state, only used on the master rank.
  * \param oh                The observables history container.
  * \param oenv              The output environment information.
  * \param bAppend           Append to existing output files?
@@ -103,8 +103,7 @@ gmx_edsam_t init_edsam(
         const t_inputrec       *ir,
         t_commrec              *cr,
         struct gmx_constr      *constr,
-        rvec                    x[],
-        matrix                  box,
+        const t_state          *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend);
