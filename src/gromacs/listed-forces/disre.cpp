@@ -180,6 +180,8 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
 
     if (dd->dr_tau != 0.0)
     {
+        GMX_RELEASE_ASSERT(state != nullptr, "We need a valid state when using time-averaged distance restraints");
+
         hist = &state->hist;
         /* Set the "history lack" factor to 1 */
         state->flags     |= (1<<estDISRE_INITF);
