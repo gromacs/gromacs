@@ -445,12 +445,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         update_realloc(upd, state->natoms);
     }
-    // TODO Global state should be destroyed now that we have local
-    // state. Nothing should need to use it. (Global topology should
-    // persist.)
 
     /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     if (DOMAINDECOMP(cr))
@@ -464,6 +461,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
     }
+
+    // NOTE: The global state is no longer used at this point.
+    // But state_global is still used as temporary storage space for writing
+    // the global state to file and potentially for replica exchange.
+    // (Global topology should persist.)
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
@@ -868,8 +870,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* find and set the current lambdas.  If rerunning, we either read in a state, or a lambda value,
                requiring different logic. */
-
-            set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
+            if (bRerunMD)
+            {
+                if (MASTER(cr))
+                {
+                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+                }
+            }
+            else
+            {
+                setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+            }
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
