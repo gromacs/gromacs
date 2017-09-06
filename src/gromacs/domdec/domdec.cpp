@@ -1062,17 +1062,19 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
     }
 }
 
-static void dd_collect_cg(gmx_domdec_t *dd,
-                          t_state      *state_local)
+static void dd_collect_cg(gmx_domdec_t  *dd,
+                          const t_state *state_local)
 {
     gmx_domdec_master_t *ma = nullptr;
-    int                  buf2[2], *ibuf, i, ncg_home = 0, *cg = nullptr, nat_home = 0;
+    int                  buf2[2], *ibuf, i, ncg_home = 0, nat_home = 0;
 
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
         /* The master has the correct distribution */
         return;
     }
+
+    const int *cg;
 
     if (state_local->ddp_count == dd->ddp_count)
     {
@@ -1270,7 +1272,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t           *dd,
-                    t_state                *state_local,
+                    const t_state          *state_local,
                     const PaddedRVecVector *localVector,
                     rvec                   *v)
 {
@@ -1289,21 +1291,24 @@ void dd_collect_vec(gmx_domdec_t           *dd,
 }
 
 void dd_collect_vec(gmx_domdec_t           *dd,
-                    t_state                *state_local,
+                    const t_state          *state_local,
                     const PaddedRVecVector *localVector,
                     PaddedRVecVector       *vector)
 {
-    dd_collect_vec(dd, state_local, localVector, as_rvec_array(vector->data()));
+    dd_collect_vec(dd, state_local, localVector,
+                   DDMASTER(dd) ? as_rvec_array(vector->data()) : nullptr);
 }
 
 
 void dd_collect_state(gmx_domdec_t *dd,
-                      t_state *state_local, t_state *state)
+                      const t_state *state_local, t_state *state)
 {
-    int nh = state->nhchainlength;
+    int nh = state_local->nhchainlength;
 
     if (DDMASTER(dd))
     {
+        GMX_RELEASE_ASSERT(state->nhchainlength == nh, "The global and local Nose-Hoover chain lengths should match");
+
         for (int i = 0; i < efptNR; i++)
         {
             state->lambda[i] = state_local->lambda[i];
@@ -1396,7 +1401,7 @@ static void dd_check_alloc_ncg(t_forcerec       *fr,
 }
 
 static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
-                                       rvec *v, rvec *lv)
+                                       const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
     int                  n, i, c, a, nalloc = 0;
@@ -1457,7 +1462,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
 }
 
 static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
-                                       rvec *v, rvec *lv)
+                                       const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
     int                 *scounts = nullptr, *disps = nullptr;
@@ -1487,7 +1492,8 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
     dd_scatterv(dd, scounts, disps, buf, dd->nat_home*sizeof(rvec), lv);
 }
 
-static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs, rvec *v, rvec *lv)
+static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs,
+                              const rvec *v, rvec *lv)
 {
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
     {
@@ -1536,10 +1542,12 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                                 t_state *state, t_state *state_local,
                                 PaddedRVecVector *f)
 {
-    int nh = state->nhchainlength;
+    int nh = state_local->nhchainlength;
 
     if (DDMASTER(dd))
     {
+        GMX_RELEASE_ASSERT(state->nhchainlength == nh, "The global and local Nose-Hoover chain lengths should match");
+
         for (int i = 0; i < efptNR; i++)
         {
             state_local->lambda[i] = state->lambda[i];
@@ -1597,15 +1605,18 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
 
     if (state_local->flags & (1 << estX))
     {
-        dd_distribute_vec(dd, cgs, as_rvec_array(state->x.data()), as_rvec_array(state_local->x.data()));
+        const rvec *xGlobal = (DDMASTER(dd) ? as_rvec_array(state->x.data()) : nullptr);
+        dd_distribute_vec(dd, cgs, xGlobal, as_rvec_array(state_local->x.data()));
     }
     if (state_local->flags & (1 << estV))
     {
-        dd_distribute_vec(dd, cgs, as_rvec_array(state->v.data()), as_rvec_array(state_local->v.data()));
+        const rvec *vGlobal = (DDMASTER(dd) ? as_rvec_array(state->v.data()) : nullptr);
+        dd_distribute_vec(dd, cgs, vGlobal, as_rvec_array(state_local->v.data()));
     }
     if (state_local->flags & (1 << estCGP))
     {
-        dd_distribute_vec(dd, cgs, as_rvec_array(state->cg_p.data()), as_rvec_array(state_local->cg_p.data()));
+        const rvec *cgpGlobal = (DDMASTER(dd) ? as_rvec_array(state->cg_p.data()) : nullptr);
+        dd_distribute_vec(dd, cgs, cgpGlobal, as_rvec_array(state_local->cg_p.data()));
     }
 }
 
@@ -3542,7 +3553,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
     }
 }
 
-static void make_tric_corr_matrix(int npbcdim, matrix box, matrix tcm)
+static void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm)
 {
     if (YY < npbcdim)
     {
@@ -3564,7 +3575,7 @@ static void make_tric_corr_matrix(int npbcdim, matrix box, matrix tcm)
     }
 }
 
-static void check_screw_box(matrix box)
+static void check_screw_box(const matrix box)
 {
     /* Mathematical limitation */
     if (box[YY][XX] != 0 || box[ZZ][XX] != 0)
@@ -3580,7 +3591,7 @@ static void check_screw_box(matrix box)
 }
 
 static void distribute_cg(FILE *fplog,
-                          matrix box, ivec tric_dir, t_block *cgs, rvec pos[],
+                          const matrix box, ivec tric_dir, t_block *cgs, rvec pos[],
                           gmx_domdec_t *dd)
 {
     gmx_domdec_master_t *ma;
@@ -3759,7 +3770,7 @@ static void distribute_cg(FILE *fplog,
 }
 
 static void get_cg_distribution(FILE *fplog, gmx_domdec_t *dd,
-                                t_block *cgs, matrix box, gmx_ddbox_t *ddbox,
+                                t_block *cgs, const matrix box, gmx_ddbox_t *ddbox,
                                 rvec pos[])
 {
     gmx_domdec_master_t *ma = nullptr;
@@ -6340,7 +6351,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                    const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
-                                   matrix box, const rvec *x,
+                                   const matrix box, const rvec *xGlobal,
                                    gmx_ddbox_t *ddbox,
                                    int *npme_x, int *npme_y)
 {
@@ -6446,7 +6457,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(fplog, mtop, ir, x, box,
+                dd_bonded_cg_distance(fplog, mtop, ir, xGlobal, box,
                                       options.checkBondedInteractions,
                                       &r_2b, &r_mb);
             }
@@ -6525,7 +6536,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     {
         copy_ivec(options.numCells, dd->nc);
         set_dd_dim(fplog, dd);
-        set_ddbox_cr(cr, &dd->nc, ir, box, &comm->cgs_gl, x, ddbox);
+        set_ddbox_cr(cr, &dd->nc, ir, box, &comm->cgs_gl, xGlobal, ddbox);
 
         if (options.numPmeRanks >= 0)
         {
@@ -6554,7 +6565,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     }
     else
     {
-        set_ddbox_cr(cr, nullptr, ir, box, &comm->cgs_gl, x, ddbox);
+        set_ddbox_cr(cr, nullptr, ir, box, &comm->cgs_gl, xGlobal, ddbox);
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         real limit =
@@ -7236,7 +7247,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                                         const MdrunOptions &mdrunOptions,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
-                                        matrix box, rvec *x,
+                                        const matrix box,
+                                        const rvec *xGlobal,
                                         gmx_ddbox_t *ddbox,
                                         int *npme_x, int *npme_y)
 {
@@ -7256,7 +7268,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     set_dd_limits_and_grid(fplog, cr, dd, options, mdrunOptions,
                            mtop, ir,
-                           box, x,
+                           box, xGlobal,
                            ddbox,
                            npme_x, npme_y);
 
@@ -9396,11 +9408,16 @@ void dd_partition_system(FILE                *fplog,
         clear_dd_indices(dd, 0, 0);
         ncgindex_set = 0;
 
-        set_ddbox(dd, bMasterState, cr, ir, state_global->box,
-                  TRUE, cgs_gl, as_rvec_array(state_global->x.data()), &ddbox);
+        rvec *xGlobal = (SIMMASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr);
+
+        set_ddbox(dd, bMasterState, cr, ir,
+                  SIMMASTER(cr) ? state_global->box : nullptr,
+                  TRUE, cgs_gl, xGlobal,
+                  &ddbox);
 
         get_cg_distribution(fplog, dd, cgs_gl,
-                            state_global->box, &ddbox, as_rvec_array(state_global->x.data()));
+                            SIMMASTER(cr) ? state_global->box : nullptr,
+                            &ddbox, xGlobal);
 
         dd_distribute_state(dd, cgs_gl,
                             state_global, state_local, f);
