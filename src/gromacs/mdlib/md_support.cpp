@@ -328,94 +328,82 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     }
 }
 
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[])
+void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
+                            const t_trxframe *rerun_fr, const double *lam0,
+                            t_state *globalState)
+{
+    GMX_RELEASE_ASSERT(globalState != nullptr, "setCurrentLambdasGlobalRerun should be called with a valid state object");
+
+    if (rerun_fr->bLambda)
+    {
+        if (fepvals->delta_lambda == 0)
+        {
+            globalState->lambda[efptFEP] = rerun_fr->lambda;
+        }
+        else
+        {
+            /* find out between which two value of lambda we should be */
+            real frac      = (step*fepvals->delta_lambda);
+            int  fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+            /* interpolate between this state and the next */
+            /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+            frac = (frac*fepvals->n_lambda)-fep_state;
+            for (int i = 0; i < efptNR; i++)
+            {
+                globalState->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                    frac*(fepvals->all_lambda[i][fep_state+1] - fepvals->all_lambda[i][fep_state]);
+            }
+        }
+    }
+    else if (rerun_fr->bFepState)
+    {
+        globalState->fep_state = rerun_fr->fep_state;
+        for (int i = 0; i < efptNR; i++)
+        {
+            globalState->lambda[i] = fepvals->all_lambda[i][globalState->fep_state];
+        }
+    }
+}
+
+void setCurrentLambdasLocal(gmx_int64_t step, const t_lambda *fepvals,
+                            const double *lam0, t_state *state)
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
 {
-    real frac;
-    int  i, fep_state = 0;
-    if (bRerunMD)
+    if (fepvals->delta_lambda != 0)
     {
-        if (rerun_fr->bLambda)
+        /* find out between which two value of lambda we should be */
+        real frac = (step*fepvals->delta_lambda);
+        if (fepvals->n_lambda > 0)
         {
-            if (fepvals->delta_lambda == 0)
+            int fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+            /* interpolate between this state and the next */
+            /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
+            frac = (frac*fepvals->n_lambda) - fep_state;
+            for (int i = 0; i < efptNR; i++)
             {
-                state_global->lambda[efptFEP] = rerun_fr->lambda;
-                for (i = 0; i < efptNR; i++)
-                {
-                    if (i != efptFEP)
-                    {
-                        state->lambda[i] = state_global->lambda[i];
-                    }
-                }
-            }
-            else
-            {
-                /* find out between which two value of lambda we should be */
-                frac      = (step*fepvals->delta_lambda);
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
-                /* interpolate between this state and the next */
-                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
-                }
+                state->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
+                    frac*(fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
             }
         }
-        else if (rerun_fr->bFepState)
+        else
         {
-            state_global->fep_state = rerun_fr->fep_state;
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
-                state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
+                state->lambda[i] = lam0[i] + frac;
             }
         }
     }
     else
     {
-        if (fepvals->delta_lambda != 0)
+        /* if < 0, fep_state was never defined, and we should not set lambda from the state */
+        if (state->fep_state > -1)
         {
-            /* find out between which two value of lambda we should be */
-            frac = (step*fepvals->delta_lambda);
-            if (fepvals->n_lambda > 0)
+            for (int i = 0; i < efptNR; i++)
             {
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
-                /* interpolate between this state and the next */
-                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
-                }
-            }
-            else
-            {
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + frac;
-                }
+                state->lambda[i] = fepvals->all_lambda[i][state->fep_state];
             }
         }
-        else
-        {
-            /* if < 0, fep_state was never defined, and we should not set lambda from the state */
-            if (state_global->fep_state > -1)
-            {
-                state_global->fep_state = state->fep_state; /* state->fep_state is the one updated by bExpanded */
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
-                }
-            }
-        }
-    }
-    for (i = 0; i < efptNR; i++)
-    {
-        state->lambda[i] = state_global->lambda[i];
     }
 }
 

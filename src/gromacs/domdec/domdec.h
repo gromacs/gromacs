@@ -190,8 +190,8 @@ gmx_domdec_t *init_domain_decomposition(FILE                *fplog,
                                         const MdrunOptions  &mdrunOptions,
                                         const gmx_mtop_t    *mtop,
                                         const t_inputrec    *ir,
-                                        matrix               box,
-                                        rvec                *x,
+                                        const matrix         box,
+                                        const rvec          *xGlobal,
                                         gmx_ddbox_t         *ddbox,
                                         int                 *npme_x,
                                         int                 *npme_y);
@@ -250,16 +250,20 @@ void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    int                  gpu_id);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
-void dd_collect_vec(struct gmx_domdec_t *dd,
-                    t_state *state_local, const PaddedRVecVector *lv, rvec *v);
+void dd_collect_vec(struct gmx_domdec_t    *dd,
+                    const t_state          *state_local,
+                    const PaddedRVecVector *lv,
+                    rvec                   *v);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
-void dd_collect_vec(struct gmx_domdec_t *dd,
-                    t_state *state_local, const PaddedRVecVector *lv, PaddedRVecVector *v);
+void dd_collect_vec(struct gmx_domdec_t    *dd,
+                    const t_state          *state_local,
+                    const PaddedRVecVector *lv,
+                    PaddedRVecVector       *v);
 
 /*! \brief Collects the local state \p state_local to \p state on the master rank */
 void dd_collect_state(struct gmx_domdec_t *dd,
-                      t_state *state_local, t_state *state);
+                      const t_state *state_local, t_state *state);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum {
@@ -397,7 +401,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
                            const t_inputrec *ir,
-                           const rvec *x, matrix box,
+                           const rvec *x, const matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb);
 
@@ -425,7 +429,7 @@ real dd_choose_grid(FILE *fplog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
-                    matrix box, const gmx_ddbox_t *ddbox,
+                    const matrix box, const gmx_ddbox_t *ddbox,
                     int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,

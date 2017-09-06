@@ -65,6 +65,7 @@ struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
+class t_state;
 struct t_swapcoords;
 struct ObservablesHistory;
 
@@ -79,8 +80,7 @@ struct ObservablesHistory;
  *                          also the structure needed for position swapping.
  * \param[in] fn            Output file name for swap data.
  * \param[in] mtop          Molecular topology.
- * \param[in] x             The initial positions of all particles.
- * \param[in] box           The simulation box.
+ * \param[in] globalState   The global state, only used on the master rank.
  * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
  * \param[in] oenv          Needed to open the swap output XVGR file.
@@ -91,8 +91,7 @@ void init_swapcoords(
         t_inputrec             *ir,
         const char             *fn,
         gmx_mtop_t             *mtop,
-        rvec                    x[],
-        matrix                  box,
+        const t_state          *globalState,
         ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
