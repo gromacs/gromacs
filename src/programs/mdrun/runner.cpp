@@ -505,14 +505,15 @@ int Mdrunner::mdrunner()
         please_cite(fplog, "Berendsen95a");
     }
 
-    // TODO state should be nullptr on non-master ranks, and perhaps call it globalState
-    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state);
-    t_state *                state         = stateInstance.get();
+    std::unique_ptr<t_state> globalState;
 
     if (SIMMASTER(cr))
     {
+        /* Only the master rank has the global state */
+        globalState = std::unique_ptr<t_state>(new t_state);
+
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
+        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), mtop);
 
         exitIfCannotForceGpuRun(forceUsePhysicalGpu,
                                 emulateGpu,
@@ -615,8 +616,23 @@ int Mdrunner::mdrunner()
         fprintf(fplog, "\n");
     }
 
-    /* now make sure the state is initialized and propagated */
-    set_state_entries(state, inputrec);
+    if (SIMMASTER(cr))
+    {
+        /* now make sure the state is initialized and propagated */
+        set_state_entries(globalState.get(), inputrec);
+    }
+
+    /* NM and TPI parallelize over force/energy calculations, not atoms,
+     * so we need to initialize and broadcast the global state.
+     */
+    if (inputrec->eI == eiNM || inputrec->eI == eiTPI)
+    {
+        if (!MASTER(cr))
+        {
+            globalState = std::unique_ptr<t_state>(new t_state);
+        }
+        broadcastStateWithoutDynamics(cr, globalState.get());
+    }
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
@@ -688,17 +704,16 @@ int Mdrunner::mdrunner()
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, fcd, state, replExParams.exchangeInterval > 0);
+    init_disres(fplog, mtop, inputrec, cr, fcd, globalState.get(), replExParams.exchangeInterval > 0);
 
-    init_orires(fplog, mtop, as_rvec_array(state->x.data()), inputrec, cr, &(fcd->orires),
-                state);
+    init_orires(fplog, mtop, inputrec, cr, globalState.get(), &(fcd->orires));
 
     if (inputrecDeform(inputrec))
     {
         /* Store the deform reference box before reading the checkpoint */
         if (SIMMASTER(cr))
         {
-            copy_mat(state->box, box);
+            copy_mat(globalState->box, box);
         }
         if (PAR(cr))
         {
@@ -729,7 +744,8 @@ int Mdrunner::mdrunner()
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                         cr, domdecOptions.numCells,
-                        inputrec, state, &bReadEkin, &observablesHistory,
+                        inputrec, globalState.get(),
+                        &bReadEkin, &observablesHistory,
                         continuationOptions.appendFiles,
                         continuationOptions.appendFilesOptionSet,
                         mdrunOptions.reproducible);
@@ -753,7 +769,7 @@ int Mdrunner::mdrunner()
 
     if (SIMMASTER(cr))
     {
-        copy_mat(state->box, box);
+        copy_mat(globalState->box, box);
     }
 
     if (PAR(cr))
@@ -771,9 +787,11 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
+        const rvec *xOnMaster = (SIMMASTER(cr) ? as_rvec_array(globalState->x.data()) : nullptr);
+
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            mtop, inputrec,
-                                           box, as_rvec_array(state->x.data()),
+                                           box, xOnMaster,
                                            &ddbox, &npme_major, &npme_minor);
         // Note that local state still does not exist yet.
     }
@@ -932,14 +950,12 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &mdrunOptions.checkpointOptions.period);
+        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
     }
 
     snew(nrnb, 1);
     if (cr->duty & DUTY_PP)
     {
-        bcast_state(cr, state);
-
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules.initForceProviders();
@@ -976,10 +992,12 @@ int Mdrunner::mdrunner()
         if (!inputrec->bContinuation && MASTER(cr) &&
             !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
         {
+            rvec *xGlobal = as_rvec_array(globalState->x.data());
+
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
             {
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, as_rvec_array(state->x.data()));
+                do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, xGlobal);
             }
             if (vsite)
             {
@@ -987,7 +1005,7 @@ int Mdrunner::mdrunner()
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(vsite, mtop, as_rvec_array(state->x.data()));
+                construct_vsites_mtop(vsite, mtop, xGlobal);
             }
         }
 
@@ -1006,9 +1024,7 @@ int Mdrunner::mdrunner()
     {
         /* This is a PME only node */
 
-        /* We don't need the state */
-        stateInstance.reset();
-        state         = nullptr;
+        GMX_ASSERT(globalState == nullptr, "We don't need the state on a PME only rank and expect it to be unitialized");
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
@@ -1106,8 +1122,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, as_rvec_array(state->x.data()), state->box, mtop, oenv,
-                     mdrunOptions);
+            init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), mtop, oenv, mdrunOptions);
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
@@ -1135,7 +1150,9 @@ int Mdrunner::mdrunner()
                                      vsite, constr,
                                      mdModules.outputProvider(),
                                      inputrec, mtop,
-                                     fcd, state, &observablesHistory,
+                                     fcd,
+                                     globalState.get(),
+                                     &observablesHistory,
                                      mdatoms, nrnb, wcycle, fr,
                                      replExParams,
                                      membed,
