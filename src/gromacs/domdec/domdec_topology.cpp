@@ -2590,7 +2590,7 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt, int *at2cg,
 /*! \brief Set the distance, function type and atom indices for the longest atom distance involved in intermolecular interactions for two-body and multi-body bonded interactions */
 static void bonded_distance_intermol(const t_ilist *ilists_intermol,
                                      gmx_bool bBCheck,
-                                     const rvec *x, int ePBC, matrix box,
+                                     const rvec *x, int ePBC, const matrix box,
                                      bonded_distance_t *bd_2b,
                                      bonded_distance_t *bd_mb)
 {
@@ -2638,7 +2638,7 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
 //! Compute charge group centers of mass for molecule \p molt
 static void get_cgcm_mol(const gmx_moltype_t *molt,
                          const gmx_ffparams_t *ffparams,
-                         int ePBC, t_graph *graph, matrix box,
+                         int ePBC, t_graph *graph, const matrix box,
                          const gmx_vsite_t *vsite,
                          const rvec *x, rvec *xs, rvec *cg_cm)
 {
@@ -2701,7 +2701,7 @@ static int have_vsite_molt(gmx_moltype_t *molt)
 void dd_bonded_cg_distance(FILE *fplog,
                            const gmx_mtop_t *mtop,
                            const t_inputrec *ir,
-                           const rvec *x, matrix box,
+                           const rvec *x, const matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb)
 {

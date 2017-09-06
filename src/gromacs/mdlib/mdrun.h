@@ -191,7 +191,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir);
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
-//! \brief Broadcasts state from the master to all ranks in cr->mpi_comm_mygroup
-void bcast_state(const t_commrec *cr, t_state *state);
+//! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
+//
+// This is intended to be used with MPI parallelization without
+// domain decompostion (currently with NM and TPI).
+void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state);
 
 #endif
