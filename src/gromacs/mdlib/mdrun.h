@@ -192,6 +192,8 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
 //! \brief Broadcasts state from the master to all ranks in cr->mpi_comm_mygroup
-void bcast_state(const t_commrec *cr, t_state *state);
+//
+// The state should only contain x and optionally the box.
+void broadcastStateXAndBox(const t_commrec *cr, t_state *state);
 
 #endif
