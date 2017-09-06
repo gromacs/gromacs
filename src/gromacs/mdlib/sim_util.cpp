@@ -2384,7 +2384,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
     }
 }
 
-static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
+static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                             const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
 {
@@ -2432,14 +2432,14 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     sfree(graph);
 }
 
-void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
+void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
                        const gmx_mtop_t *mtop, rvec x[])
 {
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
 }
 
-void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
-                 gmx_mtop_t *mtop, rvec x[])
+void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
+                 const gmx_mtop_t *mtop, rvec x[])
 {
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
 }
@@ -2650,7 +2650,7 @@ void init_md(FILE *fplog,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
-             gmx::ArrayRef<real> lambda, int *fep_state, double *lam0,
+             t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              int nfile, const t_filenm fnm[],
@@ -2675,7 +2675,20 @@ void init_md(FILE *fplog,
     }
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
+    /* TODO: Clean up initialization of fep_state and lambda in t_state.
+     * We currently need to call initialize_lambdas on non-master ranks
+     * to initialize lam0.
+     */
+    if (MASTER(cr))
+    {
+        initialize_lambdas(fplog, ir, &globalState->fep_state, globalState->lambda, lam0);
+    }
+    else
+    {
+        int                      tmpFepState;
+        std::array<real, efptNR> tmpLambda;
+        initialize_lambdas(fplog, ir, &tmpFepState, tmpLambda, lam0);
+    }
 
     // TODO upd is never NULL in practice, but the analysers don't know that
     if (upd)
