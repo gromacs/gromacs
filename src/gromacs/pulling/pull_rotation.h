@@ -61,6 +61,7 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_rot;
+class t_state;
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,14 +80,13 @@ extern "C" {
  * \param fnm      The filenames struct containing also the names
  *                 of the rotation output files.
  * \param cr       Pointer to MPI communication data.
- * \param x        The positions of all MD particles.
- * \param box      The simulation box.
+ * \param globalState  The global state, only used on the master rank.
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
  * \param mdrunOptions  Options for mdrun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     struct t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions);
 
 

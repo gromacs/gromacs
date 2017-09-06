@@ -181,7 +181,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 
 /*! \brief Make a guess for the number of PME ranks to use. */
 static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
-                      matrix box,
+                      const matrix box,
                       int nrank_tot)
 {
     float      ratio;
@@ -342,7 +342,7 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
 
 /*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
-                           matrix box, const gmx_ddbox_t *ddbox,
+                           const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr,
                            int npme_tot, ivec nc)
@@ -555,7 +555,7 @@ static float comm_cost_est(real limit, real cutoff,
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
 static void assign_factors(const gmx_domdec_t *dd,
                            real limit, real cutoff,
-                           matrix box, const gmx_ddbox_t *ddbox,
+                           const matrix box, const gmx_ddbox_t *ddbox,
                            int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
                            int ndiv, int *div, int *mdiv, ivec ir_try, ivec opt)
@@ -620,7 +620,7 @@ static real optimize_ncells(FILE *fplog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
                             const gmx_mtop_t *mtop,
-                            matrix box, const gmx_ddbox_t *ddbox,
+                            const matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
@@ -738,7 +738,7 @@ real dd_choose_grid(FILE *fplog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
-                    matrix box, const gmx_ddbox_t *ddbox,
+                    const matrix box, const gmx_ddbox_t *ddbox,
                     int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,

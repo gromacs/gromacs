@@ -358,13 +358,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         /* Initialize ion swapping code */
         init_swapcoords(fplog, ir, opt2fn_master("-swap", nfile, fnm, cr),
-                        top_global, as_rvec_array(state_global->x.data()), state_global->box, observablesHistory, cr, oenv, mdrunOptions);
+                        top_global, state_global, observablesHistory, cr, oenv, mdrunOptions);
     }
 
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
-            &t, &t0, state_global->lambda,
-            &(state_global->fep_state), lam0,
+            &t, &t0, state_global, lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, wcycle);
@@ -445,12 +444,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         update_realloc(upd, state->natoms);
     }
-    // TODO Global state should be destroyed now that we have local
-    // state. Nothing should need to use it. (Global topology should
-    // persist.)
 
     /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     if (DOMAINDECOMP(cr))
@@ -464,6 +460,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
     }
+
+    // NOTE: The global state is no longer used at this point.
+    // But state_global is still used as temporary storage space for writing
+    // the global state to file and potentially for replica exchange.
+    // (Global topology should persist.)
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
@@ -868,8 +869,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* find and set the current lambdas.  If rerunning, we either read in a state, or a lambda value,
                requiring different logic. */
-
-            set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
+            if (bRerunMD)
+            {
+                if (MASTER(cr))
+                {
+                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+                }
+            }
+            else
+            {
+                setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+            }
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
@@ -1295,7 +1305,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, as_rvec_array(state->v.data()), mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-            copy_df_history(state_global->dfhist, state->dfhist);
+            if (MASTER(cr))
+            {
+                copy_df_history(state_global->dfhist, state->dfhist);
+            }
         }
 
         /* Now we have the energies and forces corresponding to the
