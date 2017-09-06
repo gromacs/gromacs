@@ -65,11 +65,12 @@
 // TODO This implementation of ensemble orientation restraints is nasty because
 // a user can't just do multi-sim with single-sim orientation restraints.
 
-void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
-                 rvec xref[],
+void init_orires(FILE             *fplog,
+                 const gmx_mtop_t *mtop,
                  const t_inputrec *ir,
-                 const t_commrec *cr, t_oriresdata *od,
-                 t_state *state)
+                 const t_commrec  *cr,
+                 t_state          *globalState,
+                 t_oriresdata     *od)
 {
     od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
     if (0 == od->nr)
@@ -97,12 +98,8 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     {
         gmx_fatal(FARGS, "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
     }
-    /* Orientation restraints */
-    if (!MASTER(cr))
-    {
-        /* Nothing to do */
-        return;
-    }
+
+    GMX_RELEASE_ASSERT(globalState != nullptr, "We need a valid global state in init_orires");
 
     od->fc  = ir->orires_fc;
     od->nex = 0;
@@ -178,11 +175,11 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
         od->edt_1 = 1.0 - od->edt;
 
         /* Extend the state with the orires history */
-        state->flags           |= (1<<estORIRE_INITF);
-        state->hist.orire_initf = 1;
-        state->flags           |= (1<<estORIRE_DTAV);
-        state->hist.norire_Dtav = od->nr*5;
-        snew(state->hist.orire_Dtav, state->hist.norire_Dtav);
+        globalState->flags           |= (1<<estORIRE_INITF);
+        globalState->hist.orire_initf = 1;
+        globalState->flags           |= (1<<estORIRE_DTAV);
+        globalState->hist.norire_Dtav = od->nr*5;
+        snew(globalState->hist.orire_Dtav, globalState->hist.norire_Dtav);
     }
 
     snew(od->oinsl, od->nr);
@@ -237,10 +234,10 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
             od->mref[j] = atom->m;
             if (ms == nullptr || MASTERSIM(ms))
             {
-                copy_rvec(xref[i], od->xref[j]);
+                copy_rvec(globalState->x[i], od->xref[j]);
                 for (int d = 0; d < DIM; d++)
                 {
-                    com[d] += od->mref[j]*xref[i][d];
+                    com[d] += od->mref[j]*globalState->x[i][d];
                 }
             }
             mtot += od->mref[j];

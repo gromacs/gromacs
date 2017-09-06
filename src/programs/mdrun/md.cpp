@@ -445,12 +445,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         update_realloc(upd, state->natoms);
     }
-    // TODO Global state should be destroyed now that we have local
-    // state. Nothing should need to use it. (Global topology should
-    // persist.)
 
     /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     if (DOMAINDECOMP(cr))
@@ -464,6 +461,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
     }
+
+    // NOTE: The global state is no longer used at this point.
+    // But state_global is still used as temporary storage space for writing
+    // the global state to file and potentially for replica exchange.
+    // (Global topology should persist.)
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
