@@ -104,9 +104,14 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);
 
-/* set the lambda values at each step of mdrun when they change */
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
+/* Set the lambda values in the global state from a frame read with rerun */
+void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
+                            const t_trxframe *rerun_fr, const double *lam0,
+                            t_state *globalState);
+
+/* Set the lambda values at each step of mdrun when they change */
+void setCurrentLambdasLocal(gmx_int64_t step, const t_lambda *fepvals,
+                            const double *lam0, t_state *state);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */

@@ -64,6 +64,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
@@ -2665,8 +2666,7 @@ gmx_edsam_t init_edsam(
         const t_inputrec       *ir,
         t_commrec              *cr,
         gmx_constr             *constr,
-        rvec                    x[],
-        matrix                  box,
+        const t_state          *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,
         gmx_bool                bAppend)
@@ -2727,8 +2727,8 @@ gmx_edsam_t init_edsam(
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
-            copy_rvecn(x, x_pbc, 0, mtop->natoms);
-            do_pbc_first_mtop(nullptr, ir->ePBC, box, mtop, x_pbc);
+            copy_rvecn(as_rvec_array(globalState->x.data()), x_pbc, 0, mtop->natoms);
+            do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
         edi = ed->edpar;

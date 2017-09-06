@@ -266,12 +266,12 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
                 dd_collect_vec(cr->dd, state_local, &state_local->x,
-                               &state_global->x);
+                               MASTER(cr) ? &state_global->x : nullptr);
             }
             if (mdof_flags & MDOF_V)
             {
                 dd_collect_vec(cr->dd, state_local, &state_local->v,
-                               &state_global->v);
+                               MASTER(cr) ? &state_global->v : nullptr);
             }
         }
         f_global = of->f_global;

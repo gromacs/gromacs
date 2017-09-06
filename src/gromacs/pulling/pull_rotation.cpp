@@ -62,6 +62,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
@@ -1611,7 +1612,7 @@ static void flex_fit_angle_perslab(
 
 
 /* Shift x with is */
-static gmx_inline void shift_single_coord(matrix box, rvec x, const ivec is)
+static gmx_inline void shift_single_coord(const matrix box, rvec x, const ivec is)
 {
     int tx, ty, tz;
 
@@ -3342,11 +3343,11 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
  * During the copy procedure of xcurr to b, the correct PBC image is chosen
  * such that the copied vector ends up near its reference position xref */
 static gmx_inline void copy_correct_pbc_image(
-        const rvec  xcurr,  /* copy vector xcurr ...                */
-        rvec        b,      /* ... to b ...                         */
-        const rvec  xref,   /* choosing the PBC image such that b ends up near xref */
-        matrix      box,
-        int         npbcdim)
+        const rvec   xcurr,  /* copy vector xcurr ...                */
+        rvec         b,      /* ... to b ...                         */
+        const rvec   xref,   /* choosing the PBC image such that b ends up near xref */
+        const matrix box,
+        int          npbcdim)
 {
     rvec  dx;
     int   d, m;
@@ -3385,7 +3386,7 @@ static gmx_inline void copy_correct_pbc_image(
 
 
 static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
-                           rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, matrix box,
+                           rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, const matrix box,
                            t_inputrec *ir, gmx_bool bOutputCenters)
 {
     int                   i, ii;
@@ -3657,7 +3658,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions)
 {
     t_rot          *rot;
@@ -3716,8 +3717,8 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
         snew(x_pbc, mtop->natoms);
-        copy_rvecn(x, x_pbc, 0, mtop->natoms);
-        do_pbc_first_mtop(nullptr, ir->ePBC, box, mtop, x_pbc);
+        copy_rvecn(as_rvec_array(globalState->x.data()), x_pbc, 0, mtop->natoms);
+        do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule
          * (e.g. two strands of DNA), each one of them can end up in a different
@@ -3752,7 +3753,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, box, ir,
+            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
                            !er->appendFiles); /* Do not output the reference centers
                                                * again if we are appending */
         }

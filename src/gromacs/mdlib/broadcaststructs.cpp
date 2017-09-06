@@ -267,73 +267,42 @@ static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsi
     nblock_bc(cr, n, as_rvec_array(v->data()));
 }
 
-void bcast_state(const t_commrec *cr, t_state *state)
+void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
 {
-    int      i, nnht, nnhtp;
+    GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "broadcastStateWithoutDynamics should only be used for special cases without domain decomposition");
 
-    if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
+    if (!PAR(cr))
     {
         return;
     }
 
-    /* Broadcasts the state sizes and flags from the master to all nodes
-     * in cr->mpi_comm_mygroup. The arrays are not broadcasted. */
+    /* Broadcasts the state sizes and flags from the master to all ranks
+     * in cr->mpi_comm_mygroup.
+     */
     block_bc(cr, state->natoms);
-    block_bc(cr, state->ngtc);
-    block_bc(cr, state->nnhpres);
-    block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
 
-    if (cr->dd)
+    for (int i = 0; i < estNR; i++)
     {
-        /* We allocate dynamically in dd_partition_system. */
-        return;
-    }
-    /* The code below is reachable only by TPI and NM, so it is not
-       tested by anything. */
-
-    nnht  = (state->ngtc)*(state->nhchainlength);
-    nnhtp = (state->nnhpres)*(state->nhchainlength);
-
-    for (i = 0; i < estNR; i++)
-    {
-        if (state->flags & (1<<i))
+        if (state->flags & (1 << i))
         {
             switch (i)
             {
-                case estLAMBDA:  nblock_bc(cr, efptNR, state->lambda.data()); break;
-                case estFEPSTATE: block_bc(cr, state->fep_state); break;
-                case estBOX:     block_bc(cr, state->box); break;
-                case estBOX_REL: block_bc(cr, state->box_rel); break;
-                case estBOXV:    block_bc(cr, state->boxv); break;
-                case estPRES_PREV: block_bc(cr, state->pres_prev); break;
-                case estSVIR_PREV: block_bc(cr, state->svir_prev); break;
-                case estFVIR_PREV: block_bc(cr, state->fvir_prev); break;
-                case estNH_XI:   nblock_abc(cr, nnht, &state->nosehoover_xi); break;
-                case estNH_VXI:  nblock_abc(cr, nnht, &state->nosehoover_vxi); break;
-                case estNHPRES_XI:   nblock_abc(cr, nnhtp, &state->nhpres_xi); break;
-                case estNHPRES_VXI:  nblock_abc(cr, nnhtp, &state->nhpres_vxi); break;
-                case estTHERM_INT: nblock_abc(cr, state->ngtc, &state->therm_integral); break;
-                case estBAROS_INT: block_bc(cr, state->baros_integral); break;
-                case estVETA:    block_bc(cr, state->veta); break;
-                case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
-                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms); break;
-                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms); break;
-                case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
-                case estDISRE_RM3TAV:
-                    block_bc(cr, state->hist.ndisrepairs);
-                    nblock_abc(cr, state->hist.ndisrepairs, &state->hist.disre_rm3tav);
+                case estLAMBDA:
+                    nblock_bc(cr, efptNR, state->lambda.data());
                     break;
-                case estORIRE_INITF: block_bc(cr, state->hist.orire_initf); break;
-                case estORIRE_DTAV:
-                    block_bc(cr, state->hist.norire_Dtav);
-                    nblock_abc(cr, state->hist.norire_Dtav, &state->hist.orire_Dtav);
+                case estFEPSTATE:
+                    block_bc(cr, state->fep_state);
+                    break;
+                case estBOX:
+                    block_bc(cr, state->box);
+                    break;
+                case estX:
+                    bcastPaddedRVecVector(cr, &state->x, state->natoms);
                     break;
                 default:
-                    gmx_fatal(FARGS,
-                              "Communication is not implemented for %s in bcast_state",
-                              est_names[i]);
+                    GMX_RELEASE_ASSERT(false, "The state has a dynamic entry, while no dynamic entries should be present");
+                    break;
             }
         }
     }
