@@ -2384,7 +2384,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
     }
 }
 
-static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
+static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                             const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
 {
@@ -2432,7 +2432,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     sfree(graph);
 }
 
-void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
+void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
                        const gmx_mtop_t *mtop, rvec x[])
 {
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
@@ -2674,8 +2674,11 @@ void init_md(FILE *fplog,
         }
     }
 
-    /* Initialize lambda variables */
-    initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
+    if (MASTER(cr))
+    {
+        /* Initialize lambda variables */
+        initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
+    }
 
     // TODO upd is never NULL in practice, but the analysers don't know that
     if (upd)
