@@ -70,7 +70,7 @@ typedef struct gmx_repl_ex *gmx_repl_ex_t;
 gmx_repl_ex_t
 init_replica_exchange(FILE                            *fplog,
                       const gmx_multisim_t            *ms,
-                      const t_state                   *state,
+                      int                              numAtomsInSystem,
                       const t_inputrec                *ir,
                       const ReplicaExchangeParameters &replExParams);
 /* Should only be called on the master ranks */
@@ -78,7 +78,7 @@ init_replica_exchange(FILE                            *fplog,
 gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           gmx_repl_ex_t re,
-                          t_state *state, gmx_enerdata_t *enerd,
+                          t_state *state, const gmx_enerdata_t *enerd,
                           t_state *state_local,
                           gmx_int64_t step, real time);
 /* Attempts replica exchange, should be called on all ranks.

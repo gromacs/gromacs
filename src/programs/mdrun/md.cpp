@@ -510,7 +510,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
     if (useReplicaExchange && MASTER(cr))
     {
-        repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir,
+        repl_ex = init_replica_exchange(fplog, cr->ms, top_global->natoms, ir,
                                         replExParams);
     }
 
