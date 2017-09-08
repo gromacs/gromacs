@@ -43,6 +43,8 @@
 
 #include <arm_neon.h>
 
+#include "gromacs/math/utilities.h"
+
 namespace gmx
 {
 
@@ -444,13 +446,20 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const int32x4_t exponentBias = vdupq_n_s32(127);
-    int32x4_t       iExponent;
+    int32x4_t       iExponent    = vaddq_s32(exponent.simdInternal_, exponentBias);
 
-    iExponent = vshlq_n_s32( vaddq_s32(exponent.simdInternal_, exponentBias), 23);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = vmaxq_s32(iExponent, vdupq_n_s32(0));
+    }
+
+    iExponent = vshlq_n_s32( iExponent, 23);
 
     return {
                vmulq_f32(value.simdInternal_, vreinterpretq_f32_s32(iExponent))

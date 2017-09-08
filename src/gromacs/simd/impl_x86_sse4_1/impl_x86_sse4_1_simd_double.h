@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,6 +122,29 @@ blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
 {
     return {
                _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+template <MathOptimization opt = MathOptimization::Safe>
+static inline SimdDouble
+ldexp(SimdDouble value, SimdDInt32 exponent)
+{
+    const __m128i  exponentBias = _mm_set1_epi32(1023);
+    __m128i        iExponent    = _mm_add_epi32(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm_max_epi32(iExponent, _mm_setzero_si128());
+    }
+
+    // After conversion integers will be in slot 0,1. Move them to 0,2 so
+    // we can do a 64-bit shift and get them to the dp exponents.
+    iExponent = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+    iExponent = _mm_slli_epi64(iExponent, 52);
+
+    return {
+               _mm_mul_pd(value.simdInternal_, _mm_castsi128_pd(iExponent))
     };
 }
 

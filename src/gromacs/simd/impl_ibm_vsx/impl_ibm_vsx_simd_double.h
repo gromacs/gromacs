@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "impl_ibm_vsx_definitions.h"
@@ -422,6 +423,7 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
@@ -434,6 +436,13 @@ ldexp(SimdDouble value, SimdDInt32 exponent)
 #endif
 
     iExponent = vec_add(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = vec_max(iExponent, vec_splat_s32(0));
+    }
+
     // exponent is now present in pairs of integers; 0011.
     // Elements 0/2 already correspond to the upper half of each double,
     // so we only need to shift by another 52-32=20 bits.

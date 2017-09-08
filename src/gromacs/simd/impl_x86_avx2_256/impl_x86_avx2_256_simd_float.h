@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd_float.h"
 
 namespace gmx
@@ -118,13 +119,20 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __m256i  exponentBias = _mm256_set1_epi32(127);
-    __m256i        iExponent;
+    __m256i        iExponent    = _mm256_add_epi32(exponent.simdInternal_, exponentBias);
 
-    iExponent = _mm256_slli_epi32(_mm256_add_epi32(exponent.simdInternal_, exponentBias), 23);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm256_max_epi32(iExponent, _mm256_setzero_si256());
+    }
+
+    iExponent = _mm256_slli_epi32(iExponent, 23);
     return {
                _mm256_mul_ps(value.simdInternal_, _mm256_castsi256_ps(iExponent))
     };

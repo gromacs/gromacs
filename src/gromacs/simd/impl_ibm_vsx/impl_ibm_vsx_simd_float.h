@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "impl_ibm_vsx_definitions.h"
@@ -401,13 +402,22 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __vector signed int exponentBias   = vec_splats(127);
     __vector signed int       iExponent;
 
-    iExponent = vec_sl( vec_add(exponent.simdInternal_, exponentBias), vec_splats(23U));
+    iExponent  = vec_add(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = vec_max(iExponent, vec_splat_s32(0));
+    }
+
+    iExponent = vec_sl( iExponent, vec_splats(23U));
 
     return {
                vec_mul(value.simdInternal_, reinterpret_cast<__vector float>(iExponent))
