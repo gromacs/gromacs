@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,12 +110,14 @@ static void realloc_work(struct pme_solve_work_t *work, int nkx)
         snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
         srenew(work->m2inv, work->nalloc);
 
-        /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
-         * of simd padded elements.
+        /* Initialize all allocated elements of denom and tmp1/2 to avoid
+         * division by zero and  overflow exceptions of SIMD padded elements.
          */
         for (i = 0; i < work->nalloc+simd_width; i++)
         {
             work->denom[i] = 1;
+            work->tmp1[i]  = 0;
+            work->tmp2[i]  = 0;
         }
     }
 }
