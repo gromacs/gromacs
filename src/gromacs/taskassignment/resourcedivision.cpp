@@ -32,10 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief Defines utility functionality for dividing resources and
+ * checking for consistency and usefulness.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_taskassignment
+ */
 
 #include "gmxpre.h"
 
-#include "resource-division.h"
+#include "resourcedivision.h"
 
 #include "config.h"
 
@@ -46,13 +53,13 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
-#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
@@ -81,6 +88,9 @@ static const bool bHasOmpSupport = GMX_OPENMP;
 static const int min_atoms_per_mpi_thread =  90;
 static const int min_atoms_per_gpu        = 900;
 #endif /* GMX_THREAD_MPI */
+
+/**@{*/
+/*! \brief Constants for implementing default divisions of threads */
 
 /* TODO choose nthreads_omp based on hardware topology
    when we have a hardware topology detection library */
@@ -125,8 +135,9 @@ const int nthreads_omp_mpi_ok_min_cpu          =  1;
 const int nthreads_omp_mpi_ok_min_gpu          =  2;
 const int nthreads_omp_mpi_target_max          =  6;
 
+/**@}*/
 
-/* Returns the maximum OpenMP thread count for which using a single MPI rank
+/*! \brief Returns the maximum OpenMP thread count for which using a single MPI rank
  * should be faster than using multiple ranks with the same total thread count.
  */
 static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
@@ -163,7 +174,7 @@ static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
     return nth;
 }
 
-/* Returns that maximum OpenMP thread count that passes the efficiency check */
+/*! \brief Returns that maximum OpenMP thread count that passes the efficiency check */
 gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
                                                  const gmx::CpuInfo  &cpuInfo,
                                                  gmx_bool             bUseGPU)
@@ -180,7 +191,7 @@ gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
     }
 }
 
-/* Return the number of thread-MPI ranks to use.
+/*! \brief Return the number of thread-MPI ranks to use.
  * This is chosen such that we can always obey our own efficiency checks.
  */
 gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
@@ -702,6 +713,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 }
 
 
+//! Dump a \c hw_opt to \c fp.
 static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 {
     fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s'\n",
@@ -712,7 +724,6 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->gpuIdTaskAssignment.c_str());
 }
 
-/* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
                                const t_commrec *cr,
                                int              nPmeRanks)
@@ -830,7 +841,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
                        "PME thread count should only be set when the normal thread count is also set");
 }
 
-/* Checks we can do when we know the cut-off scheme */
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                int           cutoff_scheme)
 {
@@ -847,7 +857,6 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
     }
 }
 
-/* Checks we can do when we know the thread-MPI rank count */
 void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt)
 {
 #if GMX_THREAD_MPI

@@ -37,10 +37,6 @@
 
 #include <cstdio>
 
-#include <string>
-#include <vector>
-
-struct gmx_gpu_info_t;
 struct gmx_hw_info_t;
 struct t_commrec;
 
@@ -55,26 +51,5 @@ class MDLogger;
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo);
-
-/*! \brief Log a report on how GPUs are (or could be) being used on
- * the ranks of the physical node of rank 0 of the simulation.
- *
- * \todo It could be useful to report also whether any nodes differed,
- * and in what way.
- *
- * \param[out] mdlog              Logging object.
- * \param[in]  gpu_info           Information detected about GPUs
- * \param[in]  userSetGpuIds      Whether the user selected the GPU ids
- * \param[in]  gpuTaskAssignment  The selected GPU IDs.
- * \param[in]  numPpRanks         Number of PP ranks per node
- * \param[in]  bPrintHostName     Print the hostname in the usage information
- *
- * \throws                        std::bad_alloc if out of memory */
-void reportGpuUsage(const gmx::MDLogger    &mdlog,
-                    const gmx_gpu_info_t   &gpu_info,
-                    bool                    userSetGpuIds,
-                    const std::vector<int> &gpuTaskAssignment,
-                    size_t                  numPpRanks,
-                    bool                    bPrintHostName);
 
 #endif

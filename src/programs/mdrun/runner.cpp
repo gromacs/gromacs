@@ -65,7 +65,6 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
-#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/printhardware.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
@@ -104,6 +103,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/taskassignment/hardwareassign.h"
+#include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -123,7 +124,6 @@
 #include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
-#include "resource-division.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,7 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -252,3 +254,103 @@ std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
 }
 
 } // namespace
+
+/*! \brief Return the number of PP rank pairs that share a GPU device between them.
+ *
+ * Sharing GPUs among multiple PP ranks is possible via either user or
+ * automated selection. */
+static int gmx_count_gpu_dev_shared(const std::vector<int> &gpuTaskAssignment,
+                                    bool                    userSetGpuIds)
+{
+    int      same_count    = 0;
+
+    if (userSetGpuIds)
+    {
+        GMX_RELEASE_ASSERT(!gpuTaskAssignment.empty(),
+                           "The user cannot choose an empty set of GPU IDs, code is wrong somewhere");
+        size_t ngpu = gpuTaskAssignment.size();
+
+        for (size_t i = 0; i < ngpu - 1; i++)
+        {
+            for (size_t j = i + 1; j < ngpu; j++)
+            {
+                same_count      += (gpuTaskAssignment[i] ==
+                                    gpuTaskAssignment[j]);
+            }
+        }
+    }
+
+    return same_count;
+}
+
+/* Count and return the number of unique GPUs (per node) selected.
+ *
+ * As sharing GPUs among multiple PP ranks is possible, the number of
+ * GPUs used (per node) can be different from the number of GPU IDs
+ * used.
+ */
+static size_t gmx_count_gpu_dev_unique(const std::vector<int> &gpuTaskAssignment)
+{
+    std::set<int> uniqIds;
+    for (const auto &deviceId : gpuTaskAssignment)
+    {
+        uniqIds.insert(deviceId);
+    }
+    return uniqIds.size();
+}
+
+void reportGpuUsage(const gmx::MDLogger    &mdlog,
+                    const gmx_gpu_info_t   &gpu_info,
+                    bool                    userSetGpuIds,
+                    const std::vector<int> &gpuTaskAssignment,
+                    size_t                  numPpRanks,
+                    bool                    bPrintHostName)
+{
+    if (gpuTaskAssignment.empty())
+    {
+        return;
+    }
+
+    std::string output;
+    {
+        std::string gpuIdsString =
+            formatAndJoin(gpuTaskAssignment, ",", gmx::StringFormatter("%d"));
+        size_t      numGpusInUse = gmx_count_gpu_dev_unique(gpuTaskAssignment);
+        bool        bPluralGpus  = numGpusInUse > 1;
+
+        if (bPrintHostName)
+        {
+            char host[STRLEN];
+            gmx_gethostname(host, STRLEN);
+            output += gmx::formatString("On host %s ", host);
+        }
+        output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
+                                    "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
+                                    numGpusInUse, bPluralGpus ? "s" : "",
+                                    userSetGpuIds ? "user-" : "auto-",
+                                    bPluralGpus ? "s" : "",
+                                    numPpRanks,
+                                    (numPpRanks > 1) ? "s" : "",
+                                    gpuIdsString.c_str());
+    }
+
+    int same_count = gmx_count_gpu_dev_shared(gpuTaskAssignment, userSetGpuIds);
+
+    if (same_count > 0)
+    {
+        output += gmx::formatString("NOTE: You assigned %s to multiple ranks.\n",
+                                    same_count > 1 ? "GPU IDs" : "a GPU ID");
+    }
+
+    if (static_cast<size_t>(gpu_info.n_dev_compatible) > numPpRanks)
+    {
+        /* TODO In principle, this warning could be warranted only on
+         * ranks on some nodes, but we lack the infrastructure to do a
+         * good job of reporting that. */
+        output += gmx::formatString("NOTE: potentially sub-optimal launch configuration using fewer\n"
+                                    "      PP ranks on a node than GPUs available on that node.\n");
+    }
+
+    /* NOTE: this print is only for and on one physical node */
+    GMX_LOG(mdlog.warning).appendText(output);
+}
