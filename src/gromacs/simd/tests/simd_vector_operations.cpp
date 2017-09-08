@@ -112,7 +112,7 @@ TEST_F(SimdVectorOperationsTest, cprod)
     //The test values cannot be computed without FMA for the case that SIMD has no FMA. Even if no explicit FMA were
     //used, the compiler could choose to use FMA. This causes up to 6upl error because of the product is up to 6 times
     //larger than the final result after the difference.
-    setUlpTol(GMX_SIMD_HAVE_FMA ? 0 : 6);
+    setUlpTol(GMX_SIMD_HAVE_FMA ? ulpTol_ : 6);
 
     GMX_EXPECT_SIMD_REAL_NEAR(refcX, cX);
     GMX_EXPECT_SIMD_REAL_NEAR(refcY, cY);

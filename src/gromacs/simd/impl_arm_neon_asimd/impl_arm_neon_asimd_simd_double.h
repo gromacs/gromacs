@@ -42,6 +42,8 @@
 
 #include <arm_neon.h>
 
+#include "gromacs/math/utilities.h"
+
 #include "impl_arm_neon_asimd_simd_float.h"
 
 namespace gmx
@@ -424,17 +426,25 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    const int64x2_t  exponentBias = vdupq_n_s64(1023);
-    int64x2_t        iExponent;
+    const int32x2_t exponentBias = vdup_n_s32(1023);
+    int32x2_t       iExponent    = vadd_s32(exponent.simdInternal_, exponentBias);
+    int64x2_t       iExponent64;
 
-    iExponent = vmovl_s32(exponent.simdInternal_);
-    iExponent = vshlq_n_s64(vaddq_s64(iExponent, exponentBias), 52);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = vmax_s32(iExponent, vdup_n_s32(0));
+    }
+
+    iExponent64 = vmovl_s32(iExponent);
+    iExponent64 = vshlq_n_s64(iExponent64, 52);
 
     return {
-               vmulq_f64(value.simdInternal_, float64x2_t(iExponent))
+               vmulq_f64(value.simdInternal_, float64x2_t(iExponent64))
     };
 }
 

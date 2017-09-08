@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #include <cstdint>
 
 #include <immintrin.h>
+
+#include "gromacs/math/utilities.h"
 
 namespace gmx
 {
@@ -398,6 +400,7 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
 
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
@@ -407,8 +410,19 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
 
     iExponentHigh = _mm256_extractf128_si256(exponent.simdInternal_, 0x1);
     iExponentLow  = _mm256_castsi256_si128(exponent.simdInternal_);
-    iExponentLow  = _mm_slli_epi32(_mm_add_epi32(iExponentLow, exponentBias), 23);
-    iExponentHigh = _mm_slli_epi32(_mm_add_epi32(iExponentHigh, exponentBias), 23);
+
+    iExponentLow  = _mm_add_epi32(iExponentLow, exponentBias);
+    iExponentHigh = _mm_add_epi32(iExponentHigh, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponentLow  = _mm_max_epi32(iExponentLow, _mm_setzero_si128());
+        iExponentHigh = _mm_max_epi32(iExponentHigh, _mm_setzero_si128());
+    }
+
+    iExponentLow  = _mm_slli_epi32(iExponentLow, 23);
+    iExponentHigh = _mm_slli_epi32(iExponentHigh, 23);
     iExponent     = _mm256_castsi128_si256(iExponentLow);
     iExponent     = _mm256_insertf128_si256(iExponent, iExponentHigh, 0x1);
     return {

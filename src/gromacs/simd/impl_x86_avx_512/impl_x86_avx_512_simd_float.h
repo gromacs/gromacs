@@ -43,6 +43,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/real.h"
 
 #include "impl_x86_avx_512_general.h"
@@ -392,13 +393,20 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __m512i exponentBias = _mm512_set1_epi32(127);
-    __m512i       iExponent;
+    __m512i       iExponent    =  _mm512_add_epi32(exponent.simdInternal_, exponentBias);
 
-    iExponent = _mm512_slli_epi32( _mm512_add_epi32(exponent.simdInternal_, exponentBias), 23);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm512_max_epi32(iExponent, _mm512_setzero_epi32());
+    }
+
+    iExponent = _mm512_slli_epi32(iExponent, 23);
 
     return {
                _mm512_mul_ps(value.simdInternal_, _mm512_castsi512_ps(iExponent))
