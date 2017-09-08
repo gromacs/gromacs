@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd_double.h"
 
 namespace gmx
@@ -110,15 +111,22 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    const __m256i  exponentBias = _mm256_set1_epi64x(1023LL);
-    __m256i        iExponent    = _mm256_cvtepi32_epi64(exponent.simdInternal_);
+    const __m128i  exponentBias = _mm_set1_epi32(1023);
+    __m128i        iExponent    = _mm_add_epi32(exponent.simdInternal_, exponentBias);
 
-    iExponent = _mm256_slli_epi64(_mm256_add_epi64(iExponent, exponentBias), 52);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm_max_epi32(iExponent, _mm_setzero_si128());
+    }
+
+    __m256i iExponent256 = _mm256_slli_epi64(_mm256_cvtepi32_epi64(iExponent), 52);
     return {
-               _mm256_mul_pd(value.simdInternal_, _mm256_castsi256_pd(iExponent))
+               _mm256_mul_pd(value.simdInternal_, _mm256_castsi256_pd(iExponent256))
     };
 }
 

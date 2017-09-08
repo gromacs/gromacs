@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,8 @@
 
 #include <algorithm>
 #include <array>
+
+#include "gromacs/math/utilities.h"
 
 #include "impl_reference_definitions.h"
 
@@ -862,10 +864,19 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
 
 /*! \brief Multiply a SIMD float value by the number 2 raised to an exp power.
  *
+ * \tparam opt By default, this routine will return zero for input arguments
+ *             that are so small they cannot be reproduced in the current
+ *             precision. If the unsafe math optimization template parameter
+ *             setting is used, these tests are skipped, and the result will
+ *             be undefined (possible even NaN). This might happen below -127
+ *             in single precision or -1023 in double, although some
+ *             might use denormal support to extend the range.
+ *
  * \param value Floating-point number to multiply with new exponent
  * \param exponent Integer that will not overflow as 2^exponent.
  * \return value*2^exponent
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
@@ -873,6 +884,8 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
+        // std::ldexp already takes care of clamping arguments, so we do not
+        // need to do anything in the reference implementation
         res.simdInternal_[i] = std::ldexp(value.simdInternal_[i], exponent.simdInternal_[i]);
     }
     return res;

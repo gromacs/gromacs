@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include <immintrin.h>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "impl_x86_avx_512_general.h"
@@ -392,15 +393,23 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    const __m512i exponentBias = _mm512_set1_epi32(1023);
-    __m512i       iExponent;
+    const __m256i exponentBias = _mm256_set1_epi32(1023);
+    __m256i       iExponent    = _mm256_add_epi32(exponent.simdInternal_, exponentBias);
+    __m512i       iExponent512;
 
-    iExponent = _mm512_permutexvar_epi32(_mm512_set_epi32(7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0), _mm512_castsi256_si512(exponent.simdInternal_));
-    iExponent = _mm512_mask_slli_epi32(_mm512_setzero_epi32(), avx512Int2Mask(0xAAAA), _mm512_add_epi32(iExponent, exponentBias), 20);
-    return _mm512_mul_pd(_mm512_castsi512_pd(iExponent), value.simdInternal_);
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponent = _mm256_max_epi32(iExponent, _mm256_setzero_si256());
+    }
+
+    iExponent512 = _mm512_permutexvar_epi32(_mm512_set_epi32(7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0), _mm512_castsi256_si512(iExponent));
+    iExponent512 = _mm512_mask_slli_epi32(_mm512_setzero_epi32(), avx512Int2Mask(0xAAAA), iExponent512, 20);
+    return _mm512_mul_pd(_mm512_castsi512_pd(iExponent512), value.simdInternal_);
 }
 
 static inline double gmx_simdcall
