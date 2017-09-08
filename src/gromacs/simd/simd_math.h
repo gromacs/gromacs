@@ -59,6 +59,8 @@
 
 #include <cmath>
 
+#include <limits>
+
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -415,11 +417,6 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
-    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -127.
-    // Note that we use a slightly wider range inside this *implementation* compared
-    // to that guaranteed by the API documentation in the comment above (which has
-    // to cover all architectures).
-    const SimdFloat  smallArgLimit(-127.0f);
     const SimdFloat  CC6(0.0001534581200287996416911311f);
     const SimdFloat  CC5(0.001339993121934088894618990f);
     const SimdFloat  CC4(0.009618488957115180159497841f);
@@ -444,16 +441,17 @@ exp2(SimdFloat x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -127. At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
-
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdFloat(std::numeric_limits<std::int32_t>::lowest()));
     }
 
-    fexppart  = ldexp(one, cvtR2I(x));
+    fexppart  = ldexp<opt>(one, cvtR2I(x));
     intpart   = round(x);
     x         = x - intpart;
 
@@ -507,11 +505,6 @@ static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
     const SimdFloat  argscale(1.44269504088896341f);
-    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -127.
-    // Note that we use a slightly wider range inside this *implementation* compared
-    // to that guaranteed by the API documentation in the comment above (which has
-    // to cover all architectures).
-    const SimdFloat  smallArgLimit(-88.0296919311f);
     const SimdFloat  invargscale0(-0.693145751953125f);
     const SimdFloat  invargscale1(-1.428606765330187045e-06f);
     const SimdFloat  CC4(0.00136324646882712841033936f);
@@ -526,7 +519,7 @@ exp(SimdFloat x)
 
     // Large negative values are valid arguments to exp2(), so there are two
     // things we need to account for:
-    // 1. When the IEEE exponents reaches -127, the (biased) exponent field will be
+    // 1. When the exponents reaches -127, the (biased) exponent field will be
     //    zero and we can no longer multiply with it. There are special IEEE
     //    formats to handle this range, but for now we have to accept that
     //    we cannot handle those arguments. If input value becomes even more
@@ -536,17 +529,22 @@ exp(SimdFloat x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -127*ln(2). At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
 
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdFloat(std::numeric_limits<std::int32_t>::lowest())/argscale);
     }
 
     y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
+
+
+    fexppart  = ldexp<opt>(one, cvtR2I(y));
     intpart   = round(y);
 
     // Extended precision arithmetics
@@ -1797,8 +1795,6 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp2(SimdDouble x)
 {
-    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -1023.
-    const SimdDouble  smallArgLimit(-1023.0);
     const SimdDouble  CE11(4.435280790452730022081181e-10);
     const SimdDouble  CE10(7.074105630863314448024247e-09);
     const SimdDouble  CE9(1.017819803432096698472621e-07);
@@ -1828,16 +1824,17 @@ exp2(SimdDouble x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -1023. At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
-
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest()));
     }
 
-    fexppart  = ldexp(one, cvtR2I(x));
+    fexppart  = ldexp<opt>(one, cvtR2I(x));
     intpart   = round(x);
     x         = x - intpart;
 
@@ -1867,8 +1864,6 @@ static inline SimdDouble gmx_simdcall
 exp(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896340735992468100);
-    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -1023.
-    const SimdDouble  smallArgLimit(-709.0895657128);
     const SimdDouble  invargscale0(-0.69314718055966295651160180568695068359375);
     const SimdDouble  invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
     const SimdDouble  CE12(2.078375306791423699350304e-09);
@@ -1899,17 +1894,21 @@ exp(SimdDouble x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -1023*ln(2). At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
 
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest())/argscale);
     }
 
     y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
+
+    fexppart  = ldexp<opt>(one, cvtR2I(y));
     intpart   = round(y);
 
     // Extended precision arithmetics
@@ -3155,8 +3154,6 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
 exp2SingleAccuracy(SimdDouble x)
 {
-    // Lower bound: Clamp args that would lead to an IEEE fp exponent below -1023.
-    const SimdDouble  smallArgLimit(-1023.0);
     const SimdDouble  CC6(0.0001534581200287996416911311);
     const SimdDouble  CC5(0.001339993121934088894618990);
     const SimdDouble  CC4(0.009618488957115180159497841);
@@ -3181,13 +3178,14 @@ exp2SingleAccuracy(SimdDouble x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -1023. At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
-
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer.
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest()));
     }
 
     ix        = cvtR2I(x);
@@ -3200,7 +3198,7 @@ exp2SingleAccuracy(SimdDouble x)
     p         = fma(p, x, CC2);
     p         = fma(p, x, CC1);
     p         = fma(p, x, one);
-    x         = ldexp(p, ix);
+    x         = ldexp<opt>(p, ix);
 
     return x;
 }
@@ -3231,7 +3229,7 @@ expSingleAccuracy(SimdDouble x)
 
     // Large negative values are valid arguments to exp2(), so there are two
     // things we need to account for:
-    // 1. When the exponents reaches -127, the (biased) exponent field will be
+    // 1. When the exponents reaches -1023, the (biased) exponent field will be
     //    zero and we can no longer multiply with it. There are special IEEE
     //    formats to handle this range, but for now we have to accept that
     //    we cannot handle those arguments. If input value becomes even more
@@ -3241,16 +3239,20 @@ expSingleAccuracy(SimdDouble x)
     //    subtraction to get the fractional part loses accuracy, and then we
     //    can end up with overflows in the polynomial.
     //
-    // For now, we handle this by clamping smaller arguments to -127. At this
-    // point we will already return zero, so we don't need to do anything
-    // extra for the exponent.
+    // For now, we handle this by forwarding the math optimization setting to
+    // ldexp, where the routine will return zero for very small arguments.
+    //
+    // However, before doing that we need to make sure we do not call cvtR2I
+    // with an argument that is so negative it cannot be converted to an integer
+    // after being multiplied by argscale.
 
     if (opt == MathOptimization::Safe)
     {
-        x         = max(x, smallArgLimit);
+        x         = max(x, SimdDouble(std::numeric_limits<std::int32_t>::lowest())/argscale);
     }
 
     y         = x * argscale;
+
     iy        = cvtR2I(y);
     intpart   = round(y);        // use same rounding algorithm here
 
@@ -3264,7 +3266,7 @@ expSingleAccuracy(SimdDouble x)
     p         = fma(p, x, CC0);
     p         = fma(x*x, p, x);
     p         = p + one;
-    x         = ldexp(p, iy);
+    x         = ldexp<opt>(p, iy);
     return x;
 }
 

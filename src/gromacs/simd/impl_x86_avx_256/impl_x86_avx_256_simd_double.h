@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #include <cstdint>
 
 #include <immintrin.h>
+
+#include "gromacs/math/utilities.h"
 
 #include "impl_x86_avx_256_simd_float.h"
 
@@ -416,6 +418,7 @@ frexp(SimdDouble value, SimdDInt32 * exponent)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
@@ -424,6 +427,13 @@ ldexp(SimdDouble value, SimdDInt32 exponent)
     __m256d       fExponent;
 
     iExponentLow  = _mm_add_epi32(exponent.simdInternal_, exponentBias);
+
+    if (opt == MathOptimization::Safe)
+    {
+        // Make sure biased argument is not negative
+        iExponentLow  = _mm_max_epi32(iExponentLow, _mm_setzero_si128());
+    }
+
     iExponentHigh = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(3, 3, 2, 2));
     iExponentLow  = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 0, 0));
     iExponentHigh = _mm_slli_epi64(iExponentHigh, 52);
