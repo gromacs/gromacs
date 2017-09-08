@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,40 +80,42 @@ struct pme_solve_work_t
     matrix   vir_lj;
 };
 
+#ifdef PME_SIMD_SOLVE
+constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
+#else
+/* We can use any alignment > 0, so we use 4 */
+constexp int c_simdWidth = 4;
+#endif
+
+/* Allocate an aligned pointer for SIMD operations, including extra elements
+ * at the end for padding.
+ */
+/* TODO: Replace this SIMD reallocator with a general, C++ solution */
+static void reallocSimdAlignedAndPadded(real **ptr, int unpaddedNumElements)
+{
+    sfree_aligned(*ptr);
+    snew_aligned(*ptr, unpaddedNumElements + c_simdWidth, c_simdWidth*sizeof(real));
+}
+
 static void realloc_work(struct pme_solve_work_t *work, int nkx)
 {
     if (nkx > work->nalloc)
     {
-        int simd_width, i;
-
         work->nalloc = nkx;
         srenew(work->mhx, work->nalloc);
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SIMD operations, including extra
-         * elements at the end for padding.
-         */
-#ifdef PME_SIMD_SOLVE
-        simd_width = GMX_SIMD_REAL_WIDTH;
-#else
-        /* We can use any alignment, apart from 0, so we use 4 */
-        simd_width = 4;
-#endif
-        sfree_aligned(work->denom);
-        sfree_aligned(work->tmp1);
-        sfree_aligned(work->tmp2);
-        sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp1,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp2,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
+        reallocSimdAlignedAndPadded(&work->denom, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->tmp1, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->tmp2, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->eterm, work->nalloc);
         srenew(work->m2inv, work->nalloc);
 
         /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
          * of simd padded elements.
          */
-        for (i = 0; i < work->nalloc+simd_width; i++)
+        for (int i = 0; i < work->nalloc + c_simdWidth; i++)
         {
             work->denom[i] = 1;
         }
@@ -680,6 +682,12 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                 tmp1[kx] = eterm*denom[kx];
                 tmp2[kx] = vterm*denom[kx];
             }
+            /* Clear padding elements to avoid (harmless) fp exceptions */
+            for ( ; kx < ((kxend + c_simdWidth - 1) & (c_simdWidth - 1)); kx++)
+            {
+                tmp1[kx] = 0;
+                tmp2[kx] = 0;
+            }
 
             if (!bLB)
             {
@@ -811,6 +819,13 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                            + 2.0*m2k*tmp2[kx]);
                 tmp1[kx] = eterm*denom[kx];
             }
+            /* Clear padding elements to avoid (harmless) fp exceptions */
+            for ( ; kx < ((kxend + c_simdWidth - 1) & (c_simdWidth - 1)); kx++)
+            {
+                tmp1[kx] = 0;
+                tmp2[kx] = 0;
+            }
+
             gcount = (bLB ? 7 : 1);
             for (ig = 0; ig < gcount; ++ig)
             {
