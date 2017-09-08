@@ -32,8 +32,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_HARDWARE_HARDWAREASSIGN_H
-#define GMX_HARDWARE_HARDWAREASSIGN_H
+/*! \defgroup module_taskassignment Assigning simulation tasks to hardware (taskassignment)
+ * \ingroup group_mdrun
+ * \brief Provides code that manages assignment of simulation tasks to hardware.
+ */
+/*! \libinternal
+ * \file
+ * \brief Declares high-level functionality for managing assigning
+ * tasks on ranks of a node to hardware on that node.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_taskassignment
+ * \inlibraryapi
+ */
+#ifndef GMX_TASKASSIGNMENT_HARDWAREASSIGN_H
+#define GMX_TASKASSIGNMENT_HARDWAREASSIGN_H
 
 #include <string>
 #include <vector>
@@ -46,6 +59,8 @@ struct t_commrec;
 
 namespace gmx
 {
+
+class MDLogger;
 
 /*! \brief Parse a GPU assignment string into digits
  *
@@ -83,5 +98,26 @@ std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
                                   const gmx_hw_opt_t     &hw_opt);
 
 } // namespace
+
+/*! \brief Log a report on how GPUs are (or could be) being used on
+ * the ranks of the physical node of rank 0 of the simulation.
+ *
+ * \todo It could be useful to report also whether any nodes differed,
+ * and in what way.
+ *
+ * \param[out] mdlog              Logging object.
+ * \param[in]  gpu_info           Information detected about GPUs
+ * \param[in]  userSetGpuIds      Whether the user selected the GPU ids
+ * \param[in]  gpuTaskAssignment  The selected GPU IDs.
+ * \param[in]  numPpRanks         Number of PP ranks per node
+ * \param[in]  bPrintHostName     Print the hostname in the usage information
+ *
+ * \throws                        std::bad_alloc if out of memory */
+void reportGpuUsage(const gmx::MDLogger    &mdlog,
+                    const gmx_gpu_info_t   &gpu_info,
+                    bool                    userSetGpuIds,
+                    const std::vector<int> &gpuTaskAssignment,
+                    size_t                  numPpRanks,
+                    bool                    bPrintHostName);
 
 #endif
