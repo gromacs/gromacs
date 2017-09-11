@@ -36,7 +36,7 @@
  * \brief Tests for gmx::compat::make_unique
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup group_compatibility
+ * \ingroup module_compat
  */
 #include "gmxpre.h"
 
