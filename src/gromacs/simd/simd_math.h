@@ -1729,6 +1729,7 @@ sqrt(SimdDouble x)
 {
     if (opt == MathOptimization::Safe)
     {
+        // As we might use a float version of rsqrt, we mask out small values
         SimdDouble res = maskzInvsqrt(x, SimdDouble(GMX_FLOAT_MIN) < x);
         return res*x;
     }

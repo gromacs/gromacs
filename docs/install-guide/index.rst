@@ -1035,6 +1035,19 @@ you may need to specify the use of static binaries with
 ``-DGMX_BUILD_SHARED_EXE=off``, and you may need to set the F77
 environmental variable to ``ftn`` when compiling FFTW.
 
+Building on Solaris
+-------------------
+
+The built-in |Gromacs| processor detection does not work on Solaris,
+so it is strongly recommended that you build |Gromacs| with
+``-DGMX_HWLOC=on`` and ensure that the ``CMAKE_PREFIX_PATH`` includes
+the path where the hwloc headers and libraries can be found. At least
+version 1.11.8 of hwloc is recommended.
+
+Oracle Developer Studio is not a currently supported compiler (and
+does not currently compile |Gromacs| correctly, perhaps because the
+thread-MPI atomics are incorrectly implemented in |Gromacs|).
+
 Building on BlueGene
 --------------------
 
