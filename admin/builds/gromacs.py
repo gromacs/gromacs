@@ -41,6 +41,7 @@ extra_options = {
     'static': Option.simple,
     'reference': Option.simple,
     'release': Option.simple,
+    'release-with-assert': Option.simple,
     'release-with-debug-info': Option.simple,
     'asan': Option.simple,
     'mkl': Option.simple,
@@ -66,7 +67,9 @@ def do_build(context):
 
     if context.opts.reference:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'
-    elif context.opts.release:
+    elif context.opts['release']:
+        cmake_opts['CMAKE_BUILD_TYPE'] = 'Release'
+    elif context.opts['release-with-assert']:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithAssert'
     elif context.opts['release-with-debug-info']:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithDebInfo'
