@@ -27,7 +27,7 @@ gcc-4.8 gpu cuda-6.5 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test thread-MPI with CUDA
 # Test cmake version from before new FindCUDA support (in 3.8)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-5 gpu cuda-8.0 thread-mpi openmp cmake-3.6.1 release simd=avx2_256
+gcc-5 gpu cuda-8.0 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
 # Test with ThreadSanitizer (compiled without OpenMP, even though
 #   this gcc was configured with --disable-linux-futex, because
@@ -56,7 +56,7 @@ clang-4 no-openmp asan
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
-msvc-2015 openmp release
+msvc-2015 openmp release-with-assert
 
 # Test oldest supported icc on Windows
 # Test newest supported icc on Windows
@@ -71,7 +71,7 @@ icc-16.0 no-thread-mpi openmp mkl cmake-3.8.1 simd=avx_256
 # Test NVIDIA OpenCL
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-4.8 openmp opencl cuda-7.5 mpi release simd=avx2_256
+gcc-4.8 openmp opencl cuda-7.5 mpi release-with-assert simd=avx2_256
 
 # Test AMD OpenCL
 # Test AVX_128_FMA SIMD
@@ -83,3 +83,4 @@ gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
 # Test newest supported LTS Ubuntu
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
 # Resolve Redmine #1850 so that ThreadSanitizer can test our OpenMP code
+# Support icc 17
