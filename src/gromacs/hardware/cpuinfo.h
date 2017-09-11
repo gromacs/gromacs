@@ -86,6 +86,7 @@ class CpuInfo
             Fujitsu,      //!< Only works on Linux (parsed from /proc/cpuinfo)
             Ibm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
             Arm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
+            Oracle,       //!< Cannot detect anything else yet (no /proc/cpuinfo available)
         };
 
         /*! \brief List of CPU features

@@ -669,7 +669,8 @@ detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
         { "AArch64",      CpuInfo::Vendor::Arm     },
         { "Fujitsu",      CpuInfo::Vendor::Fujitsu },
         { "IBM",          CpuInfo::Vendor::Ibm     },
-        { "POWER",        CpuInfo::Vendor::Ibm     }
+        { "POWER",        CpuInfo::Vendor::Ibm     },
+        { "Oracle",       CpuInfo::Vendor::Oracle  },
     };
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
@@ -905,6 +906,10 @@ CpuInfo CpuInfo::detect()
         result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
 #endif
 
+#if defined sun
+        result.vendor_ = CpuInfo::Vendor::Oracle;
+#endif
+
         // On Linux we might be able to find information in /proc/cpuinfo. If vendor or brand
         // is set to a known value this routine will not overwrite it.
         detectProcCpuInfo(&result.vendor_, &result.brandString_, &result.family_,
@@ -948,7 +953,8 @@ CpuInfo::s_vendorStrings_ =
     { CpuInfo::Vendor::Amd, "AMD"                                 },
     { CpuInfo::Vendor::Fujitsu, "Fujitsu"                         },
     { CpuInfo::Vendor::Ibm, "IBM"                                 },
-    { CpuInfo::Vendor::Arm, "ARM"                                 }
+    { CpuInfo::Vendor::Arm, "ARM"                                 },
+    { CpuInfo::Vendor::Oracle, "Oracle"                           },
 };
 
 

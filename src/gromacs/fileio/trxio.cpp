@@ -188,7 +188,8 @@ static void printcount_(t_trxstatus *status, const gmx_output_env_t *oenv,
 {
     if ((status->__frame < 2*SKIP1 || status->__frame % SKIP1 == 0) &&
         (status->__frame < 2*SKIP2 || status->__frame % SKIP2 == 0) &&
-        (status->__frame < 2*SKIP3 || status->__frame % SKIP3 == 0))
+        (status->__frame < 2*SKIP3 || status->__frame % SKIP3 == 0) &&
+        output_env_get_trajectory_io_verbosity(oenv) != 0)
     {
         fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->__frame,
                 output_env_conv_time(oenv, t));

@@ -1722,6 +1722,10 @@ maskzInv(SimdDouble x, SimdDBool m)
 /*! \brief Calculate sqrt(x) for SIMD doubles.
  *
  *  \copydetails sqrt(SimdFloat)
+ *  \param x Argument that must be >=0.
+ *  \return sqrt(x). If x=0, the result will correctly be set to 0.
+ *          if x>0 && x<float_min, the result will incorrectly be set to 0.
+ *          The result is undefined if the input value is negative.
  */
 template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
@@ -1729,6 +1733,7 @@ sqrt(SimdDouble x)
 {
     if (opt == MathOptimization::Safe)
     {
+        // As we might use a float version of rsqrt, we mask out small values
         SimdDouble res = maskzInvsqrt(x, SimdDouble(GMX_FLOAT_MIN) < x);
         return res*x;
     }
@@ -3088,6 +3093,9 @@ maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
 /*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, with single accuracy.
  *
  *  \copydetails sqrt(SimdFloat)
+ *  \param x Argument that must be >=0.
+ *  \return sqrt(x). If x<float_min, the result will correctly be set to 0.
+ *          The result is undefined if the input value is negative.
  */
 template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall
