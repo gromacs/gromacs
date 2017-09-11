@@ -50,7 +50,9 @@ struct gmx_output_env_t
           time_unit(time_ps),
           view(FALSE),
           xvg_format(exvgNONE),
-          verbosity(0) {}
+          verbosity(0),
+          trajectory_io_verbosity(0) {}
+
 
     const gmx::IProgramContext  &programContext;
 
@@ -62,6 +64,8 @@ struct gmx_output_env_t
     xvg_format_t                         xvg_format;
     /* The level of verbosity for this program */
     int                                  verbosity;
+    /* The level of verbosity during trajectory I/O. Default=1, quiet=0. */
+    int                                  trajectory_io_verbosity;
 };
 
 /* The source code in this file should be thread-safe.
@@ -102,6 +106,9 @@ void output_env_init(gmx_output_env_t **oenvp,
         oenv->view        = view;
         oenv->xvg_format  = xvg_format;
         oenv->verbosity   = verbosity;
+        const char *env = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
+        oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, NULL, 10) : 1);
+
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -125,6 +132,11 @@ void output_env_done(gmx_output_env_t *oenv)
 int output_env_get_verbosity(const gmx_output_env_t *oenv)
 {
     return oenv->verbosity;
+}
+
+int output_env_get_trajectory_io_verbosity(const gmx_output_env_t *oenv)
+{
+    return oenv->trajectory_io_verbosity;
 }
 
 std::string output_env_get_time_unit(const gmx_output_env_t *oenv)

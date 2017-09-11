@@ -120,6 +120,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
         # Some versions of icc require this in order that mkl.h can be
         # found at compile time.
         set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} ${FFT_LINKER_FLAGS}")
+        set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${FFT_LINKER_FLAGS}")
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()

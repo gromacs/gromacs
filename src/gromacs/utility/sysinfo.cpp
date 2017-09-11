@@ -144,7 +144,7 @@ gmx_ctime_r(const time_t *clock, char *buf, size_t len)
     buf[len-1] = '\0';
 #elif (defined(__sun))
     /*Solaris*/
-    ctime_r(clock, buf, len);
+    ctime_r(clock, buf);
 #else
     char tmpbuf[30];
     ctime_r(clock, tmpbuf);

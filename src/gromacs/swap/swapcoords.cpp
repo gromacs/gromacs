@@ -1465,9 +1465,7 @@ void init_swapcoords(
     t_swapgrp             *g;
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt;
-    matrix                 boxCopy;
     swaphistory_t         *swapstate = nullptr;
-
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
     {
@@ -1622,14 +1620,6 @@ void init_swapcoords(
     /* Make a t_pbc struct on all nodes so that the molecules
      * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
-    /* Every node needs to call set_pbc() and therefore every node needs
-     * to know the box dimensions */
-    copy_mat(box, boxCopy);
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(boxCopy), boxCopy, cr);
-    }
-    set_pbc(s->pbc, -1, boxCopy);
 
     if (MASTER(cr))
     {
@@ -2010,6 +2000,7 @@ gmx_bool do_swapcoords(
     sc  = ir->swap;
     s   = sc->si_priv;
 
+    set_pbc(s->pbc, ir->ePBC, box);
 
     /* Assemble the positions of the split groups, i.e. the channels.
      * Here we also pass a shifts array to communicate_group_positions(), so that it can make
