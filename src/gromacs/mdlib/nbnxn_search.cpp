@@ -121,18 +121,6 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
     fprintf(fp, "\n");
 }
 
-gmx_unused static gmx_inline int ci_to_cj(int ci, int na_cj_2log)
-{
-    switch (na_cj_2log)
-    {
-        case 2: return ci;     break;
-        case 3: return (ci>>1); break;
-        case 1: return (ci<<1); break;
-    }
-
-    return 0;
-}
-
 /* Layout for the nonbonded NxN pair lists */
 enum class NbnxnLayout
 {
@@ -694,10 +682,16 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 #endif /* !GMX_SIMD4_HAVE_REAL */
 }
 
-/* Returns the j sub-cell for index cj_ind */
-static int nbl_cj(const nbnxn_pairlist_t *nbl, int cj_ind)
+/* Returns the j-cluster index for index cjIndex in a cj list */
+static inline int nblCj(const nbnxn_cj_t *cjList, int cjIndex)
 {
-    return nbl->cj4[cj_ind/c_nbnxnGpuJgroupSize].cj[cj_ind & (c_nbnxnGpuJgroupSize - 1)];
+    return cjList[cjIndex].cj;
+}
+
+/* Returns the j-cluster index for index cjIndex in a cj4 list */
+static inline int nblCj(const nbnxn_cj4_t *cj4List, int cjIndex)
+{
+    return cj4List[cjIndex/c_nbnxnGpuJgroupSize].cj[cjIndex & (c_nbnxnGpuJgroupSize - 1)];
 }
 
 /* Returns the i-interaction mask of the j sub-cell for index cj_ind */
@@ -1450,139 +1444,178 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     }
 }
 
-/* Set all atom-pair exclusions from the topology stored in excl
- * as masks in the pair-list for simple list i-entry nbl_ci
- */
-static void set_ci_top_excls(const nbnxn_search_t nbs,
-                             nbnxn_pairlist_t    *nbl,
-                             gmx_bool             diagRemoved,
-                             int                  na_ci_2log,
-                             int                  na_cj_2log,
-                             const nbnxn_ci_t    *nbl_ci,
-                             const t_blocka      *excl)
+/* Returns how many contiguous j-clusters we have starting in the i-list */
+template <typename CjListType>
+static int numContiguousJClusters(const int         cjIndexStart,
+                                  const int         cjIndexEnd,
+                                  const CjListType &cjList)
 {
-    const int    *cell;
-    int           ci;
-    int           cj_ind_first, cj_ind_last;
-    int           cj_first, cj_last;
-    int           ndirect;
-    int           ai, aj, si, ge, se;
-    int           found, cj_ind_0, cj_ind_1, cj_ind_m;
-    int           cj_m;
-    int           inner_i, inner_e;
+    const int firstJCluster = nblCj(cjList, cjIndexStart);
 
-    cell = nbs->cell;
+    int       numContiguous = 0;
 
-    if (nbl_ci->cj_ind_end == nbl_ci->cj_ind_start)
+    while (cjIndexStart + numContiguous < cjIndexEnd &&
+           nblCj(cjList, cjIndexStart + numContiguous) == firstJCluster + numContiguous)
     {
-        /* Empty list */
-        return;
+        numContiguous++;
     }
 
-    ci = nbl_ci->ci;
+    return numContiguous;
+}
 
-    cj_ind_first = nbl_ci->cj_ind_start;
-    cj_ind_last  = nbl->ncj - 1;
+/* Helper struct for efficient searching for excluded atoms in a j-list */
+struct JListRanges
+{
+    /* Constructor */
+    template <typename CjListType>
+    JListRanges(int               cjIndexStart,
+                int               cjIndexEnd,
+                const CjListType &cjList);
 
-    cj_first = nbl->cj[cj_ind_first].cj;
-    cj_last  = nbl->cj[cj_ind_last].cj;
+    int cjIndexStart; // The start index in the j-list
+    int cjIndexEnd;   // The end index in the j-list
+    int cjFirst;      // The j-cluster with index cjIndexStart
+    int cjLast;       // The j-cluster with index cjIndexEnd-1
+    int numDirect;    // Up to cjIndexStart+numDirect the j-clusters are cjFirst + the index offset
+};
+
+template <typename CjListType>
+JListRanges::JListRanges(int               cjIndexStart,
+                         int               cjIndexEnd,
+                         const CjListType &cjList) :
+    cjIndexStart(cjIndexStart),
+    cjIndexEnd(cjIndexEnd)
+{
+    GMX_ASSERT(cjIndexEnd > cjIndexStart, "JListRanges should only be called with non-empty lists");
+
+    cjFirst   = nblCj(cjList, cjIndexStart);
+    cjLast    = nblCj(cjList, cjIndexEnd - 1);
 
     /* Determine how many contiguous j-cells we have starting
      * from the first i-cell. This number can be used to directly
      * calculate j-cell indices for excluded atoms.
      */
-    ndirect = 0;
-    if (na_ci_2log == na_cj_2log)
+    numDirect = numContiguousJClusters(cjIndexStart, cjIndexEnd, cjList);
+}
+
+/* Return the index of \p jCluster in the given range or -1 when not present
+ *
+ * Note: This code is executed very often and therefore performance is
+ *       important. It should be inlined and fully optimized.
+ */
+template <typename CjListType>
+static inline int findJClusterInJList(int                jCluster,
+                                      const JListRanges &ranges,
+                                      const CjListType  &cjList)
+{
+    int index;
+
+    if (jCluster < ranges.cjFirst + ranges.numDirect)
     {
-        while (cj_ind_first + ndirect <= cj_ind_last &&
-               nbl->cj[cj_ind_first+ndirect].cj == ci + ndirect)
-        {
-            ndirect++;
-        }
+        /* We can calculate the index directly using the offset */
+        index = ranges.cjIndexStart + jCluster - ranges.cjFirst;
     }
-#if NBNXN_SEARCH_BB_SIMD4
     else
     {
-        while (cj_ind_first + ndirect <= cj_ind_last &&
-               nbl->cj[cj_ind_first+ndirect].cj == ci_to_cj(ci, na_cj_2log) + ndirect)
+        /* Search for jCluster using bisection */
+        index           = -1;
+        int rangeStart  = ranges.cjIndexStart + ranges.numDirect;
+        int rangeEnd    = ranges.cjIndexEnd;
+        int rangeMiddle;
+        while (index == -1 && rangeStart < rangeEnd)
         {
-            ndirect++;
+            rangeMiddle = (rangeStart + rangeEnd) >> 1;
+
+            const int clusterMiddle = nblCj(cjList, rangeMiddle);
+
+            if (jCluster == clusterMiddle)
+            {
+                index      = rangeMiddle;
+            }
+            else if (jCluster < clusterMiddle)
+            {
+                rangeEnd   = rangeMiddle;
+            }
+            else
+            {
+                rangeStart = rangeMiddle + 1;
+            }
         }
     }
-#endif
 
-    /* Loop over the atoms in the i super-cell */
+    return index;
+}
+
+/* Set all atom-pair exclusions for a simple type list i-entry
+ *
+ * Set all atom-pair exclusions from the topology stored in exclusions
+ * as masks in the pair-list for simple list entry iEntry.
+ */
+static void
+setExclusionsForSimpleIentry(const nbnxn_search_t  nbs,
+                             nbnxn_pairlist_t     *nbl,
+                             gmx_bool              diagRemoved,
+                             int                   na_cj_2log,
+                             const nbnxn_ci_t     &iEntry,
+                             const t_blocka       &exclusions)
+{
+    if (iEntry.cj_ind_end == iEntry.cj_ind_start)
+    {
+        /* Empty list: no exclusions */
+        return;
+    }
+
+    const JListRanges  ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
+
+    const int          iCluster = iEntry.ci;
+
+    const int         *cell = nbs->cell;
+
+    /* Loop over the atoms in the i-cluster */
     for (int i = 0; i < nbl->na_sc; i++)
     {
-        ai = nbs->a[ci*nbl->na_sc+i];
-        if (ai >= 0)
+        const int iIndex = iCluster*nbl->na_sc + i;
+        const int iAtom  = nbs->a[iIndex];
+        if (iAtom >= 0)
         {
-            si  = (i>>na_ci_2log);
-
             /* Loop over the topology-based exclusions for this i-atom */
-            for (int eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
+            for (int exclIndex = exclusions.index[iAtom]; exclIndex < exclusions.index[iAtom + 1]; exclIndex++)
             {
-                aj = excl->a[eind];
+                const int jAtom = exclusions.a[exclIndex];
 
-                if (aj == ai)
+                if (jAtom == iAtom)
                 {
                     /* The self exclusion are already set, save some time */
                     continue;
                 }
 
-                ge = cell[aj];
+                /* Get the index of the j-atom in the nbnxn atom data */
+                const int jIndex = cell[jAtom];
 
                 /* Without shifts we only calculate interactions j>i
                  * for one-way pair-lists.
                  */
-                if (diagRemoved && ge <= ci*nbl->na_sc + i)
+                if (diagRemoved && jIndex <= iIndex)
                 {
                     continue;
                 }
 
-                se = (ge >> na_cj_2log);
+                const int jCluster = (jIndex >> na_cj_2log);
 
                 /* Could the cluster se be in our list? */
-                if (se >= cj_first && se <= cj_last)
+                if (jCluster >= ranges.cjFirst && jCluster <= ranges.cjLast)
                 {
-                    if (se < cj_first + ndirect)
+                    const int index =
+                        findJClusterInJList(jCluster, ranges, nbl->cj);
+
+                    if (index >= 0)
                     {
-                        /* We can calculate cj_ind directly from se */
-                        found = cj_ind_first + se - cj_first;
-                    }
-                    else
-                    {
-                        /* Search for se using bisection */
-                        found    = -1;
-                        cj_ind_0 = cj_ind_first + ndirect;
-                        cj_ind_1 = cj_ind_last + 1;
-                        while (found == -1 && cj_ind_0 < cj_ind_1)
-                        {
-                            cj_ind_m = (cj_ind_0 + cj_ind_1)>>1;
+                        /* We found an exclusion, clear the corresponding
+                         * interaction bit.
+                         */
+                        const int innerJ     = jIndex - (jCluster << na_cj_2log);
 
-                            cj_m = nbl->cj[cj_ind_m].cj;
-
-                            if (se == cj_m)
-                            {
-                                found = cj_ind_m;
-                            }
-                            else if (se < cj_m)
-                            {
-                                cj_ind_1 = cj_ind_m;
-                            }
-                            else
-                            {
-                                cj_ind_0 = cj_ind_m + 1;
-                            }
-                        }
-                    }
-
-                    if (found >= 0)
-                    {
-                        inner_i = i  - (si << na_ci_2log);
-                        inner_e = ge - (se << na_cj_2log);
-
-                        nbl->cj[found].excl &= ~(1U<<((inner_i<<na_cj_2log) + inner_e));
+                        nbl->cj[index].excl &= ~(1U << ((i << na_cj_2log) + innerJ));
                     }
                 }
             }
@@ -1993,135 +2026,104 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     }
 }
 
-/* Set all atom-pair exclusions from the topology stored in excl
- * as masks in the pair-list for i-super-cell entry nbl_sci
+/* Set all atom-pair exclusions for a GPU type list i-entry
+ *
+ * Sets all atom-pair exclusions from the topology stored in exclusions
+ * as masks in the pair-list for i-super-cluster list entry iEntry.
  */
-static void set_sci_top_excls(const nbnxn_search_t nbs,
-                              nbnxn_pairlist_t    *nbl,
-                              gmx_bool             diagRemoved,
-                              int                  na_c_2log,
-                              const nbnxn_sci_t   *nbl_sci,
-                              const t_blocka      *excl)
+static void
+setExclusionsForGpuIentry(const nbnxn_search_t  nbs,
+                          nbnxn_pairlist_t     *nbl,
+                          gmx_bool              diagRemoved,
+                          const nbnxn_sci_t    &iEntry,
+                          const t_blocka       &exclusions)
 {
-    const int    *cell;
-    int           na_c;
-    int           sci;
-    int           cj_ind_first, cj_ind_last;
-    int           cj_first, cj_last;
-    int           ndirect;
-    int           ai, aj, si, ge, se;
-    int           found, cj_ind_0, cj_ind_1, cj_ind_m;
-    int           cj_m;
-    nbnxn_excl_t *nbl_excl;
-    int           inner_i, inner_e, w;
-
-    cell = nbs->cell;
-
-    na_c = nbl->na_ci;
-
-    if (nbl_sci->cj4_ind_end == nbl_sci->cj4_ind_start)
+    if (iEntry.cj4_ind_end == iEntry.cj4_ind_start)
     {
         /* Empty list */
         return;
     }
 
-    sci = nbl_sci->sci;
-
-    cj_ind_first = nbl_sci->cj4_ind_start*c_nbnxnGpuJgroupSize;
-    cj_ind_last  = nbl->work->cj_ind - 1;
-
-    cj_first = nbl->cj4[nbl_sci->cj4_ind_start].cj[0];
-    cj_last  = nbl_cj(nbl, cj_ind_last);
-
-    /* Determine how many contiguous j-clusters we have starting
-     * from the first i-cluster. This number can be used to directly
-     * calculate j-cluster indices for excluded atoms.
+    /* Set the search ranges using start and end j-cluster indices.
+     * Note that here we can not use cj4_ind_end, since the last cj4
+     * can be only partially filled, so we use cj_ind.
      */
-    ndirect = 0;
-    while (cj_ind_first + ndirect <= cj_ind_last &&
-           nbl_cj(nbl, cj_ind_first+ndirect) == sci*c_gpuNumClusterPerCell + ndirect)
-    {
-        ndirect++;
-    }
+    const JListRanges ranges(iEntry.cj4_ind_start*c_nbnxnGpuJgroupSize,
+                             nbl->work->cj_ind,
+                             nbl->cj4);
 
-    /* Loop over the atoms in the i super-cell */
-    for (int i = 0; i < nbl->na_sc; i++)
+    GMX_ASSERT(nbl->na_ci == c_nbnxnGpuClusterSize, "na_ci should match the GPU cluster size");
+    constexpr int  c_clusterSize      = c_nbnxnGpuClusterSize;
+    constexpr int  c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster*c_nbnxnGpuClusterSize;
+
+    const int      iSuperCluster = iEntry.sci;
+
+    const int     *cell = nbs->cell;
+
+    /* Loop over the atoms in the i super-cluster */
+    for (int i = 0; i < c_superClusterSize; i++)
     {
-        ai = nbs->a[sci*nbl->na_sc+i];
-        if (ai >= 0)
+        const int iIndex = iSuperCluster*c_superClusterSize + i;
+        const int iAtom  = nbs->a[iIndex];
+        if (iAtom >= 0)
         {
-            si  = (i>>na_c_2log);
+            const int iCluster = i/c_clusterSize;
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for (int eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
+            for (int exclIndex = exclusions.index[iAtom]; exclIndex < exclusions.index[iAtom + 1]; exclIndex++)
             {
-                aj = excl->a[eind];
+                const int jAtom = exclusions.a[exclIndex];
 
-                if (aj == ai)
+                if (jAtom == iAtom)
                 {
-                    /* The self exclusion are already set, save some time */
+                    /* The self exclusions are already set, save some time */
                     continue;
                 }
 
-                ge = cell[aj];
+                /* Get the index of the j-atom in the nbnxn atom data */
+                const int jIndex = cell[jAtom];
 
                 /* Without shifts we only calculate interactions j>i
                  * for one-way pair-lists.
                  */
-                if (diagRemoved && ge <= sci*nbl->na_sc + i)
+                /* NOTE: We would like to use iIndex on the right hand side,
+                 * but that makes this routine 25% slower with gcc6/7.
+                 * Even using c_superClusterSize makes it slower.
+                 * Either of these changes triggers peeling of the exclIndex
+                 * loop, which apparently leads to far less efficient code.
+                 */
+                if (diagRemoved && jIndex <= iSuperCluster*nbl->na_sc + i)
                 {
                     continue;
                 }
 
-                se = ge>>na_c_2log;
-                /* Could the cluster se be in our list? */
-                if (se >= cj_first && se <= cj_last)
+                const int jCluster = jIndex/c_clusterSize;
+
+                /* Check whether the cluster is in our list? */
+                if (jCluster >= ranges.cjFirst && jCluster <= ranges.cjLast)
                 {
-                    if (se < cj_first + ndirect)
+                    const int index =
+                        findJClusterInJList(jCluster, ranges, nbl->cj4);
+
+                    if (index >= 0)
                     {
-                        /* We can calculate cj_ind directly from se */
-                        found = cj_ind_first + se - cj_first;
-                    }
-                    else
-                    {
-                        /* Search for se using bisection */
-                        found    = -1;
-                        cj_ind_0 = cj_ind_first + ndirect;
-                        cj_ind_1 = cj_ind_last + 1;
-                        while (found == -1 && cj_ind_0 < cj_ind_1)
+                        /* We found an exclusion, clear the corresponding
+                         * interaction bit.
+                         */
+                        const unsigned int pairMask = (1U << (cj_mod_cj4(index)*c_gpuNumClusterPerCell + iCluster));
+                        /* Check if the i-cluster interacts with the j-cluster */
+                        if (nbl_imask0(nbl, index) & pairMask)
                         {
-                            cj_ind_m = (cj_ind_0 + cj_ind_1)>>1;
+                            const int innerI = (i      & (c_clusterSize - 1));
+                            const int innerJ = (jIndex & (c_clusterSize - 1));
 
-                            cj_m = nbl_cj(nbl, cj_ind_m);
+                            /* Determine which j-half (CUDA warp) we are in */
+                            const int     jHalf = innerJ/(c_clusterSize/c_nbnxnGpuClusterpairSplit);
 
-                            if (se == cj_m)
-                            {
-                                found = cj_ind_m;
-                            }
-                            else if (se < cj_m)
-                            {
-                                cj_ind_1 = cj_ind_m;
-                            }
-                            else
-                            {
-                                cj_ind_0 = cj_ind_m + 1;
-                            }
-                        }
-                    }
+                            nbnxn_excl_t *interactionMask;
+                            get_nbl_exclusions_1(nbl, cj_to_cj4(index), jHalf, &interactionMask);
 
-                    if (found >= 0)
-                    {
-                        inner_i = i  - si*na_c;
-                        inner_e = ge - se*na_c;
-
-                        if (nbl_imask0(nbl, found) & (1U << (cj_mod_cj4(found)*c_gpuNumClusterPerCell + si)))
-                        {
-                            w       = (inner_e >> 2);
-
-                            get_nbl_exclusions_1(nbl, cj_to_cj4(found), w, &nbl_excl);
-
-                            nbl_excl->pair[a_mod_wj(inner_e)*nbl->na_ci+inner_i] &=
-                                ~(1U << (cj_mod_cj4(found)*c_gpuNumClusterPerCell + si));
+                            interactionMask->pair[a_mod_wj(innerJ)*c_clusterSize + innerI] &= ~pairMask;
                         }
                     }
                 }
@@ -3168,7 +3170,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      const nbnxn_grid_t *gridj,
                                      nbnxn_search_work_t *work,
                                      const nbnxn_atomdata_t *nbat,
-                                     const t_blocka *excl,
+                                     const t_blocka &exclusions,
                                      real rlist,
                                      int nb_kernel_type,
                                      int ci_block,
@@ -3699,13 +3701,12 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     /* Set the exclusions for this ci list */
                     if (nbl->bSimple)
                     {
-                        set_ci_top_excls(nbs,
-                                         nbl,
-                                         shift == CENTRAL && gridi == gridj,
-                                         gridj->na_c_2log,
-                                         na_cj_2log,
-                                         &(nbl->ci[nbl->nci]),
-                                         excl);
+                        setExclusionsForSimpleIentry(nbs,
+                                                     nbl,
+                                                     shift == CENTRAL && gridi == gridj,
+                                                     na_cj_2log,
+                                                     nbl->ci[nbl->nci],
+                                                     exclusions);
 
                         if (nbs->bFEP)
                         {
@@ -3717,12 +3718,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
                     else
                     {
-                        set_sci_top_excls(nbs,
-                                          nbl,
-                                          shift == CENTRAL && gridi == gridj,
-                                          gridj->na_c_2log,
-                                          &(nbl->sci[nbl->nsci]),
-                                          excl);
+                        setExclusionsForGpuIentry(nbs,
+                                                  nbl,
+                                                  shift == CENTRAL && gridi == gridj,
+                                                  nbl->sci[nbl->nsci],
+                                                  exclusions);
 
                         if (nbs->bFEP)
                         {
@@ -4240,7 +4240,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 
                     /* Divide the i super cell equally over the nblists */
                     nbnxn_make_pairlist_part(nbs, gridi, gridj,
-                                             &nbs->work[th], nbat, excl,
+                                             &nbs->work[th], nbat, *excl,
                                              rlist,
                                              nb_kernel_type,
                                              ci_block,
