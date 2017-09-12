@@ -40,7 +40,7 @@ clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
 
 # Test MPMD PME with library MPI
 # Test clang + OpenMP
-clang-4 openmp simd=avx_128_fma npme=1 nranks=2 mpi
+clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 
 # Test non-default use of mdrun -gpu_id
 # Test SSE2 SIMD

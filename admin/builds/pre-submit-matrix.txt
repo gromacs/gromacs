@@ -52,7 +52,7 @@ clang-3.4 double thread-mpi no-openmp fftpack cmake-3.4.3
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
-clang-4 no-openmp asan
+clang-5 no-openmp asan
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
