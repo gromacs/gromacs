@@ -34,7 +34,7 @@
 
 # These options need to match Jenkins labels on the slave where the
 # analysis is intended to run.
-build_options = ['clang-4', 'clang-static-analyzer-4']
+build_options = ['clang-5', 'clang-static-analyzer-5']
 
 def do_build(context):
     cmake_opts = {
