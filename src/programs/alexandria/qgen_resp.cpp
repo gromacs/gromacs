@@ -892,21 +892,21 @@ void QgenResp::calcPot()
     {
         ep.setVCalc(0);
     }     
-    int nthreads = gmx_omp_get_max_threads();    
+    auto nthreads = gmx_omp_get_max_threads();    
 #pragma omp parallel
     {
-        int thread_id = gmx_omp_get_thread_num();
-        int i0        = thread_id*nEsp()/nthreads;
-        int i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-        for (int i = (i0 + nskip); i < i1; i++)
+        auto thread_id = gmx_omp_get_thread_num();
+        auto i0        = thread_id*nEsp()/nthreads;
+        auto i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
+        for (auto i = (i0 + nskip); i < i1; i++)
         {
-            double vv = 0;
+            double vv  = 0;
+            auto espx  = ep_[i].esp();
             for (auto &ra : ra_)
             {
-                int                  atype = ra.atype();
-                RespAtomTypeIterator rat   = findRAT(atype);
-                gmx::RVec            rax   = ra.x();
-                gmx::RVec            espx  = ep_[i].esp();
+                auto  atype = ra.atype();
+                auto  rat   = findRAT(atype);
+                auto  rax   = ra.x();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
                     auto q = k->q();
@@ -952,8 +952,8 @@ void QgenResp::optimizeCharges()
     int i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
-        int                  atype = ra_[ii].atype();
-        RespAtomTypeIterator rat   = findRAT(atype);
+        auto atype = ra_[ii].atype();
+        auto rat   = findRAT(atype);
         if (rat->ptype() == eptAtom)
         {
             auto rax = ra_[ii].x();

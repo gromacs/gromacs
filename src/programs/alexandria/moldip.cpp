@@ -369,11 +369,6 @@ void MolDip::Init(t_commrec                *cr,
     hwinfo_                     = hwinfo;
     bfullTensor_                = bfullTensor;
     mindata_                    = mindata;
-
-    if (iChargeDistributionModel_ == eqdAXps)
-    {
-        inputrec_->coulombtype = eelUSER;
-    }
 }
 
 void MolDip::Read(FILE            *fp,
