@@ -35,6 +35,23 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
+/* The 3 functions below are only introduced to make the code more readable */
+
+static gmx_inline int ci_to_cj_simd_2xnn(int ci)
+{
+    return ci_to_cj<GMX_SIMD_REAL_WIDTH/2>(ci);
+}
+
+static gmx_inline int x_ind_ci_simd_2xnn(int ci)
+{
+    return x_ind_ci<GMX_SIMD_REAL_WIDTH/2>(ci);
+}
+
+static gmx_inline int x_ind_cj_simd_2xnn(int cj)
+{
+    return x_ind_cj<GMX_SIMD_REAL_WIDTH/2>(cj);
+}
+
 #if GMX_SIMD_REAL_WIDTH >= 2*NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH/2)
 #else

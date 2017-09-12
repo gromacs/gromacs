@@ -202,38 +202,6 @@ template<int cj_size> static gmx_inline int x_ind_cj(int cj)
     }
 }
 
-/* The 6 functions below are only introduced to make the code more readable */
-
-static gmx_inline int ci_to_cj_simd_4xn(int ci)
-{
-    return ci_to_cj<GMX_SIMD_REAL_WIDTH>(ci);
-}
-
-static gmx_inline int x_ind_ci_simd_4xn(int ci)
-{
-    return x_ind_ci<GMX_SIMD_REAL_WIDTH>(ci);
-}
-
-static gmx_inline int x_ind_cj_simd_4xn(int cj)
-{
-    return x_ind_cj<GMX_SIMD_REAL_WIDTH>(cj);
-}
-
-static gmx_inline int ci_to_cj_simd_2xnn(int ci)
-{
-    return ci_to_cj<GMX_SIMD_REAL_WIDTH/2>(ci);
-}
-
-static gmx_inline int x_ind_ci_simd_2xnn(int ci)
-{
-    return x_ind_ci<GMX_SIMD_REAL_WIDTH/2>(ci);
-}
-
-static gmx_inline int x_ind_cj_simd_2xnn(int cj)
-{
-    return x_ind_cj<GMX_SIMD_REAL_WIDTH/2>(cj);
-}
-
 #endif // GMX_SIMD
 
 gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
