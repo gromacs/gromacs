@@ -80,40 +80,54 @@ struct pme_solve_work_t
     matrix   vir_lj;
 };
 
+#ifdef PME_SIMD_SOLVE
+constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
+#else
+/* We can use any alignment > 0, so we use 4 */
+constexpr int c_simdWidth = 4;
+#endif
+
+/* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
+template <unsigned int factor>
+static size_t roundUpToMultipleOfFactor(size_t number)
+{
+    static_assert(factor > 0 && (factor & (factor - 1)) == 0, "factor should be >0 and a power of 2");
+
+    /* We need to add a most factor-1 and because factor is a power of 2,
+     * we get the result by masking out the bits corresponding to factor-1.
+     */
+    return (number + factor - 1) & ~(factor - 1);
+}
+
+/* Allocate an aligned pointer for SIMD operations, including extra elements
+ * at the end for padding.
+ */
+/* TODO: Replace this SIMD reallocator with a general, C++ solution */
+static void reallocSimdAlignedAndPadded(real **ptr, int unpaddedNumElements)
+{
+    sfree_aligned(*ptr);
+    snew_aligned(*ptr, roundUpToMultipleOfFactor<c_simdWidth>(unpaddedNumElements), c_simdWidth*sizeof(real));
+}
+
 static void realloc_work(struct pme_solve_work_t *work, int nkx)
 {
     if (nkx > work->nalloc)
     {
-        int simd_width, i;
-
         work->nalloc = nkx;
         srenew(work->mhx, work->nalloc);
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SIMD operations, including extra
-         * elements at the end for padding.
-         */
-#ifdef PME_SIMD_SOLVE
-        simd_width = GMX_SIMD_REAL_WIDTH;
-#else
-        /* We can use any alignment, apart from 0, so we use 4 */
-        simd_width = 4;
-#endif
-        sfree_aligned(work->denom);
-        sfree_aligned(work->tmp1);
-        sfree_aligned(work->tmp2);
-        sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp1,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp2,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
+        reallocSimdAlignedAndPadded(&work->denom, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->tmp1, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->tmp2, work->nalloc);
+        reallocSimdAlignedAndPadded(&work->eterm, work->nalloc);
         srenew(work->m2inv, work->nalloc);
 
         /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
          * of simd padded elements.
          */
-        for (i = 0; i < work->nalloc+simd_width; i++)
+        for (size_t i = 0; i < roundUpToMultipleOfFactor<c_simdWidth>(work->nalloc ); i++)
         {
             work->denom[i] = 1;
         }
@@ -672,6 +686,13 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp1[kx]  = -factor*m2k;
                 tmp2[kx]  = sqrt(factor*m2k);
             }
+            /* Clear padding elements to avoid (harmless) fp exceptions */
+            const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);
+            for (; kx < kxendSimd; kx++)
+            {
+                tmp1[kx] = 0;
+                tmp2[kx] = 0;
+            }
 
             calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
 
@@ -804,6 +825,13 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 denom[kx] = bz*by*pme->bsp_mod[XX][kx];
                 tmp1[kx]  = -factor*m2k;
                 tmp2[kx]  = sqrt(factor*m2k);
+            }
+            /* Clear padding elements to avoid (harmless) fp exceptions */
+            const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);
+            for (; kx < kxendSimd; kx++)
+            {
+                tmp1[kx] = 0;
+                tmp2[kx] = 0;
             }
 
             calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
