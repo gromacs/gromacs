@@ -64,6 +64,23 @@
 #define USE_TEXOBJ
 #endif
 
+/**@{*/
+/*! \brief Macro indicating whether to prefetch CJ into shared memory.
+ *
+ * On CC 7.0 / V100 cj preloading is a little slower (requires two syncwarps).
+ *
+ * Note: convenience macro, needs to be undef-ed at the end of the file.
+ */
+#if GMX_PTX_ARCH >= 700
+#define USE_CJ_PREFETCH 0
+#else
+#define USE_CJ_PREFETCH 1
+#endif
+/**@}*/
+/*! \brief Indicates whether to prefetch cj entries into shared memory. */
+static const bool c_prefetchCj = USE_CJ_PREFETCH;
+
+
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int          c_clSizeLog2  = 3;

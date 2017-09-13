@@ -287,8 +287,11 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    if (dinfo->prop.major < 7)
+    {
+        /* cj in shared memory, for each warp separately; on V100 it's off */
+        shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    }
     if (dinfo->prop.major >= 3)
     {
         if (nbp->vdwtype == evdwCuCUTCOMBGEOM ||
@@ -497,14 +500,20 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required_prune(const int num_threads_z)
+static inline int calc_shmem_required_prune(const int                           num_threads_z,
+                                            const gmx_device_info_t gmx_unused *dinfo)
 {
     int shmem;
 
+    assert(dinfo);
+
     /* i-atom x in shared memory */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    if (dinfo->prop.major < 7)
+    {
+        /* cj in shared memory, for each warp separately; on V100 it's off */
+        shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    }
 
     return shmem;
 }
@@ -584,7 +593,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
     int  nblock         = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
     dim3 dim_block      = dim3(c_clSize, c_clSize, num_threads_z);
     dim3 dim_grid       = dim3(nblock, 1, 1);
-    int  shmem          = calc_shmem_required_prune(num_threads_z);
+    int  shmem          = calc_shmem_required_prune(num_threads_z, nb->dev_info);
 
     if (debug)
     {
