@@ -262,19 +262,36 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
+    /*********************************************************************
+     * Set up shared memory pointers.
+     * sm_nextSlotPtr should always be updated to point to the "next slot",
+     * that is past the last point where data has been stored.
+     */
+    extern __shared__  char sm_dynamicShmem[];
+    char                   *sm_nextSlotPtr = sm_dynamicShmem;
+    // The offset calculation below assumes that char is 1 byte
+    static_assert(sizeof(char) == 1, "char type is exepcted to be 1 byte!");
+
     /* shmem buffer for i x+q pre-loading */
-    extern __shared__  float4 xqib[];
+    float4 *xqib    = (float4 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
-    int *cjs_end   = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    int *cjs        = (int *)(sm_nextSlotPtr);
+    /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
+    cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    int *atib      = cjs_end;
+    int *atib       = (int *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*atib));
 #else
     /* shmem buffer for i-atom LJ combination rule parameters */
-    float2 *ljcpib = (float2 *)cjs_end;
+    float2 *ljcpib  = (float2 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*ljcpib));
 #endif
+    /*********************************************************************/
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
@@ -359,12 +376,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif                                  /* CALC_ENERGIES */
 
 #ifdef EXCLUSION_FORCES
-    const int nonSelfInteraction  = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
+    const int nonSelfInteraction = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
 #endif
 
-    int          j4LoopStart = cij4_start + tidxz;
-    /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
-    for (j4 = j4LoopStart; j4 < cij4_end; j4 += NTHREAD_Z)
+    /* loop over the j clusters = seen by any of the atoms in the current super-cluster;
+     * The loop stride NTHREAD_Z ensures that consecutive warps-pairs are assigned
+     * consecutive j4's entries.
+     */
+    for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
         imask       = pl_cj4[j4].imei[widx].imask;
@@ -387,8 +406,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                Tested with up to nvcc 7.5 */
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                const unsigned int jmSkipCondition = imask & (superClInteractionMask << (jm * c_numClPerSupercl));
-                if (jmSkipCondition)
+                if (imask & (superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
 
@@ -412,8 +430,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
                     for (i = 0; i < c_numClPerSupercl; i++)
                     {
-                        const unsigned int iInnerSkipCondition = imask & mask_ji;
-                        if (iInnerSkipCondition)
+                        if (imask & mask_ji)
                         {
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
 
