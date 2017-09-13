@@ -287,8 +287,11 @@ static inline int calc_shmem_required_nonbonded(const int num_threads_z, const g
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    if (dinfo->prop.major < 7)
+    {
+        /* cj in shared memory, for each warp separately; on V100 it's off */
+        shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    }
     if (dinfo->prop.major >= 3)
     {
         if (nbp->vdwtype == evdwCuCUTCOMBGEOM ||
@@ -503,8 +506,11 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 
     /* i-atom x in shared memory */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    if (dinfo->prop.major < 7)
+    {
+        /* cj in shared memory, for each warp separately; on V100 it's off */
+        shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    }
 
     return shmem;
 }
