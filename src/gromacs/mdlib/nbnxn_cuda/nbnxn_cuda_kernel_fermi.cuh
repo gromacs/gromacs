@@ -220,8 +220,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs        = (int *)(sm_nextSlotPtr);
-    sm_nextSlotPtr += (c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    int *cjs;
+    if (c_prefetchCj)
+    {
+        cjs             = (int *)(sm_nextSlotPtr);
+        sm_nextSlotPtr += (c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    }
 
     /* shmem j force buffer */
     float *f_buf    = (float *)(sm_nextSlotPtr);
