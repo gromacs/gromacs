@@ -153,7 +153,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlistOuter_sq         = nbparam.rlistOuter_sq;
+    float rlist_sq              = nbparam.rlistOuter_sq;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -206,13 +206,27 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
+    /*********************************************************************
+     * Set up shared memory pointers.
+     * sm_nextSlotPtr should always be updated to point to the "next slot",
+     * that is past the last point where data has been stored.
+     */
+    extern __shared__  char sm_dynamicShmem[];
+    char                   *sm_nextSlotPtr = sm_dynamicShmem;
+    static_assert(sizeof(char) == 1, "The shared memory offset calculation assumes that char is 1 byte");
+
     /* shmem buffer for i x+q pre-loading */
-    extern __shared__  float4 xqib[];
+    float4 *xqib    = (float4 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int   *cjs   = ((int *)(xqib + c_numClPerSupercl * c_clSize));
+    int *cjs        = (int *)(sm_nextSlotPtr);
+    sm_nextSlotPtr += (c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+
     /* shmem j force buffer */
-    float *f_buf = (float *)(cjs + c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
+    float *f_buf    = (float *)(sm_nextSlotPtr);
+    sm_nextSlotPtr += (c_clSize * c_clSize * 3*sizeof(*f_buf));
+    /*********************************************************************/
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
@@ -355,7 +369,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!__any(r2 < rlistOuter_sq))
+                            if (!__any(r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -458,7 +472,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef VDW_CUTOFF_CHECK
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
-                                 * (rvdw < rcoulomb <= rlistOuter)
+                                 * (rvdw < rcoulomb <= rlist)
                                  */
                                 vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
                                 F_invr       *= vdw_in_range;
