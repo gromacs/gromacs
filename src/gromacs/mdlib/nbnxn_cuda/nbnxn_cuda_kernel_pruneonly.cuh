@@ -133,11 +133,23 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
     unsigned int bidx   = blockIdx.x;
     unsigned int widx   = (threadIdx.y * c_clSize) / warp_size; /* warp index */
 
-    /* shmem buffer for i x pre-loading */
-    extern __shared__  float4 xib[];
+    /*********************************************************************
+     * Set up shared memory pointers.
+     * sm_nextSlotPtr should always be updated to point to the "next slot",
+     * that is past the last point where data has been stored.
+     */
+    extern __shared__  int sm_dynamicShmem[];
+    int                   *sm_nextSlotPtr = sm_dynamicShmem;
+
+    /* shmem buffer for i x+q pre-loading */
+    float4 *xqib    = (float4 *)sm_nextSlotPtr;
+    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int        *cjs    = ((int *)(xib + c_numClPerSupercl * c_clSize)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    int *cjs        = (int *)(sm_nextSlotPtr) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(cjs));
+    /*********************************************************************/
+
 
     nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
     int         sci         = nb_sci.sci;                   /* super-cluster */
@@ -158,7 +170,10 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
     }
     __syncthreads();
 
-    /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
+    /* loop over the j clusters = seen by any of the atoms in the current super-cluster;
+     * The loop stride NTHREAD_Z ensures that consecutive warps-pairs are assigned
+     * consecutive j4's entries.
+     */
     for (int j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
         unsigned int imaskFull, imaskCheck, imaskNew;
