@@ -201,7 +201,7 @@ struct t_forcerec {
 
     /* Dielectric constant resp. multiplication factor for charges */
     real zsquare, temp;
-    real epsilon_r, epsfac;
+    real epsilon_r;
 
     /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
     double qsum[2];

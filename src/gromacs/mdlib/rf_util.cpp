@@ -79,8 +79,8 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
         start = mdatoms->nr - fr->n_tpi;
     }
 
-    ek      = fr->epsfac*fr->ic->k_rf;
-    ec      = fr->epsfac*fr->ic->c_rf;
+    ek      = fr->ic->epsfac*fr->ic->k_rf;
+    ec      = fr->ic->epsfac*fr->ic->c_rf;
     chargeA = mdatoms->chargeA;
     chargeB = mdatoms->chargeB;
     AA      = excl->a;

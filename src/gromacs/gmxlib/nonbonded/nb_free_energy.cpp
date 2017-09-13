@@ -158,7 +158,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     shiftvec            = fr->shift_vec[0];
     chargeA             = mdatoms->chargeA;
     chargeB             = mdatoms->chargeB;
-    facel               = fr->epsfac;
+    facel               = fr->ic->epsfac;
     krf                 = ic->k_rf;
     crf                 = ic->c_rf;
     Vc                  = kernel_data->energygrp_elec;

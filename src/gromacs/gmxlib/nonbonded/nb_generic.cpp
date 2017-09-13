@@ -194,7 +194,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     charge              = mdatoms->chargeA;
     type                = mdatoms->typeA;
-    facel               = fr->epsfac;
+    facel               = fr->ic->epsfac;
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
