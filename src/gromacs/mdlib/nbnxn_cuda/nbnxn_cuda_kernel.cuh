@@ -277,10 +277,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xqib));
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs        = (int *)(sm_nextSlotPtr);
-    /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
-    cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
-    sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    int *cjs;
+    if (c_prefetchCj)
+    {
+        cjs             = (int *)(sm_nextSlotPtr);
+        /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
+        cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+        sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    }
 
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
@@ -393,12 +397,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         if (imask)
 #endif
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
+            if (c_prefetchCj)
             {
-                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
+                /* Pre-load cj into shared memory on both warps separately */
+                if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
+                {
+                    cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
+                }
+                gmx_syncwarp(c_fullWarpMask);
             }
-            gmx_syncwarp(c_fullWarpMask);
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
@@ -410,7 +417,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
 
-                    cj      = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize];
+                    if (c_prefetchCj)
+                    {
+                        cj  = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize];
+                    }
+                    else
+                    {
+                        cj  = pl_cj4[j4].cj[jm];
+                    }
                     aj      = cj * c_clSize + tidxj;
 
                     /* load j atom data */
@@ -616,8 +630,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
-        // avoid shared memory WAR hazards between loop iterations
-        gmx_syncwarp(c_fullWarpMask);
+
+        if (c_prefetchCj)
+        {
+            // avoid shared memory WAR hazards between loop iterations
+            gmx_syncwarp(c_fullWarpMask);
+        }
     }
 
     /* skip central shifts when summing shift forces */
