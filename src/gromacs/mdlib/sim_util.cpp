@@ -172,6 +172,18 @@ void print_time(FILE                     *out,
     fflush(out);
 }
 
+template<typename Func, typename ...Args>
+void run(int tag, gmx_wallcycle_t wcycle, Func&& f, Args && ...args)
+{
+    wallcycle_start(wcycle, tag);
+    wallcycle_sub_start(wcycle, tag);
+
+    std::forward<Func>(f)(std::forward<Args>(args)...);
+
+    wallcycle_sub_stop(wcycle, tag);
+    wallcycle_stop(wcycle, tag);
+};
+
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
                          double the_time)
 {
@@ -282,8 +294,8 @@ static void pull_potential_wrapper(t_commrec *cr,
     set_pbc(&pbc, ir->ePBC, box);
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
+            pull_potential(ir->pull_work, mdatoms, &pbc,
+                           cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
@@ -940,12 +952,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
-                                        nbv->grp[eintLocal].nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_copy_x_to_nbat_x, nbv->nbs, eatLocal, FALSE, x, nbv->grp[eintLocal].nbat);
     }
 
     if (bUseGPU)
@@ -976,12 +983,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * (in CPU format) as the non-local kernel call also
              * calculates the local - non-local interactions.
              */
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, TRUE, x,
-                                            nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_copy_x_to_nbat_x, nbv->nbs, eatLocal, FALSE, x, nbv->grp[eintLocal].nbat);
         }
 
         if (bNS)
@@ -1024,12 +1026,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_x(cr->dd, box, x);
             wallcycle_stop(wcycle, ewcMOVEX);
 
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
-                                            nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_copy_x_to_nbat_x, nbv->nbs, eatLocal, FALSE, x, nbv->grp[eintLocal].nbat);
         }
 
         if (bUseGPU && !bDiffKernels)
@@ -1081,8 +1078,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         for (j = 0; j < DIM; j++)
         {
             mu_tot[j] =
-                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
-                lambda[efptCOUL]*fr->mu_tot[1][j];
+                    (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
+                    lambda[efptCOUL]*fr->mu_tot[1][j];
         }
     }
 
@@ -1212,11 +1209,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_add_nbat_f_to_f, nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
@@ -1272,16 +1265,11 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
-                                               nbv->grp[eintNonlocal].nbat, f);
+                run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_add_nbat_f_to_f, nbv->nbs, eatNonlocal, nbv->grp[eintNonlocal].nbat, f);
             }
-            wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
@@ -1375,12 +1363,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          step, nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                       nbv->grp[eintLocal].nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        run(ewcNB_XF_BUF_OPS, wcycle, nbnxn_atomdata_add_nbat_f_to_f, nbv->nbs, eatLocal, nbv->grp[eintLocal].nbat, f);
     }
 
     if (DOMAINDECOMP(cr))
@@ -1632,7 +1615,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             for (j = 0; j < DIM; j++)
             {
                 mu_tot[j] =
-                    (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
+                        (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
             }
         }
     }
@@ -2129,7 +2112,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
+                                  "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
             /* TODO This code depends on the logic in tables.c that
