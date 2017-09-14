@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,5 +68,20 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                      gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
                      struct gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
+
+
+template<typename Func, typename ... Args>
+void runTimedFunction(int mainTag, int subTag, gmx_wallcycle_t wcycle, Func &&f, Args && ... args)
+{
+    wallcycle_start(wcycle, mainTag);
+
+    wallcycle_sub_start(wcycle, subTag);
+
+    std::forward<Func>(f)(std::forward<Args>(args) ...);
+
+    wallcycle_sub_stop(wcycle, subTag);
+
+    wallcycle_stop(wcycle, mainTag);
+};
 
 #endif
