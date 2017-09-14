@@ -69,4 +69,19 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                      struct gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
+
+template<typename Func, typename ...Args>
+void runTimedFunction(int mainTag, int subTag, gmx_wallcycle_t wcycle, Func &&f, Args &&...args)
+{
+    wallcycle_start(wcycle, mainTag);
+
+    wallcycle_sub_start(wcycle, subTag);
+
+    std::forward<Func>(f)(std::forward<Args>(args)...);
+
+    wallcycle_sub_stop(wcycle, subTag);
+
+    wallcycle_stop(wcycle, mainTag);
+};
+
 #endif
