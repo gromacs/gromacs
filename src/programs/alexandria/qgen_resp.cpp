@@ -851,13 +851,13 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
 
     rvec_sub(espx, rax, dx);
     r = norm(dx);
-    if (r == 0)
-    {
-        gmx_fatal(FARGS, "Zero distance between the atom and the grid!\n");
-    }
     if (zeta <= 0)
     {
         iChargeDistributionModel = eqdAXp;
+    }
+    if(watoms_ == 0 && r == 0)
+    {
+        gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
     switch (iChargeDistributionModel)
     {
@@ -882,12 +882,7 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
 }
 
 void QgenResp::calcPot()
-{
-    int  nskip = 0;
-    if(watoms_)
-    {
-        nskip = nAtom_;
-    }   
+{  
     for (auto &ep : ep_)
     {
         ep.setVCalc(0);
@@ -898,10 +893,11 @@ void QgenResp::calcPot()
         auto thread_id = gmx_omp_get_thread_num();
         auto i0        = thread_id*nEsp()/nthreads;
         auto i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-        for (auto i = (i0 + nskip); i < i1; i++)
+        for (auto i = i0; i < i1; i++)
         {
             double vv  = 0;
             auto espx  = ep_[i].esp();
+            auto espv  = ep_[i].v();
             for (auto &ra : ra_)
             {
                 auto  atype = ra.atype();
@@ -932,7 +928,6 @@ void QgenResp::optimizeCharges()
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   factor   = nEsp();
     int                   ncolumn  = fitQ_;
-    int                   nskip    = 0;
     double              **lhs      = alloc_matrix(ncolumn, nrow);
     std::vector<double>   rhs;
 
@@ -940,10 +935,6 @@ void QgenResp::optimizeCharges()
     {
         printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
         return;
-    }
-    if(watoms_)
-    {
-        nskip = nAtom_;
     }
     for (size_t j = 0; j < nEsp(); j++)
     {
@@ -957,7 +948,7 @@ void QgenResp::optimizeCharges()
         if (rat->ptype() == eptAtom)
         {
             auto rax = ra_[ii].x();
-            for (size_t j = (0 + nskip); j < nEsp(); j++)
+            for (size_t j = 0; j < nEsp(); j++)
             {
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
@@ -978,7 +969,7 @@ void QgenResp::optimizeCharges()
         else if (rat->ptype() == eptShell)
         {
             auto rax = ra_[ii].x();
-            for (size_t j = (0 + nskip); j < nEsp(); j++)
+            for (size_t j = 0; j < nEsp(); j++)
             {
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)

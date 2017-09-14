@@ -62,7 +62,7 @@ void generate_composition(std::vector<MolProp> &mp,
 
     for (auto &mpi : mp)
     {
-        for (alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
+        for (auto csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
         {
             mpi.DeleteComposition(csi->name());
         }
@@ -94,7 +94,7 @@ void generate_formula(std::vector<MolProp> &mp,
 
 int my_strcmp(const char *a, const char *b)
 {
-    if ((NULL != a) && (NULL != b))
+    if ((nullptr != a) && (nullptr != b))
     {
         return strcasecmp(a, b);
     }
@@ -104,8 +104,9 @@ int my_strcmp(const char *a, const char *b)
     }
 }
 
-int merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
-                  bool bForceMerge)
+int merge_doubles(std::vector<alexandria::MolProp> &mp, 
+                  char                            *doubles,
+                  bool                             bForceMerge)
 {
     alexandria::MolPropIterator mpi, mmm[2];
     std::string                 molname[2];
@@ -118,13 +119,13 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
     int   cur   = 0;
 #define prev (1-cur)
 
-    if (NULL != doubles)
+    if (nullptr != doubles)
     {
         fp = fopen(doubles, "w");
     }
     else
     {
-        fp = NULL;
+        fp = nullptr;
     }
     i = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); )
@@ -230,7 +231,7 @@ int merge_xml(int nfile, char **filens,
         }
     }
     tmp = mpout.size();
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "mpout.size() = %u mpout.max_size() = %u\n",
                 (unsigned int)mpout.size(), (unsigned int)mpout.max_size());
@@ -240,7 +241,7 @@ int merge_xml(int nfile, char **filens,
         }
     }
     MolSelect gms;
-    MolPropSort(mpout, MPSA_MOLNAME, NULL, gms);
+    MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
     nwarn += merge_doubles(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout.size());
@@ -252,7 +253,7 @@ int merge_xml(int nfile, char **filens,
     }
     if (sorted)
     {
-        MolPropSort(mpout, MPSA_FORMULA, NULL, gms);
+        MolPropSort(mpout, MPSA_FORMULA, nullptr, gms);
         MolPropWrite(sorted, mpout, false);
         dump_mp(mpout);
     }
@@ -316,7 +317,7 @@ static bool comp_mp_elem(alexandria::MolProp ma,
                 if (i != 6)
                 {
                     const char *ee = gmx_atomprop_element(my_aps, i);
-                    if (NULL != ee)
+                    if (nullptr != ee)
                     {
                         std::string elem(ee);
                         d = mcia->CountAtoms(elem) - mcib->CountAtoms(elem);
@@ -363,7 +364,7 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
     printf("There are %d molprops. Will now sort them.\n", (int)mp.size());
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             mpi->Dump(debug);
         }
@@ -377,11 +378,11 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
             std::sort(mp.begin(), mp.end(), comp_mp_formula);
             break;
         case MPSA_COMPOSITION:
-            if (NULL != apt)
+            if (nullptr != apt)
             {
                 my_aps = apt;
                 std::sort(mp.begin(), mp.end(), comp_mp_elem);
-                my_aps = NULL;
+                my_aps = nullptr;
             }
             else
             {
@@ -391,7 +392,7 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
         case MPSA_SELECTION:
             if (gms.nMol() > 0)
             {
-                for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+                for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
                 {
                     int index = gms.index(mpi->getIupac());
                     mpi->SetIndex(index);
@@ -460,12 +461,12 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
 
     for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+        for (auto ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
             qmc->addConf(ei->getConformation());
         }
     }
-    if (NULL != fc_str)
+    if (nullptr != fc_str)
     {
         std::vector<std::string> qm = split(fc_str, ':');
         int n = 0;
@@ -505,9 +506,9 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
             }
             for (auto ti = types.begin(); (ti < types.end()); ti++)
             {
-                if ((NULL == fc_str) || (qmc->qmCalcCount(ci->getMethod(),
-                                                          ci->getBasisset(),
-                                                          *ti) > 0))
+                if ((nullptr == fc_str) || (qmc->qmCalcCount(ci->getMethod(),
+                                                             ci->getBasisset(),
+                                                             *ti) > 0))
                 {
                     double T, value, error, vec[3];
                     tensor quadrupole;
@@ -525,7 +526,7 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
     for (auto q = qmc->beginCalc(); q < qmc->endCalc(); ++q)
     {
         /* Since we initialized these we have counted one extra */
-        if (NULL != fc_str)
+        if (nullptr != fc_str)
         {
             q->decrement();
         }

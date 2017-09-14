@@ -1075,7 +1075,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        relax_shell_flexcon(fplog, cr, false, 0,
+        relax_shell_flexcon(fplog, cr, true, 0,
                             inputrec_, true, force_flags,
                             ltop_, nullptr, enerd_,
                             fcd_, state_,
@@ -1351,39 +1351,86 @@ void MyMol::PrintTopology(FILE                   *fp,
     
     printmol.nr = 1;
     
-    snprintf(buf, sizeof(buf), "Total Mass = %.3f Da", molProp()->getMass());
+    snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", molProp()->getMass());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f kJ/mol", ref_enthalpy_);
+    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy_);
+    commercials.push_back(buf);      
+    snprintf(buf, sizeof(buf), "Total Charge = %d (e)", molProp()->getCharge());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Polarizability = %.3f +/- %.3f A^3", polarizability_, sig_pol_);
+    snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeDistributionModel));
+    commercials.push_back(buf);
+    snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
+             "(%.2f %6.2f %6.2f) Total= %.2f\n", 
+             mu[XX], mu[YY], mu[ZZ], 
+             norm(mu));
     commercials.push_back(buf);
     
-    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
+    if (molProp()->getPropRef(MPO_DIPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
-                              &T, myref, mylot, vec, alpha_elec_))
+                              &T, myref, mylot, vec, Q_elec_))
     {
-        snprintf(buf, sizeof(buf), "Polarizabilities from %s XX= %.3f  YY= %.3f  ZZ= %.3f A^3", 
-                 lot, alpha_elec_[XX][XX], alpha_elec_[YY][YY], alpha_elec_[ZZ][ZZ]);
+        for (int m = 0; m < DIM; m++)
+        {
+            mu_elec_[m] = vec[m];
+        }
+        snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
+                 "(%.2f %6.2f %6.2f) Total= %.2f\n", 
+                 lot, 
+                 mu_elec_[XX], mu_elec_[YY], mu_elec_[ZZ], 
+                 norm(mu_elec_));
         commercials.push_back(buf);
     }
-      
+    
+    snprintf(buf, sizeof(buf), "ALexandria Traceless Quadrupole Moments (Buckingham):\n"
+             "(%6.2f %6.2f %6.2f)\n"
+             "(%6.2f %6.2f %6.2f)\n"
+             "(%6.2f %6.2f %6.2f)\n", 
+             Q_calc_[XX][XX], Q_calc_[XX][YY], Q_calc_[XX][ZZ], 
+             Q_calc_[YY][XX], Q_calc_[YY][YY], Q_calc_[YY][ZZ],
+             Q_calc_[ZZ][XX], Q_calc_[ZZ][YY], Q_calc_[ZZ][ZZ]);
+    commercials.push_back(buf);
+    
+    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmBoth, lot, "",
+                              (char *)"electronic", &value, &error,
+                              &T, myref, mylot, vec, Q_elec_))
+    {
+        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham):\n"
+             "(%6.2f %6.2f %6.2f)\n"
+             "(%6.2f %6.2f %6.2f)\n"
+             "(%6.2f %6.2f %6.2f)\n", 
+                 lot,
+                 Q_elec_[XX][XX], Q_elec_[XX][YY], Q_elec_[XX][ZZ], 
+                 Q_elec_[YY][XX], Q_elec_[YY][YY], Q_elec_[YY][ZZ],
+                 Q_elec_[ZZ][XX], Q_elec_[ZZ][YY], Q_elec_[ZZ][ZZ]);
+        commercials.push_back(buf);
+    }
+    
+    snprintf(buf, sizeof(buf), "Alexandria Polarizability (Additivity Law): %.3f +/- %.3f (A^3)\n", polarizability_, sig_pol_);
+    commercials.push_back(buf);
+    
     if (efield > 0 && nullptr != cr)
     {
         CalcPolarizability(efield, cr, fp);
-        snprintf(buf, sizeof(buf), "Polarizabilities from Alexandria XX= %.3f  YY= %.3f  ZZ= %.3f A^3", 
-                 alpha_calc_[XX][XX], alpha_calc_[YY][YY], alpha_calc_[ZZ][ZZ]);
+        snprintf(buf, sizeof(buf), "Alexandria Polarizability components (A^3):\n" 
+                 "(%.2f %6.2f %6.2f)\n", 
+                 alpha_calc_[XX][XX], 
+                 alpha_calc_[YY][YY], 
+                 alpha_calc_[ZZ][ZZ]);
         commercials.push_back(buf);
+           
+        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
+                                  (char *)"electronic", &value, &error,
+                                  &T, myref, mylot, vec, alpha_elec_))
+        {
+            snprintf(buf, sizeof(buf), "%s Polarizability components (A^3):\n"
+                     "(%.2f %6.2f %6.2f)\n", 
+                     lot, 
+                     alpha_elec_[XX][XX], 
+                     alpha_elec_[YY][YY], 
+                     alpha_elec_[ZZ][ZZ]);
+            commercials.push_back(buf);
+        }
     }
-    
-    snprintf(buf, sizeof(buf), "Total Charge = %d e", molProp()->getCharge());
-    commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Charge Type  = %s", getEemtypeName(iChargeDistributionModel));
-    commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Dipole Moment  X= %.3f Y= %.3f Z= %.3f Tot= %.3f Debye", mu[XX], mu[YY], mu[ZZ], norm(mu));
-    commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Traceless Quadrupole Moment XX= %.3f YY= %.3f ZZ= %.3f XY= %.3f XZ= %.3f YZ= %.3f Buckingham", 
-             Q_calc_[XX][XX], Q_calc_[YY][YY], Q_calc_[ZZ][ZZ], Q_calc_[XX][YY], Q_calc_[XX][ZZ], Q_calc_[YY][ZZ]);
-    commercials.push_back(buf);
     
     print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
     write_top2(fp, printmol.name, &topology_->atoms, FALSE,
