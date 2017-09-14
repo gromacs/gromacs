@@ -34,7 +34,7 @@
 
 # - Check the username performing the build, as well as date and time
 #
-# gmx_detect_simd(_suggested_simd_)
+# gmx_detect_simd(_suggested_simd)
 #
 # Try to detect CPU features and suggest a SIMD instruction set
 # that fits the current CPU. This should work on all architectures
@@ -42,8 +42,10 @@
 # detection will either use special assembly instructions (like cpuid),
 # preprocessor defines, or probing /proc/cpuinfo on Linux.
 # 
-# Sets ${suggested_simd} in the parent scope if GMX_SIMD is not set
+# Sets ${_suggested_simd} in the parent scope if GMX_SIMD is not set
 # (e.g. by the user, or a previous run of CMake).
+# The string is converted to uppercase for compatibility with
+# gmx_option_multichoice() user input parsing.
 #
 
 # we rely on inline asm support for GNU!
@@ -138,6 +140,7 @@ function(gmx_detect_simd _suggested_simd)
             gmx_suggest_simd(${_suggested_simd})
         endif()
 
+        string(TOUPPER "${${_suggested_simd}}" ${_suggested_simd})
         set(${_suggested_simd} ${${_suggested_simd}} PARENT_SCOPE)
     endif()
 endfunction()
