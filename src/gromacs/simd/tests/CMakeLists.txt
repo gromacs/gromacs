@@ -48,7 +48,9 @@ gmx_add_unit_test(SimdUnitTests simd-test
                   simd4_math.cpp
                   scalar.cpp
                   scalar_util.cpp
-                  scalar_math.cpp)
+                  scalar_math.cpp
+                  simdmemory.cpp
+                  )
 
 
 
