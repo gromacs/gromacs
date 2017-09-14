@@ -139,7 +139,7 @@ if(GMX_SIMD STREQUAL "AUTO")
     set(GMX_SIMD_ACTIVE ${GMX_SUGGESTED_SIMD})
 endif()
 
-if(GMX_SIMD_ACTIVE STREQUAL "NONE")
+if(GMX_SIMD_ACTIVE STREQUAL "None")
     # nothing to do configuration-wise
     set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
 elseif(GMX_SIMD_ACTIVE STREQUAL "SSE2")
