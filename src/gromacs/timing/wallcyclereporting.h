@@ -71,4 +71,25 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                      const gmx_wallclock_gpu_pme_t *gpu_pme_t);
 /* Print the cycle and time accounting */
 
+
+template<typename Func>
+void runTimed(Func f, gmx_wallcycle_t wcycle, int mainTag, int subTag = -1)
+{
+    wallcycle_start(wcycle, mainTag);
+
+    if (subTag > 0)
+    {
+        wallcycle_sub_start(wcycle, subTag);
+    }
+
+    f();
+
+    if (subTag > 0)
+    {
+        wallcycle_sub_stop(wcycle, subTag);
+    }
+
+    wallcycle_stop(wcycle, mainTag);
+};
+
 #endif

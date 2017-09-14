@@ -273,20 +273,18 @@ static void pull_potential_wrapper(t_commrec *cr,
                                    double t,
                                    gmx_wallcycle_t wcycle)
 {
-    t_pbc  pbc;
-    real   dvdl;
-
     /* Calculate the center of mass forces, this requires communication,
      * which is why pull_potential is called close to other communication.
      */
-    wallcycle_start(wcycle, ewcPULLPOT);
-    set_pbc(&pbc, ir->ePBC, box);
-    dvdl                     = 0;
-    enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, force, &dvdl);
-    enerd->dvdl_lin[efptRESTRAINT] += dvdl;
-    wallcycle_stop(wcycle, ewcPULLPOT);
+    runTimed([&](){
+                 t_pbc  pbc;
+                 set_pbc(&pbc, ir->ePBC, box);
+                 real dvdl = 0;
+                 enerd->term[F_COM_PULL] +=
+                     pull_potential(ir->pull_work, mdatoms, &pbc,
+                                    cr, t, lambda[efptRESTRAINT], x, force, &dvdl);
+                 enerd->dvdl_lin[efptRESTRAINT] += dvdl;
+             }, wcycle, ewcPULLPOT);
 }
 
 static void pme_receive_force_ener(t_commrec       *cr,
@@ -1059,12 +1057,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
-                                        nbv->nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        runTimed([&](){
+                     nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
+                                                     nbv->nbat);
+                 }, wcycle, ewcsNB_X_BUF_OPS, ewcNB_XF_BUF_OPS);
     }
 
     if (useGpuPme && pmeRunMode == PmeRunMode::GPU)
@@ -1140,12 +1136,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_x(cr->dd, box, x);
             wallcycle_stop(wcycle, ewcMOVEX);
 
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
-                                            nbv->nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            runTimed([&](){
+                         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
+                                                         nbv->nbat);
+                     }, wcycle, ewcsNB_X_BUF_OPS, ewcNB_XF_BUF_OPS);
         }
 
         if (bUseGPU)
@@ -1321,11 +1315,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        runTimed([&](){
+                     nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f);
+                 }, wcycle, ewcsNB_F_BUF_OPS, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
@@ -1381,16 +1373,14 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
-                                               nbv->nbat, f);
+                runTimed([&](){
+                             nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
+                                                            nbv->nbat, f);
+                         }, wcycle, ewcsNB_F_BUF_OPS, ewcNB_XF_BUF_OPS);
             }
-            wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
@@ -1496,12 +1486,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          step, nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                       nbv->nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        runTimed([&](){
+                     nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                                    nbv->nbat, f);
+                 }, wcycle, ewcsNB_F_BUF_OPS, ewcNB_XF_BUF_OPS);
     }
 
     if (DOMAINDECOMP(cr))
