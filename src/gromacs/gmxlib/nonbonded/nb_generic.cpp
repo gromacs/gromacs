@@ -406,7 +406,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         c                = vdwparam[tj+1];   /*sigma*/
                         cexp1            = vdwparam[tj+2];   /*epsilon*/
                         cexp2            = vdwparam[tj];     /*gamma*/
-                        rinvsix          = rinvsq*rinvsq*rinvsq;
                         r                = rsq*rinv;
                         r5               = rsq*rsq*r;
                         r6               = r5*r;
@@ -414,7 +413,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         c6               = c2*c2*c2;
                         c5               = c2*c2*c;
                         vdw_wang1        = std::exp(cexp2*(1-(r/c)));
-                        vdw_wang2        = c6 + rinvsix;
+                        vdw_wang2        = c6 + r6;
                         vdw_wang3        = cexp2 + 3;
                         
                         vvdw_disp        = -2*cexp1*(1.0/(1-(3.0/vdw_wang3))*(c6/vdw_wang2));

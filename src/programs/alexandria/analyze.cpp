@@ -84,7 +84,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
     ang3    = unit2string(eg2cAngstrom3);
     if (0 == pd.getBosquePol( null, &bos0))
     {
-        gmx_fatal(FARGS, "Cannot find Bosque polarizability for %s", null);
+        gmx_fatal(FARGS, "Can not find Bosque polarizability for %s", null);
     }
 
     for (auto &mpi : mp)
@@ -92,17 +92,18 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
         ims = gms.status(mpi.getIupac());
         if ((ims == imsTrain) || (ims == imsTest))
         {
-            for (auto csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
+            for (alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
             {
-                auto ic  = csi->iC();
-                auto mci = mpi.SearchMolecularComposition(csi->name());
+                alexandria::iComp ic = csi->iC();
+                alexandria::MolecularCompositionIterator mci =
+                    mpi.SearchMolecularComposition(csi->name());
                 if (mci != mpi.EndMolecularComposition())
                 {
                     double p         = 0, sp = 0;
                     double ahc       = 0, ahp = 0;
                     bool   bSupport  = true;
                     int    natom_tot = 0, Nelec = 0;
-                    for (auto ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
+                    for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
                     {
                         const char *atomname = ani->getAtom().c_str();
                         int         natom    = ani->getNumber();

@@ -946,7 +946,10 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
             }
-            Qgresp_.plotLsq(oenv);
+            if(nullptr != oenv)
+            {
+                Qgresp_.plotLsq(oenv);
+            }
         }
         break;
         case eqgEEM:
@@ -1075,7 +1078,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        relax_shell_flexcon(fplog, cr, true, 0,
+        relax_shell_flexcon(fplog, cr, false, 0,
                             inputrec_, true, force_flags,
                             ltop_, nullptr, enerd_,
                             fcd_, state_,
