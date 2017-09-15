@@ -350,6 +350,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
 
+    t->didNB[iloc] = false;
+
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
@@ -498,6 +500,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* Windows: force flushing WDDM queue */
     stat = cudaStreamQuery(stream);
 #endif
+
+    t->didNB[iloc] = true;
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
@@ -868,8 +872,11 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
             }
 
             /* kernel timings */
-            timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
-                cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
+            if (timers->didNB[iloc])
+            {
+                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
+                    cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
+            }
 
             /* X/q H2D and F D2H timings */
             timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],

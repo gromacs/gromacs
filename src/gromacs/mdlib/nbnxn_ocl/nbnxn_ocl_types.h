@@ -323,6 +323,7 @@ typedef struct cl_timers
     cl_event pl_h2d_imask[2];    /**< events for pair-list imask H2D transfers (l/nl, every PS step)*/
 
     cl_event nb_k[2];            /**< event for non-bonded kernels (l/nl, every step)              */
+    bool     didNB[2];           /**< true when non-bonded kernels were actually launched at this step */
 
     bool     didPairlistH2D[2];  /**< tells if we timed a pair-list transfer */
     cl_event prune_k[2];         /**< event for pruning kernel (every prune step) */

@@ -453,6 +453,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     size_t               debug_buffer_size;
 #endif
 
+    t->didNB[iloc] = false;
+
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
@@ -684,6 +686,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         run_step++;
     }
 #endif
+
+    t->didNB[iloc] = true;
 }
 
 
@@ -1058,9 +1062,11 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
             }
 
             /* kernel timings */
-
-            timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
-                ocl_event_elapsed_ms(timers->nb_k + iloc);
+            if (timers->didNB[iloc])
+            {
+                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
+                    ocl_event_elapsed_ms(timers->nb_k + iloc);
+            }
 
             /* X/q H2D and F D2H timings */
             timings->nb_h2d_t += ocl_event_elapsed_ms(timers->nb_h2d        + iloc);
