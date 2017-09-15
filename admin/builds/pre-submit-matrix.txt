@@ -58,15 +58,16 @@ clang-4 no-openmp asan
 # Test newest supported MSVC on Windows
 msvc-2015 openmp release-with-assert
 
-# Test oldest supported icc on Windows
-# Test newest supported icc on Windows
-icc-16.0 msvc-2015 fftpack
+# Test oldest supported icc
+# Test icc on Windows
+icc-16 msvc-2015 fftpack
 
 # Test newest cmake at time of release
+# Test newest icc at the time of release
 # Test MKL
 # Test without any MPI
-# Test on CentOS (because icc-16.0 is only available there)
-icc-16.0 no-thread-mpi openmp mkl cmake-3.8.1 simd=avx_256
+# Test on CentOS (because icc-18.0 is only available there)
+icc-18 no-thread-mpi openmp mkl cmake-3.8.1 simd=avx_256
 
 # Test NVIDIA OpenCL
 # Test MPI + OpenCL
