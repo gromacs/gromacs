@@ -251,6 +251,7 @@ struct cu_timers
     bool        didPairlistH2D[2];       /**< true when a pair-list transfer has been done at this step      */
     cudaEvent_t start_nb_k[2];           /**< start event for non-bonded kernels (l/nl, every step)          */
     cudaEvent_t stop_nb_k[2];            /**< stop event non-bonded kernels (l/nl, every step)               */
+    bool        didNB[2];                /**< true when non-bonded kernels were actually launched at this step */
     cudaEvent_t start_prune_k[2];        /**< start event for the 1st pass list pruning kernel (l/nl, every PS step)   */
     cudaEvent_t stop_prune_k[2];         /**< stop event for the 1st pass list pruning kernel (l/nl, every PS step)   */
     bool        didPrune[2];             /**< true when we timed pruning and the timings need to be accounted for */
