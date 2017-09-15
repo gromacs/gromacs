@@ -2,5 +2,5 @@
 # before the release.
 gcc-4.8 mpi mdrun-only
 gcc-6 static
-gcc-5 double
+icc-18 double
 clang-3.4 static double
