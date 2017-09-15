@@ -31,7 +31,7 @@ gcc-7 npme=1 nranks=2 no-openmp fftpack release
 
 # Test behaviour when dlopen is not present
 # TODO enable this
-# icc-16.0 no-dlopen no-threadmpi double mkl release
+# icc-18.0 no-dlopen no-threadmpi double mkl release
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
