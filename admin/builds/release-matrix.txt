@@ -30,8 +30,8 @@ gcc-4.8 mpi mdrun-only release
 gcc-7 static release
 
 # Test double precision
-# Test with Intel compiler
-icc-16 double release
+# Test with newest supported Intel compiler
+icc-18 double release
 
 # Test static linking with clang
 # Test double precision
