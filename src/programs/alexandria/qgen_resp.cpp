@@ -897,7 +897,6 @@ void QgenResp::calcPot()
         {
             double vv  = 0;
             auto espx  = ep_[i].esp();
-            auto espv  = ep_[i].v();
             for (auto &ra : ra_)
             {
                 auto  atype = ra.atype();
