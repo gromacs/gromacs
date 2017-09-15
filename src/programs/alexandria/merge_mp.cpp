@@ -246,7 +246,7 @@ int alex_merge_mp(int argc, char *argv[])
 
     if (nwarn <= maxwarn)
     {
-        ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp);
+        ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp, temperature);
 
         add_properties(opt2fn_null("-x", NFILE, fnm), mp, temperature);
 

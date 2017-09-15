@@ -8,6 +8,7 @@
 #include "molprop.h"
 
 void ReadSqlite3(const char                       *sqlite_file,
-                 std::vector<alexandria::MolProp> &mp);
+                 std::vector<alexandria::MolProp> &mp,
+                 double                            ref_temperature);
 
 #endif

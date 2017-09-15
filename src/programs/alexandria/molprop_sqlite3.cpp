@@ -39,6 +39,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h> 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -207,7 +208,8 @@ void getClasses(sqlite3              *db,
 }
 
 void ReadSqlite3(const char                       *sqlite_file,
-                 std::vector<alexandria::MolProp> &mp)
+                 std::vector<alexandria::MolProp> &mp,
+                 double                            ref_temperature)
 {
 #ifdef HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
@@ -291,22 +293,54 @@ void ReadSqlite3(const char                       *sqlite_file,
                     preferred      = sqlite3_column_int(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
                     source         = (char *)sqlite3_column_text(stmt, cidx++);
-
-                    bool bExp = (0 == theory);
-                    if (bExp)
+                    
+                    if (fabs(ref_temperature-temperature) < 0.1)
                     {
-                        if (preferred)
+                        bool bExp = (0 == theory);
+                        if (bExp)
                         {
-                            nexp_prop++;
-                            alexandria::Experiment exper("unknown", "minimum");
+                            if (preferred)
+                            {
+                                nexp_prop++;
+                                alexandria::Experiment exper("unknown", "minimum");
+                                if (strcasecmp(prop, "Polarizability") == 0)
+                                {
+                                    exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
+                                    
+                                }
+                                else if (strcasecmp(prop, "dipole") == 0)
+                                {
+                                    exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
+                                }
+                                else if ((strcasecmp(prop, "DeltaHform") == 0) ||
+                                         (strcasecmp(prop, "DeltaGform") == 0) ||
+                                         (strcasecmp(prop, "DeltaSform") == 0) ||
+                                         (strcasecmp(prop, "S0") == 0) ||
+                                         (strcasecmp(prop, "cp") == 0) ||
+                                         (strcasecmp(prop, "cv") == 0))
+                                {
+                                    exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
+                                }
+                                mpi->AddExperiment(exper);
+                            }
+                        }
+                        else
+                        {
+                            alexandria::Experiment calc("gentop", 
+                                                        source,
+                                                        "-", 
+                                                        "unknown", 
+                                                        "minimum",
+                                                        "unknown", 
+                                                        alexandria::JOB_UNKNOWN);
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
-                                exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
-                                
+                                alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
+                                calc.AddPolar(mp);
                             }
                             else if (strcasecmp(prop, "dipole") == 0)
                             {
-                                exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
+                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
                             else if ((strcasecmp(prop, "DeltaHform") == 0) ||
                                      (strcasecmp(prop, "DeltaGform") == 0) ||
@@ -314,41 +348,12 @@ void ReadSqlite3(const char                       *sqlite_file,
                                      (strcasecmp(prop, "S0") == 0) ||
                                      (strcasecmp(prop, "cp") == 0) ||
                                      (strcasecmp(prop, "cv") == 0))
+                                
                             {
-                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
+                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
-                            mpi->AddExperiment(exper);
+                            mpi->AddExperiment(calc);
                         }
-                    }
-                    else
-                    {
-                        alexandria::Experiment calc("gentop", 
-                                                    source,
-                                                    "-", 
-                                                    "unknown", 
-                                                    "minimum",
-                                                    "unknown", 
-                                                    alexandria::JOB_UNKNOWN);
-                        if (strcasecmp(prop, "Polarizability") == 0)
-                        {
-                            alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
-                            calc.AddPolar(mp);
-                        }
-                        else if (strcasecmp(prop, "dipole") == 0)
-                        {
-                            calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
-                        }
-                        else if ((strcasecmp(prop, "DeltaHform") == 0) ||
-                                 (strcasecmp(prop, "DeltaGform") == 0) ||
-                                 (strcasecmp(prop, "DeltaSform") == 0) ||
-                                 (strcasecmp(prop, "S0") == 0) ||
-                                 (strcasecmp(prop, "cp") == 0) ||
-                                 (strcasecmp(prop, "cv") == 0))
-
-                        {
-                            calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
-                        }
-                        mpi->AddExperiment(calc);
                     }
                     const char *iupac = keyptr->iupac().c_str();
                     auto        cptr  = std::find_if(classes.begin(), classes.end(),
@@ -399,7 +404,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     check_sqlite3(db, "Finalizing sqlite3 statement", sqlite3_finalize(stmt));
     check_sqlite3(nullptr, "Closing sqlite database", sqlite3_close(db));
     check_sqlite3(nullptr, "Shutting down sqlite. Sqlite3 code %d.", sqlite3_shutdown());
-    printf("Extracted %d data points from sql database\n", nexp_prop);
+    printf("Extracted %d data points at %0.2f (K) from sql database\n", nexp_prop, ref_temperature);
     
 #else
     fprintf(stderr, "No support for sqlite3 database in this executable.\n");
