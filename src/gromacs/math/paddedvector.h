@@ -55,7 +55,7 @@ namespace gmx
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities.
  *
  * \todo Replace the manual padding using resizePaddedRVecVector() by automated padded on resize() */
-using PaddedRVecVector = std::vector<gmx::RVec, gmx::Allocator<gmx::RVec, AlignedAllocationPolicy>>;
+using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, AlignedAllocationPolicy > >;
 
 /*! \brief Resize a paddedRVecVector, this adds and clears the padding
  *
