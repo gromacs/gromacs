@@ -288,11 +288,11 @@ static inline void simdStoreRvecs(rvec *r, int index,
     store(realPtr + 2*GMX_SIMD_REAL_WIDTH, r2);
 }
 
-/*! \brief Returns whether an rvec pointer is aligned to a SIMD boundary
+/*! \brief Returns whether an real pointer is aligned to a SIMD boundary
  *
- * \param[in] x  A pointer to an rvec
+ * \param[in] x  A pointer to an real
  */
-gmx_unused static bool IsSimdAligned(const rvec *x)
+gmx_unused static bool isSimdAligned(const real *x)
 {
     return reinterpret_cast<std::size_t>(x) % (GMX_SIMD_REAL_WIDTH*sizeof(real)) == 0;
 }
@@ -330,10 +330,12 @@ updateMdLeapfrogSimpleSimd(int                       start,
     SimdReal x0, x1, x2;
     SimdReal xprime0, xprime1, xprime2;
 
-    GMX_ASSERT(IsSimdAligned(x), "x should be aligned");
-    GMX_ASSERT(IsSimdAligned(xprime), "xprime should be aligned");
-    GMX_ASSERT(IsSimdAligned(v), "v should be aligned");
-    GMX_ASSERT(IsSimdAligned(f), "f should be aligned");
+    /* Note: We should implement a proper PaddedVector, so we don't need these checks */
+    GMX_ASSERT(isSimdAligned(invMass), "invMass should be aligned");
+    GMX_ASSERT(isSimdAligned(x[0]), "x should be aligned");
+    GMX_ASSERT(isSimdAligned(xprime[0]), "xprime should be aligned");
+    GMX_ASSERT(isSimdAligned(v[0]), "v should be aligned");
+    GMX_ASSERT(isSimdAligned(f[0]), "f should be aligned");
 
     for (int a = start; a < nrend; a += GMX_SIMD_REAL_WIDTH)
     {
