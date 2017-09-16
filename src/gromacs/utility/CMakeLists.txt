@@ -39,6 +39,8 @@ endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
+    alignedallocator.h
+    allocator.h
     arrayref.h
     arraysize.h
     basedefinitions.h
