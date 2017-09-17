@@ -430,6 +430,8 @@
 #else
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S0, &ctab0_S0, &ctab1_S0);
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S2, &ctab0_S2, &ctab1_S2);
+    ctab1_S0 = ctab1_S0 - ctab0_S0;
+    ctab1_S2 = ctab1_S2 - ctab0_S2;
 #endif
 #else
 #ifdef TAB_FDV0
@@ -446,12 +448,12 @@
 #endif
     fsub_S0     = fma(frac_S0, ctab1_S0, ctab0_S0);
     fsub_S2     = fma(frac_S2, ctab1_S2, ctab0_S2);
-    frcoul_S0   = qq_S0, fnma(fsub_S0, r_S0, rinv_ex_S0);
-    frcoul_S2   = qq_S2, fnma(fsub_S2, r_S2, rinv_ex_S2);
+    frcoul_S0   = qq_S0 * fnma(fsub_S0, r_S0, rinv_ex_S0);
+    frcoul_S2   = qq_S2 * fnma(fsub_S2, r_S2, rinv_ex_S2);
 
 #ifdef CALC_ENERGIES
-    vc_sub_S0   = ctabv_S0 + (mhalfsp_S * frac_S0 * (ctab0_S0 + fsub_S0));
-    vc_sub_S2   = ctabv_S2 + (mhalfsp_S * frac_S2 * (ctab0_S2 + fsub_S2));
+    vc_sub_S0   = fma((mhalfsp_S * frac_S0), (ctab0_S0 + fsub_S0), ctabv_S0);
+    vc_sub_S2   = fma((mhalfsp_S * frac_S2), (ctab0_S2 + fsub_S2), ctabv_S2);
 #endif
 #endif /* CALC_COUL_TAB */
 
@@ -469,6 +471,7 @@
 
     vcoul_S0    = qq_S0 * (rinv_ex_S0 - vc_sub_S0);
     vcoul_S2    = qq_S2 * (rinv_ex_S2 - vc_sub_S2);
+
 #endif
 
 #ifdef CALC_ENERGIES
