@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,6 @@ typedef struct {
     int                QMmethod;       /* see enums.h for all methods       */
     int                QMbasis;        /* see enums.h for all bases         */
     int                nelectrons;     /* total number of elecs in QM region*/
-    gmx_bool           bTS;            /* Optimize a TS, only steep, no md  */
-    gmx_bool           bOPT;           /* Optimize QM subsys, only steep, no md  */
-    gmx_bool          *frontatoms;     /* qm atoms on the QM side of a QM-MM bond */
     /* Gaussian specific stuff */
     int                nQMcpus;        /* no. of CPUs used for the QM calc. */
     int                QMmem;          /* memory for the gaussian calc.     */
@@ -73,14 +70,12 @@ typedef struct {
     char              *devel_dir;
     char              *orca_basename; /* basename for I/O with orca        */
     char              *orca_dir;      /* directory for ORCA                */
-    real              *c6;
-    real              *c12;
     /* Surface hopping stuff */
-    gmx_bool           bSH;     /* surface hopping (diabatic only)   */
-    real               SAon;    /* at which energy gap the SA starts */
-    real               SAoff;   /* at which energy gap the SA stops  */
-    int                SAsteps; /* stepwise switchinng on the SA     */
-    int                SAstep;  /* current state of SA               */
+    gmx_bool           bSH;           /* surface hopping (diabatic only)   */
+    real               SAon;          /* at which energy gap the SA starts */
+    real               SAoff;         /* at which energy gap the SA stops  */
+    int                SAsteps;       /* stepwise switchinng on the SA     */
+    int                SAstep;        /* current state of SA               */
     int                CIdim;
     real              *CIvec1;
     real              *CIvec2;
@@ -99,9 +94,6 @@ typedef struct {
     int           *shiftMM;
     int           *MMatomtype;  /* only important for semi-emp.      */
     real           scalefactor;
-    /* gaussian specific stuff */
-    real          *c6;
-    real          *c12;
 } t_MMrec;
 
 
@@ -129,12 +121,11 @@ void init_QMMMrec(t_commrec  *cr,
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
 
-void update_QMMMrec(t_commrec      *cr,
-                    t_forcerec     *fr,
-                    rvec            x[],
-                    t_mdatoms      *md,
-                    matrix          box,
-                    gmx_localtop_t *top);
+void update_QMMMrec(t_commrec       *cr,
+                    t_forcerec      *fr,
+                    const rvec      *x,
+                    const t_mdatoms *md,
+                    const matrix     box);
 
 /* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
  * taken froom the neighbourlists of the QM atoms. In a QMMM run this
@@ -142,8 +133,8 @@ void update_QMMMrec(t_commrec      *cr,
  * elements of the t_QMMMrec struct.
  */
 
-real calculate_QMMM(t_commrec *cr,
-                    rvec x[], rvec f[],
+real calculate_QMMM(t_commrec  *cr,
+                    rvec        f[],
                     t_forcerec *fr);
 
 /* QMMM computes the QM forces. This routine makes either function

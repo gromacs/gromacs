@@ -1241,7 +1241,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* update QMMMrec, if necessary */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, x, mdatoms, box, top);
+        update_QMMMrec(cr, fr, x, mdatoms, box);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
@@ -1732,7 +1732,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     /* update QMMMrec, if necessary */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, x, mdatoms, box, top);
+        update_QMMMrec(cr, fr, x, mdatoms, box);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */

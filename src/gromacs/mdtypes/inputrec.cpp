@@ -324,8 +324,6 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAon);
     sfree(ir->opts.SAoff);
     sfree(ir->opts.SAsteps);
-    sfree(ir->opts.bOPT);
-    sfree(ir->opts.bTS);
     sfree(ir->opts.egp_flags);
     done_lambdas(ir->fepvals);
     sfree(ir->fepvals);
@@ -357,8 +355,6 @@ static void pr_qm_opts(FILE *fp, int indent, const char *title, const t_grpopts 
         pr_rvec(fp, indent, "SAon", opts->SAon, opts->ngQM, FALSE);
         pr_rvec(fp, indent, "SAoff", opts->SAoff, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "SAsteps", opts->SAsteps, opts->ngQM, FALSE);
-        pr_bvec(fp, indent, "bOPT", opts->bOPT, opts->ngQM, FALSE);
-        pr_bvec(fp, indent, "bTS", opts->bTS, opts->ngQM, FALSE);
     }
 }
 
