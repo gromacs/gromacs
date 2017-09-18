@@ -553,7 +553,7 @@ int alex_bastat(int argc, char *argv[])
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bDih        = false;
     static gmx_bool                  bBondOrder  = true;
-    static const char               *cqdist[]    = {nullptr, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", nullptr};
+    static const char               *cqdist[]    = {nullptr, "AXp", "AXpp", "AXg", "AXpg", "AXs", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },

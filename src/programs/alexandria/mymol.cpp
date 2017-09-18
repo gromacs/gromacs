@@ -1410,8 +1410,10 @@ void MyMol::PrintTopology(FILE                   *fp,
     
     snprintf(buf, sizeof(buf), "Alexandria Polarizability (Additivity Law): %.3f +/- %.3f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
-    
-    CalcPolarizability(efield, cr, fp);
+        
+    if (efield > 0 && nullptr != cr)
+    {    
+        CalcPolarizability(efield, cr, fp);
         snprintf(buf, sizeof(buf), "Alexandria Polarizability components (A^3):\n" 
                  "(%.2f %6.2f %6.2f)\n", 
                  alpha_calc_[XX][XX], 
@@ -1419,8 +1421,6 @@ void MyMol::PrintTopology(FILE                   *fp,
                  alpha_calc_[ZZ][ZZ]);
         commercials.push_back(buf);
         
-    if (efield > 0 && nullptr != cr)
-    {    
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
                                   (char *)"electronic", &value, &error,
                                   &T, myref, mylot, vec, alpha_elec_))
