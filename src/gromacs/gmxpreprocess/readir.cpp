@@ -110,7 +110,7 @@ typedef struct t_inputrec_strings
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
            bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
+           SAoff[STRLEN], SAsteps[STRLEN];
 
 } gmx_inputrec_strings;
 
@@ -2073,9 +2073,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("SAsteps", is->SAsteps, nullptr);
     CTYPE ("Scale factor for MM charges");
     RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
-    CTYPE ("Optimization of QM subsystem");
-    STYPE ("bOPT",          is->bOPT, nullptr);
-    STYPE ("bTS",          is->bTS, nullptr);
 
     /* Simulated annealing */
     CCTYPE("SIMULATED ANNEALING");
@@ -3744,17 +3741,7 @@ void do_index(const char* mdparin, const char *ndx,
             warning_error(wi, "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
         }
     }
-    /* special optimization options */
 
-    str_nelem(is->bOPT, MAXPTR, ptr1);
-    str_nelem(is->bTS, MAXPTR, ptr2);
-    snew(ir->opts.bOPT, nr);
-    snew(ir->opts.bTS, nr);
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i], "Y", 1) == 0);
-        ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i], "Y", 1) == 0);
-    }
     str_nelem(is->SAon, MAXPTR, ptr1);
     str_nelem(is->SAoff, MAXPTR, ptr2);
     str_nelem(is->SAsteps, MAXPTR, ptr3);
