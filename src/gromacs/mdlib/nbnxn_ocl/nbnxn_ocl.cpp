@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu.h"
+#include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -464,7 +465,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (iloc == eintNonlocal && plist->nsci == 0)
+    if (canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -877,7 +878,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
+    if (canSkipWork(nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
@@ -1040,7 +1041,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
        counters could end up being inconsistent due to not being incremented
        on some of the nodes! */
-    if (!(iloc == eintNonlocal && nb->plist[iloc]->nsci == 0))
+    if (!canSkipWork(nb, iloc))
     {
         /* Actual sync point. Waits for everything to be finished in the command queue. TODO: Find out if a more fine grained solution is needed */
         cl_error = clFinish(nb->stream[iloc]);
