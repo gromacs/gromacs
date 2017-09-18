@@ -84,7 +84,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
     ang3    = unit2string(eg2cAngstrom3);
     if (0 == pd.getBosquePol( null, &bos0))
     {
-        gmx_fatal(FARGS, "Can not find Bosque polarizability for %s", null);
+        gmx_fatal(FARGS, "Cannot find Bosque polarizability for %s", null);
     }
 
     for (auto &mpi : mp)
@@ -92,11 +92,10 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
         ims = gms.status(mpi.getIupac());
         if ((ims == imsTrain) || (ims == imsTest))
         {
-            for (alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
+            for (auto csi = cs.beginCS(); csi < cs.endCS(); ++csi)
             {
                 alexandria::iComp ic = csi->iC();
-                alexandria::MolecularCompositionIterator mci =
-                    mpi.SearchMolecularComposition(csi->name());
+                alexandria::MolecularCompositionIterator mci = mpi.SearchMolecularComposition(csi->name());
                 if (mci != mpi.EndMolecularComposition())
                 {
                     double p         = 0, sp = 0;
@@ -223,23 +222,29 @@ static void write_corr_xvg(const char                       *fn,
         fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
         {
-	  /*if (mpi.getMolname().compare("water") == 0)
-            {
-                printf("%s\n", mpi.getMolname().c_str());
-		}*/
             double exp_val, exp_error;
             double Texp    = -1;
-            bool   bExp    = mpi.getProp(mpo, iqmExp, "", "",
+            bool   bExp    = mpi.getProp(mpo, 
+                                         iqmExp, 
+                                         "", 
+                                         "",
                                          exp_type,
-                                         &exp_val, &exp_error, &Texp);
+                                         &exp_val, 
+                                         &exp_error, 
+                                         &Texp);
             iMolSelect ims = gms.status(mpi.getIupac());
             if ((ims == imsTrain) || (ims == imsTest))
             {
                 double Tqm  = -1;
                 double qm_val, qm_error;
-                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, "",
+                bool   bQM  = mpi.getProp(mpo,                
+                                          iqmQM, 
+                                          LevelOfTheory, 
+                                          "",
                                           q->type().c_str(),
-                                          &qm_val, &qm_error, &Tqm);
+                                          &qm_val,
+                                          &qm_error, 
+                                          &Tqm);
                 if (bExp && bQM)
                 {
                     fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
@@ -248,15 +253,14 @@ static void write_corr_xvg(const char                       *fn,
                         (((atoler > 0) && (diff >= atoler)) ||
                          ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                     {
-                        fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
-                                mpi.getIupac().c_str(), exp_val, qm_val, qm_error);
+                        fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
+                                mpi.getIupac().c_str(), exp_val, qm_val, qm_error, q->method().c_str());
                         nout++;
                     }
                 }
                 else if (nullptr != debug)
                 {
-                    fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(),
-                            bQM ? 1 : 0, bExp ? 1 : 0);
+                    fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(), bQM ? 1 : 0, bExp ? 1 : 0);
                 }
             }
         }
@@ -335,7 +339,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 
     for (auto &mpi : mp)
     {
-        for (alexandria::ExperimentIterator ei = mpi.BeginExperiment(); (ei < mpi.EndExperiment()); ++ei)
+        for (auto ei = mpi.BeginExperiment(); ei < mpi.EndExperiment(); ++ei)
         {
             T = -1;
             if (ei->getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
@@ -391,7 +395,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");
-            for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+            for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
             {
                 iupac = mpi->getIupac().c_str();
                 if ((nullptr != iupac) && (strlen(iupac) > 0))

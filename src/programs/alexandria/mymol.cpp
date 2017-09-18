@@ -1411,20 +1411,28 @@ void MyMol::PrintTopology(FILE                   *fp,
     snprintf(buf, sizeof(buf), "Alexandria Polarizability (Additivity Law): %.3f +/- %.3f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
     
-    if (efield > 0 && nullptr != cr)
-    {
-        CalcPolarizability(efield, cr, fp);
+    CalcPolarizability(efield, cr, fp);
         snprintf(buf, sizeof(buf), "Alexandria Polarizability components (A^3):\n" 
                  "(%.2f %6.2f %6.2f)\n", 
                  alpha_calc_[XX][XX], 
                  alpha_calc_[YY][YY], 
                  alpha_calc_[ZZ][ZZ]);
         commercials.push_back(buf);
-           
+        
+    if (efield > 0 && nullptr != cr)
+    {    
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
                                   (char *)"electronic", &value, &error,
                                   &T, myref, mylot, vec, alpha_elec_))
         {
+            matrix rotmatrix;
+            rvec   tmpvec;
+            for(int m = 0; m < DIM; m++)
+            {
+                calc_rotmatrix(alpha_elec_[m], alpha_calc_[m], rotmatrix);
+                mvmul(rotmatrix, alpha_elec_[m], tmpvec);
+                copy_rvec(tmpvec, alpha_elec_[m]);
+            }
             snprintf(buf, sizeof(buf), "%s Polarizability components (A^3):\n"
                      "(%.2f %6.2f %6.2f)\n", 
                      lot, 
@@ -1432,7 +1440,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                      alpha_elec_[YY][YY], 
                      alpha_elec_[ZZ][ZZ]);
             commercials.push_back(buf);
-        }
+        }        
     }
     
     print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
