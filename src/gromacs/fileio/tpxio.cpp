@@ -1704,8 +1704,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             snew(ir->opts.SAon,        ir->opts.ngQM);
             snew(ir->opts.SAoff,       ir->opts.ngQM);
             snew(ir->opts.SAsteps,     ir->opts.ngQM);
-            snew(ir->opts.bOPT,        ir->opts.ngQM);
-            snew(ir->opts.bTS,         ir->opts.ngQM);
         }
         if (ir->opts.ngQM > 0)
         {
@@ -1719,8 +1717,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             gmx_fio_ndo_real(fio, ir->opts.SAon, ir->opts.ngQM);
             gmx_fio_ndo_real(fio, ir->opts.SAoff, ir->opts.ngQM);
             gmx_fio_ndo_int(fio, ir->opts.SAsteps, ir->opts.ngQM);
-            gmx_fio_ndo_gmx_bool(fio, ir->opts.bOPT, ir->opts.ngQM);
-            gmx_fio_ndo_gmx_bool(fio, ir->opts.bTS, ir->opts.ngQM);
         }
         /* end of QMMM stuff */
     }

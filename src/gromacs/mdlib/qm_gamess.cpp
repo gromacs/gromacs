@@ -147,18 +147,9 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 #endif
                 }
             }
-            if (!qm->bTS)
-            {
-                fprintf(out, "END\nBASIS %s\nRUNTYPE GRADIENT\nSCFTYPE %s\n",
-                        eQMbasis_names[qm->QMbasis],
-                        eQMmethod_names[qm->QMmethod]); /* see enum.h */
-            }
-            else
-            {
-                fprintf(out, "END\nBASIS %s\nRUNTYPE SADDLE\nSCFTYPE %s\n",
-                        eQMbasis_names[qm->QMbasis],
-                        eQMmethod_names[qm->QMmethod]); /* see enum.h */
-            }
+            fprintf(out, "END\nBASIS %s\nRUNTYPE GRADIENT\nSCFTYPE %s\n",
+                    eQMbasis_names[qm->QMbasis],
+                    eQMmethod_names[qm->QMmethod]); /* see enum.h */
             fclose(out);
         }
         gmx_barrier(cr);
@@ -210,18 +201,9 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 #endif
             }
         }
-        if (!qm->bTS)
-        {
-            fprintf(out, "END\nBASIS %s\nRUNTYPE GRADIENT\nSCFTYPE %s\n",
-                    eQMbasis_names[qm->QMbasis],
-                    eQMmethod_names[qm->QMmethod]); /* see enum.h */
-        }
-        else
-        {
-            fprintf(out, "END\nBASIS %s\nRUNTYPE SADDLE\nSCFTYPE %s\n",
-                    eQMbasis_names[qm->QMbasis],
-                    eQMmethod_names[qm->QMmethod]); /* see enum.h */
-        }
+        fprintf(out, "END\nBASIS %s\nRUNTYPE GRADIENT\nSCFTYPE %s\n",
+                eQMbasis_names[qm->QMbasis],
+                eQMmethod_names[qm->QMmethod]); /* see enum.h */
         F77_FUNC(inigms, IMIGMS) ();
     }
 }
