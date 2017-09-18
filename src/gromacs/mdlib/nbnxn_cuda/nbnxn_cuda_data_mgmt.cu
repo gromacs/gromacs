@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -702,6 +703,11 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_pairlist_t *h_plist,
                              int                     iloc)
 {
+    if (canSkipWork(nb, iloc))
+    {
+        return;
+    }
+
     char          sbuf[STRLEN];
     cudaError_t   stat;
     bool          bDoTime    = nb->bDoTime;
