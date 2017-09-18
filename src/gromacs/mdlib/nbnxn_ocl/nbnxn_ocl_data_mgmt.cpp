@@ -907,6 +907,11 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
     cl_command_queue stream     = nb->stream[iloc];
     cl_plist_t      *d_plist    = nb->plist[iloc];
 
+    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
+    {
+        return;
+    }
+
     if (d_plist->na_c < 0)
     {
         d_plist->na_c = h_plist->na_ci;
