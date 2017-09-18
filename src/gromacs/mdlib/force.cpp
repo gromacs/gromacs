@@ -178,7 +178,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
-        enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr);
+        enerd->term[F_EQM] = calculate_QMMM(cr, f, fr);
     }
 
     /* Call the short range functions all in one go. */

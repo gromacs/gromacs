@@ -84,8 +84,6 @@ typedef struct t_grpopts {
     real        *SAon;         /* at which gap (A.U.) the SA is switched on    */
     real        *SAoff;
     int         *SAsteps;      /* in how many steps SA goes from 1-1 to 0.5-0.5*/
-    gmx_bool    *bOPT;
-    gmx_bool    *bTS;
 } t_grpopts;
 
 typedef struct t_simtemp {
