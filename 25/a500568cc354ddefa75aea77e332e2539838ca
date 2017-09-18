@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Verified+1: Szilárd Páll <pall.szilard@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Mon, 18 Sep 2017 21:21:34 +0200
+Reviewed-on: https://gerrit.gromacs.org/6943
+Project: gromacs
+Branch: refs/heads/master
