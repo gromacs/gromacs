@@ -304,11 +304,16 @@ typedef struct cl_plist
  *
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
+ *
+ * \todo Booleans stored in this structure are not actually timer-specific -
+ * they refer to the task stages that are being executed during the step.
+ * This information should live somewhere more general.
  */
 typedef struct cl_timers
 {
     GpuRegionTimer atdat;              /**< timer for atom data transfer (every PS step)            */
     GpuRegionTimer nb_h2d[2];          /**< timer for x/q H2D transfers (l/nl, every step)          */
+    bool           didH2D[2];          /**< true when x/q H2D transfers were actually launched at this step */
     GpuRegionTimer nb_d2h[2];          /**< timer for f D2H transfer (l/nl, every step)             */
     GpuRegionTimer pl_h2d[2];          /**< timer for pair-list H2D transfers (l/nl, every PS step) */
     bool           didPairlistH2D[2];  /**< true when a pair-list transfer has been done at this step */

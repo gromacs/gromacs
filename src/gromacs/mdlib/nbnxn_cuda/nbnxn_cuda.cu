@@ -349,7 +349,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
 
-    t->didNB[iloc] = false;
+    t->didNB[iloc]  = false;
+    t->didH2D[iloc] = false;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
@@ -413,6 +414,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     {
         t->nb_h2d[iloc].stopRecording(stream);
     }
+    t->didH2D[iloc] = true;
 
     if (nbp->useDynamicPruning && plist->haveFreshList)
     {
@@ -864,7 +866,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
             }
 
             /* X/q H2D and F D2H timings */
-            timings->nb_h2d_t += timers->nb_h2d[iloc].getLastTimeMilliseconds();
+            if (timers->didH2D[iloc])
+            {
+                timings->nb_h2d_t += timers->nb_h2d[iloc].getLastTimeMilliseconds();
+            }
             timings->nb_d2h_t += timers->nb_d2h[iloc].getLastTimeMilliseconds();
 
             /* Count the pruning kernel times for both cases:1st pass (at search step)
