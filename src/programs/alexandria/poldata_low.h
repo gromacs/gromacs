@@ -63,7 +63,27 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-    eqdAXp, eqdAXg, eqdAXs, eqdAXpp, eqdAXpg, eqdAXps, eqdYang, eqdBultinck, eqdRappe, eqdNR
+    eqdAXp, 
+    eqdAXg, 
+    eqdAXs, 
+    eqdAXpp, 
+    eqdAXpg, 
+    eqdAXps, 
+    eqdYang, 
+    eqdBultinck, 
+    eqdRappe, 
+    eqdNR
+};
+
+enum VsiteType
+{
+    evtLINEAR       = 0,
+    evtPLANAR       = 1,
+    evtRING_PLANAR  = 2,
+    evtIN_PLANE     = 3,
+    evtOUT_OF_PLANE = 4,
+    evtALL          = 5,
+    evtNR           = 6
 };
 
 /*! \brief
@@ -75,6 +95,16 @@ const char *iType2string(InteractionType iType);
  * Convert string to interaction type
  */
 InteractionType string2iType(const char *string);
+
+/*! \brief
+ * Convert virtual site type to string
+ */
+const char *vsiteType2string(VsiteType vType);
+
+/*! \brief
+ * Convert string to virtual site type
+ */
+VsiteType string2vsiteType(const char *string);
 
 
 /*! \brief
@@ -254,6 +284,65 @@ class Ptype
 using PtypeIterator      = typename std::vector<Ptype>::iterator;
 using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 
+class Vsite
+{
+    public:
+    
+        Vsite () {};
+    
+        Vsite(const std::string &atype,
+              const std::string &type,
+              int                number,
+              double             distance,
+              double             angle,
+              int                ncontrolatoms);
+        
+        /*! \brief
+         * Return the atom type to which the vsites are connected.
+         */
+        const std::string &atype() const { return atype_; }
+        
+        /*! \brief
+         * Return the type pf virtual site.
+         */
+        const VsiteType &type() const { return type_; }
+        
+        /*! \brief
+         * Return the distance between the atom and the virtual site.
+         */
+        double distance() const {return distance_;}
+        
+        /*! \brief
+         * Return the angle between the atom and the virtual site.
+         */
+        double angle() const {return angle_;}
+        
+        /*! \brief
+         * Return the number of virtual sites connected to the atom.
+         */
+        int number() const {return number_;}
+        
+        /*! \brief
+         * Return the number of atoms needed to locate the vsite.
+         */
+        int ncontrolatoms() const {return ncontrolatoms_;}
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+        
+        
+    private:
+        std::string atype_;
+        VsiteType   type_;
+        int         number_;
+        double      distance_;
+        double      angle_;
+        int         ncontrolatoms_;
+};
+
+using VsiteIterator      = typename std::vector<Vsite>::iterator;
+using VsiteConstIterator = typename std::vector<Vsite>::const_iterator;
 
 /*! \brief
  * Contains the listed force including

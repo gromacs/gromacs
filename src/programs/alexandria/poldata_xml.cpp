@@ -100,6 +100,7 @@ enum {
     exmlATOM1, exmlATOM2, exmlATOM3, exmlATOM4,
     exmlSIGMA, exmlBONDORDER, exmlPARAMS,
     exmlREFVALUE, exmlUNIT, exmlNTRAIN,
+    exmlGT_VSITES, exmlGT_VSITE,
     exmlGT_BONDS, exmlGT_BOND,
     exmlGT_ANGLES, exmlGT_ANGLE,
     exmlGT_DIHEDRALS, exmlGT_DIHEDRAL,
@@ -113,7 +114,9 @@ enum {
     exmlEEMPROPS, exmlEEMPROP, exmlMODEL, 
     exmlJ0, exmlJ0_SIGMA, exmlCHI0, exmlCHI0_SIGMA, 
     exmlZETA, exmlROW, exmlEEMPROP_REF, 
-    exmlEPREF, exmlCHARGES,
+    exmlEPREF, exmlCHARGES, exmlANGLE_UNIT, exmlLENGTH_UNIT,
+    exmlDISTANCE, exmlNCONTROLATOMS, exmlNUMBER, exmlVTYPE,
+    exmlANGLE,
     exmlNR
 };
 
@@ -132,6 +135,7 @@ const char * exml_names[exmlNR] = {
     "atom1", "atom2", "atom3", "atom4",
     "sigma", "bondorder", "params",
     "refValue", "unit", "ntrain",
+    "gt_vsites", "gt_vsite",
     "gt_bonds", "gt_bond",
     "gt_angles", "gt_angle",
     "gt_dihedrals", "gt_dihedral",
@@ -144,7 +148,8 @@ const char * exml_names[exmlNR] = {
     "central", "attached", "numattach",
     "eemprops", "eemprop", "model", 
     "jaa", "jaa_sigma", "chi", "chi_sigma", "zeta", "row",
-    "eemprop_ref", "epref", "charge"
+    "eemprop_ref", "epref", "charge", "angle_unit", "length_unit",
+    "distance", "ncontrolatoms", "number", "vtype", "angle"
 };
 
 static void sp(int n, char buf[], int maxindent)
@@ -255,6 +260,13 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 pd.setBosqueFlags(xbuf[exmlPOLAR_UNIT], xbuf[exmlREFERENCE]);
             }
             break;
+        case exmlGT_VSITES:
+            if (NN(xbuf[exmlANGLE_UNIT]) && NN(xbuf[exmlLENGTH_UNIT]))
+            {
+                pd.setVsite_angle_unit(xbuf[exmlANGLE_UNIT]);
+                pd.setVsite_length_unit(xbuf[exmlLENGTH_UNIT]);
+            }
+            break;
         case exmlGT_BONDS:
             if (NN(xbuf[exmlINTERACTION]) &&
                 NN(xbuf[exmlFUNCTION])    &&
@@ -340,6 +352,19 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
             {
                 pd.addBosque( xbuf[exmlELEM], my_atof(xbuf[exmlPOLARIZABILITY].c_str()));
+            }
+            break;
+        case exmlGT_VSITE:
+            if (NN(xbuf[exmlATYPE])  && NN(xbuf[exmlVTYPE])    &&
+                NN(xbuf[exmlNUMBER]) && NN(xbuf[exmlDISTANCE]) &&
+                NN(xbuf[exmlANGLE])  && NN(xbuf[exmlNCONTROLATOMS]))
+            {
+                pd.addVsite(xbuf[exmlATYPE],
+                            xbuf[exmlVTYPE],
+                            atoi(xbuf[exmlNUMBER].c_str()),
+                            atof(xbuf[exmlDISTANCE].c_str()),
+                            atof(xbuf[exmlANGLE].c_str()),
+                            atoi(xbuf[exmlNCONTROLATOMS].c_str()));
             }
             break;
         case exmlGT_BOND:
@@ -600,19 +625,37 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     {
         add_xml_char(child, exml_names[exmlREFERENCE], tmp.c_str());
     }
+    for (auto pType = pd.getPtypeBegin();
+         pType != pd.getPtypeEnd(); pType++)
     {
-        for (auto pType = pd.getPtypeBegin();
-             pType != pd.getPtypeEnd(); pType++)
-        {
-            grandchild = add_xml_child(child, exml_names[exmlPOLTYPE]);
-            add_xml_char(grandchild, exml_names[exmlPTYPE], pType->getType().c_str());
-            add_xml_char(grandchild, exml_names[exmlMILLER], pType->getMiller().c_str());
-            add_xml_char(grandchild, exml_names[exmlBOSQUE], pType->getBosque().c_str());
-            add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], pType->getPolarizability());
-            add_xml_double(grandchild, exml_names[exmlSIGPOL], pType->getSigPol());
-        }
+        grandchild = add_xml_child(child, exml_names[exmlPOLTYPE]);
+        add_xml_char(grandchild, exml_names[exmlPTYPE], pType->getType().c_str());
+        add_xml_char(grandchild, exml_names[exmlMILLER], pType->getMiller().c_str());
+        add_xml_char(grandchild, exml_names[exmlBOSQUE], pType->getBosque().c_str());
+        add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], pType->getPolarizability());
+        add_xml_double(grandchild, exml_names[exmlSIGPOL], pType->getSigPol());
     }
-
+    tmp   = pd.getVsite_angle_unit();
+    if (0 != tmp.size())
+    {
+        child = add_xml_child(parent, exml_names[exmlGT_VSITES]);
+        add_xml_char(child, exml_names[exmlANGLE_UNIT], tmp.c_str());
+    }
+    tmp   = pd.getVsite_length_unit();
+    if (0 != tmp.size())
+    {
+        add_xml_char(child, exml_names[exmlLENGTH_UNIT], tmp.c_str());
+    }
+    for (auto vsite = pd.getVsiteBegin(); vsite != pd.getVsiteEnd(); vsite++)
+    {
+        grandchild = add_xml_child(child, exml_names[exmlGT_VSITE]);
+        add_xml_char(grandchild, exml_names[exmlATYPE], vsite->atype().c_str());
+        add_xml_char(grandchild, exml_names[exmlVTYPE], vsiteType2string(vsite->type()));
+        add_xml_int(grandchild, exml_names[exmlNUMBER], vsite->number());
+        add_xml_double(grandchild, exml_names[exmlDISTANCE], vsite->distance());
+        add_xml_double(grandchild, exml_names[exmlANGLE], vsite->angle());
+        add_xml_int(grandchild, exml_names[exmlNCONTROLATOMS], vsite->ncontrolatoms());
+    }
     for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
     {
         if (eitBONDS == fs->iType())

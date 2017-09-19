@@ -57,9 +57,25 @@ namespace alexandria
 {
 
 static const char * eit_names[eitNR] = {
-    "BONDS", "ANGLES", "LINEAR_ANGLES",
-    "PROPER_DIHEDRALS", "IMPROPER_DIHEDRALS", "VDW",
-    "LJ14", "POLARIZATION", "CONSTR", "VSITE2"
+    "BONDS", 
+    "ANGLES", 
+    "LINEAR_ANGLES",
+    "PROPER_DIHEDRALS", 
+    "IMPROPER_DIHEDRALS", 
+    "VDW",
+    "LJ14", 
+    "POLARIZATION", 
+    "CONSTR", 
+    "VSITE2"
+};
+
+static const char * evt_names[evtNR] = {
+    "linear",  
+    "planar",
+    "ring_planar",
+    "in_plane",
+    "out_of_plane", 
+    "all"
 };
 
 const char *iType2string(InteractionType iType)
@@ -75,7 +91,7 @@ const char *iType2string(InteractionType iType)
 InteractionType string2iType(const char *string)
 {
     int i;
-    for (i = 0; (i < eitNR); i++)
+    for (i = 0; i < eitNR; i++)
     {
         if (gmx_strcasecmp(string, eit_names[i]) == 0)
         {
@@ -85,63 +101,26 @@ InteractionType string2iType(const char *string)
     return eitNR;
 }
 
-Ptype::Ptype(const std::string &ptype,
-             const std::string &miller,
-             const std::string &bosque,
-             double             polarizability,
-             double             sigPol)
-    :
-      type_(ptype),
-      miller_(miller),
-      bosque_(bosque),
-      polarizability_(polarizability),
-      sigPol_(sigPol)
-{}
-
-CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
+const char *vsiteType2string(VsiteType vType)
 {
-    CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
+    if (vType < evtNR)
     {
-        gmx_send_str(cr, dest, &type_);
-        gmx_send_str(cr, dest, &miller_);
-        gmx_send_str(cr, dest, &bosque_);
-        gmx_send_double(cr, dest, polarizability_);
-        gmx_send_double(cr, dest, sigPol_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(), 
-                    bosque_.c_str(), polarizability_, 
-                    sigPol_, cs_name(cs));
-            fflush(debug);
-        }
+        return evt_names[vType];
     }
-    return cs;
+    return nullptr;
 }
 
-CommunicationStatus Ptype::Receive(t_commrec *cr, int src)
+VsiteType string2vsiteType(const char *string)
 {
-    CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
+    int i;
+    for (i = 0; i < evtNR; i++)
     {
-        gmx_recv_str(cr, src, &type_);
-        gmx_recv_str(cr, src, &miller_);
-        gmx_recv_str(cr, src, &bosque_);
-        polarizability_ = gmx_recv_double(cr, src);
-        sigPol_ = gmx_recv_double(cr, src);
-        if (nullptr != debug)
+        if (gmx_strcasecmp(string, evt_names[i]) == 0)
         {
-            fprintf(debug, "Received Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(), 
-                    bosque_.c_str(), polarizability_, 
-                    sigPol_, cs_name(cs));
-            fflush(debug);
+            return static_cast<VsiteType>(i);
         }
     }
-    return cs;
+    return evtNR;
 }
 
 Ffatype::Ffatype(const std::string &desc,
@@ -207,6 +186,130 @@ CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str() ,
                     refEnthalpy_.c_str(), cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
+Ptype::Ptype(const std::string &ptype,
+             const std::string &miller,
+             const std::string &bosque,
+             double             polarizability,
+             double             sigPol)
+    :
+      type_(ptype),
+      miller_(miller),
+      bosque_(bosque),
+      polarizability_(polarizability),
+      sigPol_(sigPol)
+{}
+
+CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_str(cr, dest, &type_);
+        gmx_send_str(cr, dest, &miller_);
+        gmx_send_str(cr, dest, &bosque_);
+        gmx_send_double(cr, dest, polarizability_);
+        gmx_send_double(cr, dest, sigPol_);
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Sent Ptype %s %s %s %g %g, status %s\n",
+                    type_.c_str(), miller_.c_str(), 
+                    bosque_.c_str(), polarizability_, 
+                    sigPol_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus Ptype::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        gmx_recv_str(cr, src, &type_);
+        gmx_recv_str(cr, src, &miller_);
+        gmx_recv_str(cr, src, &bosque_);
+        polarizability_ = gmx_recv_double(cr, src);
+        sigPol_ = gmx_recv_double(cr, src);
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received Ptype %s %s %s %g %g, status %s\n",
+                    type_.c_str(), miller_.c_str(), 
+                    bosque_.c_str(), polarizability_, 
+                    sigPol_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
+Vsite::Vsite(const std::string &atype,
+             const std::string &type,
+             int                number,
+             double             distance,
+             double             angle,
+             int                ncontrolatoms)  
+    :
+      atype_(atype),
+      type_(string2vsiteType(type.c_str())),
+      number_(number),
+      distance_(distance),
+      angle_(angle),
+      ncontrolatoms_(ncontrolatoms)
+{}
+
+CommunicationStatus Vsite::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;   
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        std::string vtype;
+        vtype.assign(vsiteType2string(type_));
+        gmx_send_str(cr, dest, &atype_);
+        gmx_send_str(cr, dest, &vtype);
+        gmx_send_int(cr, dest, number_);
+        gmx_send_double(cr, dest, distance_);
+        gmx_send_double(cr, dest, angle_);
+        gmx_send_int(cr, dest, ncontrolatoms_);
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Sent Vsite %s %s %d %g %g %d, status %s\n",
+                    atype_.c_str(), vsiteType2string(type_), number_, 
+                    distance_, angle_, ncontrolatoms_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus Vsite::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        std::string type;
+        gmx_recv_str(cr, src, &atype_);
+        gmx_recv_str(cr, src, &type);
+        type_          = string2vsiteType(type.c_str()); 
+        number_        = gmx_recv_int(cr, src);
+        distance_      = gmx_recv_double(cr, src);
+        angle_         = gmx_recv_double(cr, src);
+        ncontrolatoms_ = gmx_recv_int(cr, src);
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received Vsite %s %s %d %g %g %d, status %s\n",
+                    atype_.c_str(), vsiteType2string(type_), number_, 
+                    distance_, angle_, ncontrolatoms_, cs_name(cs));
             fflush(debug);
         }
     }

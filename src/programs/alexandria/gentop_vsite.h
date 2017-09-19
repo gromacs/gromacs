@@ -48,13 +48,6 @@
 
 struct gpp_atomtype;
 
-#define egvtNO           0
-#define egvtLINEAR       1
-#define egvtPLANAR       2
-#define egvtRING_PLANAR  4
-#define egvtOUT_OF_PLANE 8
-#define egvtALL (egvtLINEAR | egvtPLANAR | egvtRING_PLANAR | egvtOUT_OF_PLANE)
-
 namespace alexandria
 {
 typedef struct {

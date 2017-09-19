@@ -139,7 +139,12 @@ class Poldata
                        double             polarizability,
                        double             sigPol);
 
-        
+        void  addVsite(const std::string &atype,
+                       const std::string &type,
+                       int                number,
+                       double             distance,
+                       double             angle,
+                       int                ncontrolatoms);
 
         /*! \brief
          * Set the value and the associated error for the given poltype
@@ -166,6 +171,22 @@ class Poldata
         void setPolarRef(const std::string &polarRef)
         {
             alexandriaPolarRef_ = polarRef;
+        }
+        
+        /*! \brief
+         * Set the vsite angle unit. 
+         */
+        void setVsite_angle_unit(const std::string &angle_unit)
+        {
+            vsite_angle_unit_ = angle_unit;
+        }
+        
+        /*! \brief
+         * Set the vsite angle unit. 
+         */
+        void setVsite_length_unit(const std::string &length_unit)
+        {
+            vsite_length_unit_ = length_unit;
         }
 
         const std::string &getForceField() const { return alexandriaForcefield_; }
@@ -297,6 +318,14 @@ class Poldata
         PtypeConstIterator getPtypeBegin() const { return ptype_.begin(); }
 
         PtypeConstIterator getPtypeEnd() const { return ptype_.end(); }
+        
+        VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
+        
+        VsiteConstIterator getVsiteBegin()  const { return vsite_.begin(); }
+
+        VsiteIterator getVsiteEnd() { return vsite_.end(); }
+        
+        VsiteConstIterator getVsiteEnd() const { return vsite_.end(); }
 
         /*! \brief
          * Return the iterator corresponding to the polarizability type
@@ -480,6 +509,10 @@ class Poldata
         const std::string &getPolarUnit() const { return alexandriaPolarUnit_; }
 
         const std::string &getPolarRef() const { return alexandriaPolarRef_; }
+        
+        const std::string &getVsite_angle_unit() const { return vsite_angle_unit_;}
+        
+        const std::string &getVsite_length_unit() const { return vsite_length_unit_;}
 
         void addSymcharges(const std::string &central,
                            const std::string &attached,
@@ -568,10 +601,13 @@ class Poldata
         std::string                           filename_;
         std::vector<Ptype>                    ptype_;
         std::vector<Ffatype>                  alexandria_;
+        std::vector<Vsite>                    vsite_;
         std::vector<std::string>              btype_;
         std::string                           alexandriaPolarUnit_;
         std::string                           alexandriaPolarRef_;
         std::string                           alexandriaForcefield_;
+        std::string                           vsite_angle_unit_;
+        std::string                           vsite_length_unit_;
         int                                   nexcl_;
         double                                fudgeQQ_, fudgeLJ_;
         std::string                           gtVdwFunction_, gtCombinationRule_;

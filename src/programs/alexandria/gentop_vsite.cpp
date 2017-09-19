@@ -463,7 +463,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
         }
         fprintf(debug, " and %d impropers\n", (int)planar_.size());
     }
-    if ((gvt_ == egvtLINEAR) || (gvt_ == egvtALL))
+    if ((gvt_ == evtLINEAR) || (gvt_ == evtALL))
     {
         /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement
          * is described by
@@ -501,8 +501,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
                 /* Compute details for the new masses and vsites,
                  * and update everything
                  */
-                calc_vsite2parm(atoms, plist,
-                                x, &linear_[i], symtab, atype);
+                calc_vsite2parm(atoms, plist, x, &linear_[i], symtab, atype);
                 srenew((*excls), atoms->nr);
                 for (j = atoms->nr-2; (j <= atoms->nr-1); j++)
                 {
@@ -517,7 +516,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
             }
         }
     }
-    if ((gvt_ == egvtPLANAR) || (gvt_ == egvtALL))
+    if ((gvt_ == evtPLANAR) || (gvt_ == evtALL))
     {
         for (unsigned int i = 0; (i < planar_.size()); i++)
         {

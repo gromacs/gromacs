@@ -105,7 +105,7 @@ const char *immsg(immStatus imm)
     return msg[imm];
 } 
 
-MyMol::MyMol() : gvt_(egvtALL)
+MyMol::MyMol() : gvt_(evtALL)
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;

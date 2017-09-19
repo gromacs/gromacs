@@ -251,6 +251,39 @@ void Poldata::addPtype(const std::string &ptype,
 }
 
 /*
+ *-+-+-+-+-+-+-+-+-+-+-+
+ * Virtual Site STUFF
+ *-+-+-+-+-+-+-+-+-+-+-+
+ */
+ 
+void  Poldata::addVsite(const std::string &atype,
+                        const std::string &type,
+                        int                number,
+                        double             distance,
+                        double             angle,
+                        int                ncontrolatoms)
+{
+    size_t i;
+    for (i = 0; i < vsite_.size(); i++)
+    {
+        if (vsite_[i].atype() == atype && 
+            vsite_[i].type()  == string2vsiteType(atype.c_str()))
+        {
+            break;
+        }
+    }
+    if (i == vsite_.size())
+    {
+        Vsite vs(atype, type, number, distance, angle, ncontrolatoms);
+        vsite_.push_back(vs);
+    }
+    else
+    {
+        fprintf(stderr, "vsite type %s was already added to Poldata record\n", atype.c_str());
+    }
+}
+
+/*
  *-+-+-+-+-+-+-+-+
  * Bosque STUFF
  *-+-+-+-+-+-+-+-+
@@ -706,8 +739,11 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &millerAhpUnit_);
         gmx_send_str(cr, dest, &millerRef_);
         gmx_send_str(cr, dest, &bosquePolarUnit_);
-        gmx_send_str(cr, dest, &bosqueRef_);       
+        gmx_send_str(cr, dest, &bosqueRef_);
+        gmx_send_str(cr, dest, &vsite_angle_unit_);
+        gmx_send_str(cr, dest, &vsite_length_unit_);       
         gmx_send_int(cr, dest, ptype_.size());
+        gmx_send_int(cr, dest, vsite_.size());
         gmx_send_int(cr, dest, alexandria_.size());
         gmx_send_int(cr, dest, btype_.size());
         gmx_send_int(cr, dest, forces_.size());
@@ -727,6 +763,12 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.Send(cr, dest);           
+        }
+        
+        /*Send Vsite*/
+        for (auto &vsite : vsite_)
+        {
+            cs = vsite.Send(cr, dest);           
         }
         
         /*Send btype*/
@@ -776,7 +818,7 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         
 CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
 {
-    size_t nptype, nalexandria, nbtype, nforces;
+    size_t nptype, nalexandria, nbtype, nforces, nvsite;
     size_t nmiller, nbosque, nsymcharges, neep, nepr;
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -797,8 +839,11 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &millerAhpUnit_);
         gmx_recv_str(cr, src, &millerRef_);
         gmx_recv_str(cr, src, &bosquePolarUnit_);
-        gmx_recv_str(cr, src, &bosqueRef_);     
+        gmx_recv_str(cr, src, &bosqueRef_); 
+        gmx_recv_str(cr, src, &vsite_angle_unit_);
+        gmx_recv_str(cr, src, &vsite_length_unit_);    
         nptype                = gmx_recv_int(cr, src);
+        nvsite                = gmx_recv_int(cr, src);
         nalexandria           = gmx_recv_int(cr, src);
         nbtype                = gmx_recv_int(cr, src);
         nforces               = gmx_recv_int(cr, src);
@@ -830,6 +875,18 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 alexandria_.push_back(alexandria);
+            }
+        }
+        
+        /*Receive Ffatype*/
+        vsite_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
+        {
+            Vsite vsite;
+            cs = vsite.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                vsite_.push_back(vsite);
             }
         }
         
