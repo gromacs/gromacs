@@ -49,6 +49,7 @@
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -68,17 +69,50 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
+class RefCount
+{
+    private:
+        int         count_;
+        std::string ref_;
+    public:
+        RefCount(const std::string ref) : count_(1), ref_(ref) {};
+
+        int count() const { return count_; }
+
+        void increment() { count_++; }
+
+        const std::string ref() const { return ref_; }
+};
+
+static void add_refc(std::vector<RefCount> &rc, std::string ref)
+{
+    for (auto &r : rc)
+    {
+        if (r.ref().compare(ref) == 0)
+        {
+            r.increment();
+            return;
+        }
+    }
+    rc.push_back(RefCount(ref));
+}
+
 static void calc_frag_miller(alexandria::Poldata              &pd,
                              std::vector<alexandria::MolProp> &mp,
                              const alexandria::MolSelect      &gms)
 {
-    double                       bos0, polar, sig_pol;
-
-    iMolSelect                   ims;
-    char                        *null    = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
-    alexandria::jobType          jobtype = alexandria::JOB_UNKNOWN;
-    const char                  *program = "alexandria";
+    double                       bos0      = 0;
+    double                       polar     = 0; 
+    double                       sig_pol   = 0;
+    char                        *null      = (char *)"0";
+    char                        *empirical = (char *)"empirical";
+    char                        *minimum   = (char *)"minimum";
+    char                        *minus     = (char *)"-";
+    char                        *nofile    = (char *)"none";
+    const char                  *program   = "alexandria";
     const char                  *ang3;
+    iMolSelect                   ims;
+    alexandria::jobType          jobtype   = alexandria::JOB_UNKNOWN;
     alexandria::CompositionSpecs cs;
 
     ang3    = unit2string(eg2cAngstrom3);
@@ -95,14 +129,14 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
             for (auto csi = cs.beginCS(); csi < cs.endCS(); ++csi)
             {
                 alexandria::iComp ic = csi->iC();
-                alexandria::MolecularCompositionIterator mci = mpi.SearchMolecularComposition(csi->name());
+                auto mci = mpi.SearchMolecularComposition(csi->name());
                 if (mci != mpi.EndMolecularComposition())
                 {
                     double p         = 0, sp = 0;
                     double ahc       = 0, ahp = 0;
                     bool   bSupport  = true;
                     int    natom_tot = 0, Nelec = 0;
-                    for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
+                    for (auto ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
                     {
                         const char *atomname = ani->getAtom().c_str();
                         int         natom    = ani->getNumber();
@@ -147,7 +181,6 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                     {
                         const char *type = csi->abbreviation();
                         const char *ref  = csi->reference();
-
                         if (ic == alexandria::iCmiller)
                         {
                             alexandria::Experiment calc1(program, type, (char *)"ahc",
@@ -182,7 +215,8 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
     }
 }
 
-static void write_corr_xvg(const char                       *fn,
+static void write_corr_xvg(FILE                             *fplog,
+                           const char                       *fn,
                            std::vector<alexandria::MolProp> &mp,
                            MolPropObservable                 mpo,
                            const alexandria::QmCount        &qmc,
@@ -192,12 +226,32 @@ static void write_corr_xvg(const char                       *fn,
                            const alexandria::MolSelect      &gms,
                            char                             *exp_type)
 {
-    FILE *fp;
-
-    fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
-    int i = 0;
+    int          i         = 0;
+    int          n         = 0;
+    real         a         = 0;
+    real         da        = 0;
+    real         b         = 0;
+    real         db        = 0;
+    real         chi2      = 0;
+    real         rmsd      = 0;
+    real         Rfit      = 0;   
+    double       exp_val   = 0;
+    double       exp_error = 0;
+    double       qm_val    = 0;
+    double       qm_error  = 0;
+    double       diff      = 0;
+    double       Texp      = -1;
+    double       Tqm       = -1;
+    bool         bExp      = false;
+    bool         bQM       = false;
+    
+    FILE        *fp;
+    gmx_stats_t  lsq[qmc.nCalc()];    
+    
+    fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);   
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
+        lsq[i] = gmx_stats_init();
         fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i,
                 q->method().c_str(),
                 q->basis().c_str(),
@@ -212,8 +266,7 @@ static void write_corr_xvg(const char                       *fn,
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
         char LevelOfTheory[256];
-        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s",
-                 q->method().c_str(), q->basis().c_str());
+        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s", q->method().c_str(), q->basis().c_str());
         if (debug)
         {
             fprintf(debug, "QM: %s LoT: %s\n", q->lot().c_str(), LevelOfTheory);
@@ -222,36 +275,36 @@ static void write_corr_xvg(const char                       *fn,
         fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
         {
-            double exp_val, exp_error;
-            double Texp    = -1;
-            bool   bExp    = mpi.getProp(mpo, 
-                                         iqmExp, 
-                                         "", 
-                                         "",
-                                         exp_type,
-                                         &exp_val, 
-                                         &exp_error, 
-                                         &Texp);
-            iMolSelect ims = gms.status(mpi.getIupac());
+            exp_val   = 0;
+            exp_error = 0;
+            bExp      = mpi.getProp(mpo, 
+                                    iqmExp, 
+                                    "", 
+                                    "",
+                                    exp_type,
+                                    &exp_val, 
+                                    &exp_error, 
+                                    &Texp);
+            auto ims = gms.status(mpi.getIupac());
             if ((ims == imsTrain) || (ims == imsTest))
             {
-                double Tqm  = -1;
-                double qm_val, qm_error;
-                bool   bQM  = mpi.getProp(mpo,                
-                                          iqmQM, 
-                                          LevelOfTheory, 
-                                          "",
-                                          q->type().c_str(),
-                                          &qm_val,
-                                          &qm_error, 
-                                          &Tqm);
+                
+                qm_val   = 0;
+                qm_error = 0;
+                bQM      = mpi.getProp(mpo,                
+                                       iqmQM, 
+                                       LevelOfTheory, 
+                                       "",
+                                       q->type().c_str(),
+                                       &qm_val,
+                                       &qm_error, 
+                                       &Tqm);
                 if (bExp && bQM)
                 {
+                    gmx_stats_add_point(lsq[i], exp_val, qm_val, 0, 0);
                     fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
-                    double diff = fabs(qm_val-exp_val);
-                    if (debug &&
-                        (((atoler > 0) && (diff >= atoler)) ||
-                         ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
+                    diff = fabs(qm_val-exp_val);                  
+                    if (debug && (((atoler > 0) && (diff >= atoler)) || ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                     {
                         fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
                                 mpi.getIupac().c_str(), exp_val, qm_val, qm_error, q->method().c_str());
@@ -267,76 +320,66 @@ static void write_corr_xvg(const char                       *fn,
         fprintf(fp, "&\n");
         if (debug)
         {
-            fprintf(debug, "There were %3d outliers for %s.\n",
-                    nout, q->lot().c_str());
+            fprintf(debug, "There were %3d outliers for %s.\n", nout, q->lot().c_str());
         }
     }
+    
+    fprintf(fplog, "Fitting %s data to y = ax+b\n", exp_type);
+    fprintf(fplog, "%-12s %5s %13s %13s %8s %8s\n", "Method", "N", "a", "b", "R", "RMSD");
+    fprintf(fplog, "---------------------------------------------------------------\n");              
+    i = 0;
+    for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
+    {
+        gmx_stats_get_ab(lsq[i], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        gmx_stats_get_rmsd(lsq[i], &rmsd);
+        gmx_stats_get_npoints(lsq[i], &n);        
+        fprintf(fplog, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n", 
+               q->method().c_str(), n, a, da, b, db, Rfit*100, rmsd);
+        gmx_stats_free(lsq[i]);
+    }    
     fclose(fp);
     do_view(oenv, fn, nullptr);
 }
 
-class RefCount
-{
-    private:
-        int         count_;
-        std::string ref_;
-    public:
-        RefCount(const std::string ref) : count_(1), ref_(ref) {};
-
-        int count() const { return count_; }
-
-        void increment() { count_++; }
-
-        const std::string ref() const { return ref_; }
-};
-
-static void add_refc(std::vector<RefCount> &rc, std::string ref)
-{
-    for (auto &r : rc)
-    {
-        if (r.ref().compare(ref) == 0)
-        {
-            r.increment();
-            return;
-        }
-    }
-    rc.push_back(RefCount(ref));
-}
-
-static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
-                                alexandria::Poldata &pd,
-                                gmx_bool bCalcPol,
-                                MolPropObservable mpo, char *exp_type,
-                                char *lot,
-                                real rtoler, real atoler, real outlier,
-                                char *fc_str, gmx_bool bPrintAll,
-                                gmx_bool bStatsTable,
-                                int catmin,
-                                const char *categoryfn,
-                                gmx_bool bPropTable, gmx_bool bCompositionTable,
-                                gmx_bool bPrintBasis, gmx_bool bPrintMultQ,
-                                const char *texfn,
-                                const char *xvgfn,
-                                const gmx_output_env_t *oenv,
-                                const alexandria::MolSelect &gms,
-                                const char *selout)
-{
-    alexandria::CategoryList  cList;
-    FILE                     *fp, *gp;
+static void gmx_molprop_analyze(FILE                              *fplog,
+                                std::vector<alexandria::MolProp>  &mp,
+                                alexandria::Poldata               &pd,
+                                gmx_bool                           bCalcPol,
+                                MolPropObservable                  mpo, 
+                                char                              *exp_type,
+                                char                              *lot,
+                                real                               rtoler,
+                                real                               atoler, 
+                                real                               outlier,
+                                char                              *fc_str, 
+                                gmx_bool                           bPrintAll,
+                                gmx_bool                           bStatsTable,
+                                int                                catmin,
+                                const char                        *categoryfn,
+                                gmx_bool                           bPropTable, 
+                                gmx_bool                           bCompositionTable,
+                                gmx_bool                           bPrintBasis, 
+                                gmx_bool                           bPrintMultQ,
+                                const char                        *texfn,
+                                const char                        *xvgfn,
+                                const gmx_output_env_t            *oenv,
+                                const alexandria::MolSelect       &gms,
+                                const char                        *selout)
+{  
     int                       ntot;
-    std::vector<RefCount>     rc;
+    FILE                     *fp, *gp;
     double                    T, value, error, vec[3];
     tensor                    quadrupole;
     const char               *iupac;
     alexandria::QmCount       qmc;
-
+    alexandria::CategoryList  cList;
+    std::vector<RefCount>     rc;
+    
     if (bCalcPol)
     {
         calc_frag_miller(pd, mp, gms);
     }
-
     find_calculations(mp, mpo, fc_str, &qmc);
-
     for (auto &mpi : mp)
     {
         for (auto ei = mpi.BeginExperiment(); ei < mpi.EndExperiment(); ++ei)
@@ -348,9 +391,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
             }
         }
     }
-
     printf("--------------------------------------------------\n");
-    printf("      Some statistics for %s\n", mpo_name[mpo]);
+    printf("      Statistics for %s\n", mpo_name[mpo]);
     ntot = 0;
     for (const auto &r : rc)
     {
@@ -371,7 +413,6 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                q->basis().c_str(), q->type().c_str());
     }
     printf("--------------------------------------------------\n");
-
     makeCategoryList(cList, mp, gms, imsTrain);
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
@@ -426,7 +467,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     if (nullptr != xvgfn)
     {
-        write_corr_xvg(xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms, exp_type);
+        write_corr_xvg(fplog, xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms, exp_type);
     }
 }
 
@@ -455,20 +496,33 @@ int alex_analyze(int argc, char *argv[])
         { efTEX, "-cat",    "category",  ffOPTWR  },
         { efDAT, "-sel",    "molselect", ffREAD   },
         { efDAT, "-selout", "selout",    ffOPTWR  },
-        { efXVG, "-c",      "correl",    ffWRITE  }
+        { efXVG, "-c",      "correl",    ffWRITE  },
+        { efLOG, "-g",      "analyze",   ffWRITE  }
     };
-#define NFILE (sizeof(fnm)/sizeof(fnm[0]))
-    static char                     *sort[]      = { nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr };
-    static char                     *prop[]      = { nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr };
-    static char                     *fc_str      = (char *)"";
-    static char                     *exp_type    = (char *)"";
-    static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
-    static real                      rtoler      = 0.15, atoler = 0, outlier = 1;
-    static real                      th_toler    = 170, ph_toler = 5;
-    static gmx_bool                  bMerge      = true, bAll = false, bCalcPol = true, bPrintBasis = true, bPrintMultQ = false;
-    static gmx_bool                  bStatsTable = true, bCompositionTable = false, bPropTable = true;
-    static int                       catmin      = 1;
-    static int                       maxwarn     = 0;
+    int                 NFILE             = asize(fnm);
+      
+    static int          catmin            = 1;
+    static int          maxwarn           = 0;
+    static char        *fc_str            = (char *)"";
+    static char        *exp_type          = (char *)"";
+    static char        *lot               = (char *)"B3LYP/aug-cc-pVTZ";
+    static real         rtoler            = 0.15;
+    static real         atoler            = 0;
+    static real         outlier           = 1;
+    static real         th_toler          = 170;
+    static real         ph_toler          = 5;
+    static gmx_bool     bMerge            = true;
+    static gmx_bool     bAll              = false;
+    static gmx_bool     bCalcPol          = true;
+    static gmx_bool     bPrintBasis       = true;
+    static gmx_bool     bPrintMultQ       = false;
+    static gmx_bool     bStatsTable       = true;
+    static gmx_bool     bCompositionTable = false;
+    static gmx_bool     bPropTable        = true;
+    
+    static char        *sort[]            = {nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr};
+    static char        *prop[]            = {nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr};
+
     t_pargs                          pa[]        = {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
@@ -511,9 +565,12 @@ int alex_analyze(int argc, char *argv[])
         { "-exp_type", FALSE, etSTR, {&exp_type},
           "The experimental property type that all the stuff above has to be compared to." }
     };
+    
+    FILE                            *fplog;   
     int                              npa;
     int                              i;
-
+    alexandria::Poldata              pd;
+    alexandria::MolSelect            gms;
     std::vector<alexandria::MolProp> mp;
     MolPropSortAlgorithm             mpsa;
     MolPropObservable                mpo;
@@ -528,13 +585,9 @@ int alex_analyze(int argc, char *argv[])
     {
         return 0;
     }
-
     ap = gmx_atomprop_init();
-
-    nmpfile = opt2fns(&mpname, "-m", NFILE, fnm);
-    alexandria::MolSelect gms;
+    nmpfile = opt2fns(&mpname, "-m", NFILE, fnm);    
     gms.read(opt2fn("-sel", NFILE, fnm));
-
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort", npa, pa))
     {
@@ -563,8 +616,6 @@ int alex_analyze(int argc, char *argv[])
     {
         mpo = MPO_DIPOLE;
     }
-
-    alexandria::Poldata pd;
     try
     {
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
@@ -589,17 +640,33 @@ int alex_analyze(int argc, char *argv[])
     if (mpsa != MPSA_NR)
     {
         MolPropSort(mp, mpsa, ap, gms);
-    }
-    gmx_molprop_analyze(mp, pd, bCalcPol,
-                        mpo, exp_type, lot, rtoler, atoler, outlier, fc_str, bAll,
+    }   
+    fplog  = opt2FILE("-g", NFILE, fnm, "w");
+    gmx_molprop_analyze(fplog,
+                        mp, 
+                        pd, 
+                        bCalcPol,
+                        mpo, 
+                        exp_type, 
+                        lot, 
+                        rtoler, 
+                        atoler, 
+                        outlier, 
+                        fc_str, 
+                        bAll,
                         bStatsTable,
                         catmin,
                         opt2fn_null("-cat", NFILE, fnm),
-                        bPropTable, bCompositionTable,
-                        bPrintBasis, bPrintMultQ,
-                        opt2fn("-t", NFILE, fnm), opt2fn("-c", NFILE, fnm),
-                        oenv, gms,
+                        bPropTable, 
+                        bCompositionTable,
+                        bPrintBasis, 
+                        bPrintMultQ,
+                        opt2fn("-t", NFILE, fnm), 
+                        opt2fn("-c", NFILE, fnm),
+                        oenv, 
+                        gms,
                         opt2fn_null("-selout", NFILE, fnm));
+    gmx_ffclose(fplog);
 
     return 0;
 }
