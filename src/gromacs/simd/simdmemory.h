@@ -38,6 +38,7 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
+ * \inlibraryapi
  */
 // TODO eventually this will replace paddedvector.h
 #ifndef GMX_SIMD_SIMDMEMORY_H
@@ -55,7 +56,7 @@ namespace gmx
 
 // TODO This is a hack so that GMX_SIMD=None can compile and run this
 // code. Find a better approach.
-#if GMX_SIMD == 0
+#if GMX_SIMD == 0 && !defined DOXYGEN
 using SimdReal = real;
 #  if GMX_DOUBLE
 #define GMX_SIMD_DOUBLE_WIDTH 1;
