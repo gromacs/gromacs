@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,8 +94,14 @@ struct t_commrec {
     /* Not used yet: int threadid, nthreads; */
     /* The nodeid in the PP/PME, PP or PME group */
     int      nodeid;
-    MPI_Comm mpi_comm_mysim;
-    MPI_Comm mpi_comm_mygroup;
+
+    /* MPI communicators within a single simulation
+     * Note: other parts of the code may further subset these communicators.
+     */
+    MPI_Comm mpi_comm_mysim;           /* communicator including all ranks of
+                                          a single simulation */
+    MPI_Comm mpi_comm_mygroup;         /* subset of mpi_comm_mysim including only
+                                          the ranks in the same group (PP or PME) */
 
     /* MPI ranks within a physical node for hardware access */
     int            nrank_intranode;    /* nr of ranks on this physical node */
