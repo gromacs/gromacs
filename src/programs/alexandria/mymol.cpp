@@ -1253,6 +1253,16 @@ void MyMol::CalcQPol(const Poldata &pd, rvec mu)
     sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
+void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
+{
+    auto a = gmx::square(polar[XX][XX] - polar[YY][YY]);
+    auto b = gmx::square(polar[XX][XX] - polar[ZZ][ZZ]);
+    auto c = gmx::square(polar[ZZ][ZZ] - polar[YY][YY]);
+    auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
+    
+    *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
+}
+
 void MyMol::CalcPolarizability(double     efield,
                                t_commrec *cr,
                                FILE      *fplog)
@@ -1276,11 +1286,15 @@ void MyMol::CalcPolarizability(double     efield,
         myforce->setField(field);
         computeForces(fplog, cr);
         CalcDipole(mu_tot);
-        alpha_calc_[m][m] = ((mu_tot[m]-mu_ref[m])/efield)*(POLFAC);
+        for (auto n = 0; n < DIM; n++)
+        {
+            alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
+        }
         isoPol_calc_     += alpha_calc_[m][m];
         field[m] = 0.0;
     }
     isoPol_calc_ /= DIM;
+    CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
 }
 
 void MyMol::PrintConformation(const char *fn)
@@ -1407,18 +1421,17 @@ void MyMol::PrintTopology(FILE                   *fp,
                  Q_elec_[ZZ][XX], Q_elec_[ZZ][YY], Q_elec_[ZZ][ZZ]);
         commercials.push_back(buf);
     }
-    
-    snprintf(buf, sizeof(buf), "Alexandria Polarizability (Additivity Law): %.3f +/- %.3f (A^3)\n", polarizability_, sig_pol_);
-    commercials.push_back(buf);
         
     if (efield > 0 && nullptr != cr)
     {    
         CalcPolarizability(efield, cr, fp);
         snprintf(buf, sizeof(buf), "Alexandria Polarizability components (A^3):\n" 
-                 "(%.2f %6.2f %6.2f)\n", 
-                 alpha_calc_[XX][XX], 
-                 alpha_calc_[YY][YY], 
-                 alpha_calc_[ZZ][ZZ]);
+                 "(%6.2f %6.2f %6.2f)\n" 
+                 "(%6.2f %6.2f %6.2f)\n"
+                 "(%6.2f %6.2f %6.2f)\n",
+                 alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
+                 alpha_calc_[YY][XX], alpha_calc_[YY][YY], alpha_calc_[YY][ZZ],
+                 alpha_calc_[ZZ][XX], alpha_calc_[ZZ][YY], alpha_calc_[ZZ][ZZ]);
         commercials.push_back(buf);
         
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
@@ -1433,15 +1446,30 @@ void MyMol::PrintTopology(FILE                   *fp,
                 mvmul(rotmatrix, alpha_elec_[m], tmpvec);
                 copy_rvec(tmpvec, alpha_elec_[m]);
             }
+            isoPol_elec_ = (alpha_elec_[XX][XX] + alpha_elec_[YY][YY] + alpha_elec_[ZZ][ZZ])/3.0;
+            CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
             snprintf(buf, sizeof(buf), "%s Polarizability components (A^3):\n"
-                     "(%.2f %6.2f %6.2f)\n", 
+                     "(%6.2f %6.2f %6.2f)\n"
+                     "(%6.2f %6.2f %6.2f)\n"
+                     "(%6.2f %6.2f %6.2f)\n",  
                      lot, 
-                     alpha_elec_[XX][XX], 
-                     alpha_elec_[YY][YY], 
-                     alpha_elec_[ZZ][ZZ]);
+                     alpha_elec_[XX][XX], alpha_elec_[XX][YY], alpha_elec_[XX][ZZ],
+                     alpha_elec_[YY][XX], alpha_elec_[YY][YY], alpha_elec_[YY][ZZ],
+                     alpha_elec_[ZZ][XX], alpha_elec_[ZZ][YY], alpha_elec_[ZZ][ZZ]);
             commercials.push_back(buf);
         }        
     }
+    
+    snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additivity Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
+    commercials.push_back(buf);
+    snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
+    commercials.push_back(buf);  
+    snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
+    commercials.push_back(buf);  
+    snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", lot, isoPol_elec_);
+    commercials.push_back(buf);    
+    snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", lot, anisoPol_elec_);
+    commercials.push_back(buf);
     
     print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
     write_top2(fp, printmol.name, &topology_->atoms, FALSE,
@@ -1788,6 +1816,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }
         isoPol_elec_ /=DIM;
+        CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
     } 
     return imm;
 }

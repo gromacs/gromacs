@@ -206,6 +206,8 @@ class MyMol
         double                    OptForce2_     = 0;
         double                    isoPol_elec_   = 0;
         double                    isoPol_calc_   = 0;
+        double                    anisoPol_elec_ = 0;
+        double                    anisoPol_calc_ = 0;
         matrix                    box_;
         tensor                    Q_elec_        = {{0,0,0},{0,0,0},{0,0,0}};
         tensor                    Q_calc_        = {{0,0,0},{0,0,0},{0,0,0}};
@@ -378,6 +380,8 @@ class MyMol
         void CalcDipole();
         
         void CalcDipole(rvec mu);
+        
+        void CalcAnisoPolarizability(tensor polar, double *anisoPol);
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
