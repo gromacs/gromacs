@@ -38,6 +38,7 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
+ * \inlibraryapi
  */
 // TODO eventually this will replace paddedvector.h
 #ifndef GMX_SIMD_SIMDMEMORY_H
@@ -55,7 +56,7 @@ namespace gmx
 
 // TODO This is a hack so that GMX_SIMD=None can compile and run this
 // code. Find a better approach.
-#if GMX_SIMD == 0
+#if GMX_SIMD == 0 && !defined DOXYGEN
 using SimdReal = real;
 #  if GMX_DOUBLE
 #define GMX_SIMD_DOUBLE_WIDTH 1;
@@ -183,7 +184,7 @@ class SimdMemory
                v.resize(13) does not reallocate. This means that the
                new extent should be large enough for the padded
                storage for a vector whose size is new_extent. */
-            auto newSize = computePaddedSize(numElements);
+            auto newSize        = computePaddedSize(numElements);
             auto oldSize        = storage_.size();
             storage_.reserve(newSize);
             unpadded_end_ = storage_.data() + oldSize;
