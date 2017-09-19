@@ -42,12 +42,14 @@
 #include <cmath>
 
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/math/simdmemory.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
@@ -62,52 +64,22 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 struct pme_solve_work_t
 {
     /* work data for solve_pme */
-    int      nalloc;
-    real *   mhx;
-    real *   mhy;
-    real *   mhz;
-    real *   m2;
-    real *   denom;
-    real *   tmp1_alloc;
-    real *   tmp1;
-    real *   tmp2;
-    real *   eterm;
-    real *   m2inv;
+    int                nalloc = 0;
+    real           *   mhx    = nullptr;
+    real           *   mhy    = nullptr;
+    real           *   mhz    = nullptr;
+    real           *   m2     = nullptr;
+    SimdMemory<real>   denomStorage;
+    SimdMemory<real>   tmp1Storage;
+    SimdMemory<real>   tmp2Storage;
+    SimdMemory<real>   etermStorage;
+    real           *   m2inv = nullptr;
 
-    real     energy_q;
-    matrix   vir_q;
-    real     energy_lj;
-    matrix   vir_lj;
+    real               energy_q  = 0;
+    matrix             vir_q     = {{0}};
+    real               energy_lj = 0;
+    matrix             vir_lj    = {{0}};
 };
-
-#ifdef PME_SIMD_SOLVE
-constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
-#else
-/* We can use any alignment > 0, so we use 4 */
-constexpr int c_simdWidth = 4;
-#endif
-
-/* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
-template <unsigned int factor>
-static size_t roundUpToMultipleOfFactor(size_t number)
-{
-    static_assert(factor > 0 && (factor & (factor - 1)) == 0, "factor should be >0 and a power of 2");
-
-    /* We need to add a most factor-1 and because factor is a power of 2,
-     * we get the result by masking out the bits corresponding to factor-1.
-     */
-    return (number + factor - 1) & ~(factor - 1);
-}
-
-/* Allocate an aligned pointer for SIMD operations, including extra elements
- * at the end for padding.
- */
-/* TODO: Replace this SIMD reallocator with a general, C++ solution */
-static void reallocSimdAlignedAndPadded(real **ptr, int unpaddedNumElements)
-{
-    sfree_aligned(*ptr);
-    snew_aligned(*ptr, roundUpToMultipleOfFactor<c_simdWidth>(unpaddedNumElements), c_simdWidth*sizeof(real));
-}
 
 static void realloc_work(struct pme_solve_work_t *work, int nkx)
 {
@@ -118,19 +90,25 @@ static void realloc_work(struct pme_solve_work_t *work, int nkx)
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->denom, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->tmp1, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->tmp2, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->eterm, work->nalloc);
+        work->denomStorage.resizeWithPadding(work->nalloc);
+        work->tmp1Storage.resizeWithPadding(work->nalloc);
+        work->tmp2Storage.resizeWithPadding(work->nalloc);
+        work->etermStorage.resizeWithPadding(work->nalloc);
         srenew(work->m2inv, work->nalloc);
 
-        /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
-         * of simd padded elements.
-         */
-        for (size_t i = 0; i < roundUpToMultipleOfFactor<c_simdWidth>(work->nalloc ); i++)
-        {
-            work->denom[i] = 1;
-        }
+        // Init all elements of denom that might be used merely as
+        // padding to 1, to avoid division-by-0 exceptions in SIMD
+        // operations.
+        work->denomStorage.getUnpaddedArrayRef()[0] = 1;
+        work->denomStorage.setPaddingRegionTo(1);
+        // Init all elements of tmp1 and tmp2 that might be used
+        // merely as padding to 0, to avoid overflow in SIMD
+        // operations.
+        work->tmp1Storage.getUnpaddedArrayRef()[0] = 1;
+        work->tmp1Storage.setPaddingRegionTo(1);
+        // Note that tmp2 is only used for LJ-PME
+        work->tmp2Storage.getUnpaddedArrayRef()[0] = 1;
+        work->tmp2Storage.setPaddingRegionTo(1);
     }
 }
 
@@ -139,7 +117,8 @@ void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx)
     int thread;
     /* Use fft5d, order after FFT is y major, z, x minor */
 
-    snew(*work, nthread);
+    // TODO This should probably become a vector when gmx_pme_t stops using snew
+    *work = new pme_solve_work_t[nthread];
     /* Allocate the work arrays thread local to optimize memory access */
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
@@ -160,10 +139,6 @@ static void free_work(struct pme_solve_work_t *work)
         sfree(work->mhy);
         sfree(work->mhz);
         sfree(work->m2);
-        sfree_aligned(work->denom);
-        sfree_aligned(work->tmp1);
-        sfree_aligned(work->tmp2);
-        sfree_aligned(work->eterm);
         sfree(work->m2inv);
     }
 }
@@ -177,7 +152,7 @@ void pme_free_all_work(struct pme_solve_work_t **work, int nthread)
             free_work(&(*work)[thread]);
         }
     }
-    sfree(*work);
+    delete[] *work;
     *work = nullptr;
 }
 
@@ -219,30 +194,35 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<SimdReal> d_aligned, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
 {
     {
         SimdReal              f_simd(f);
         SimdReal              tmp_d1, tmp_r, tmp_e;
-        int                   kx;
 
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
+        GMX_ASSERT(d_aligned.size() == r_aligned.size(), "d and r must have same size");
+        GMX_ASSERT(d_aligned.size() == e_aligned.size(), "d and e must have same size");
+        for (size_t kx = 0; kx != d_aligned.size(); kx++)
         {
-            tmp_d1   = load(d_aligned+kx);
-            tmp_r    = load(r_aligned+kx);
-            tmp_r    = gmx::exp(tmp_r);
-            tmp_e    = f_simd / tmp_d1;
-            tmp_e    = tmp_e * tmp_r;
-            store(e_aligned+kx, tmp_e);
+            tmp_d1        = d_aligned[kx];
+            tmp_r         = r_aligned[kx];
+            tmp_r         = gmx::exp(tmp_r);
+            tmp_e         = f_simd / tmp_d1;
+            tmp_e         = tmp_e * tmp_r;
+            e_aligned[kx] = tmp_e;
         }
     }
+    GMX_UNUSED_VALUE(start);
+    GMX_UNUSED_VALUE(end);
 }
 #else
-gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, real *r, real *e)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<SimdReal> d, ArrayRef<SimdReal> r, ArrayRef<SimdReal> e)
 {
+    GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
+    GMX_ASSERT(d.size() == e.size(), "d and e must have same size");
     int kx;
     for (kx = start; kx < end; kx++)
     {
@@ -261,32 +241,38 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, 
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
+gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
 {
     SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
-    int                   kx;
-    for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
+
+    GMX_ASSERT(d_aligned.size() == r_aligned.size(), "d and r must have same size");
+    GMX_ASSERT(d_aligned.size() == factor_aligned.size(), "d and factor must have same size");
+    for (size_t kx = 0; kx != d_aligned.size(); kx++)
     {
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = load(d_aligned+kx);
-        d_inv = SimdReal(1.0) / tmp_d;
-        store(d_aligned+kx, d_inv);
-        tmp_r = load(r_aligned+kx);
-        tmp_r = gmx::exp(tmp_r);
-        store(r_aligned+kx, tmp_r);
-        tmp_mk  = load(factor_aligned+kx);
-        tmp_fac = sqr_PI * tmp_mk * erfc(tmp_mk);
-        store(factor_aligned+kx, tmp_fac);
+        tmp_d              = d_aligned[kx];
+        d_inv              = SimdReal(1.0) / tmp_d;
+        d_aligned[kx]      = d_inv;
+        tmp_r              = r_aligned[kx];
+        tmp_r              = gmx::exp(tmp_r);
+        r_aligned[kx]      = tmp_r;
+        tmp_mk             = factor_aligned[kx];
+        tmp_fac            = sqr_PI * tmp_mk * erfc(tmp_mk);
+        factor_aligned[kx] = tmp_fac;
     }
+    GMX_UNUSED_VALUE(start);
+    GMX_UNUSED_VALUE(end);
 }
 #else
-gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *tmp2, real *d)
+gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<SimdReal> r, ArrayRef<SimdReal> tmp2, ArrayRef<SimdReal> d)
 {
     int  kx;
     real mk;
+    GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
+    GMX_ASSERT(d.size() == tmp2.size(), "d and tmp2 must have same size");
     for (kx = start; kx < end; kx++)
     {
         d[kx] = 1.0/d[kx];
@@ -323,7 +309,7 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     real                     virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
     real                     rxx, ryx, ryy, rzx, rzy, rzz;
     struct pme_solve_work_t *work;
-    real                    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *eterm, *m2inv;
+    real                    *mhx, *mhy, *mhz, *m2, *m2inv;
     real                     mhxk, mhyk, mhzk, m2k;
     real                     corner_fac;
     ivec                     complex_order;
@@ -358,9 +344,10 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     mhy   = work->mhy;
     mhz   = work->mhz;
     m2    = work->m2;
-    denom = work->denom;
-    tmp1  = work->tmp1;
-    eterm = work->eterm;
+    ArrayRef<real> denom = work->denomStorage.getUnpaddedArrayRef();
+    ArrayRef<real> tmp1  = work->tmp1Storage.getUnpaddedArrayRef();
+    ArrayRef<real> eterm = work->etermStorage.getUnpaddedArrayRef();
+
     m2inv = work->m2inv;
 
     iyz0 = local_ndata[YY]*local_ndata[ZZ]* thread   /nthread;
@@ -458,7 +445,12 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 m2inv[kx] = 1.0/m2[kx];
             }
 
-            calc_exponentials_q(kxstart, kxend, elfac, denom, tmp1, eterm);
+            work->tmp1Storage.setPaddingRegionTo(0);
+
+            calc_exponentials_q(kxstart, kxend, elfac,
+                                work->denomStorage.getPaddedArrayRef(),
+                                work->tmp1Storage.getPaddedArrayRef(),
+                                work->etermStorage.getPaddedArrayRef());
 
             for (kx = kxstart; kx < kxend; kx++, p0++)
             {
@@ -520,7 +512,12 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 tmp1[kx]  = -factor*m2k;
             }
 
-            calc_exponentials_q(kxstart, kxend, elfac, denom, tmp1, eterm);
+            work->tmp1Storage.setPaddingRegionTo(0);
+
+            calc_exponentials_q(kxstart, kxend, elfac,
+                                work->denomStorage.getPaddedArrayRef(),
+                                work->tmp1Storage.getPaddedArrayRef(),
+                                work->etermStorage.getPaddedArrayRef());
 
             for (kx = kxstart; kx < kxend; kx++, p0++)
             {
@@ -572,7 +569,7 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
     real                     by, bz;
     real                     virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
     real                     rxx, ryx, ryy, rzx, rzy, rzz;
-    real                    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *tmp2;
+    real                    *mhx, *mhy, *mhz, *m2;
     real                     mhxk, mhyk, mhzk, m2k;
     struct pme_solve_work_t *work;
     real                     corner_fac;
@@ -603,9 +600,9 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
     mhy   = work->mhy;
     mhz   = work->mhz;
     m2    = work->m2;
-    denom = work->denom;
-    tmp1  = work->tmp1;
-    tmp2  = work->tmp2;
+    ArrayRef<real> denom = work->denomStorage.getUnpaddedArrayRef();
+    ArrayRef<real> tmp1  = work->tmp1Storage.getUnpaddedArrayRef();
+    ArrayRef<real> tmp2  = work->tmp2Storage.getUnpaddedArrayRef();
 
     iyz0 = local_ndata[YY]*local_ndata[ZZ]* thread   /nthread;
     iyz1 = local_ndata[YY]*local_ndata[ZZ]*(thread+1)/nthread;
@@ -686,15 +683,11 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp1[kx]  = -factor*m2k;
                 tmp2[kx]  = sqrt(factor*m2k);
             }
-            /* Clear padding elements to avoid (harmless) fp exceptions */
-            const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);
-            for (; kx < kxendSimd; kx++)
-            {
-                tmp1[kx] = 0;
-                tmp2[kx] = 0;
-            }
 
-            calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            calc_exponentials_lj(kxstart, kxend,
+                                 work->tmp1Storage.getPaddedArrayRef(),
+                                 work->tmp2Storage.getPaddedArrayRef(),
+                                 work->denomStorage.getPaddedArrayRef());
 
             for (kx = kxstart; kx < kxend; kx++)
             {
@@ -730,7 +723,7 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
             }
             else
             {
-                real *struct2 = denom;
+                real *struct2 = denom.data();
                 real  str2;
 
                 for (kx = kxstart; kx < kxend; kx++)
@@ -826,15 +819,11 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp1[kx]  = -factor*m2k;
                 tmp2[kx]  = sqrt(factor*m2k);
             }
-            /* Clear padding elements to avoid (harmless) fp exceptions */
-            const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);
-            for (; kx < kxendSimd; kx++)
-            {
-                tmp1[kx] = 0;
-                tmp2[kx] = 0;
-            }
 
-            calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            calc_exponentials_lj(kxstart, kxend,
+                                 work->tmp1Storage.getPaddedArrayRef(),
+                                 work->tmp2Storage.getPaddedArrayRef(),
+                                 work->denomStorage.getPaddedArrayRef());
 
             for (kx = kxstart; kx < kxend; kx++)
             {
