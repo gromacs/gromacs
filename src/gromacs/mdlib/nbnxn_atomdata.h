@@ -37,6 +37,7 @@
 #define _nbnxn_atomdata_h
 
 #include <cstdio>
+#include <gromacs/timing/wallcycle.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -44,6 +45,8 @@
 #include "gromacs/utility/real.h"
 
 struct t_mdatoms;
+
+thread_local extern gmx_wallcycle_t* wallCycle;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
@@ -108,7 +111,8 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
-                                     nbnxn_atomdata_t    *nbat);
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle_t     &wallCycle);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
@@ -119,5 +123,6 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);
+
 
 #endif
