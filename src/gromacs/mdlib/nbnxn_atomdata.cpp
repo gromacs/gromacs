@@ -1072,6 +1072,8 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
     }
 }
 
+thread_local gmx_wallcycle_t* wallCycle = nullptr;
+
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
@@ -1079,6 +1081,8 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat)
 {
+    PerformanceCounter myCounter(wallCycle, ewcNB_XF_BUF_OPS, ewcsNB_X_BUF_OPS);
+
     int g0 = 0, g1 = 0;
     int nth, th;
 

@@ -743,6 +743,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
+    wallCycle = &wcycle;
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -940,12 +942,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
                                         nbv->grp[eintLocal].nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
     if (bUseGPU)
@@ -976,12 +974,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * (in CPU format) as the non-local kernel call also
              * calculates the local - non-local interactions.
              */
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, TRUE, x,
                                             nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
         if (bNS)
@@ -1024,12 +1018,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_x(cr->dd, box, x);
             wallcycle_stop(wcycle, ewcMOVEX);
 
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
                                             nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
         if (bUseGPU && !bDiffKernels)
@@ -1463,6 +1453,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             checkPotentialEnergyValidity(enerd);
         }
     }
+
+    wallCycle = nullptr;
 }
 
 static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,

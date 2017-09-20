@@ -37,6 +37,7 @@
 #define _nbnxn_atomdata_h
 
 #include <cstdio>
+#include <gromacs/timing/wallcycle.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -44,6 +45,8 @@
 #include "gromacs/utility/real.h"
 
 struct t_mdatoms;
+
+thread_local extern gmx_wallcycle_t* wallCycle;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
@@ -119,5 +122,46 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);
+
+class PerformanceCounter
+{
+    gmx_wallcycle_t wallCycleTimer;
+    int mainTag;
+    int subTag;
+    bool isSubClockingOn;
+
+public:
+
+    PerformanceCounter(gmx_wallcycle_t* wcycle, int tag1, int tag2=-42)
+    {
+        wallCycleTimer = *wcycle;
+        mainTag = tag1;
+        subTag = tag2;
+
+        if (tag2 != -42)
+        {
+            isSubClockingOn = TRUE;
+            wallcycle_start(wallCycleTimer,mainTag);
+            wallcycle_sub_start(wallCycleTimer, subTag);
+        }
+        else // The case where sub-cycle clocking is not performed
+        {
+            wallcycle_start(wallCycleTimer,mainTag);
+        }
+    }
+
+    ~PerformanceCounter()
+    {
+        if (isSubClockingOn)
+        {
+            wallcycle_sub_stop(wallCycleTimer, subTag);
+            wallcycle_stop(wallCycleTimer, mainTag);
+        }
+        else
+        {
+            wallcycle_stop(wallCycleTimer, mainTag);
+        }
+    }
+};
 
 #endif
