@@ -62,6 +62,10 @@
 #include <unistd.h>
 #endif
 
+#if GMX_NATIVE_WINDOWS
+#include "windows.h"
+#endif
+
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -225,13 +229,18 @@ AlignedAllocationPolicy::free(void *p)
 // === PageAlignedAllocationPolicy
 
 //! Return a page size, from a sysconf query if available, or a default guess (4096 bytes).
+//! \todo Move this function into sysinfo.cpp where other OS-specific code/includes live
 static std::size_t getPageSize()
 {
-    long pageSize;
+    long        pageSize;
+#if GMX_NATIVE_WINDOWS
+    SYSTEM_INFO si;
+    GetNativeSystemInfo(&si);
+    pageSize = si.dwPageSize;
+#elif defined(_SC_PAGESIZE)
     /* Note that sysconf returns -1 on its error conditions, which we
        don't really need to check, nor can really handle at
        initialization time. */
-#if defined(_SC_PAGESIZE)
     pageSize = sysconf(_SC_PAGESIZE);
 #elif defined(_SC_PAGE_SIZE)
     pageSize = sysconf(_SC_PAGE_SIZE);
