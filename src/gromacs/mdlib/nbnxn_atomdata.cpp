@@ -1077,10 +1077,14 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
-                                     nbnxn_atomdata_t    *nbat)
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle_t &wallCycle)
 {
-    int g0 = 0, g1 = 0;
-    int nth, th;
+    PerformanceCounter myCounter(wallCycle, ewcNB_XF_BUF_OPS);
+    PerformanceSubCounter mySubCounter(wallCycle, ewcsNB_X_BUF_OPS);
+
+    int                g0 = 0, g1 = 0;
+    int                nth, th;
 
     switch (locality)
     {

@@ -940,12 +940,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
-                                        nbv->grp[eintLocal].nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                        nbv->grp[eintLocal].nbat, wcycle);
     }
 
     if (bUseGPU)
@@ -976,12 +972,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * (in CPU format) as the non-local kernel call also
              * calculates the local - non-local interactions.
              */
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, TRUE, x,
-                                            nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                            nbv->grp[eintNonlocal].nbat, wcycle);
         }
 
         if (bNS)
@@ -1024,12 +1016,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_x(cr->dd, box, x);
             wallcycle_stop(wcycle, ewcMOVEX);
 
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
-                                            nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                            nbv->grp[eintNonlocal].nbat, wcycle);
         }
 
         if (bUseGPU && !bDiffKernels)

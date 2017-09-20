@@ -117,4 +117,47 @@ void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
 
+class PerformanceCounter
+{
+    gmx_wallcycle_t *wallCycleTimer;
+    int             mainTag;
+
+public:
+
+    PerformanceCounter(gmx_wallcycle_t &wcycle, int tag)
+    {
+        wallCycleTimer = &wcycle;
+        mainTag        = tag;
+
+        wallcycle_start(*wallCycleTimer, mainTag);
+    }
+
+    ~PerformanceCounter()
+    {
+        wallcycle_stop(*wallCycleTimer, mainTag);
+    }
+};
+
+class PerformanceSubCounter
+{
+    gmx_wallcycle_t *wallCycleTimer;
+    int             subTag;
+
+public:
+
+    PerformanceSubCounter(gmx_wallcycle_t &wcycle, int tag)
+    {
+        wallCycleTimer = &wcycle;
+        subTag         = tag;
+
+        wallcycle_sub_start(*wallCycleTimer, subTag);
+    }
+
+    ~PerformanceSubCounter()
+    {
+        wallcycle_sub_stop(*wallCycleTimer, subTag);
+    }
+
+};
+
 #endif
