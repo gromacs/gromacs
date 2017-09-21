@@ -110,18 +110,20 @@ static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
             nbparam->vdwtype == evdwCuCUTCOMBLB);
 }
 
-/*! \brief Set up float texture object.
+/*! \brief Set up texture object for an array of type T.
  *
- * Set up texture object for float data and bind it to the device memory
- * \p devPtr points to.
+ * Set up texture object for an array of type T and bind it to the device memory
+ * \p d_ptr points to.
  *
+ * \tparam[in] T        Raw data type
  * \param[out] texObj   texture object to initialize
- * \param[in]  devPtr   pointer to device global memory to bind \p texObj to
+ * \param[in]  d_ptr    pointer to device global memory to bind \p texObj to
  * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
  */
-static void setup1DFloatTexture(cudaTextureObject_t &texObj,
-                                void                *devPtr,
-                                size_t               sizeInBytes)
+template <typename T>
+static void setup1DTexture(cudaTextureObject_t &texObj,
+                           void                *d_ptr,
+                           size_t               sizeInBytes)
 {
     assert(!c_disableCudaTextures);
 
@@ -130,11 +132,10 @@ static void setup1DFloatTexture(cudaTextureObject_t &texObj,
     cudaTextureDesc  td;
 
     memset(&rd, 0, sizeof(rd));
-    rd.resType                  = cudaResourceTypeLinear;
-    rd.res.linear.devPtr        = devPtr;
-    rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
-    rd.res.linear.desc.x        = 32;
-    rd.res.linear.sizeInBytes   = sizeInBytes;
+    rd.resType                = cudaResourceTypeLinear;
+    rd.res.linear.devPtr      = d_ptr;
+    rd.res.linear.desc        = cudaCreateChannelDesc<T>();
+    rd.res.linear.sizeInBytes = sizeInBytes;
 
     memset(&td, 0, sizeof(td));
     td.readMode                 = cudaReadModeElementType;
@@ -142,29 +143,30 @@ static void setup1DFloatTexture(cudaTextureObject_t &texObj,
     CU_RET_ERR(stat, "cudaCreateTextureObject failed");
 }
 
-/*! \brief Set up float texture reference.
+/*! \brief Set up texture reference for an array of type T.
  *
- * Set up texture object for float data and bind it to the device memory
- * \p devPtr points to.
+ * Set up texture object for an array of type T and bind it to the device memory
+ * \p d_ptr points to.
  *
+ * \tparam[in] T        Raw data type
  * \param[out] texObj   texture reference to initialize
- * \param[in]  devPtr   pointer to device global memory to bind \p texObj to
+ * \param[in]  d_ptr    pointer to device global memory to bind \p texObj to
  * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
  */
-static void setup1DFloatTexture(const struct texture<float, 1, cudaReadModeElementType> *texRef,
-                                const void                                              *devPtr,
-                                size_t                                                   sizeInBytes)
+template <typename T>
+static void setup1DTexture(const struct texture<T, 1, cudaReadModeElementType> *texRef,
+                           const void                                          *d_ptr,
+                           size_t                                              sizeInBytes)
 {
     assert(!c_disableCudaTextures);
 
     cudaError_t           stat;
     cudaChannelFormatDesc cd;
 
-    cd   = cudaCreateChannelDesc<float>();
-    stat = cudaBindTexture(NULL, texRef, devPtr, &cd, sizeInBytes);
+    cd   = cudaCreateChannelDesc<T>();
+    stat = cudaBindTexture(nullptr, texRef, d_ptr, &cd, sizeInBytes);
     CU_RET_ERR(stat, "cudaBindTexture failed");
 }
-
 
 /*! \brief Initialize parameter lookup table.
  *
@@ -172,37 +174,36 @@ static void setup1DFloatTexture(const struct texture<float, 1, cudaReadModeEleme
  * a texture to allocated device memory to be used for LJ/Ewald/... parameter
  * lookup.
  *
- * \param[out] devPtr    device pointer to the memory to be allocated
+ * \tparam[in] T         Raw data type
+ * \param[out] d_ptr     device pointer to the memory to be allocated
  * \param[out] texObj    texture object to be initialized
  * \param[out] texRef    texture reference to be initialized
- * \param[in]  hostPtr   pointer to the host memory to be uploaded to the device
- * \param[in]  numElem   number of elements in the hostPtr
+ * \param[in]  h_ptr     pointer to the host memory to be uploaded to the device
+ * \param[in]  numElem   number of elements in the h_ptr
  * \param[in]  devInfo   pointer to the info struct of the device in use
  */
-static void initParamLookupTable(float                    * &devPtr,
+template <typename T>
+static void initParamLookupTable(T                        * &d_ptr,
                                  cudaTextureObject_t       &texObj,
-                                 const struct texture<float, 1, cudaReadModeElementType> *texRef,
-                                 const float               *hostPtr,
+                                 const struct texture<T, 1, cudaReadModeElementType> *texRef,
+                                 const T                   *h_ptr,
                                  int                        numElem,
                                  const gmx_device_info_t   *devInfo)
 {
-    cudaError_t stat;
-
-    size_t      sizeInBytes = numElem*sizeof(*devPtr);
-
-    stat  = cudaMalloc((void **)&devPtr, sizeInBytes);
+    const size_t sizeInBytes = numElem * sizeof(*d_ptr);
+    cudaError_t  stat        = cudaMalloc((void **)&d_ptr, sizeInBytes);
     CU_RET_ERR(stat, "cudaMalloc failed in initParamLookupTable");
-    cu_copy_H2D(devPtr, (void *)hostPtr, sizeInBytes);
+    cu_copy_H2D(d_ptr, (void *)h_ptr, sizeInBytes);
 
     if (!c_disableCudaTextures)
     {
         if (use_texobj(devInfo))
         {
-            setup1DFloatTexture(texObj, devPtr, sizeInBytes);
+            setup1DTexture<T>(texObj, d_ptr, sizeInBytes);
         }
         else
         {
-            setup1DFloatTexture(texRef, devPtr, sizeInBytes);
+            setup1DTexture<T>(texRef, d_ptr, sizeInBytes);
         }
     }
 }
