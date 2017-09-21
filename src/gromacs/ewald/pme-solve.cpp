@@ -194,7 +194,7 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<SimdReal> d_aligned, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, SimdArrayRef<real> d_aligned, SimdArrayRef<real> r_aligned, SimdArrayRef<real> e_aligned)
 {
     {
         SimdReal              f_simd(f);
@@ -219,7 +219,7 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<
     GMX_UNUSED_VALUE(end);
 }
 #else
-gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<SimdReal> d, ArrayRef<SimdReal> r, ArrayRef<SimdReal> e)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, SimdArrayRef<real> d, SimdArrayRef<real> r, SimdArrayRef<real> e)
 {
     GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
     GMX_ASSERT(d.size() == e.size(), "d and e must have same size");
@@ -241,7 +241,7 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
+gmx_inline static void calc_exponentials_lj(int start, int end, SimdArrayRef<real> r_aligned, SimdArrayRef<real> factor_aligned, SimdArrayRef<real> d_aligned)
 {
     SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
@@ -267,7 +267,7 @@ gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<SimdRea
     GMX_UNUSED_VALUE(end);
 }
 #else
-gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<SimdReal> r, ArrayRef<SimdReal> tmp2, ArrayRef<SimdReal> d)
+gmx_inline static void calc_exponentials_lj(int start, int end, SimdArrayRef<real> r, SimdArrayRef<real> tmp2, SimdArrayRef<real> d)
 {
     int  kx;
     real mk;
