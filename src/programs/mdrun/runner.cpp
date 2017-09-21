@@ -1145,7 +1145,11 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        /* Now do whatever the user wants us to do (how flexible...) */
+        /* Now do whatever the user wants us to do (how flexible...)
+         *
+         * Note that the ownership of globalState is transferred here,
+         * so we no longer can not use globalState after return.
+         */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
                                      oenv,
                                      mdrunOptions,
@@ -1153,7 +1157,7 @@ int Mdrunner::mdrunner()
                                      mdModules.outputProvider(),
                                      inputrec, mtop,
                                      fcd,
-                                     globalState.get(),
+                                     std::move(globalState),
                                      &observablesHistory,
                                      mdatoms, nrnb, wcycle, fr,
                                      replExParams,

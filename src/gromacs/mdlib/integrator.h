@@ -42,6 +42,8 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
@@ -84,9 +86,9 @@ class MDLogger;
  * \param[in] constr              Constraint information
  * \param[in] outputProvider      Additional output provider
  * \param[in] inputrec            Input record with mdp options
- * \param[in] top_global          Molecular topology for the whole system
+ * \param[in] globalTopology      Molecular topology for the whole system
  * \param[in] fcd                 Force and constraint data
- * \param[in] state_global        The state (x, v, f, box etc.) of the whole system
+ * \param[in] globalState         The state (x, v, f, box etc.) of the whole system, note that the ownership is transferred
  * \param[in] observablesHistory  The observables statistics history
  * \param[in] mdatoms             Structure containing atom information
  * \param[in] nrnb                Accounting for floating point operations
@@ -103,8 +105,8 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              gmx::IMDOutputProvider *outputProvider,
                              t_inputrec *inputrec,
-                             gmx_mtop_t *top_global, t_fcdata *fcd,
-                             t_state *state_global,
+                             gmx_mtop_t *globalTopology, t_fcdata *fcd,
+                             std::unique_ptr<t_state> globalState,
                              ObservablesHistory *observablesHistory,
                              t_mdatoms *mdatoms,
                              t_nrnb *nrnb, gmx_wallcycle_t wcycle,

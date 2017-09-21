@@ -280,7 +280,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   t_inputrec *ir,
                   gmx_mtop_t *top_global,
                   t_fcdata *fcd,
-                  t_state *state_global,
+                  std::unique_ptr<t_state> state_global,
                   ObservablesHistory *observablesHistory,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -410,7 +410,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         /* Initialize essential dynamics sampling */
         ed = init_edsam(opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
                         top_global, ir, cr, constr,
-                        state_global, observablesHistory,
+                        state_global.get(), observablesHistory,
                         oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
@@ -418,12 +418,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         /* Initialize ion swapping code */
         init_swapcoords(fplog, ir, opt2fn_master("-swap", nfile, fnm, cr),
-                        top_global, state_global, observablesHistory, cr, oenv, mdrunOptions);
+                        top_global, state_global.get(), observablesHistory, cr, oenv, mdrunOptions);
     }
 
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
-            &t, &t0, state_global, lam0,
+            &t, &t0, state_global.get(), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, wcycle);
@@ -476,55 +476,71 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
+    /* Set up interactive MD (IMD) */
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
+             nfile, fnm, oenv, mdrunOptions);
+
     // Local state only becomes valid now.
     std::unique_ptr<t_state> stateInstance;
-    t_state *                state;
 
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
         stateInstance = std::unique_ptr<t_state>(new t_state);
-        state         = stateInstance.get();
-        dd_init_local_state(cr->dd, state_global, state);
+
+        dd_init_local_state(cr->dd, state_global.get(), stateInstance.get());
+
+        /* Distribute the charge groups over the nodes from the master node */
+        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
+                            state_global.get(), top_global, ir,
+                            stateInstance.get(), &f, mdatoms, top, fr,
+                            vsite, constr,
+                            nrnb, nullptr, FALSE);
+        shouldCheckNumberOfBondedInteractions = true;
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
+        state_change_natoms(state_global.get(), state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
         f.resize(state_global->natoms + 1);
-        /* Copy the pointer to the global state */
-        state = state_global;
+        /* Move the global state to the local state */
+        stateInstance = std::move(state_global);
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdatoms, vsite, shellfc);
-
-        update_realloc(upd, state->natoms);
     }
 
-    /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, oenv, mdrunOptions);
-
+    /* The global state is no longer used at this point.
+     * With domain decomposition we still need a container for i/o and
+     * global state redistribution, so we move the allocated memory.
+     * To avoid branching, especially for the rerun code, we point
+     * the container to the local state without domain decomposition.
+     *
+     * TODO: Reconsider use of container pointer without DD after
+     *       separation of the rerun code.
+     */
+    t_state                  *globalStateContainerPtr;
+    std::unique_ptr<t_state>  globalStateContainer;
     if (DOMAINDECOMP(cr))
     {
-        /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdatoms, top, fr,
-                            vsite, constr,
-                            nrnb, nullptr, FALSE);
-        shouldCheckNumberOfBondedInteractions = true;
-        update_realloc(upd, state->natoms);
+        globalStateContainer    = std::move(state_global);
+        globalStateContainerPtr = globalStateContainer.get();
+    }
+    else
+    {
+        globalStateContainerPtr = stateInstance.get();
     }
 
-    // NOTE: The global state is no longer used at this point.
-    // But state_global is still used as temporary storage space for writing
-    // the global state to file and potentially for replica exchange.
-    // (Global topology should persist.)
+    /* For convenience, set a pointer to the local state.
+     * Todo: rename to localState
+     */
+    t_state *state = stateInstance.get();
+
+    update_realloc(upd, state->natoms);
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
@@ -650,7 +666,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     if (continuationOptions.haveReadEkin)
     {
-        restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
+        restore_ekinstate_from_state(cr, ekind, &globalStateContainerPtr->ekinstate);
     }
 
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
@@ -933,7 +949,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 if (MASTER(cr))
                 {
-                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, globalStateContainerPtr);
                 }
             }
             else
@@ -961,7 +977,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph, &bRerunWarnNoV);
+            prepareRerunState(rerun_fr, globalStateContainerPtr, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph, &bRerunWarnNoV);
         }
 
         /* Stop Center of Mass motion */
@@ -1021,7 +1037,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 }
                 if (DOMAINDECOMP(cr) && bMasterState)
                 {
-                    dd_collect_state(cr->dd, state, state_global);
+                    dd_collect_state(cr->dd, state, globalStateContainerPtr);
                 }
             }
 
@@ -1030,7 +1046,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 /* Repartition the domain decomposition */
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
-                                    state_global, top_global, ir,
+                                    globalStateContainerPtr, top_global, ir,
                                     state, &f, mdatoms, top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
@@ -1316,10 +1332,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                do update the velocities and the tau_t. */
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, as_rvec_array(state->v.data()), mdatoms);
-            /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+            /* history is maintained in state->dfhist, but globalStateContainerPtr is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
-                copy_df_history(state_global->dfhist, state->dfhist);
+                copy_df_history(globalStateContainerPtr->dfhist, state->dfhist);
             }
         }
 
@@ -1328,7 +1344,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          * the update.
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                                 ir, state, state_global, observablesHistory,
+                                 ir, state, globalStateContainerPtr, observablesHistory,
                                  top_global, fr,
                                  outf, mdebin, ekind, &f,
                                  &nchkpt,
@@ -1680,7 +1696,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : nullptr,
-                                          state_global->dfhist, state->fep_state, ir->nstlog, step);
+                                          globalStateContainerPtr->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (bCalcEner)
             {
@@ -1748,7 +1764,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
             if (bNeedRepartition && DOMAINDECOMP(cr))
             {
-                dd_collect_state(cr->dd, state, state_global);
+                dd_collect_state(cr->dd, state, globalStateContainerPtr);
             }
         }
 
@@ -1757,14 +1773,14 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (bDoReplEx)
         {
             bExchanged = replica_exchange(fplog, cr, repl_ex,
-                                          state_global, enerd,
+                                          globalStateContainerPtr, enerd,
                                           state, step, t);
         }
 
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
             dd_partition_system(fplog, step, cr, TRUE, 1,
-                                state_global, top_global, ir,
+                                globalStateContainerPtr, top_global, ir,
                                 state, &f, mdatoms, top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
@@ -1794,7 +1810,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         if ( (membed != nullptr) && (!bLastStep) )
         {
-            rescale_membed(step_rel, membed, as_rvec_array(state_global->x.data()));
+            rescale_membed(step_rel, membed, as_rvec_array(globalStateContainerPtr->x.data()));
         }
 
         if (bRerunMD)
