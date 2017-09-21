@@ -326,7 +326,6 @@ static void fillin_ocl_structures(cl_nbparam_t        *nbp,
                                   cl_nbparam_params_t *nbparams_params)
 {
     nbparams_params->coulomb_tab_scale = nbp->coulomb_tab_scale;
-    nbparams_params->coulomb_tab_size  = nbp->coulomb_tab_size;
     nbparams_params->c_rf              = nbp->c_rf;
     nbparams_params->dispersion_shift  = nbp->dispersion_shift;
     nbparams_params->eeltype           = nbp->eeltype;

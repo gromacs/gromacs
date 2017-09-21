@@ -227,7 +227,6 @@ typedef struct cl_nbparam
     cl_mem                  nbfp_comb_climg2d; /**< nonbonded parameter table per atom type, 2*ntype elements                          */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    int                    coulomb_tab_size;    /**< table size (s.t. it fits in texture cache) */
     float                  coulomb_tab_scale;   /**< table scale/spacing                        */
     cl_mem                 coulomb_tab_climg2d; /**< pointer to the table in the device memory  */
 } cl_nbparam_t;
@@ -263,7 +262,6 @@ typedef struct cl_nbparam_params
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    int                    coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */
     float                  coulomb_tab_scale;  /**< table scale/spacing                        */
 } cl_nbparam_params_t;
 

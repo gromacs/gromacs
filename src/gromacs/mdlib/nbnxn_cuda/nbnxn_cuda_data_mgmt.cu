@@ -222,11 +222,10 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
         nbnxn_cuda_free_nbparam_table(nbp, dev_info);
     }
 
-    nbp->coulomb_tab_size  = ic->tabq_size;
     nbp->coulomb_tab_scale = ic->tabq_scale;
     initParamLookupTable(nbp->coulomb_tab, nbp->coulomb_tab_texobj,
                          &nbnxn_cuda_get_coulomb_tab_texref(),
-                         ic->tabq_coul_F, nbp->coulomb_tab_size, dev_info);
+                         ic->tabq_coul_F, ic->tabq_size, dev_info);
 }
 
 
@@ -902,7 +901,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
                 CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab_texref failed");
             }
         }
-        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
+        cu_free_buffered(nbparam->coulomb_tab);
     }
 }
 

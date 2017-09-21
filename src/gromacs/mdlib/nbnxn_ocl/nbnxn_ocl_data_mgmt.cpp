@@ -233,7 +233,6 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
     // TODO: handle errors, check clCreateBuffer flags
 
     nbp->coulomb_tab_climg2d  = coul_tab;
-    nbp->coulomb_tab_size     = ic->tabq_size;
     nbp->coulomb_tab_scale    = ic->tabq_scale;
 }
 
