@@ -37,6 +37,7 @@
  * implementing safe SIMD-ized access to vectors of basic types.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
  * \ingroup module_simd
  */
 // TODO eventually this will replace paddedvector.h
@@ -93,6 +94,29 @@ struct SimdMemoryTypeTraits<RVec> {
     static constexpr std::size_t s_packSize  = sizeof(ValueType) / sizeof(BaseType);
     //!@}
 };
+
+// TODO:
+// - Make this more complete like ArrayRef, possible by sharing code with ArrayRef
+// - Make const version. Possible by allowing T to be const (but should then probably be changed for ArrayRef too)
+template<typename T>
+class SimdArrayRef
+{
+    using SimdWidth = typename SimdTraits<T>::width;
+
+    public:
+        SimdArrayRef(std::vector<T, gmx::Allocator<T, gmx::AlignedAllocationPolicy> > &v)
+            : begin_((!v.empty()) ? &v[0] : nullptr),
+              end_((!v.empty()) ? &v[0] + v.size() : nullptr) {}
+        size_t size() const { return (end_ - begin_)/SimdWidth::value; }
+        SimdLoadProxyInternal<T> operator[](size_t n)
+        {
+            return load(begin_+n*SimdWidth::value);
+        }
+    private:
+        T*           begin_;
+        T*           end_;
+};
+
 
 /*! \libinternal \brief Class to maintain contiguous memory intended for use in
  * SIMD-ized code.
@@ -182,7 +206,7 @@ class SimdMemory
                v.resize(13) does not reallocate. This means that the
                new extent should be large enough for the padded
                storage for a vector whose size is new_extent. */
-            auto newSize = computePaddedSize(numElements);
+            auto newSize        = computePaddedSize(numElements);
             auto oldSize        = storage_.size();
             storage_.reserve(newSize);
             unpadded_end_ = storage_.data() + oldSize;
@@ -221,16 +245,16 @@ class SimdMemory
             return constArrayRefFromPointers<T>(storage_.data(), unpadded_end_);
         }
         //! Returns a view of the storage in SimdType, with any necessary padding.
-        ArrayRef<SimdType> getSimdArrayRef()
+        SimdArrayRef<T> getSimdArrayRef()
         {
-            // TODO Check codegen, maybe we care about performance
-            return arrayRefFromArray<SimdType>(reinterpret_cast<SimdType *>(storage_.data()), storage_.size() / s_simdWidth / s_packSize);
+            return storage_;
         }
-        //! Returns a const view of the storage in SimdType, with any necessary padding.
-        ConstArrayRef<SimdType> getSimdConstArrayRef() const
-        {
+        /* TODO
+           //! Returns a const view of the storage in SimdType, with any necessary padding.
+           ConstArrayRef<SimdType> getSimdConstArrayRef() const
+           {
             return constArrayRefFromArray<SimdType>(reinterpret_cast<const SimdType *>(storage_.data()), storage_.size() / s_simdWidth / s_packSize);
-        }
+            }*/
         //! Returns a view of the padding region of the storage in BaseTypes.
         ArrayRef<BaseType> getPaddingArrayRef()
         {
