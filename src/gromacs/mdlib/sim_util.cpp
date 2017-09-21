@@ -897,16 +897,18 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
     {
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+
         if (bNS)
         {
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     /* do local pair search */
@@ -955,11 +957,13 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             ddOpenBalanceRegionGpu(cr->dd);
         }
 
-        wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
-        /* launch local nonbonded F on GPU */
+        wallcycle_start(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        /* launch local nonbonded work on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1034,18 +1038,21 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         if (bUseGPU && !bDiffKernels)
         {
-            wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
-            /* launch non-local nonbonded F on GPU */
+            wallcycle_start(wcycle, ewcLAUNCH_GPU);
+            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            /* launch non-local nonbonded tasks on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
     }
 
     if (bUseGPU)
     {
         /* launch D2H copy-back F */
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
@@ -1053,7 +1060,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
                                  flags, eatLocal);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1340,7 +1348,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             }
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
 
             /* Is dynamic pair-list pruning activated? */
@@ -1365,7 +1374,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                                       numRollingParts);
                 }
             }
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
         else
         {
