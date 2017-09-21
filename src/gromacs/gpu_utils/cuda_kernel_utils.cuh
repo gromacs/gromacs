@@ -56,5 +56,26 @@ __device__ __forceinline__ T LDG(const T* ptr)
 #endif
 }
 
+//! General CUDA 1D texture global memory table loading routine
+template <typename T>
+__device__  __forceinline__
+T fetchTableValue(const T * __restrict__ gm_array,
+                  const texture<T, 1, cudaReadModeElementType> textureReference,
+                  const cudaTextureObject_t textureObject,
+                  const size_t elementIndex)
+{
+    T result;
+#if DISABLE_CUDA_TEXTURES
+    // Raw load
+    result = LDG<T>(gm_array + elementIndex);
+#elif (GMX_PTX_ARCH >= 300)
+    // Texture object load
+    result = tex1Dfetch<T>(textureObject, elementIndex);
+#else
+    // Texture reference load (CC 2.X)
+    result = tex1Dfetch(textureReference, elementIndex);
+#endif
+    return result;
+}
 
 #endif /* GMX_GPU_UTILS_CUDA_KERNEL_UTILS_CUH */

@@ -230,15 +230,9 @@ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
                                 int                typei,
                                 int                typej)
 {
-#if DISABLE_CUDA_TEXTURES
-    return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
-#else
-#ifdef USE_TEXOBJ
-    return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
-#endif /* DISABLE_CUDA_TEXTURES */
+    const float pi = fetchTableValue<float>(nbparam.nbfp_comb, nbfp_comb_texref, nbparam.nbfp_comb_texobj, 2*typei);
+    const float pj = fetchTableValue<float>(nbparam.nbfp_comb, nbfp_comb_texref, nbparam.nbfp_comb_texobj, 2*typej);
+    return pi*pj;
 }
 
 
