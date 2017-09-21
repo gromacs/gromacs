@@ -127,7 +127,7 @@ namespace gmx
 {
 
 /*! \brief Do test particle insertion.
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv,
                            const MdrunOptions &mdrunOptions,
@@ -152,7 +152,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               gmx::IMDOutputProvider *outputProvider,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
-              t_state *state_global,
+              std::unique_ptr<t_state> state_global,
               ObservablesHistory gmx_unused *observablesHistory,
               t_mdatoms *mdatoms,
               t_nrnb *nrnb, gmx_wallcycle_t wcycle,

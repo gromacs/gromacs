@@ -1145,7 +1145,12 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        /* Now do whatever the user wants us to do (how flexible...) */
+        /* Now do whatever the user wants us to do (how flexible...)
+         *
+         * Note that globalState is consumed here. If we would like
+         * to the global state after the return of the integrator call,
+         * the integrator should return a unique_ptr to the global state.
+         */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
                                      oenv,
                                      mdrunOptions,
@@ -1153,7 +1158,7 @@ int Mdrunner::mdrunner()
                                      mdModules.outputProvider(),
                                      inputrec, mtop,
                                      fcd,
-                                     globalState.get(),
+                                     std::move(globalState),
                                      &observablesHistory,
                                      mdatoms, nrnb, wcycle, fr,
                                      replExParams,
