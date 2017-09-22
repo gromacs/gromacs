@@ -249,7 +249,12 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
     }
 }
 
-bool use_texobj(const gmx_device_info_t *dev_info)
+/*! \brief Return whether texture objects are used on this device.
+ *
+ * \param[in]   pointer to the GPU device info structure to inspect for texture objects support
+ * \return      true if texture objects are used on this device
+ */
+static inline bool use_texobj(const gmx_device_info_t *dev_info)
 {
     assert(!c_disableCudaTextures);
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
@@ -340,5 +345,28 @@ void initParamLookupTable(T                        * &d_ptr,
     }
 }
 
-//! Add explicit instantiations of initParamLookupTable() here as needed
+template <typename T>
+void destroyParamLookupTable(T                      *d_ptr,
+                             cudaTextureObject_t       &texObj,
+                             const struct texture<T, 1, cudaReadModeElementType> *texRef,
+                             const gmx_device_info_t   *devInfo)
+{
+    if (!c_disableCudaTextures)
+    {
+        if (use_texobj(devInfo))
+        {
+            CU_RET_ERR(cudaDestroyTextureObject(texObj), "cudaDestroyTextureObject on texObj failed");
+        }
+        else
+        {
+            CU_RET_ERR(cudaUnbindTexture(texRef), "cudaUnbindTexture on texRef failed");
+        }
+    }
+    CU_RET_ERR(cudaFree(d_ptr), "cudaFree failed");
+}
+
+//! Add explicit instantiations of init/destroyParamLookupTable() here as needed.
+//! One should also verify that the result of cudaCreateChannelDesc<T>() during texture setup
+//! looks reasonable, when instantiating the templates for new types - just in case.
 template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const texture<float, 1, cudaReadModeElementType> *, const float *, int, const gmx_device_info_t *);
+template void destroyParamLookupTable<float>(float *, cudaTextureObject_t &, const texture<float, 1, cudaReadModeElementType> *, const gmx_device_info_t *);
