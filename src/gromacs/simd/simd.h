@@ -634,4 +634,8 @@ static inline bool isSimdAligned(const double *ptr)
 
 #endif // end of hack
 
+// The ArrayRef<SimdReal> specialization is always included, because compiler
+// errors are confusing when template specialization aren't available.
+#include "gromacs/simd/simd_memory.h"
+
 #endif // GMX_SIMD_SIMD_H
