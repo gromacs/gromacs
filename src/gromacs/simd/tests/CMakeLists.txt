@@ -41,6 +41,7 @@ gmx_add_unit_test(SimdUnitTests simd-test
                   simd_floatingpoint_util.cpp
                   simd_vector_operations.cpp
                   simd_math.cpp
+                  simd_memory.cpp
 		  simd_integer.cpp
                   simd4.cpp
                   simd4_floatingpoint.cpp
