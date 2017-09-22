@@ -74,10 +74,6 @@ static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
 static const int c_clSize          = c_nbnxnGpuClusterSize;
 
-/*! \brief True if the use of texture fetch in the CUDA kernels is disabled. */
-static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

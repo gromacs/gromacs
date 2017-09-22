@@ -165,4 +165,34 @@ float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
 /*! Waits for event end to complete and calculates the time between start and end. */
 int cu_wait_event_time(cudaEvent_t /*end*/, cudaEvent_t /*begin*/, float * /*time*/);
 
+/*! \brief Return whether texture objects are used on this device.
+ *
+ * \todo This should be static in cudautils.cu, as soon as texture destruction code is moved there as well
+ *
+ * \param[in]   pointer to the GPU device info structure to inspect for texture objects support
+ * \return      true if texture objects are used on this device
+ */
+bool use_texobj(const gmx_device_info_t *dev_info);
+
+/*! \brief Initialize parameter lookup table.
+ *
+ * Initializes device memory, copies data from host and binds
+ * a texture to allocated device memory to be used for parameter lookup.
+ *
+ * \tparam[in] T         Raw data type
+ * \param[out] d_ptr     device pointer to the memory to be allocated
+ * \param[out] texObj    texture object to be initialized
+ * \param[out] texRef    texture reference to be initialized
+ * \param[in]  h_ptr     pointer to the host memory to be uploaded to the device
+ * \param[in]  numElem   number of elements in the h_ptr
+ * \param[in]  devInfo   pointer to the info struct of the device in use
+ */
+template <typename T>
+void initParamLookupTable(T                        * &d_ptr,
+                          cudaTextureObject_t       &texObj,
+                          const struct texture<T, 1, cudaReadModeElementType> *texRef,
+                          const T                   *h_ptr,
+                          int                        numElem,
+                          const gmx_device_info_t   *devInfo);
+
 #endif
