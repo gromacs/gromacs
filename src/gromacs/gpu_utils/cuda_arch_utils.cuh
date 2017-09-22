@@ -150,6 +150,10 @@ T gmx_shfl_down_sync(const unsigned int activeMask,
 #define DISABLE_CUDA_TEXTURES 0
 #endif
 
+/*! \brief True if the use of texture fetch in the CUDA kernels is disabled. */
+static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
+
+
 /* CUDA architecture technical characteristics. Needs macros because it is used
  * in the __launch_bounds__ function qualifiers and might need it in preprocessor
  * conditionals.
