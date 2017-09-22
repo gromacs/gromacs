@@ -772,26 +772,10 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
                                           const gmx_device_info_t *dev_info)
 {
-    cudaError_t stat;
-
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        if (!c_disableCudaTextures)
-        {
-            /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-            if (use_texobj(dev_info))
-            {
-                stat = cudaDestroyTextureObject(nbparam->coulomb_tab_texobj);
-                CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
-            }
-            else
-            {
-                GMX_UNUSED_VALUE(dev_info);
-                stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
-                CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab_texref failed");
-            }
-        }
-        cu_free_buffered(nbparam->coulomb_tab);
+        destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj,
+                                &nbnxn_cuda_get_coulomb_tab_texref(), dev_info);
     }
 }
 
@@ -868,40 +852,15 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     if (!useLjCombRule(nb->nbparam))
     {
-        if (!c_disableCudaTextures)
-        {
-            /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-            if (use_texobj(nb->dev_info))
-            {
-                stat = cudaDestroyTextureObject(nbparam->nbfp_texobj);
-                CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_texobj failed");
-            }
-            else
-            {
-                stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
-                CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_texref failed");
-            }
-        }
-        cu_free_buffered(nbparam->nbfp);
+        destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj,
+                                &nbnxn_cuda_get_nbfp_texref(), nb->dev_info);
+
     }
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-        if (!c_disableCudaTextures)
-        {
-            /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-            if (use_texobj(nb->dev_info))
-            {
-                stat = cudaDestroyTextureObject(nbparam->nbfp_comb_texobj);
-                CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_comb_texobj failed");
-            }
-            else
-            {
-                stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_comb_texref());
-                CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_comb_texref failed");
-            }
-        }
-        cu_free_buffered(nbparam->nbfp_comb);
+        destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj,
+                                &nbnxn_cuda_get_nbfp_comb_texref(), nb->dev_info);
     }
 
     stat = cudaFree(atdat->shift_vec);
