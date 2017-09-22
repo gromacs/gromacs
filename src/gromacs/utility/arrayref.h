@@ -97,6 +97,10 @@ struct EmptyArrayRef {};
  * Attempting to create a non-const ArrayRef of a const vector/array will result
  * in a compiler error in the respective constructor.
  *
+ * For SIMD types there is template specialization available
+ * (e.g. ArrayRef<SimdReal>) in gromacs/simd/simd_memory.h which should have
+ * the same functionality as much as possible.
+ *
  * \todo
  * This class is not complete. There are likely also methods missing (not
  * required for current usage).
