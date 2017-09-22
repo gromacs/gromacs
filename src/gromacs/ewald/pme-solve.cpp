@@ -47,6 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -219,30 +220,33 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
+gmx_inline static void calc_exponentials_q(int, int, real f, ArrayRef<const SimdReal> d_aligned, ArrayRef<const SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
 {
     {
         SimdReal              f_simd(f);
         SimdReal              tmp_d1, tmp_r, tmp_e;
-        int                   kx;
 
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
+        GMX_ASSERT(d_aligned.size() == r_aligned.size(), "d and r must have same size");
+        GMX_ASSERT(d_aligned.size() == e_aligned.size(), "d and e must have same size");
+        for (size_t kx = 0; kx != d_aligned.size(); ++kx)
         {
-            tmp_d1   = load(d_aligned+kx);
-            tmp_r    = load(r_aligned+kx);
-            tmp_r    = gmx::exp(tmp_r);
-            tmp_e    = f_simd / tmp_d1;
-            tmp_e    = tmp_e * tmp_r;
-            store(e_aligned+kx, tmp_e);
+            tmp_d1        = d_aligned[kx];
+            tmp_r         = r_aligned[kx];
+            tmp_r         = gmx::exp(tmp_r);
+            tmp_e         = f_simd / tmp_d1;
+            tmp_e         = tmp_e * tmp_r;
+            e_aligned[kx] = tmp_e;
         }
     }
 }
 #else
-gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, real *r, real *e)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<real> d, ArrayRef<real> r, ArrayRef<real> e)
 {
+    GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
+    GMX_ASSERT(d.size() == e.size(), "d and e must have same size");
     int kx;
     for (kx = start; kx < end; kx++)
     {
@@ -261,32 +265,36 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, 
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
+gmx_inline static void calc_exponentials_lj(int, int, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
 {
     SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
-    int                   kx;
-    for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
+
+    GMX_ASSERT(d_aligned.size() == r_aligned.size(), "d and r must have same size");
+    GMX_ASSERT(d_aligned.size() == factor_aligned.size(), "d and factor must have same size");
+    for (size_t kx = 0; kx != d_aligned.size(); ++kx)
     {
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = load(d_aligned+kx);
-        d_inv = SimdReal(1.0) / tmp_d;
-        store(d_aligned+kx, d_inv);
-        tmp_r = load(r_aligned+kx);
-        tmp_r = gmx::exp(tmp_r);
-        store(r_aligned+kx, tmp_r);
-        tmp_mk  = load(factor_aligned+kx);
-        tmp_fac = sqr_PI * tmp_mk * erfc(tmp_mk);
-        store(factor_aligned+kx, tmp_fac);
+        tmp_d              = d_aligned[kx];
+        d_inv              = SimdReal(1.0) / tmp_d;
+        d_aligned[kx]      = d_inv;
+        tmp_r              = r_aligned[kx];
+        tmp_r              = gmx::exp(tmp_r);
+        r_aligned[kx]      = tmp_r;
+        tmp_mk             = factor_aligned[kx];
+        tmp_fac            = sqr_PI * tmp_mk * erfc(tmp_mk);
+        factor_aligned[kx] = tmp_fac;
     }
 }
 #else
-gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *tmp2, real *d)
+gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<real> r, ArrayRef<real> tmp2, ArrayRef<real> d)
 {
     int  kx;
     real mk;
+    GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
+    GMX_ASSERT(d.size() == tmp2.size(), "d and tmp2 must have same size");
     for (kx = start; kx < end; kx++)
     {
         d[kx] = 1.0/d[kx];
@@ -303,6 +311,12 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
         tmp2[kx] = sqrt(M_PI)*mk*std::erfc(mk);
     }
 }
+#endif
+
+#if defined PME_SIMD_SOLVE
+using PME_T = SimdReal;
+#else
+using PME_T = real;
 #endif
 
 int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
@@ -458,7 +472,10 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 m2inv[kx] = 1.0/m2[kx];
             }
 
-            calc_exponentials_q(kxstart, kxend, elfac, denom, tmp1, eterm);
+            calc_exponentials_q(kxstart, kxend, elfac,
+                                ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                ArrayRef<PME_T>(eterm, eterm+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
 
             for (kx = kxstart; kx < kxend; kx++, p0++)
             {
@@ -520,7 +537,11 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 tmp1[kx]  = -factor*m2k;
             }
 
-            calc_exponentials_q(kxstart, kxend, elfac, denom, tmp1, eterm);
+            calc_exponentials_q(kxstart, kxend, elfac,
+                                ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                ArrayRef<PME_T>(eterm, eterm+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
+
 
             for (kx = kxstart; kx < kxend; kx++, p0++)
             {
@@ -694,7 +715,10 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp2[kx] = 0;
             }
 
-            calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            calc_exponentials_lj(kxstart, kxend,
+                                 ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                 ArrayRef<PME_T>(tmp2, tmp2+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                 ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
 
             for (kx = kxstart; kx < kxend; kx++)
             {
@@ -834,7 +858,10 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp2[kx] = 0;
             }
 
-            calc_exponentials_lj(kxstart, kxend, tmp1, tmp2, denom);
+            calc_exponentials_lj(kxstart, kxend,
+                                 ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                 ArrayRef<PME_T>(tmp2, tmp2+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                 ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
 
             for (kx = kxstart; kx < kxend; kx++)
             {
