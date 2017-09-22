@@ -204,8 +204,8 @@ class SimdTest : public SimdBaseTest
          * reference element.
          */
         ::testing::AssertionResult
-        compareSimdRealEq(const char * refExpr, const char * tstExpr,
-                          const SimdReal ref, const SimdReal tst);
+        compareSimdEq(const char * refExpr, const char * tstExpr,
+                      const SimdReal ref, const SimdReal tst);
 
         /*! \brief Compare two 32-bit integer SIMD variables.
          *
@@ -220,8 +220,8 @@ class SimdTest : public SimdBaseTest
          * in the SIMD variable tst is identical to the corresponding reference element.
          */
         ::testing::AssertionResult
-        compareSimdInt32(const char * refExpr, const char *  tstExpr,
-                         const SimdInt32 ref, const SimdInt32 tst);
+        compareSimdEq(const char * refExpr, const char *  tstExpr,
+                      const SimdInt32 ref, const SimdInt32 tst);
 #endif
 };
 
@@ -256,7 +256,10 @@ SimdReal   setSimdRealFrom3R(real r0, real r1, real r2);
 SimdReal   setSimdRealFrom1R(real value);
 
 /*! \brief Test if a SIMD real is bitwise identical to reference SIMD value. */
-#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdRealEq, ref, tst)
+#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
+
+/*! \brief Test if a SIMD is bitwise identical to reference SIMD value. */
+#define GMX_EXPECT_SIMD_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
 
 /*! \brief Test if a SIMD real is within tolerance of reference SIMD value. */
 #define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealUlp, ref, tst)
@@ -295,7 +298,7 @@ SimdInt32   setSimdIntFrom1I(int value);
  * If the reference argument is a scalar integer it will be expanded into
  * the width of the SIMD register and tested against all elements.
  */
-#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
+#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdEq, ref, tst)
 
 #endif  // GMX_SIMD_HAVE_REAL
 
