@@ -190,7 +190,7 @@ static void initParamLookupTable(T                        * &d_ptr,
                                  int                        numElem,
                                  const gmx_device_info_t   *devInfo)
 {
-    const size_t sizeInBytes = numElem * sizeof(*d_ptr);
+    const size_t sizeInBytes = std::max(numElem/10, 5) * sizeof(*d_ptr);
     cudaError_t  stat        = cudaMalloc((void **)&d_ptr, sizeInBytes);
     CU_RET_ERR(stat, "cudaMalloc failed in initParamLookupTable");
     cu_copy_H2D(d_ptr, (void *)h_ptr, sizeInBytes);
