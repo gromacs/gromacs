@@ -418,21 +418,21 @@ struct SimdTraits<double>
 template<typename T>
 struct SimdTraits<const T> : public SimdTraits<T> {};
 
-/*! \name High-level SIMD proxy objects to disambiguate load/set operations
+/*! \name High-level SIMD proxy/reference objects to disambiguate load/set operations
  * \{
  */
 template <typename T> //can be either float/double/int, each const or non-const
-class SimdLoadProxyInternal;
+class SimdReference;
 
 template<typename T>
-static inline const SimdLoadProxyInternal<T> gmx_simdcall
+static inline const SimdReference<T> gmx_simdcall
 load(T *m);
 
 template <typename T, size_t N>
-static inline const SimdLoadProxyInternal<const T> gmx_simdcall
+static inline const SimdReference<const T> gmx_simdcall
 load(const AlignedArray<T, N> &m);
 
-/*! \libinternal \brief Proxy object to enable load() for SIMD and equivalent basic type
+/*! \libinternal \brief Reference object to enable load() for SIMD and equivalent basic type
  *
  * This object is returned by the load() function that takes a single pointer
  * to a float/double. When the result is assigned to either SimdFloat/Double or float/double/int,
@@ -445,7 +445,7 @@ load(const AlignedArray<T, N> &m);
  * so that only the load function can construct it.
  */
 template <typename T>
-class SimdLoadProxyInternal
+class SimdReference
 {
     template<typename U>
     using TIsInt = std::is_same<std::int32_t, typename std::remove_const<U>::type>;
@@ -453,44 +453,71 @@ class SimdLoadProxyInternal
     public:
         //! \brief Conversion method that will execute load of scalar basic type
         operator T() const { return *m_; }
+
         //! \brief Conversion method that will execute load of SimdFloat/Double
         template<typename U = T>  //Always U=T. Indirection needed for SFINAE
                                   //Disabled if type doesn't exist (unsupported or int)
         operator typename SimdTraits<U>::type() const { return simdLoad(m_); }
 
+        //! \brief Assignment operator that will execute store for scalar
+        SimdReference operator=(T o)
+        {
+            *m_ = o;
+            return *this;
+        }
+
+        //! \brief Assignment operator that will execute store for SIMD
+        template<typename U = T>
+        SimdReference operator=(typename SimdTraits<U>::type o)
+        {
+            store(m_, o);
+            return *this;
+        }
 #if GMX_SIMD_HAVE_FLOAT
         //! \brief Conversion method that will execute load of SimdFInt32
         template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
         operator SimdFInt32() const { return simdLoadFI(m_); }
+
+        //! \brief Assignment operator that will execute store
+        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
+        SimdReference operator=(SimdFInt32 o)
+        {
+            store(m_, o);
+            return *this;
+        }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //! \brief Conversion method that will execute load of SimdDInt32
         template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
         operator SimdDInt32() const { return simdLoadDI(m_); }
-#endif
 
+        //! \brief Assignment operator that will execute store
+        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
+        SimdReference operator=(SimdDInt32 o)
+        {
+            store(m_, o);
+            return *this;
+        }
+#endif
     private:
         //! \brief Private constructor can only be called from load()
-        SimdLoadProxyInternal(T *m) : m_(m) {}
+        SimdReference(T *m) : m_(m) {}
 
         template<typename U>
-        friend const SimdLoadProxyInternal<U> gmx_simdcall
+        friend const SimdReference<U> gmx_simdcall
         load(U *m);
         template <typename U, size_t N>
-        friend const SimdLoadProxyInternal<const U> gmx_simdcall
+        friend const SimdReference<const U> gmx_simdcall
         load(const AlignedArray<U, N> &m);
 
         T* const m_; //!< The pointer used to load memory
 };
 
-/*! \brief Load function that returns proxy object for SimdFloat/Double/Int and basic type
- *
- * \param m Pointer to load memory
- * \return Proxy object that will call the actual load for either SimdFloat/Double/Int
+/*! \brief Load function that returns reference object that will call the actual load for either SimdFloat/Double/Int
  *         or basic scalar type when you assign it and the conversion method is called.
  */
 template<typename T>
-static inline const SimdLoadProxyInternal<T> gmx_simdcall
+static inline const SimdReference<T> gmx_simdcall
 load(T *m)
 {
     return {
@@ -499,7 +526,7 @@ load(T *m)
 }
 
 template <typename T, size_t N>
-static inline const SimdLoadProxyInternal<const T> gmx_simdcall
+static inline const SimdReference<const T> gmx_simdcall
 load(const AlignedArray<T, N> &m)
 {
     return {
@@ -508,13 +535,13 @@ load(const AlignedArray<T, N> &m)
 }
 
 template <typename T> //can be either float/double/int, each const or non-const
-class SimdLoadUProxyInternal;
+class SimdUReference;
 
 template<typename T>
-static inline const SimdLoadUProxyInternal<T> gmx_simdcall
+static inline const SimdUReference<T> gmx_simdcall
 loadU(T *m);
 
-/*! \libinternal \brief Proxy object to enable loadU() for SIMD and equivalent basic type
+/*! \libinternal \brief Reference object to enable loadU() for SIMD and equivalent basic type
  *
  * This object is returned by the loadU() function that takes a single pointer
  * to a float/double. When the result is assigned to either SimdFloat/Double or float/double/int,
@@ -527,7 +554,7 @@ loadU(T *m);
  * so that only the load function can construct it.
  */
 template <typename T>
-class SimdLoadUProxyInternal
+class SimdUReference
 {
     template<typename U>
     using TIsInt = std::is_same<std::int32_t, typename std::remove_const<U>::type>;
@@ -535,41 +562,73 @@ class SimdLoadUProxyInternal
     public:
         //! \brief Conversion method that will execute loadU of scalar basic type
         operator T() const { return *m_; }
+
         //! \brief Conversion method that will execute loadU of SimdFloat/Double
         template<typename U = T>  //Always U=T. Indirection needed for SFINAE.
                                   //Disabled if type doesn't exist (unsupported or int)
         operator typename SimdTraits<U>::type() const { return simdLoadU(m_); }
 
+        //! \brief Assignment operator that will execute store for scalar
+        SimdUReference operator=(T o)
+        {
+            *m_ = o;
+            return *this;
+        }
+
+        //! \brief Assignment operator that will execute unaligned store for SIMD
+        template<typename U = T>
+        SimdUReference operator=(typename SimdTraits<U>::type o)
+        {
+            storeU(m_, o);
+            return *this;
+        }
+
 #if GMX_SIMD_HAVE_FLOAT
         //! \brief Conversion method that will execute loadU of SimdFInt32
         template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
         operator SimdFInt32() const { return simdLoadUFI(m_); }
+
+        //! \brief Assignment operator that will execute unaligned store
+        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
+        SimdUReference operator=(SimdFInt32 o)
+        {
+            storeU(m_, o);
+            return *this;
+        }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //! \brief Conversion method that will execute loadU of SimdDInt32
         template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
         operator SimdDInt32() const { return simdLoadUDI(m_); }
+
+        //! \brief Assignment operator that will execute unaligned store
+        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
+        SimdUReference operator=(SimdDInt32 o)
+        {
+            storeU(m_, o);
+            return *this;
+        }
 #endif
 
     private:
         //! \brief Private constructor can only be called from loadU()
-        SimdLoadUProxyInternal(T *m) : m_(m) {}
+        SimdUReference(T *m) : m_(m) {}
 
         template<typename U>
-        friend const SimdLoadUProxyInternal<U> gmx_simdcall
+        friend const SimdUReference<U> gmx_simdcall
         loadU(U *m);
 
         T* const m_; //!< The pointer used to load memory
 };
 
-/*! \brief LoadU function that returns proxy object for SimdFloat/Double/Int and basic type
+/*! \brief LoadU function that returns reference object for SimdFloat/Double/Int and basic type
  *
  * \param m Pointer to load memory
- * \return Proxy object that will call the actual unaligned load for either SimdFloat/Double/Int
+ * \return Reference object that will call the actual unaligned load for either SimdFloat/Double/Int
  *         or basic scalar type when you assign it and the conversion method is called.
  */
 template<typename T>
-static inline const SimdLoadUProxyInternal<T> gmx_simdcall
+static inline const SimdUReference<T> gmx_simdcall
 loadU(T *m)
 {
     return {
