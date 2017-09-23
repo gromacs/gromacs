@@ -193,6 +193,78 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
+/*! \brief Copy the state from \p rerunFrame to \p globalState and, if requested, construct vsites
+ *
+ * \param[in]     rerunFrame      The trajectory frame to compute energy/forces for
+ * \param[in,out] globalState     The global state container
+ * \param[in]     constructVsites When true, vsite coordinates are constructed
+ * \param[in]     vsite           Vsite setup, can be nullptr when \p constructVsites = false
+ * \param[in]     idef            Topology parameters, used for constructing vsites
+ * \param[in]     timeStep        Time step, used for constructing vsites
+ * \param[in]     forceRec        Force record, used for constructing vsites
+ * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
+ * \param[in,out] warnWhenNoV     When true, issue a warning when no velocities are present in \p rerunFrame; is set to false when a warning was issued
+ */
+static void prepareRerunState(const t_trxframe  &rerunFrame,
+                              t_state           *globalState,
+                              bool               constructVsites,
+                              const gmx_vsite_t *vsite,
+                              const t_idef      &idef,
+                              double             timeStep,
+                              const t_forcerec  &forceRec,
+                              t_graph           *graph,
+                              gmx_bool          *warnWhenNoV)
+{
+    for (int i = 0; i < globalState->natoms; i++)
+    {
+        copy_rvec(rerunFrame.x[i], globalState->x[i]);
+    }
+    if (rerunFrame.bV)
+    {
+        for (int i = 0; i < globalState->natoms; i++)
+        {
+            copy_rvec(rerunFrame.v[i], globalState->v[i]);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < globalState->natoms; i++)
+        {
+            clear_rvec(globalState->v[i]);
+        }
+        if (*warnWhenNoV)
+        {
+            fprintf(stderr, "\nWARNING: Some frames do not contain velocities.\n"
+                    "         Ekin, temperature and pressure are incorrect,\n"
+                    "         the virial will be incorrect when constraints are present.\n"
+                    "\n");
+            *warnWhenNoV = FALSE;
+        }
+    }
+    copy_mat(rerunFrame.box, globalState->box);
+
+    if (constructVsites)
+    {
+        GMX_ASSERT(vsite, "Need valid vsite for constructing vsites");
+
+        if (graph)
+        {
+            /* Following is necessary because the graph may get out of sync
+             * with the coordinates if we only have every N'th coordinate set
+             */
+            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, as_rvec_array(globalState->x.data()));
+            shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+        }
+        construct_vsites(vsite, as_rvec_array(globalState->x.data()), timeStep, as_rvec_array(globalState->v.data()),
+                         idef.iparams, idef.il,
+                         forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
+        if (graph)
+        {
+            unshift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
+        }
+    }
+}
+
 /*! \libinternal
     \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
@@ -893,63 +965,14 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             update_annealing_target_temp(ir, t, upd);
         }
 
-        if (bRerunMD)
+        if (bRerunMD && MASTER(cr))
         {
-            if (!DOMAINDECOMP(cr) || MASTER(cr))
+            const bool constructVsites = (vsite && mdrunOptions.rerunConstructVsites);
+            if (constructVsites && DOMAINDECOMP(cr))
             {
-                for (i = 0; i < state_global->natoms; i++)
-                {
-                    copy_rvec(rerun_fr.x[i], state_global->x[i]);
-                }
-                if (rerun_fr.bV)
-                {
-                    for (i = 0; i < state_global->natoms; i++)
-                    {
-                        copy_rvec(rerun_fr.v[i], state_global->v[i]);
-                    }
-                }
-                else
-                {
-                    for (i = 0; i < state_global->natoms; i++)
-                    {
-                        clear_rvec(state_global->v[i]);
-                    }
-                    if (bRerunWarnNoV)
-                    {
-                        fprintf(stderr, "\nWARNING: Some frames do not contain velocities.\n"
-                                "         Ekin, temperature and pressure are incorrect,\n"
-                                "         the virial will be incorrect when constraints are present.\n"
-                                "\n");
-                        bRerunWarnNoV = FALSE;
-                    }
-                }
-                copy_mat(rerun_fr.box, state_global->box);
+                gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
             }
-
-            if (vsite && mdrunOptions.rerunConstructVsites)
-            {
-                if (DOMAINDECOMP(cr))
-                {
-                    gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
-                }
-                GMX_RELEASE_ASSERT(state == state_global, "With rerun and vsite construction the local state pointer should point to the global state");
-
-                if (graph)
-                {
-                    /* Following is necessary because the graph may get out of sync
-                     * with the coordinates if we only have every N'th coordinate set
-                     */
-                    mk_mshift(fplog, graph, fr->ePBC, state->box, as_rvec_array(state->x.data()));
-                    shift_self(graph, state->box, as_rvec_array(state->x.data()));
-                }
-                construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
-                                 top->idef.iparams, top->idef.il,
-                                 fr->ePBC, fr->bMolPBC, cr, state->box);
-                if (graph)
-                {
-                    unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-                }
-            }
+            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph, &bRerunWarnNoV);
         }
 
         /* Stop Center of Mass motion */
