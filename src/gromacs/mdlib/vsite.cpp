@@ -620,7 +620,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
         ivec null_ivec;
         clear_ivec(null_ivec);
         pbc_null = set_pbc_dd(&pbc, ePBC,
-                              DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+                              bDomDec ? cr->dd->nc : null_ivec,
                               FALSE, box);
     }
     else
@@ -1575,22 +1575,23 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
                     t_commrec *cr)
 {
-    t_pbc pbc, *pbc_null;
+    const bool useDomdec = (cr && DOMAINDECOMP(cr));
+    t_pbc      pbc, *pbc_null;
 
     /* We only need to do pbc when we have inter-cg vsites */
-    if ((DOMAINDECOMP(cr) || bMolPBC) && vsite->n_intercg_vsite)
+    if ((useDomdec || bMolPBC) && vsite->n_intercg_vsite)
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : nullptr, FALSE, box);
     }
     else
     {
         pbc_null = nullptr;
     }
 
-    if (DOMAINDECOMP(cr))
+    if (useDomdec)
     {
         dd_clear_f_vsites(cr->dd, f);
     }
@@ -1744,7 +1745,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (useDomdec)
     {
         dd_move_f_vsites(cr->dd, f, fshift);
     }
@@ -1987,7 +1988,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
     /* If we don't have charge groups, the vsite follows its own pbc */
     if (!bSerial_NoPBC &&
         vsite->bHaveChargeGroups &&
-        vsite->n_intercg_vsite > 0 && DOMAINDECOMP(cr))
+        vsite->n_intercg_vsite > 0 && cr && DOMAINDECOMP(cr))
     {
         vsite->nvsite_pbc_molt = mtop->nmoltype;
         snew(vsite->vsite_pbc_molt, vsite->nvsite_pbc_molt);
@@ -2555,6 +2556,6 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
         }
 
         split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                  md, !DOMAINDECOMP(cr), vsite);
+                                  md, !(cr && DOMAINDECOMP(cr)), vsite);
     }
 }
