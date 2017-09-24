@@ -112,11 +112,11 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
              * We only need to do the thread division here.
              */
             split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                      mdatoms, FALSE, vsite);
+                                      mdatoms, vsite);
         }
         else
         {
-            set_vsite_top(vsite, top, mdatoms, cr);
+            set_vsite_top(vsite, top, mdatoms);
         }
     }
 
