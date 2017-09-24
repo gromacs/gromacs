@@ -984,7 +984,7 @@ int Mdrunner::mdrunner()
         mdatoms = init_mdatoms(fplog, mtop, inputrec->efep != efepNO);
 
         /* Initialize the virtual site communication */
-        vsite = init_vsite(mtop, cr, FALSE);
+        vsite = initVsite(*mtop, cr);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -994,11 +994,10 @@ int Mdrunner::mdrunner()
         if (!inputrec->bContinuation && MASTER(cr) &&
             !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
         {
-            rvec *xGlobal = as_rvec_array(globalState->x.data());
-
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
             {
+                rvec *xGlobal = as_rvec_array(globalState->x.data());
                 do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, xGlobal);
             }
             if (vsite)
@@ -1007,7 +1006,7 @@ int Mdrunner::mdrunner()
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(vsite, mtop, xGlobal);
+                constructVsitesGlobal(*mtop, globalState->x);
             }
         }
 

@@ -86,7 +86,7 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
     }
 }
 
-void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
+void dd_move_x_vsites(gmx_domdec_t *dd, const matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -62,30 +63,38 @@ typedef struct gmx_vsite_t {
     struct VsiteThread **tData;                /* Thread local vsites and work structs    */
     int                 *taskIndex;            /* Work array                              */
     int                  taskIndexNalloc;      /* Size of taskIndex                       */
+    bool                 useDomdec;            /* Tells whether we use domain decomposition with more than 1 DD rank */
+
 } gmx_vsite_t;
 
+/*! \brief Create positions of vsite atoms based for the local system
+ *
+ * \param[in]     vsite    The vsite struct, when nullptr is passed, no MPI and no multi-threading is used
+ * \param[in,out] x        The coordinates
+ * \param[in]     dt       The time step
+ * \param[in,out] v        When != nullptr, velocities for vsites are set as displacement/dt
+ * \param[in]     ip       Interaction parameters
+ * \param[in]     ilist    The interaction list
+ * \param[in]     ePBC     The type of periodic boundary conditions
+ * \param[in]     bMolPBC  When true, molecules are broken over PBC
+ * \param[in]     cr       The communication record
+ * \param[in]     box      The box
+ */
 void construct_vsites(const gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec v[],
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      t_commrec *cr, matrix box);
-/* Create positions of vsite atoms based on surrounding atoms
- * for the local system.
- * If v is passed, the velocities of the vsites will be calculated
- * as the new positions minus the old positions divided by dt,
- * thus v should only be passed when the coordinates have been
- * updated with a full time step.
- * Note that velocitis of vsites are completely irrelevant
- * for the integration, they are only useful for analysis.
- */
+                      t_commrec *cr,
+                      const matrix box);
 
-void construct_vsites_mtop(gmx_vsite_t *vsite,
-                           gmx_mtop_t *mtop, rvec x[]);
-/* Create positions of vsite atoms based on surrounding atoms
- * for the whole system.
- * This function assumes that all molecules are whole.
+/*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
+ *
+ * \param[in]     mtop  The global topology
+ * \param[in,out] x     The global coordinates
  */
+void constructVsitesGlobal(const gmx_mtop_t         &mtop,
+                           gmx::ArrayRef<gmx::RVec>  x);
 
 void spread_vsite_f(const gmx_vsite_t *vsite,
                     const rvec x[],
@@ -105,26 +114,26 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
 int count_intercg_vsites(const gmx_mtop_t *mtop);
 /* Returns the number of virtual sites that cross charge groups */
 
-gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
-                        gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
- * returns NULL when there are no virtual sites.
- * bSerial_NoPBC is to generate a simple vsite setup to be
- * used only serial (no MPI or thread parallelization) and without pbc;
- * this is useful for correction vsites of the initial configuration.
+ *
+ * \param[in] mtop  The global topology
+ * \param[in] cr    The communication record
+ * \returns A valid vsite struct or nullptr when there are no virtual sites
  */
+gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
+                       t_commrec        *cr);
 
 void split_vsites_over_threads(const t_ilist   *ilist,
                                const t_iparams *ip,
                                const t_mdatoms *mdatoms,
-                               gmx_bool         bLimitRange,
                                gmx_vsite_t     *vsite);
 /* Divide the vsite work-load over the threads.
  * Should be called at the end of the domain decomposition.
  */
 
-void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
-                   t_commrec *cr);
+void set_vsite_top(gmx_vsite_t          *vsite,
+                   const gmx_localtop_t *top,
+                   const t_mdatoms      *md);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
