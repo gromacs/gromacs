@@ -2635,11 +2635,26 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
     }
 }
 
+//! Returns whether \p molt has at least one virtual site
+static bool moltypeHasVsite(const gmx_moltype_t &molt)
+{
+    bool hasVsite = false;
+    for (int i = 0; i < F_NRE; i++)
+    {
+        if ((interaction_function[i].flags & IF_VSITE) &&
+            molt.ilist[i].nr > 0)
+        {
+            hasVsite = true;
+        }
+    }
+
+    return hasVsite;
+}
+
 //! Compute charge group centers of mass for molecule \p molt
 static void get_cgcm_mol(const gmx_moltype_t *molt,
                          const gmx_ffparams_t *ffparams,
                          int ePBC, t_graph *graph, const matrix box,
-                         const gmx_vsite_t *vsite,
                          const rvec *x, rvec *xs, rvec *cg_cm)
 {
     int n, i;
@@ -2669,33 +2684,14 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
         }
     }
 
-    if (vsite)
+    if (moltypeHasVsite(*molt))
     {
-        construct_vsites(vsite, xs, 0.0, nullptr,
+        construct_vsites(nullptr, xs, 0.0, nullptr,
                          ffparams->iparams, molt->ilist,
                          epbcNONE, TRUE, nullptr, nullptr);
     }
 
     calc_cgcm(nullptr, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);
-}
-
-//! Returns whether \p molt has a virtual site
-static int have_vsite_molt(gmx_moltype_t *molt)
-{
-    int      i;
-    gmx_bool bVSite;
-
-    bVSite = FALSE;
-    for (i = 0; i < F_NRE; i++)
-    {
-        if ((interaction_function[i].flags & IF_VSITE) &&
-            molt->ilist[i].nr > 0)
-        {
-            bVSite = TRUE;
-        }
-    }
-
-    return bVSite;
 }
 
 void dd_bonded_cg_distance(FILE *fplog,
@@ -2708,7 +2704,6 @@ void dd_bonded_cg_distance(FILE *fplog,
     gmx_bool           bExclRequired;
     int                mb, at_offset, *at2cg, mol;
     t_graph            graph;
-    gmx_vsite_t       *vsite;
     gmx_molblock_t    *molb;
     gmx_moltype_t     *molt;
     rvec              *xs, *cg_cm;
@@ -2716,8 +2711,6 @@ void dd_bonded_cg_distance(FILE *fplog,
     bonded_distance_t  bd_mb = { 0, -1, -1, -1 };
 
     bExclRequired = inputrecExclForces(ir);
-
-    vsite = init_vsite(mtop, nullptr, TRUE);
 
     *r_2b     = 0;
     *r_mb     = 0;
@@ -2744,7 +2737,6 @@ void dd_bonded_cg_distance(FILE *fplog,
             for (mol = 0; mol < molb->nmol; mol++)
             {
                 get_cgcm_mol(molt, &mtop->ffparams, ir->ePBC, &graph, box,
-                             have_vsite_molt(molt) ? vsite : nullptr,
                              x+at_offset, xs, cg_cm);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
@@ -2774,9 +2766,6 @@ void dd_bonded_cg_distance(FILE *fplog,
             }
         }
     }
-
-    /* We should have a vsite free routine, but here we can simply free */
-    sfree(vsite);
 
     if (mtop->bIntermolecularInteractions)
     {
