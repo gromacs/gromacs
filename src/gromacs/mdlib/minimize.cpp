@@ -414,7 +414,7 @@ static void init_em(FILE *fplog, const char *title,
 
         if (vsite)
         {
-            set_vsite_top(vsite, *top, mdatoms, cr);
+            set_vsite_top(vsite, *top, mdatoms);
         }
     }
 

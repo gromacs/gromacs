@@ -984,7 +984,7 @@ int Mdrunner::mdrunner()
         mdatoms = init_mdatoms(fplog, mtop, inputrec->efep != efepNO);
 
         /* Initialize the virtual site communication */
-        vsite = init_vsite(mtop, cr, FALSE);
+        vsite = initVsite(*mtop, cr);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1007,7 +1007,7 @@ int Mdrunner::mdrunner()
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(vsite, mtop, xGlobal);
+                constructVsitesGlobal(*mtop, xGlobal);
             }
         }
 
