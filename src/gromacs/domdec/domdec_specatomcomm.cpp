@@ -171,7 +171,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 }
 
 void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                      matrix box,
+                      const matrix box,
                       rvec *x0,
                       rvec *x1, gmx_bool bX1IsCoord)
 {
