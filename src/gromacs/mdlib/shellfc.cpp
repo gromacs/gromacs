@@ -268,6 +268,7 @@ static std::array<int, eptNR> countPtypes(FILE       *fplog,
             case eptAtom:
             case eptVSite:
             case eptShell:
+            case eptNucleus:
                 nptype[atom->ptype] += nmol;
                 break;
             default:

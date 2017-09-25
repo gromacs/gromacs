@@ -42,6 +42,8 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/mdtypes/state.h"
+
 
 #include "plistwrapper.h"
 #include "poldata.h"
@@ -66,6 +68,95 @@ typedef struct {
     int nb[6];
 } gv_ringplanar;
 
+
+/*
+             ca                      o
+             |                       ||
+            bca           e.x.       c
+          /     \                  /   \
+      bbca1     bbca2             ch3   ch3
+ */
+ 
+class gv_inplane
+{
+    public:
+      gv_inplane () {};  
+      
+      gv_inplane (int natom, int nvsite, int ca, 
+                  int bca,   int bbca1,  int bbca2);
+      
+      int natom() const {return natom_;}
+      
+      int ca() const {return ca_;}
+      
+      int bca() const {return bca_;}
+      
+      int bbca1()  const {return bbca1_;}
+      
+      int bbca2() const {return bbca2_;}
+      
+      int nvsite() const {return nvsite_;}
+      
+    private:    
+      //! Number of atoms needed to place virtual sites. (must be 4)
+      int natom_;
+      //! Number of virtual sites.
+      int nvsite_;      
+      //! Central atom on which virtual sites are placed.
+      int ca_;
+      //! Atom bound to the central atom.
+      int bca_;
+      //! Atom 1 bound to bca_.
+      int bbca1_;
+      //! Atom 2 bound to bca_.
+      int bbca2_;
+};
+
+using gv_inplaneIterator      = typename std::vector<gv_inplane>::iterator;
+using gv_inplaneConstIterator = typename std::vector<gv_inplane>::const_iterator;
+ 
+
+/*
+           ca                    o
+         /    \                /    \
+       ca1    ca2     e.x.    c      c
+         \ __ /               \\    //
+                               c __ c
+ */
+
+class gv_outplane
+{
+    public:
+      gv_outplane () {};  
+      
+      gv_outplane (int natom, int nvsite, int ca, int bca1, int bca2);
+      
+      int natom() const {return natom_;}
+      
+      int ca() const {return ca_;}
+      
+      int bca1() const {return bca1_;}
+      
+      int bca2() const {return bca2_;}
+      
+      int nvsite() const {return nvsite_;}
+      
+    private:    
+      //! Number of atoms needed to place virtual sites. (must be 4)
+      int natom_;     
+      //! Number of virtual sites.
+      int nvsite_;      
+      //! Central atom on which virtual sites are placed.
+      int ca_;
+      //! Atom 1 bound to ca_.
+      int bca1_;
+      //! Atom 2 bound to ca_.
+      int bca2_;
+};
+
+using gv_outplaneIterator      = typename std::vector<gv_outplane>::iterator;
+using gv_outplaneConstIterator = typename std::vector<gv_outplane>::const_iterator;
+
 class GentopVsites
 {
     private:
@@ -76,7 +167,9 @@ class GentopVsites
         //! The planar vsites
         std::vector<gv_planar>     planar_;
         //! The out-of-plane vsites
-        std::vector<gv_planar>     outofplane_;
+        std::vector<gv_outplane>   outplane_;
+        //! The out-of-plane vsites
+        std::vector<gv_inplane>    inplane_;
         //! The ring-planar vsites
         std::vector<gv_ringplanar> ringplanar_;
 
@@ -88,10 +181,8 @@ class GentopVsites
 
         bool bHaveVsites()
         {
-            return ((linear_.size() > 0) ||
-                    (planar_.size() > 0) ||
-                    (outofplane_.size() > 0) ||
-                    (ringplanar_.size() > 0));
+            return ((inplane_.size()  > 0) ||
+                    (outplane_.size() > 0));
         }
 
         /*! \brief Add a linear vsite
@@ -117,7 +208,7 @@ class GentopVsites
          * param[in] nbonds number of bonds for each of the atoms
          */
         void addPlanar(int a1, int a2, int a3, int a4, int nbonds[]);
-
+        
         /*! \brief Add an out of plane vsite
          *
          * param[in] a1 first atom
@@ -126,7 +217,55 @@ class GentopVsites
          * param[in] a4 atom number of the vsite
          * param[in] nbonds number of bonds for each of the atoms
          */
-        void addOutOfPlane(int a1, int a2, int a3, int a4, int nbonds[]);
+        void addOutPlane(int natom, int nvsite, int ca, int bca1, int bca2);
+        
+        gv_outplaneIterator outplaneBegin() {return outplane_.begin(); }
+
+        gv_outplaneConstIterator outplaneBegin() const {return outplane_.begin(); }
+
+        gv_outplaneIterator outplaneEnd() {return outplane_.end(); }
+
+        gv_outplaneConstIterator outplaneEnd() const {return outplane_.end(); }
+        
+        gv_outplaneIterator findOutPlane(int natom, int nvsite, int ca, int bca1, int bca2);
+        
+        gv_outplaneConstIterator findOutPlane(int natom, int nvsite, 
+                                              int ca,    int bca1, int bca2) const;
+                                              
+        gv_outplaneIterator findOutPlane(int nvsite, int ca);
+        
+        gv_outplaneConstIterator findOutPlane(int nvsite, int ca) const;
+        
+        void addInPlane(int natom, int nvsite, int ca, 
+                        int bca,   int bbca1, int bbca2);
+        
+        gv_inplaneIterator inplaneBegin() {return inplane_.begin(); }
+
+        gv_inplaneConstIterator inplaneBegin() const {return inplane_.begin(); }
+
+        gv_inplaneIterator inplaneEnd() {return inplane_.end(); }
+
+        gv_inplaneConstIterator inplaneEnd() const {return inplane_.end(); }
+        
+        gv_inplaneIterator findInPlane(int natom, int nvsite, int ca, 
+                                       int bca,   int bbca1,  int bbca2);
+        
+        gv_inplaneConstIterator findInPlane(int natom, int nvsite, int ca, 
+                                            int bca,   int bbca1,  int bbca2) const;
+                                            
+        gv_inplaneIterator findInPlane(int nvsite, int ca);
+        
+        gv_inplaneConstIterator findInPlane(int nvsite, int ca) const;
+        
+        int nVsites();
+        
+        void gen_Vsites(const Poldata             &pd,
+                        t_atoms                   *atoms,
+                        std::vector<PlistWrapper> &plist,
+                        gpp_atomtype              *atype,
+                        t_symtab                  *symtab,
+                        t_excls                   **excls,
+                        t_state                    *state);
 
         /*! \brief Add a ring-planar vsite
          *
@@ -148,7 +287,8 @@ class GentopVsites
                              std::vector<PlistWrapper> &plist,
                              t_symtab                  *symtab,
                              gpp_atomtype              *atype,
-                             t_excls                  **excls);
+                             t_excls                  **excls,
+                             t_state                   *state);
 };
 
 }

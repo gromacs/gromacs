@@ -651,7 +651,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         grandchild = add_xml_child(child, exml_names[exmlGT_VSITE]);
         add_xml_char(grandchild, exml_names[exmlATYPE], vsite->atype().c_str());
         add_xml_char(grandchild, exml_names[exmlVTYPE], vsiteType2string(vsite->type()));
-        add_xml_int(grandchild, exml_names[exmlNUMBER], vsite->number());
+        add_xml_int(grandchild, exml_names[exmlNUMBER], vsite->nvsite());
         add_xml_double(grandchild, exml_names[exmlDISTANCE], vsite->distance());
         add_xml_double(grandchild, exml_names[exmlANGLE], vsite->angle());
         add_xml_int(grandchild, exml_names[exmlNCONTROLATOMS], vsite->ncontrolatoms());

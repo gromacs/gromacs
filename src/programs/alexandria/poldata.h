@@ -188,6 +188,8 @@ class Poldata
         {
             vsite_length_unit_ = length_unit;
         }
+        
+        std::vector<Vsite> &getVsite() {return vsite_;}
 
         const std::string &getForceField() const { return alexandriaForcefield_; }
 
@@ -326,6 +328,26 @@ class Poldata
         VsiteIterator getVsiteEnd() { return vsite_.end(); }
         
         VsiteConstIterator getVsiteEnd() const { return vsite_.end(); }
+        
+        VsiteIterator findVsite(std::string  atype)
+        {
+        
+            return std::find_if(vsite_.begin(), vsite_.end(), 
+                                [atype](const Vsite &vs)
+                                {
+                                    return (atype == vs.atype());
+                                });
+        }
+        
+        VsiteConstIterator findVsite(std::string atype) const
+        {
+        
+            return std::find_if(vsite_.begin(), vsite_.end(), 
+                                [atype](const Vsite &vs)
+                                {
+                                    return (atype == vs.atype());
+                                });
+        }
 
         /*! \brief
          * Return the iterator corresponding to the polarizability type

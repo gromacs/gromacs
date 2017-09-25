@@ -66,7 +66,9 @@ static const char * eit_names[eitNR] = {
     "LJ14", 
     "POLARIZATION", 
     "CONSTR", 
-    "VSITE2"
+    "VSITE2",
+    "VSITE3FAD",
+    "VSITE3OUT"
 };
 
 static const char * evt_names[evtNR] = {

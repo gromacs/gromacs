@@ -109,6 +109,7 @@ MyMol::MyMol() : gvt_(evtALL)
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;
+    bNeedVsites_       = false;
     cgnr_              = nullptr;
     immAtoms_          = immOK;
     immTopology_       = immOK;
@@ -191,13 +192,91 @@ bool MyMol::IsSymmetric(real toler)
     return bSymmAll;
 }
 
+void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
+{
+    int bca = 0;
+    /*First try to find the atom bound to ca.*/
+    for (auto bi = molProp()->BeginBond(); 
+         bi < molProp()->EndBond(); bi++)
+    {
+        if ((ca == (bi->getAj() - 1) || 
+             ca == (bi->getAi() - 1)))
+        {
+            if (ca == (bi->getAi() - 1))
+            {
+                bca = (bi->getAj() - 1);
+                atoms.push_back(bca);
+            }
+            else
+            {
+                bca = (bi->getAi() - 1);
+                atoms.push_back(bca);
+            }
+        }
+    }   
+    /*Now try to find atoms bound to bca, except ca.*/
+    for (auto bi = molProp()->BeginBond(); 
+         bi < molProp()->EndBond(); bi++)
+    {
+        if ((ca != (bi->getAj() - 1)   && 
+             ca != (bi->getAi() - 1))  &&
+            (bca == (bi->getAj() - 1)  || 
+             bca == (bi->getAi() - 1)))
+        {
+            if (bca == (bi->getAi() - 1))
+            {
+                atoms.push_back(bi->getAj() - 1);
+            }
+            else
+            {
+                atoms.push_back(bi->getAi() - 1);
+            }
+        }
+    }   
+}
+
+void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
+{
+    for (auto bi = molProp()->BeginBond(); 
+         bi < molProp()->EndBond(); bi++)
+    {
+        if (bi->getBondOrder() == 1  && 
+            (ca == (bi->getAj() - 1) || 
+             ca == (bi->getAi() - 1)))
+        {
+            if (ca == (bi->getAi() - 1))
+            {
+                atoms.push_back(bi->getAj() - 1);
+            }
+            else
+            {
+                atoms.push_back(bi->getAj() - 1);
+            }
+        }
+    }
+}
+
+bool MyMol::IsVsiteNeeded(std::string        atype,
+                          const Poldata      &pd)
+{    
+    auto vsite = pd.findVsite(atype);
+    if (vsite != pd.getVsiteEnd())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*
  * Make Linear Angles, Improper Dihedrals, and Virtual Sites
  */
 void MyMol::MakeSpecialInteractions(const Poldata &pd,
                                     bool           bUseVsites)
 {
-    std::vector < std::vector < unsigned int> > bonds;
+    std::vector<std::vector<unsigned int>> bonds;
     std::vector<int> nbonds;
     t_pbc            pbc;
     real             th_toler = 175;
@@ -254,11 +333,51 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
             gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
                            &nbonds[0]);
         }
+        if (bUseVsites)
+        {
+            const auto atype(*topology_->atoms.atomtype[i]);
+            if (IsVsiteNeeded(atype, pd))
+            {
+                std::vector<int> atoms;
+                auto vsite = pd.findVsite(atype);
+                if(vsite->type() == evtIN_PLANE)
+                {
+                    atoms.push_back(i);
+                    findInPlaneAtoms(i, atoms);
+                    if (vsite->ncontrolatoms() == static_cast<int>(atoms.size()))
+                    {
+                        gvt_.addInPlane(vsite->ncontrolatoms(), 
+                                        vsite->nvsite(),
+                                        atoms[0], atoms[1], 
+                                        atoms[2], atoms[3]);
+                    }
+                }
+                else if (vsite->type() == evtOUT_OF_PLANE)
+                { 
+                    atoms.push_back(i);
+                    findOutPlaneAtoms(i, atoms);
+                    if (vsite->ncontrolatoms() == static_cast<int>(atoms.size()))
+                    {
+                        gvt_.addOutPlane(vsite->ncontrolatoms(),
+                                         vsite->nvsite(),
+                                         atoms[0], atoms[1], 
+                                         atoms[2]);
+                    }
+                }
+                if(!bNeedVsites_)
+                {
+                    bNeedVsites_ = true;
+                }
+            }
+        }
     }
-    auto anr = topology_->atoms.nr;
-    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x,
-                         plist_, symtab_, atype_, &excls_);
-    bHaveVSites_ = (topology_->atoms.nr > anr);
+    if (bUseVsites && bNeedVsites_)
+    {
+        auto anr = topology_->atoms.nr;
+        gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, 
+                             &x, plist_, symtab_, atype_, &excls_, state_);
+        bHaveVSites_ = (topology_->atoms.nr > anr);
+    }
 }
 
 /*
@@ -533,7 +652,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         snew(topology_, 1);
         init_top(topology_);
         state_change_natoms(state_, molProp()->NAtom());
-        imm = GenerateAtoms(ap, lot, iChargeDistributionModel); /* get atoms */      
+        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);    
     }
     if (immOK == imm)
     {
@@ -542,7 +661,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         imm = zeta2atoms(iChargeDistributionModel, pd);
-    }
+    }   
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
     if (immOK == imm)
@@ -664,8 +783,7 @@ void MyMol::addShells(const Poldata          &pd,
     auto polarUnit = string2unit(pd.getPolarUnit().c_str());
     if (-1 == polarUnit)
     {
-        gmx_fatal(FARGS, "No such polarizability unit '%s'",
-                  pd.getPolarUnit().c_str());
+        gmx_fatal(FARGS, "No such polarizability unit '%s'", pd.getPolarUnit().c_str());
     }
     for (i = 0; i < topology_->atoms.nr; i++)
     {
@@ -1472,7 +1590,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     commercials.push_back(buf);
     
     print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
-    write_top2(fp, printmol.name, &topology_->atoms, FALSE,
+    write_top2(fp, printmol.name, &topology_->atoms, false,
                plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
     {
@@ -2207,6 +2325,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         }
         break;
         case eitVSITE2:
+        case eitVSITE3FAD:
+        case eitVSITE3OUT:
         case eitCONSTR:
         case eitNR:
             break;

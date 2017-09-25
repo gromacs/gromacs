@@ -109,14 +109,20 @@ class MyMol
          */
         int              nexcl_;
         int             *cgnr_;
-        t_excls         *excls_;
-        GentopVsites     gvt_;
-        immStatus        immAtoms_, immCharges_, immTopology_;
-        std::string      forcefield_;
-        bool             bHaveShells_, bHaveVSites_;
+        bool             bHaveShells_;
+        bool             bHaveVSites_;
+        bool             bNeedVsites_;
         double           ref_enthalpy_;
-        double           polarizability_, sig_pol_;
-        double           EspRms_, EemRms_;
+        double           polarizability_;
+        double           sig_pol_;
+        double           EspRms_;
+        double           EemRms_;
+        t_excls         *excls_;
+        immStatus        immAtoms_;
+        immStatus        immCharges_;
+        immStatus        immTopology_;
+        GentopVsites     gvt_;
+        std::string      forcefield_;
 
 
         bool             IsSymmetric(real toler);
@@ -168,12 +174,13 @@ class MyMol
         immStatus zeta2atoms(ChargeDistributionModel iChargeDistributionModel,
                              const Poldata &pd);
 
-        /*! \brief
-         * Fetch the force constants
-         *
-         * \param[in] pd
-         */
-        //void getForceConstants(const Poldata &pd);
+        bool IsVsiteNeeded(std::string       atype,
+                           const Poldata     &pd);
+                           
+        void findInPlaneAtoms(int ca, std::vector<int> &atoms);
+        
+        void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
+       
     public:
         rvec                     *buf_;
         rvec                      coc_           = {0,0,0};

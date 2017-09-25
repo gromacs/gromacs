@@ -39,18 +39,178 @@
 
 #include "gentop_vsite.h"
 
+#include <map>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "mymol_low.h"
 #include "plistwrapper.h"
 #include "poldata.h"
 
 namespace alexandria
 {
+
+gv_inplane::gv_inplane(int natom, int nvsite, int ca, 
+                       int bca,   int bbca1,  int bbca2)
+    :
+      natom_(natom),
+      nvsite_(nvsite),
+      ca_(ca),
+      bca_(bca),
+      bbca1_(bbca1),
+      bbca2_(bbca2)
+{}
+
+gv_inplaneIterator GentopVsites::findInPlane(int natom, int nvsite, int ca, 
+                                             int bca,   int bbca1,  int bbca2)
+{
+    gv_inplaneIterator b = inplaneBegin(), e = inplaneEnd();
+    return std::find_if(b, e, [natom, nvsite, ca, bca, bbca1, bbca2](const gv_inplane &inplane)
+                        {
+                            return (natom   == inplane.natom()  && 
+                                    nvsite  == inplane.nvsite() &&
+                                    ca      == inplane.ca()     &&
+                                    bca     == inplane.bca()    &&
+                                    ((bbca1 == inplane.bbca1()  && 
+                                      bbca2 == inplane.bbca2()) ||
+                                     (bbca1 == inplane.bbca2()  && 
+                                      bbca2 == inplane.bbca1())));
+                        });
+}
+        
+gv_inplaneConstIterator GentopVsites::findInPlane(int natom, int nvsite, int ca, 
+                                                  int bca,   int bbca1,  int bbca2) const
+{
+    gv_inplaneConstIterator b = inplaneBegin(), e = inplaneEnd();
+    return std::find_if(b, e, [natom, nvsite, ca, bca, bbca1, bbca2](const gv_inplane &inplane)
+                        {
+                            return (natom   == inplane.natom()  && 
+                                    nvsite  == inplane.nvsite() &&
+                                    ca      == inplane.ca()     &&
+                                    bca     == inplane.bca()    &&
+                                    ((bbca1 == inplane.bbca1()  && 
+                                      bbca2 == inplane.bbca2()) ||
+                                     (bbca1 == inplane.bbca2()  && 
+                                      bbca2 == inplane.bbca1())));
+                        });
+}
+
+gv_inplaneIterator GentopVsites::findInPlane(int nvsite, int ca)
+{
+    gv_inplaneIterator b = inplaneBegin(), e = inplaneEnd();
+    return std::find_if(b, e, [nvsite, ca](const gv_inplane &inplane)
+                        {
+                            return (nvsite  == inplane.nvsite() && ca == inplane.ca());
+                        });
+}
+
+gv_inplaneConstIterator GentopVsites::findInPlane(int nvsite, int ca) const
+{
+    gv_inplaneConstIterator b = inplaneBegin(), e = inplaneEnd();
+    return std::find_if(b, e, [nvsite, ca](const gv_inplane &inplane)
+                        {
+                            return (nvsite  == inplane.nvsite() && ca == inplane.ca());
+                        });
+}
+
+void GentopVsites::addInPlane(int natom, int nvsite, int ca, 
+                              int bca,   int bbca1,  int bbca2)
+{
+    auto inplane = findInPlane(natom, nvsite, ca, bca, bbca1, bbca2);
+    if(inplane != inplaneEnd())
+    {
+        return;
+    }
+    gv_inplane p(natom, nvsite, ca, bca, bbca1, bbca2);
+    inplane_.push_back(std::move(p));
+}
+
+gv_outplane::gv_outplane(int natom, int nvsite,int ca, int bca1, int bca2)
+    :
+      natom_(natom),
+      nvsite_(nvsite),
+      ca_(ca),
+      bca1_(bca1),
+      bca2_(bca2)
+{}
+
+gv_outplaneIterator GentopVsites::findOutPlane(int natom, int nvsite, int ca, int bca1, int bca2)
+{
+    gv_outplaneIterator b = outplaneBegin(), e = outplaneEnd();
+    return std::find_if(b, e, [natom, nvsite, ca, bca1, bca2](const gv_outplane &outplane)
+                        {
+                            return (natom  == outplane.natom()  && 
+                                    ca     == outplane.ca()     &&
+                                    nvsite == outplane.nvsite() &&
+                                    ((bca1 == outplane.bca1() && bca2 == outplane.bca2()) ||
+                                     (bca1 == outplane.bca2() && bca2 == outplane.bca1())));
+                        });
+}
+        
+gv_outplaneConstIterator GentopVsites::findOutPlane(int natom, int nvsite, int ca, int bca1, int bca2) const
+{
+    gv_outplaneConstIterator b = outplaneBegin(), e = outplaneEnd();
+    return std::find_if(b, e, [natom, nvsite, ca, bca1, bca2](const gv_outplane &outplane)
+                        {
+                            return (natom  == outplane.natom()  && 
+                                    ca     == outplane.ca()     &&
+                                    nvsite == outplane.nvsite() &&
+                                    ((bca1 == outplane.bca1() && bca2 == outplane.bca2()) ||
+                                     (bca1 == outplane.bca2() && bca2 == outplane.bca1())));
+                        });
+
+}
+
+gv_outplaneIterator GentopVsites::findOutPlane(int nvsite, int ca)
+{
+    gv_outplaneIterator b = outplaneBegin(), e = outplaneEnd();
+    return std::find_if(b, e, [nvsite, ca](const gv_outplane &outplane)
+                        {
+                            return (ca == outplane.ca() && nvsite == outplane.nvsite());
+                        });
+}
+        
+gv_outplaneConstIterator GentopVsites::findOutPlane(int nvsite, int ca) const
+{
+    gv_outplaneConstIterator b = outplaneBegin(), e = outplaneEnd();
+    return std::find_if(b, e, [nvsite, ca](const gv_outplane &outplane)
+                        {
+                            return (ca == outplane.ca() && nvsite == outplane.nvsite());
+                        });
+
+}
+
+void GentopVsites::addOutPlane(int natom, int nvsite, int ca, int bca1, int bca2)
+{
+    auto outplane = findOutPlane(natom, nvsite, ca, bca1, bca2);    
+    if (outplane != outplaneEnd())
+    {
+        return;
+    }
+    gv_outplane p(natom, nvsite, ca, bca1, bca2);
+    outplane_.push_back(std::move(p));
+}
+
+
+int GentopVsites::nVsites()
+{
+    int n = 0;
+    for (const auto &oplane : outplane_)
+    {
+        n += oplane.nvsite();
+    }
+    for (const auto &iplane : inplane_)
+    {
+        n += iplane.nvsite();
+    }
+    return n;
+}
 
 void GentopVsites::addLinear(int ai, int aj, int ak)
 {
@@ -108,37 +268,6 @@ void GentopVsites::addPlanar(int ai, int aj, int ak, int al, int nbonds[])
     }
 }
 
-void GentopVsites::addOutOfPlane(int ai, int aj, int ak, int al,
-                                 int nbonds[])
-{
-    unsigned int i;
-
-    for (i = 0; (i < outofplane_.size()); i++)
-    {
-        if (((outofplane_[i].a[0] == ai) && (outofplane_[i].a[1] == aj)  &&
-             (outofplane_[i].a[2] == ak) && (outofplane_[i].a[3] == al)) ||
-            ((outofplane_[i].a[0] == al) && (outofplane_[i].a[1] == ak)  &&
-             (outofplane_[i].a[2] == aj) && (outofplane_[i].a[3] == ai)))
-        {
-            break;
-        }
-    }
-    if (i == outofplane_.size())
-    {
-        gv_planar p;
-
-        p.a[0] = ai;
-        p.a[1] = aj;
-        p.a[2] = ak;
-        p.a[3] = al;
-        for (unsigned int j = 0; (j < 4); j++)
-        {
-            p.nb[j] = nbonds[p.a[j]];
-        }
-        outofplane_.push_back(p);
-    }
-}
-
 void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
 {
     unsigned int i;
@@ -167,11 +296,12 @@ void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
     }
 }
 
-static void calc_vsite2parm(t_atoms *atoms,
+static void calc_vsite2parm(t_atoms                   *atoms,
                             std::vector<PlistWrapper> &plist,
-                            rvec **x,
-                            gv_linear *gvl, t_symtab *symtab,
-                            gpp_atomtype_t atype)
+                            rvec                      **x,
+                            gv_linear                 *gvl,
+                            t_symtab                  *symtab,
+                            gpp_atomtype_t             atype)
 {
     int              i, j, natoms, mt;
     const   char    *ml = "ML";
@@ -422,6 +552,300 @@ static void set_linear_angle_params(const int                  atoms[],
     }
 }
 
+void GentopVsites::gen_Vsites(const Poldata             &pd,
+                              t_atoms                   *atoms,
+                              std::vector<PlistWrapper> &plist,
+                              gpp_atomtype              *atype,
+                              t_symtab                  *symtab,
+                              t_excls                   **excls,
+                              t_state                    *state)
+{
+    int                      nvsite = 0;
+    size_t                   ntrain = 0;
+    double                   sigma  = 0;       
+    double                   akjl   = 0;
+    double                   bij    = 0;
+    double                   bjk    = 0;
+    double                   bjl    = 0;
+    double                   aijk   = 0;
+    double                   aijl   = 0;
+    
+    std::string              j, k, l, m;
+    std::string              params;    
+    std::vector<int>         renum;
+    std::vector<int>         inv_renum;
+    std::map<int , int>      nuclei;    // std::map<index, number of vsites>
+    std::vector<std::string> Akjl;
+    std::vector<std::string> Bjk, Bjl;
+        
+    char                     buf[32];
+    char                   **newname;
+    t_atoms                 *newatoms;
+    t_excls                 *newexcls;
+    PaddedRVecVector         newx;    
+    t_param                  vs;
+    
+    memset(&vs, 0, sizeof(vs));    
+    int nParticles = atoms->nr + nVsites();
+    state_change_natoms(state, nParticles);
+    renum.resize(atoms->nr + 1, 0);
+    inv_renum.resize(nParticles, -1);
+    
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        renum[i] = i+nvsite;
+        inv_renum[i+nvsite] = i;
+        const auto atype(*atoms->atomtype[i]);
+        auto vsite = pd.findVsite(atype);
+        if (vsite != pd.getVsiteEnd())
+        {
+            nuclei.insert(std::pair<int,int>(i, vsite->nvsite()));
+            nvsite += vsite->nvsite();
+            if(vsite->type() == evtIN_PLANE)
+            {
+                auto inplane = findInPlane(vsite->nvsite(), i);
+                if (inplane != inplaneEnd())
+                {
+                    bij        = vsite->distance();
+                    aijk       = vsite->angle();
+                    aijl       = 360 - aijk;                   
+                    for (int n = 1; n <= vsite->nvsite(); n++)
+                    {
+                        vs.a[0] = inplane->ca() + n; /*vsite    i   */
+                        vs.a[1] = inplane->ca();     /*nucleus  j   */
+                        vs.a[2] = inplane->bca();    /*         m   */
+                        vs.a[3] = inplane->bbca1();  /*        / \  */                         
+                        vs.c[0] = aijk;              /*       k   l */
+                        vs.c[1] = bij;  
+                        if (n == vsite->nvsite())
+                        {
+                            vs.a[3] = inplane->bbca2();                            
+                            vs.c[0] = aijl;
+                        }
+                        add_param_to_plist(plist, F_VSITE3FAD, eitVSITE3FAD, vs);
+                    }                                                
+                }
+            }
+            else if (vsite->type() == evtOUT_OF_PLANE)
+            {
+                auto outplane = findOutPlane(vsite->nvsite(), i);
+                if (outplane != outplaneEnd())
+                {
+                    if (pd.atypeToBtype(*atoms->atomtype[outplane->bca1()], k) &&
+                        pd.atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
+                        pd.atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
+                    {
+                        bij     = vsite->distance();
+                        aijk    = aijl = vsite->angle();
+                        Akjl    = {k, j, l};
+                        Bjk     = {j, k};
+                        Bjl     = {j, l};
+                        if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, eitANGLES) &&
+                            pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, eitBONDS)  &&
+                            pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, eitBONDS))
+                        {                                                                                  
+                            auto pijk = std::cos(aijk)*bij;
+                            auto pijl = std::cos(aijl)*bij;
+                            auto a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
+                            auto b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
+                            auto c    = -std::sqrt( gmx::square(bij) -
+                                                    ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
+                                                    / gmx::square(std::sin(akjl)) )
+                                / ( bjk*bjl*std::sin(akjl) );                                                                              
+                            for (int n = 1; n <= vsite->nvsite(); n++)
+                            {
+                                vs.a[0] = outplane->ca() + n; /* vsite     i   */
+                                vs.a[1] = outplane->ca();     /* nucleus   j   */
+                                vs.a[2] = outplane->bca1();   /*          / \  */
+                                vs.a[3] = outplane->bca2();   /*         k   l */            
+                                vs.c[0] = a;
+                                vs.c[1] = b;  
+                                vs.c[2] = c;
+                                if (n == vsite->nvsite())
+                                {
+                                    vs.c[2] = (-1)*c;
+                                }
+                                add_param_to_plist(plist, F_VSITE3OUT, eitVSITE3OUT, vs);
+                            }                            
+                        }
+                    }
+                }
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Undefined virtual site type!\n");
+            }
+        }        
+    }
+    renum[atoms->nr] = nParticles;    
+    if (nvsite == nVsites())
+    {
+        t_atom          *vsite_atom;
+        snew(vsite_atom, 1);
+        vsite_atom->ptype = eptVSite;
+
+        /* Make new atoms and x arrays */
+        snew(newatoms, 1);
+        init_t_atoms(newatoms, nParticles, true);
+        snew(newatoms->atomtype, nParticles);
+        snew(newatoms->atomtypeB, nParticles);
+        newatoms->nres = atoms->nres;
+        newx.resize(newatoms->nr);
+        snew(newname, newatoms->nr);
+        
+        /* Make a new exclusion array and put the vsites in it */
+        snew(newexcls, newatoms->nr);
+        
+        /* Add exclusion for F_VSITE3OUT virtual type */
+        auto pl1 = SearchPlist(plist, F_VSITE3OUT);
+        if (plist.end() != pl1)
+        {
+            // Exclude vsite and nucleus from each other.
+            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            {
+                add_excl_pair(newexcls, j->a[0], j->a[1]);
+            }
+            // Add the exclusions from the nucleus to the vsite.
+            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            {                
+                // We know that the nuclues is 1 as we added it to plist as such.
+                int  i0 = inv_renum[j->a[1]];
+                for (auto j0 = 0; j0 < excls[i0]->nr; j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], renum[excls[i0]->e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[excls[i0]->e[j0]]);
+                }
+            }
+            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            {
+                for (auto j0 = 0; j0 < newexcls[j->a[1]].nr; j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], newexcls[j->a[1]].e[j0]);
+                }
+            }
+        }
+        /* Add exclusion for F_VSITE3FAD virtual type */
+        auto pl2 = SearchPlist(plist, F_VSITE3FAD);
+        if (plist.end() != pl2)
+        {
+            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            {
+                add_excl_pair(newexcls, j->a[0], j->a[1]);
+            }
+            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            {
+                int  i0 = inv_renum[j->a[1]];
+                for (auto j0 = 0; j0 < excls[i0]->nr; j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], renum[excls[i0]->e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[excls[i0]->e[j0]]);
+                }
+            }
+            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            {
+                for (auto j0 = 0; j0 < newexcls[j->a[1]].nr; j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], newexcls[j->a[1]].e[j0]);
+                }
+            }
+        }
+        
+        /* Set the particle type for atoms having vsites to eptNucleus. */
+        for (const auto& nucleus : nuclei)
+        {
+            if (nucleus.second > 0)
+            {
+                atoms->atom[nucleus.first].ptype = eptNucleus;
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Nucleus %d is supposed to have virtual site!\n", nucleus.first);
+            }
+        }
+        
+        /* Now copy the old atoms to the new structures. */
+        for (int i = 0; i < atoms->nr; i++)
+        {
+            newatoms->atom[renum[i]]      = atoms->atom[i];
+            newatoms->atomname[renum[i]]  = put_symtab(symtab, *atoms->atomname[i]);
+            newatoms->atomtype[renum[i]]  = put_symtab(symtab, *atoms->atomtype[i]);
+            newatoms->atomtypeB[renum[i]] = put_symtab(symtab, *atoms->atomtypeB[i]);
+            newname[renum[i]]             = *atoms->atomtype[i];            
+            copy_rvec(state->x[i], newx[renum[i]]);
+            t_atoms_set_resinfo(newatoms, renum[i], symtab, 
+                                *atoms->resinfo[atoms->atom[i].resind].name,
+                                atoms->atom[i].resind, ' ', 1, ' ');
+        }
+        
+        /* Now insert the virtual particles. */
+        for (int i = 0; i < atoms->nr; i++)
+        {
+            auto nucleus = nuclei.find(i);
+            if (nucleus != nuclei.end())
+            {
+                auto nvsite = nucleus->second;
+                for(int j = 1; j <= nvsite; j++)
+                {
+                    newatoms->atom[i + j]               = atoms->atom[i];
+                    newatoms->atom[i + j].m             = 0;
+                    newatoms->atom[i + j].mB            = 0;
+                    newatoms->atom[i + j].atomnumber    = 0;
+                    sprintf(buf, "%sL%d", get_atomtype_name(atoms->atom[i].type, atype), j);
+                    newname[i + j] = strdup(buf);
+                    auto vsite                          = add_atomtype(atype, symtab, vsite_atom, buf, &vs, 0, 0, 0, 0, 0, 0, 0);
+                    newatoms->atom[i + j].type          = vsite;
+                    newatoms->atom[i + j].typeB         = vsite;
+                    newatoms->atomtype[i + j]           = put_symtab(symtab, buf);
+                    newatoms->atomtypeB[i + j]          = newatoms->atomtype[i + j];
+                    newatoms->atom[i + j].ptype         = eptVSite;
+                    newatoms->atom[i + j].resind        = atoms->atom[i].resind;
+                    sprintf(buf, "%sL%d", *(atoms->atomname[i]), j);
+                    newatoms->atomname[i + j] = put_symtab(symtab, buf);
+                    copy_rvec(state->x[i], newx[i + j]);
+                }
+            }
+        }
+        
+        /* Copy newatoms to atoms */
+        copy_atoms(newatoms, atoms);
+        
+        /* Copy coordinates and names */
+        for (int i = 0; i < newatoms->nr; i++)
+        {
+            copy_rvec(newx[i], state->x[i]);
+            atoms->atomtype[i] = put_symtab(symtab, newname[i]);
+        }
+        sfree(newname);
+        
+        /* Copy exclusions, may need to empty the original first */
+        sfree(excls);
+        excls = &newexcls;
+                
+        /*Now renumber atoms in all other plist interaction types */
+        for (auto pw = plist.begin(); pw < plist.end(); ++pw)
+        {
+            if (pw->getFtype() != F_VSITE3FAD && pw->getFtype() != F_VSITE3OUT)
+            {
+                for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
+                {
+                    for (int k = 0; k < NRAL(pw->getFtype()); k++)
+                    {
+                        j->a[k] = renum[j->a[k]];
+                    }
+                }
+            }
+        }
+        sfree(vsite_atom);
+        sfree(newexcls);
+    }
+    else
+    {
+        gmx_fatal(FARGS, 
+                  "Number of vistes counted here does not match the number of vsites needed: %d vs %d",
+                  nvsite, nVsites());
+    }
+}
+
 void GentopVsites::generateSpecial(const Poldata              &pd,
                                    bool                        bUseVsites,
                                    t_atoms                    *atoms,
@@ -429,7 +853,8 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
                                    std::vector<PlistWrapper>  &plist,
                                    t_symtab                   *symtab,
                                    gpp_atomtype_t              atype,
-                                   t_excls                   **excls)
+                                   t_excls                   **excls,
+                                   t_state                    *state)
 {
     int          j, nlin_at;
     int          a[MAXATOMLIST], aa[2];
@@ -489,7 +914,9 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
             delete_params(plist, fti, a);
 
             if (bUseVsites)
-            {
+            {                
+                gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
+                
                 /* Complicated algorithm, watch out */
                 for (j = 0; (j < linear_[i].nline-1); j++)
                 {
@@ -508,7 +935,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
                     (*excls)[j].nr = 1;
                     snew((*excls)[j].e, 1);
                     (*excls)[j].e[0] = j;
-                }
+                }                
             }
             else
             {

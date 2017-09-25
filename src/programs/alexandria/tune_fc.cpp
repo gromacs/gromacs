@@ -772,6 +772,8 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     case eitVDW:
                     case eitLJ14:
                     case eitVSITE2:
+                    case eitVSITE3FAD:
+                    case eitVSITE3OUT:
                     case eitCONSTR:
                     case eitNR:
                         break;
@@ -1125,6 +1127,8 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
                             case eitVDW:
                             case eitLJ14:
                             case eitVSITE2:
+                            case eitVSITE3FAD:
+                            case eitVSITE3OUT:
                             case eitCONSTR:
                             case eitNR:
                                 break;

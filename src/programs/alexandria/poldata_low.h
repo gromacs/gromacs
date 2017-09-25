@@ -320,7 +320,7 @@ class Vsite
         /*! \brief
          * Return the number of virtual sites connected to the atom.
          */
-        int number() const {return number_;}
+        int nvsite() const {return number_;}
         
         /*! \brief
          * Return the number of atoms needed to locate the vsite.

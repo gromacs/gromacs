@@ -1047,43 +1047,38 @@ void print_bondeds2(FILE                     *out,
     fprintf(out, "\n");
 }
 
-void write_top2(FILE *out, char *molname,
-                t_atoms *at, gmx_bool bRTPresname,
+void write_top2(FILE                     *out, 
+                char                     *molname,
+                t_atoms                  *at, 
+                gmx_bool                  bRTPresname,
                 std::vector<PlistWrapper> plist_,
-                t_excls excls[],
-                gpp_atomtype_t atype, int *cgnr, int nrexcl,
-                const Poldata &pd)
-/* NOTE: nrexcl is not the size of *excl! */
+                t_excls                   excls[],
+                gpp_atomtype_t            atype, 
+                int                      *cgnr, 
+                int                       nrexcl,
+                const Poldata            &pd)
 {
     if (at && atype && cgnr)
     {
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
-
         print_atoms(out, atype, at, cgnr, bRTPresname);
-
         for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
         {
             if (eitBONDS == fs->iType())
             {
-                print_bondeds2(out, d_bonds, fs->fType(),
-                               fs->fType(), plist_);
+                print_bondeds2(out, d_bonds, fs->fType(), fs->fType(), plist_);
             }
-            else if (eitANGLES == fs->iType() ||
-                     eitLINEAR_ANGLES == fs->iType())
+            else if (eitANGLES == fs->iType() || eitLINEAR_ANGLES == fs->iType())
             {
-                print_bondeds2(out, d_angles, fs->fType(),
-                               fs->fType(), plist_);
+                print_bondeds2(out, d_angles, fs->fType(), fs->fType(), plist_);
             }
-            else if (eitPROPER_DIHEDRALS == fs->iType() ||
-                     eitIMPROPER_DIHEDRALS == fs->iType())
+            else if (eitPROPER_DIHEDRALS == fs->iType() || eitIMPROPER_DIHEDRALS == fs->iType())
             {
-                print_bondeds2(out, d_dihedrals, fs->fType(),
-                               fs->fType(), plist_);
+                print_bondeds2(out, d_dihedrals, fs->fType(), fs->fType(), plist_);
             }
         }
-
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
