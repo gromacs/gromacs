@@ -87,10 +87,6 @@
 #include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
-#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
-#define USE_TEXOBJ
-#endif
-
 /*! \brief Convenience constants */
 //@{
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
