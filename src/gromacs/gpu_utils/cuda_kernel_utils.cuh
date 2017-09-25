@@ -56,5 +56,56 @@ __device__ __forceinline__ T LDG(const T* ptr)
 #endif
 }
 
+/*! \brief Fetch the value by index from the texture object or reference.
+ * Fetching from the object is the preferred behaviour on CC >= 3.0.
+ *
+ * \tparam[in] T         Raw data type
+ * \param[out] texObj    Table texture object
+ * \param[out] texRef    Table texture reference
+ */
+template <typename T>
+static __forceinline__ __device__
+T fetchFromTexture(const cudaTextureObject_t texObj,
+                   const struct texture<T, 1, cudaReadModeElementType> texRef,
+                   int index)
+{
+    assert(index >= 0);
+    assert(!c_disableCudaTextures);
+    T result;
+#if GMX_PTX_ARCH >= 300  // Preferring texture objects on any new arch
+    result = tex1Dfetch<T>(texObj, index);
+#else
+    result = tex1Dfetch(texRef, index);
+#endif
+    return result;
+}
+
+/*! \brief Fetch the value by index from the parameter lookup table.
+ *
+ *  Depending on what is supported, it fetches parameters either
+ *  using direct load, texture objects, or texrefs.
+ *
+ * \tparam[in] T         Raw data type
+ * \param[out] d_ptr     Device pointer to the raw table memory
+ * \param[out] texObj    Table texture object
+ * \param[out] texRef    Table texture reference
+ */
+template <typename T>
+static __forceinline__ __device__
+T fetchFromParamLookupTable(const T                  *d_ptr,
+                            const cudaTextureObject_t texObj,
+                            const struct texture<T, 1, cudaReadModeElementType> texRef,
+                            int index)
+{
+    assert(index >= 0);
+    T result;
+#if DISABLE_CUDA_TEXTURES
+    result = LDG(T + index);
+#else
+    result = fetchFromTexture<T>(texObj, texRef, index);
+#endif
+    return result;
+}
+
 
 #endif /* GMX_GPU_UTILS_CUDA_KERNEL_UTILS_CUH */
