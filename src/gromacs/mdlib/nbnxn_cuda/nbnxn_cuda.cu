@@ -74,7 +74,10 @@
  * textures are bound/unbound.
  * (In principle we could do it the other way arond, but that would likely require
  * device linking and we'd rather avoid technical hurdles.)
+ * In the multiple compilation mode, we only declare them as extern in nbnxn_cuda_kernel_utils.cuh.
  */
+#if GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+
 /*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
 texture<float, 1, cudaReadModeElementType> nbfp_texref;
 
@@ -84,6 +87,7 @@ texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
+#endif
 
 /***** The kernel declarations/definitions come here *****/
 
