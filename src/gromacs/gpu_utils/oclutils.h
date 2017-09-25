@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,17 +41,9 @@
 #ifndef GMX_GPU_UTILS_OCLUTILS_H
 #define GMX_GPU_UTILS_OCLUTILS_H
 
-/*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
-   features that were deprecated in 2.0, so that they don't warn about
-   it. */
-#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
-#ifdef __APPLE__
-#    include <OpenCL/opencl.h>
-#else
-#    include <CL/opencl.h>
-#endif
-
 #include <string>
+
+#include "gromacs/gpu_utils/gmxopencl.h"
 
 /*! \brief OpenCL vendor IDs */
 typedef enum {

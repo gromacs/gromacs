@@ -155,6 +155,10 @@ if (GMX_USE_CUDA)
     # Work around FindCUDA that prevents using target_link_libraries()
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
+    # Compile some source files with .cpp extension with nvcc using -x cu
+    foreach(_cuda_file ${CUDA_SOURCES_FROM_CXX})
+        set_source_files_properties(${_cuda_file} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+    endforeach()
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
