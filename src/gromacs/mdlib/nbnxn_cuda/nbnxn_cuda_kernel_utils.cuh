@@ -58,12 +58,6 @@
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-/* Use texture objects if supported by the target hardware (and in host pass). */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
-/* Note: convenience macro, needs to be undef-ed at the end of the file. */
-#define USE_TEXOBJ
-#endif
-
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int          c_clSizeLog2  = 3;
@@ -230,17 +224,10 @@ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
                                 int                typei,
                                 int                typej)
 {
-#if DISABLE_CUDA_TEXTURES
-    return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
-#else
-#ifdef USE_TEXOBJ
-    return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
-#endif /* DISABLE_CUDA_TEXTURES */
+    float sqrtC6i = fetchFromParamLookupTable(nbparam.nbfp_comb, nbparam.nbfp_comb_texobj, nbfp_comb_texref, 2 * typei);
+    float sqrtC6j = fetchFromParamLookupTable(nbparam.nbfp_comb, nbparam.nbfp_comb_texobj, nbfp_comb_texref, 2 * typej);
+    return sqrtC6i * sqrtC6j;
 }
-
 
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
@@ -319,14 +306,10 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
     c6c12 = LDG(&nbfp_comb[type]);
 #else
     /* NOTE: as we always do 8-byte aligned loads, we could
-       fetch float2 here too just as above. */
-#ifdef USE_TEXOBJ
-    c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type);
-    c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type + 1);
-#else
-    c6c12.x = tex1Dfetch(nbfp_comb_texref, 2*type);
-    c6c12.y = tex1Dfetch(nbfp_comb_texref, 2*type + 1);
-#endif /* USE_TEXOBJ */
+       fetch float2 here too just as above, and use
+       fetchFromParamLookupTable() with float2 texture, perhaps? */
+    c6c12.x = fetchFromTexture<float>(nbparam.nbfp_comb_texobj, nbfp_comb_texref, 2*type);
+    c6c12.y = fetchFromTexture<float>(nbparam.nbfp_comb_texobj, nbfp_comb_texref, 2*type + 1);
 #endif /* DISABLE_CUDA_TEXTURES */
 
     return c6c12;
@@ -393,21 +376,9 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
                              int                index)
 {
     float2 d;
-
-#if DISABLE_CUDA_TEXTURES
     /* Can't do 8-byte fetch because some of the addresses will be misaligned. */
-    d.x = LDG(&nbparam.coulomb_tab[index]);
-    d.y = LDG(&nbparam.coulomb_tab[index + 1]);
-#else
-#ifdef USE_TEXOBJ
-    d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
-    d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
-#else
-    d.x =  tex1Dfetch(coulomb_tab_texref, index);
-    d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
-#endif // USE_TEXOBJ
-#endif // DISABLE_CUDA_TEXTURES
-
+    d.x = fetchFromParamLookupTable(nbparam.coulomb_tab, nbparam.coulomb_tab_texobj, coulomb_tab_texref, index);
+    d.y = fetchFromParamLookupTable(nbparam.coulomb_tab, nbparam.coulomb_tab_texobj, coulomb_tab_texref, index + 1);
     return d;
 }
 
@@ -461,13 +432,8 @@ void fetch_nbfp_c6_c12(float               &c6,
 #else
     /* NOTE: as we always do 8-byte aligned loads, we could
        fetch float2 here too just as above. */
-#ifdef USE_TEXOBJ
-    c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
-    c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
-#else
-    c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
-    c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
-#endif
+    c6  = fetchFromTexture<float>(nbparam.nbfp_texobj, nbfp_texref, 2*baseIndex);
+    c12 = fetchFromTexture<float>(nbparam.nbfp_texobj, nbfp_texref, 2*baseIndex + 1);
 #endif // DISABLE_CUDA_TEXTURES
 }
 
@@ -765,7 +731,5 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
     }
 }
 #endif /* GMX_PTX_ARCH */
-
-#undef USE_TEXOBJ
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */
