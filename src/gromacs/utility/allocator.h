@@ -69,7 +69,22 @@ namespace gmx
  * e.g. with SIMD alignment, GPU host-side page locking, or perhaps
  * both, in a way that preserves a common programming interface and
  * duplicates minimal code.
-
+ *
+ * AllocationPolicy is used as a base class, so that if
+ * AllocationPolicy is stateless, then the empty base optimization
+ * will ensure that Allocation is also stateless, and objects made
+ * with the Allocator will incur no size penalty. (Embedding an
+ * AllocationPolicy object incurs a size penalty always, even if the
+ * object is empty.) Normally a stateless allocator will be used.
+ *
+ * However, an AllocationPolicy with state might be desirable for
+ * simplifying writing code that e.g. might need to allocate suitable
+ * to transfer to a GPU, so needs to specify an Allocator that can do
+ * so, but the code will know until run time whether that is
+ * necessary. Such an allocator will incur the cost of keeping that
+ * state, typically by increasing the size of a container that uses
+ * it.
+ *
  * \throws std::bad_alloc Instead of a GROMACS exception object, we
  * throw the standard one on allocation failures to make it as
  * compatible as possible with the errors expected by code using the
@@ -79,7 +94,7 @@ namespace gmx
  * \ingroup module_utility
  */
 template <class T, typename AllocationPolicy>
-class Allocator
+class Allocator : public AllocationPolicy
 {
     public:
         // The standard library specification for a custom allocator
@@ -124,7 +139,13 @@ class Allocator
          * No constructor can be auto-generated in the presence of any
          * user-defined constructor, but we want the default constructor.
          */
-        Allocator() {};
+        Allocator() = default;
+
+        /*! \brief Constructor to accept an AllocationPolicy.
+         *
+         * This is useful for AllocationPolicies with state.
+         */
+        Allocator(const AllocationPolicy &p) : AllocationPolicy(p) {}
 
         /*! \brief Return address of an object
          *
