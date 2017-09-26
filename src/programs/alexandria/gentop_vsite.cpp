@@ -34,6 +34,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
@@ -574,7 +575,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     std::string              params;    
     std::vector<int>         renum;
     std::vector<int>         inv_renum;
-    std::map<int , int>      nuclei;    // std::map<index, number of vsites>
+    std::map<int , int>      nuclei;    // std::map<original atom index, number of vsites>
     std::vector<std::string> Akjl;
     std::vector<std::string> Bjk, Bjl;
         
@@ -591,6 +592,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     renum.resize(atoms->nr + 1, 0);
     inv_renum.resize(nParticles, -1);
     
+    /*Renumber the atoms*/
     for (int i = 0; i < atoms->nr; i++)
     {
         renum[i] = i+nvsite;
@@ -599,8 +601,19 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
         auto vsite = pd.findVsite(atype);
         if (vsite != pd.getVsiteEnd())
         {
-            nuclei.insert(std::pair<int,int>(i, vsite->nvsite()));
             nvsite += vsite->nvsite();
+            nuclei.insert(std::pair<int,int>(i, vsite->nvsite()));            
+        }
+    }
+    renum[atoms->nr] = nParticles;
+    
+    /*Add the virtual sites to the plist*/
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        const auto atype(*atoms->atomtype[i]);
+        auto vsite = pd.findVsite(atype);
+        if (vsite != pd.getVsiteEnd())
+        {
             if(vsite->type() == evtIN_PLANE)
             {
                 auto inplane = findInPlane(vsite->nvsite(), i);
@@ -611,15 +624,15 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     aijl       = 360 - aijk;                   
                     for (int n = 1; n <= vsite->nvsite(); n++)
                     {
-                        vs.a[0] = inplane->ca() + n; /*vsite    i   */
-                        vs.a[1] = inplane->ca();     /*nucleus  j   */
-                        vs.a[2] = inplane->bca();    /*         m   */
-                        vs.a[3] = inplane->bbca1();  /*        / \  */                         
-                        vs.c[0] = aijk;              /*       k   l */
+                        vs.a[0] = renum[inplane->ca()] + n; /*vsite    i   */
+                        vs.a[1] = renum[inplane->ca()];     /*nucleus  j   */
+                        vs.a[2] = renum[inplane->bca()];    /*         m   */
+                        vs.a[3] = renum[inplane->bbca1()];  /*        / \  */                         
+                        vs.c[0] = aijk;                     /*       k   l */
                         vs.c[1] = bij;  
                         if (n == vsite->nvsite())
                         {
-                            vs.a[3] = inplane->bbca2();                            
+                            vs.a[3] = renum[inplane->bbca2()];                            
                             vs.c[0] = aijl;
                         }
                         add_param_to_plist(plist, F_VSITE3FAD, eitVSITE3FAD, vs);
@@ -654,10 +667,10 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                                 / ( bjk*bjl*std::sin(akjl) );                                                                              
                             for (int n = 1; n <= vsite->nvsite(); n++)
                             {
-                                vs.a[0] = outplane->ca() + n; /* vsite     i   */
-                                vs.a[1] = outplane->ca();     /* nucleus   j   */
-                                vs.a[2] = outplane->bca1();   /*          / \  */
-                                vs.a[3] = outplane->bca2();   /*         k   l */            
+                                vs.a[0] = renum[outplane->ca()] + n; /* vsite     i   */
+                                vs.a[1] = renum[outplane->ca()];     /* nucleus   j   */
+                                vs.a[2] = renum[outplane->bca1()];   /*          / \  */
+                                vs.a[3] = renum[outplane->bca2()];   /*         k   l */            
                                 vs.c[0] = a;
                                 vs.c[1] = b;  
                                 vs.c[2] = c;
@@ -677,7 +690,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             }
         }        
     }
-    renum[atoms->nr] = nParticles;    
+        
     if (nvsite == nVsites())
     {
         t_atom          *vsite_atom;
@@ -705,7 +718,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             {
                 add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
-            // Add the exclusions from the nucleus to the vsite.
+            // Make a copy of the exclusions of the nucleus for the vsite.
             for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
             {                
                 // We know that the nuclues is 1 as we added it to plist as such.
@@ -763,7 +776,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             }
         }
         
-        /* Now copy the old atoms to the new structures. */
+        /* Copy the old atoms to the new structures. */
         for (int i = 0; i < atoms->nr; i++)
         {
             newatoms->atom[renum[i]]      = atoms->atom[i];
@@ -783,25 +796,26 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             auto nucleus = nuclei.find(i);
             if (nucleus != nuclei.end())
             {
+                auto iat    = renum[nucleus->first];
                 auto nvsite = nucleus->second;
                 for(int j = 1; j <= nvsite; j++)
                 {
-                    newatoms->atom[i + j]               = atoms->atom[i];
-                    newatoms->atom[i + j].m             = 0;
-                    newatoms->atom[i + j].mB            = 0;
-                    newatoms->atom[i + j].atomnumber    = 0;
+                    newatoms->atom[iat + j]               = atoms->atom[i];
+                    newatoms->atom[iat + j].m             = 0;
+                    newatoms->atom[iat + j].mB            = 0;
+                    newatoms->atom[iat + j].atomnumber    = 0;
                     sprintf(buf, "%sL%d", get_atomtype_name(atoms->atom[i].type, atype), j);
-                    newname[i + j] = strdup(buf);
-                    auto vsite                          = add_atomtype(atype, symtab, vsite_atom, buf, &vs, 0, 0, 0, 0, 0, 0, 0);
-                    newatoms->atom[i + j].type          = vsite;
-                    newatoms->atom[i + j].typeB         = vsite;
-                    newatoms->atomtype[i + j]           = put_symtab(symtab, buf);
-                    newatoms->atomtypeB[i + j]          = newatoms->atomtype[i + j];
-                    newatoms->atom[i + j].ptype         = eptVSite;
-                    newatoms->atom[i + j].resind        = atoms->atom[i].resind;
+                    newname[iat + j] = strdup(buf);
+                    auto vsite                            = add_atomtype(atype, symtab, vsite_atom, buf, &vs, 0, 0, 0, 0, 0, 0, 0);
+                    newatoms->atom[iat + j].type          = vsite;
+                    newatoms->atom[iat + j].typeB         = vsite;
+                    newatoms->atomtype[iat + j]           = put_symtab(symtab, buf);
+                    newatoms->atomtypeB[iat + j]          = put_symtab(symtab, buf);
+                    newatoms->atom[iat + j].ptype         = eptVSite;
+                    newatoms->atom[iat + j].resind        = atoms->atom[i].resind;
                     sprintf(buf, "%sL%d", *(atoms->atomname[i]), j);
-                    newatoms->atomname[i + j] = put_symtab(symtab, buf);
-                    copy_rvec(state->x[i], newx[i + j]);
+                    newatoms->atomname[iat + j] = put_symtab(symtab, buf);
+                    copy_rvec(state->x[i], newx[iat + j]);
                 }
             }
         }
@@ -817,7 +831,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
         }
         sfree(newname);
         
-        /* Copy exclusions, may need to empty the original first */
+        /* Copy exclusions, empty the original first */
         sfree(excls);
         excls = &newexcls;
                 
@@ -836,7 +850,6 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             }
         }
         sfree(vsite_atom);
-        sfree(newexcls);
     }
     else
     {

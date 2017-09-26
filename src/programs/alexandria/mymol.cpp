@@ -88,6 +88,13 @@ static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0;}
 
 static inline double e2d(double a) {return a*ENM2DEBYE;}
 
+static void vsiteType_to_atomType(const std::string &vsiteType, std::string *atomType)  
+{
+    /*  The name of the virtual type is: "atomtype + L + Number" */
+    std::size_t pos = vsiteType.find("L");
+   *atomType        = vsiteType.substr (0, pos);
+}
+
 const char *immsg(immStatus imm)
 {
     static const char *msg[immNR] = {
@@ -766,175 +773,210 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
 {
-    int              i, j, k, iat, shell, nshell = 0;
-    std::vector<int> renum, inv_renum;
-    char             buf[32], **newname;
-    t_param          p;
-    t_atoms         *newa;
-    t_excls         *newexcls;
-    PaddedRVecVector newx;
-    double           pol, sigpol;
 
-    int              maxatom = 2*topology_->atoms.nr;
+    int                 shell  = 0;
+    int                 nshell = 0;
+    double              pol    = 0; 
+    double              sigpol = 0; 
+      
+    std::vector<int>    renum;
+    std::vector<int>    inv_renum;
 
-    state_change_natoms(state_, maxatom);
-    memset(&p, 0, sizeof(p));
-    inv_renum.resize(topology_->atoms.nr*2, -1);
+    char                buf[32];
+    char              **newname;
+    t_atoms            *newatoms;
+    t_excls            *newexcls;
+    PaddedRVecVector    newx;    
+    t_param             p;
+    
     auto polarUnit = string2unit(pd.getPolarUnit().c_str());
     if (-1 == polarUnit)
     {
         gmx_fatal(FARGS, "No such polarizability unit '%s'", pd.getPolarUnit().c_str());
     }
-    for (i = 0; i < topology_->atoms.nr; i++)
+    
+    /*Calculate the total number of particles.*/
+    auto nParticles = topology_->atoms.nr;    
+    for(int i = 0; i < topology_->atoms.nr; i++)
     {
-        renum.push_back(i+nshell);
-        inv_renum[i+nshell] = i;
-        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol) &&
-            (pol > 0) && (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
+            topology_->atoms.atom[i].ptype == eptVSite)
+        {
+            nParticles++; // We add 1 particle as shell per Atom and Vsite
+        }
+    }               
+    state_change_natoms(state_, nParticles);
+    inv_renum.resize(nParticles, -1);
+    renum.resize(topology_->atoms.nr, 0);
+        
+    /*Renumber the atoms.*/
+    for(int i = 0; i < topology_->atoms.nr; i++)
+    {
+        renum[i] = i + nshell;
+        inv_renum[i + nshell] = i;
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
+            topology_->atoms.atom[i].ptype == eptVSite)
         {
             nshell++;
-            p.a[0] = renum[i];
-            p.a[1] = renum[i]+1;
-            p.c[0] = convert2gmx(pol, polarUnit);
-            add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Polarizability is zero for %s atom type.\n",
-                      *topology_->atoms.atomtype[i]);
         }
     }
-    renum.resize(topology_->atoms.nr + 1, 0);
-    renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
-    if (nullptr != debug)
+    
+    /*Add Polarization to the plist*/
+    memset(&p, 0, sizeof(p));
+    for(int i = 0; i < topology_->atoms.nr; i++)
     {
-        fprintf(debug, "added %d shells\n", nshell);
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
+            topology_->atoms.atom[i].ptype == eptVSite)
+        {
+            std::string atomtype;
+            vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
+            if (pd.getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
+                (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
+            {
+                nshell++;
+                p.a[0] = renum[i];
+                p.a[1] = renum[i]+1;
+                p.c[0] = convert2gmx(pol, polarUnit);
+                add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Polarizability is zero for %s atom type.\n", 
+                          *topology_->atoms.atomtype[i]);
+            }
+        }
     }
-    if (nshell > 0)
+    
+    t_atom *shell_atom;
+    snew(shell_atom, 1);
+    shell_atom->ptype = eptShell;
+
+    /* Make new atoms and x arrays */
+    snew(newatoms, 1);
+    init_t_atoms(newatoms, nParticles, true);
+    snew(newatoms->atomtype, nParticles);
+    snew(newatoms->atomtypeB, nParticles);
+    newatoms->nres = topology_->atoms.nres;
+    newx.resize(newatoms->nr);
+    snew(newname, newatoms->nr);
+    
+    /* Make a new exclusion array and put the shells in it */
+    snew(newexcls, newatoms->nr);
+    
+    /* Add exclusion for F_POLARIZATION */
+    auto pw = SearchPlist(plist_, F_POLARIZATION);
+    if (plist_.end() != pw)
     {
-        t_atom          *shell_atom;
-        snew(shell_atom, 1);
-        shell_atom->ptype = eptShell;
-
-        /* Make new atoms and x arrays */
-        snew(newa, 1);
-        init_t_atoms(newa, topology_->atoms.nr+nshell, true);
-        snew(newa->atomtype, topology_->atoms.nr+nshell);
-        snew(newa->atomtypeB, topology_->atoms.nr+nshell);
-        newa->nres = topology_->atoms.nres;
-        newx.resize(newa->nr);
-        snew(newname, newa->nr);
-
-        /* Make new exclusion array, and put the shells in it */
-        snew(newexcls, newa->nr);
-        /* TODO: other polarization types */
-        auto pw = SearchPlist(plist_, F_POLARIZATION);
-        if (plist_.end() != pw)
+        // Exclude the vsites and the atoms from their own shell.
+        for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
         {
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            add_excl_pair(newexcls, j->a[0], j->a[1]);
+        }
+        // Make a copy of the exclusions of the Atom or Vsite for the shell.
+        for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+        {
+            // We know that the Atom or Vsite is 0 as we added it to plist as such.
+            int  i0 = inv_renum[j->a[0]];
+            char buf[256];
+            snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
+                     j->a[0], inv_renum[j->a[0]],
+                     j->a[1], inv_renum[j->a[1]]);
+            GMX_RELEASE_ASSERT(i0 >= 0, buf);
+            for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
             {
-                // Exclude nucleus and shell from each other
-                add_excl_pair(newexcls, j->a[0], j->a[1]);
-            }
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
-            {
-                // Now add the exclusions from the nucleus to the shell.
-                // We know that the nuclues is 0 since we just made the list
-                int  i0 = inv_renum[j->a[0]];
-                char buf[256];
-                snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
-                         j->a[0], inv_renum[j->a[0]],
-                         j->a[1], inv_renum[j->a[1]]);
-                GMX_RELEASE_ASSERT(i0 >= 0, buf);
-                for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
-                {
-                    add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
-                    add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
-                }
-            }
-            for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
-            {
-                for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
-                {
-                    add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
-                }
+                add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
             }
         }
-        // Now copy the old atoms to the new structures
-        for (i = 0; (i < topology_->atoms.nr); i++)
+        for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
         {
-            newa->atom[renum[i]]      = topology_->atoms.atom[i];
-            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
-            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
-            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
-            copy_rvec(state_->x[i], newx[renum[i]]);
-            newname[renum[i]] = *topology_->atoms.atomtype[i];
-            t_atoms_set_resinfo(newa, renum[i], symtab_,
-                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
-                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
-        }
-        // Now insert the shell particles
-        for (i = 0; (i < topology_->atoms.nr); i++)
-        {
-            iat = renum[i];
-            for (j = iat+1; (j < renum[i+1]); j++)
+            for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
             {
-                newa->atom[j]            = topology_->atoms.atom[i];
-                newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].qB       = newa->atom[iat].q;
-                newa->atom[iat].zetaA    = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].zetaB    = newa->atom[iat].zetaA;
-                newa->atom[j].m          = 0;
-                newa->atom[j].mB         = 0;
-                newa->atom[j].atomnumber = 0;
-                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
-                newname[j] = strdup(buf);
-                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
-                newa->atom[j].type          = shell;
-                newa->atom[j].typeB         = shell;
-                newa->atomtype[j]           =
-                    newa->atomtypeB[j]      = put_symtab(symtab_, buf);
-                newa->atom[j].ptype         = eptShell;
-                newa->atom[j].q             = pd.getQ(iModel, *topology_->atoms.atomtype[i], 1);
-                newa->atom[j].qB            = newa->atom[j].q;
-                newa->atom[j].zetaA         = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 1);
-                newa->atom[j].zetaB         = newa->atom[j].zetaA;
-                newa->atom[j].resind        = topology_->atoms.atom[i].resind;
-                sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
-                newa->atomname[j] = put_symtab(symtab_, buf);
-                copy_rvec(state_->x[i], newx[j]);
+                add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
             }
         }
-        /* Copy newa to atoms */
-        copy_atoms(newa, &topology_->atoms);
-        /* Copy coordinates and smnames */
-        for (i = 0; i < newa->nr; i++)
-        {
-            copy_rvec(newx[i], state_->x[i]);
-            topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
-        }
-
-        sfree(newname);
-        /* Copy exclusions, may need to empty the original first */
-        sfree(excls_);
-        excls_ = newexcls;
-        //let_shells_see_shells(excls_, &topology_->atoms, atype_);
-        for (auto i = plist_.begin(); i < plist_.end(); ++i)
-        {
-            if (i->getFtype() != F_POLARIZATION)
-            {
-                for (auto j = i->beginParam(); j < i->endParam(); ++j)
-                {
-                    for (k = 0; (k < NRAL(i->getFtype())); k++)
-                    {
-                        j->a[k] = renum[j->a[k]];
-                    }
-                }
-            }
-        }
-        bHaveShells_ = true;
-        sfree(shell_atom);
     }
+    
+     /* Copy the old atoms to the new structures. */
+    for (int i = 0; i < topology_->atoms.nr; i++)
+    {
+        newatoms->atom[renum[i]]      = topology_->atoms.atom[i];
+        newatoms->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
+        newatoms->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
+        newatoms->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
+        copy_rvec(state_->x[i], newx[renum[i]]);
+        newname[renum[i]] = *topology_->atoms.atomtype[i];
+        t_atoms_set_resinfo(newatoms, renum[i], symtab_,
+                            *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
+                            topology_->atoms.atom[i].resind, ' ', 1, ' ');
+    }
+    
+    for (int i = 0; i < topology_->atoms.nr; i++)
+    {
+        if (topology_->atoms.atom[i].ptype == eptAtom ||
+            topology_->atoms.atom[i].ptype == eptVSite)
+        {
+            std::string atomtype;
+            auto iat = renum[i];
+            auto j   = iat + 1;
+            
+            vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
+            
+            newatoms->atom[j]               = topology_->atoms.atom[i];
+            newatoms->atom[j].m             = 0;
+            newatoms->atom[j].mB            = 0;
+            newatoms->atom[j].atomnumber    = 0;
+            sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
+            newname[j]                      = strdup(buf);
+            shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
+            newatoms->atom[j].type          = shell;
+            newatoms->atom[j].typeB         = shell;
+            newatoms->atomtype[j]           = put_symtab(symtab_, buf);
+            newatoms->atomtypeB[j]          = put_symtab(symtab_, buf);
+            newatoms->atom[j].ptype         = eptShell;
+            newatoms->atom[j].q             = pd.getQ(iModel, atomtype, 1);
+            newatoms->atom[j].qB            = newatoms->atom[j].q;
+            newatoms->atom[j].zetaA         = pd.getZeta(iModel, atomtype, 1);
+            newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
+            newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;
+            sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
+            newatoms->atomname[j] = put_symtab(symtab_, buf);
+            copy_rvec(state_->x[i], newx[j]);
+        }   
+    }
+    
+    /* Copy newatoms to atoms */
+    copy_atoms(newatoms, &topology_->atoms);
+
+    for (int i = 0; i < newatoms->nr; i++)
+    {
+        copy_rvec(newx[i], state_->x[i]);
+        topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
+    }   
+    sfree(newname);
+    
+    /* Copy exclusions, empty the original first */
+    sfree(excls_);
+    excls_ = newexcls;
+    
+    //let_shells_see_shells(excls_, &topology_->atoms, atype_);
+    
+    /*Now renumber atoms in all other plist interaction types */
+    for (auto i = plist_.begin(); i < plist_.end(); ++i)
+    {
+        if (i->getFtype() != F_POLARIZATION)
+        {
+            for (auto j = i->beginParam(); j < i->endParam(); ++j)
+            {
+                for (int k = 0; k < NRAL(i->getFtype()); k++)
+                {
+                    j->a[k] = renum[j->a[k]];
+                }
+            }
+        }
+    }
+    bHaveShells_ = true;
+    sfree(shell_atom);
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
