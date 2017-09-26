@@ -89,8 +89,6 @@ typedef struct gmx_settledata
     int          *hw3;      /* Index to HW3 atoms, size nsettle + SIMD padding */
     real         *virfac;   /* Virial factor 0 or 1, size nsettle + SIMD pad. */
     int           nalloc;   /* Allocation size of ow1, hw2, hw3, virfac */
-
-    bool          bUseSimd; /* Use SIMD intrinsics code, if possible */
 } t_gmx_settledata;
 
 
@@ -213,9 +211,6 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     settled->hw3    = nullptr;
     settled->virfac = nullptr;
     settled->nalloc = 0;
-
-    /* Without SIMD configured, this bool is not used */
-    settled->bUseSimd = (getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr);
 
     return settled;
 }
@@ -846,47 +841,42 @@ void csettle(gmx_settledata_t settled,
              bool *bErrorHasOccurred)
 {
 #if GMX_SIMD_HAVE_REAL
-    if (settled->bUseSimd)
-    {
-        /* Convert the pbc struct for SIMD */
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbcSimd[9*GMX_SIMD_REAL_WIDTH];
-        set_pbc_simd(pbc, pbcSimd);
+    /* Convert the pbc struct for SIMD */
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbcSimd[9*GMX_SIMD_REAL_WIDTH];
+    set_pbc_simd(pbc, pbcSimd);
 
-        settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
-                              const real *>(settled,
-                                            nthread, thread,
-                                            pbcSimd,
-                                            x, xprime,
-                                            invdt,
-                                            v,
-                                            bCalcVirial, vir_r_m_dr,
-                                            bErrorHasOccurred);
+    settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
+                          const real *>(settled,
+                                        nthread, thread,
+                                        pbcSimd,
+                                        x, xprime,
+                                        invdt,
+                                        v,
+                                        bCalcVirial, vir_r_m_dr,
+                                        bErrorHasOccurred);
+#else
+    /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
+    t_pbc        pbcNo;
+    const t_pbc *pbcNonNull;
+
+    if (pbc != nullptr)
+    {
+        pbcNonNull = pbc;
     }
     else
-#endif
     {
-        /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
-        t_pbc        pbcNo;
-        const t_pbc *pbcNonNull;
-
-        if (pbc != nullptr)
-        {
-            pbcNonNull = pbc;
-        }
-        else
-        {
-            set_pbc(&pbcNo, epbcNONE, nullptr);
-            pbcNonNull = &pbcNo;
-        }
-
-        settleTemplateWrapper<real, bool, 1,
-                              const t_pbc *>(settled,
-                                             nthread, thread,
-                                             pbcNonNull,
-                                             x, xprime,
-                                             invdt,
-                                             v,
-                                             bCalcVirial, vir_r_m_dr,
-                                             bErrorHasOccurred);
+        set_pbc(&pbcNo, epbcNONE, nullptr);
+        pbcNonNull = &pbcNo;
     }
+
+    settleTemplateWrapper<real, bool, 1,
+                          const t_pbc *>(settled,
+                                         nthread, thread,
+                                         pbcNonNull,
+                                         x, xprime,
+                                         invdt,
+                                         v,
+                                         bCalcVirial, vir_r_m_dr,
+                                         bErrorHasOccurred);
+#endif
 }
