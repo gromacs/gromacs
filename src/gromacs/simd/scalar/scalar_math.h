@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #include <cmath>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/simd/scalar/scalar.h"
 
 /*! \libinternal \file
@@ -48,6 +49,8 @@
  * either a SIMD or scalar type. While some of these functions might not appear
  * SIMD-specific, we have placed them here because the only reason to use these
  * instead of generic function is in templated combined SIMD/non-SIMD code.
+ * It is important that these functions match the SIMD versions exactly in their
+ * arguments and template arguments so that overload resolution works correctly.
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  *
@@ -157,7 +160,21 @@ maskzInv(float x, bool m)
     return m ? inv(x) : 0.0f;
 }
 
-// sqrt(x) is already defined in math/functions.h
+/*! \brief Float sqrt(x). This is the square root.
+ *
+ * \param x Argument, should be >= 0.
+ * \result The square root of x. Undefined if argument is invalid.
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline float
+sqrt(float x)
+{
+    return std::sqrt(x);
+}
 
 /*! \brief Float log(x). This is the natural logarithm.
  *
@@ -183,6 +200,7 @@ log(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline float
 exp2(float x)
 {
@@ -198,6 +216,7 @@ exp2(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline float
 exp(float x)
 {
@@ -551,7 +570,21 @@ maskzInv(double x, bool m)
     return m ? inv(x) : 0.0;
 }
 
-// sqrt(x) is already defined in math/functions.h
+/*! \brief Double sqrt(x). This is the square root.
+ *
+ * \param x Argument, should be >= 0.
+ * \result The square root of x. Undefined if argument is invalid.
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+template <MathOptimization opt = MathOptimization::Safe>
+static inline double
+sqrt(double x)
+{
+    return std::sqrt(x);
+}
 
 /*! \brief Double log(x). This is the natural logarithm.
  *
@@ -577,6 +610,7 @@ log(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline double
 exp2(double x)
 {
@@ -592,6 +626,7 @@ exp2(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
+template <MathOptimization opt = MathOptimization::Safe>
 static inline double
 exp(double x)
 {
