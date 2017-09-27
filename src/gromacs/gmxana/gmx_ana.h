@@ -154,6 +154,9 @@ int
 gmx_make_ndx(int argc, char *argv[]);
 
 int
+gmx_map(int argc, char *argv[]);
+
+int
 gmx_mindist(int argc, char *argv[]);
 
 int

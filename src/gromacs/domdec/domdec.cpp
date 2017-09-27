@@ -85,6 +85,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/maputil.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
@@ -9772,6 +9773,12 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local rotation groups */
         dd_make_local_rotation_groups(dd, ir->rot);
+    }
+
+    if (ir->densfit)
+    {
+        /* Make a selection of the local atoms for density fitting */
+        dd_make_local_df_indices(dd, ir->densfit);
     }
 
     if (ir->eSwapCoords != eswapNO)
