@@ -376,6 +376,11 @@ void please_cite(FILE *fp, const char *key)
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           10, 2014, "381-393" },
+        { "Tama2008",
+          "M. Orzechowski, F. Tama",
+          "Flexible Fitting of High-Resolution X-Ray Structures into Cryoelectron Microscopy Maps Using Biased Molecular Dynamics Simulations",
+          "Biophys. J.",
+          95, 2008, "5692-5705"},
     };
 #define NSTR (int)asize(citedb)
 

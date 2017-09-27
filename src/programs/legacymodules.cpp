@@ -355,6 +355,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel",
                    "Plot helical wheels");
+    registerModule(manager, &gmx_map, "map",
+                   "Work with CCP4 electron density maps");
     registerModuleNoNice(manager, &gmx_view, "view",
                          "View a trajectory on an X-Windows terminal");
 
@@ -420,6 +422,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
+        group.addModule("map");
     }
     {
         gmx::CommandLineModuleGroup group =

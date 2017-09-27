@@ -280,6 +280,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->bEner[i] = (integratorHasConservedEnergyQuantity(ir));
         }
+        else if (i == F_DENSFIT_CC && ir->densfit != nullptr)
+        {
+            md->bEner[i] = TRUE;
+        }
         else
         {
             md->bEner[i] = (gmx_mtop_ftype_count(mtop, i) > 0);
