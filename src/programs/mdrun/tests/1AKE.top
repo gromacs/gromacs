@@ -1,0 +1,46 @@
+;
+;	File 'topol.top' was generated
+;	By user: onbekend (0)
+;	On host: onbekend
+;	At date: Fri May 11 13:03:19 2012
+;
+;	This is a standalone topology file
+;
+;	It was generated using program:
+;	pdb2gmx - VERSION 4.5.5-dev-20110921-e25c350
+;
+;	Command line was:
+;	pdb2gmx -f ions.gro -ff amber99sb -water tip3p -vsite hydrogen -o 1AKE_final.pdb 
+;
+;	Force field was read from the standard Gromacs share directory.
+;
+
+; Include forcefield parameters
+#include "amber99sb.ff/forcefield.itp"
+
+; Include chain topologies
+#include "1AKE_topol.itp"
+#include "1AKE_ion.itp"
+
+; Include water topology
+#include "amber99sb.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber99sb.ff/ions.itp"
+
+[ system ]
+; Name
+Gallium Rubidium Oxygen Manganese Argon Carbon Silicon in water
+
+[ molecules ]
+; Compound        #mols
+Protein             1
+Ion2                1
+SOL             17354
