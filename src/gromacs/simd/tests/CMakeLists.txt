@@ -50,5 +50,16 @@ gmx_add_unit_test(SimdUnitTests simd-test
                   scalar_util.cpp
                   scalar_math.cpp)
 
-
+#Add tests for expressions which are supposed to not compile
+foreach(TEST_FUNC exp exp2 log inv cos sin sqrt)
+    add_executable(simd_ambigious_${TEST_FUNC} simd_ambigious.cpp)
+    set_target_properties(simd_ambigious_${TEST_FUNC} PROPERTIES
+                          EXCLUDE_FROM_ALL TRUE
+			  EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+    target_compile_definitions(simd_ambigious_${TEST_FUNC} PRIVATE TEST_FUNC=${TEST_FUNC})
+    add_test(NAME simd_ambigious_${TEST_FUNC}
+             COMMAND ${CMAKE_COMMAND} --build . --target simd_ambigious_${TEST_FUNC} --config $<CONFIGURATION>
+	              WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    set_tests_properties(simd_ambigious_${TEST_FUNC} PROPERTIES WILL_FAIL TRUE)
+endforeach()
 
