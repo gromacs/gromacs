@@ -101,6 +101,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/maputil.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/taskassignment/hardwareassign.h"
@@ -1125,6 +1126,13 @@ int Mdrunner::mdrunner()
         {
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), mtop, oenv, mdrunOptions);
+        }
+
+        if (inputrec->bDensityFitting)
+        {
+            /* Initialize additional potential due to experimental density maps */
+            init_density_fitting(fplog, inputrec, nfile, fnm, mtop, as_rvec_array(globalState.get()->x.data()), box,
+                                 cr, oenv, mdrunOptions.continuationOptions.appendFiles, mdrunOptions.verbose);
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
