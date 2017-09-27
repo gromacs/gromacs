@@ -91,6 +91,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/maputil.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -1111,6 +1112,17 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROT);
     }
 
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        do_densfit(t, step, do_per_step(step, inputrec->densfit->nstmapout), inputrec,
+                   cr, x, box, wcycle);
+    }
+
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force->data());
 
@@ -1445,6 +1457,12 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Apply the forces resulting from the density fitting potential */
+    if (inputrec->bDensityFitting)
+    {
+        enerd->term[F_DENSFIT_CC] = add_densfit_forces(inputrec, f, cr, step, t);
+    }
+
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
     IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
 
@@ -1688,6 +1706,17 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROT);
     }
 
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        do_densfit(t, step, do_per_step(step, inputrec->densfit->nstmapout), inputrec,
+                   cr, x, box, wcycle);
+    }
+
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force->data());
 
@@ -1824,6 +1853,13 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcROTadd);
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
+    }
+
+    /* Apply the forces resulting from the density fitting potential */
+    if (inputrec->bDensityFitting)
+    {
+        /* Apply the forces due to density maps */
+        add_densfit_forces(inputrec, f, cr, step, t);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */

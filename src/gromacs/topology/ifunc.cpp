@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,5 +178,6 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("DVV/DL",   "dVvdw/dl"         ),
     def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
     def_nofc    ("DVR/DL",   "dVrestraint/dl"   ),
-    def_nofc    ("DVT/DL",   "dVtemperature/dl" )
+    def_nofc    ("DVT/DL",   "dVtemperature/dl" ),
+    def_nofc    ("DENS_CC",  "densfit c.c."     ),  /* density fitting correlation coefficient */
 };
