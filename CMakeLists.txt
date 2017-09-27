@@ -737,6 +737,9 @@ if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
     list(APPEND GMX_EXTRA_LIBRARIES rt)
 endif()
 
+# CCP4 support for density fitting
+#list(APPEND GMX_EXTRA_LIBRARIES ccp4c)
+
 # Math and thread libraries must often come after all others when linking...
 if (HAVE_LIBM)
     list(APPEND GMX_PUBLIC_LIBRARIES m)

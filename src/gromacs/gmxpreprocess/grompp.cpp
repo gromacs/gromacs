@@ -48,6 +48,7 @@
 
 #include <sys/types.h>
 
+#include "gromacs/applied-forces/maputil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
@@ -100,6 +101,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -1326,6 +1328,13 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 
 }
 
+/* For density fitting, read in the (electron) density map */
+static void setup_densfit(const char *fn_map, t_densfit *densfit, gmx_bool bVerbose)
+{
+    /* Process input file (map) */
+    gmx::do_map_ccp4(TRUE, &densfit->map_ref, fn_map, FALSE, bVerbose, bVerbose ? stdout : NULL);
+}
+
 static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
@@ -1799,7 +1808,8 @@ int gmx_grompp(int argc, char *argv[])
         { efEDR, "-e",  nullptr,        ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
         { efGRO, "-imd", "imdgroup", ffOPTWR },
-        { efTRN, "-ref", "rotref",   ffOPTRW }
+        { efTRN, "-ref", "rotref",   ffOPTRW },
+        { efDENSITYMAP, "-mi", "mapin", ffOPTRD }    /* CCP4 density map input file */
     };
 #define NFILE asize(fnm)
 
@@ -2312,6 +2322,12 @@ int gmx_grompp(int argc, char *argv[])
         set_reference_positions(ir->rot, as_rvec_array(state.x.data()), state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
+    }
+
+    /* Was an input (electron) density map provided? */
+    if (ir->bDensityFitting)
+    {
+        setup_densfit(opt2fn("-mi", NFILE, fnm), ir->densfit, bVerbose);
     }
 
     /*  reset_multinr(sys); */
