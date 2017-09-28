@@ -1779,16 +1779,11 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             dd_move_f(cr->dd, f, fr->fshift);
             /* Do we need to communicate the separate force array
              * for terms that do not contribute to the single sum virial?
-             * Position restraints and electric fields do not introduce
-             * inter-cg forces, only full electrostatics methods do.
-             * When we do not calculate the virial, fr->f_novirsum = f,
-             * so we have already communicated these forces.
+             * Position restraints, electric fields and PME with exclusion
+	     * correction in the non-bonded kernel only act on local atoms.
+	     * We currently require ForceProviders to only act on local
+	     * atoms. So we never need to communicate fr->f_novirsum.
              */
-            if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
-                (flags & GMX_FORCE_VIRIAL))
-            {
-                dd_move_f(cr->dd, as_rvec_array(fr->f_novirsum->data()), nullptr);
-            }
             wallcycle_stop(wcycle, ewcMOVEF);
         }
 
