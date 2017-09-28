@@ -2810,7 +2810,10 @@ void init_forcerec(FILE                *fp,
     fr->bF_NoVirSum = (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
                        fr->forceProviders->hasForcesWithoutVirialContribution() ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
+                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
+                       ir->bPull ||
+                       ir->bRot ||
+                       ir->bIMD);
 
     if (fr->bF_NoVirSum)
     {
