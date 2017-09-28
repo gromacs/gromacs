@@ -392,6 +392,12 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                       adat_len * sizeof(*adat->xq), stream);
 
+    if (bDoTime)
+    {
+        stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
        so we record that in the local stream and wait for it in the nonlocal one. */
@@ -407,12 +413,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
             stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
             CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
         }
-    }
-
-    if (bDoTime)
-    {
-        stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     if (nbp->useDynamicPruning && plist->haveFreshList)
