@@ -156,15 +156,6 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
                          cudaStream_t s,
                          bool bAsync);
 
-/*! Waits for event e to complete, */
-int cu_wait_event(cudaEvent_t /*e*/);
-
-/*! Calculates and returns the time elapsed between event start and end. */
-float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
-
-/*! Waits for event end to complete and calculates the time between start and end. */
-int cu_wait_event_time(cudaEvent_t /*end*/, cudaEvent_t /*begin*/, float * /*time*/);
-
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. We just need to add a templated __device__ table data fetching to complete it.
 
