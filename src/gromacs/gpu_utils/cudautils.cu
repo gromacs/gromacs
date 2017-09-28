@@ -126,46 +126,6 @@ int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s 
     return cu_copy_H2D_generic(d_dest, h_src, bytes, true, s);
 }
 
-float cu_event_elapsed(cudaEvent_t start, cudaEvent_t end)
-{
-    float       t = 0.0;
-    cudaError_t stat;
-
-    stat = cudaEventElapsedTime(&t, start, end);
-    CU_RET_ERR(stat, "cudaEventElapsedTime failed in cu_event_elapsed");
-
-    return t;
-}
-
-int cu_wait_event(cudaEvent_t e)
-{
-    cudaError_t s;
-
-    s = cudaEventSynchronize(e);
-    CU_RET_ERR(s, "cudaEventSynchronize failed in cu_wait_event");
-
-    return 0;
-}
-
-/*!
- *  If time != NULL it also calculates the time elapsed between start and end and
- *  return this is milliseconds.
- */
-int cu_wait_event_time(cudaEvent_t end, cudaEvent_t start, float *time)
-{
-    cudaError_t s;
-
-    s = cudaEventSynchronize(end);
-    CU_RET_ERR(s, "cudaEventSynchronize failed in cu_wait_event");
-
-    if (time)
-    {
-        *time = cu_event_elapsed(start, end);
-    }
-
-    return 0;
-}
-
 /**** Operation on buffered arrays (arrays with "over-allocation" in gmx wording) *****/
 
 /*!

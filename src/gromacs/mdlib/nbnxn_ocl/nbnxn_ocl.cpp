@@ -370,44 +370,6 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     *ocl_event = 0;
 }
 
-/*! \brief Returns the duration in milliseconds for the command associated with the event.
- *
- * It then releases the event and sets it to 0.
- * Before calling this function, make sure the command has finished either by
- * calling clFinish or clWaitForEvents.
- * The function returns 0.0 if the input event, *ocl_event, is 0.
- * Don't use this function when more than one wait will be issued for the event.
- * \todo This function, as well as some CUDA counterparts, is superseded by GpuRegionTimer.
- * Delete.
- */
-static inline double ocl_event_elapsed_ms(cl_event *ocl_event)
-{
-    cl_int gmx_unused cl_error;
-    cl_ulong          start_ns, end_ns;
-    double            elapsed_ms;
-
-    elapsed_ms = 0.0;
-    assert(NULL != ocl_event);
-
-    if (*ocl_event)
-    {
-        cl_error = clGetEventProfilingInfo(*ocl_event, CL_PROFILING_COMMAND_START,
-                                           sizeof(cl_ulong), &start_ns, NULL);
-        assert(CL_SUCCESS == cl_error);
-
-        cl_error = clGetEventProfilingInfo(*ocl_event, CL_PROFILING_COMMAND_END,
-                                           sizeof(cl_ulong), &end_ns, NULL);
-        assert(CL_SUCCESS == cl_error);
-
-        clReleaseEvent(*ocl_event);
-        *ocl_event = 0;
-
-        elapsed_ms = (end_ns - start_ns) / 1000000.0;
-    }
-
-    return elapsed_ms;
-}
-
 /*! \brief Launch GPU kernel
 
    As we execute nonbonded workload in separate queues, before launching
