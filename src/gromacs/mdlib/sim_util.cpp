@@ -231,7 +231,6 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     int    i;
 
     /* The short-range virial from surrounding boxes */
-    clear_mat(vir_part);
     calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
@@ -275,8 +274,7 @@ static void pull_potential_wrapper(t_commrec *cr,
 
     /* Calculate the center of mass forces, this requires communication,
      * which is why pull_potential is called close to other communication.
-     * The virial contribution is calculated directly,
-     * which is why we call pull_potential after calc_virial.
+     * The virial contribution is calculated directly.
      */
     wallcycle_start(wcycle, ewcPULLPOT);
     set_pbc(&pbc, ir->ePBC, box);
@@ -707,6 +705,104 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
     }
 }
 
+/*! \brief Compute forces and/or energies for special algorithms
+ *
+ * The intention is to collect all calls to algorithms that compute
+ * forces on local atoms only and that do not contribute to the local
+ * virial sum (but add their virial contribution separately).
+ * Eventually these should likely all become ForceProviders.
+ * Within this function the intention is to have algorithms that do
+ * global communication at the end, so global barriers within the MD loop
+ * are as close together as possible.
+ *
+ * \param[in]     cr              The communication record
+ * \param[in]     inputrec        The input record
+ * \param[in]     step            The current MD step
+ * \param[in]     t               The current time
+ * \param[in,out] wcycle          Wallcycle accounting struct
+ * \param[in,out] forceProviders  Pointer to a list of force providers
+ * \param[in]     box             The unit cell
+ * \param[in]     x               The coordinates
+ * \param[in]     mdatoms         Per atom properties
+ * \param[in]     lambda          Array of free-energy lambda values
+ * \param[in]     forceFlags      Flags that tell whether we should compute forces/energies/virial
+ * \param[in,out] force           Force buffer which contributes to the virial
+ * \param[in,out] forceNoVirSum   Force buffer which does not contribute to the virial
+ * \param[in,out] virial          Virial buffer
+ * \param[in,out] enerd           Energy buffer
+ * \param[in,out] ed              Essential dynamics pointer
+ * \param[in]     bNS             Tells if we did neighbor searching this step, used for ED sampling
+ *
+ * \todo Consider removing the normal force buffer, since we don't need it.
+ * \todo Remove bNS, which is used incorrectly.
+ * \todo Convert all other algorithms called here to ForceProviders.
+ */
+static void
+computeSpecialForces(t_commrec        *cr,
+                     t_inputrec       *inputrec,
+                     gmx_int64_t       step,
+                     double            t,
+                     gmx_wallcycle_t   wcycle,
+                     ForceProviders   *forceProviders,
+                     matrix            box,
+                     rvec             *x,
+                     t_mdatoms        *mdatoms,
+                     real             *lambda,
+                     int               forceFlags,
+                     PaddedRVecVector *force,
+                     PaddedRVecVector *forceNoVirSum,
+                     tensor            virial,
+                     gmx_enerdata_t   *enerd,
+                     gmx_edsam_t       ed,
+                     gmx_bool          bNS)
+{
+    const bool computeForces = (forceFlags & GMX_FORCE_FORCES);
+
+    /* NOTE: Currently all ForceProviders only provide forces.
+     *       When they also provide energies, remove this conditional.
+     */
+    if (computeForces)
+    {
+        /* Collect forces from modules */
+        gmx::ArrayRef<gmx::RVec> fNoVirSum = *forceNoVirSum;
+
+        forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+    }
+
+    rvec *fNoVirSum = as_rvec_array(forceNoVirSum->data());
+
+    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
+    {
+        pull_potential_wrapper(cr, inputrec, box, x,
+                               fNoVirSum, virial, mdatoms, enerd, lambda, t,
+                               wcycle);
+    }
+
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+    {
+        wallcycle_start(wcycle, ewcROTadd);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, fNoVirSum, cr, step, t);
+        wallcycle_stop(wcycle, ewcROTadd);
+    }
+
+    if (ed)
+    {
+        /* Note that since init_edsam() is called after the initialization
+         * of forcerec, edsam doesn't request the noVirSum force buffer.
+         * Thus if no other algorithm (e.g. PME) requires it, the forces
+         * here will contribute to the virial.
+         */
+        do_flood(cr, inputrec, x, fNoVirSum, ed, box, step, bNS);
+    }
+
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    if (inputrec->bIMD && computeForces)
+    {
+        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, fNoVirSum, wcycle);
+    }
+}
+
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1118,34 +1214,20 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
      * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
+    fr->f_novirsum = force;
     if (bDoForces)
     {
-        /* Reset forces for which the virial is calculated separately:
-         * PME/Ewald forces if necessary */
-        if (fr->bF_NoVirSum)
+        /* If we need to compute the virial, we might need a separate
+         * force buffer for algorithms for which the virial is calculated
+         * separately, such as PME.
+         */
+        if (fr->bF_NoVirSum && (flags & GMX_FORCE_VIRIAL))
         {
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                fr->f_novirsum = fr->forceBufferNoVirialSummation;
-            }
-            else
-            {
-                /* We are not calculating the pressure so we do not need
-                 * a separate array for forces that do not contribute
-                 * to the pressure.
-                 */
-                fr->f_novirsum = force;
-            }
-        }
+            fr->f_novirsum = fr->forceBufferNoVirialSummation;
 
-        if (fr->bF_NoVirSum)
-        {
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                /* TODO: remove this - 1 when padding is properly implemented */
-                clear_rvecs_omp(fr->f_novirsum->size() - 1,
-                                as_rvec_array(fr->f_novirsum->data()));
-            }
+            /* TODO: remove this - 1 when padding is properly implemented */
+            clear_rvecs_omp(fr->f_novirsum->size() - 1,
+                            as_rvec_array(fr->f_novirsum->data()));
         }
         /* Clear the short- and long-range forces */
         clear_rvecs_omp(fr->natoms_force_constr, f);
@@ -1254,10 +1336,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    if (ed)
-    {
-        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
-    }
+    computeSpecialForces(cr, inputrec, step, t, wcycle,
+                         fr->forceProviders, box, x, mdatoms, lambda,
+                         flags, force, fr->f_novirsum, vir_force, enerd,
+                         ed, bNS);
 
     if (bUseOrEmulGPU && !bDiffKernels)
     {
@@ -1400,14 +1482,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        /* Collect forces from modules */
-        gmx::ArrayRef<gmx::RVec> fNoVirSum;
-        if (fr->bF_NoVirSum)
-        {
-            fNoVirSum = *fr->f_novirsum;
-        }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
-
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=f later.
          */
@@ -1426,27 +1500,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
-
-    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
-    {
-        /* Since the COM pulling is always done mass-weighted, no forces are
-         * applied to vsites and this call can be done after vsite spreading.
-         */
-        pull_potential_wrapper(cr, inputrec, box, x,
-                               f, vir_force, mdatoms, enerd, lambda, t,
-                               wcycle);
-    }
-
-    /* Add the forces from enforced rotation potentials (if any) */
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
-        wallcycle_stop(wcycle, ewcROTadd);
-    }
-
-    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
-    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
@@ -1696,27 +1749,20 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
      */
     wallcycle_start(wcycle, ewcFORCE);
 
+    fr->f_novirsum = force;
     if (bDoForces)
     {
-        /* Reset forces for which the virial is calculated separately:
-         * PME/Ewald forces if necessary */
-        if (fr->bF_NoVirSum)
+        /* If we need to compute the virial, we might need a separate
+         * force buffer for algorithms for which the virial is calculated
+         * separately, such as PME.
+         */
+        if (fr->bF_NoVirSum && (flags & GMX_FORCE_VIRIAL))
         {
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                fr->f_novirsum = fr->forceBufferNoVirialSummation;
-                /* TODO: remove this - 1 when padding is properly implemented */
-                clear_rvecs(fr->f_novirsum->size() - 1,
-                            as_rvec_array(fr->f_novirsum->data()));
-            }
-            else
-            {
-                /* We are not calculating the pressure so we do not need
-                 * a separate array for forces that do not contribute
-                 * to the pressure.
-                 */
-                fr->f_novirsum = force;
-            }
+            fr->f_novirsum = fr->forceBufferNoVirialSummation;
+
+            /* TODO: remove this - 1 when padding is properly implemented */
+            clear_rvecs(fr->f_novirsum->size() - 1,
+                        as_rvec_array(fr->f_novirsum->data()));
         }
 
         /* Clear the short- and long-range forces */
@@ -1757,21 +1803,13 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (ed)
-    {
-        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
-    }
+    computeSpecialForces(cr, inputrec, step, t, wcycle,
+                         fr->forceProviders, box, x, mdatoms, lambda,
+                         flags, force, fr->f_novirsum, vir_force, enerd,
+                         ed, bNS);
 
     if (bDoForces)
     {
-        /* Collect forces from modules */
-        gmx::ArrayRef<gmx::RVec> fNoVirSum;
-        if (fr->bF_NoVirSum)
-        {
-            fNoVirSum = *fr->f_novirsum;
-        }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
-
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
         {
@@ -1810,24 +1848,6 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
-
-    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
-    {
-        pull_potential_wrapper(cr, inputrec, box, x,
-                               f, vir_force, mdatoms, enerd, lambda, t,
-                               wcycle);
-    }
-
-    /* Add the forces from enforced rotation potentials (if any) */
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
-        wallcycle_stop(wcycle, ewcROTadd);
-    }
-
-    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
-    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
