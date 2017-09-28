@@ -104,7 +104,7 @@ template <GpuFramework framework> class GpuRegionTimerImpl
 
 /*! \libinternal \brief
  * This is a GPU region timing wrapper class.
- * It allows for host-side tracking of the execution timespans in GPU code
+ * It allows for host-side tracking of the accumulated execution timespans in GPU code
  * (measuring kernel or transfers duration).
  * It also partially tracks the correctness of the timer state transitions,
  * as far as current implementation allows (see TODO in getLastRangeTime() for a disabled check).
@@ -123,6 +123,10 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
         Stopped
     } debugState_;
 
+    //! The number of times the timespan has been measured
+    unsigned int                  callCount_;
+    //! The accumulated duration of the timespans measured (milliseconds)
+    double                        totalMilliseconds_;
     //! The underlying region timer implementation
     GpuRegionTimerImpl<framework> impl_;
 
@@ -160,10 +164,12 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
                 GMX_ASSERT(debugState_ == TimerState::Recording, error.c_str());
                 debugState_ = TimerState::Stopped;
             }
+            callCount_++;
             impl_.closeTimingRegion(s);
         }
         /*! \brief
-         * Returns the last timespan, and resets the internal timer state.
+         * Accumulates the last timespan of all the events used into the the total duration,
+         * and resets the internal timer state.
          * To be called after closeTimingRegion() and the command stream of the event having been synchronized.
          * \returns The last timespan (in milliseconds).
          */
@@ -185,7 +191,12 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
                  */
                 debugState_ = TimerState::Idle;
             }
-            double milliseconds = impl_.getLastRangeTime();
+            double milliseconds = 0.0;
+            if (callCount_ > 0) /* Only the touched events needed */
+            {
+                milliseconds        = impl_.getLastRangeTime();
+                totalMilliseconds_ += milliseconds;
+            }
             return milliseconds;
         }
         /*! \brief Resets the implementation and total time/call count to zeroes. */
@@ -195,7 +206,19 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
             {
                 debugState_ = TimerState::Idle;
             }
+            totalMilliseconds_ = 0.0;
+            callCount_         = 0;
             impl_.reset();
+        }
+        /*! \brief Gets total time recorded (in milliseconds). */
+        double getTotalTime() const
+        {
+            return totalMilliseconds_;
+        }
+        /*! \brief Gets total call count recorded. */
+        unsigned int getCallCount() const
+        {
+            return callCount_;
         }
         /*! \brief
          * Gets a pointer to a new timing event for passing into individual GPU API calls
