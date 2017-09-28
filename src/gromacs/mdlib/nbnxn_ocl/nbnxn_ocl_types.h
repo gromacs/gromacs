@@ -368,7 +368,7 @@ struct gmx_nbnxn_ocl_t
 
     cl_bool                     bDoTime;  /**< True if event-based timing is enabled.                     */
     cl_timers_t                *timers;   /**< OpenCL event-based timers.                                 */
-    struct gmx_wallclock_gpu_t *timings;  /**< Timing data.                                               */
+    struct gmx_wallclock_gpu_t *timings;  /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
 
 #ifdef __cplusplus
