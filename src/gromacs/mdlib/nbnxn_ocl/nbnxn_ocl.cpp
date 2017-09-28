@@ -496,6 +496,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     ocl_copy_H2D_async(adat->xq, nbatom->x + adat_begin * 4, adat_begin*sizeof(float)*4,
                        adat_len * sizeof(float) * 4, stream, bDoTime ? t->nb_h2d[iloc].fetchNextEvent() : nullptr);
 
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].closeTimingRegion(stream);
+    }
+
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
        so we record that in the local stream and wait for it in the nonlocal one. */
@@ -521,11 +526,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         {
             sync_ocl_event(stream, &(nb->misc_ops_and_local_H2D_done));
         }
-    }
-
-    if (bDoTime)
-    {
-        t->nb_h2d[iloc].closeTimingRegion(stream);
     }
 
     if (nbp->useDynamicPruning && plist->haveFreshList)
