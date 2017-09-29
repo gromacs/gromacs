@@ -179,7 +179,7 @@ class ElectricField final : public IMDModule,
         {
             if (isActive())
             {
-                forceProviders->addForceProviderWithoutVirialContribution(this);
+                forceProviders->addForceProvider(this);
             }
         }
 
