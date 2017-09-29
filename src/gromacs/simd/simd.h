@@ -417,6 +417,14 @@ struct SimdTraits<const T> : public SimdTraits<T> {};
 /*! \name High-level SIMD proxy/reference objects to disambiguate load/set operations
  * \{
  */
+
+/* \brief Cast to type for which implicit cast is available.
+ *
+ * Useful if more than one implicit cast is available. In particular used on return from load/loadU.
+ */
+template<typename R, typename T>
+R weak_cast(T x) { return x; }
+
 template <typename T> //can be either float/double/int, each const or non-const
 class SimdReference;
 
