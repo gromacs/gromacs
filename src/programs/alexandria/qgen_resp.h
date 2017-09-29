@@ -115,7 +115,7 @@ class QgenResp
 
         size_t nAtom() const { return ra_.size(); }
 
-        size_t nAtomType() const { return ratype_.size(); }
+        size_t nRespAtomType() const { return ratype_.size(); }
 
         size_t nEsp() const { return ep_.size(); }
         

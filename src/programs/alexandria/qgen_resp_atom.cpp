@@ -53,7 +53,9 @@ RespAtomType::RespAtomType(int                             atype,
                            const char                     *atomtype,
                            const Poldata                  &pd,
                            ChargeDistributionModel         iDistributionModel,
-                           const std::vector<std::string> &dzatoms)
+                           const std::vector<std::string> &dzatoms,
+                           double                          zeta,
+                           double                          q)
 {
     bool bRestr = false;
     if (!dzatoms.empty())
@@ -82,8 +84,7 @@ RespAtomType::RespAtomType(int                             atype,
             atomtype_new = atomtype_.substr(0, shell_name);
         }
         rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, shell),
-                               pd.getZeta(iDistributionModel, atomtype_new, shell),
-                               pd.getQ(iDistributionModel, atomtype_new, shell)));
+                               zeta, q));
     }
     else
     {
@@ -94,8 +95,7 @@ RespAtomType::RespAtomType(int                             atype,
         for (int i = 0; i < nZeta; i++)
         {
             rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype, i),
-                                   pd.getZeta(iDistributionModel, atomtype, i),
-                                   pd.getQ(iDistributionModel, atomtype, i)));
+                                   zeta,q));
         }
     }
 }

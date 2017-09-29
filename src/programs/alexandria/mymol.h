@@ -121,6 +121,7 @@ class MyMol
         immStatus        immAtoms_;
         immStatus        immCharges_;
         immStatus        immTopology_;
+        gmx_vsite_t     *vsite_;
         GentopVsites     gvt_;
         std::string      forcefield_;
 

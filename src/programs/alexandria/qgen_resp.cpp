@@ -98,8 +98,9 @@ void QgenResp::updateAtomCoords(const PaddedRVecVector x)
 
 void QgenResp::updateAtomCharges(t_atoms  *atoms)
 {
-    GMX_RELEASE_ASSERT(static_cast<int>(ra_.size()) == atoms->nr, "Inconsistency between number of resp atoms and topology atoms");
-    
+    GMX_RELEASE_ASSERT(static_cast<int>(ra_.size()) == atoms->nr, 
+                       "Inconsistency between number of resp atoms and topology atoms");  
+                         
     for (size_t i = 0; i < ra_.size(); i++)
     {
         if (!ra_[i].fixedQ())
@@ -124,68 +125,100 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     // First add all the resp atom types
     for (int i = 0; i < atoms->nr; i++)
     {
-        // THIS is a hack
-        bool hasShell = ((i < atoms->nr-1) &&
-                         (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
-                         (atoms->atom[i].ptype == eptAtom) &&
-                         (atoms->atom[i+1].ptype == eptShell));
-        switch (atoms->atom[i].ptype)
+        if (atoms->atom[i].ptype != eptVSite)
         {
-            case eptAtom:
-                nAtom_ += 1;
-                break;
-            case eptShell:
-                nShell_ += 1;
-                break;
-            default:
-                fprintf(stderr, "Oh dear, particle %d is a %s\n",
-                        i, ptype_str[atoms->atom[i].ptype]);
-        }
-        if (findRAT(atoms->atom[i].type) == endRAT())
-        {
-            ratype_.push_back(RespAtomType(atoms->atom[i].type,
-                                           atoms->atom[i].ptype,
-                                           hasShell,
-                                           *(atoms->atomtype[i]), pd,
-                                           iDistributionModel_, dzatoms_));
+            int  nskip    = 1;
+            bool hasShell = false;
+            switch (atoms->atom[i].ptype)
+            {
+                case eptAtom:
+                {
+                    hasShell = ((i < atoms->nr-1) &&
+                                (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
+                                (atoms->atom[i+nskip].ptype == eptShell));
+                    nAtom_ += 1;
+                }
+                    break;
+                case eptNucleus:
+                {
+                    auto vsite = pd.findVsite(*atoms->atomtype[i]);
+                    if (vsite != pd.getVsiteEnd())
+                    {
+                        nskip    = vsite->nvsite();
+                        hasShell = ((i < atoms->nr-1) &&
+                                    (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
+                                    (atoms->atom[i+nskip].ptype == eptShell));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, 
+                                  "You have an eptNucleus particle that dose not exist in PolData Gt_Vsite.\n");
+                    }
+                    nAtom_ += 1;
+                }
+                    break;
+                case eptShell:
+                    nShell_ += 1;
+                    break;
+                case eptVSite:
+                    break;
+                default:
+                     fprintf(stderr, "Unknown particle %d is a %s\n",
+                             i, ptype_str[atoms->atom[i].ptype]);
+            }
+            if (findRAT(atoms->atom[i].type) == endRAT())
+            {
+                ratype_.push_back(RespAtomType(atoms->atom[i].type,
+                                               atoms->atom[i].ptype,
+                                               hasShell,
+                                               *(atoms->atomtype[i]), 
+                                               pd,
+                                               iDistributionModel_, 
+                                               dzatoms_,
+                                               atoms->atom[i].zetaA,
+                                               atoms->atom[i].q));
+            }
         }
     }
     // Then add all the atoms
-    for (int i = 0; (i < atoms->nr); i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
-        // Now compute starting charge for atom, taking into account
-        // the charges of the other "shells".
-        auto   rat = findRAT(atoms->atom[i].type);
-        GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
-        double q    = rat->beginRZ()->q();
-        // q is the variable charge. For precision we determine what the
-        // "rest" of the charge on a particle is such that we fit charges to
-        // the residual electrostatic potential only.
-        double qref = 0;
-        if (rat->hasShell())
+        if (atoms->atom[i].ptype != eptVSite)
         {
-            // The reference charge is the charge of the shell times -1
-            auto ratp = findRAT(atoms->atom[i+1].type);
-            GMX_RELEASE_ASSERT(ratp != endRAT(), "Inconsistency setting atom info");
-            qref    -= ratp->beginRZ()->q();
-            qshell_ += ratp->beginRZ()->q();
-        }
-        else
-        {
-            for (auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
+            // Now compute starting charge for atom, taking into account
+            // the charges of the other "shells".
+            auto   rat = findRAT(atoms->atom[i].type);
+            GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
+            double q    = rat->beginRZ()->q();
+            // q is the variable charge. For precision we determine what the
+            // "rest" of the charge on a particle is such that we fit charges to
+            // the residual electrostatic potential only.
+            double qref = 0;
+            if (rat->hasShell())
             {
-                qref -= ra->q();
+                // The reference charge is the charge of the shell times -1
+                auto ratp = findRAT(atoms->atom[i+1].type);
+                GMX_RELEASE_ASSERT(ratp != endRAT(), "Inconsistency setting atom info");
+                qref    -= ratp->beginRZ()->q();
+                qshell_ += ratp->beginRZ()->q();
             }
-        }
-        ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
-                               atoms->atom[i].type,
-                               q,
-                               qref,
-                               x[i]));
-        if (debug)
-        {
-            fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
-                    i, gmx::boolToString(rat->hasShell()), q, qref);
+            else
+            {
+                for (auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
+                {
+                    qref -= ra->q();
+                }
+            }
+            ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
+                                   atoms->atom[i].type,
+                                   q,
+                                   qref,
+                                   x[i]));
+            if (debug)
+            {
+                fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
+                        i, gmx::boolToString(rat->hasShell()), q, qref);
+            }
         }
     }
 }
@@ -196,7 +229,7 @@ void QgenResp::summary(FILE *fp)
     {
         fprintf(fp, "There are %d atoms, %d atomtypes for (R)ESP fitting.\n",
                 static_cast<int>(nAtom()),
-                static_cast<int>(nAtomType()));
+                static_cast<int>(nRespAtomType()));
         for (size_t i = 0; (i < nAtom()); i++)
         {
             fprintf(fp, " %d", symmetricAtoms_[i]);
@@ -226,7 +259,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     }
     uniqueQ_        = 0;
     fitQ_           = 0;
-    for (size_t i = 0; (i < nAtom()); i++)
+    for (size_t i = 0; i < nAtom(); i++)
     {
         if (!ra_[i].fixedQ())
         {
@@ -241,7 +274,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     if (debug)
     {
         size_t maxz = 0;
-        for (size_t i = 0; (i < nAtomType()); i++)
+        for (size_t i = 0; i < nRespAtomType(); i++)
         {
             if (ratype_[i].getNZeta() > maxz)
             {
@@ -251,7 +284,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 
         fprintf(debug, "GRQ: %3s %5s", "nr", "type");
         fprintf(debug, " %8s %8s %8s %8s\n", "q", "zeta", "q", "zeta");
-        for (size_t i = 0; (i < nAtom()); i++)
+        for (size_t i = 0; i < nAtom(); i++)
         {
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rai   = findRAT(atype);

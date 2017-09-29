@@ -864,8 +864,10 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox)
     }
 }
 
-void write_zeta_q(FILE *fp, QgenEem * qgen,
-                  t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
+void write_zeta_q(FILE                   *fp, 
+                  QgenEem                *qgen,
+                  t_atoms                *atoms, 
+                  ChargeDistributionModel iChargeDistributionModel)
 {
     int    i, ii, j, k, nz, row;
     double zeta, q;
@@ -946,8 +948,10 @@ void write_zeta_q(FILE *fp, QgenEem * qgen,
     fprintf(fp, "\n");
 }
 
-void write_zeta_q2(QgenEem * qgen, gpp_atomtype_t atype,
-                   t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
+void write_zeta_q2(QgenEem                *qgen, 
+                   gpp_atomtype_t          atype,
+                   t_atoms                *atoms, 
+                   ChargeDistributionModel iChargeDistributionModel)
 {
     FILE      *fp;
     int        i, j, k, nz, row;
@@ -1096,10 +1100,12 @@ void write_top2(FILE                     *out,
     }
 }
 
-void print_top_header2(FILE *fp, const Poldata &pd,
-                       gmx_atomprop_t aps, bool bPol,
+void print_top_header2(FILE                    *fp, 
+                       const Poldata           &pd,
+                       gmx_atomprop_t           aps, 
+                       bool                     bPol,
                        std::vector<std::string> commercials,
-                       bool bItp)
+                       bool                     bItp)
 {
     std::string   gt_old, gt_type;
     std::string   btype;

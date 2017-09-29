@@ -56,7 +56,9 @@ class RespAtomType
                      const char                     *atomtype,
                      const Poldata                  &pd,
                      ChargeDistributionModel         iDistributionModel,
-                     const std::vector<std::string> &dzatoms);
+                     const std::vector<std::string> &dzatoms,
+                     double                          zeta,
+                     double                          q);
 
         size_t getNZeta() const { return rz_.size(); }
 

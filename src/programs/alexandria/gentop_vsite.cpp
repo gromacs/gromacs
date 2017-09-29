@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
@@ -597,8 +598,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     {
         renum[i] = i+nvsite;
         inv_renum[i+nvsite] = i;
-        const auto atype(*atoms->atomtype[i]);
-        auto vsite = pd.findVsite(atype);
+        auto vsite = pd.findVsite(*atoms->atomtype[i]);
         if (vsite != pd.getVsiteEnd())
         {
             nvsite += vsite->nvsite();
@@ -610,17 +610,18 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     /*Add the virtual sites to the plist*/
     for (int i = 0; i < atoms->nr; i++)
     {
-        const auto atype(*atoms->atomtype[i]);
-        auto vsite = pd.findVsite(atype);
+        auto vsite = pd.findVsite(*atoms->atomtype[i]);
         if (vsite != pd.getVsiteEnd())
         {
+            auto lengthUnit = string2unit(pd.getVsite_length_unit().c_str());
+            auto angleunit  = string2unit(pd.getVsite_angle_unit().c_str());
             if(vsite->type() == evtIN_PLANE)
             {
                 auto inplane = findInPlane(vsite->nvsite(), i);
                 if (inplane != inplaneEnd())
                 {
-                    bij        = vsite->distance();
-                    aijk       = vsite->angle();
+                    bij        = convert2gmx(vsite->distance(), lengthUnit);
+                    aijk       = convert2gmx(vsite->angle(), angleunit);
                     aijl       = 360 - aijk;                   
                     for (int n = 1; n <= vsite->nvsite(); n++)
                     {
@@ -648,23 +649,23 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                         pd.atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
                         pd.atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
                     {
-                        bij     = vsite->distance();
-                        aijk    = aijl = vsite->angle();
+                        bij     = convert2gmx(vsite->distance(), lengthUnit);
+                        aijk    = aijl = convert2gmx(vsite->angle(), angleunit);
                         Akjl    = {k, j, l};
                         Bjk     = {j, k};
                         Bjl     = {j, l};
                         if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, eitANGLES) &&
                             pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, eitBONDS)  &&
                             pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, eitBONDS))
-                        {                                                                                  
-                            auto pijk = std::cos(aijk)*bij;
-                            auto pijl = std::cos(aijl)*bij;
-                            auto a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
-                            auto b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
-                            auto c    = -std::sqrt( gmx::square(bij) -
-                                                    ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
-                                                    / gmx::square(std::sin(akjl)) )
-                                / ( bjk*bjl*std::sin(akjl) );                                                                              
+                        {   
+                            akjl = convert2gmx(akjl, angleunit);
+                            bjk  = convert2gmx(bjk, lengthUnit);
+                            bjl  = convert2gmx(bjl, lengthUnit);
+                            auto pijk = bij*std::cos(aijk);  // Scalar projection of i along jk
+                            auto pijl = bij*std::cos(aijl);  // Scalar projection of i along jl
+                            auto a    = (pijk / bjk);
+                            auto b    = (pijl / bjl);
+                            auto c    = (bij  / (bjk*bjl*std::sin(akjl)));
                             for (int n = 1; n <= vsite->nvsite(); n++)
                             {
                                 vs.a[0] = renum[outplane->ca()] + n; /* vsite     i   */
@@ -748,10 +749,15 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
             {
                 int  i0 = inv_renum[j->a[1]];
-                for (auto j0 = 0; j0 < excls[i0]->nr; j0++)
+                char buf[256];
+                snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) vsite %d (%d)",
+                         j->a[1], inv_renum[j->a[1]],
+                         j->a[0], inv_renum[j->a[0]]);
+                GMX_RELEASE_ASSERT(i0 >= 0, buf);
+                for (auto j0 = 0; j0 < (*excls)[i0].nr; j0++)
                 {
-                    add_excl_pair(newexcls, j->a[0], renum[excls[i0]->e[j0]]);
-                    add_excl_pair(newexcls, j->a[1], renum[excls[i0]->e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[(*excls)[i0].e[j0]]);
+                    add_excl_pair(newexcls, j->a[0], renum[(*excls)[i0].e[j0]]);
                 }
             }
             for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
@@ -803,6 +809,10 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     newatoms->atom[iat + j]               = atoms->atom[i];
                     newatoms->atom[iat + j].m             = 0;
                     newatoms->atom[iat + j].mB            = 0;
+                    newatoms->atom[iat + j].q             = 0;
+                    newatoms->atom[iat + j].qB            = 0;
+                    newatoms->atom[iat + j].zetaA         = 0;
+                    newatoms->atom[iat + j].zetaB         = 0;
                     newatoms->atom[iat + j].atomnumber    = 0;
                     sprintf(buf, "%sL%d", get_atomtype_name(atoms->atom[i].type, atype), j);
                     newname[iat + j] = strdup(buf);
@@ -832,8 +842,8 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
         sfree(newname);
         
         /* Copy exclusions, empty the original first */
-        sfree(excls);
-        excls = &newexcls;
+        sfree((*excls));
+        (*excls) = newexcls;
                 
         /*Now renumber atoms in all other plist interaction types */
         for (auto pw = plist.begin(); pw < plist.end(); ++pw)
@@ -911,7 +921,13 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
          * particles for each linear group.
          * In case we use the special linear angle terms, life gets a lot easier!
          */
-        for (unsigned int i = 0; (i < linear_.size()); i++)
+        
+        if (bUseVsites && (inplane_.size() > 0 || outplane_.size() > 0))
+        {
+            gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
+        }
+        
+        for (size_t i = 0; i < linear_.size(); i++)
         {
             for (j = 0; (j < linear_[i].nline); j++)
             {
@@ -928,8 +944,6 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
 
             if (bUseVsites)
             {                
-                gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
-                
                 /* Complicated algorithm, watch out */
                 for (j = 0; (j < linear_[i].nline-1); j++)
                 {
