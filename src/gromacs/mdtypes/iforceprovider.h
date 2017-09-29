@@ -68,6 +68,11 @@ class ArrayRef;
  * The interface most likely requires additional generalization for use in
  * other modules than the current electric field implementation.
  *
+ * The forces that are produced by force providers are not taken into account
+ * in the calculation of the virial. When applicable, the provider should
+ * compute its own virial contribution.
+ * \todo Extend this interface with a virial container and flag if the virial is needed here
+ *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
@@ -117,13 +122,9 @@ struct ForceProviders
          * Adds a provider.
          */
         void addForceProvider(gmx::IForceProvider *provider);
-        /*! \brief
-         * Adds a provider whose forces should not contribute to the virial.
-         */
-        void addForceProviderWithoutVirialContribution(gmx::IForceProvider *provider);
 
-        //! Whether there are modules that do not contribute to the virial.
-        bool hasForcesWithoutVirialContribution() const;
+        //! Whether there are modules added.
+        bool hasForceProvider() const;
 
         //! Computes forces.
         void calculateForces(const t_commrec          *cr,
@@ -131,8 +132,7 @@ struct ForceProviders
                              const matrix              box,
                              double                    t,
                              const rvec               *x,
-                             gmx::ArrayRef<gmx::RVec>  force,
-                             gmx::ArrayRef<gmx::RVec>  f_novirsum) const;
+                             gmx::ArrayRef<gmx::RVec>  force) const;
 
     private:
         class Impl;
