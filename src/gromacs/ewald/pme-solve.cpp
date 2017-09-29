@@ -238,8 +238,7 @@ gmx_inline static void calc_exponentials_q(int start, real f, ArrayRef<const T> 
     GMX_ASSERT(d.size() == e.size(), "d and e must have same size");
     for (size_t kx = start; kx != d.size(); ++kx)
     {
-        const T tmp_r = r[kx];
-        e[kx] = f_simd / d[kx] * gmx::exp(tmp_r);
+        e[kx] = f_simd / d[kx] * gmx::exp(weak_cast<T>(r[kx]));
     }
 }
 
@@ -263,10 +262,8 @@ gmx_inline static void calc_exponentials_lj(int start, ArrayRef<T> r, ArrayRef<T
 
     for (size_t kx = start; kx != d.size(); ++kx)
     {
-        const T tmp_d  = d[kx];
-        d[kx]          = gmx::inv(tmp_d);
-        const T tmp_r  = r[kx];
-        r[kx]          = gmx::exp(tmp_r);
+        d[kx]          = gmx::inv(weak_cast<T>(d[kx]));
+        r[kx]          = gmx::exp(weak_cast<T>(r[kx]));
         const T tmp_mk = factor[kx];
         factor[kx]     = sqr_PI * tmp_mk * gmx::erfc(tmp_mk);
     }
