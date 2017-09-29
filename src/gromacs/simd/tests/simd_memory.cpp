@@ -40,12 +40,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/simd/simd_memory.h"
-
 #include <numeric>
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "gromacs/simd/simd.h"
 
 #include "simd.h"
 

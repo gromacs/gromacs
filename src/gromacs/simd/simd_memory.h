@@ -42,7 +42,6 @@
 #ifndef GMX_SIMD_SIMD_MEMORY_H
 #define GMX_SIMD_SIMD_MEMORY_H
 
-#include "gromacs/simd/simd.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 
