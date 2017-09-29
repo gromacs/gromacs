@@ -2791,7 +2791,7 @@ void init_forcerec(FILE                *fp,
     }
 
     fr->bF_NoVirSum = (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
-                       fr->forceProviders->hasForcesWithoutVirialContribution() ||
+                       fr->forceProviders->hasForceProvider() ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
                        ir->bPull ||
