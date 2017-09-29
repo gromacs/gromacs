@@ -727,8 +727,7 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
  * \param[in]     mdatoms         Per atom properties
  * \param[in]     lambda          Array of free-energy lambda values
  * \param[in]     forceFlags      Flags that tell whether we should compute forces/energies/virial
- * \param[in,out] force           Force buffer which contributes to the virial
- * \param[in,out] forceNoVirSum   Force buffer which does not contribute to the virial
+ * \param[in,out] force           Force buffer which does not contribute to the virial
  * \param[in,out] virial          Virial buffer
  * \param[in,out] enerd           Energy buffer
  * \param[in,out] ed              Essential dynamics pointer
@@ -751,7 +750,6 @@ computeSpecialForces(t_commrec        *cr,
                      real             *lambda,
                      int               forceFlags,
                      PaddedRVecVector *force,
-                     PaddedRVecVector *forceNoVirSum,
                      tensor            virial,
                      gmx_enerdata_t   *enerd,
                      gmx_edsam_t       ed,
@@ -765,17 +763,17 @@ computeSpecialForces(t_commrec        *cr,
     if (computeForces)
     {
         /* Collect forces from modules */
-        gmx::ArrayRef<gmx::RVec> fNoVirSum = *forceNoVirSum;
+        gmx::ArrayRef<gmx::RVec> f = *force;
 
-        forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+        forceProviders->calculateForces(cr, mdatoms, box, t, x, f);
     }
 
-    rvec *fNoVirSum = as_rvec_array(forceNoVirSum->data());
+    rvec *f = as_rvec_array(force->data());
 
     if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
     {
         pull_potential_wrapper(cr, inputrec, box, x,
-                               fNoVirSum, virial, mdatoms, enerd, lambda, t,
+                               f, virial, mdatoms, enerd, lambda, t,
                                wcycle);
     }
 
@@ -783,7 +781,7 @@ computeSpecialForces(t_commrec        *cr,
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, fNoVirSum, cr, step, t);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
@@ -794,13 +792,13 @@ computeSpecialForces(t_commrec        *cr,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr, inputrec, x, fNoVirSum, ed, box, step, bNS);
+        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
     if (inputrec->bIMD && computeForces)
     {
-        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, fNoVirSum, wcycle);
+        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
     }
 }
 
@@ -1339,7 +1337,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     computeSpecialForces(cr, inputrec, step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
-                         flags, force, fr->f_novirsum, vir_force, enerd,
+                         flags, fr->f_novirsum, vir_force, enerd,
                          ed, bNS);
 
     if (bUseOrEmulGPU && !bDiffKernels)
@@ -1806,7 +1804,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     computeSpecialForces(cr, inputrec, step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
-                         flags, force, fr->f_novirsum, vir_force, enerd,
+                         flags, fr->f_novirsum, vir_force, enerd,
                          ed, bNS);
 
     if (bDoForces)
