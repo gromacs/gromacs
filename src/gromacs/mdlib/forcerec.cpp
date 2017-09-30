@@ -1510,10 +1510,9 @@ void forcerec_set_ranges(t_forcerec *fr,
         fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
     }
 
-    if (fr->bF_NoVirSum)
+    if (fr->haveDirectVirialContributions)
     {
-        /* TODO: remove this + 1 when padding is properly implemented */
-        fr->forceBufferNoVirialSummation->resize(natoms_f_novirsum + 1);
+        fr->forceBufferForDirectVirialContributions->resize(natoms_f_novirsum);
     }
 }
 
@@ -2807,17 +2806,18 @@ void init_forcerec(FILE                *fp,
         init_generalized_rf(fp, mtop, ir, fr);
     }
 
-    fr->bF_NoVirSum = (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
-                       fr->forceProviders->hasForceProvider() ||
-                       gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       ir->bPull ||
-                       ir->bRot ||
-                       ir->bIMD);
+    fr->haveDirectVirialContributions =
+        (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
+         fr->forceProviders->hasForceProvider() ||
+         gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
+         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
+         ir->bPull ||
+         ir->bRot ||
+         ir->bIMD);
 
-    if (fr->bF_NoVirSum)
+    if (fr->haveDirectVirialContributions)
     {
-        fr->forceBufferNoVirialSummation = new PaddedRVecVector;
+        fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
     }
 
     if (fr->cutoff_scheme == ecutsGROUP &&
