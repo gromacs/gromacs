@@ -57,6 +57,7 @@ namespace gmx
 
 template <typename T>
 class ArrayRef;
+class ForceWithVirial;
 
 /*! \libinternal \brief
  * Interface for a component that provides forces during MD.
@@ -82,19 +83,19 @@ class IForceProvider
         /*! \brief
          * Computes forces.
          *
-         * \param[in]    cr      Communication record for parallel operations
-         * \param[in]    mdatoms Atom information
-         * \param[in]    box     The box
-         * \param[in]    t       The actual time in the simulation (ps)
-         * \param[in]    x       The coordinates
-         * \param[inout] force   The forces
+         * \param[in]    cr               Communication record for parallel operations
+         * \param[in]    mdatoms          Atom information
+         * \param[in]    box              The box
+         * \param[in]    t                The actual time in the simulation (ps)
+         * \param[in]    x                The coordinates
+         * \param[inout] forceWithVirial  The forces and virial
          */
         virtual void calculateForces(const t_commrec          *cr,
                                      const t_mdatoms          *mdatoms,
                                      const matrix              box,
                                      double                    t,
                                      const rvec               *x,
-                                     gmx::ArrayRef<gmx::RVec>  force) = 0;
+                                     gmx::ForceWithVirial     *forceWithVirial) = 0;
 
     protected:
         ~IForceProvider() {}
@@ -132,7 +133,7 @@ struct ForceProviders
                              const matrix              box,
                              double                    t,
                              const rvec               *x,
-                             gmx::ArrayRef<gmx::RVec>  force) const;
+                             gmx::ForceWithVirial     *forceWithVirial) const;
 
     private:
         class Impl;
