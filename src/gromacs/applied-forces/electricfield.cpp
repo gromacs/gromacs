@@ -53,7 +53,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -195,12 +195,12 @@ class ElectricField final : public IMDModule,
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
-        void calculateForces(const t_commrec  *cr,
-                             const t_mdatoms  *mdatoms,
-                             const matrix      box,
-                             double            t,
-                             const rvec       *x,
-                             ArrayRef<RVec>    force) override;
+        void calculateForces(const t_commrec       *cr,
+                             const t_mdatoms       *mdatoms,
+                             const matrix           box,
+                             double                 t,
+                             const rvec            *x,
+                             gmx::ForceWithVirial  *forceWithVirial) override;
 
     private:
         //! Return whether or not to apply a field
@@ -405,16 +405,17 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-void ElectricField::calculateForces(const t_commrec  *cr,
-                                    const t_mdatoms  *mdatoms,
-                                    const matrix      /* box */,
-                                    double            t,
-                                    const rvec        * /* x */,
-                                    ArrayRef<RVec>    force)
+void ElectricField::calculateForces(const t_commrec       *cr,
+                                    const t_mdatoms       *mdatoms,
+                                    const matrix           /* box */,
+                                    double                 t,
+                                    const rvec             * /* x */,
+                                    gmx::ForceWithVirial  *forceWithVirial)
 {
     if (isActive())
     {
-        rvec *f = as_rvec_array(force.data());
+        // NOTE: The non-conservative electric field does not have a virial
+        rvec *f = as_rvec_array(forceWithVirial->force_.data());
 
         for (int m = 0; (m < DIM); m++)
         {
