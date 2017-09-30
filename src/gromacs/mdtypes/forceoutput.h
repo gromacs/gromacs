@@ -32,57 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Implements classes from iforceprovider.h.
+
+/*! \libinternal \file
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \brief
+ * This file contains the definition of a container for force and virial
+ * output.
+ *
+ * Currently the only container defined here is one used in algorithms
+ * that provide their own virial tensor contribution.
+ * We can consider adding another containter for forces and shift forces.
+ *
+ * \author Berk Hess
+ *
+ * \inlibraryapi
  * \ingroup module_mdtypes
  */
-#include "gmxpre.h"
 
-#include "iforceprovider.h"
+#ifndef GMX_MDTYPES_FORCEOUTPUT_H
+#define GMX_MDTYPES_FORCEOUTPUT_H
 
-#include <vector>
-
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-using namespace gmx;
-
-class ForceProviders::Impl
+namespace gmx
 {
-    public:
-        std::vector<IForceProvider *> providers_;
+
+/*! \libinternal \brief Container for force and virial for algorithms that provide their own virial tensor contribution */
+struct ForceWithVirial
+{
+    /*! \brief Constructor
+     *
+     * \param[in] force          A force buffer that will be used for storing forces
+     * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
+     */
+    ForceWithVirial(ArrayRef<RVec> force, bool computeVirial) :
+        force(force),
+        computeVirial(computeVirial)
+    {
+        clear_mat(virial);
+    }
+
+    ArrayRef<RVec> force;         //!< Force accumulation buffer
+    matrix         virial;        //!< Virial accumulation buffer
+    const bool     computeVirial; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
 };
 
-ForceProviders::ForceProviders()
-    : impl_(new Impl)
-{
 }
 
-ForceProviders::~ForceProviders()
-{
-}
-
-void ForceProviders::addForceProvider(gmx::IForceProvider *provider)
-{
-    impl_->providers_.push_back(provider);
-}
-
-bool ForceProviders::hasForceProvider() const
-{
-    return !impl_->providers_.empty();
-}
-
-void ForceProviders::calculateForces(const t_commrec       *cr,
-                                     const t_mdatoms       *mdatoms,
-                                     const matrix           box,
-                                     double                 t,
-                                     const rvec            *x,
-                                     gmx::ForceWithVirial  *forceWithVirial) const
-{
-    for (auto provider : impl_->providers_)
-    {
-        provider->calculateForces(cr, mdatoms, box, t, x, forceWithVirial);
-    }
-}
+#endif
