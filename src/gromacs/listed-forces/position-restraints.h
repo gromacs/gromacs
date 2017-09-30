@@ -53,10 +53,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
@@ -65,15 +61,21 @@ struct t_lambda;
 struct t_nrnb;
 struct t_pbc;
 
+namespace gmx
+{
+class ForceWithVirial;
+}
+
 /*! \brief Helper function that wraps calls to posres */
 void
-posres_wrapper(t_nrnb             *nrnb,
-               const t_idef       *idef,
-               const struct t_pbc *pbc,
-               const rvec          x[],
-               gmx_enerdata_t     *enerd,
-               const real         *lambda,
-               t_forcerec         *fr);
+posres_wrapper(t_nrnb               *nrnb,
+               const t_idef         *idef,
+               const struct t_pbc   *pbc,
+               const rvec           *x,
+               gmx_enerdata_t       *enerd,
+               const real           *lambda,
+               const t_forcerec     *fr,
+               gmx::ForceWithVirial *forceWithVirial);
 
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
@@ -85,19 +87,16 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
                       const rvec            x[],
                       gmx_enerdata_t       *enerd,
                       const real           *lambda,
-                      t_forcerec           *fr);
+                      const t_forcerec     *fr);
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb             *nrnb,
-                      const t_idef       *idef,
-                      const struct t_pbc *pbc,
-                      const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      t_forcerec         *fr);
-
-#ifdef __cplusplus
-}
-#endif
+void fbposres_wrapper(t_nrnb               *nrnb,
+                      const t_idef         *idef,
+                      const struct t_pbc   *pbc,
+                      const rvec           *x,
+                      gmx_enerdata_t       *enerd,
+                      const t_forcerec     *fr,
+                      gmx::ForceWithVirial *forceWithVirial);
 
 #endif

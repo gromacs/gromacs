@@ -58,10 +58,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct ContinuationOptions;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -71,6 +67,11 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+
+namespace gmx
+{
+class ForceWithVirial;
+}
 
 /*! \brief Returns the units of the pull coordinate.
  *
@@ -175,15 +176,14 @@ void clear_pull_forces(struct pull_t *pull);
  * \param[in]     t      Time.
  * \param[in]     lambda The value of lambda in FEP calculations.
  * \param[in]     x      Positions.
- * \param[in]     f      Forces.
- * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
+ * \param[in,out] force  Forces and virial.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
  *
  * \returns The pull potential energy.
  */
 real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda);
+                    rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -305,9 +305,5 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  */
 real max_pull_distance2(const pull_coord_work_t *pcrd,
                         const t_pbc             *pbc);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
