@@ -65,6 +65,7 @@ struct t_pbc;
 
 namespace gmx
 {
+struct ForceWithVirial;
 class MDLogger;
 }
 
@@ -198,6 +199,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        rvec         x[],
                        history_t    *hist,
                        rvec         f_shortrange[],
+                       gmx::ForceWithVirial *forceWithVirial,
                        gmx_enerdata_t *enerd,
                        t_fcdata     *fcd,
                        gmx_localtop_t *top,
