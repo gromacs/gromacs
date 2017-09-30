@@ -1493,7 +1493,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
 void forcerec_set_ranges(t_forcerec *fr,
                          int ncg_home, int ncg_force,
                          int natoms_force,
-                         int natoms_force_constr, int natoms_f_novirsum)
+                         int natoms_force_constr)
 {
     fr->cg0 = 0;
     fr->hcg = ncg_home;
@@ -1510,10 +1510,12 @@ void forcerec_set_ranges(t_forcerec *fr,
         fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
     }
 
-    if (fr->bF_NoVirSum)
+    if (fr->haveDirectVirialContributions)
     {
+        /* For the Verlet scheme we need natoms_home, which equals ncg_home */
+        int numAtomsInBuffer = (fr->cutoff_scheme == ecutsVERLET ? ncg_home : fr->natoms_force);
         /* TODO: remove this + 1 when padding is properly implemented */
-        fr->forceBufferNoVirialSummation->resize(natoms_f_novirsum + 1);
+        fr->forceBufferForDirectVirialContributions->resize(numAtomsInBuffer + 1);
     }
 }
 
@@ -2807,17 +2809,18 @@ void init_forcerec(FILE                *fp,
         init_generalized_rf(fp, mtop, ir, fr);
     }
 
-    fr->bF_NoVirSum = (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
-                       fr->forceProviders->hasForceProvider() ||
-                       gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       ir->bPull ||
-                       ir->bRot ||
-                       ir->bIMD);
+    fr->haveDirectVirialContributions =
+        (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
+         fr->forceProviders->hasForceProvider() ||
+         gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
+         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
+         ir->bPull ||
+         ir->bRot ||
+         ir->bIMD);
 
-    if (fr->bF_NoVirSum)
+    if (fr->haveDirectVirialContributions)
     {
-        fr->forceBufferNoVirialSummation = new PaddedRVecVector;
+        fr->forceBufferForDirectVirialContributions = new PaddedRVecVector;
     }
 
     if (fr->cutoff_scheme == ecutsGROUP &&
@@ -3128,7 +3131,7 @@ void init_forcerec(FILE                *fp,
     if (!DOMAINDECOMP(cr))
     {
         forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
-                            mtop->natoms, mtop->natoms, mtop->natoms);
+                            mtop->natoms, mtop->natoms);
     }
 
     fr->print_force = print_force;

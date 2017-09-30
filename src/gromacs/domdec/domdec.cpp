@@ -9195,7 +9195,7 @@ void dd_partition_system(FILE                *fplog,
     t_block           *cgs_gl;
     gmx_int64_t        step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
-    int                i, n, ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
+    int                i, n, ncgindex_set, ncg_home_old = -1, ncg_moved;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
     gmx_bool           bRedist, bSortCG, bResortAll;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
@@ -9703,29 +9703,6 @@ void dd_partition_system(FILE                *fplog,
 
     dd_resize_state(state_local, f, state_local->natoms);
 
-    if (fr->bF_NoVirSum)
-    {
-        if (vsite && vsite->n_intercg_vsite)
-        {
-            nat_f_novirsum = comm->nat[ddnatVSITE];
-        }
-        else
-        {
-            if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0)
-            {
-                nat_f_novirsum = dd->nat_tot;
-            }
-            else
-            {
-                nat_f_novirsum = dd->nat_home;
-            }
-        }
-    }
-    else
-    {
-        nat_f_novirsum = 0;
-    }
-
     /* Set the number of atoms required for the force calculation.
      * Forces need to be constrained when doing energy
      * minimization. For simple simulations we could avoid some
@@ -9733,7 +9710,7 @@ void dd_partition_system(FILE                *fplog,
      * the complications and checking.
      */
     forcerec_set_ranges(fr, dd->ncg_home, dd->ncg_tot,
-                        dd->nat_tot, comm->nat[ddnatCON], nat_f_novirsum);
+                        dd->nat_tot, comm->nat[ddnatCON]);
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
