@@ -62,6 +62,11 @@
 struct t_commrec;
 struct t_inputrec;
 
+namespace gmx
+{
+struct ForceWithVirial;
+}
+
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
@@ -178,8 +183,8 @@ void gmx_pme_send_resetcounters(struct t_commrec *cr, gmx_int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
 void gmx_pme_receive_f(struct t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
-                       matrix vir_lj, real *energy_lj,
+                       gmx::ForceWithVirial *forceWithVirial,
+                       real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
 

@@ -48,7 +48,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
@@ -109,14 +109,15 @@ class ElectricFieldTest : public ::testing::Test
             ForceProviders forceProviders;
             module->initForceProviders(&forceProviders);
 
-            t_mdatoms        md;
-            PaddedRVecVector f = { { 0, 0, 0 } };
+            t_mdatoms            md;
+            PaddedRVecVector     f = { { 0, 0, 0 } };
+            gmx::ForceWithVirial forceWithVirial(f, true);
             md.homenr = 1;
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;
 
             t_commrec  *cr = init_commrec();
-            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, f);
+            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, &forceWithVirial);
             done_commrec(cr);
 
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
