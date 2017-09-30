@@ -53,6 +53,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -185,9 +186,9 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
  * normal position restraints */
 real fbposres(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec vir_diag,
+              const rvec x[], rvec f[], matrix virial,
               const t_pbc *pbc,
-              int refcoord_scaling, int ePBC, rvec com)
+              int refcoord_scaling, int ePBC, const rvec com)
 /* compute flat-bottomed positions restraints */
 {
     int              i, ai, m, d, type, npbcdim = 0, fbdim;
@@ -295,9 +296,9 @@ real fbposres(int nbonds,
 
         for (m = 0; (m < DIM); m++)
         {
-            f[ai][m]   += fm[m];
+            f[ai][m]     += fm[m];
             /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
+            virial[m][m] -= 0.5*(dx[m] + rdist[m])*fm[m];
         }
     }
 
@@ -311,10 +312,10 @@ real fbposres(int nbonds,
  * from other bondeds */
 real posres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec vir_diag,
+            const rvec x[], rvec f[], matrix virial,
             const struct t_pbc *pbc,
             real lambda, real *dvdlambda,
-            int refcoord_scaling, int ePBC, rvec comA, rvec comB)
+            int refcoord_scaling, int ePBC, const rvec comA, const rvec comB)
 {
     int              i, ai, m, d, type, npbcdim = 0;
     const t_iparams *pr;
@@ -323,7 +324,7 @@ real posres(int nbonds,
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
     gmx_bool         bForceValid = TRUE;
 
-    if ((f == nullptr) || (vir_diag == nullptr))    /* should both be null together! */
+    if ((f == nullptr) || (virial == nullptr))    /* should both be null together! */
     {
         bForceValid = FALSE;
     }
@@ -372,8 +373,8 @@ real posres(int nbonds,
             /* Here we correct for the pbc_dx which included rdist */
             if (bForceValid)
             {
-                f[ai][m]    += fm;
-                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+                f[ai][m]     += fm;
+                virial[m][m] -= 0.5*(dx[m] + rdist[m])*fm;
             }
         }
     }
@@ -384,20 +385,23 @@ real posres(int nbonds,
 } // namespace
 
 void
-posres_wrapper(t_nrnb             *nrnb,
-               const t_idef       *idef,
-               const struct t_pbc *pbc,
-               const rvec          x[],
-               gmx_enerdata_t     *enerd,
-               const real         *lambda,
-               t_forcerec         *fr)
+posres_wrapper(t_nrnb               *nrnb,
+               const t_idef         *idef,
+               const struct t_pbc   *pbc,
+               const rvec           *x,
+               gmx_enerdata_t       *enerd,
+               const real           *lambda,
+               const t_forcerec     *fr,
+               gmx::ForceWithVirial *forceWithVirial)
 {
     real  v, dvdl;
 
     dvdl = 0;
     v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
                   idef->iparams_posres,
-                  x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
+                  x,
+                  as_rvec_array(forceWithVirial->force.data()),
+                  forceWithVirial->virial,
                   fr->ePBC == epbcNONE ? nullptr : pbc,
                   lambda[efptRESTRAINT], &dvdl,
                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
@@ -417,7 +421,7 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
                       const rvec            x[],
                       gmx_enerdata_t       *enerd,
                       const real           *lambda,
-                      t_forcerec           *fr)
+                      const t_forcerec     *fr)
 {
     real  v;
     int   i;
@@ -445,18 +449,21 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb             *nrnb,
-                      const t_idef       *idef,
-                      const struct t_pbc *pbc,
-                      const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      t_forcerec         *fr)
+void fbposres_wrapper(t_nrnb               *nrnb,
+                      const t_idef         *idef,
+                      const struct t_pbc   *pbc,
+                      const rvec           *x,
+                      gmx_enerdata_t       *enerd,
+                      const t_forcerec     *fr,
+                      gmx::ForceWithVirial *forceWithVirial)
 {
     real  v;
 
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
                  idef->iparams_fbposres,
-                 x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
+                 x,
+                 as_rvec_array(forceWithVirial->force.data()),
+                 forceWithVirial->virial,
                  fr->ePBC == epbcNONE ? nullptr : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;

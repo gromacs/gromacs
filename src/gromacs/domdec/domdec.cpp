@@ -9703,7 +9703,7 @@ void dd_partition_system(FILE                *fplog,
 
     dd_resize_state(state_local, f, state_local->natoms);
 
-    if (fr->bF_NoVirSum)
+    if (fr->haveDirectVirialContributions)
     {
         if (vsite && vsite->n_intercg_vsite)
         {

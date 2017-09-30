@@ -60,6 +60,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -665,8 +666,8 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
 }
 /*! \brief Receive virial and energy from PME rank */
 static void receive_virial_energy(t_commrec *cr,
-                                  matrix vir_q, real *energy_q,
-                                  matrix vir_lj, real *energy_lj,
+                                  gmx::ForceWithVirial *forceWithVirial,
+                                  real *energy_q, real *energy_lj,
                                   real *dvdlambda_q, real *dvdlambda_lj,
                                   float *pme_cycles)
 {
@@ -687,8 +688,11 @@ static void receive_virial_energy(t_commrec *cr,
         memset(&cve, 0, sizeof(cve));
 #endif
 
-        m_add(vir_q, cve.vir_q, vir_q);
-        m_add(vir_lj, cve.vir_lj, vir_lj);
+        if (forceWithVirial->computeVirial)
+        {
+            m_add(forceWithVirial->virial, cve.vir_q, forceWithVirial->virial);
+            m_add(forceWithVirial->virial, cve.vir_lj, forceWithVirial->virial);
+        }
         *energy_q      = cve.energy_q;
         *energy_lj     = cve.energy_lj;
         *dvdlambda_q  += cve.dvdlambda_q;
@@ -709,8 +713,8 @@ static void receive_virial_energy(t_commrec *cr,
 }
 
 void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
-                       matrix vir_lj, real *energy_lj,
+                       gmx::ForceWithVirial *forceWithVirial,
+                       real *energy_q, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles)
 {
@@ -736,6 +740,8 @@ void gmx_pme_receive_f(t_commrec *cr,
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
 
+    gmx::ArrayRef<gmx::RVec> f = forceWithVirial->force;
+
     /* Note that we would like to avoid this conditional by putting it
      * into the omp pragma instead, but then we still take the full
      * omp parallel for overhead (at least with gcc5).
@@ -756,7 +762,7 @@ void gmx_pme_receive_f(t_commrec *cr,
         }
     }
 
-    receive_virial_energy(cr, vir_q, energy_q, vir_lj, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
+    receive_virial_energy(cr, forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }
 
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,

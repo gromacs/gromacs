@@ -285,39 +285,27 @@ struct t_forcerec {
     /* The allocation size of vectors of size natoms_force */
     int nalloc_force;
 
-    /* Forces that should not enter into the virial summation:
-     * PPPM/PME/Ewald/posres
-     * If such forces are present in the system, bF_NoVirSum=TRUE.
+    /* Forces that should not enter into the coord x force virial summation:
+     * PPPM/PME/Ewald/posres/ForceProviders
      */
-    gmx_bool          bF_NoVirSum;
+    /* True when we have contributions that are directly added to the virial */
+    gmx_bool          haveDirectVirialContributions;
 #ifdef __cplusplus
     /* TODO: Replace the pointer by an object once we got rid of C */
-    PaddedRVecVector *forceBufferNoVirialSummation;
+    std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions;
 #else
-    void             *forceBufferNoVirialSummation_dummy;
-#endif
-    /* Pointer that points to forceNoVirialSummation when virial is calcaluted,
-     * points to the normal force vector when the virial is not requested
-     * or when bF_NoVirSum == FALSE.
-     */
-#ifdef __cplusplus
-    PaddedRVecVector *f_novirsum;
-#else
-    void             *f_novirsum_xdummy;
+    void                    *forceBufferForDirectVirialContributions_dummy;
 #endif
 
-    /* Long-range forces and virial for PPPM/PME/Ewald */
+    /* Data for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata;
     int               ljpme_combination_rule;
-    tensor            vir_el_recip;
-    tensor            vir_lj_recip;
 
     /* PME/Ewald stuff */
     struct gmx_ewald_tab_t *ewald_table;
 
     /* Virial Stuff */
     rvec *fshift;
-    rvec  vir_diag_posres;
     dvec  vir_wall_z;
 
     /* Non bonded Parameter lists */
