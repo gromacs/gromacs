@@ -53,6 +53,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -178,21 +179,21 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
     return v;
 }
 
-/*! \brief Adds forces of flat-bottomed positions restraints to f[]
- *         and fixes vir_diag.
+/*! \brief Compute energies and forces for flat-bottomed position restraints
  *
  * Returns the flat-bottomed potential. Same PBC treatment as in
  * normal position restraints */
 real fbposres(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec vir_diag,
+              const rvec x[],
+              gmx::ForceWithVirial *forceWithVirial,
               const t_pbc *pbc,
-              int refcoord_scaling, int ePBC, rvec com)
+              int refcoord_scaling, int ePBC, const rvec com)
 /* compute flat-bottomed positions restraints */
 {
     int              i, ai, m, d, type, npbcdim = 0, fbdim;
     const t_iparams *pr;
-    real             vtot, kk, v;
+    real             kk, v;
     real             dr, dr2, rfb, rfb2, fact;
     rvec             com_sc, rdist, dx, dpdl, fm;
     gmx_bool         bInvert;
@@ -212,7 +213,9 @@ real fbposres(int nbonds,
         }
     }
 
-    vtot = 0.0;
+    rvec *f      = as_rvec_array(forceWithVirial->force_.data());
+    real  vtot   = 0.0;
+    rvec  virial = { 0 };
     for (i = 0; (i < nbonds); )
     {
         type = forceatoms[i++];
@@ -295,38 +298,35 @@ real fbposres(int nbonds,
 
         for (m = 0; (m < DIM); m++)
         {
-            f[ai][m]   += fm[m];
+            f[ai][m]  += fm[m];
             /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
+            virial[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
         }
     }
+
+    forceWithVirial->addVirialContribution(virial);
 
     return vtot;
 }
 
 
-/*! \brief Compute energies and forces for position restraints
+/*! \brief Compute energies and forces, when requested, for position restraints
  *
  * Note that position restraints require a different pbc treatment
  * from other bondeds */
+template<bool computeForce>
 real posres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec vir_diag,
+            const rvec x[],
+            gmx::ForceWithVirial *forceWithVirial,
             const struct t_pbc *pbc,
             real lambda, real *dvdlambda,
-            int refcoord_scaling, int ePBC, rvec comA, rvec comB)
+            int refcoord_scaling, int ePBC, const rvec comA, const rvec comB)
 {
     int              i, ai, m, d, type, npbcdim = 0;
     const t_iparams *pr;
-    real             L1;
-    real             vtot, kk, fm;
+    real             kk, fm;
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
-    gmx_bool         bForceValid = TRUE;
-
-    if ((f == nullptr) || (vir_diag == nullptr))    /* should both be null together! */
-    {
-        bForceValid = FALSE;
-    }
 
     npbcdim = ePBC2npbcdim(ePBC);
 
@@ -345,9 +345,17 @@ real posres(int nbonds,
         }
     }
 
-    L1 = 1.0 - lambda;
+    const real  L1     = 1.0 - lambda;
 
-    vtot = 0.0;
+    rvec       *f;
+    if (computeForce)
+    {
+        GMX_ASSERT(forceWithVirial != nullptr, "When forces are requested we need a force object");
+        f              = as_rvec_array(forceWithVirial->force_.data());
+    }
+    real        vtot   = 0.0;
+    /* Use intermediate virial buffer to reduce reduction rounding errors */
+    rvec        virial = { 0 };
     for (i = 0; (i < nbonds); )
     {
         type = forceatoms[i++];
@@ -370,12 +378,17 @@ real posres(int nbonds,
                 + fm*dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
-            if (bForceValid)
+            if (computeForce)
             {
-                f[ai][m]    += fm;
-                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+                f[ai][m]  += fm;
+                virial[m] -= 0.5*(dx[m] + rdist[m])*fm;
             }
         }
+    }
+
+    if (computeForce)
+    {
+        forceWithVirial->addVirialContribution(virial);
     }
 
     return vtot;
@@ -384,23 +397,25 @@ real posres(int nbonds,
 } // namespace
 
 void
-posres_wrapper(t_nrnb             *nrnb,
-               const t_idef       *idef,
-               const struct t_pbc *pbc,
-               const rvec          x[],
-               gmx_enerdata_t     *enerd,
-               const real         *lambda,
-               t_forcerec         *fr)
+posres_wrapper(t_nrnb               *nrnb,
+               const t_idef         *idef,
+               const struct t_pbc   *pbc,
+               const rvec           *x,
+               gmx_enerdata_t       *enerd,
+               const real           *lambda,
+               const t_forcerec     *fr,
+               gmx::ForceWithVirial *forceWithVirial)
 {
     real  v, dvdl;
 
     dvdl = 0;
-    v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
-                  idef->iparams_posres,
-                  x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
-                  fr->ePBC == epbcNONE ? nullptr : pbc,
-                  lambda[efptRESTRAINT], &dvdl,
-                  fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+    v    = posres<true>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
+                        idef->iparams_posres,
+                        x,
+                        forceWithVirial,
+                        fr->ePBC == epbcNONE ? nullptr : pbc,
+                        lambda[efptRESTRAINT], &dvdl,
+                        fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
@@ -417,7 +432,7 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
                       const rvec            x[],
                       gmx_enerdata_t       *enerd,
                       const real           *lambda,
-                      t_forcerec           *fr)
+                      const t_forcerec     *fr)
 {
     real  v;
     int   i;
@@ -433,11 +448,11 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
         real dvdl_dum = 0, lambda_dum;
 
         lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i-1]);
-        v          = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
-                            idef->iparams_posres,
-                            x, nullptr, nullptr,
-                            fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
-                            fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+        v          = posres<false>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
+                                   idef->iparams_posres,
+                                   x, nullptr,
+                                   fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
+                                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
@@ -445,18 +460,20 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb             *nrnb,
-                      const t_idef       *idef,
-                      const struct t_pbc *pbc,
-                      const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      t_forcerec         *fr)
+void fbposres_wrapper(t_nrnb               *nrnb,
+                      const t_idef         *idef,
+                      const struct t_pbc   *pbc,
+                      const rvec           *x,
+                      gmx_enerdata_t       *enerd,
+                      const t_forcerec     *fr,
+                      gmx::ForceWithVirial *forceWithVirial)
 {
     real  v;
 
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
                  idef->iparams_fbposres,
-                 x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
+                 x,
+                 forceWithVirial,
                  fr->ePBC == epbcNONE ? nullptr : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;

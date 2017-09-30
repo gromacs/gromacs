@@ -82,9 +82,10 @@ struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace gmx
+{
+class ForceWithVirial;
+}
 
 /*! \brief Return whether this is an interaction that actually
  * calculates a potential and works on multiple atoms (not e.g. a
@@ -103,7 +104,9 @@ void calc_listed(const t_commrec *cr,
                  struct gmx_wallcycle *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
-                 rvec f[], t_forcerec *fr,
+                 rvec f[],
+                 gmx::ForceWithVirial *forceWithVirial,
+                 const t_forcerec *fr,
                  const struct t_pbc *pbc, const struct t_pbc *pbc_full,
                  const struct t_graph *g,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb, const real *lambda,
@@ -117,7 +120,7 @@ void calc_listed(const t_commrec *cr,
  * The shift forces in fr are not affected. */
 void calc_listed_lambda(const t_idef *idef,
                         const rvec x[],
-                        t_forcerec *fr,
+                        const t_forcerec *fr,
                         const struct t_pbc *pbc, const struct t_graph *g,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                         const real *lambda,
@@ -134,8 +137,9 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_idef                   *idef,
                 const rvec                      x[],
                 history_t                      *hist,
-                rvec                            f[],
-                t_forcerec                     *fr,
+                rvec                           *forceForUseWithShiftForces,
+                gmx::ForceWithVirial           *forceWithVirial,
+                const t_forcerec               *fr,
                 const struct t_pbc             *pbc,
                 const struct t_graph           *graph,
                 gmx_enerdata_t                 *enerd,
@@ -145,9 +149,5 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
                 int                             flags);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

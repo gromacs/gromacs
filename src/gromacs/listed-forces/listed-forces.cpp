@@ -469,7 +469,9 @@ void calc_listed(const t_commrec             *cr,
                  struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
-                 rvec f[], t_forcerec *fr,
+                 rvec f[],
+                 gmx::ForceWithVirial *forceWithVirial,
+                 const t_forcerec *fr,
                  const struct t_pbc *pbc,
                  const struct t_pbc *pbc_full,
                  const struct t_graph *g,
@@ -512,12 +514,14 @@ void calc_listed(const t_commrec             *cr,
 
         if (idef->il[F_POSRES].nr > 0)
         {
-            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
+            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr,
+                           forceWithVirial);
         }
 
         if (idef->il[F_FBPOSRES].nr > 0)
         {
-            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
+            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr,
+                             forceWithVirial);
         }
 
         /* Do pre force calculation stuff which might require communication */
@@ -584,7 +588,7 @@ void calc_listed(const t_commrec             *cr,
 
 void calc_listed_lambda(const t_idef *idef,
                         const rvec x[],
-                        t_forcerec *fr,
+                        const t_forcerec *fr,
                         const struct t_pbc *pbc, const struct t_graph *g,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                         const real *lambda,
@@ -658,8 +662,9 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_idef                *idef,
                 const rvec                   x[],
                 history_t                   *hist,
-                rvec                         f[],
-                t_forcerec                  *fr,
+                rvec                        *forceForUseWithShiftForces,
+                gmx::ForceWithVirial        *forceWithVirial,
+                const t_forcerec            *fr,
                 const struct t_pbc          *pbc,
                 const struct t_graph        *graph,
                 gmx_enerdata_t              *enerd,
@@ -683,7 +688,9 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         /* Not enough flops to bother counting */
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(cr, wcycle, idef, x, hist, f, fr, pbc, &pbc_full,
+    calc_listed(cr, wcycle, idef, x, hist,
+                forceForUseWithShiftForces, forceWithVirial,
+                fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
 
