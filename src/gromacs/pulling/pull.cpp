@@ -61,6 +61,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -1704,7 +1705,7 @@ static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
 
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda)
+                    rvec *x, gmx::ForceWithVirial *force, real *dvdlambda)
 {
     real V = 0;
 
@@ -1722,6 +1723,9 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 
         pull_calc_coms(cr, pull, md, pbc, t, x, nullptr);
 
+        rvec       *f             = as_rvec_array(force->force_.data());
+        matrix      virial        = { { 0 } };
+        const bool  computeVirial = (force->computeVirial_ && MASTER(cr));
         for (int c = 0; c < pull->ncoord; c++)
         {
             /* For external potential the force is assumed to be given by an external module by a call to
@@ -1732,7 +1736,9 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
             }
 
             do_pull_pot_coord(pull, c, pbc, t, lambda,
-                              &V, MASTER(cr) ? vir : nullptr, &dVdl);
+                              &V,
+                              computeVirial ? virial : nullptr,
+                              &dVdl);
 
             /* Distribute the force over the atoms in the pulled groups */
             apply_forces_coord(pull, c, md, f);
@@ -1740,6 +1746,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 
         if (MASTER(cr))
         {
+            force->addVirialContribution(virial);
             *dvdlambda += dVdl;
         }
     }
