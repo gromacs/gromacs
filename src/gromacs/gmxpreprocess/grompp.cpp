@@ -49,6 +49,7 @@
 #include <sys/types.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
@@ -1773,7 +1774,6 @@ int gmx_grompp(int argc, char *argv[])
     gpp_atomtype_t     atype;
     int                nvsite, comb, mt;
     t_params          *plist;
-    matrix             box;
     real               fudgeQQ;
     double             reppow;
     const char        *mdparin;
@@ -2238,11 +2238,10 @@ int gmx_grompp(int argc, char *argv[])
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
-        copy_mat(state.box, box);
-        if (ir->ePBC == epbcXY && ir->nwall == 2)
-        {
-            svmul(ir->wall_ewald_zfac, box[ZZ], box[ZZ]);
-        }
+        matrix          scaledBox;
+        EwaldBoxZScaler boxScaler(*ir);
+        boxScaler.scaleBox(state.box, scaledBox);
+
         if (ir->nkx > 0 && ir->nky > 0 && ir->nkz > 0)
         {
             /* Mark fourier_spacing as not used */
@@ -2254,7 +2253,7 @@ int gmx_grompp(int argc, char *argv[])
             warning_error(wi, "Some of the Fourier grid sizes are set, but all of them need to be set.");
         }
         const int minGridSize = minimalPmeGridSize(ir->pme_order);
-        calcFftGrid(stdout, box, ir->fourier_spacing, minGridSize,
+        calcFftGrid(stdout, scaledBox, ir->fourier_spacing, minGridSize,
                     &(ir->nkx), &(ir->nky), &(ir->nkz));
         if (ir->nkx < minGridSize ||
             ir->nky < minGridSize ||
