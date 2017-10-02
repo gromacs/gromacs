@@ -91,7 +91,6 @@ void nbnxn_atomdata_init(FILE *fp,
 
 /* Copy the atom data to the non-bonded atom data structure */
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        int                  locality,
                         const nbnxn_search_t nbs,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo);
