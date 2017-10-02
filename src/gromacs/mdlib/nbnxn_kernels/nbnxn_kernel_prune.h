@@ -47,6 +47,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+struct nbnxn_atomdata_t;
 struct nonbonded_verlet_group_t;
 
 /*! \brief Prune all pair-lists in the set with distance \p rlistInner
@@ -56,5 +57,6 @@ struct nonbonded_verlet_group_t;
  * to be consumed by the non-bonded kernel.
  */
 void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t  *nbvg,
+                            const nbnxn_atomdata_t    *nbat,
                             const rvec                *shift_vec,
                             real                       rlistInner);

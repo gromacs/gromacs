@@ -2151,7 +2151,6 @@ static void init_nb_verlet(FILE                *fp,
                            matrix               box)
 {
     nonbonded_verlet_t *nbv;
-    int                 i;
     char               *env;
 
     nbnxn_alloc_t      *nb_alloc;
@@ -2174,10 +2173,9 @@ static void init_nb_verlet(FILE                *fp,
     nbv->min_ci_balanced = 0;
 
     nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
-    for (i = 0; i < nbv->ngrp; i++)
+    for (int i = 0; i < nbv->ngrp; i++)
     {
         nbv->grp[i].nbl_lists.nnbl = 0;
-        nbv->grp[i].nbat           = nullptr;
         nbv->grp[i].kernel_type    = nbnxnkNotSet;
 
         if (i == 0) /* local */
@@ -2206,67 +2204,55 @@ static void init_nb_verlet(FILE                *fp,
                       bFEP_NonBonded,
                       gmx_omp_nthreads_get(emntPairsearch));
 
-    for (i = 0; i < nbv->ngrp; i++)
-    {
-        gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,
-                                     &nb_alloc, &nb_free);
+    gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,
+                                 &nb_alloc, &nb_free);
 
+    for (int i = 0; i < nbv->ngrp; i++)
+    {
         nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
                                 nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
                                 /* 8x8x8 "non-simple" lists are ATM always combined */
                                 !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
                                 nb_alloc, nb_free);
+    }
 
-        if (i == 0 ||
-            nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
+    int      enbnxninitcombrule;
+    if (fr->ic->vdwtype == evdwCUT &&
+        (fr->ic->vdw_modifier == eintmodNONE ||
+         fr->ic->vdw_modifier == eintmodPOTSHIFT) &&
+        getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
+    {
+        /* Plain LJ cut-off: we can optimize with combination rules */
+        enbnxninitcombrule = enbnxninitcombruleDETECT;
+    }
+    else if (fr->ic->vdwtype == evdwPME)
+    {
+        /* LJ-PME: we need to use a combination rule for the grid */
+        if (fr->ljpme_combination_rule == eljpmeGEOM)
         {
-            gmx_bool bSimpleList;
-            int      enbnxninitcombrule;
-
-            bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
-
-            if (fr->ic->vdwtype == evdwCUT &&
-                (fr->ic->vdw_modifier == eintmodNONE ||
-                 fr->ic->vdw_modifier == eintmodPOTSHIFT) &&
-                getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
-            {
-                /* Plain LJ cut-off: we can optimize with combination rules */
-                enbnxninitcombrule = enbnxninitcombruleDETECT;
-            }
-            else if (fr->ic->vdwtype == evdwPME)
-            {
-                /* LJ-PME: we need to use a combination rule for the grid */
-                if (fr->ljpme_combination_rule == eljpmeGEOM)
-                {
-                    enbnxninitcombrule = enbnxninitcombruleGEOM;
-                }
-                else
-                {
-                    enbnxninitcombrule = enbnxninitcombruleLB;
-                }
-            }
-            else
-            {
-                /* We use a full combination matrix: no rule required */
-                enbnxninitcombrule = enbnxninitcombruleNONE;
-            }
-
-
-            snew(nbv->grp[i].nbat, 1);
-            nbnxn_atomdata_init(fp,
-                                nbv->grp[i].nbat,
-                                nbv->grp[i].kernel_type,
-                                enbnxninitcombrule,
-                                fr->ntype, fr->nbfp,
-                                ir->opts.ngener,
-                                bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
-                                nb_alloc, nb_free);
+            enbnxninitcombrule = enbnxninitcombruleGEOM;
         }
         else
         {
-            nbv->grp[i].nbat = nbv->grp[0].nbat;
+            enbnxninitcombrule = enbnxninitcombruleLB;
         }
     }
+    else
+    {
+        /* We use a full combination matrix: no rule required */
+        enbnxninitcombrule = enbnxninitcombruleNONE;
+    }
+
+    snew(nbv->nbat, 1);
+    bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
+    nbnxn_atomdata_init(fp,
+                        nbv->nbat,
+                        nbv->grp[0].kernel_type,
+                        enbnxninitcombrule,
+                        fr->ntype, fr->nbfp,
+                        ir->opts.ngener,
+                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
+                        nb_alloc, nb_free);
 
     if (nbv->bUseGPU)
     {
