@@ -78,6 +78,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "ewald-utils.h"
 #include "pme-internal.h"
 
 /*! \brief Parameters and settings for one PP-PME setup */
@@ -200,11 +201,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     pme_lb->rbufInner_coulomb = listParams->rlistInner - ic->rcoulomb;
     pme_lb->rbufInner_vdw     = listParams->rlistInner - ic->rvdw;
 
-    copy_mat(box, pme_lb->box_start);
-    if (ir->ePBC == epbcXY && ir->nwall == 2)
-    {
-        svmul(ir->wall_ewald_zfac, pme_lb->box_start[ZZ], pme_lb->box_start[ZZ]);
-    }
+    pmedata->boxScaler->scaleBox(box, pme_lb->box_start);
 
     pme_lb->n = 1;
     snew(pme_lb->setup, pme_lb->n);
