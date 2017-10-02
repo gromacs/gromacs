@@ -459,6 +459,9 @@ gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir);
 
+/*! \brief Return true if the simulation is 2D periodic with two walls. */
+bool     inputrecPbcXY2Walls(const t_inputrec *ir);
+
 /* Returns true for MD integator with T and/or P-coupling that supports
  * calculating the conserved energy quantity.
  */

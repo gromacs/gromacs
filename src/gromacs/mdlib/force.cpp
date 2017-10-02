@@ -149,10 +149,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 {
     int         i, j;
     int         donb_flags;
-    gmx_bool    bSB;
     int         pme_flags;
-    matrix      boxs;
-    rvec        box_size;
     t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
@@ -167,12 +164,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         dvdl_nb[i]  = 0;
         dvdl_dum[i] = 0;
-    }
-
-    /* Reset box */
-    for (i = 0; (i < DIM); i++)
-    {
-        box_size[i] = box[i][i];
     }
 
     /* do QMMM first if requested */
@@ -380,14 +371,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
         real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
-        bSB = (ir->nwall == 2);
-        if (bSB)
-        {
-            copy_mat(box, boxs);
-            svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
-            box_size[ZZ] *= ir->wall_ewald_zfac;
-        }
-
         if (EEL_PME_EWALD(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
             real dvdl_long_range_correction_q   = 0;
@@ -449,14 +432,14 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                          * exclusion forces) are calculated, so we can store
                          * the forces in the normal, single fr->f_novirsum array.
                          */
-                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
+                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr, ir,
                                            md->chargeA, md->chargeB,
                                            md->sqrt_c6A, md->sqrt_c6B,
                                            md->sigmaA, md->sigmaB,
                                            md->sigma3A, md->sigma3B,
                                            md->nChargePerturbed || md->nTypePerturbed,
                                            ir->cutoff_scheme != ecutsVERLET,
-                                           excl, x, bSB ? boxs : box, mu_tot,
+                                           excl, x, box, mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
                                            as_rvec_array(fr->f_novirsum->data()),
@@ -529,7 +512,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                         md->chargeA, md->chargeB,
                                         md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
-                                        bSB ? boxs : box, cr,
+                                        box, cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                         nrnb, wcycle,
@@ -572,7 +555,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             Vlr_q = do_ewald(ir, x, as_rvec_array(fr->f_novirsum->data()),
                              md->chargeA, md->chargeB,
-                             box_size, cr, md->homenr,
+                             box, cr, md->homenr,
                              fr->vir_el_recip, fr->ic->ewaldcoeff_q,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
         }

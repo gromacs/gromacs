@@ -40,15 +40,19 @@
 
 #include <cmath>
 
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "pme-internal.h"
 
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
@@ -64,6 +68,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                         t_commrec *cr,
                         int numThreads, int thread,
                         t_forcerec *fr,
+                        const t_inputrec *ir,
                         real *chargeA, real *chargeB,
                         real *C6A, real *C6B,
                         real *sigmaA, real *sigmaB,
@@ -105,12 +110,16 @@ void ewald_LRcorrection(int numAtomsLocal,
     real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;
     rvec        df, dx, mutot[2], dipcorrA, dipcorrB;
     tensor      dxdf_q = {{0}}, dxdf_lj = {{0}};
-    real        vol    = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
     real        chargecorr[2] = { 0, 0 };
     gmx_bool    bMolPBC       = fr->bMolPBC;
     gmx_bool    bDoingLBRule  = (fr->ljpme_combination_rule == eljpmeLB);
     gmx_bool    bNeedLongRangeCorrection;
+
+    assert(ir);
+    matrix          scaledBox;
+    EwaldBoxZScaler boxScaler(*ir);
+    boxScaler.scaleBox(box, scaledBox);
 
     /* This routine can be made faster by using tables instead of analytical interactions
      * However, that requires a thorough verification that they are correct in all cases.
@@ -145,13 +154,15 @@ void ewald_LRcorrection(int numAtomsLocal,
         dipcorrB[i] = 0;
     }
     dipole_coeff = 0;
+
+    real boxVolume = scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ];
     switch (ewald_geometry)
     {
         case eewg3D:
             if (epsilon_surface != 0)
             {
                 dipole_coeff =
-                    2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface + fr->ic->epsilon_r)*vol);
+                    2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface + fr->ic->epsilon_r)*boxVolume);
                 for (i = 0; (i < DIM); i++)
                 {
                     dipcorrA[i] = 2*dipole_coeff*mutot[0][i];
@@ -160,7 +171,7 @@ void ewald_LRcorrection(int numAtomsLocal,
             }
             break;
         case eewg3DC:
-            dipole_coeff  = 2*M_PI*one_4pi_eps/vol;
+            dipole_coeff  = 2*M_PI*one_4pi_eps/boxVolume;
             dipcorrA[ZZ]  = 2*dipole_coeff*mutot[0][ZZ];
             dipcorrB[ZZ]  = 2*dipole_coeff*mutot[1][ZZ];
             for (int q = 0; q < (bHaveChargeOrTypePerturbed ? 2 : 1); q++)
