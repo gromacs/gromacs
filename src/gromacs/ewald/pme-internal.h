@@ -55,9 +55,11 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -261,6 +263,8 @@ typedef struct gmx_pme_t {
     real       ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
     real       ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
     real       epsilon_r;
+
+    class EwaldBoxZScaler *boxScaler;   /*! The scaling data Ewald uses with walls (set at pme_init constant for the entire run) */
 
     int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
 
