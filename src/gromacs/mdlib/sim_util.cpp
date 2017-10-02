@@ -251,8 +251,6 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
-    int    i;
-
     /* The short-range virial from surrounding boxes */
     calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
@@ -262,12 +260,6 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
      */
     f_calc_vir(start, start+homenr, x, f, vir_part, graph, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
-
-    /* Add wall contribution */
-    for (i = 0; i < DIM; i++)
-    {
-        vir_part[i][ZZ] += fr->vir_wall_z[i];
-    }
 
     if (debug)
     {
