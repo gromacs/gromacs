@@ -422,16 +422,20 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
-    if (plist->nsci == 0)
-    {
-        /* Don't launch an empty local kernel (not allowed with CUDA) */
-        return;
-    }
-
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
         t->nb_k[iloc].openTimingRegion(stream);
+    }
+
+    if (plist->nsci == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with CUDA) */
+        if (bDoTime)
+        {
+            t->nb_k[iloc].closeTimingRegion(stream);
+        }
+        return;
     }
 
     /* get the pointer to the kernel flavor we need to use */

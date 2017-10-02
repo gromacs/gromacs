@@ -179,10 +179,8 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
                  * cl_event conditionals which ideally should only be asserts.
                  * TODO: improve internal task scheduling, re-enable the assert, turn conditionals into asserts
                  */
-                /*
-                   std::string error = "GPU timer should be stopped, but is " + std::string((debugState_ == TimerState::Idle) ? "idle" : "recording") + ".";
-                   GMX_ASSERT(debugState_ == TimerState::Stopped, error.c_str());
-                 */
+                std::string error = "GPU timer should be stopped, but is " + std::string((debugState_ == TimerState::Idle) ? "idle" : "recording") + ".";
+                GMX_ASSERT(debugState_ == TimerState::Stopped, error.c_str());
                 debugState_ = TimerState::Idle;
             }
             double milliseconds = impl_.getLastRangeTime();

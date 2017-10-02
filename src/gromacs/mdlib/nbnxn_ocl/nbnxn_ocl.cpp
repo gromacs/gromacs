@@ -536,18 +536,22 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
+    /* beginning of timed nonbonded calculation section */
+    if (bDoTime)
+    {
+        t->nb_k[iloc].openTimingRegion(stream);
+    }
+
     if (plist->nsci == 0)
     {
         /* Don't launch an empty local kernel (is not allowed with OpenCL).
          * TODO: Separate H2D and kernel launch into separate functions.
          */
+        if (bDoTime)
+        {
+            t->nb_k[iloc].closeTimingRegion(stream);
+        }
         return;
-    }
-
-    /* beginning of timed nonbonded calculation section */
-    if (bDoTime)
-    {
-        t->nb_k[iloc].openTimingRegion(stream);
     }
 
     /* get the pointer to the kernel flavor we need to use */
