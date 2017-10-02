@@ -104,8 +104,10 @@ void make_wall_tables(FILE *fplog,
                       const gmx_groups_t *groups,
                       t_forcerec *fr);
 
-real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
-              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
+real do_walls(const t_inputrec &ir, const t_forcerec &fr,
+              const matrix box, const t_mdatoms &md,
+              const rvec *x, gmx::ForceWithVirial *forceWithVirial,
+              real lambda, real Vlj[], t_nrnb *nrnb);
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
                           gmx_bool bPrintNote, t_commrec *cr, FILE *fp);
