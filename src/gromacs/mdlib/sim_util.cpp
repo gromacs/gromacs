@@ -444,7 +444,7 @@ static void do_nb_verlet(t_forcerec *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            nbnxn_kernel_cpu_prune(nbvg, fr->shift_vec, nbv->listParams->rlistInner);
+            nbnxn_kernel_cpu_prune(nbvg, nbv->nbat, fr->shift_vec, nbv->listParams->rlistInner);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
@@ -457,6 +457,7 @@ static void do_nb_verlet(t_forcerec *fr,
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
             nbnxn_kernel_cpu(nbvg,
+                             nbv->nbat,
                              ic,
                              fr->shift_vec,
                              flags,
@@ -469,16 +470,16 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
+            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, nbv->nbat, flags, ilocality);
             break;
 
         case nbnxnk8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
-                                 nbvg->nbat, ic,
+                                 nbv->nbat, ic,
                                  fr->shift_vec,
                                  flags,
                                  clearF,
-                                 nbvg->nbat->out[0].f,
+                                 nbv->nbat->out[0].f,
                                  fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
@@ -809,7 +810,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
-                                 fr->shift_vec, nbv->grp[0].nbat);
+                                 fr->shift_vec, nbv->nbat);
 
 #if GMX_MPI
     if (!(cr->duty & DUTY_PME))
@@ -864,7 +865,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                               0, mdatoms->homenr, -1, fr->cginfo, x,
                               0, nullptr,
                               nbv->grp[eintLocal].kernel_type,
-                              nbv->grp[eintLocal].nbat);
+                              nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
         }
         else
@@ -873,23 +874,11 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_put_on_grid_nonlocal(nbv->nbs, domdec_zones(cr->dd),
                                        fr->cginfo, x,
                                        nbv->grp[eintNonlocal].kernel_type,
-                                       nbv->grp[eintNonlocal].nbat);
+                                       nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        if (nbv->ngrp == 1 ||
-            nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
-        {
-            nbnxn_atomdata_set(nbv->grp[eintLocal].nbat, eatAll,
-                               nbv->nbs, mdatoms, fr->cginfo);
-        }
-        else
-        {
-            nbnxn_atomdata_set(nbv->grp[eintLocal].nbat, eatLocal,
-                               nbv->nbs, mdatoms, fr->cginfo);
-            nbnxn_atomdata_set(nbv->grp[eintNonlocal].nbat, eatAll,
-                               nbv->nbs, mdatoms, fr->cginfo);
-        }
+        nbnxn_atomdata_set(nbv->nbat, nbv->nbs, mdatoms, fr->cginfo);
         wallcycle_stop(wcycle, ewcNS);
     }
 
@@ -901,10 +890,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         if (bNS)
         {
-            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
+            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat);
         }
 
-        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
+        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
 
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -915,7 +904,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
-        nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintLocal].nbat,
+        nbnxn_make_pairlist(nbv->nbs, nbv->nbat,
                             &top->excls,
                             nbv->listParams->rlistOuter,
                             nbv->min_ci_balanced,
@@ -944,7 +933,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
-                                        nbv->grp[eintLocal].nbat);
+                                        nbv->nbat);
         wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
@@ -974,7 +963,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintNonlocal].nbat,
+            nbnxn_make_pairlist(nbv->nbs, nbv->nbat,
                                 &top->excls,
                                 nbv->listParams->rlistOuter,
                                 nbv->min_ci_balanced,
@@ -1007,7 +996,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
-                                            nbv->grp[eintNonlocal].nbat);
+                                            nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
             wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
@@ -1031,10 +1020,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         if (DOMAINDECOMP(cr))
         {
-            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
+            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
                                      flags, eatNonlocal);
         }
-        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
+        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
                                  flags, eatLocal);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -1197,7 +1186,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
@@ -1208,7 +1197,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
-            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
+            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat,
                                                      fr->fshift);
         }
     }
@@ -1261,7 +1250,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
-                                               nbv->grp[eintNonlocal].nbat, f);
+                                               nbv->nbat, f);
             }
             wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
             wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
@@ -1363,7 +1352,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                       nbv->grp[eintLocal].nbat, f);
+                                       nbv->nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }

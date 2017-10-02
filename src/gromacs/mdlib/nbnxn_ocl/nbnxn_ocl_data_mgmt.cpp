@@ -708,10 +708,10 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
 static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
                                  const interaction_const_t      *ic,
                                  const NbnxnListParameters      *listParams,
-                                 const nonbonded_verlet_group_t *nbv_group)
+                                 const nbnxn_atomdata_t         *nbat)
 {
-    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype, nb->dev_rundata);
-    init_nbparam(nb->nbparam, ic, listParams, nbv_group[0].nbat, nb->dev_rundata);
+    init_atomdata_first(nb->atdat, nbat->ntype, nb->dev_rundata);
+    init_nbparam(nb->nbparam, ic, listParams, nbat, nb->dev_rundata);
 }
 
 
@@ -720,7 +720,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
                     const NbnxnListParameters *listParams,
-                    nonbonded_verlet_group_t  *nbv_grp,
+                    const nbnxn_atomdata_t    *nbat,
                     int                        rank,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -812,7 +812,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
         init_timings(nb->timings);
     }
 
-    nbnxn_ocl_init_const(nb, ic, listParams, nbv_grp);
+    nbnxn_ocl_init_const(nb, ic, listParams, nbat);
 
     /* Enable LJ param manual prefetch for AMD or if we request through env. var.
      * TODO: decide about NVIDIA
@@ -976,7 +976,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
 
 //! This function is documented in the header file
 void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
-                             const struct nbnxn_atomdata_t *nbat)
+                             const nbnxn_atomdata_t        *nbat)
 {
     cl_int           cl_error;
     int              nalloc, natoms;

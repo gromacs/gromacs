@@ -790,11 +790,10 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
 
 /* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
-                                         int                  ngrid,
                                          const nbnxn_search_t nbs,
                                          const int           *type)
 {
-    for (int g = 0; g < ngrid; g++)
+    for (int g = 0; g < nbs->ngrid; g++)
     {
         const nbnxn_grid_t * grid = &nbs->grid[g];
 
@@ -812,12 +811,11 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
 
 /* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
-                                            int                  ngrid,
                                             const nbnxn_search_t nbs)
 {
     if (nbat->comb_rule != ljcrNONE)
     {
-        for (int g = 0; g < ngrid; g++)
+        for (int g = 0; g < nbs->ngrid; g++)
         {
             const nbnxn_grid_t * grid = &nbs->grid[g];
 
@@ -855,14 +853,13 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
 
 /* Sets the charges in nbnxn_atomdata_t *nbat */
 static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
-                                       int                  ngrid,
                                        const nbnxn_search_t nbs,
                                        const real          *charge)
 {
     int                 i;
     real               *q;
 
-    for (int g = 0; g < ngrid; g++)
+    for (int g = 0; g < nbs->ngrid; g++)
     {
         const nbnxn_grid_t * grid = &nbs->grid[g];
 
@@ -914,7 +911,6 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
  * using the original charge and LJ data, not nbnxn_atomdata_t.
  */
 static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
-                                    int                  ngrid,
                                     const nbnxn_search_t nbs)
 {
     real               *q;
@@ -931,7 +927,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
         stride_q = 1;
     }
 
-    for (int g = 0; g < ngrid; g++)
+    for (int g = 0; g < nbs->ngrid; g++)
     {
         const nbnxn_grid_t * grid = &nbs->grid[g];
         if (grid->bSimple)
@@ -999,7 +995,6 @@ static void copy_egp_to_nbat_egps(const int *a, int na, int na_round,
 
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
-                                            int                  ngrid,
                                             const nbnxn_search_t nbs,
                                             const int           *atinfo)
 {
@@ -1008,7 +1003,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
         return;
     }
 
-    for (int g = 0; g < ngrid; g++)
+    for (int g = 0; g < nbs->ngrid; g++)
     {
         const nbnxn_grid_t * grid = &nbs->grid[g];
 
@@ -1027,35 +1022,23 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
 void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
-                        int                  locality,
                         const nbnxn_search_t nbs,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo)
 {
-    int ngrid;
+    nbnxn_atomdata_set_atomtypes(nbat, nbs, mdatoms->typeA);
 
-    if (locality == eatLocal)
-    {
-        ngrid = 1;
-    }
-    else
-    {
-        ngrid = nbs->ngrid;
-    }
-
-    nbnxn_atomdata_set_atomtypes(nbat, ngrid, nbs, mdatoms->typeA);
-
-    nbnxn_atomdata_set_charges(nbat, ngrid, nbs, mdatoms->chargeA);
+    nbnxn_atomdata_set_charges(nbat, nbs, mdatoms->chargeA);
 
     if (nbs->bFEP)
     {
-        nbnxn_atomdata_mask_fep(nbat, ngrid, nbs);
+        nbnxn_atomdata_mask_fep(nbat, nbs);
     }
 
     /* This must be done after masking types for FEP */
-    nbnxn_atomdata_set_ljcombparams(nbat, ngrid, nbs);
+    nbnxn_atomdata_set_ljcombparams(nbat, nbs);
 
-    nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
+    nbnxn_atomdata_set_energygroups(nbat, nbs, atinfo);
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */

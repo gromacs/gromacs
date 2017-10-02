@@ -48,11 +48,11 @@
 
 
 void nbnxn_kernel_cpu_prune(nonbonded_verlet_group_t *nbvg,
+                            const nbnxn_atomdata_t   *nbat,
                             const rvec               *shift_vec,
                             real                      rlistInner)
 {
     nbnxn_pairlist_set_t   *nbl_lists = &nbvg->nbl_lists;
-    const nbnxn_atomdata_t *nbat      = nbvg->nbat;
 
     GMX_ASSERT(nbl_lists->nbl[0]->nciOuter >= 0, "nciOuter<0, which signals an invalid pair-list");
 
