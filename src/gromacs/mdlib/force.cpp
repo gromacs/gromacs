@@ -201,7 +201,8 @@ void do_force_lowlevel(t_forcerec           *fr,
     if (ir->nwall)
     {
         /* foreign lambda component for walls */
-        real dvdl_walls = do_walls(ir, fr, box, md, x, forceForUseWithShiftForces, lambda[efptVDW],
+        real dvdl_walls = do_walls(*ir, *fr, box, *md, x,
+                                   forceWithVirial, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR], nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }

@@ -2761,6 +2761,7 @@ void init_forcerec(FILE                             *fp,
          fr->forceProviders->hasForceProvider() ||
          gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
          gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
+         ir->nwall > 0 ||
          ir->bPull ||
          ir->bRot ||
          ir->bIMD);

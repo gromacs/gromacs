@@ -265,9 +265,8 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* PME/Ewald stuff */
     struct gmx_ewald_tab_t *ewald_table;
 
-    /* Virial Stuff */
+    /* Shift force array for computing the virial */
     rvec *fshift;
-    dvec  vir_wall_z;
 
     /* Non bonded Parameter lists */
     int      ntype; /* Number of atom types */
