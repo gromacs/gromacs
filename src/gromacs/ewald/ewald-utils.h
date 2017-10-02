@@ -36,18 +36,22 @@
  */
 /*! \libinternal \file
  *
- * \brief Declares functions for computing Ewald splitting coefficients
- *
- * These belong in the maths module because they do simple maths and
- * are used many parts of Gromacs.
+ * \brief Declares utility functions related to Ewald.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Szilárd Páll <pall.szilard@gmail.com>
+ *
  * \inlibraryapi
  * \ingroup module_ewald
  */
 #ifndef GMX_EWALD_UTILS_H
 #define GMX_EWALD_UTILS_H
 
+#include <assert.h>
+
+#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/real.h"
 
 /*! \brief Computes the Ewald splitting coefficient for Coulomb
@@ -79,5 +83,60 @@ calc_ewaldcoeff_q(real rc, real rtol);
  */
 real
 calc_ewaldcoeff_lj(real rc, real rtol);
+
+
+/*! \libinternal \brief Class to handle box scaling for Ewald and PME.
+ *
+ * At construction contents of inputrec determine whether scaling is necessary
+ * as well as the scaling factor used. Later, the scaleBox method can be used
+ * to apply the appropriate scaling (if needed) for Ewald-based methods.
+ *
+ */
+class EwaldBoxZScaler
+{
+
+    private:
+        bool scaleWithWalls_; /**< True if the simulation uses two walls and the box needs to be scaled in PME */
+        real scalingFactor_;  /**< Box The scaling factor PME uses with walls */
+
+    public:
+        EwaldBoxZScaler() = delete;
+
+        /*! \brief Constructor that takes the input record to initialize Ewald box scaling appropriately. */
+        EwaldBoxZScaler(const t_inputrec &ir)
+        {
+            if (inputrecPbcXY2Walls(&ir))
+            {
+                scaleWithWalls_ = true;
+                scalingFactor_  = ir.wall_ewald_zfac;
+            }
+            else
+            {
+                scaleWithWalls_ = false;
+                scalingFactor_  = 1;
+            }
+        }
+
+        /*! \brief Copy and scale the box for PME.
+         *
+         * When PME is used with 2D periodicity and two walls, the
+         * copy of the \p box passed is scaled with the Z scaling factor.
+         *
+         * \param[in] box        The current box matrix
+         * \param[out] scaledBox Scaled copy of the box matrix.
+         */
+        void scaleBox(const matrix box,
+                      matrix       scaledBox)
+        {
+            assert(box);
+            assert(scaledBox);
+
+            copy_mat(box, scaledBox);
+            if (scaleWithWalls_)
+            {
+                svmul(scalingFactor_, scaledBox[ZZ], scaledBox[ZZ]);
+            }
+        }
+};
 
 #endif

@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/gmxlib/network.h"
@@ -200,11 +201,11 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     pme_lb->rbufInner_coulomb = listParams->rlistInner - ic->rcoulomb;
     pme_lb->rbufInner_vdw     = listParams->rlistInner - ic->rvdw;
 
-    copy_mat(box, pme_lb->box_start);
-    if (ir->ePBC == epbcXY && ir->nwall == 2)
-    {
-        svmul(ir->wall_ewald_zfac, pme_lb->box_start[ZZ], pme_lb->box_start[ZZ]);
-    }
+    /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
+     * can't always usedd as it's not available with separate PME ranks.
+     */
+    EwaldBoxZScaler boxScaler(*ir);
+    boxScaler.scaleBox(box, pme_lb->box_start);
 
     pme_lb->n = 1;
     snew(pme_lb->setup, pme_lb->n);
@@ -222,7 +223,11 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     pme_lb->setup[0].ewaldcoeff_q    = ic->ewaldcoeff_q;
     pme_lb->setup[0].ewaldcoeff_lj   = ic->ewaldcoeff_lj;
 
-    pme_lb->setup[0].pmedata         = pmedata;
+    if (!pme_lb->bSepPMERanks)
+    {
+        GMX_RELEASE_ASSERT(pmedata, "On ranks doing both PP and PME we need a valid pmedata object");
+        pme_lb->setup[0].pmedata     = pmedata;
+    }
 
     spm = 0;
     for (d = 0; d < DIM; d++)

@@ -908,29 +908,16 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 #if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
-        gmx_bool bBS;
-        matrix   boxs;
-
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-
         wallcycle_start(wcycle, ewcPP_PMESENDX);
-
-        bBS = (inputrec->nwall == 2);
-        if (bBS)
-        {
-            copy_mat(box, boxs);
-            svmul(inputrec->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
-        }
-
-        gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
+        gmx_pme_send_coordinates(cr, box, x,
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
                                  step);
-
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
 #endif /* GMX_MPI */
@@ -1602,29 +1589,16 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 #if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
-        gmx_bool bBS;
-        matrix   boxs;
-
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-
         wallcycle_start(wcycle, ewcPP_PMESENDX);
-
-        bBS = (inputrec->nwall == 2);
-        if (bBS)
-        {
-            copy_mat(box, boxs);
-            svmul(inputrec->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
-        }
-
-        gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
+        gmx_pme_send_coordinates(cr, box, x,
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
                                  step);
-
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
 #endif /* GMX_MPI */
