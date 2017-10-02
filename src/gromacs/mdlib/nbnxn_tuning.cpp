@@ -115,7 +115,7 @@ static const float c_nbnxnListSizeFactorCpu           = 1.25;
 //! Target pair-list size increase ratio for Intel KNL
 static const float c_nbnxnListSizeFactorIntelXeonPhi  = 1.4;
 // GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel.
-//! Target pair-list size increase ratio for hybrid CPU-GPU
+//! Target pair-list size increase ratio for GPU
 static const float c_nbnxnListSizeFactorGPU           = 1.4;
 //! Never increase the size of the pair-list more than the factor above plus this margin
 static const float c_nbnxnListSizeFactorMargin        = 0.1;

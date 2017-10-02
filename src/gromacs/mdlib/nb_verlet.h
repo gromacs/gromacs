@@ -182,7 +182,6 @@ enum {
  *  \brief Non-bonded interaction group data structure. */
 typedef struct nonbonded_verlet_group_t {
     nbnxn_pairlist_set_t  nbl_lists;   /**< pair list(s)                       */
-    nbnxn_atomdata_t     *nbat;        /**< atom data                          */
     int                   kernel_type; /**< non-bonded kernel - see enum above */
     int                   ewald_excl;  /**< Ewald exclusion - see enum above   */
 } nonbonded_verlet_group_t;
@@ -194,6 +193,7 @@ typedef struct nonbonded_verlet_t {
     nbnxn_search_t                       nbs;             /**< n vs n atom pair searching data       */
     int                                  ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
+    nbnxn_atomdata_t                    *nbat;            /**< atom data                             */
 
     gmx_bool                             bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
     EmulateGpuNonbonded                  emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */

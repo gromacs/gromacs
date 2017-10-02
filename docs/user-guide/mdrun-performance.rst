@@ -246,13 +246,10 @@ behavior.
 
 ``-nb``
     Used to set where to execute the non-bonded interactions.
-    Can be set to "auto", "cpu", "gpu", "gpu_cpu."
+    Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which uses a compatible GPU if available.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
-    that a compatible GPU be available and will be used. Setting
-    "gpu_cpu" lets the GPU compute the local and the CPU the non-local
-    non-bonded interactions. Is only faster under a narrow range of
-    conditions.
+    that a compatible GPU be available and will be used.
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
