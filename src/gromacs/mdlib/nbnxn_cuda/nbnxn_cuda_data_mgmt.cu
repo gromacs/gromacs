@@ -464,10 +464,10 @@ static void init_timings(gmx_wallclock_gpu_t *t)
 static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                                   const interaction_const_t      *ic,
                                   const NbnxnListParameters      *listParams,
-                                  const nonbonded_verlet_group_t *nbv_group)
+                                  const nbnxn_atomdata_t         *nbat)
 {
-    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
-    init_nbparam(nb->nbparam, ic, listParams, nbv_group[0].nbat, nb->dev_info);
+    init_atomdata_first(nb->atdat, nbat->ntype);
+    init_nbparam(nb->nbparam, ic, listParams, nbat, nb->dev_info);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(nb);
@@ -477,7 +477,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
                     const NbnxnListParameters *listParams,
-                    nonbonded_verlet_group_t  *nbv_grp,
+                    const nbnxn_atomdata_t    *nbat,
                     int                        /*rank*/,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -558,7 +558,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
-    nbnxn_cuda_init_const(nb, ic, listParams, nbv_grp);
+    nbnxn_cuda_init_const(nb, ic, listParams, nbat);
 
     *p_nb = nb;
 
@@ -688,7 +688,7 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
 }
 
 void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
-                             const struct nbnxn_atomdata_t *nbat)
+                             const nbnxn_atomdata_t        *nbat)
 {
     cudaError_t    stat;
     int            nalloc, natoms;

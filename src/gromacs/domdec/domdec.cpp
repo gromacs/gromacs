@@ -9580,7 +9580,7 @@ void dd_partition_system(FILE                *fplog,
                                   as_rvec_array(state_local->x.data()),
                                   ncg_moved, bRedist ? comm->moved : nullptr,
                                   fr->nbv->grp[eintLocal].kernel_type,
-                                  fr->nbv->grp[eintLocal].nbat);
+                                  fr->nbv->nbat);
 
                 nbnxn_get_ncells(fr->nbv->nbs, &ncells_new[XX], &ncells_new[YY]);
                 break;
