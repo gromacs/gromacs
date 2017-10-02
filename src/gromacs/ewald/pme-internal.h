@@ -55,9 +55,11 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -262,6 +264,9 @@ typedef struct gmx_pme_t {
     real       ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
     real       epsilon_r;
 
+    bool       scaleBoxZWithWalls;      /*! True if the simulation uses two walls and the box needs to be scaled in PME */
+    real       boxZScalingFactor;       /*! Box The scaling factor PME uses with walls */
+
     int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
 
     int        ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
@@ -328,6 +333,32 @@ typedef struct gmx_pme_t {
 } t_gmx_pme_t;
 
 //! @endcond
+
+/*! \brief Copy and scale the box for PME.
+ *
+ * When PME is used with 2D periodicity and two walls, the
+ * copy of the \p box passed is scaled with the Z scaling factor.
+ *
+ * \param[in] pmedata    The PME data strucure.
+ * \param[in] box        The current box maxtrix
+ * \param[out] scaledBox Scaled copy of the box matrix.
+ */
+static inline void getScaledBox(const gmx_pme_t  *pmedata,
+                                const matrix      box,
+                                matrix            scaledBox)
+{
+    assert(pmedata);
+    assert(box);
+    assert(*box);
+    assert(scaledBox);
+    assert(*scaledBox);
+
+    copy_mat(box, scaledBox);
+    if (pmedata->scaleBoxZWithWalls)
+    {
+        svmul(pmedata->boxZScalingFactor, scaledBox[ZZ], scaledBox[ZZ]);
+    }
+}
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
 gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);

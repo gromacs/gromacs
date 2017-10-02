@@ -137,14 +137,13 @@ static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, 
 real do_ewald(t_inputrec *ir,
               rvec x[],        rvec f[],
               real chargeA[],  real chargeB[],
-              rvec box,
+              matrix box,
               t_commrec *cr,   int natoms,
               matrix lrvir,    real ewaldcoeff,
               real lambda,     real *dvdlambda,
               struct gmx_ewald_tab_t *et)
 {
     real     factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
-    real     scaleRecip = 4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; /* 1/(Vol*e0) */
     real    *charge, energy_AB[2], energy;
     rvec     lll;
     int      lowiy, lowiz, ix, iy, iz, n, q;
@@ -159,6 +158,18 @@ real do_ewald(t_inputrec *ir,
         }
     }
 
+    /* Reset box and scale with Ewald wall factor */
+    rvec boxSize;
+    for (int i = 0; (i < DIM); i++)
+    {
+        boxSize[i] = box[i][i];
+    }
+    if (ir->nwall == 2)
+    {
+        boxSize[ZZ] *= ir->wall_ewald_zfac;
+    }
+    /* 1/(Vol*e0) */
+    real scaleRecip = 4.0*M_PI/(boxSize[XX]*boxSize[YY]*boxSize[ZZ])*ONE_4PI_EPS0/ir->epsilon_r;
 
     if (!et->eir) /* allocate if we need to */
     {
@@ -175,7 +186,7 @@ real do_ewald(t_inputrec *ir,
 
     clear_mat(lrvir);
 
-    calc_lll(box, lll);
+    calc_lll(boxSize, lll);
     tabulateStructureFactors(natoms, x, et->kmax, et->eir, lll);
 
     for (q = 0; q < (bFreeEnergy ? 2 : 1); q++)

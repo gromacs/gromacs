@@ -2238,6 +2238,7 @@ int gmx_grompp(int argc, char *argv[])
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
+        // FIXME: this code should be unified with the one on pme-internals.h
         copy_mat(state.box, box);
         if (ir->ePBC == epbcXY && ir->nwall == 2)
         {

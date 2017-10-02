@@ -664,6 +664,15 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     /* Always constant LJ coefficients */
     pme->ljpme_combination_rule = ir->ljpme_combination_rule;
 
+    // The box requires scaling with nwalls = 2, we store that condition as well
+    // as the scaling factor
+    pme->scaleBoxZWithWalls = (ir->nwall == 2);
+    pme->boxZScalingFactor  = 1.0;
+    if (pme->scaleBoxZWithWalls)
+    {
+        pme->boxZScalingFactor = ir->wall_ewald_zfac;
+    }
+
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(pme->pme_order,
                                pme->nkx, pme->nky, pme->nkz,
@@ -1032,7 +1041,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         atc->f = f;
     }
 
-    gmx::invertBoxMatrix(box, pme->recipbox);
+    matrix scaledBox;
+    getScaledBox(pme, box, scaledBox);
+
+    gmx::invertBoxMatrix(scaledBox, pme->recipbox);
     bFirst = TRUE;
 
     /* For simplicity, we construct the splines for all particles if
@@ -1191,7 +1203,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         loop_count =
                             solve_pme_yzx(pme, cfftgrid,
-                                          box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
+                                          scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
                                           bCalcEnerVir,
                                           pme->nthread, thread);
                     }
@@ -1199,7 +1211,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         loop_count =
                             solve_pme_lj_yzx(pme, &cfftgrid, FALSE,
-                                             box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
+                                             scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
                     }
@@ -1470,7 +1482,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                         loop_count =
                             solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE,
-                                             box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
+                                             scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
                         if (thread == 0)
