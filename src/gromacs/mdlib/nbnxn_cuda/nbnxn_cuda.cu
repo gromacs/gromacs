@@ -353,6 +353,12 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
+    /* beginning of timed HtoD section */
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].openTimingRegion(stream);
+    }
+
     /* Don't launch the non-local kernel if there is no work to do.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
@@ -365,7 +371,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     if (canSkipWork(nb, iloc))
     {
         plist->haveFreshList = false;
-
+        if (bDoTime)
+        {
+            t->nb_h2d[iloc].closeTimingRegion(stream);
+        }
         return;
     }
 
@@ -379,12 +388,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-    }
-
-    /* beginning of timed HtoD section */
-    if (bDoTime)
-    {
-        t->nb_h2d[iloc].openTimingRegion(stream);
     }
 
     /* HtoD x, q */
@@ -422,16 +425,20 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
-    if (plist->nsci == 0)
-    {
-        /* Don't launch an empty local kernel (not allowed with CUDA) */
-        return;
-    }
-
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
         t->nb_k[iloc].openTimingRegion(stream);
+    }
+
+    if (plist->nsci == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with CUDA) */
+        if (bDoTime)
+        {
+            t->nb_k[iloc].closeTimingRegion(stream);
+        }
+        return;
     }
 
     /* get the pointer to the kernel flavor we need to use */
@@ -689,9 +696,19 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
+    /* beginning of timed D2H section */
+    if (bDoTime)
+    {
+        t->nb_d2h[iloc].openTimingRegion(stream);
+    }
+
     /* don't launch non-local copy-back if there was no non-local work to do */
     if (canSkipWork(nb, iloc))
     {
+        if (bDoTime)
+        {
+            t->nb_d2h[iloc].closeTimingRegion(stream);
+        }
         return;
     }
 
@@ -705,12 +722,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-    }
-
-    /* beginning of timed D2H section */
-    if (bDoTime)
-    {
-        t->nb_d2h[iloc].openTimingRegion(stream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local

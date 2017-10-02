@@ -85,19 +85,18 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
             double milliseconds = 0.0;
             for (size_t i = 0; i < currentEvent_; i++)
             {
-                if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
-                {
-                    cl_ulong          start_ns, end_ns;
-                    cl_int gmx_unused cl_error;
+                GMX_ASSERT(events_[i] != nullptr, "Underlying cl_event should not be null. "
+                           "Make sure all outputs of fetchNextEvent() were passed into OpenCL API.");
+                cl_ulong          start_ns, end_ns;
+                cl_int gmx_unused cl_error;
 
-                    cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_START,
-                                                       sizeof(cl_ulong), &start_ns, nullptr);
-                    GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
-                    cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_END,
-                                                       sizeof(cl_ulong), &end_ns, nullptr);
-                    GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
-                    milliseconds += (end_ns - start_ns) / 1000000.0;
-                }
+                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_START,
+                                                   sizeof(cl_ulong), &start_ns, nullptr);
+                GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
+                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_END,
+                                                   sizeof(cl_ulong), &end_ns, nullptr);
+                GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
+                milliseconds += (end_ns - start_ns) / 1000000.0;
             }
             reset();
             return milliseconds;
@@ -107,10 +106,9 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
         {
             for (size_t i = 0; i < currentEvent_; i++)
             {
-                if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
-                {
-                    GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
-                }
+                GMX_ASSERT(events_[i] != nullptr, "Underlying cl_event should not be null. "
+                           "Make sure all outputs of fetchNextEvent() were passed into OpenCL API.");
+                GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
             }
             currentEvent_ = 0;
             // As long as we're doing nullptr checks, we might want to be extra cautious.
