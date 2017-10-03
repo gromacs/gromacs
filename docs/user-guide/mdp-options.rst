@@ -222,11 +222,21 @@ Run control
 
    .. mdp-value:: Linear
 
-      Remove center of mass translation
+      Remove center of mass translational velocity
 
    .. mdp-value:: Angular
 
-      Remove center of mass translation and rotation around the center of mass
+      Remove center of mass translational and rotational velocity around
+      the center of mass
+
+   .. mdp-value:: Linear-acceleration-correction
+
+      Remove center of mass translational velocity. Correct the center of
+      mass position assuming linear acceleration over :mdp:`nstcomm` steps.
+      This is useful for cases where an acceleration is expected on the
+      center of mass which is nearly constant over mdp:`nstcomm` steps.
+      This can occur for example when pulling on a group using an absolute
+      reference.
 
    .. mdp-value:: None
 

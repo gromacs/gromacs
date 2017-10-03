@@ -247,8 +247,12 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        do_stopcm_grp(0, mdatoms->homenr, mdatoms->cVCM,
-                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
+        /* Don't pass x with linear modes to avoid correction of the initial
+         * coordinates for the initial COM velocity.
+         */
+        do_stopcm_grp(mdatoms->homenr, mdatoms->cVCM,
+                      vcm->mode == ecmANGULAR ? as_rvec_array(state->x.data()) : nullptr,
+                      as_rvec_array(state->v.data()), *vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
 
