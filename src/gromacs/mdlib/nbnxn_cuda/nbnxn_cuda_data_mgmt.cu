@@ -64,7 +64,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nbnxn_cuda.h"
+#include "nbnxn_cuda.cuh"
 #include "nbnxn_cuda_types.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
