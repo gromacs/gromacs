@@ -3018,6 +3018,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             switch (ir->comm_mode)
             {
                 case ecmLINEAR:
+                case ecmLINEAR_ACCELERATION_CORRECTION:
                     nrdf_vcm_sub[j] = 0;
                     for (d = 0; d < ndim_rm_vcm; d++)
                     {

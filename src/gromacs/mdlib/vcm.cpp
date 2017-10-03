@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,18 +50,20 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)
+t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir)
 {
     t_vcm *vcm;
     int    g;
 
     snew(vcm, 1);
 
-    vcm->mode = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
-    vcm->ndim = ndof_com(ir);
+    vcm->mode     = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
+    vcm->ndim     = ndof_com(ir);
+    vcm->timeStep = ir->nstcomm*ir->delta_t;
 
     if (vcm->mode == ecmANGULAR && vcm->ndim < 3)
     {
@@ -227,68 +229,158 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
     }
 }
 
-void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
-                   rvec x[], rvec v[], t_vcm *vcm)
+/*! \brief Remove the COM motion velocity from the velocities
+ *
+ * \note This routine should be called from within an OpenMP parallel region.
+ *
+ * \tparam numDimensions    Correct dimensions 0 to \p numDimensions-1
+ * \param[in]     homenr    The number of atoms to correct
+ * \param[in]     group_id  List of VCM group ids, when nullptr is passed all atoms are assumed to be in group 0
+ * \param[in,out] v         The velocities to correct
+ * \param[in]     vcm       VCM data
+ */
+template<int numDimensions>
+static void
+doStopComMotionLinear(int                   homenr,
+                      const unsigned short *group_id,
+                      rvec                 *v,
+                      const t_vcm          &vcm)
 {
-    if (vcm->mode != ecmNO)
+    if (group_id == nullptr)
+    {
+#pragma omp for schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            for (int d = 0; d < numDimensions; d++)
+            {
+                v[i][d] -= vcm.group_v[0][d];
+            }
+        }
+    }
+    else
+    {
+#pragma omp for schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            const int g = group_id[i];
+            for (int d = 0; d < numDimensions; d++)
+            {
+                v[i][d] -= vcm.group_v[g][d];
+            }
+        }
+    }
+}
+
+/*! \brief Remove the COM motion velocity from the velocities, correct the coordinates assuming constant acceleration
+ *
+ * \note This routine should be called from within an OpenMP parallel region.
+ *
+ * \tparam numDimensions    Correct dimensions 0 to \p numDimensions-1
+ * \param[in]     homenr    The number of atoms to correct
+ * \param[in]     group_id  List of VCM group ids, when nullptr is passed all atoms are assumed to be in group 0
+ * \param[in,out] x         The coordinates to correct
+ * \param[in,out] v         The velocities to correct
+ * \param[in]     vcm       VCM data
+ */
+template<int numDimensions>
+static void
+doStopComMotionAccelerationCorrection(int                   homenr,
+                                      const unsigned short *group_id,
+                                      rvec * gmx_restrict   x,
+                                      rvec * gmx_restrict   v,
+                                      const t_vcm          &vcm)
+{
+    const real xCorrectionFactor = 0.5*vcm.timeStep;
+
+    if (group_id == nullptr)
+    {
+#pragma omp for schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            for (int d = 0; d < numDimensions; d++)
+            {
+                x[i][d] -= vcm.group_v[0][d]*xCorrectionFactor;
+                v[i][d] -= vcm.group_v[0][d];
+            }
+        }
+    }
+    else
+    {
+#pragma omp for schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            const int g = group_id[i];
+            for (int d = 0; d < numDimensions; d++)
+            {
+                x[i][d] -= vcm.group_v[g][d]*xCorrectionFactor;
+                v[i][d] -= vcm.group_v[g][d];
+            }
+        }
+    }
+}
+
+void do_stopcm_grp(int homenr, const unsigned short *group_id,
+                   rvec x[], rvec v[], const t_vcm &vcm)
+{
+    if (vcm.mode != ecmNO)
     {
         // cppcheck-suppress unreadVariable
         int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel num_threads(nth)
         {
-            int  i, g = 0;
-            rvec dv, dx;
-            /* Subtract linear momentum */
-            switch (vcm->ndim)
+            if (vcm.mode == ecmLINEAR ||
+                vcm.mode == ecmANGULAR ||
+                (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x == nullptr))
             {
-                case 1:
-#pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
-                    {
-                        if (group_id)
-                        {
-                            g = group_id[i];
-                        }
-                        v[i][XX] -= vcm->group_v[g][XX];
-                    }
-                    break;
-                case 2:
-#pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
-                    {
-                        if (group_id)
-                        {
-                            g = group_id[i];
-                        }
-                        v[i][XX] -= vcm->group_v[g][XX];
-                        v[i][YY] -= vcm->group_v[g][YY];
-                    }
-                    break;
-                case 3:
-#pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
-                    {
-                        if (group_id)
-                        {
-                            g = group_id[i];
-                        }
-                        rvec_dec(v[i], vcm->group_v[g]);
-                    }
-                    break;
+                /* Subtract linear momentum for v */
+                switch (vcm.ndim)
+                {
+                    case 1:
+                        doStopComMotionLinear<1>(homenr, group_id, v, vcm);
+                        break;
+                    case 2:
+                        doStopComMotionLinear<2>(homenr, group_id, v, vcm);
+                        break;
+                    case 3:
+                        doStopComMotionLinear<3>(homenr, group_id, v, vcm);
+                        break;
+                }
             }
-            if (vcm->mode == ecmANGULAR)
+            else
+            {
+                GMX_ASSERT(vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION, "When the mode is not linear or angular, it should be acceleration correction");
+                /* Subtract linear momentum for v and x*/
+                switch (vcm.ndim)
+                {
+                    case 1:
+                        doStopComMotionAccelerationCorrection<1>(homenr, group_id, x, v, vcm);
+                        break;
+                    case 2:
+                        doStopComMotionAccelerationCorrection<2>(homenr, group_id, x, v, vcm);
+                        break;
+                    case 3:
+                        doStopComMotionAccelerationCorrection<3>(homenr, group_id, x, v, vcm);
+                        break;
+                }
+
+            }
+            if (vcm.mode == ecmANGULAR)
             {
                 /* Subtract angular momentum */
+                GMX_ASSERT(x, "Need x to compute angular momentum correction");
+
+                int g = 0;
 #pragma omp for schedule(static)
-                for (i = start; i < start+homenr; i++)
+                for (int i = 0; i < homenr; i++)
                 {
                     if (group_id)
                     {
                         g = group_id[i];
                     }
                     /* Compute the correction to the velocity for each atom */
-                    rvec_sub(x[i], vcm->group_x[g], dx);
-                    cprod(vcm->group_w[g], dx, dv);
+                    rvec dv, dx;
+                    rvec_sub(x[i], vcm.group_x[g], dx);
+                    cprod(vcm.group_w[g], dx, dv);
                     rvec_dec(v[i], dv);
                 }
             }
