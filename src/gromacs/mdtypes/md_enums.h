@@ -453,7 +453,7 @@ extern const char *edispc_names[edispcNR+1];
 
 //! Center of mass motion removal algorithm.
 enum {
-    ecmLINEAR, ecmANGULAR, ecmNO, ecmNR
+    ecmLINEAR, ecmANGULAR, ecmNO, ecmLINEAR_ACCELERATION_CORRECTION, ecmNR
 };
 //! String corresponding to COM removal
 extern const char *ecm_names[ecmNR+1];
