@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,84 +34,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+/*! \file
+ *
+ * \brief Declares functions for computing Ewald splitting coefficients
+ *
+ * These belong in the maths module because they do simple maths and
+ * are used many parts of Gromacs.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inpublicapi
+ */
+#ifndef GMX_EWALD_UTILS_H
+#define GMX_EWALD_UTILS_H
 
-#include "calculate-ewald-splitting-coefficient.h"
-
-#include <cmath>
-
-#include "gromacs/math/utilities.h"
 #include "gromacs/utility/real.h"
 
-real calc_ewaldcoeff_q(real rc, real rtol)
-{
-    real beta = 5, low, high;
-    int  n, i = 0;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    do
-    {
-        i++;
-        beta *= 2;
-    }
-    while (std::erfc(beta*rc) > rtol);
+/*! \brief Computes the Ewald splitting coefficient for Coulomb
+ *
+ * Returns a value of beta that satisfies rtol > erfc(beta * rc)
+ * (and is very close to equality). That value is used the same way in
+ * all Coulomb-based Ewald methods.
+ *
+ * \param[in] rc    Cutoff radius
+ * \param[in] rtol  Required maximum value of the short-ranged
+ *                  potential at the cutoff (ie. ewald-rtol)
+ * \return          The value of the splitting coefficient that
+ *                  produces the required dtol at rc.
+ */
+real
+calc_ewaldcoeff_q(real rc, real rtol);
 
-    /* Do a binary search with tolerance 2^-60 */
-    n    = i+60;
-    low  = 0;
-    high = beta;
-    for (i = 0; i < n; i++)
-    {
-        beta = (low+high)/2;
-        if (std::erfc(beta*rc) > rtol)
-        {
-            low = beta;
-        }
-        else
-        {
-            high = beta;
-        }
-    }
-    return beta;
+/*! \brief Computes the Ewald splitting coefficient for LJ
+ *
+ * Returns a value of beta that satisfies dtol > erfc(beta * rc) * (1
+ * + beta^2 * rc^2 + 0.5 * beta^4 * rc^4) (and is very close to
+ * equality), which is used in LJ-PME.
+ *
+ * \param[in] rc    Cutoff radius
+ * \param[in] rtol  Required maximum value of the short-ranged
+ *                  potential at the cutoff (ie. ewald-rtol-lj)
+ * \return          The value of the splitting coefficient that
+ *                  produces the required dtol at rc.
+ */
+real
+calc_ewaldcoeff_lj(real rc, real rtol);
+
+#ifdef __cplusplus
 }
+#endif
 
-static real compute_lj_function(real beta, real rc)
-{
-    real xrc, xrc2, xrc4, result;
-    xrc    = beta*rc;
-    xrc2   = xrc*xrc;
-    xrc4   = xrc2*xrc2;
-    result = std::exp(-xrc2)*(1 + xrc2 + xrc4/2.0);
-
-    return result;
-}
-
-real calc_ewaldcoeff_lj(real rc, real rtol)
-{
-    real beta = 5, low, high;
-    int  n, i = 0;
-
-    do
-    {
-        i++;
-        beta *= 2.0;
-    }
-    while (compute_lj_function(beta, rc) > rtol);
-
-    /* Do a binary search with tolerance 2^-60 */
-    n    = i + 60;
-    low  = 0;
-    high = beta;
-    for (i = 0; i < n; ++i)
-    {
-        beta = (low + high) / 2.0;
-        if (compute_lj_function(beta, rc) > rtol)
-        {
-            low = beta;
-        }
-        else
-        {
-            high = beta;
-        }
-    }
-    return beta;
-}
+#endif
