@@ -110,12 +110,6 @@ class ArrayRef
         typedef size_t    size_type;
         //! Type for representing difference between two container indices.
         typedef ptrdiff_t difference_type;
-        //! Const reference to a container element.
-        typedef const T  &const_reference;
-        //! Const pointer to a container element.
-        typedef const T  *const_pointer;
-        //! Const iterator type for the container.
-        typedef const T  *const_iterator;
         //! Reference to a container element.
         typedef T        &reference;
         //! Pointer to a container element.
@@ -124,8 +118,6 @@ class ArrayRef
         typedef T        *iterator;
         //! Standard reverse iterator.
         typedef std::reverse_iterator<iterator>       reverse_iterator;
-        //! Standard reverse iterator.
-        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
         /*! \brief
          * Constructs a reference to a particular range from two pointers.
@@ -259,21 +251,13 @@ class ArrayRef
         //! \endcond
 
         //! Returns an iterator to the beginning of the container.
-        iterator begin() { return begin_; }
-        //! Returns an iterator to the beginning of the container.
-        const_iterator begin() const { return begin_; }
+        iterator begin() const { return begin_; }
         //! Returns an iterator to the end of the container.
-        iterator end() { return end_; }
-        //! Returns an iterator to the end of the container.
-        const_iterator end() const { return end_; }
+        iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        //! Returns an iterator to the reverse beginning of the container.
-        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
+        reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        //! Returns an iterator to the reverse end of the container.
-        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
+        reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }
@@ -283,20 +267,9 @@ class ArrayRef
         bool empty() const { return begin_ == end_; }
 
         //! Access container element.
-        reference operator[](size_type n) { return begin_[n]; }
-        //! Access container element.
-        const_reference operator[](size_type n) const { return begin_[n]; }
+        reference operator[](size_type n) const { return begin_[n]; }
         //! Access container element (throws on out-of-range error).
-        reference at(size_type n)
-        {
-            if (n >= size())
-            {
-                throw std::out_of_range("Vector index out of range");
-            }
-            return begin_[n];
-        }
-        //! Access container element (throws on out-of-range error).
-        const_reference at(size_type n) const
+        reference at(size_type n) const
         {
             if (n >= size())
             {
@@ -305,18 +278,12 @@ class ArrayRef
             return begin_[n];
         }
         //! Returns the first element in the container.
-        reference front() { return *begin_; }
+        reference front() const { return *begin_; }
         //! Returns the first element in the container.
-        const_reference front() const { return *begin_; }
-        //! Returns the last element in the container.
-        reference back() { return *(end_ - 1); }
-        //! Returns the last element in the container.
-        const_reference back() const { return *(end_ - 1); }
+        reference back() const { return *(end_ - 1); }
 
         //! Returns a raw pointer to the contents of the array.
-        pointer data() { return begin_; }
-        //! Returns a raw pointer to the contents of the array.
-        const_pointer data() const { return begin_; }
+        pointer data() const { return begin_; }
 
         /*! \brief
          * Swaps referenced memory with the other object.
