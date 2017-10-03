@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda.cuh"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -64,7 +65,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nbnxn_cuda.h"
 #include "nbnxn_cuda_types.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
