@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  *
  * \brief Declares functions for computing Ewald splitting coefficients
  *
@@ -42,16 +42,13 @@
  * are used many parts of Gromacs.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inpublicapi
+ * \inlibraryapi
+ * \ingroup module_ewald
  */
-#ifndef GMX_MATH_CALCULATE_EWALD_SPLITTING_COEFFICIENT_H
-#define GMX_MATH_CALCULATE_EWALD_SPLITTING_COEFFICIENT_H
+#ifndef GMX_EWALD_UTILS_H
+#define GMX_EWALD_UTILS_H
 
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Computes the Ewald splitting coefficient for Coulomb
  *
@@ -82,9 +79,5 @@ calc_ewaldcoeff_q(real rc, real rtol);
  */
 real
 calc_ewaldcoeff_lj(real rc, real rtol);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
