@@ -598,7 +598,8 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     {
         renum[i] = i+nvsite;
         inv_renum[i+nvsite] = i;
-        auto vsite = pd.findVsite(*atoms->atomtype[i]);
+        const auto atype(*atoms->atomtype[i]);
+        auto vsite = pd.findVsite(atype);
         if (vsite != pd.getVsiteEnd())
         {
             nvsite += vsite->nvsite();
@@ -610,18 +611,22 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
     /*Add the virtual sites to the plist*/
     for (int i = 0; i < atoms->nr; i++)
     {
-        auto vsite = pd.findVsite(*atoms->atomtype[i]);
+        const auto atype(*atoms->atomtype[i]);
+        auto vsite = pd.findVsite(atype);
         if (vsite != pd.getVsiteEnd())
         {
             auto lengthUnit = string2unit(pd.getVsite_length_unit().c_str());
-            auto angleunit  = string2unit(pd.getVsite_angle_unit().c_str());
+            if (-1 == lengthUnit)
+            {
+                gmx_fatal(FARGS, "No such length unit '%s'", pd.getVsite_length_unit().c_str());
+            }
             if(vsite->type() == evtIN_PLANE)
             {
                 auto inplane = findInPlane(vsite->nvsite(), i);
                 if (inplane != inplaneEnd())
                 {
                     bij        = convert2gmx(vsite->distance(), lengthUnit);
-                    aijk       = convert2gmx(vsite->angle(), angleunit);
+                    aijk       = vsite->angle();
                     aijl       = 360 - aijk;                   
                     for (int n = 1; n <= vsite->nvsite(); n++)
                     {
@@ -649,23 +654,24 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                         pd.atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
                         pd.atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
                     {
-                        bij     = convert2gmx(vsite->distance(), lengthUnit);
-                        aijk    = aijl = convert2gmx(vsite->angle(), angleunit);
-                        Akjl    = {k, j, l};
-                        Bjk     = {j, k};
-                        Bjl     = {j, l};
+                        bij      = convert2gmx(vsite->distance(), lengthUnit);
+                        aijk     = 
+                            aijl = vsite->angle();
+                        Akjl     = {k, j, l};
+                        Bjk      = {j, k};
+                        Bjl      = {j, l};
                         if (pd.searchForce(Akjl, params, &akjl, &sigma, &ntrain, eitANGLES) &&
                             pd.searchForce(Bjk,  params, &bjk,  &sigma, &ntrain, eitBONDS)  &&
                             pd.searchForce(Bjl,  params, &bjl,  &sigma, &ntrain, eitBONDS))
                         {   
-                            akjl = convert2gmx(akjl, angleunit);
                             bjk  = convert2gmx(bjk, lengthUnit);
                             bjl  = convert2gmx(bjl, lengthUnit);
-                            auto pijk = bij*std::cos(aijk);  // Scalar projection of i along jk
-                            auto pijl = bij*std::cos(aijl);  // Scalar projection of i along jl
+                            auto pijk = std::cos(aijk)*bij;  // Scalar projection of i along jk
+                            auto pijl = std::cos(aijl)*bij;  // Scalar projection of i along jl
                             auto a    = (pijk / bjk);
                             auto b    = (pijl / bjl);
                             auto c    = (bij  / (bjk*bjl*std::sin(akjl)));
+                            
                             for (int n = 1; n <= vsite->nvsite(); n++)
                             {
                                 vs.a[0] = renum[outplane->ca()] + n; /* vsite     i   */

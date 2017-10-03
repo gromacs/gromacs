@@ -41,6 +41,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/xvgr.h"
@@ -122,7 +123,9 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     ratype_.clear();
     ra_.clear();
     
-    // First add all the resp atom types
+    std::map<int, std::vector<int>> map;
+    
+    // Generate Resp Atom Types
     for (int i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype != eptVSite)
@@ -134,8 +137,12 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                 case eptAtom:
                 {
                     hasShell = ((i < atoms->nr-1) &&
-                                (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
+                                (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
                                 (atoms->atom[i+nskip].ptype == eptShell));
+                    if (hasShell)
+                    {
+                        map[i].push_back(i+nskip);
+                    }
                     nAtom_ += 1;
                 }
                     break;
@@ -148,6 +155,14 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                         hasShell = ((i < atoms->nr-1) &&
                                     (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
                                     (atoms->atom[i+nskip].ptype == eptShell));
+                        if (hasShell)
+                        {
+                            for (int j = 0; j < vsite->nvsite(); j++)
+                            {
+                                map[i].push_back(i+nskip);
+                                nskip += vsite->nvsite();
+                            }
+                        }
                     }
                     else
                     {
@@ -180,27 +195,34 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
             }
         }
     }
-    // Then add all the atoms
+    
+    /*
+      Generate Resp Atoms. In doing so, we need to compute the 
+      starting charge for each Atom and Nucleus. We should take 
+      the charges of all the shells conntected to the Atom or 
+      the Nuncleus into account.
+    */
     for (int i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype != eptVSite)
-        {
-            // Now compute starting charge for atom, taking into account
-            // the charges of the other "shells".
+        {            
             auto   rat = findRAT(atoms->atom[i].type);
             GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
             double q    = rat->beginRZ()->q();
-            // q is the variable charge. For precision we determine what the
-            // "rest" of the charge on a particle is such that we fit charges to
-            // the residual electrostatic potential only.
             double qref = 0;
             if (rat->hasShell())
             {
-                // The reference charge is the charge of the shell times -1
-                auto ratp = findRAT(atoms->atom[i+1].type);
-                GMX_RELEASE_ASSERT(ratp != endRAT(), "Inconsistency setting atom info");
-                qref    -= ratp->beginRZ()->q();
-                qshell_ += ratp->beginRZ()->q();
+                auto atom = map.find(i);
+                if (atom != map.end())
+                {
+                    for (const auto &shell : atom->second)
+                    {
+                        auto rat_shell = findRAT(atoms->atom[shell].type);
+                        GMX_RELEASE_ASSERT(rat_shell != endRAT(), "Inconsistency setting atom info");
+                        qref    -= rat_shell->beginRZ()->q();
+                        qshell_ += rat_shell->beginRZ()->q();
+                    }
+                }
             }
             else
             {

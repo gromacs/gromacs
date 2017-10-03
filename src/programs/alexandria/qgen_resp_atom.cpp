@@ -95,7 +95,7 @@ RespAtomType::RespAtomType(int                             atype,
         for (int i = 0; i < nZeta; i++)
         {
             rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype, i),
-                                   zeta,q));
+                                   zeta, q));
         }
     }
 }

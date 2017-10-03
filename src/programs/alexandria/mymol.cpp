@@ -342,10 +342,11 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
         }
         if (bUseVsites)
         {
-            if (IsVsiteNeeded(*topology_->atoms.atomtype[i], pd))
+            const auto atype(*topology_->atoms.atomtype[i]);
+            if (IsVsiteNeeded(atype, pd))
             {
                 std::vector<int> atoms;
-                auto vsite = pd.findVsite(*topology_->atoms.atomtype[i]);
+                auto vsite = pd.findVsite(atype);
                 if(vsite->type() == evtIN_PLANE)
                 {
                     atoms.push_back(i);
@@ -590,7 +591,8 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
     auto nmissing = 0;
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
-        auto fa = pd.findAtype(*topology_->atoms.atomtype[i]);
+        const auto atype(*topology_->atoms.atomtype[i]);
+        auto       fa = pd.findAtype(atype);
         if (fa == pd.getAtypeEnd())
         {
             printf("Could not find a force field entry for atomtype %s atom %d\n",
@@ -828,7 +830,7 @@ void MyMol::addShells(const Poldata          &pd,
             std::string atomtype;
             vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
             if (pd.getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
-                (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
+                (pd.getNzeta(iModel, atomtype) == 2))
             {
                 p.a[0] = renum[i];
                 p.a[1] = renum[i]+1;
@@ -916,14 +918,16 @@ void MyMol::addShells(const Poldata          &pd,
             auto iat = renum[i];  // Atom or Vsite
             auto j   = iat + 1;   // Shell sits next to the Atom or Vsite
             
-            vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
+            auto atomtypeName = get_atomtype_name(topology_->atoms.atom[i].type, atype_);
+            vsiteType_to_atomType(atomtypeName, &atomtype);
             
             newatoms->atom[j]               = topology_->atoms.atom[i];
             newatoms->atom[j].m             = 0;
             newatoms->atom[j].mB            = 0;
             newatoms->atom[j].atomnumber    = 0;
-            sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
+            sprintf(buf, "%s_s", atomtype.c_str());
             newname[j]                      = strdup(buf);
+            newatoms->atomname[j]           = put_symtab(symtab_, buf);
             shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
@@ -932,11 +936,9 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atom[j].ptype         = eptShell;
             newatoms->atom[j].zetaA         = pd.getZeta(iModel, atomtype, 1);
             newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
-            newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;
-            sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
-            newatoms->atomname[j] = put_symtab(symtab_, buf);
-            copy_rvec(state_->x[i], newx[j]);
-            
+            newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;            
+            copy_rvec(state_->x[i], newx[j]);   
+                     
             newatoms->atom[j].q = 
                 newatoms->atom[j].qB = pd.getQ(iModel, atomtype, 1);
             auto vsite = pd.findVsite(atomtype);
