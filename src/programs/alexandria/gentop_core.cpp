@@ -54,8 +54,11 @@
 
 using namespace alexandria;
 
-void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
-                      matrix box)
+void calc_angles_dihs(t_params *ang, 
+                      t_params *dih, 
+                      rvec      x[], 
+                      gmx_bool  bPBC,
+                      matrix    box)
 {
     int           i, ai, aj, ak, al, t1, t2, t3;
     rvec          r_ij, r_kj, r_kl, m, n;
@@ -111,8 +114,11 @@ void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
     }
 }
 
-static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
-                     char ***atomname)
+static void print_pl(FILE       *fp, 
+                     t_params    plist[], 
+                     int         ftp, 
+                     const char *name,
+                     char       ***atomname)
 {
     int i, j, nral, nrfp;
 
@@ -291,11 +297,13 @@ void reset_q(t_atoms *atoms)
     }
 }
 
-void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
+void symmetrize_charges(gmx_bool                                        bQsym, 
+                        t_atoms                                        *atoms,
                         std::vector<alexandria::PlistWrapper>::iterator bonds,
-                        const Poldata &pd,
-                        gmx_atomprop_t aps, const char *symm_string,
-                        std::vector<int> &sym_charges)
+                        const Poldata                                  &pd,
+                        gmx_atomprop_t                                  aps, 
+                        const char                                     *symm_string,
+                        std::vector<int>                               &sym_charges)
 {
     std::string  central, attached;
     int          ai, aj, anri, anrj;
@@ -312,7 +320,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         if ((nullptr != symm_string) && (strlen(symm_string) > 0))
         {
             std::vector<std::string> ss = gmx::splitString(symm_string);
-            if ((int)ss.size() != atoms->nr)
+            if (static_cast<int>(ss.size()) != atoms->nr)
             {
                 gmx_fatal(FARGS, "Wrong number (%d) of atom-numbers in symm_string: expected %d",
                           ss.size(), atoms->nr);
@@ -371,11 +379,11 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             }
         }
 
-        for (int i = 0; (i < atoms->nr); i++)
-        {
+        for (int i = 0; i < atoms->nr; i++)
+        { 
             qsum = 0;
             nrq  = 0;
-            for (int j = i+1; (j < atoms->nr); j++)
+            for (int j = i+1; j < atoms->nr; j++)
             {
                 if (sym_charges[j] == sym_charges[i])
                 {
@@ -386,7 +394,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             if (0 < nrq)
             {
                 qaver = qsum/nrq;
-                for (int j = 0; (j < atoms->nr); j++)
+                for (int j = 0; j < atoms->nr; j++)
                 {
                     if (sym_charges[j] == sym_charges[i])
                     {
@@ -530,10 +538,12 @@ static int *generate_cg_atom(int natom)
     return cgnr;
 }
 
-int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
+int *generate_charge_groups(eChargeGroup                           cgtp, 
+                            t_atoms                               *atoms,
                             std::vector<alexandria::PlistWrapper> &plist,
-                            bool bUsePDBcharge,
-                            real *qtot, real *mtot)
+                            bool                                   bUsePDBcharge,
+                            real                                  *qtot, 
+                            real                                  *mtot)
 {
     int i, *cgnr = nullptr;
     std::vector<alexandria::PlistWrapper>::iterator pb, ps;
@@ -594,10 +604,13 @@ static int cg_comp(const void *a, const void *b)
     }
 }
 
-void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
+void sort_on_charge_groups(int                                   *cgnr, 
+                           t_atoms                               *atoms,
                            std::vector<alexandria::PlistWrapper> &pw,
-                           rvec x[], t_excls excls[],
-                           const char *ndxout, int nmol)
+                           rvec                                  x[], 
+                           t_excls                               excls[],
+                           const char                            *ndxout, 
+                           int                                    nmol)
 {
     FILE      *fp;
     int        i, j, j0, k, newi, ri, *cg_renum, *ccgg, *inv_renum;

@@ -113,7 +113,7 @@ class QgenResp
 
         void setMolecularCharge(int qtot) { qtot_ = qtot; }
 
-        size_t nAtom() const { return ra_.size(); }
+        size_t nRespAtom() const { return ra_.size(); }
 
         size_t nRespAtomType() const { return ratype_.size(); }
 

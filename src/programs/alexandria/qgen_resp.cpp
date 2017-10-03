@@ -128,71 +128,68 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     // Generate Resp Atom Types
     for (int i = 0; i < atoms->nr; i++)
     {
-        if (atoms->atom[i].ptype != eptVSite)
+        int  nskip    = 1;
+        bool hasShell = false;
+        switch (atoms->atom[i].ptype)
         {
-            int  nskip    = 1;
-            bool hasShell = false;
-            switch (atoms->atom[i].ptype)
+            case eptAtom:
             {
-                case eptAtom:
+                hasShell = ((i < atoms->nr-1) &&
+                            (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
+                            (atoms->atom[i+nskip].ptype == eptShell));
+                if (hasShell)
                 {
+                    map[i].push_back(i+nskip);
+                }
+                nAtom_ += 1;
+            }
+            break;
+            case eptNucleus:
+            {
+                auto vsite = pd.findVsite(*atoms->atomtype[i]);
+                if (vsite != pd.getVsiteEnd())
+                {
+                    nskip    = vsite->nvsite();
                     hasShell = ((i < atoms->nr-1) &&
-                                (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
+                                (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
                                 (atoms->atom[i+nskip].ptype == eptShell));
                     if (hasShell)
                     {
-                        map[i].push_back(i+nskip);
-                    }
-                    nAtom_ += 1;
-                }
-                    break;
-                case eptNucleus:
-                {
-                    auto vsite = pd.findVsite(*atoms->atomtype[i]);
-                    if (vsite != pd.getVsiteEnd())
-                    {
-                        nskip    = vsite->nvsite();
-                        hasShell = ((i < atoms->nr-1) &&
-                                    (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+nskip], strlen(*atoms->atomtype[i])) == 0) &&
-                                    (atoms->atom[i+nskip].ptype == eptShell));
-                        if (hasShell)
+                        for (int j = 0; j < vsite->nvsite(); j++)
                         {
-                            for (int j = 0; j < vsite->nvsite(); j++)
-                            {
-                                map[i].push_back(i+nskip);
-                                nskip += vsite->nvsite();
-                            }
+                            map[i].push_back(i+nskip);
+                            nskip += vsite->nvsite();
                         }
                     }
-                    else
-                    {
-                        gmx_fatal(FARGS, 
-                                  "You have an eptNucleus particle that dose not exist in PolData Gt_Vsite.\n");
-                    }
-                    nAtom_ += 1;
                 }
-                    break;
-                case eptShell:
-                    nShell_ += 1;
-                    break;
-                case eptVSite:
-                    break;
-                default:
-                     fprintf(stderr, "Unknown particle %d is a %s\n",
-                             i, ptype_str[atoms->atom[i].ptype]);
+                else
+                {
+                    gmx_fatal(FARGS, 
+                              "You have an eptNucleus particle that dose not exist in PolData Gt_Vsite.\n");
+                }
+                nAtom_ += 1;
             }
-            if (findRAT(atoms->atom[i].type) == endRAT())
-            {
-                ratype_.push_back(RespAtomType(atoms->atom[i].type,
-                                               atoms->atom[i].ptype,
-                                               hasShell,
-                                               *(atoms->atomtype[i]), 
-                                               pd,
-                                               iDistributionModel_, 
-                                               dzatoms_,
-                                               atoms->atom[i].zetaA,
-                                               atoms->atom[i].q));
-            }
+            break;
+            case eptShell:
+                nShell_ += 1;
+                break;
+            case eptVSite:
+                break;
+            default:
+                fprintf(stderr, "Unknown particle %d is a %s\n",
+                        i, ptype_str[atoms->atom[i].ptype]);
+        }
+        if (findRAT(atoms->atom[i].type) == endRAT())
+        {
+            ratype_.push_back(RespAtomType(atoms->atom[i].type,
+                                           atoms->atom[i].ptype,
+                                           hasShell,
+                                           *(atoms->atomtype[i]), 
+                                           pd,
+                                           iDistributionModel_, 
+                                           dzatoms_,
+                                           atoms->atom[i].zetaA,
+                                           atoms->atom[i].q));
         }
     }
     
@@ -203,44 +200,41 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
       the Nuncleus into account.
     */
     for (int i = 0; i < atoms->nr; i++)
-    {
-        if (atoms->atom[i].ptype != eptVSite)
-        {            
-            auto   rat = findRAT(atoms->atom[i].type);
-            GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
-            double q    = rat->beginRZ()->q();
-            double qref = 0;
-            if (rat->hasShell())
+    {           
+        auto   rat = findRAT(atoms->atom[i].type);
+        GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
+        double q    = rat->beginRZ()->q();
+        double qref = 0;
+        if (rat->hasShell())
+        {
+            auto atom = map.find(i);
+            if (atom != map.end())
             {
-                auto atom = map.find(i);
-                if (atom != map.end())
+                for (const auto &shell : atom->second)
                 {
-                    for (const auto &shell : atom->second)
-                    {
-                        auto rat_shell = findRAT(atoms->atom[shell].type);
-                        GMX_RELEASE_ASSERT(rat_shell != endRAT(), "Inconsistency setting atom info");
-                        qref    -= rat_shell->beginRZ()->q();
-                        qshell_ += rat_shell->beginRZ()->q();
-                    }
+                    auto rat_shell = findRAT(atoms->atom[shell].type);
+                    GMX_RELEASE_ASSERT(rat_shell != endRAT(), "Inconsistency setting atom info");
+                    qref    -= rat_shell->beginRZ()->q();
+                    qshell_ += rat_shell->beginRZ()->q();
                 }
             }
-            else
+        }
+        else
+        {
+            for (auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
             {
-                for (auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
-                {
-                    qref -= ra->q();
-                }
+                qref -= ra->q();
             }
-            ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
-                                   atoms->atom[i].type,
-                                   q,
-                                   qref,
-                                   x[i]));
-            if (debug)
-            {
-                fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
-                        i, gmx::boolToString(rat->hasShell()), q, qref);
-            }
+        }
+        ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
+                               atoms->atom[i].type,
+                               q,
+                               qref,
+                               x[i]));
+        if (debug)
+        {
+            fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
+                    i, gmx::boolToString(rat->hasShell()), q, qref);
         }
     }
 }
@@ -250,9 +244,9 @@ void QgenResp::summary(FILE *fp)
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atoms, %d atomtypes for (R)ESP fitting.\n",
-                static_cast<int>(nAtom()),
+                static_cast<int>(nRespAtom()),
                 static_cast<int>(nRespAtomType()));
-        for (size_t i = 0; (i < nAtom()); i++)
+        for (size_t i = 0; (i < nRespAtom()); i++)
         {
             fprintf(fp, " %d", symmetricAtoms_[i]);
         }
@@ -265,7 +259,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
-                       symmetricAtoms.size() == static_cast<size_t>(nAtom()),
+                       symmetricAtoms.size() == static_cast<size_t>(nRespAtom()),
                        "Please pass me a correct symmetric atoms vector");
 
     if (symmetricAtoms.size() == 0)
@@ -281,15 +275,20 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     }
     uniqueQ_        = 0;
     fitQ_           = 0;
-    for (size_t i = 0; i < nAtom(); i++)
-    {
+    for (size_t i = 0; i < nRespAtom(); i++)
+    {        
         if (!ra_[i].fixedQ())
         {
-            fitQ_ += 1;
-
-            if (symmetricAtoms_[i] == static_cast<int>(i))
+            auto atype = ra_[i].atype();
+            auto rat   = findRAT(atype);
+            if (rat->ptype() != eptVSite)
             {
-                uniqueQ_ += 1;
+                fitQ_ += 1;
+                
+                if (symmetricAtoms_[i] == static_cast<int>(i))
+                {
+                    uniqueQ_ += 1;
+                }
             }
         }
     }
@@ -306,7 +305,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 
         fprintf(debug, "GRQ: %3s %5s", "nr", "type");
         fprintf(debug, " %8s %8s %8s %8s\n", "q", "zeta", "q", "zeta");
-        for (size_t i = 0; i < nAtom(); i++)
+        for (size_t i = 0; i < nRespAtom(); i++)
         {
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rai   = findRAT(atype);
@@ -377,7 +376,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
         fprintf(fp, "%s\n", title.c_str());
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
-                static_cast<int>(nAtom()),
+                static_cast<int>(nRespAtom()),
                 gmx2convert(origin_[XX], eg2cBohr),
                 gmx2convert(origin_[YY], eg2cBohr),
                 gmx2convert(origin_[ZZ], eg2cBohr));
@@ -388,7 +387,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[ZZ],
                 0.0, 0.0, gmx2convert(space_[ZZ], eg2cBohr));
 
-        for (size_t m = 0; (m < nAtom()); m++)
+        for (size_t m = 0; (m < nRespAtom()); m++)
         {
             q = ra_[m].q();
             fprintf(fp, "%5d%12.6f%12.6f%12.6f%12.6f\n",
@@ -647,7 +646,7 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
         spacing = 0.1;
         fprintf(stderr, "spacing too small, setting it to %g\n", spacing);
     }
-    for (size_t i = 0; (i < nAtom()); i++)
+    for (size_t i = 0; (i < nRespAtom()); i++)
     {
         ra_[i].setX(x[i]);
     }
@@ -803,7 +802,7 @@ double QgenResp::calcPenalty()
     if (bAXpRESP_ && (iDistributionModel_ == eqdAXp))
     {
         b2 = gmx::square(bHyper_);
-        for (size_t i = 0; (i < nAtom()); i++)
+        for (size_t i = 0; (i < nRespAtom()); i++)
         {
             p += sqrt(gmx::square(ra_[i].q()) + b2) - bHyper_;
         }
@@ -818,7 +817,7 @@ void QgenResp::regularizeCharges()
 {
     double qtot   = 0;
     int    nfixed = 0;
-    for (size_t ii = 0; ii < nAtom(); ii++)
+    for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
         auto rat = findRAT(ra_[ii].atype());
         GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency with atomtypes");
@@ -833,8 +832,8 @@ void QgenResp::regularizeCharges()
             qtot -= ra_[ii].qRef();
         }
     }
-    double dq = (qtot_ - qtot)/(nAtom()-nfixed);
-    for (size_t ii = 0; ii < nAtom(); ii++)
+    double dq = (qtot_ - qtot)/(nRespAtom()-nfixed);
+    for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
         if (!ra_[ii].fixedQ())
         {
@@ -851,7 +850,7 @@ void QgenResp::calcRms()
     for (size_t i = 0; (i < nEsp()); i++)
     {
         double diff = ep_[i].v() - ep_[i].vCalc();
-        if (debug && (i < 4*nAtom()))
+        if (debug && (i < 4*nRespAtom()))
         {
             fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
@@ -956,16 +955,19 @@ void QgenResp::calcPot()
             {
                 auto  atype = ra.atype();
                 auto  rat   = findRAT(atype);
-                auto  rax   = ra.x();
-                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                if (rat->ptype() != eptVSite)
                 {
-                    auto q = k->q();
-                    if (q == 0)
+                    auto  rax   = ra.x();
+                    for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                     {
-                        q = ra.q();
+                        auto q = k->q();
+                        if (q == 0)
+                        {
+                            q = ra.q();
+                        }
+                        auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                        vv += (q*epot);
                     }
-                    auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
-                    vv += (q*epot);
                 }
             }
             ep_[i].setVCalc(vv);
@@ -985,9 +987,9 @@ void QgenResp::optimizeCharges()
     double              **lhs      = alloc_matrix(ncolumn, nrow);
     std::vector<double>   rhs;
 
-    if (nEsp() < nAtom())
+    if (nEsp() < nRespAtom())
     {
-        printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
+        printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nRespAtom());
         return;
     }
     for (size_t j = 0; j < nEsp(); j++)
@@ -995,11 +997,11 @@ void QgenResp::optimizeCharges()
         rhs.push_back(ep_[j].v());
     }    
     int i = 0;
-    for (size_t ii = 0; ii < nAtom(); ii++)
+    for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
         auto atype = ra_[ii].atype();
         auto rat   = findRAT(atype);
-        if (rat->ptype() == eptAtom)
+        if (rat->ptype() == eptAtom || rat->ptype() == eptNucleus)
         {
             auto rax = ra_[ii].x();
             for (size_t j = 0; j < nEsp(); j++)
@@ -1010,7 +1012,7 @@ void QgenResp::optimizeCharges()
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
                     lhs[i][j] += pot;
 
-                    if (debug && j < 4*nAtom())
+                    if (debug && j < 4*nRespAtom())
                     {
                         fprintf(debug, "Core[%zu] ESP[%zu] espx = %g espy = %g espz = %g V= %g  CalcV=%g\n", 
                                 ii, j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), pot);
@@ -1032,7 +1034,7 @@ void QgenResp::optimizeCharges()
                     auto q   = k->q();
                     rhs[j]  -= (q*pot);
                     
-                    if (debug && j < 4*nAtom())
+                    if (debug && j < 4*nRespAtom())
                     {
                         fprintf(debug, "Shell[%zu] ESP[%zu] Shellx = %g shelly = %g shellz = %g pot= %g q=%g qpot=%g\n", 
                                 ii, j, rax[XX], rax[YY], rax[ZZ], pot, q, q*pot);
@@ -1050,15 +1052,20 @@ void QgenResp::optimizeCharges()
     std::vector<int> ii1;
     int    j1     = factor+1;
     int    i1     = 0;  
-    for (int i = 0; i < static_cast<int>(nAtom()); i++)
+    for (int i = 0; i < static_cast<int>(nRespAtom()); i++)
     {
         ii1.push_back(i1);
         if (!ra_[i].fixedQ())
         {
-            i1++;
+            auto atype = ra_[i].atype();
+            auto rat   = findRAT(atype);
+            if (rat->ptype() != eptVSite)
+            {
+                i1++;
+            }
         }
     }    
-    for (int i = 0; i < static_cast<int>(nAtom()); i++)
+    for (int i = 0; i < static_cast<int>(nRespAtom()); i++)
     {
         if (symmetricAtoms_[i] < i)
         {
@@ -1099,14 +1106,19 @@ void QgenResp::optimizeCharges()
         fprintf(debug, "Fitted Charges from optimizeCharges\n");
     }
     i = 0;
-    for (size_t ii = 0; ii < nAtom(); ii++)
+    for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
         if (!ra_[ii].fixedQ())
         {
-            ra_[ii].setQ(q[i]);
-            if (debug)
+            auto atype = ra_[ii].atype();
+            auto rat   = findRAT(atype);
+            if (rat->ptype() != eptVSite)
             {
-                fprintf(debug, "q[%d] = %0.3f\n", i, ra_[ii].q());
+                ra_[ii].setQ(q[i]);
+                if (debug)
+                {
+                    fprintf(debug, "q[%d] = %0.3f\n", i, ra_[ii].q());
+                }
             }
             i++;
         }
@@ -1134,7 +1146,7 @@ void QgenResp::potcomp(const std::string      &potcomp,
             /* Conversion may or may not be in vain depending on unit */
             exp = gmx2convert(ep_[i].v(), unit);
             eem = gmx2convert(ep_[i].vCalc(), unit);
-            if (i == nAtom())
+            if (i == nRespAtom())
             {
                 fprintf(fp, "&\n");
                 fprintf(fp, "@type xy\n");
@@ -1164,7 +1176,7 @@ void QgenResp::potcomp(const std::string      &potcomp,
 
 double QgenResp::getAtomCharge(int atom) const
 {
-    range_check(atom, 0, nAtom());
+    range_check(atom, 0, nRespAtom());
     double                    q     = ra_[atom].q();
     // TODO Check
     if (1)
@@ -1181,7 +1193,7 @@ double QgenResp::getAtomCharge(int atom) const
 
 double QgenResp::getCharge(int atom, size_t zz) const
 {
-    range_check(atom, 0, nAtom());
+    range_check(atom, 0, nRespAtom());
     double                    q     = ra_[atom].q();
     int                       atype = ra_[atom].atype();
     RespAtomTypeConstIterator rat   = findRAT(atype);
@@ -1194,7 +1206,7 @@ double QgenResp::getCharge(int atom, size_t zz) const
 
 double QgenResp::getZeta(int atom, int zz) const
 {
-    range_check(atom, 0, nAtom());
+    range_check(atom, 0, nRespAtom());
     int atype                     = ra_[atom].atype();
     RespAtomTypeConstIterator rat = findRAT(atype);
     range_check(zz, 0, rat->getNZeta());
@@ -1204,7 +1216,7 @@ double QgenResp::getZeta(int atom, int zz) const
 
 void QgenResp::setCharge(int atom, int zz, double q)
 {
-    range_check(atom, 0, nAtom());
+    range_check(atom, 0, nRespAtom());
     int                  atype = ra_[atom].atype();
     RespAtomTypeIterator rat   = findRAT(atype);
     range_check(zz, 0, rat->getNZeta());
@@ -1213,7 +1225,7 @@ void QgenResp::setCharge(int atom, int zz, double q)
 
 void QgenResp::setZeta(int atom, int zz, double zeta)
 {
-    range_check(atom, 0, nAtom());
+    range_check(atom, 0, nRespAtom());
     int                  atype = ra_[atom].atype();
     RespAtomTypeIterator rat   = findRAT(atype);
     range_check(zz, 0, rat->getNZeta());
@@ -1224,7 +1236,7 @@ void QgenResp::updateZeta(t_atoms *atoms, const Poldata &pd)
 {
     int     zz = 0;
     double zeta = 0;
-    for (size_t i = 0; i < nAtom(); i++)
+    for (size_t i = 0; i < nRespAtom(); i++)
     {
         zz   = 0;
         zeta = 0;

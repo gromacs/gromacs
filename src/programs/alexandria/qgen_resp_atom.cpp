@@ -86,6 +86,19 @@ RespAtomType::RespAtomType(int                             atype,
         rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, shell),
                                zeta, q));
     }
+    else if (ptype_ == eptVSite)
+    {
+        int         vsite        = nZeta-1;
+        size_t      vsite_name   = atomtype_.find("L");
+        std::string atomtype_new = atomtype_;
+        if (vsite_name != std::string::npos)
+        {
+            vsite        = 1;
+            atomtype_new = atomtype_.substr(0, vsite_name);
+        }
+        rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, vsite),
+                               zeta, q));
+    }
     else
     {
         if (hasShell)
