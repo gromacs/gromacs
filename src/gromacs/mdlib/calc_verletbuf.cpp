@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
