@@ -69,15 +69,15 @@ namespace gmx
 struct EmptyArrayRef {};
 
 /*! \brief STL-like container for an interface to a C array of T (or part
- * of a std::vector<T> or std::array<T>).
+ * of a std::vector<T, A> or std::array<T>).
  *
  * \tparam T  Value type of elements.
  *
- * This class provides an interface similar to \c std::vector<T>, with the
+ * This class provides an interface similar to \c std::vector<T, A>, with the
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T> or std::array<T>).
+ *    std::vector<T, A> or std::array<T>).
  *  - It is only possible to modify the values themselves through ArrayRef;
  *    it is not possible to add or remove values.
  *  - Copying objects of this type is cheap, and the copies behave identically
@@ -201,7 +201,7 @@ class ArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole std::vector<T>.
+         * Constructs a reference to a whole std::vector<T, A>.
          *
          * \param[in] v  Vector to reference.
          *
@@ -209,9 +209,10 @@ class ArrayRef
          * lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ArrayRef.
+         * std::vector<T, A> to a method that takes ArrayRef.
          */
-        ArrayRef(std::vector<T> &v)
+        template <typename A>
+        ArrayRef(std::vector<T, A> &v)
             : begin_((!v.empty()) ? &v[0] : nullptr),
               end_((!v.empty()) ? &v[0] + v.size() : nullptr)
         {
@@ -338,15 +339,15 @@ class ArrayRef
 
 
 /*! \brief STL-like container for non-mutable interface to a C array of T
- * (or part of a std::vector<T> or std::array<T>).
+ * (or part of a std::vector<T, A> or std::array<T>).
  *
  * \tparam T  Value type of elements.
  *
- * This class provides an interface similar to \c std::vector<T>, with the
+ * This class provides an interface similar to \c std::vector<T, A>, with the
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T> or std::array<T>).
+ *    std::vector<T, A> or std::array<T>).
  *  - Only const methods are provided to access the stored values.
  *    It is not possible to alter the referenced array.
  *  - Copying objects of this type is cheap, and the copies behave identically
@@ -446,7 +447,7 @@ class ConstArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole std::vector<T>.
+         * Constructs a reference to a whole std::vector<T, A>.
          *
          * \param[in] v  Vector to reference.
          *
@@ -454,9 +455,10 @@ class ConstArrayRef
          * lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ConstArrayRef.
+         * std::vector<T, A> to a method that takes ConstArrayRef.
          */
-        ConstArrayRef(const std::vector<T> &v)
+        template <typename A>
+        ConstArrayRef(const std::vector<T, A> &v)
             : begin_((!v.empty()) ? &v[0] : nullptr),
               end_((!v.empty()) ? &v[0] + v.size() : nullptr)
         {
