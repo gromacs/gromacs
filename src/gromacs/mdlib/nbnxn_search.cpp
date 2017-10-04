@@ -66,6 +66,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
@@ -2798,46 +2799,44 @@ static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
     }
 }
 
-/* Combine pair lists *nbl generated on multiple threads nblc */
-static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
-                            nbnxn_pairlist_t *nblc)
+/* Combine pair lists generated on multiple threads into the output */
+static void combine_nblists(gmx::ConstArrayRef<nbnxn_pairlist_t *>  lists,
+                            nbnxn_pairlist_t                       *output)
 {
-    int nsci, ncj4, nexcl;
-
-    if (nblc->bSimple)
+    if (output->bSimple)
     {
         gmx_incons("combine_nblists does not support simple lists");
     }
 
-    nsci  = nblc->nsci;
-    ncj4  = nblc->ncj4;
-    nexcl = nblc->nexcl;
-    for (int i = 0; i < nnbl; i++)
+    int nsci  = output->nsci;
+    int ncj4  = output->ncj4;
+    int nexcl = output->nexcl;
+    for (const auto &list : lists)
     {
-        nsci  += nbl[i]->nsci;
-        ncj4  += nbl[i]->ncj4;
-        nexcl += nbl[i]->nexcl;
+        nsci  += list->nsci;
+        ncj4  += list->ncj4;
+        nexcl += list->nexcl;
     }
 
-    if (nsci > nblc->sci_nalloc)
+    if (nsci > output->sci_nalloc)
     {
-        nb_realloc_sci(nblc, nsci);
+        nb_realloc_sci(output, nsci);
     }
-    if (ncj4 > nblc->cj4_nalloc)
+    if (ncj4 > output->cj4_nalloc)
     {
-        nblc->cj4_nalloc = over_alloc_small(ncj4);
-        nbnxn_realloc_void((void **)&nblc->cj4,
-                           nblc->ncj4*sizeof(*nblc->cj4),
-                           nblc->cj4_nalloc*sizeof(*nblc->cj4),
-                           nblc->alloc, nblc->free);
+        output->cj4_nalloc = over_alloc_small(ncj4);
+        nbnxn_realloc_void((void **)&output->cj4,
+                           output->ncj4*sizeof(*output->cj4),
+                           output->cj4_nalloc*sizeof(*output->cj4),
+                           output->alloc, output->free);
     }
-    if (nexcl > nblc->excl_nalloc)
+    if (nexcl > output->excl_nalloc)
     {
-        nblc->excl_nalloc = over_alloc_small(nexcl);
-        nbnxn_realloc_void((void **)&nblc->excl,
-                           nblc->nexcl*sizeof(*nblc->excl),
-                           nblc->excl_nalloc*sizeof(*nblc->excl),
-                           nblc->alloc, nblc->free);
+        output->excl_nalloc = over_alloc_small(nexcl);
+        nbnxn_realloc_void((void **)&output->excl,
+                           output->nexcl*sizeof(*output->excl),
+                           output->excl_nalloc*sizeof(*output->excl),
+                           output->alloc, output->free);
     }
 
     /* Each thread should copy its own data to the combined arrays,
@@ -2849,57 +2848,52 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 #endif
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int n = 0; n < nnbl; n++)
+    for (size_t n = 0; n < lists.size(); n++)
     {
         try
         {
-            int                     sci_offset;
-            int                     cj4_offset;
-            int                     excl_offset;
-            const nbnxn_pairlist_t *nbli;
-
             /* Determine the offset in the combined data for our thread */
-            sci_offset  = nblc->nsci;
-            cj4_offset  = nblc->ncj4;
-            excl_offset = nblc->nexcl;
+            int sci_offset  = output->nsci;
+            int cj4_offset  = output->ncj4;
+            int excl_offset = output->nexcl;
 
-            for (int i = 0; i < n; i++)
+            for (const auto &list : lists)
             {
-                sci_offset  += nbl[i]->nsci;
-                cj4_offset  += nbl[i]->ncj4;
-                excl_offset += nbl[i]->nexcl;
+                sci_offset  += list->nsci;
+                cj4_offset  += list->ncj4;
+                excl_offset += list->nexcl;
             }
 
-            nbli = nbl[n];
+            const nbnxn_pairlist_t *nbli = lists[n];
 
             for (int i = 0; i < nbli->nsci; i++)
             {
-                nblc->sci[sci_offset+i]                = nbli->sci[i];
-                nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
-                nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
+                output->sci[sci_offset+i]                = nbli->sci[i];
+                output->sci[sci_offset+i].cj4_ind_start += cj4_offset;
+                output->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
             }
 
             for (int j4 = 0; j4 < nbli->ncj4; j4++)
             {
-                nblc->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
-                nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
-                nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
+                output->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
+                output->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
+                output->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
             }
 
             for (int j4 = 0; j4 < nbli->nexcl; j4++)
             {
-                nblc->excl[excl_offset+j4] = nbli->excl[j4];
+                output->excl[excl_offset+j4] = nbli->excl[j4];
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
-    for (int n = 0; n < nnbl; n++)
+    for (const auto &list : lists)
     {
-        nblc->nsci    += nbl[n]->nsci;
-        nblc->ncj4    += nbl[n]->ncj4;
-        nblc->nci_tot += nbl[n]->nci_tot;
-        nblc->nexcl   += nbl[n]->nexcl;
+        output->nsci    += list->nsci;
+        output->ncj4    += list->ncj4;
+        output->nci_tot += list->nci_tot;
+        output->nexcl   += list->nexcl;
     }
 }
 
@@ -4283,7 +4277,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
             {
                 nbs_cycle_start(&nbs->cc[enbsCCcombine]);
 
-                combine_nblists(nnbl-1, nbl+1, nbl[0]);
+                auto listsToCombine = gmx::ConstArrayRef <nbnxn_pairlist_t *>::fromArray(nbl+1, nnbl-1);
+                combine_nblists(listsToCombine, nbl[0]);
 
                 nbs_cycle_stop(&nbs->cc[enbsCCcombine]);
             }
