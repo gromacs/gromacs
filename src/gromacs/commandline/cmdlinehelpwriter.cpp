@@ -539,7 +539,7 @@ CommandLineHelpWriter::setHelpText(const std::string &help)
 }
 
 CommandLineHelpWriter &
-CommandLineHelpWriter::setHelpText(const ConstArrayRef<const char *> &help)
+CommandLineHelpWriter::setHelpText(const ArrayRef<const char *const> &help)
 {
     impl_->helpText_ = joinStrings(help, "\n");
     return *this;
