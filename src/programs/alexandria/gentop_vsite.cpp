@@ -656,7 +656,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     {
                         bij      = convert2gmx(vsite->distance(), lengthUnit);
                         aijk     = 
-                            aijl = vsite->angle();
+                            aijl = DEG2RAD*vsite->angle();
                         Akjl     = {k, j, l};
                         Bjk      = {j, k};
                         Bjl      = {j, l};
@@ -666,11 +666,15 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                         {   
                             bjk  = convert2gmx(bjk, lengthUnit);
                             bjl  = convert2gmx(bjl, lengthUnit);
-                            auto pijk = std::cos(aijk)*bij;  // Scalar projection of i along jk
-                            auto pijl = std::cos(aijl)*bij;  // Scalar projection of i along jl
-                            auto a    = (pijk / bjk);
-                            auto b    = (pijl / bjl);
-                            auto c    = (bij  / (bjk*bjl*std::sin(akjl)));
+                            akjl = DEG2RAD*akjl;
+                            
+                            auto pijk = std::cos(aijk)*bij;
+                            auto pijl = std::cos(aijl)*bij;
+                            auto a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
+                            auto b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
+                            auto c    = std::sqrt( gmx::square(bij) -
+                                                   ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
+                                                   / gmx::square(std::sin(akjl)) ) / ( bjk*bjl*std::sin(akjl) );
                             
                             for (int n = 1; n <= vsite->nvsite(); n++)
                             {
@@ -730,10 +734,10 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
             {                
                 // We know that the nuclues is 1 as we added it to plist as such.
                 int  i0 = inv_renum[j->a[1]];
-                for (auto j0 = 0; j0 < excls[i0]->nr; j0++)
+                for (auto j0 = 0; j0 < (*excls)[i0].nr; j0++)
                 {
-                    add_excl_pair(newexcls, j->a[0], renum[excls[i0]->e[j0]]);
-                    add_excl_pair(newexcls, j->a[1], renum[excls[i0]->e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[(*excls)[i0].e[j0]]);
+                    add_excl_pair(newexcls, j->a[0], renum[(*excls)[i0].e[j0]]);
                 }
             }
             for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)

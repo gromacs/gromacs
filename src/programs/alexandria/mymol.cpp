@@ -257,7 +257,7 @@ void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
             }
             else
             {
-                atoms.push_back(bi->getAj() - 1);
+                atoms.push_back(bi->getAi() - 1);
             }
         }
     }
