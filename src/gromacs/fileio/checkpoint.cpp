@@ -643,26 +643,27 @@ static int doRealArrayRef(XDR *xd, StatePart part, int ecpt, int sflags,
 
 //! \brief Read/Write a PaddedRVecVector.
 static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                              gmx::PaddedRVecVector *vector, FILE *list)
+                              gmx::PaddedRVecVector *v, int numAtoms, FILE *list)
 {
-    real *v_real;
+    const int numReals = numAtoms*DIM;
 
-    if (list == nullptr && (sflags & (1 << ecpt)))
+    if (list == nullptr)
     {
-        v_real = vector->data()->as_vec();
+        GMX_RELEASE_ASSERT(sflags & (1 << ecpt), "When not listing, the flag for the entry should be set when requesting i/o");
+        GMX_RELEASE_ASSERT(v->size() >= static_cast<size_t>(numAtoms), "v should have sufficient size for numAtoms");
+
+        real *v_real = v->data()->as_vec();
+
+        // PaddedRVecVector is padded beyond numAtoms, we should only write
+        // numAtoms RVecs
+        gmx::ArrayRef<real> ref(v_real, v_real + numReals);
+
+        return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
     }
     else
     {
-        v_real = nullptr;
+        return doVectorLow<real>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
-    // The current invariant of a PaddedRVecVector is that its size is
-    // one larger than necessary to store the data. Make sure that we
-    // read/write only the valid data, and don't leak to the outside
-    // world that currently we find it convenient internally to
-    // allocate one extra element.
-    gmx::ArrayRef<real> ref(v_real, v_real + (vector->size()-1) * DIM);
-
-    return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
 }
 
 /* This function stores n along with the reals for reading,
@@ -1052,8 +1053,8 @@ static int do_cpt_state(XDR *xd,
                 case estBAROS_INT:   ret  = do_cpte_double(xd, part, i, sflags, &state->baros_integral, list); break;
                 case estVETA:    ret      = do_cpte_real(xd, part, i, sflags, &state->veta, list); break;
                 case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
-                case estX:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->x, list); break;
-                case estV:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->v, list); break;
+                case estX:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->x, state->natoms, list); break;
+                case estV:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->v, state->natoms, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
