@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@ namespace gmx
 class CommandLineHelpContext;
 class Options;
 
-template <typename T> class ConstArrayRef;
+template <typename T> class ArrayRef;
 
 /*! \brief
  * Writes help information for Options.
@@ -85,7 +85,7 @@ class CommandLineHelpWriter
         CommandLineHelpWriter &setHelpText(const std::string &help);
         //! \copydoc setHelpText(const std::string &)
         CommandLineHelpWriter &
-        setHelpText(const ConstArrayRef<const char *> &help);
+        setHelpText(const ArrayRef<const char *const> &help);
         /*! \brief
          * Sets the list of known bugs/limitations.
          *
@@ -96,7 +96,7 @@ class CommandLineHelpWriter
          * object.
          */
         CommandLineHelpWriter &
-        setKnownIssues(const ConstArrayRef<const char *> &bugs);
+        setKnownIssues(const ArrayRef<const char *const> &bugs);
 
         /*! \brief
          * Writes the help.
