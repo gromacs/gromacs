@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,9 @@
 /*! \def gmx_real_fullprecision_pfmt
  * \brief Format string for full `real` precision.
  */
+/*! \def GMX_REAL_MAX_SIMD_WIDTH
+ * \brief The maximum supported number of `real` elements in a SIMD register.
+ */
 #if GMX_DOUBLE
 
 #ifndef HAVE_REAL
@@ -118,6 +121,7 @@ typedef double      real;
 #define GMX_REAL_MAX      GMX_DOUBLE_MAX
 #define GMX_REAL_NEGZERO  GMX_DOUBLE_NEGZERO
 #define gmx_real_fullprecision_pfmt "%21.14e"
+#define GMX_REAL_MAX_SIMD_WIDTH  8
 
 #else /* GMX_DOUBLE */
 
@@ -132,6 +136,7 @@ typedef float           real;
 #define GMX_REAL_MAX      GMX_FLOAT_MAX
 #define GMX_REAL_NEGZERO  GMX_FLOAT_NEGZERO
 #define gmx_real_fullprecision_pfmt "%14.7e"
+#define GMX_REAL_MAX_SIMD_WIDTH  16
 
 #endif /* GMX_DOUBLE */
 

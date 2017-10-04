@@ -643,26 +643,27 @@ static int doRealArrayRef(XDR *xd, StatePart part, int ecpt, int sflags,
 
 //! \brief Read/Write a PaddedRVecVector.
 static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                              gmx::PaddedRVecVector *vector, FILE *list)
+                              gmx::PaddedRVecVector *v, FILE *list)
 {
-    real *v_real;
-
-    if (list == nullptr && (sflags & (1 << ecpt)))
+    if (list == nullptr)
     {
-        v_real = vector->data()->as_vec();
+        GMX_RELEASE_ASSERT(sflags & (1 << ecpt), "When not listing, the flag for the entry should be set when requesting i/o");
+
+        real *v_real = v->data()->as_vec();
+
+        // The current invariant of a PaddedRVecVector is that its size is
+        // GMX_REAL_MAX_SIMD_WIDTH larger than necessary to store the data.
+        // Make sure that we read/write only the valid data, and don't leak
+        // to the outside world that currently we find it convenient internally
+        // to allocate one extra element.
+        gmx::ArrayRef<real> ref(v_real, v_real + (v->size() - GMX_REAL_MAX_SIMD_WIDTH) * DIM);
+
+        return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
     }
     else
     {
-        v_real = nullptr;
+        return doVectorLow<real>(xd, part, ecpt, sflags, -1, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
-    // The current invariant of a PaddedRVecVector is that its size is
-    // one larger than necessary to store the data. Make sure that we
-    // read/write only the valid data, and don't leak to the outside
-    // world that currently we find it convenient internally to
-    // allocate one extra element.
-    gmx::ArrayRef<real> ref(v_real, v_real + (vector->size()-1) * DIM);
-
-    return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
 }
 
 /* This function stores n along with the reals for reading,

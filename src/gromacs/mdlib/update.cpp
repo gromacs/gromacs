@@ -687,9 +687,7 @@ void update_realloc(gmx_update_t *upd, int natoms)
 {
     GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
 
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries. */
-    upd->xp.resize(natoms + 1);
+    upd->xp.resize(paddedRVecVectorSize(natoms));
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,

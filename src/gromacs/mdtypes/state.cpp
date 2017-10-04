@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -101,29 +102,21 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 void state_change_natoms(t_state *state, int natoms)
 {
     state->natoms = natoms;
-    if (state->natoms > 0)
+
+    /* We need padding, since we might use SIMD access */
+    const size_t paddedSize = gmx::paddedRVecVectorSize(state->natoms);
+
+    if (state->flags & (1 << estX))
     {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        if (state->flags & (1 << estX))
-        {
-            state->x.resize(state->natoms + 1);
-        }
-        if (state->flags & (1 << estV))
-        {
-            state->v.resize(state->natoms + 1);
-        }
-        if (state->flags & (1 << estCGP))
-        {
-            state->cg_p.resize(state->natoms + 1);
-        }
+        state->x.resize(paddedSize);
     }
-    else
+    if (state->flags & (1 << estV))
     {
-        state->x.resize(0);
-        state->v.resize(0);
-        state->cg_p.resize(0);
+        state->v.resize(paddedSize);
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        state->cg_p.resize(paddedSize);
     }
 }
 

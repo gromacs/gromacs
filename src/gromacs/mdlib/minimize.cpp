@@ -405,7 +405,7 @@ static void init_em(FILE *fplog, const char *title,
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        ems->f.resize(ems->s.natoms + 1);
+        ems->f.resize(gmx::paddedRVecVectorSize(ems->s.natoms));
 
         snew(*top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
@@ -591,7 +591,7 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        ems2->f.resize(s2->natoms + 1);
+        ems2->f.resize(gmx::paddedRVecVectorSize(s2->natoms));
     }
     if (DOMAINDECOMP(cr) && s2->cg_gl.size() != s1->cg_gl.size())
     {
