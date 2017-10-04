@@ -50,7 +50,7 @@
 #include <gtest/gtest.h>
 
 // arrayref.h is not strictly necessary for this header, but nearly all
-// callers will need it to use the constructor that takes ConstArrayRef.
+// callers will need it to use the constructor that takes ArrayRef.
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -125,7 +125,7 @@ class CommandLine
          * that is desired in the output.
          *
          * This function does the same as the constructor that takes a
-         * ConstArrayRef.  Any earlier contents of the object are discarded.
+         * ArrayRef.  Any earlier contents of the object are discarded.
          *
          * Strong exception safety.
          */
