@@ -258,13 +258,10 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
-static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsigned int n)
+static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, int numAtoms)
 {
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries.
-     */
-    (*v).resize(n + 1);
-    nblock_bc(cr, n, as_rvec_array(v->data()));
+    v->resize(gmx::paddedRVecVectorSize(numAtoms));
+    nblock_bc(cr, numAtoms, as_rvec_array(v->data()));
 }
 
 void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)

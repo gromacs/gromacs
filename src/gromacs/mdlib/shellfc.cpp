@@ -1031,8 +1031,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     for (i = 0; (i < 2); i++)
     {
-        shfc->x[i].resize(nat + 1);
-        shfc->f[i].resize(nat + 1);
+        shfc->x[i].resize(gmx::paddedRVecVectorSize(nat));
+        shfc->f[i].resize(gmx::paddedRVecVectorSize(nat));
     }
 
     /* Create pointer that we can swap */

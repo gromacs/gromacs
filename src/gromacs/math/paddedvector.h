@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,14 +46,47 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/alignedallocator.h"
 
 namespace gmx
 {
 
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities.
  *
- * \todo This vector is not padded yet, padding will be added soon */
-using PaddedRVecVector = std::vector<gmx::RVec>;
+ * \note When resizing paddedRVecVector, the size should be chosen with
+         paddedRVecVectorSize() to ensure correct padding.
+ * \todo Consider replacing the padding applied in resizePaddedRVecVector()
+ *       by automated padding on resize() of the vector.
+ */
+using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, AlignedAllocationPolicy > >;
+
+/*! \brief Returns the padded size for PaddedRVecVector given the number of atoms
+ *
+ * \param[in] numAtoms  The number of atoms for which data will be stored in a PaddedRVecVector
+ */
+static inline size_t paddedRVecVectorSize(size_t numAtoms)
+{
+    /* We need one real extra for 4-wide SIMD load/store of RVec.
+     * But because the vector contains RVecs, we need to add 1 RVec.
+     */
+    size_t simdScatterAccessSize;
+    if (numAtoms > 0)
+    {
+        simdScatterAccessSize = numAtoms + 1;
+    }
+    else
+    {
+        simdScatterAccessSize = 0;
+    }
+
+    /* We need padding up to a multiple of GMX_SIMD_REAL_WIDTH,
+     * but as we don't want a dependence on the SIMD module,
+     * we use GMX_REAL_MAX_SIMD_WIDTH here.
+     */
+    size_t simdFlatAccesSize  = ((numAtoms + (GMX_REAL_MAX_SIMD_WIDTH - 1))/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
+
+    return std::max(simdScatterAccessSize, simdFlatAccesSize);
+}
 
 } // namespace gmx
 
