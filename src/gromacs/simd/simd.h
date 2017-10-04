@@ -812,6 +812,13 @@ setZero()
 //! \endcond   end of condition libapi
 
 
+#if GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH
+#error "GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH: increase GMX_REAL_MAX_SIMD_WIDTH in real.h"
+#endif
+#endif
+
+
 #if 0
 /* This is a hack to cover the corner case of using an
    explicit GMX_SIMD_HAVE_FLOAT or GMX_SIMD_HAVE_DOUBLE, rather than
