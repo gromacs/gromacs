@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,7 @@ class StringOutputStream : public TextOutputStream
         std::string str_;
 };
 
-template<typename T> class ConstArrayRef;
+template<typename T> class ArrayRef;
 
 /*! \libinternal \brief
  * Helper class to convert static string data to a stream.
@@ -108,7 +108,7 @@ class StringInputStream : public TextInputStream
          *
          * \param[in] input Array of char * to be served by the stream.
          */
-        explicit StringInputStream(ConstArrayRef<const char *> const &input);
+        explicit StringInputStream(ArrayRef<const char *const> const &input);
 
         // From TextInputStream
         virtual bool readLine(std::string *line);

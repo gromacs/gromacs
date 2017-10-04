@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for gmx::ArrayRef and gmx::ConstArrayRef.
+ * \brief Tests for gmx::ArrayRef.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
@@ -109,6 +109,7 @@ class ArrayRefTest : public ::testing::Test
     public:
         typedef TypeParam ArrayRefType;
         typedef typename ArrayRefType::value_type ValueType;
+        typedef typename std::remove_const<ValueType>::type NonConstValueType;
 
         /*! \brief Run the same tests all the time
          *
@@ -188,15 +189,15 @@ TYPED_TEST(ArrayRefTest, MakeFromArrayWorks)
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
-    std::vector<typename TestFixture::ValueType> v(a, a + aSize);
-    typename TestFixture::ArrayRefType           arrayRef(v);
+    std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
+    typename TestFixture::ArrayRefType                   arrayRef(v);
     this->runTests(a, v.size(), v.data(), arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
-    std::vector<typename TestFixture::ValueType> v(a, a + aSize);
+    std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
     typename TestFixture::ArrayRefType arrayRef
         = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
     this->runTests(a, v.size(), v.data(), arrayRef);
@@ -223,7 +224,7 @@ struct Helper
 TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
 {
     DEFINE_ARRAY(a, aSize);
-    Helper<typename TestFixture::ValueType> h;
+    Helper<typename TestFixture::NonConstValueType> h;
     h.size = aSize;
     for (int i = 0; i != h.size; ++i)
     {
