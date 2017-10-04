@@ -74,7 +74,7 @@ bool beCool(void)
 
 //! Return a valid random index into \c arrayRef
 template <typename T>
-const T &getRandomElement(gmx::ConstArrayRef<T> arrayRef)
+const T &getRandomElement(gmx::ArrayRef<const T> arrayRef)
 {
     std::random_device                    generator;
     std::uniform_int_distribution<size_t> distribution(0, arrayRef.size()-1);

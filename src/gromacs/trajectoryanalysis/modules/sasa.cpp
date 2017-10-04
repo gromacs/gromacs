@@ -559,10 +559,10 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // TODO: Not exception-safe, but nice solution would be to have a C++
     // atom properties class...
-    gmx_atomprop_t     aps = gmx_atomprop_init();
+    gmx_atomprop_t      aps = gmx_atomprop_init();
 
-    ConstArrayRef<int> atomIndices = surfaceSel_.atomIndices();
-    int                ndefault    = 0;
+    ArrayRef<const int> atomIndices = surfaceSel_.atomIndices();
+    int                 ndefault    = 0;
     for (int i = 0; i < surfaceSel_.posCount(); i++)
     {
         const int ii     = atomIndices[i];
@@ -597,7 +597,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // and store it in the selection ID map for easy lookup.
     for (size_t g = 0; g < outputSel_.size(); ++g)
     {
-        ConstArrayRef<int> outputIndices = outputSel_[g].atomIndices();
+        ArrayRef<const int> outputIndices = outputSel_[g].atomIndices();
         for (int i = 0, j = 0; i < outputSel_[g].posCount(); ++i)
         {
             while (j < surfaceSel_.posCount() && outputIndices[i] > atomIndices[j])

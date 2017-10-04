@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,8 +104,8 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
  *        to avoid accuracy loss.
  */
 void
-throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double>         function,
-                                              ConstArrayRef<double>         derivative,
+throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        function,
+                                              ArrayRef<const double>        derivative,
                                               double                        inputSpacing,
                                               const std::pair<real, real>  &range);
 
@@ -175,7 +175,7 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
  *        avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double>         function,
+findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        function,
                                                   double                        inputSpacing,
                                                   const std::pair<real, real>  &range);
 
@@ -245,7 +245,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
  *        avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         function,
+findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        function,
                                                  double                        inputSpacing,
                                                  const std::pair<real, real>  &range);
 
@@ -264,7 +264,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         f
  *       accuracy loss (since differentiation can be numerically fragile).
  */
 std::vector<double>
-vectorSecondDerivative(ConstArrayRef<double>        f,
+vectorSecondDerivative(ArrayRef<const double>       f,
                        double                       spacing);
 
 

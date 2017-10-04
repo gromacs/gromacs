@@ -136,7 +136,7 @@ class AnalysisNeighborhoodPositions
          * AnalysisNeighborhood::setTopologyExclusions().
          */
         AnalysisNeighborhoodPositions &
-        exclusionIds(ConstArrayRef<int> ids)
+        exclusionIds(ArrayRef<const int> ids)
         {
             GMX_ASSERT(static_cast<int>(ids.size()) == count_,
                        "Exclusion id array should match the number of positions");
@@ -152,7 +152,7 @@ class AnalysisNeighborhoodPositions
          * indices to the \p indices array passed here.
          */
         AnalysisNeighborhoodPositions &
-        indexed(ConstArrayRef<int> indices)
+        indexed(ArrayRef<const int> indices)
         {
             count_   = indices.size();
             indices_ = indices.data();

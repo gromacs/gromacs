@@ -198,11 +198,11 @@ TEST(formatAndJoinTest, Works)
 {
     const char * const words[] = { "The", "quick", "brown", "fox" };
     EXPECT_EQ("The       .quick     .brown     .fox       ",
-              gmx::formatAndJoin(gmx::ConstArrayRef<const char *>(words), ".",
+              gmx::formatAndJoin(gmx::ArrayRef<const char *const>(words), ".",
                                  gmx::StringFormatter("%-10s")));
 
     const int values[] = { 0, 1, 4 };
-    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ConstArrayRef<int>(values), ",",
+    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ArrayRef<const int>(values), ",",
                                           gmx::StringFormatter("%d")));
 }
 
@@ -213,7 +213,7 @@ TEST(formatAndJoinTest, Works)
 TEST(JoinStringsTest, Works)
 {
     const char * const               words[] = { "The", "quick", "brown", "fox" };
-    gmx::ConstArrayRef<const char *> refToWords(words);
+    gmx::ArrayRef<const char *const> refToWords(words);
     EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(words, "-"));

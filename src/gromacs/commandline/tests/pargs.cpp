@@ -96,7 +96,7 @@ class ParseCommonArgsTest : public ::testing::Test
                                          0, nullptr, 0, nullptr, &oenv_);
             EXPECT_TRUE(bOk);
         }
-        void parseFromArray(gmx::ConstArrayRef<const char *> cmdline,
+        void parseFromArray(gmx::ArrayRef<const char *const> cmdline,
                             unsigned long                    flags,
                             gmx::ArrayRef<t_filenm>          fnm,
                             gmx::ArrayRef<t_pargs>           pa)

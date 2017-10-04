@@ -246,9 +246,9 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     nmol_ = top.topology()->mols.nr;
 
     // Loop over atoms in the selection using an iterator
-    const int          maxnovdw = 10;
-    ConstArrayRef<int> atomind  = sel_.atomIndices();
-    for (ConstArrayRef<int>::iterator ai = atomind.begin(); (ai < atomind.end()); ++ai)
+    const int           maxnovdw = 10;
+    ArrayRef<const int> atomind  = sel_.atomIndices();
+    for (ArrayRef<const int>::iterator ai = atomind.begin(); (ai < atomind.end()); ++ai)
     {
         // Dereference the iterator to obtain an atom number
         int  i = *ai;

@@ -700,9 +700,9 @@ Select::writeOutput()
         {
             for (int i = 0; i < sel_[g].posCount(); ++i)
             {
-                ConstArrayRef<int>                 atomIndices
+                ArrayRef<const int>                 atomIndices
                     = sel_[g].position(i).atomIndices();
-                ConstArrayRef<int>::const_iterator ai;
+                ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
                     pdbinfo[*ai].occup += occupancyModule_->average(g, i);
@@ -732,7 +732,7 @@ Select::writeOutput()
                 std::set<int> atomIndicesSet;
                 for (size_t g = 0; g < sel_.size(); ++g)
                 {
-                    ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
+                    ArrayRef<const int> atomIndices = sel_[g].atomIndices();
                     atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
                 }
                 std::vector<int>  allAtomIndices(atomIndicesSet.begin(),

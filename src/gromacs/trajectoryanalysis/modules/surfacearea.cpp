@@ -552,7 +552,7 @@ static std::vector<real> make_unsp(int densit, int cubus)
 }
 
 static void
-nsc_dclm_pbc(const rvec *coords, const ConstArrayRef<real> &radius, int nat,
+nsc_dclm_pbc(const rvec *coords, const ArrayRef<const real> &radius, int nat,
              const real *xus, int n_dot, int mode,
              real *value_of_area, real **at_area,
              real *value_of_vol,
@@ -734,7 +734,7 @@ class SurfaceAreaCalculator::Impl
         }
 
         std::vector<real>             unitSphereDots_;
-        ConstArrayRef<real>           radius_;
+        ArrayRef<const real>          radius_;
         int                           flags_;
         mutable AnalysisNeighborhood  nb_;
 };
@@ -753,7 +753,7 @@ void SurfaceAreaCalculator::setDotCount(int dotCount)
     impl_->unitSphereDots_ = make_unsp(dotCount, 4);
 }
 
-void SurfaceAreaCalculator::setRadii(const ConstArrayRef<real> &radius)
+void SurfaceAreaCalculator::setRadii(const ArrayRef<const real> &radius)
 {
     impl_->radius_ = radius;
     if (!radius.empty())

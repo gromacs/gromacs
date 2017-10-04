@@ -541,7 +541,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 
 //! Return whether the contents of \c a and \c b are the same, considering also reversed order.
 template <typename T>
-static bool equalEitherForwardOrBackward(gmx::ConstArrayRef<T> a, gmx::ConstArrayRef<T> b)
+static bool equalEitherForwardOrBackward(gmx::ArrayRef<const T> a, gmx::ArrayRef<const T> b)
 {
     return (std::equal(a.begin(), a.end(), b.begin()) ||
             std::equal(a.begin(), a.end(), b.rbegin()));
@@ -590,8 +590,8 @@ static void push_bondtype(t_params     *       bt,
     bool haveErrored = false;
     for (int i = 0; (i < nr); i++)
     {
-        gmx::ConstArrayRef<int> bParams(b->a, b->a + nral);
-        gmx::ConstArrayRef<int> testParams(bt->param[i].a, bt->param[i].a + nral);
+        gmx::ArrayRef<const int> bParams(b->a, b->a + nral);
+        gmx::ArrayRef<const int> testParams(bt->param[i].a, bt->param[i].a + nral);
         if (equalEitherForwardOrBackward(bParams, testParams))
         {
             GMX_ASSERT(nrfp <= MAXFORCEPARAM, "This is ensured in other places, but we need this assert to keep the clang analyzer happy");

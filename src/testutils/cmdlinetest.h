@@ -111,7 +111,7 @@ class CommandLine
          * This constructor is not explicit to make it possible to create a
          * CommandLine object directly from a C array.
          */
-        CommandLine(const ConstArrayRef<const char *> &cmdline);
+        CommandLine(const ArrayRef<const char *const> &cmdline);
         //! Creates a deep copy of a command-line object.
         CommandLine(const CommandLine &other);
         ~CommandLine();
@@ -129,7 +129,7 @@ class CommandLine
          *
          * Strong exception safety.
          */
-        void initFromArray(const ConstArrayRef<const char *> &cmdline);
+        void initFromArray(const ArrayRef<const char *const> &cmdline);
 
         /*! \brief
          * Appends an argument to the command line.
@@ -295,7 +295,7 @@ class CommandLineTestHelper
          */
         void setInputFileContents(CommandLine *args, const char *option,
                                   const char *extension,
-                                  const ConstArrayRef<const char *> &contents);
+                                  const ArrayRef<const char *const> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
@@ -399,7 +399,7 @@ class CommandLineTestBase : public ::testing::Test
          */
         void setInputFileContents(const char                        *option,
                                   const char                        *extension,
-                                  const ConstArrayRef<const char *> &contents);
+                                  const ArrayRef<const char *const> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *

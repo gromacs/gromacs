@@ -149,8 +149,8 @@ void TimeUnitBehavior::setTimeUnitFromEnvironment()
     const char *const value = std::getenv("GMXTIMEUNIT");
     if (value != nullptr)
     {
-        ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
-        ConstArrayRef<const char *>::const_iterator i =
+        ArrayRef<const char *const>                 timeUnits(g_timeUnits);
+        ArrayRef<const char *const>::const_iterator i =
             std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
         if (i == timeUnits.end())
         {

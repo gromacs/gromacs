@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,8 +154,8 @@ fillSingleQuadraticSplineTableData(const std::function<double(double)>   &functi
  * \param[out] derivativeTableData  OUtput table with (adjusted) derivative data
  */
 void
-fillSingleQuadraticSplineTableData(ConstArrayRef<double>                  function,
-                                   ConstArrayRef<double>                  derivative,
+fillSingleQuadraticSplineTableData(ArrayRef<const double>                 function,
+                                   ArrayRef<const double>                 derivative,
                                    double                                 inputSpacing,
                                    const std::pair<real, real>           &range,
                                    double                                 spacing,

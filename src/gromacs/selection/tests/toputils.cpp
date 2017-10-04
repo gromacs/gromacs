@@ -191,7 +191,7 @@ void TopologyManager::initAtoms(int count)
     }
 }
 
-void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
+void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     atomtypes_.reserve(types.size());
@@ -244,7 +244,7 @@ void TopologyManager::initUniformMolecules(int moleculeSize)
     mtop_->mols.index[mtop_->mols.nr] = mtop_->natoms;
 }
 
-void TopologyManager::initFrameIndices(const ConstArrayRef<int> &index)
+void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)
 {
     GMX_RELEASE_ASSERT(frame_ != nullptr, "Frame not initialized");
     GMX_RELEASE_ASSERT(!frame_->bIndex, "Frame atom indices can only be set once");
