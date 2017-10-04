@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief Declares allocation policy classes and allocators that are
  * used to make library containers compatible with alignment
  * requirements of particular hardware, e.g. memory operations for
@@ -40,7 +40,7 @@
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_ALIGNEDALLOCATOR_H
