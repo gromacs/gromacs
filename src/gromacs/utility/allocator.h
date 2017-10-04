@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::Allocator template whose allocation functionality is
  * configured both by type of object allocated and a policy class that
@@ -40,7 +40,7 @@
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_ALLOCATOR_H
