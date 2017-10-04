@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,7 +125,7 @@
  * The header init.h declares gmx::init() and gmx::finalize() for initializing
  * and deinitializing the \Gromacs library.
  *
- * The header arrayref.h implements a gmx::ConstArrayRef class for exposing a
+ * The header arrayref.h implements a gmx::ArrayRef class for exposing a
  * C array or part of a std::vector (basically, any continuous stretch of
  * memory) throuh a std::vector-like interface.
  *
