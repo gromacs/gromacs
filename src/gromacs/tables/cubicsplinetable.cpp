@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,8 +220,8 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
  * \param[out] yfghTableData        Output cubic spline table with Y,F,G,H entries
  */
 void
-fillSingleCubicSplineTableData(ConstArrayRef<double>                  function,
-                               ConstArrayRef<double>                  derivative,
+fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
+                               ArrayRef<const double>                 derivative,
                                double                                 inputSpacing,
                                const std::pair<real, real>           &range,
                                double                                 spacing,

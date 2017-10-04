@@ -896,7 +896,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
-                      gmx::ConstArrayRef<real> lambda, real *dvdlambda,
+                      gmx::ArrayRef<const real> lambda, real *dvdlambda,
                       t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,8 +69,8 @@ struct
 NumericalSplineTableInput
 {
     const std::string                    &desc;        //!< \libinternal Brief description of function
-    ConstArrayRef<double>                 function;    //!< \libinternal Vector with function values
-    ConstArrayRef<double>                 derivative;  //!< \libinternal Vector with derivative values
+    ArrayRef<const double>                function;    //!< \libinternal Vector with function values
+    ArrayRef<const double>                derivative;  //!< \libinternal Vector with derivative values
     double                                spacing;     //!< \libinternal Distance between data points
 };
 

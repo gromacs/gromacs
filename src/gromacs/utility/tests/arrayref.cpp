@@ -66,8 +66,8 @@ TEST(EmptyArrayRefTest, IsEmpty)
 
 TEST(EmptyConstArrayRefTest, IsEmpty)
 {
-    EmptyArrayRef       emptyArray = {};
-    ConstArrayRef<real> empty(emptyArray);
+    EmptyArrayRef        emptyArray = {};
+    ArrayRef<const real> empty(emptyArray);
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());
@@ -87,16 +87,16 @@ typedef ::testing::Types<
         ArrayRef<gmx_uint64_t>,
         ArrayRef<float>,
         ArrayRef<double>,
-        ConstArrayRef<char>,
-        ConstArrayRef<unsigned char>,
-        ConstArrayRef<int>,
-        ConstArrayRef<unsigned int>,
-        ConstArrayRef<long>,
-        ConstArrayRef<unsigned long>,
-        ConstArrayRef<gmx_int64_t>,
-        ConstArrayRef<gmx_uint64_t>,
-        ConstArrayRef<float>,
-        ConstArrayRef<double>
+        ArrayRef<const char>,
+        ArrayRef<const unsigned char>,
+        ArrayRef<const int>,
+        ArrayRef<const unsigned int>,
+        ArrayRef<const long>,
+        ArrayRef<const unsigned long>,
+        ArrayRef<const gmx_int64_t>,
+        ArrayRef<const gmx_uint64_t>,
+        ArrayRef<const float>,
+        ArrayRef<const double>
         > ArrayRefTypes;
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefs

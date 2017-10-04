@@ -329,12 +329,12 @@ class ExclusionsHelper
 
         const t_blocka *exclusions() const { return &excls_; }
 
-        gmx::ConstArrayRef<int> refPosIds() const
+        gmx::ArrayRef<const int> refPosIds() const
         {
             return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
                                                      exclusionIds_.begin() + refPosCount_);
         }
-        gmx::ConstArrayRef<int> testPosIds() const
+        gmx::ArrayRef<const int> testPosIds() const
         {
             return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
                                                      exclusionIds_.begin() + testPosCount_);
@@ -434,8 +434,8 @@ class NeighborhoodSearchTest : public ::testing::Test
                                 const NeighborhoodSearchTestData         &data,
                                 const gmx::AnalysisNeighborhoodPositions &pos,
                                 const t_blocka                           *excls,
-                                const gmx::ConstArrayRef<int>            &refIndices,
-                                const gmx::ConstArrayRef<int>            &testIndices,
+                                const gmx::ArrayRef<const int>           &refIndices,
+                                const gmx::ArrayRef<const int>           &testIndices,
                                 bool                                      selfPairs);
 
         gmx::AnalysisNeighborhood        nb_;
@@ -552,8 +552,8 @@ void NeighborhoodSearchTest::testPairSearchFull(
         const NeighborhoodSearchTestData         &data,
         const gmx::AnalysisNeighborhoodPositions &pos,
         const t_blocka                           *excls,
-        const gmx::ConstArrayRef<int>            &refIndices,
-        const gmx::ConstArrayRef<int>            &testIndices,
+        const gmx::ArrayRef<const int>           &refIndices,
+        const gmx::ArrayRef<const int>           &testIndices,
         bool                                      selfPairs)
 {
     std::map<int, RefPairList> refPairs;

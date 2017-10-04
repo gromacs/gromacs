@@ -260,9 +260,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * The non-const variant should only be used from processAll() in
          * derived classes if necessary.
          */
-        ArrayRef<T>      values() { return store_->values(); }
+        ArrayRef<T>       values() { return store_->values(); }
         //! Provides derived classes access to the current list of values.
-        ConstArrayRef<T> values() const { return store_->values(); }
+        ArrayRef<const T> values() const { return store_->values(); }
 
     private:
         //! Creates the internal storage object for final values..

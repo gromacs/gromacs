@@ -121,7 +121,7 @@ CommandLine::CommandLine()
 {
 }
 
-CommandLine::CommandLine(const ConstArrayRef<const char *> &cmdline)
+CommandLine::CommandLine(const ArrayRef<const char *const> &cmdline)
     : impl_(new Impl(cmdline.data(), cmdline.size()))
 {
 }
@@ -135,7 +135,7 @@ CommandLine::~CommandLine()
 {
 }
 
-void CommandLine::initFromArray(const ConstArrayRef<const char *> &cmdline)
+void CommandLine::initFromArray(const ArrayRef<const char *const> &cmdline)
 {
     impl_.reset(new Impl(cmdline.data(), cmdline.size()));
 }
@@ -322,13 +322,13 @@ void CommandLineTestHelper::setInputFileContents(
 
 void CommandLineTestHelper::setInputFileContents(
         CommandLine *args, const char *option, const char *extension,
-        const ConstArrayRef<const char *> &contents)
+        const ArrayRef<const char *const> &contents)
 {
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
     TextWriter  file(fullFilename);
-    ConstArrayRef<const char *>::const_iterator i;
+    ArrayRef<const char *const>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
     {
         file.writeLine(*i);
@@ -420,7 +420,7 @@ void CommandLineTestBase::setInputFileContents(
 
 void CommandLineTestBase::setInputFileContents(
         const char *option, const char *extension,
-        const ConstArrayRef<const char *> &contents)
+        const ArrayRef<const char *const> &contents)
 {
     impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
                                         contents);

@@ -210,7 +210,7 @@ void print_start(FILE *fplog, t_commrec *cr,
                         walltime_accounting_get_start_time_stamp(walltime_accounting));
 }
 
-static void sum_forces(rvec f[], gmx::ConstArrayRef<gmx::RVec> forceToAdd)
+static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
 {
     const int end = forceToAdd.size();
 

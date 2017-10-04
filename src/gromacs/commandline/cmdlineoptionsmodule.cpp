@@ -77,7 +77,7 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
         const std::string &helpText() const { return helpText_; }
 
-        virtual void setHelpText(const ConstArrayRef<const char *> &help)
+        virtual void setHelpText(const ArrayRef<const char *const> &help)
         {
             helpText_ = joinStrings(help, "\n");
         }

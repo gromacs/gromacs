@@ -66,15 +66,6 @@ TEST(EmptyArrayRefTest, IsEmpty)
     EXPECT_TRUE(empty.empty());
 }
 
-TEST(EmptyConstArrayRefTest, IsEmpty)
-{
-    EmptyArrayRef           emptyArray = {};
-    ConstArrayRef<SimdReal> empty(emptyArray);
-
-    EXPECT_EQ(0U, empty.size());
-    EXPECT_TRUE(empty.empty());
-}
-
 #ifdef GTEST_HAS_TYPED_TEST
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefs

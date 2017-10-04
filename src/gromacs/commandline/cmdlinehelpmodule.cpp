@@ -295,7 +295,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
         Options                    &options = *optionsHolder.options();
-        ConstArrayRef<const char *> helpText;
+        ArrayRef<const char *const> helpText;
         if (context.outputFormat() != eHelpOutputFormat_Console)
         {
             helpText = RootHelpText::text;

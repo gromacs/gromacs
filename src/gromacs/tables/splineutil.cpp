@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,8 +108,8 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
 
 
 void
-throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double>         function,
-                                              ConstArrayRef<double>         derivative,
+throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        function,
+                                              ArrayRef<const double>        derivative,
                                               double                        inputSpacing,
                                               const std::pair<real, real>  &range)
 {
@@ -203,7 +203,7 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
 
 
 real
-findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double>         function,
+findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        function,
                                                   double                        inputSpacing,
                                                   const std::pair<real, real>   &range)
 {
@@ -277,7 +277,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
 
 
 real
-findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         function,
+findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        function,
                                                  double                        inputSpacing,
                                                  const std::pair<real, real>   &range)
 {
@@ -296,7 +296,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         f
 
 
 std::vector<double>
-vectorSecondDerivative(ConstArrayRef<double> f, double spacing)
+vectorSecondDerivative(ArrayRef<const double> f, double spacing)
 {
     if (f.size() < 5)
     {

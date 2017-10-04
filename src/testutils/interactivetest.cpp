@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ class InteractiveTestHelper::Impl
         }
 
         TestReferenceChecker             checker_;
-        ConstArrayRef<const char *>      inputLines_;
+        ArrayRef<const char *const>      inputLines_;
         bool                             bLastNewline_;
         size_t                           currentLine_;
         bool                             bHasOutput_;
@@ -156,7 +156,7 @@ void InteractiveTestHelper::setLastNewline(bool bInclude)
 }
 
 void InteractiveTestHelper::setInputLines(
-        const ConstArrayRef<const char *> &inputLines)
+        const ArrayRef<const char *const> &inputLines)
 {
     impl_->inputLines_  = inputLines;
     impl_->currentLine_ = 0;

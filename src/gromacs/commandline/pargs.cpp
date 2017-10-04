@@ -201,12 +201,12 @@ namespace
  *
  * \ingroup module_commandline
  */
-int getDefaultXvgFormat(gmx::ConstArrayRef<const char *> xvgFormats)
+int getDefaultXvgFormat(gmx::ArrayRef<const char *const> xvgFormats)
 {
     const char *const select = getenv("GMX_VIEW_XVG");
     if (select != nullptr)
     {
-        ConstArrayRef<const char *>::const_iterator i =
+        ArrayRef<const char *const>::const_iterator i =
             std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
         if (i != xvgFormats.end())
         {

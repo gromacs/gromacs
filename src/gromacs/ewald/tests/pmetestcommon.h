@@ -65,17 +65,17 @@ namespace test
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
 //! Charges
-typedef ConstArrayRef<real> ChargesVector;
+typedef ArrayRef<const real> ChargesVector;
 //! Coordinates
 typedef std::vector<RVec> CoordinatesVector;
 //! Forces
 typedef ArrayRef<RVec> ForcesVector;
 //! Gridline indices
-typedef ConstArrayRef<IVec> GridLineIndicesVector;
+typedef ArrayRef<const IVec> GridLineIndicesVector;
 /*! \brief Spline parameters (theta or dtheta).
  * A reference to a single dimension's spline data; this means (atomCount * pmeOrder) values or derivatives.
  */
-typedef ConstArrayRef<real> SplineParamsDimVector;
+typedef ArrayRef<const real> SplineParamsDimVector;
 /*! \brief Spline parameters (theta or dtheta) in all 3 dimensions
  */
 typedef std::array<SplineParamsDimVector, DIM> SplineParamsVector;

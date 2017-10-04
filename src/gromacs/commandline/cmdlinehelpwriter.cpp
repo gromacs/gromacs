@@ -499,7 +499,7 @@ class CommandLineHelpWriter::Impl
         //! Help text.
         std::string                  helpText_;
         //! List of bugs/knows issues.
-        ConstArrayRef<const char *>  bugs_;
+        ArrayRef<const char *const>  bugs_;
 };
 
 void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
@@ -509,7 +509,7 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
         return;
     }
     context.writeTitle("Known Issues");
-    ConstArrayRef<const char *>::const_iterator i;
+    ArrayRef<const char *const>::const_iterator i;
     for (i = bugs_.begin(); i != bugs_.end(); ++i)
     {
         const char *const       bug = *i;
@@ -546,7 +546,7 @@ CommandLineHelpWriter::setHelpText(const ArrayRef<const char *const> &help)
 }
 
 CommandLineHelpWriter &
-CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
+CommandLineHelpWriter::setKnownIssues(const ArrayRef<const char *const> &bugs)
 {
     impl_->bugs_ = bugs;
     return *this;
