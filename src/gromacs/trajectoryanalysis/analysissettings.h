@@ -55,7 +55,7 @@ struct t_topology;
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
+template <typename T> class ArrayRef;
 
 class AnalysisDataPlotSettings;
 class ICommandLineOptionsModuleSettings;
@@ -226,7 +226,7 @@ class TrajectoryAnalysisSettings
         void setFrameFlags(int frflags);
 
         //! \copydoc ICommandLineOptionsModuleSettings::setHelpText()
-        void setHelpText(const ConstArrayRef<const char *> &help);
+        void setHelpText(const ArrayRef<const char *const> &help);
 
     private:
         class Impl;
