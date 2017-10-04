@@ -52,7 +52,7 @@
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
+template <typename T> class ArrayRef;
 class FileNameOptionInfo;
 class FileNameOptionManager;
 class FileNameOptionStorage;
@@ -259,7 +259,7 @@ class FileNameOptionInfo : public OptionInfo
         //! Returns whether \p fileType (from filetypes.h) is accepted for this option.
         bool isValidType(int fileType) const;
         //! Returns the list of file types this option accepts.
-        ConstArrayRef<int> fileTypes() const;
+        ArrayRef<const int> fileTypes() const;
 
     private:
         const FileNameOptionStorage &option() const;
