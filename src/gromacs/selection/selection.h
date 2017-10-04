@@ -337,7 +337,7 @@ class Selection
             return data().rawPositions_.m.mapb.nra;
         }
         //! Returns atom indices of all atoms in the selection.
-        ConstArrayRef<int> atomIndices() const
+        ArrayRef<const int> atomIndices() const
         {
             return constArrayRefFromArray(sel_->rawPositions_.m.mapb.a,
                                           sel_->rawPositions_.m.mapb.nra);
@@ -347,7 +347,7 @@ class Selection
         //! Access a single position.
         SelectionPosition position(int i) const;
         //! Returns coordinates for this selection as a continuous array.
-        ConstArrayRef<rvec> coordinates() const
+        ArrayRef<const rvec> coordinates() const
         {
             return constArrayRefFromArray(data().rawPositions_.x, posCount());
         }
@@ -358,7 +358,7 @@ class Selection
          *
          * Must not be called if hasVelocities() returns false.
          */
-        ConstArrayRef<rvec> velocities() const
+        ArrayRef<const rvec> velocities() const
         {
             GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
             return constArrayRefFromArray(data().rawPositions_.v, posCount());
@@ -370,13 +370,13 @@ class Selection
          *
          * Must not be called if hasForces() returns false.
          */
-        ConstArrayRef<rvec> forces() const
+        ArrayRef<const rvec> forces() const
         {
             GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
             return constArrayRefFromArray(data().rawPositions_.f, posCount());
         }
         //! Returns masses for this selection as a continuous array.
-        ConstArrayRef<real> masses() const
+        ArrayRef<const real> masses() const
         {
             // posMass_ may have more entries than posCount() in the case of
             // dynamic selections that don't have a topology
@@ -387,7 +387,7 @@ class Selection
                                                  data().posMass_.begin() + posCount());
         }
         //! Returns charges for this selection as a continuous array.
-        ConstArrayRef<real> charges() const
+        ArrayRef<const real> charges() const
         {
             // posCharge_ may have more entries than posCount() in the case of
             // dynamic selections that don't have a topology
@@ -402,7 +402,7 @@ class Selection
          *
          * \see SelectionPosition::refId()
          */
-        ConstArrayRef<int> refIds() const
+        ArrayRef<const int> refIds() const
         {
             return constArrayRefFromArray(data().rawPositions_.m.refid, posCount());
         }
@@ -411,7 +411,7 @@ class Selection
          *
          * \see SelectionPosition::mappedId()
          */
-        ConstArrayRef<int> mappedIds() const
+        ArrayRef<const int> mappedIds() const
         {
             return constArrayRefFromArray(data().rawPositions_.m.mapid, posCount());
         }
@@ -688,12 +688,12 @@ class SelectionPosition
                    - sel_->rawPositions_.m.mapb.index[i_];
         }
         //! Return atom indices that make up this position.
-        ConstArrayRef<int> atomIndices() const
+        ArrayRef<const int> atomIndices() const
         {
             const int *atoms = sel_->rawPositions_.m.mapb.a;
             if (atoms == nullptr)
             {
-                return ConstArrayRef<int>();
+                return ArrayRef<const int>();
             }
             const int first = sel_->rawPositions_.m.mapb.index[i_];
             return constArrayRefFromArray(&atoms[first], atomCount());

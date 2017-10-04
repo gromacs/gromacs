@@ -127,7 +127,7 @@ class PositionCalculationCollection::Impl
          * there are also other thread-unsafe constructs here), so a temporary
          * array is used to avoid repeated memory allocation.
          */
-        ConstArrayRef<int> getFrameIndices(int size, int index[])
+        ArrayRef<const int> getFrameIndices(int size, int index[])
         {
             if (mapToFrameAtoms_.empty())
             {
@@ -1330,9 +1330,9 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 clear_rvec(p->f[i]);
             }
         }
-        gmx::ConstArrayRef<int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
-        const gmx_mtop_t       *top   = pc->coll->top_;
-        const bool              bMass = pc->flags & POS_MASS;
+        gmx::ArrayRef<const int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
+        const gmx_mtop_t        *top   = pc->coll->top_;
+        const bool               bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {
             case POS_ATOM:

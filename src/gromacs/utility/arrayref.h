@@ -342,13 +342,6 @@ class ArrayRef
         pointer           end_;
 };
 
-
-//! Alias for ArrayRef<const T>
-//! \related ArrayRef
-template <typename T>
-using ConstArrayRef = ArrayRef<const T>;
-
-
 //! \copydoc ArrayRef::fromPointers()
 //! \related ArrayRef
 template <typename T>
@@ -376,24 +369,24 @@ ArrayRef<T> arrayRefFromVector(typename std::vector<T>::iterator begin,
 //! \copydoc ArrayRef::fromPointers()
 //! \related ArrayRef
 template <typename T>
-ConstArrayRef<T> constArrayRefFromPointers(const T *begin, const T *end)
+ArrayRef<const T> constArrayRefFromPointers(const T *begin, const T *end)
 {
-    return ConstArrayRef<T>::fromPointers(begin, end);
+    return ArrayRef<const T>::fromPointers(begin, end);
 }
 //! \copydoc ArrayRef::fromArray()
 //! \related ArrayRef
 template <typename T>
-ConstArrayRef<T> constArrayRefFromArray(const T *begin, size_t size)
+ArrayRef<const T> constArrayRefFromArray(const T *begin, size_t size)
 {
-    return ConstArrayRef<T>::fromArray(begin, size);
+    return ArrayRef<const T>::fromArray(begin, size);
 }
 //! \copydoc ArrayRef::fromVector()
 //! \related ArrayRef
 template <typename T>
-ConstArrayRef<T> constArrayRefFromVector(typename std::vector<T>::const_iterator begin,
-                                         typename std::vector<T>::const_iterator end)
+ArrayRef<const T> constArrayRefFromVector(typename std::vector<T>::const_iterator begin,
+                                          typename std::vector<T>::const_iterator end)
 {
-    return ConstArrayRef<T>::fromVector(begin, end);
+    return ArrayRef<const T>::fromVector(begin, end);
 }
 
 /*! \brief

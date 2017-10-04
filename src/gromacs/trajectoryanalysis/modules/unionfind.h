@@ -191,7 +191,7 @@ class MappedUnionFinder
          * If multiple indices are the same, then these items are considered
          * equivalent.
          */
-        void initWithGroupIndices(ConstArrayRef<int> indices)
+        void initWithGroupIndices(ArrayRef<const int> indices)
         {
             mapping_.clear();
             int groupCount = 0;

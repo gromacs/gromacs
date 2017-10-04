@@ -173,7 +173,7 @@ TrajectoryAnalysisSettings::setFrameFlags(int frflags)
 }
 
 void
-TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
+TrajectoryAnalysisSettings::setHelpText(const ArrayRef<const char *const> &help)
 {
     GMX_RELEASE_ASSERT(impl_->optionsModuleSettings_ != nullptr,
                        "setHelpText() called in invalid context");
