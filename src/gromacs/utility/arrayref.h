@@ -107,8 +107,6 @@ struct EmptyArrayRef {};
 template <typename T>
 class ArrayRef
 {
-    private:
-        typedef typename std::remove_const<T>::type non_const_value_type;
     public:
         //! Type of values stored in the container.
         typedef T         value_type;
@@ -169,18 +167,9 @@ class ArrayRef
          * The referenced vector must remain valid and not be reallocated for
          * the lifetime of this object.
          */
+        template<typename It>
         static ArrayRef<value_type>
-        fromVector(typename std::vector<non_const_value_type>::iterator begin,
-                   typename std::vector<non_const_value_type>::iterator end)
-        {
-            value_type *p_begin = (begin != end) ? &*begin : nullptr;
-            value_type *p_end   = p_begin + (end-begin);
-            return ArrayRef<value_type>(p_begin, p_end);
-        }
-        //! \copydoc ArrayRef::fromVector(typename std::vector<non_const_value_type>::iterator, typename std::vector<non_const_value_type>::iterator)
-        static ArrayRef<value_type>
-        fromVector(typename std::vector<non_const_value_type>::const_iterator begin,
-                   typename std::vector<non_const_value_type>::const_iterator end)
+        fromVector(It begin, It end)
         {
             value_type *p_begin = (begin != end) ? &*begin : nullptr;
             value_type *p_end   = p_begin + (end-begin);
@@ -199,14 +188,25 @@ class ArrayRef
          */
         ArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
-         * Constructs a reference to const data from a reference to non-const data.
+         * Constructs a reference to a container or reference
          *
-         * Constructs a ArrayRef<const T> from a ArrayRef<T>.
+         * \param[in] o containter to reference.
+         *
+         * Can be used to create a reference to a whole vector, array or
+         * an ArrayRef. The destination has to have a convertible pointer type
+         * (identical besides const or base class).
+         *
+         * Passed container must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * a container to a method that takes ArrayRef.
          */
-        template<typename = T> //Otherwise useless template argument
-                               //to avoid this being used as copy constructor
-        ArrayRef(const ArrayRef<non_const_value_type> &o) :
-            begin_(o.begin()), end_(o.end()) {}
+        template<typename U,
+                 typename = typename std::enable_if<
+                         std::is_convertible<typename std::remove_reference<U>::type::pointer,
+                                             pointer>::value>::type>
+        ArrayRef(U &&o) : begin_(o.data()), end_(o.data()+o.size()) {}
         /*! \brief
          * Constructs a reference to a particular range.
          *
@@ -222,52 +222,6 @@ class ArrayRef
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::vector<T>.
-         *
-         * \param[in] v  Vector to reference.
-         *
-         * Passed vector must remain valid and not be reallocated for the
-         * lifetime of this object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ArrayRef.
-         */
-        ArrayRef(std::vector<non_const_value_type> &v)
-            : begin_((!v.empty()) ? &v[0] : nullptr),
-              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
-        {
-        }
-        //! \copydoc ArrayRef::ArrayRef(std::vector<non_const_value_type>&)
-        ArrayRef(const std::vector<non_const_value_type> &v)
-            : begin_((!v.empty()) ? &v[0] : nullptr),
-              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
-        {
-        }
-        /*! \brief
-         * Constructs a reference to a whole std::array<T>.
-         *
-         * \param[in] a  Array to reference.
-         *
-         * Passed array must remain valid for the lifetime of this
-         * object.
-         *
-         * This constructor is not explicit to allow directly passing
-         * std::array<T> to a method that takes ArrayRef.
-         */
-        template <size_t count>
-        ArrayRef(std::array<non_const_value_type, count> &a)
-            : begin_((!a.empty()) ? &a[0] : NULL),
-              end_((!a.empty()) ? &a[0] + a.size() : NULL)
-        {
-        }
-        //! \copydoc ArrayRef::ArrayRef(std::array<non_const_value_type, count> &)
-        template <size_t count>
-        ArrayRef(const std::array<non_const_value_type, count> &a)
-            : begin_((!a.empty()) ? &a[0] : NULL),
-              end_((!a.empty()) ? &a[0] + a.size() : NULL)
-        {
         }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...
