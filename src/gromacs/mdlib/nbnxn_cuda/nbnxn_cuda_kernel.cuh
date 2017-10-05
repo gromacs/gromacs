@@ -150,6 +150,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
 #endif /* GMX_PTX_ARCH >= 350 */
+static inline
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)

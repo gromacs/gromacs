@@ -95,7 +95,7 @@ static int  cuda_max_device_count = 32;
 static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != NULL));
 
 /** Dummy kernel used for sanity checking. */
-__global__ void k_dummy_test()
+static __global__ void k_dummy_test(void)
 {
 }
 

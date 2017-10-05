@@ -99,6 +99,7 @@
 #define THREADS_PER_BLOCK   (c_clSize*c_clSize)
 
 __launch_bounds__(THREADS_PER_BLOCK)
+static inline
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
