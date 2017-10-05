@@ -50,11 +50,12 @@
  * The test execution code in CMakeLists.txt tests that the code doesn't
  * compile with a SIMD implementation. To test that this code does correctly
  * compile besides causing the ambiguous overload error, it expects to
- * correctly compile for a a non-simd build. For such a build the
+ * correctly compile for a non-simd build. For such a build the
  * code is non-ambiguous because only the scalar version exists.
  *
- * The test execution code passes either float/double as TEST_PREC and the math
- * function to test as TEST_FUNC. Both are passed as compile definitions.
+ * The test execution code passes either float/double as TEST_PREC,
+ * derived GMX_SIMD_HAVE_FLOAT/DOUBLE as TEST_SIMD_DEFINE and the math
+ * function to test as TEST_FUNC. All are passed as compile definitions.
  * The file is compiled once for each combination when executing ctest and
  * the test fails if the file compiles.
  *
@@ -65,5 +66,9 @@ int main()
 {
     TEST_PREC  d = 0;
     TEST_PREC *m = &d;
+    if (GMX_SIMD)
+    {
+        static_assert(TEST_SIMD_DEFINE, "This will not compile (and the test will then pass) if the SIMD type is not supported");
+    }
     gmx::TEST_FUNC(gmx::load(m));
 }
