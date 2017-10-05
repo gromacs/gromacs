@@ -88,6 +88,8 @@ list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math")
 list(APPEND _CUDA_CLANG_FLAGS "--cuda-path=${CUDA_TOOLKIT_ROOT_DIR}")
 # codegen flags
 list(APPEND _CUDA_CLANG_FLAGS "${_CUDA_CLANG_GENCODE_FLAGS}")
+# avoid -Wmissing-prototypes warnings
+list(APPEND _CUDA_CLANG_FLAGS "-Wno-missing-prototypes")
 foreach(_flag ${_CUDA_CLANG_FLAGS})
     set(GMX_CUDA_CLANG_FLAGS "${GMX_CUDA_CLANG_FLAGS} ${_flag}")
 endforeach()
