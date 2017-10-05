@@ -344,105 +344,109 @@ void updatePlist(const Poldata             &pd,
     {
         auto iType = pw.getItype();
         auto fs    = pd.findForces(iType);
-        pw.setFtype(fs->fType());
-
-        if (eitBONDS == iType)
+        
+        if (fs != pd.forcesEnd())
         {
-            lu = string2unit(fs->unit().c_str());
-            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+            pw.setFtype(fs->fType());
+            
+            if (eitBONDS == iType)
             {
-                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
+                lu = string2unit(fs->unit().c_str());
+                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    atoms = {aai, aaj};
-                    n     = 0;
-                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
                     {
-                        b->c[n++] = convert2gmx(value, lu);
-                        ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
+                        atoms = {aai, aaj};
+                        n     = 0;
+                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                         {
-                            b->c[n++] = gmx::doubleFromString(pi->c_str());
-                        }
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n",
-                              b->a[0], b->a[1]);
-                }
-            }
-        }
-        else if (eitANGLES == iType ||
-                 eitLINEAR_ANGLES == iType)
-        {
-            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-            {
-                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
-                {
-                    atoms = {aai, aaj, aak};
-                    n     = 0;
-                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-                    {
-                        r13 = calc_r13(pd, aai, aaj, aak, value);
-
-                        b->c[n++] = value;
-                        ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
-                        {
-                            b->c[n++] = gmx::doubleFromString(pi->c_str());
-                            if (n == 2)
-                            {
-                                b->c[n++] = r13;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
-                              b->a[0], b->a[1], b->a[2]);
-                }
-            }
-        }
-        else if (eitPROPER_DIHEDRALS == iType ||
-                 eitIMPROPER_DIHEDRALS == iType)
-        {
-            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-            {
-                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
-                {
-                    atoms = {aai, aaj, aak, aal};
-                    n     = 0;
-                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-                    {
-                        b->c[n++] = value;
-                        ptr       = gmx::splitString(params);
-                        int n = 0;
-                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
-                        {
-                            if (n == 0)
+                            b->c[n++] = convert2gmx(value, lu);
+                            ptr       = gmx::splitString(params);
+                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                             {
                                 b->c[n++] = gmx::doubleFromString(pi->c_str());
                             }
-                            else
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n",
+                                  b->a[0], b->a[1]);
+                    }
+                }
+            }
+            else if (eitANGLES == iType ||
+                     eitLINEAR_ANGLES == iType)
+            {
+                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+                {
+                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+                    {
+                        atoms = {aai, aaj, aak};
+                        n     = 0;
+                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                        {
+                            r13 = calc_r13(pd, aai, aaj, aak, value);
+                            
+                            b->c[n++] = value;
+                            ptr       = gmx::splitString(params);
+                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                             {
-                                /*Multiplicity for Proper Dihedral must be integer
-                                   This assumes that the second paramter is Multiplicity*/
-                                b->c[n++] = atoi(pi->c_str());
+                                b->c[n++] = gmx::doubleFromString(pi->c_str());
+                                if (n == 2)
+                                {
+                                    b->c[n++] = r13;
+                                }
                             }
                         }
                     }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
+                                  b->a[0], b->a[1], b->a[2]);
+                    }
                 }
-                else
+            }
+            else if (eitPROPER_DIHEDRALS == iType ||
+                     eitIMPROPER_DIHEDRALS == iType)
+            {
+                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n",
-                              b->a[0], b->a[1], b->a[2], b->a[3]);
+                    if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
+                        pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
+                    {
+                        atoms = {aai, aaj, aak, aal};
+                        n     = 0;
+                        if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                        {
+                            b->c[n++] = value;
+                            ptr       = gmx::splitString(params);
+                            int n = 0;
+                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
+                            {
+                                if (n == 0)
+                                {
+                                    b->c[n++] = gmx::doubleFromString(pi->c_str());
+                                }
+                                else
+                                {
+                                    /*Multiplicity for Proper Dihedral must be integer
+                                      This assumes that the second paramter is Multiplicity*/
+                                    b->c[n++] = atoi(pi->c_str());
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n",
+                                  b->a[0], b->a[1], b->a[2], b->a[3]);
+                    }
                 }
             }
         }
