@@ -58,13 +58,14 @@ if(GMX_SIMD_ACTIVE STREQUAL "NONE")
     set(AMBIGUOUS_COMPILATION_EXPECTED_TO_FAIL FALSE)
 endif()
 foreach(TEST_PREC float double)
+    string(TOUPPER GMX_SIMD_HAVE_${TEST_PREC} TEST_SIMD_DEFINE)
     foreach(TEST_FUNC exp exp2 log inv cos sin sqrt)
         set(TEST_NAME simd_ambiguous_${TEST_PREC}_${TEST_FUNC})
         add_executable(${TEST_NAME} simd_ambiguous.cpp)
         set_target_properties(${TEST_NAME} PROPERTIES
                               EXCLUDE_FROM_ALL TRUE
                               EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-        target_compile_definitions(${TEST_NAME} PRIVATE TEST_FUNC=${TEST_FUNC} TEST_PREC=${TEST_PREC})
+        target_compile_definitions(${TEST_NAME} PRIVATE TEST_FUNC=${TEST_FUNC} TEST_PREC=${TEST_PREC} TEST_SIMD_DEFINE=${TEST_SIMD_DEFINE})
         add_test(NAME ${TEST_NAME}
             COMMAND ${CMAKE_COMMAND} --build . --target ${TEST_NAME} --config $<CONFIGURATION>
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
