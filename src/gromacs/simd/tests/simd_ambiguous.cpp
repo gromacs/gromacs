@@ -53,8 +53,9 @@
  * correctly compile for a a non-simd build. For such a build the
  * code is non-ambiguous because only the scalar version exists.
  *
- * The test execution code passes either float/double as TEST_PREC and the math
- * function to test as TEST_FUNC. Both are passed as compile definitions.
+ * The test execution code passes either float/double as TEST_PREC,
+ * derived GMX_SIMD_HAVE_FLOAT/DOUBLE as TEST_SIMD_DEFINE and the math
+ * function to test as TEST_FUNC. All are passed as compile definitions.
  * The file is compiled once for each combination when executing ctest and
  * the test fails if the file compiles.
  *
@@ -65,5 +66,6 @@ int main()
 {
     TEST_PREC  d = 0;
     TEST_PREC *m = &d;
+    static_assert(TEST_SIMD_DEFINE, "This will not compile (and the test will then pass) if type is not supported for SIMD");
     gmx::TEST_FUNC(gmx::load(m));
 }
