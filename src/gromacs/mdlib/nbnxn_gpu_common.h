@@ -61,7 +61,7 @@
  */
 static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
 {
-    assert(nb && nb->plist);
+    assert(nb && nb->plist[iloc]);
     return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
 }
 
