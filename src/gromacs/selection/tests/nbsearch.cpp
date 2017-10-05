@@ -331,13 +331,11 @@ class ExclusionsHelper
 
         gmx::ConstArrayRef<int> refPosIds() const
         {
-            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
-                                                     exclusionIds_.begin() + refPosCount_);
+            return gmx::ArrayRef<const int>(exclusionIds_).subArray(0, refPosCount_);
         }
         gmx::ConstArrayRef<int> testPosIds() const
         {
-            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
-                                                     exclusionIds_.begin() + testPosCount_);
+            return gmx::ArrayRef<const int>(exclusionIds_).subArray(0, testPosCount_);
         }
 
     private:

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ class OptionValueStorePlain : public IOptionValueStore<T>
         }
 
         virtual int valueCount() { return count_; }
-        virtual ArrayRef<T> values() { return ArrayRef<T>::fromArray(store_, count_); }
+        virtual ArrayRef<T> values() { return arrayRefFromArray(store_, count_); }
         virtual void clear()
         {
             count_ = 0;
@@ -124,8 +124,8 @@ class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
         virtual int valueCount() { return static_cast<int>(store_->size()); }
         virtual ArrayRef<bool> values()
         {
-            return ArrayRef<bool>::fromArray(reinterpret_cast<bool *>(boolStore_.data()),
-                                             boolStore_.size());
+            return arrayRefFromArray(reinterpret_cast<bool *>(boolStore_.data()),
+                                     boolStore_.size());
         }
         virtual void clear()
         {

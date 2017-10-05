@@ -243,11 +243,11 @@ static std::vector<real> const sampleChargesFull
     4.95f, 3.11f, 3.97f, 1.08f, 2.09f, 1.1f, 4.13f, 3.31f, 2.8f, 5.83f, 5.09f, 6.1f, 2.86f, 0.24f, 5.76f, 5.19f, 0.72f
 };
 //! 1 charge
-static auto const sampleCharges1 = ChargesVector::fromVector(sampleChargesFull.begin(), sampleChargesFull.begin() + 1);
+static auto const sampleCharges1 = ChargesVector(sampleChargesFull).subArray(0, 1);
 //! 2 charges
-static auto const sampleCharges2 = ChargesVector::fromVector(sampleChargesFull.begin() + 1, sampleChargesFull.begin() + 3);
+static auto const sampleCharges2 = ChargesVector(sampleChargesFull).subArray(1, 2);
 //! 13 charges
-static auto const sampleCharges13 = ChargesVector::fromVector(sampleChargesFull.begin() + 3, sampleChargesFull.begin() + 16);
+static auto const sampleCharges13 = ChargesVector(sampleChargesFull).subArray(3, 13);
 
 //! Random coordinate vectors
 static CoordinatesVector const sampleCoordinatesFull

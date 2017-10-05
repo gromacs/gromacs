@@ -427,7 +427,7 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
     switch (mode)
     {
         case CodePath::CPU:
-            result = SplineParamsDimVector::fromArray(sourceBuffer, dimSize);
+            result = arrayRefFromArray(sourceBuffer, dimSize);
             break;
 
         default:
@@ -447,7 +447,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
     switch (mode)
     {
         case CodePath::CPU:
-            gridLineIndices = GridLineIndicesVector::fromArray(reinterpret_cast<IVec *>(atc->idx), atomCount);
+            gridLineIndices = arrayRefFromArray(reinterpret_cast<IVec *>(atc->idx), atomCount);
             break;
 
         default:
