@@ -821,23 +821,30 @@ void QgenResp::regularizeCharges()
     {
         auto rat = findRAT(ra_[ii].atype());
         GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency with atomtypes");
-
-        qtot += ra_[ii].q();
-        if (ra_[ii].fixedQ())
+        
+        if (rat->ptype() != eptVSite)
         {
-            nfixed++;
-        }
-        if (!rat->hasShell())
-        {
-            qtot -= ra_[ii].qRef();
+            qtot += ra_[ii].q();
+            if (ra_[ii].fixedQ())
+            {
+                nfixed++;
+            }
+            if (!rat->hasShell())
+            {
+                qtot -= ra_[ii].qRef();
+            }
         }
     }
     double dq = (qtot_ - qtot)/(nRespAtom()-nfixed);
     for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
-        if (!ra_[ii].fixedQ())
+        auto rat = findRAT(ra_[ii].atype());
+        if (rat->ptype() != eptVSite)
         {
-            ra_[ii].setQ(ra_[ii].q() + dq);
+            if (!ra_[ii].fixedQ())
+            {
+                ra_[ii].setQ(ra_[ii].q() + dq);
+            }
         }
     }
 }
@@ -1119,8 +1126,8 @@ void QgenResp::optimizeCharges()
                 {
                     fprintf(debug, "q[%d] = %0.3f\n", i, ra_[ii].q());
                 }
+                i++;
             }
-            i++;
         }
     }
     free_matrix(lhs);
