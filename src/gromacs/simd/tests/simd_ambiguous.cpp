@@ -63,6 +63,19 @@
  */
 int main()
 {
+    /* We cannot check for SIMD float or double support at cmake,
+     * therefore we make the compilation fail with a static_assert
+     * instead of the ambiguous overload error.
+     */
+#if GMX_SIMD && !GMX_SIMD_HAVE_FLOAT
+    constexpr bool testFloat = std::is_same<TEST_FRAC, float>::value;
+    static_assert(!testFloat, "Assertion failure to make test fail without SIMD float support");
+#endif
+#if GMX_SIMD && !GMX_SIMD_HAVE_DOUBLE
+    constexpr bool testDouble = std::is_same<TEST_FRAC, double>::value;
+    static_assert(!testDouble, "Assertion failure to make test fail without SIMD double support");
+#endif
+
     TEST_PREC  d = 0;
     TEST_PREC *m = &d;
     gmx::TEST_FUNC(gmx::load(m));
