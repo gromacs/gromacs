@@ -247,6 +247,39 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<
 
 /* Calculate exponentials */
 template <typename T>
+gmx_inline static void calc_exponentials_lj1(int start, real factor, ArrayRef<T> tmp1, ArrayRef<T> tmp2, ArrayRef<const T> denom, ArrayRef<const T> m2)
+{
+    const T sqr_PI = std::sqrt(M_PI);
+
+    GMX_ASSERT(denom.size() == tmp1.size(), "denom and tmp1 must have same size");
+    GMX_ASSERT(denom.size() == tmp2.size(), "denom and tmp2 must have same size");
+    GMX_ASSERT(denom.size() == m2.size(),   "denom and m2 must have same size");
+
+    /* We only need to calculate from start. But since start is 0 or 1
+     * and we want to use aligned loads/stores, we always start from 0
+     * for the SIMD version.
+     */
+    if (!std::is_same<T, real>::value) //non scalar version
+    {
+        start = 0;
+    }
+
+    for (size_t kx = start; kx != denom.size(); ++kx)
+    {
+        const T tmp_denom = gmx::inv(weak_cast<T>(denom[kx]));
+        const T ttmp1     = gmx::exp(weak_cast<T>(tmp1[kx]));
+        const T tmp_mk    = tmp2[kx];
+        const T ttmp2     = sqr_PI * tmp_mk * gmx::erfc(tmp_mk);
+
+        const T m2k       = T(factor)*m2[kx];
+        const T eterm     = -((1.0 - 2.0*m2k)*ttmp1 + 2.0*m2k*ttmp2);
+        const T vterm     = 3.0*(-ttmp1 + ttmp2);
+        tmp1[kx]          = eterm*tmp_denom;
+        tmp2[kx]          = vterm*tmp_denom;
+    }
+}
+
+template <typename T>
 gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<T> r, ArrayRef<T> factor, ArrayRef<T> d)
 {
     const T sqr_PI = std::sqrt(M_PI);
@@ -677,20 +710,11 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
                 tmp2[kx] = 0;
             }
 
-            calc_exponentials_lj(kxstart, kxend,
-                                 ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
-                                 ArrayRef<PME_T>(tmp2, tmp2+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
-                                 ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
-
-            for (kx = kxstart; kx < kxend; kx++)
-            {
-                m2k   = factor*m2[kx];
-                eterm = -((1.0 - 2.0*m2k)*tmp1[kx]
-                          + 2.0*m2k*tmp2[kx]);
-                vterm    = 3.0*(-tmp1[kx] + tmp2[kx]);
-                tmp1[kx] = eterm*denom[kx];
-                tmp2[kx] = vterm*denom[kx];
-            }
+            calc_exponentials_lj1(kxstart, kxend, factor,
+                                  ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                  ArrayRef<PME_T>(tmp2, tmp2+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                  ArrayRef<const PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
+                                  ArrayRef<const PME_T>(m2, m2+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
 
             if (!bLB)
             {
