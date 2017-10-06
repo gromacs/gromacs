@@ -377,7 +377,7 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
+    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vreinterpretq_u32_f32(vrsqrteq_f32(1.0f)));
 #endif
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrsqrteq_f32(x.simdInternal_)),
