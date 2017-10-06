@@ -203,7 +203,7 @@ class Allocator
          * by size_type.
          */
         std::size_t
-        max_size() const { return (static_cast<size_t>(0) - static_cast<size_t>(1)) / sizeof(T); }
+        max_size() const { return (static_cast<std::size_t>(0) - static_cast<std::size_t>(1)) / sizeof(T); }
 
         /*! \brief Return true if two allocators are identical
          *
