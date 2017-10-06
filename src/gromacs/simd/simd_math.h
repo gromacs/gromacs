@@ -806,7 +806,7 @@ erfc(SimdFloat x)
         conv.i  = conv.i & isieve;
         mem[i]  = conv.f;
     }
-    z = load(mem);
+    z = load<SimdFloat>(mem);
 #endif
     q       = (z-y) * (z+y);
     corr    = fma(CD4, q, CD3);

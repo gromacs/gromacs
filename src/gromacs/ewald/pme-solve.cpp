@@ -231,8 +231,8 @@ gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f
          */
         for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
         {
-            tmp_d1   = load(d_aligned+kx);
-            tmp_r    = load(r_aligned+kx);
+            tmp_d1   = load<SimdReal>(d_aligned+kx);
+            tmp_r    = load<SimdReal>(r_aligned+kx);
             tmp_r    = gmx::exp(tmp_r);
             tmp_e    = f_simd / tmp_d1;
             tmp_e    = tmp_e * tmp_r;
@@ -271,13 +271,13 @@ gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real 
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = load(d_aligned+kx);
+        tmp_d = load<SimdReal>(d_aligned+kx);
         d_inv = SimdReal(1.0) / tmp_d;
         store(d_aligned+kx, d_inv);
-        tmp_r = load(r_aligned+kx);
+        tmp_r = load<SimdReal>(r_aligned+kx);
         tmp_r = gmx::exp(tmp_r);
         store(r_aligned+kx, tmp_r);
-        tmp_mk  = load(factor_aligned+kx);
+        tmp_mk  = load<SimdReal>(factor_aligned+kx);
         tmp_fac = sqr_PI * tmp_mk * erfc(tmp_mk);
         store(factor_aligned+kx, tmp_fac);
     }

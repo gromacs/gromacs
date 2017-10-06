@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
  * \param  m      Memory address to load from
  */
 template <typename T, typename TSimd> TSimd gmx_simdcall
-loadWrapper(const T * m) { return load(m); }
+loadWrapper(const T * m) { return load<TSimd>(m); }
 
 /*! \brief Wrapper to handle proxy objects returned by some loadU functions.
  *
@@ -143,7 +143,7 @@ loadWrapper(const T * m) { return load(m); }
  * \param  m      Memory address to load from
  */
 template <typename T, typename TSimd> TSimd gmx_simdcall
-loadUWrapper(const T * m) { return loadU(m); }
+loadUWrapper(const T * m) { return loadU<TSimd>(m); }
 
 
 #if GMX_SIMD_HAVE_REAL
