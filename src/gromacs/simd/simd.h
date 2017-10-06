@@ -387,7 +387,7 @@ typedef Simd4FBool                Simd4Bool;
 
 //! \}  end of name-group describing SIMD data types
 
-//Traits of Simd. Works for float and double but NOT for int.
+//Traits of Simd. Works for float and double but NOT for int. TODO: update loadU and remove
 template<typename T>
 struct SimdTraits {};
 //This does not work for int because int32_t maps to two simd types and we can't base
@@ -414,98 +414,186 @@ struct SimdTraits<double>
 template<typename T>
 struct SimdTraits<const T> : public SimdTraits<T> {};
 
+
+template<typename T>
+struct ReverseSimdTraits {};
+
+#if GMX_SIMD_HAVE_FLOAT
+template<>
+struct ReverseSimdTraits<SimdFloat>
+{
+    using type = float;
+    static constexpr int width = GMX_SIMD_FLOAT_WIDTH;
+};
+#endif
+#if GMX_SIMD_HAVE_DOUBLE
+template<>
+struct ReverseSimdTraits<SimdDouble>
+{
+    using type = double;
+    static constexpr int width = GMX_SIMD_DOUBLE_WIDTH;
+};
+#endif
+#if GMX_SIMD_HAVE_FLOAT
+template<>
+struct ReverseSimdTraits<SimdFInt32>
+{
+    using type = int;
+    static constexpr int width = GMX_SIMD_FINT32_WIDTH;
+};
+#endif
+#if GMX_SIMD_HAVE_DOUBLE
+template<>
+struct ReverseSimdTraits<SimdDInt32>
+{
+    using type = int;
+    static constexpr int width = GMX_SIMD_DINT32_WIDTH;
+};
+#endif
+
+template<typename T>
+struct ReverseSimdTraits<const T>
+{
+    using type = const typename ReverseSimdTraits<T>::type;
+    static constexpr int width = ReverseSimdTraits<T>::width;
+};
+
+
 /*! \name High-level SIMD proxy/reference objects to disambiguate load/set operations
  * \{
  */
-template <typename T> //can be either float/double/int, each const or non-const
-class SimdReference;
-
-template<typename T>
-static inline SimdReference<T> gmx_simdcall
-load(T *m);
-
-template <typename T, size_t N>
-static inline SimdReference<const T> gmx_simdcall
-load(const AlignedArray<T, N> &m);
-
-/*! \libinternal \brief Reference object to enable load() for SIMD and equivalent basic type
- *
- * This object is returned by the load() function that takes a single pointer
+/*! \libinternal \brief Reference object to enable load<SimdReal>() for SIMD and equivalent basic type
+ * TODO: update doc.
+ * This object is returned by the load<SimdReal>() function that takes a single pointer
  * to a float/double. When the result is assigned to either SimdFloat/Double or float/double/int,
  * the appropriate conversion method will be executed, which in turn calls
  * the correct low-level load function.
- * In practice this simply means you can use load() regardless for both SIMD
+ * In practice this simply means you can use load<SimdReal>() regardless for both SIMD
  * and non-SIMD data in templated functions.
  *
  * This is an internal class which should never be constructed directly. The constructor is private
  * so that only the load function can construct it.
  */
-template <typename T>
-class SimdReference
+template<typename T, typename Check = void>
+class SimdReference;
+
+template<typename T>
+static inline SimdReference<T> gmx_simdcall
+    load(typename ReverseSimdTraits<T>::type *m);
+
+template <typename T, size_t N>
+static inline SimdReference<const T> gmx_simdcall
+load(const AlignedArray<typename ReverseSimdTraits<T>::type, N> &m);
+
+//All enable_if can be removed if we also change simdLoad to take template argument
+
+#if GMX_SIMD_HAVE_FLOAT
+template<typename T>
+class SimdReference<T, typename std::enable_if<std::is_same<const T, const SimdFloat>::value>::type>
 {
-    template<typename U>
-    using TIsInt = std::is_same<std::int32_t, typename std::remove_const<U>::type>;
-
     public:
-        //! \brief Conversion method that will execute load of scalar basic type
-        operator T() const { return *m_; }
+        //! \brief Constructor
+        // cppcheck-suppress uninitMemberVar
+        SimdReference(typename ReverseSimdTraits<T>::type *m) : m_(m) {}
 
-        //! \brief Conversion method that will execute load of SimdFloat/Double
-        template<typename U = T>  //Always U=T. Indirection needed for SFINAE
-                                  //Disabled if type doesn't exist (unsupported or int)
-        operator typename SimdTraits<U>::type() const { return simdLoad(m_); }
+        //! \brief Conversion method that will execute load
+        operator typename std::remove_const<T>::type() const { return simdLoad(m_); }
 
-        //! \brief Assignment operator that will execute store for scalar
+        //! \brief Assignment operator that will execute store
+        SimdReference operator=(T o)
+        {
+            store(m_, o);
+            return *this;
+        }
+    protected:
+        typename ReverseSimdTraits<T>::type* const m_; //!< The pointer used to load memory
+};
+#endif
+
+#if GMX_SIMD_HAVE_DOUBLE
+template<typename T>
+class SimdReference<T, typename std::enable_if<std::is_same<const T, const SimdDouble>::value>::type>
+{
+    public:
+        //! \brief Constructor
+        // cppcheck-suppress uninitMemberVar
+        SimdReference(typename ReverseSimdTraits<T>::type *m) : m_(m) {}
+
+        //! \brief Conversion method that will execute load
+        operator typename std::remove_const<T>::type() const { return simdLoad(m_); }
+
+        //! \brief Assignment operator that will execute store
+        SimdReference operator=(T o)
+        {
+            store(m_, o);
+            return *this;
+        }
+    protected:
+        typename ReverseSimdTraits<T>::type* const m_; //!< The pointer used to load memory
+};
+#endif
+
+#if GMX_SIMD_HAVE_FLOAT
+template<typename T>
+class SimdReference<T, typename std::enable_if<std::is_same<const T, const SimdFInt32>::value>::type>
+{
+    public:
+        //! \brief Constructor
+        SimdReference(typename ReverseSimdTraits<T>::type *m) : m_(m) {}
+
+        //! \brief Conversion method that will execute load
+        operator typename std::remove_const<T>::type() const { return simdLoadFI(m_); }
+
+        //! \brief Assignment operator that will execute store
+        SimdReference operator=(T o)
+        {
+            store(m_, o);
+            return *this;
+        }
+    protected:
+        typename ReverseSimdTraits<T>::type* const m_; //!< The pointer used to load memory
+};
+#endif
+
+#if GMX_SIMD_HAVE_DOUBLE
+template<typename T>
+class SimdReference<T, typename std::enable_if<std::is_same<const T, const SimdDInt32>::value>::type>
+{
+    public:
+        //! \brief Constructor
+        SimdReference(typename ReverseSimdTraits<T>::type *m) : m_(m) {}
+
+        //! \brief Conversion method that will execute load
+        operator typename std::remove_const<T>::type() const { return simdLoadDI(m_); }
+
+        //! \brief Assignment operator that will execute store
+        SimdReference operator=(T o)
+        {
+            store(m_, o);
+            return *this;
+        }
+    protected:
+        typename ReverseSimdTraits<T>::type* const m_; //!< The pointer used to load memory
+};
+#endif
+
+template<typename T>
+class SimdReference<T, typename std::enable_if<std::is_arithmetic<T>::value>::type>
+{
+    public:
+        //! \brief Constructor
+        SimdReference(T *m) : m_(m) {}
+
+        //! \brief Conversion method that will execute load
+        operator typename std::remove_const<T>::type() const { return *m_; }
+
+        //! \brief Assignment operator that will execute store
         SimdReference operator=(T o)
         {
             *m_ = o;
             return *this;
         }
-
-        //! \brief Assignment operator that will execute store for SIMD
-        template<typename U = T>
-        SimdReference operator=(typename SimdTraits<U>::type o)
-        {
-            store(m_, o);
-            return *this;
-        }
-#if GMX_SIMD_HAVE_FLOAT
-        //! \brief Conversion method that will execute load of SimdFInt32
-        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
-        operator SimdFInt32() const { return simdLoadFI(m_); }
-
-        //! \brief Assignment operator that will execute store
-        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
-        SimdReference operator=(SimdFInt32 o)
-        {
-            store(m_, o);
-            return *this;
-        }
-#endif
-#if GMX_SIMD_HAVE_DOUBLE
-        //! \brief Conversion method that will execute load of SimdDInt32
-        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
-        operator SimdDInt32() const { return simdLoadDI(m_); }
-
-        //! \brief Assignment operator that will execute store
-        template<typename U = T, typename = typename std::enable_if<TIsInt<U>::value>::type>
-        SimdReference operator=(SimdDInt32 o)
-        {
-            store(m_, o);
-            return *this;
-        }
-#endif
     private:
-        //! \brief Private constructor can only be called from load()
-        SimdReference(T *m) : m_(m) {}
-
-        template<typename U>
-        friend SimdReference<U> gmx_simdcall
-        load(U *m);
-        template <typename U, size_t N>
-        friend SimdReference<const U> gmx_simdcall
-        load(const AlignedArray<U, N> &m);
-
         T* const m_; //!< The pointer used to load memory
 };
 
@@ -514,7 +602,39 @@ class SimdReference
  */
 template<typename T>
 static inline SimdReference<T> gmx_simdcall
-load(T *m)
+load(typename ReverseSimdTraits<T>::type *m)
+{
+    return {
+               m
+    };
+}
+
+template<typename T, typename = typename std::enable_if<!std::is_const<T>::value>::type>
+static inline SimdReference<const T> gmx_simdcall
+load(const typename ReverseSimdTraits<T>::type *m)
+{
+    return {
+               m
+    };
+}
+
+template<typename T>
+using DisableDeduction = typename std::common_type<T>::type;
+
+//consider returning std reference
+template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+static inline SimdReference<T> gmx_simdcall
+load(DisableDeduction<T> *m)
+{
+    return {
+               m
+    };
+}
+
+template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value &&
+                                                        !std::is_const<T>::value>::type>
+static inline SimdReference<const T> gmx_simdcall
+load(const DisableDeduction<T> *m)
 {
     return {
                m
@@ -523,7 +643,7 @@ load(T *m)
 
 template <typename T, size_t N>
 static inline SimdReference<const T> gmx_simdcall
-load(const AlignedArray<T, N> &m)
+load(const AlignedArray<typename ReverseSimdTraits<T>::type, N> &m)
 {
     return {
                m.data()
@@ -543,7 +663,7 @@ loadU(T *m);
  * to a float/double. When the result is assigned to either SimdFloat/Double or float/double/int,
  * the appropriate conversion method will be executed, which in turn calls
  * the correct low-level load function.
- * In practice this simply means you can use load() regardless for both SIMD
+ * In practice this simply means you can use load<SimdReal>() regardless for both SIMD
  * and non-SIMD data in templated functions.
  *
  * This is an internal class which should never be constructed directly. The constructor is private
