@@ -627,7 +627,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                 {
                     bij        = convert2gmx(vsite->distance(), lengthUnit);
                     aijk       = vsite->angle();
-                    aijl       = 360 - aijk;                   
+                    aijl       = aijk; // Must be in Degree here, will be converetd to RAD inside GROMACS.                 
                     for (int n = 1; n <= vsite->nvsite(); n++)
                     {
                         vs.a[0] = renum[inplane->ca()] + n; /*vsite    i   */
@@ -656,7 +656,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     {
                         bij      = convert2gmx(vsite->distance(), lengthUnit);
                         aijk     = 
-                            aijl = DEG2RAD*vsite->angle();
+                            aijl = DEG2RAD*vsite->angle(); // Must be in RAD here.
                         Akjl     = {k, j, l};
                         Bjk      = {j, k};
                         Bjl      = {j, l};

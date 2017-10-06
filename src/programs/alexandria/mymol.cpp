@@ -941,11 +941,14 @@ void MyMol::addShells(const Poldata          &pd,
                      
             newatoms->atom[j].q = 
                 newatoms->atom[j].qB = pd.getQ(iModel, atomtype, 1);
-            auto vsite = pd.findVsite(atomtype);
-            if (vsite != pd.getVsiteEnd())
+            if(bHaveVSites_)
             {
-                newatoms->atom[j].q /= vsite->nvsite();
-                newatoms->atom[j].qB = newatoms->atom[j].q;
+                auto vsite = pd.findVsite(atomtype);
+                if (vsite != pd.getVsiteEnd())
+                {
+                    newatoms->atom[j].q /= vsite->nvsite();
+                    newatoms->atom[j].qB = newatoms->atom[j].q;
+                }
             }
         }   
     }

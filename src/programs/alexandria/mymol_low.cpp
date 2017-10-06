@@ -744,8 +744,10 @@ void do_init_mtop(const Poldata            &pd,
                 {
                     double c6  = 0;
                     double c12 = 0;
-                    if (atoms->atom[i].ptype != eptShell && 
-                        atoms->atom[j].ptype != eptShell)
+                    if (atoms->atom[i].ptype != eptShell &&
+                        atoms->atom[i].ptype != eptVSite &&
+                        atoms->atom[j].ptype != eptShell &&
+                        atoms->atom[j].ptype != eptVSite)
                     {
                         getLjParams(pd,
                                     *(atoms->atomtype[i]),
@@ -761,8 +763,10 @@ void do_init_mtop(const Poldata            &pd,
                     double a = 0;
                     double b = 0;
                     double c = 0;
-                    if (atoms->atom[i].ptype != eptShell && 
-                        atoms->atom[j].ptype != eptShell)
+                    if (atoms->atom[i].ptype != eptShell &&
+                        atoms->atom[i].ptype != eptVSite &&
+                        atoms->atom[j].ptype != eptShell &&
+                        atoms->atom[j].ptype != eptVSite)
                     {
                         getBhamParams(pd,
                                       *(atoms->atomtype[i]),
