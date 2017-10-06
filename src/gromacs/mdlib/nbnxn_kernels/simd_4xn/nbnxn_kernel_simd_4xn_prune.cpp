@@ -127,9 +127,9 @@ nbnxn_kernel_prune_4xn(nbnxn_pairlist_t *         nbl,
             int ajz     = ajy + STRIDE;
 
             /* load j atom coordinates */
-            SimdReal jx_S   = load(x + ajx);
-            SimdReal jy_S   = load(x + ajy);
-            SimdReal jz_S   = load(x + ajz);
+            SimdReal jx_S   = load<SimdReal>(x + ajx);
+            SimdReal jy_S   = load<SimdReal>(x + ajy);
+            SimdReal jz_S   = load<SimdReal>(x + ajz);
 
             /* Calculate distance */
             SimdReal dx_S0  = ix_S0 - jx_S;

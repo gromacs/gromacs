@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,17 +91,17 @@ pbc_correct_dx_simd(SimdReal         *dx,
 {
     SimdReal shz, shy, shx;
 
-    shz = round(*dz * load(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
-    *dx = *dx - shz * load(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
-    *dy = *dy - shz * load(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
-    *dz = *dz - shz * load(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
+    shz = round(*dz * load<SimdReal>(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
+    *dx = *dx - shz * load<SimdReal>(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
+    *dy = *dy - shz * load<SimdReal>(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
+    *dz = *dz - shz * load<SimdReal>(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
 
-    shy = round(*dy * load(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
-    *dx = *dx - shy * load(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
-    *dy = *dy - shy * load(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
+    shy = round(*dy * load<SimdReal>(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
+    *dx = *dx - shy * load<SimdReal>(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
+    *dy = *dy - shy * load<SimdReal>(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
 
-    shx = round(*dx * load(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
-    *dx = *dx - shx * load(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
+    shx = round(*dx * load<SimdReal>(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
+    *dx = *dx - shx * load<SimdReal>(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
 
 }
 

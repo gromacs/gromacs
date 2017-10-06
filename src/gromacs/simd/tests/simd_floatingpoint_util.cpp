@@ -137,10 +137,10 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose4)
             mem0_[align * offset_[j] + 3] = val3_[j];
         }
 
-        ref0 = load(val0_);
-        ref1 = load(val1_);
-        ref2 = load(val2_);
-        ref3 = load(val3_);
+        ref0 = load<SimdReal>(val0_);
+        ref1 = load<SimdReal>(val1_);
+        ref2 = load<SimdReal>(val2_);
+        ref3 = load<SimdReal>(val3_);
 
         if (align == 4)
         {
@@ -185,8 +185,8 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2)
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
-        ref0 = load(val0_);
-        ref1 = load(val1_);
+        ref0 = load<SimdReal>(val0_);
+        ref1 = load<SimdReal>(val1_);
 
         if (align == 2)
         {
@@ -228,9 +228,9 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadUTranspose3)
             mem0_[align * offset_[j] + 2] = val2_[j];
         }
 
-        ref0 = load(val0_);
-        ref1 = load(val1_);
-        ref2 = load(val2_);
+        ref0 = load<SimdReal>(val0_);
+        ref1 = load<SimdReal>(val1_);
+        ref2 = load<SimdReal>(val2_);
 
         if (align == 3)
         {
@@ -279,9 +279,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
             refmem[align * offset_[j] + 2] = val2_[j];
         }
 
-        v0 = load(val0_);
-        v1 = load(val1_);
-        v2 = load(val2_);
+        v0 = load<SimdReal>(val0_);
+        v1 = load<SimdReal>(val1_);
+        v2 = load<SimdReal>(val2_);
 
         if (align == 3)
         {
@@ -331,9 +331,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
             refmem[align * offset_[j] + 2] += val2_[j];
         }
 
-        v0 = load(val0_);
-        v1 = load(val1_);
-        v2 = load(val2_);
+        v0 = load<SimdReal>(val0_);
+        v1 = load<SimdReal>(val1_);
+        v2 = load<SimdReal>(val2_);
 
         if (align == 3)
         {
@@ -382,9 +382,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
         refmem[3 * offset_[j] + 2] += val2_[j];
     }
 
-    v0 = load(val0_);
-    v1 = load(val1_);
-    v2 = load(val2_);
+    v0 = load<SimdReal>(val0_);
+    v1 = load<SimdReal>(val1_);
+    v2 = load<SimdReal>(val2_);
 
     transposeScatterIncrU<3>(mem0_, offset_, v0, v1, v2);
 
@@ -422,9 +422,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
             refmem[align * offset_[j] + 2] -= val2_[j];
         }
 
-        v0 = load(val0_);
-        v1 = load(val1_);
-        v2 = load(val2_);
+        v0 = load<SimdReal>(val0_);
+        v1 = load<SimdReal>(val1_);
+        v2 = load<SimdReal>(val2_);
 
         if (align == 3)
         {
@@ -473,9 +473,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
         refmem[3 * offset_[j] + 2] -= val2_[j];
     }
 
-    v0 = load(val0_);
-    v1 = load(val1_);
-    v2 = load(val2_);
+    v0 = load<SimdReal>(val0_);
+    v1 = load<SimdReal>(val1_);
+    v2 = load<SimdReal>(val2_);
 
     transposeScatterDecrU<3>(mem0_, offset_, v0, v1, v2);
 
@@ -495,7 +495,7 @@ TEST_F(SimdFloatingpointUtilTest, expandScalarsToTriplets)
         mem0_[i] = i;
     }
 
-    vs = load(mem0_);
+    vs = load<SimdReal>(mem0_);
 
     expandScalarsToTriplets(vs, &v0, &v1, &v2);
 
@@ -532,11 +532,11 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose4)
             mem0_[align * offset_[j] + 3] = val3_[j];
         }
 
-        simdoffset = load(offset_);
-        ref0       = load(val0_);
-        ref1       = load(val1_);
-        ref2       = load(val2_);
-        ref3       = load(val3_);
+        simdoffset = load<SimdInt32>(offset_);
+        ref0       = load<SimdReal>(val0_);
+        ref1       = load<SimdReal>(val1_);
+        ref2       = load<SimdReal>(val2_);
+        ref3       = load<SimdReal>(val3_);
 
         if (align == 4)
         {
@@ -581,9 +581,9 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose2)
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
-        simdoffset = load(offset_);
-        ref0       = load(val0_);
-        ref1       = load(val1_);
+        simdoffset = load<SimdInt32>(offset_);
+        ref0       = load<SimdReal>(val0_);
+        ref1       = load<SimdReal>(val1_);
 
         if (align == 4)
         {
@@ -626,9 +626,9 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadUBySimdIntTranspose2)
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
-        simdoffset = load(offset_);
-        ref0       = load(val0_);
-        ref1       = load(val1_);
+        simdoffset = load<SimdInt32>(offset_);
+        ref0       = load<SimdReal>(val0_);
+        ref1       = load<SimdReal>(val1_);
 
         if (align == 1)
         {
@@ -660,10 +660,10 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4Sum)
     real                              sum0, sum1, sum2, sum3, tstsum;
     FloatingPointTolerance            tolerance(defaultRealTolerance());
 
-    v0 = load(val0_);
-    v1 = load(val1_);
-    v2 = load(val2_);
-    v3 = load(val3_);
+    v0 = load<SimdReal>(val0_);
+    v1 = load<SimdReal>(val1_);
+    v2 = load<SimdReal>(val2_);
+    v3 = load<SimdReal>(val3_);
 
     sum0 = sum1 = sum2 = sum3 = 0;
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -699,7 +699,7 @@ TEST_F(SimdFloatingpointUtilTest, loadDualHsimd)
     // Point p to the upper half of val0_
     real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
-    v0 = load(val0_);
+    v0 = load<SimdReal>(val0_);
     v1 = loadDualHsimd(val0_, p);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
@@ -717,7 +717,7 @@ TEST_F(SimdFloatingpointUtilTest, loadDuplicateHsimd)
         p[i] = val0_[i];
     }
 
-    v0 = load(val0_);
+    v0 = load<SimdReal>(val0_);
     v1 = loadDuplicateHsimd(val0_);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
@@ -739,7 +739,7 @@ TEST_F(SimdFloatingpointUtilTest, load1DualHsimd)
         p[i]     = data[1];
     }
 
-    v0 = load(val0_);
+    v0 = load<SimdReal>(val0_);
     v1 = load1DualHsimd(data);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
@@ -754,7 +754,7 @@ TEST_F(SimdFloatingpointUtilTest, storeDualHsimd)
     // Point p to the upper half of val0_
     real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
-    v0 = load(val2_);
+    v0 = load<SimdReal>(val2_);
     storeDualHsimd(val0_, p, v0);
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -777,7 +777,7 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
     // Point p to the upper half of val0_
     real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
-    v0 = load(val2_);
+    v0 = load<SimdReal>(val2_);
     incrDualHsimd(val0_, p, v0);
 
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -797,7 +797,7 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
         reference[i] = val0_[i] + val2_[i] + val2_[GMX_SIMD_REAL_WIDTH/2+i];
     }
 
-    v0 = load(val2_);
+    v0 = load<SimdReal>(val2_);
     incrDualHsimd(val0_, val0_, v0);
 
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
@@ -820,7 +820,7 @@ TEST_F(SimdFloatingpointUtilTest, decrHsimd)
         ref[i] = val0_[i] - ( val1_[i] + p[i] );
     }
 
-    v0 = load(val1_);
+    v0 = load<SimdReal>(val1_);
     decrHsimd(val0_, v0);
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
@@ -853,8 +853,8 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2Hsimd)
 
         }
 
-        ref0 = load(val0_);
-        ref1 = load(val1_);
+        ref0 = load<SimdReal>(val0_);
+        ref1 = load<SimdReal>(val1_);
 
         if (align == 2)
         {
@@ -887,8 +887,8 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
     FloatingPointTolerance            tolerance(defaultRealTolerance());
 
     // Use the half-SIMD storage in memory val0_ and val1_.
-    v0 = load(val0_);
-    v1 = load(val1_);
+    v0 = load<SimdReal>(val0_);
+    v1 = load<SimdReal>(val1_);
 
     sum0 = sum1 = sum2 = sum3 = 0;
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)

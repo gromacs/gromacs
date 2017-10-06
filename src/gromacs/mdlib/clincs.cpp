@@ -488,7 +488,7 @@ calc_dr_x_f_simd(int                       b0,
 
         ip_S  = iprod(rx_S, ry_S, rz_S, fx_S, fy_S, fz_S);
 
-        rhs_S = load(blc + bs) * ip_S;
+        rhs_S = load<SimdReal>(blc + bs) * ip_S;
 
         store(rhs + bs, rhs_S);
         store(sol + bs, rhs_S);
@@ -744,7 +744,7 @@ calc_dr_x_xp_simd(int                       b0,
 
         ip_S  = iprod(rx_S, ry_S, rz_S, rxp_S, ryp_S, rzp_S);
 
-        rhs_S = load(blc + bs) * (ip_S - load(bllen + bs));
+        rhs_S = load<SimdReal>(blc + bs) * (ip_S - load<SimdReal>(bllen + bs));
 
         store(rhs + bs, rhs_S);
         store(sol + bs, rhs_S);
@@ -854,7 +854,7 @@ calc_dist_iter_simd(int                       b0,
 
         n2_S    = norm2(rx_S, ry_S, rz_S);
 
-        len_S   = load(bllen + bs);
+        len_S   = load<SimdReal>(bllen + bs);
         len2_S  = len_S * len_S;
 
         dlen2_S = fms(two_S, len2_S, n2_S);
@@ -869,7 +869,7 @@ calc_dist_iter_simd(int                       b0,
 
         lc_S    = fnma(dlen2_S, invsqrt(dlen2_S), len_S);
 
-        blc_S   = load(blc + bs);
+        blc_S   = load<SimdReal>(blc + bs);
 
         lc_S    = blc_S * lc_S;
 
@@ -1010,8 +1010,8 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 #if GMX_SIMD_HAVE_REAL
     for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
     {
-        SimdReal t1 = load(blc + b);
-        SimdReal t2 = load(sol + b);
+        SimdReal t1 = load<SimdReal>(blc + b);
+        SimdReal t2 = load<SimdReal>(sol + b);
         store(mlambda + b, t1 * t2);
     }
 #else
@@ -1068,11 +1068,11 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 #if GMX_SIMD_HAVE_REAL
         for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
         {
-            SimdReal t1  = load(blc + b);
-            SimdReal t2  = load(sol + b);
+            SimdReal t1  = load<SimdReal>(blc + b);
+            SimdReal t2  = load<SimdReal>(sol + b);
             SimdReal mvb = t1 * t2;
             store(blc_sol + b, mvb);
-            store(mlambda + b, load(mlambda + b) + mvb);
+            store(mlambda + b, load<SimdReal>(mlambda + b) + mvb);
         }
 #else
         for (b = b0; b < b1; b++)
