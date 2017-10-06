@@ -277,9 +277,9 @@
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
-    jx_S        = load(x+ajx);
-    jy_S        = load(x+ajy);
-    jz_S        = load(x+ajz);
+    jx_S        = load<SimdReal>(x+ajx);
+    jy_S        = load<SimdReal>(x+ajy);
+    jz_S        = load<SimdReal>(x+ajz);
 
     /* Calculate distance */
     dx_S0       = ix_S0 - jx_S;
@@ -399,7 +399,7 @@
 
 #ifdef CALC_COULOMB
     /* Load parameters for j atom */
-    jq_S        = load(q+aj);
+    jq_S        = load<SimdReal>(q+aj);
     qq_S0       = iq_S0 * jq_S;
     qq_S1       = iq_S1 * jq_S;
     qq_S2       = iq_S2 * jq_S;
@@ -419,8 +419,8 @@
 #endif /* not defined any LJ rule */
 
 #ifdef LJ_COMB_GEOM
-    c6s_j_S     = load(ljc+aj2+0);
-    c12s_j_S    = load(ljc+aj2+STRIDE);
+    c6s_j_S     = load<SimdReal>(ljc+aj2+0);
+    c12s_j_S    = load<SimdReal>(ljc+aj2+STRIDE);
     SimdReal c6_S0  = c6s_S0 * c6s_j_S;
     SimdReal c6_S1  = c6s_S1 * c6s_j_S;
 #ifndef HALF_LJ
@@ -436,8 +436,8 @@
 #endif /* LJ_COMB_GEOM */
 
 #ifdef LJ_COMB_LB
-    hsig_j_S    = load(ljc+aj2+0);
-    seps_j_S    = load(ljc+aj2+STRIDE);
+    hsig_j_S    = load<SimdReal>(ljc+aj2+0);
+    seps_j_S    = load<SimdReal>(ljc+aj2+STRIDE);
 
     sig_S0      = hsig_i_S0 + hsig_j_S;
     sig_S1      = hsig_i_S1 + hsig_j_S;
@@ -946,7 +946,7 @@
 #endif
 
         /* Determine C6 for the grid using the geometric combination rule */
-        c6s_j_S         = load(ljc+aj2+0);
+        c6s_j_S         = load<SimdReal>(ljc+aj2+0);
         c6grid_S0       = c6s_S0 * c6s_j_S;
         c6grid_S1       = c6s_S1 * c6s_j_S;
 #ifndef HALF_LJ
@@ -1172,9 +1172,9 @@
     fiz_S3      = fiz_S3 + tz_S3;
 
     /* Decrement j atom force */
-    store(f+ajx, load(f+ajx) - (tx_S0 + tx_S1 + tx_S2 + tx_S3));
-    store(f+ajy, load(f+ajy) - (ty_S0 + ty_S1 + ty_S2 + ty_S3));
-    store(f+ajz, load(f+ajz) - (tz_S0 + tz_S1 + tz_S2 + tz_S3));
+    store(f+ajx, load<SimdReal>(f+ajx) - (tx_S0 + tx_S1 + tx_S2 + tx_S3));
+    store(f+ajy, load<SimdReal>(f+ajy) - (ty_S0 + ty_S1 + ty_S2 + ty_S3));
+    store(f+ajz, load<SimdReal>(f+ajz) - (tz_S0 + tz_S1 + tz_S2 + tz_S3));
 }
 
 #undef  rinv_ex_S0

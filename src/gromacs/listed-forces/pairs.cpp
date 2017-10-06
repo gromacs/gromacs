@@ -597,9 +597,9 @@ do_pairs_simple(int nbonds,
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi[XX], &xi[YY], &xi[ZZ]);
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj[XX], &xj[YY], &xj[ZZ]);
 
-        T c6    = load(coeff + 0*pack_size);
-        T c12   = load(coeff + 1*pack_size);
-        T qq    = load(coeff + 2*pack_size);
+        T c6    = load<T>(coeff + 0*pack_size);
+        T c12   = load<T>(coeff + 1*pack_size);
+        T qq    = load<T>(coeff + 2*pack_size);
 
         /* We could save these operations by storing 6*C6,12*C12 */
         c6             = six*c6;

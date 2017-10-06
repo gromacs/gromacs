@@ -134,7 +134,7 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
  * \param  m      Memory address to load from
  */
 template <typename T, typename TSimd> TSimd gmx_simdcall
-loadWrapper(const T * m) { return load(m); }
+loadWrapper(const T * m) { return load<TSimd>(m); }
 
 /*! \brief Wrapper to handle proxy objects returned by some loadU functions.
  *

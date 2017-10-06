@@ -59,15 +59,15 @@ class SimdIterator
         //! Type for representing difference between two container indices.
         using difference_type   = std::ptrdiff_t;
         //! Type of values stored in the container.
-        using value_type        = typename SimdTraits<T>::type;
+        using value_type        = T;
         //! Pointer to a container element.
-        using pointer           = T*;
+        using pointer           = typename ReverseSimdTraits<T>::type*;
         //! Reference to a container element.
         using reference         = SimdReference<T>;
 
         explicit SimdIterator(pointer p = 0) : p_(p)
         {
-            GMX_ASSERT(reinterpret_cast<size_type>(p)%(simdWidth*sizeof(T)) == 0,
+            GMX_ASSERT(reinterpret_cast<size_type>(p)%sizeof(value_type) == 0,
                        "Trying to create aligned iterator for non aligned address.");
         }
         SimdIterator &operator++()
@@ -112,12 +112,12 @@ class SimdIterator
         bool operator<=(SimdIterator other) const { return p_ <= other.p_; }
         bool operator>=(SimdIterator other) const { return p_ >= other.p_; }
 
-        reference operator*() const { return load(p_); }
+        reference operator*() const { return load<value_type>(p_); }
 
         operator pointer() const { return p_; }
     private:
         pointer p_;
-        static constexpr int simdWidth = SimdTraits<T>::width;
+        static constexpr int simdWidth = ReverseSimdTraits<T>::width;
 };
 
 
@@ -144,9 +144,9 @@ class SimdArrayRef
         //! Type for representing difference between two container indices.
         using difference_type   = std::ptrdiff_t;
         //! Type of values stored in the container.
-        using value_type        = typename SimdTraits<T>::type;
+        using value_type        = T;
         //! Pointer to a container element.
-        using pointer           = T*;
+        using pointer           = typename ReverseSimdTraits<T>::type*;
         //! Reference to a container element.
         using reference         = SimdReference<T>;
         //! Iterator type for the container.
@@ -173,13 +173,13 @@ class SimdArrayRef
          * load/stores with full SIMD width is legal for the last element.
          *
          */
-        SimdArrayRef(T* begin, T* end)
+        SimdArrayRef(pointer begin, pointer end)
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
-            GMX_ASSERT(reinterpret_cast<size_type>(begin)%(simdWidth*sizeof(T)) == 0,
+            GMX_ASSERT(reinterpret_cast<size_type>(begin)%sizeof(value_type) == 0,
                        "Aligned ArrayRef requires aligned starting address");
-            GMX_ASSERT(reinterpret_cast<size_type>(end)%(simdWidth*sizeof(T)) == 0,
+            GMX_ASSERT(reinterpret_cast<size_type>(end)%sizeof(value_type) == 0,
                        "Size of ArrayRef needs to be divisible by type size");
         }
 
@@ -203,12 +203,12 @@ class SimdArrayRef
         //! Access container element.
         reference operator[](size_type n)
         {
-            return load(begin_+n*simdWidth);
+            return load<value_type>(begin_+n*simdWidth);
         }
     private:
-        T* const     begin_;
-        T* const     end_;
-        static constexpr int simdWidth = SimdTraits<T>::width;
+        pointer const     begin_;
+        pointer const     end_;
+        static constexpr int simdWidth = ReverseSimdTraits<T>::width;
 };
 
 }   //namespace internal
@@ -219,29 +219,29 @@ class SimdArrayRef
  */
 #if GMX_SIMD_HAVE_FLOAT
 template<>
-class ArrayRef<SimdFloat>  : public internal::SimdArrayRef<float>
+class ArrayRef<SimdFloat>  : public internal::SimdArrayRef<SimdFloat>
 {
-    using Base = internal::SimdArrayRef<float>;
+    using Base = internal::SimdArrayRef<SimdFloat>;
     using Base::Base;
 };
 template<>
-class ArrayRef<const SimdFloat>  : public internal::SimdArrayRef<const float>
+class ArrayRef<const SimdFloat>  : public internal::SimdArrayRef<const SimdFloat>
 {
-    using Base = internal::SimdArrayRef<const float>;
+    using Base = internal::SimdArrayRef<const SimdFloat>;
     using Base::Base;
 };
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
 template<>
-class ArrayRef<SimdDouble> : public internal::SimdArrayRef<double>
+class ArrayRef<SimdDouble> : public internal::SimdArrayRef<SimdDouble>
 {
-    using Base = internal::SimdArrayRef<double>;
+    using Base = internal::SimdArrayRef<SimdDouble>;
     using Base::Base;
 };
 template<>
-class ArrayRef<const SimdDouble> : public internal::SimdArrayRef<const double>
+class ArrayRef<const SimdDouble> : public internal::SimdArrayRef<const SimdDouble>
 {
-    using Base = internal::SimdArrayRef<const double>;
+    using Base = internal::SimdArrayRef<const SimdDouble>;
     using Base::Base;
 };
 #endif

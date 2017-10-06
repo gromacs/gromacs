@@ -44,9 +44,11 @@
 #define GMX_SIMD_HAVE_STOREU                    1
 #define GMX_SIMD_HAVE_LOGICAL                   1
 #define GMX_SIMD_HAVE_FMA                       0
+#define GMX_SIMD_HAVE_FINT32                    1
 #define GMX_SIMD_HAVE_FINT32_EXTRACT            1 // Emulated
 #define GMX_SIMD_HAVE_FINT32_LOGICAL            0 // AVX1 cannot do 256-bit int shifts
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS        0 // AVX1 cannot do 256-bit int +,-,*
+#define GMX_SIMD_HAVE_DINT32_                   1
 #define GMX_SIMD_HAVE_DINT32_EXTRACT            1 // Native, since we use __m128i
 #define GMX_SIMD_HAVE_DINT32_LOGICAL            1
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS        1
