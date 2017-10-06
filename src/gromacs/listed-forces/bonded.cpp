@@ -1052,8 +1052,8 @@ angles_noener_simd(int nbonds,
         rkjy_S = yk_S - yj_S;
         rkjz_S = zk_S - zj_S;
 
-        k_S       = load(coeff);
-        theta0_S  = load(coeff+GMX_SIMD_REAL_WIDTH) * deg2rad_S;
+        k_S       = load<SimdReal>(coeff);
+        theta0_S  = load<SimdReal>(coeff+GMX_SIMD_REAL_WIDTH) * deg2rad_S;
 
         pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc_simd);
         pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc_simd);
@@ -1926,9 +1926,9 @@ pdihs_noener_simd(int nbonds,
                        &nrkj_n2_S,
                        &p_S, &q_S);
 
-        cp_S     = load(cp);
-        phi0_S   = load(phi0) * deg2rad_S;
-        mult_S   = load(mult);
+        cp_S     = load<SimdReal>(cp);
+        phi0_S   = load<SimdReal>(phi0) * deg2rad_S;
+        mult_S   = load<SimdReal>(mult);
 
         mdphi_S  = fms(mult_S, phi_S, phi0_S);
 
@@ -2054,7 +2054,7 @@ rbdihs_noener_simd(int nbonds,
         cosfac_S  = one_S;
         for (j = 1; j < NR_RBDIHS; j++)
         {
-            parm_S   = load(parm + j*GMX_SIMD_REAL_WIDTH);
+            parm_S   = load<SimdReal>(parm + j*GMX_SIMD_REAL_WIDTH);
             ddphi_S  = fma(c_S * parm_S, cosfac_S, ddphi_S);
             cosfac_S = cosfac_S * cos_S;
             c_S      = c_S + one_S;

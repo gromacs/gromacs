@@ -464,7 +464,7 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
         f[i] = i * (1.0 + 100*GMX_FLOAT_EPS);
     }
 
-    vf = load(f);
+    vf = load<SimdFloat>(f);
 #if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1;
     cvtF2DD(vf, &vd0, &vd1);
@@ -499,9 +499,9 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
         d[i] = i * (1.0 + 100*GMX_FLOAT_EPS);
     }
 
-    vd0 = load(d);
+    vd0 = load<SimdDouble>(d);
 #if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
-    SimdDouble vd1 = load(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
+    SimdDouble vd1 = load<SimdDouble>(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
     vf = cvtDD2F(vd0, vd1);
 #elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
     vf = cvtD2F(vd0);

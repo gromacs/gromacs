@@ -50,7 +50,6 @@ src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: sh
 src/gromacs/simd/tests/scalar.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/simd/tests/scalar_math.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/simd/tests/scalar_util.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/simd/tests/simd_ambiguous.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/tables/cubicsplinetable.h: warning: includes "simd.h" unnecessarily
 src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessarily
 
