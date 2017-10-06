@@ -61,7 +61,7 @@ class QgenEem
 
         int getRow(int atom, int z);
 
-        std::vector<std::vector<double>> q() { return q_;}
+        std::vector<std::vector<double> > q() { return q_;}
         
         int natom() {return natom_;}
         

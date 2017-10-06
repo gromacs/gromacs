@@ -130,18 +130,20 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_commrec     *cr          = init_commrec();
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
             gmx_hw_info_t *hwinfo      = gmx_detect_hardware(mdlog, cr, false);
+            int            qcycle      = 1;
+            real           qtol        = 1e-3;
 
             if(!bPolar)
             {
                 mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
-                                    hfac, lot, false, symm_string, cr, nullptr, hwinfo);
+                                    hfac, lot, false, symm_string, cr, nullptr, hwinfo, qcycle, qtol, nullptr);
             }
             else
             {
                 if (qdist == eqdAXpg)
                 {
                     mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
-                                        hfac, lot, false, symm_string, cr, nullptr, hwinfo);
+                                        hfac, lot, false, symm_string, cr, nullptr, hwinfo, qcycle, qtol, nullptr);
                 }
                 else if (qdist == eqdAXps)
                 {
@@ -150,7 +152,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                     std::string tabFile = fileManager().getInputFilePath("table.xvg");
                     mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
                                         hfac, lot, false, symm_string, cr,
-                                        tabFile.c_str(), hwinfo);
+                                        tabFile.c_str(), hwinfo, qcycle, qtol, nullptr);
                 }
             }
             std::vector<double> qtotValues;

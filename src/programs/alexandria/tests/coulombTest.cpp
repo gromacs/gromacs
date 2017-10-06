@@ -88,15 +88,15 @@ class CoulombTest : public gmx::test::CommandLineTestBase
                 {
                 case eqdAXg:
                     coulomb.push_back(Coulomb_GG(r, xi, xj));
-                    force.push_back(DCoulomb_GG(r, xi, xj));
+                    force.push_back(-DCoulomb_GG(r, xi, xj));
                     ncoulomb.push_back(Nuclear_GG(r, xi));
-                    nforce.push_back(DNuclear_GG(r, xi));
+                    nforce.push_back(-DNuclear_GG(r, xi));
                     break;
                 case eqdAXs:
                     coulomb.push_back(Coulomb_SS(r, ri, rj, xi, xj));
-                    force.push_back(DCoulomb_SS(r, ri, rj, xi, xj));
+                    force.push_back(-DCoulomb_SS(r, ri, rj, xi, xj));
                     ncoulomb.push_back(Nuclear_SS(r, ri, xi));
-                    nforce.push_back(DNuclear_SS(r, ri, xi));
+                    nforce.push_back(-DNuclear_SS(r, ri, xi));
                     break;
                 default:
                     break;

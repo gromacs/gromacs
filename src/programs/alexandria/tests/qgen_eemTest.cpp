@@ -110,7 +110,7 @@ class EemTest : public gmx::test::CommandLineTestBase
             const char *basis   = (char *)"";
             const char *jobtype = (char *)"Pop";
 
-            int         maxpot   = 0;
+            int         maxpot   = 100;
             int         nsymm    = 0;
 
             //Read input file for molprop
@@ -140,10 +140,12 @@ class EemTest : public gmx::test::CommandLineTestBase
             t_commrec     *cr          = init_commrec();
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
             gmx_hw_info_t *hwinfo      = gmx_detect_hardware(mdlog, cr, false);
+            int            qcycle      = 1;
+            real           qtol        = 1e-3;
 
             mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgEEM, watoms,
                                 hfac, lot, true, symm_string, cr,
-                                nullptr, hwinfo);
+                                nullptr, hwinfo, qcycle, qtol, nullptr);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)

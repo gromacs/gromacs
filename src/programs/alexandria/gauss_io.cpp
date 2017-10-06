@@ -64,9 +64,9 @@
 static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
                                           int                                              natom,
-                                          int                                              espFraction)
+                                          int                                              maxPotential)
 {
-    if (espFraction > 100)
+    if (maxPotential > 100)
     {
         gmx_fatal(FARGS, "You cannot have more than 100 percent of the available ESP points.\n");
     }
@@ -78,7 +78,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
                 });*/
 
     int npot   = espv.size() - natom;
-    int maxpot = (npot * espFraction)/100;
+    int maxpot = (npot * maxPotential)/100;
     int mod    = npot / maxpot;
     int i      = 0;
     for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
@@ -166,7 +166,7 @@ static void gmx_molprop_read_babel(const char          *g09,
                                    const char          *iupac,
                                    const char          *conformation,
                                    const char          *basisset,
-                                   int                  espFraction,
+                                   int                  maxPotential,
                                    int                  nsymm,
                                    const char          *forcefield,
                                    alexandria::jobType  jobtype)
@@ -543,7 +543,7 @@ static void gmx_molprop_read_babel(const char          *g09,
             //      espid, 100*fgp->GetX(), 100*fgp->GetY(), 100*fgp->GetZ(), fgp->GetV());
             espv.push_back(ep);
         }
-        merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), espFraction);
+        merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxPotential);
     }
 }
 #endif
