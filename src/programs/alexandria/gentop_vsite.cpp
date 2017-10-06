@@ -932,11 +932,6 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
          * In case we use the special linear angle terms, life gets a lot easier!
          */
         
-        if (bUseVsites && (inplane_.size() > 0 || outplane_.size() > 0))
-        {
-            gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
-        }
-        
         for (size_t i = 0; i < linear_.size(); i++)
         {
             for (j = 0; (j < linear_[i].nline); j++)
@@ -1031,6 +1026,10 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
             }
             add_param_to_plist(plist, F_IDIHS, eitIMPROPER_DIHEDRALS, pp);
         }
+    }
+    if (bUseVsites && (inplane_.size() > 0 || outplane_.size() > 0))
+    {
+        gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
     }
 }
 
