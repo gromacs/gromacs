@@ -144,12 +144,12 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
             jz_S  = loadDuplicateHsimd(x_j + xind_f + 2*STRIDE_S);
 
             /* Calculate distance */
-            dx_S0            = load(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0            = load(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0            = load(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2            = load(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2            = load(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2            = load(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S0            = load<SimdReal>(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load<SimdReal>(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load<SimdReal>(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load<SimdReal>(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load<SimdReal>(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load<SimdReal>(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
@@ -202,12 +202,12 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
             jz_S  = loadDuplicateHsimd(x_j + xind_l + 2*STRIDE_S);
 
             /* Calculate distance */
-            dx_S0            = load(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0            = load(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0            = load(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2            = load(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2            = load(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2            = load(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S0            = load<SimdReal>(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load<SimdReal>(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load<SimdReal>(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load<SimdReal>(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load<SimdReal>(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load<SimdReal>(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
             rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);

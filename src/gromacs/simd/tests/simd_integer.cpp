@@ -147,7 +147,7 @@ TEST_F(SimdIntegerTest, extract)
     {
         idata[i] = i+1;
     }
-    simd = load(idata);
+    simd = load<SimdInt32>(idata);
 
     /* We cannot do a loop here, since
      * - C++ gets confused about signed/unsigned if SSE macros are used in EXPECT_EQ()
