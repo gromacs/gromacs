@@ -141,7 +141,7 @@ vector2SimdReal(const std::vector<real> &v)
     {
         mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
-    return load(mem);
+    return load<SimdReal>(mem);
 }
 
 SimdReal
@@ -199,7 +199,7 @@ vector2SimdInt(const std::vector<int> &v)
     {
         mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
-    return load(mem);
+    return load<SimdInt32>(mem);
 }
 
 SimdInt32

@@ -725,13 +725,13 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
     // Make position 1 incorrect if width>=2, otherwise position 0
     // range.first-GMX_REAL_EPS is not invalid. See comment in table.
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
-    x = load(alignedMem);
+    x = load<SimdReal>(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
-    x = load(alignedMem);
+    x = load<SimdReal>(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 }
@@ -749,7 +749,7 @@ TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
     {
         alignedMem[i] = range.second*(1.0-GMX_REAL_EPS)*i/(GMX_SIMD_REAL_WIDTH-1);
     }
-    x = load(alignedMem);
+    x = load<SimdReal>(alignedMem);
 
     EXPECT_NO_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der));
 }
