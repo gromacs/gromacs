@@ -62,14 +62,14 @@ namespace
 
 TEST(SimdScalarTest, load)
 {
-    real val = load(&c1);
+    real val = load<real>(&c1);
 
     EXPECT_EQ(c1, val);
 }
 
 TEST(SimdScalarTest, loadU)
 {
-    real val = loadU(&c1);
+    real val = loadU<real>(&c1);
 
     EXPECT_EQ(c1, val);
 }
@@ -253,7 +253,7 @@ TEST(SimdScalarTest, cvtD2D)
 TEST(SimdScalarTest, loadI)
 {
     std::int32_t ref = 42;
-    std::int32_t val = load(&ref);
+    std::int32_t val = load<int32_t>(&ref);
 
     EXPECT_EQ(ref, val);
 }
@@ -261,7 +261,7 @@ TEST(SimdScalarTest, loadI)
 TEST(SimdScalarTest, loadUI)
 {
     std::int32_t ref = 42;
-    std::int32_t val = load(&ref);
+    std::int32_t val = loadU<int32_t>(&ref);
 
     EXPECT_EQ(ref, val);
 }
