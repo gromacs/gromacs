@@ -91,6 +91,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
         ) 
     set(_cxx_flags
+        --language=c++ # particularly useful for CUDA files
         -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
