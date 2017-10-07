@@ -89,7 +89,7 @@ class SimdFBool
 };
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     assert(std::size_t(m) % 32 == 0);
     return {
@@ -127,7 +127,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     assert(std::size_t(m) % 32 == 0);
     return {

@@ -100,7 +100,7 @@ class SimdDIBool
 };
 
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+simdLoad(const double *m, SimdDoubleTag = {})
 {
     assert(std::size_t(m) % 64 == 0);
     return {
@@ -140,7 +140,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdDInt32Tag)
 {
     assert(std::size_t(m) % 32 == 0);
     return {

@@ -100,7 +100,7 @@ class SimdDBool
 };
 
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+simdLoad(const double *m, SimdDoubleTag = {})
 {
 #ifdef NDEBUG
     return {
@@ -132,7 +132,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdDInt32Tag)
 {
 #ifdef NDEBUG
     return {

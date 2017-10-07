@@ -112,7 +112,7 @@ class SimdIterator
         bool operator<=(SimdIterator other) const { return p_ <= other.p_; }
         bool operator>=(SimdIterator other) const { return p_ >= other.p_; }
 
-        reference operator*() const { return load<value_type>(p_); }
+        reference operator*() const { return reference(p_); }
 
         operator pointer() const { return p_; }
     private:
@@ -203,7 +203,7 @@ class SimdArrayRef
         //! Access container element.
         reference operator[](size_type n)
         {
-            return load<value_type>(begin_+n*simdWidth);
+            return reference(begin_+n*simdWidth);
         }
     private:
         pointer const        begin_;

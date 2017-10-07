@@ -349,15 +349,15 @@
         pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
     }
-    SimdReal c6_S0  = simdLoad(pvdw_c6 +0*UNROLLJ);
-    SimdReal c6_S1  = simdLoad(pvdw_c6 +1*UNROLLJ);
-    SimdReal c6_S2  = simdLoad(pvdw_c6 +2*UNROLLJ);
-    SimdReal c6_S3  = simdLoad(pvdw_c6 +3*UNROLLJ);
+    SimdReal c6_S0  = load<SimdReal>(pvdw_c6 +0*UNROLLJ);
+    SimdReal c6_S1  = load<SimdReal>(pvdw_c6 +1*UNROLLJ);
+    SimdReal c6_S2  = load<SimdReal>(pvdw_c6 +2*UNROLLJ);
+    SimdReal c6_S3  = load<SimdReal>(pvdw_c6 +3*UNROLLJ);
 
-    SimdReal c12_S0 = simdLoad(pvdw_c12+0*UNROLLJ);
-    SimdReal c12_S1 = simdLoad(pvdw_c12+1*UNROLLJ);
-    SimdReal c12_S2 = simdLoad(pvdw_c12+2*UNROLLJ);
-    SimdReal c12_S3 = simdLoad(pvdw_c12+3*UNROLLJ);
+    SimdReal c12_S0 = load<SimdReal>(pvdw_c12+0*UNROLLJ);
+    SimdReal c12_S1 = load<SimdReal>(pvdw_c12+1*UNROLLJ);
+    SimdReal c12_S2 = load<SimdReal>(pvdw_c12+2*UNROLLJ);
+    SimdReal c12_S3 = load<SimdReal>(pvdw_c12+3*UNROLLJ);
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS

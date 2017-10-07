@@ -114,7 +114,7 @@ template <int align, typename ... Targs>
 static inline void gmx_simdcall
 gatherLoadTranspose(const float *base, const std::int32_t offset[], Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), Fargs ...);
 }
 
 template <int align, typename ... Targs>
@@ -132,7 +132,7 @@ transposeScatterStoreU(float *              base,
                        SimdFloat            v1,
                        SimdFloat            v2)
 {
-    SimdFInt32 simdoffset = simdLoadFI(offset);
+    SimdFInt32 simdoffset = simdLoad(offset, SimdFInt32Tag());
     if (align > 2)
     {
         simdoffset = fastMultiply<align>(simdoffset);
@@ -155,7 +155,7 @@ transposeScatterIncrU(float *              base,
     __m512 t[4], t5, t6, t7, t8;
     int    i;
     GMX_ALIGNED(std::int32_t, 16)    o[16];
-    store(o, fastMultiply<align>(simdLoadFI(offset)));
+    store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {
         t5   = _mm512_unpacklo_ps(v0.simdInternal_, v1.simdInternal_);
@@ -227,7 +227,7 @@ transposeScatterDecrU(float *              base,
     __m512 t[4], t5, t6, t7, t8;
     int    i;
     GMX_ALIGNED(std::int32_t, 16)    o[16];
-    store(o, fastMultiply<align>(simdLoadFI(offset)));
+    store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {
         t5   = _mm512_unpacklo_ps(v0.simdInternal_, v1.simdInternal_);

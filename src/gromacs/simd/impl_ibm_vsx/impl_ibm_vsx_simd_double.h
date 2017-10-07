@@ -104,7 +104,7 @@ class SimdDIBool
 // currently version 13.1.5 is required.
 
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+simdLoad(const double *m, SimdDoubleTag = {})
 {
     return {
                *reinterpret_cast<const __vector double *>(m)
@@ -140,7 +140,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdDInt32Tag)
 {
     __vector signed int          t0, t1;
     const __vector unsigned char perm = { 0, 1, 2, 3, 0, 1, 2, 3, 16, 17, 18, 19, 16, 17, 18, 19 };
@@ -162,7 +162,7 @@ store(std::int32_t * m, SimdDInt32 gmx_unused x)
 static inline SimdDInt32 gmx_simdcall
 simdLoadUDI(const std::int32_t *m)
 {
-    return simdLoadDI(m);
+    return simdLoad(m, SimdDInt32Tag());
 }
 
 static inline void gmx_simdcall

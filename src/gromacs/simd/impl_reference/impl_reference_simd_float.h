@@ -193,7 +193,7 @@ class SimdFIBool
  * \return SIMD variable with data loaded.
  */
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     SimdFloat a;
 
@@ -274,7 +274,7 @@ setZeroF()
  * \return SIMD integer variable.
  */
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     SimdFInt32 a;
 
