@@ -87,6 +87,14 @@
  * \{
  */
 
+//! Tag type to select to load SimdFloat with simdLoad(U)
+struct SimdFloatTag {};
+//! Tag type to select to load SimdDouble with simdLoad(U)
+struct SimdDoubleTag {};
+//! Tag type to select to load SimdFInt32 with simdLoad(U)
+struct SimdFInt32Tag {};
+//! Tag type to select to load SimdDInt32 with simdLoad(U)
+struct SimdDInt32Tag {};
 
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
@@ -461,12 +469,12 @@ class SimdLoadProxyInternal
 #if GMX_SIMD_HAVE_FLOAT
         //! \brief Conversion method that will execute load of SimdFInt32
         template<typename U = T, typename = typename std::enable_if<IsIntType<U>::value>::type>
-        operator SimdFInt32() const { return simdLoadFI(m_); }
+        operator SimdFInt32() const { return simdLoad(m_, SimdFInt32Tag()); }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //! \brief Conversion method that will execute load of SimdDInt32
         template<typename U = T, typename = typename std::enable_if<IsIntType<U>::value>::type>
-        operator SimdDInt32() const { return simdLoadDI(m_); }
+        operator SimdDInt32() const { return simdLoad(m_, SimdDInt32Tag()); }
 #endif
 
     private:
@@ -543,12 +551,12 @@ class SimdLoadUProxyInternal
 #if GMX_SIMD_HAVE_FLOAT
         //! \brief Conversion method that will execute loadU of SimdFInt32
         template<typename U = T, typename = typename std::enable_if<IsIntType<U>::value>::type>
-        operator SimdFInt32() const { return simdLoadUFI(m_); }
+        operator SimdFInt32() const { return simdLoadU(m_, SimdFInt32Tag()); }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //! \brief Conversion method that will execute loadU of SimdDInt32
         template<typename U = T, typename = typename std::enable_if<IsIntType<U>::value>::type>
-        operator SimdDInt32() const { return simdLoadUDI(m_); }
+        operator SimdDInt32() const { return simdLoadU(m_, SimdDInt32Tag()); }
 #endif
 
     private:
