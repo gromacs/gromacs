@@ -193,7 +193,7 @@ class SimdFIBool
  * \return SIMD variable with data loaded.
  */
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     SimdFloat a;
 
@@ -224,7 +224,7 @@ store(float *m, SimdFloat a)
  * \return SIMD variable with data loaded.
  */
 static inline SimdFloat gmx_simdcall
-simdLoadU(const float *m)
+simdLoadU(const float *m, SimdFloatTag = {})
 {
     SimdFloat a;
     std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
@@ -274,7 +274,7 @@ setZeroF()
  * \return SIMD integer variable.
  */
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     SimdFInt32 a;
 
@@ -308,7 +308,7 @@ store(std::int32_t * m, SimdFInt32 a)
  * \return SIMD integer variable.
  */
 static inline SimdFInt32 gmx_simdcall
-simdLoadUFI(const std::int32_t *m)
+simdLoadU(const std::int32_t *m, SimdFInt32Tag)
 {
     SimdFInt32 a;
     std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());

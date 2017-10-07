@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,7 @@ gatherLoadTranspose(const double *        base,
                     SimdDouble *          v2,
                     SimdDouble *          v3)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1, v2, v3);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v0, v1, v2, v3);
 }
 
 template <int align>
@@ -152,7 +152,7 @@ gatherLoadTranspose(const double *        base,
                     SimdDouble *          v0,
                     SimdDouble *          v1)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v0, v1);
 }
 
 static const int c_simdBestPairAlignmentDouble = 2;
@@ -169,7 +169,7 @@ gatherLoadUTranspose(const double *        base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    simdoffset = simdLoadDI(offset);
+    simdoffset = simdLoad(offset, SimdDInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
@@ -204,7 +204,7 @@ transposeScatterStoreU(double *            base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    simdoffset = simdLoadDI(offset);
+    simdoffset = simdLoad(offset, SimdDInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
