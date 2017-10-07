@@ -111,7 +111,7 @@ template <int align, typename ... Targs>
 static inline void gmx_simdcall
 gatherLoadTranspose(const double *base, const std::int32_t offset[], Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), Fargs ...);
 }
 
 template <int align, typename ... Targs>
@@ -129,7 +129,7 @@ transposeScatterStoreU(double *             base,
                        SimdDouble           v1,
                        SimdDouble           v2)
 {
-    SimdDInt32 simdoffset = simdLoadDI(offset);
+    SimdDInt32 simdoffset = simdLoad(offset, SimdDInt32Tag());
     if (align > 1)
     {
         simdoffset = fastMultiply<align>(simdoffset);;

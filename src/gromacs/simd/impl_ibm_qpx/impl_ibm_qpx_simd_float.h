@@ -97,7 +97,7 @@ class SimdFBool
 };
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
 #ifdef NDEBUG
     return {
@@ -129,7 +129,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
 #ifdef NDEBUG
     return {
