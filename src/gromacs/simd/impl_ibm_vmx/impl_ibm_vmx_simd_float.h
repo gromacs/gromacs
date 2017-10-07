@@ -117,12 +117,10 @@ class SimdFIBool
         __vector vmxBool int  simdInternal_;
 };
 
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline void gmx_simdcall
+simdLoad(const float *m, SimdFloat *a)
 {
-    return {
-               vec_ld(0, const_cast<float *>(m))
-    };
+    *a = { vec_ld(0, const_cast<float *>(m)) };
 }
 
 static inline void gmx_simdcall
@@ -139,12 +137,10 @@ setZeroF()
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadFI(const std::int32_t * m, SimdFInt32 *a)
 {
-    return {
-               vec_ld(0, const_cast<int *>(m))
-    };
+    *a = { vec_ld(0, const_cast<int *>(m)) };
 }
 
 static inline void gmx_simdcall

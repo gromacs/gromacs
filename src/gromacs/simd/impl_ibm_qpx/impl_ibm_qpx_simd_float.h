@@ -96,17 +96,13 @@ class SimdFBool
         vector4double  simdInternal_;
 };
 
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline void gmx_simdcall
+simdLoad(const float *m, SimdFloat *a)
 {
 #ifdef NDEBUG
-    return {
-               vec_ld(0, const_cast<float *>(m))
-    };
+    *a = { vec_ld(0, const_cast<float *>(m)) };
 #else
-    return {
-               vec_lda(0, const_cast<float *>(m))
-    };
+    *a = { vec_lda(0, const_cast<float *>(m)) };
 #endif
 }
 
@@ -128,17 +124,13 @@ setZeroF()
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadFI(const std::int32_t * m, SimdFInt32 *a)
 {
 #ifdef NDEBUG
-    return {
-               vec_ldia(0, const_cast<int *>(m))
-    };
+    *a = { vec_ldia(0, const_cast<int *>(m)) };
 #else
-    return {
-               vec_ldiaa(0, const_cast<int *>(m))
-    };
+    *a = { vec_ldiaa(0, const_cast<int *>(m)) };
 #endif
 }
 

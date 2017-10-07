@@ -193,17 +193,14 @@ class SimdDIBool
 /*! \brief Load \ref GMX_SIMD_DOUBLE_WIDTH numbers from aligned memory.
  *
  * \param m Pointer to memory aligned to the SIMD width.
- * \return SIMD variable with data loaded.
+ * \param a Pointer to SIMD variable to store data loaded.
  */
-static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+static inline void gmx_simdcall
+simdLoad(const double *m, SimdDouble *a)
 {
-    SimdDouble a;
+    assert(std::size_t(m) % (a->simdInternal_.size()*sizeof(double)) == 0);
 
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(double)) == 0);
-
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
-    return a;
+    std::copy(m, m+a->simdInternal_.size(), a->simdInternal_.begin());
 }
 
 /*! \brief Store the contents of SIMD double variable to aligned memory m.
@@ -272,17 +269,14 @@ setZeroD()
  * internally to handle all types rather than adding the suffix used here.
  *
  * \param m Pointer to memory, aligned to (double) integer SIMD width.
- * \return SIMD integer variable.
+ * \param m Pointer to SIMD integer variable.
  */
-static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadDI(const std::int32_t * m, SimdDInt32 *a)
 {
-    SimdDInt32 a;
+    assert(std::size_t(m) % (a->simdInternal_.size()*sizeof(std::int32_t)) == 0);
 
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(std::int32_t)) == 0);
-
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
-    return a;
+    std::copy(m, m+a->simdInternal_.size(), a->simdInternal_.begin());
 };
 
 /*! \brief Store aligned SIMD integer data, width corresponds to \ref gmx::SimdDouble.

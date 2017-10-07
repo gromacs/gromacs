@@ -103,12 +103,10 @@ class SimdDIBool
 // Note that the interfaces we use here have been a mess in xlc;
 // currently version 13.1.5 is required.
 
-static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+static inline void gmx_simdcall
+simdLoad(const double *m, SimdDouble *a)
 {
-    return {
-               *reinterpret_cast<const __vector double *>(m)
-    };
+    *a = { *reinterpret_cast<const __vector double *>(m) };
 }
 
 static inline void gmx_simdcall
@@ -139,16 +137,14 @@ setZeroD()
     };
 }
 
-static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadDI(const std::int32_t * m, SimdDInt32 *a)
 {
     __vector signed int          t0, t1;
     const __vector unsigned char perm = { 0, 1, 2, 3, 0, 1, 2, 3, 16, 17, 18, 19, 16, 17, 18, 19 };
     t0 = vec_splats(m[0]);
     t1 = vec_splats(m[1]);
-    return {
-               vec_perm(t0, t1, perm)
-    };
+    *a = { vec_perm(t0, t1, perm) };
 }
 
 // gcc-4.9 does not understand that arguments to vec_extract() are used
@@ -162,7 +158,9 @@ store(std::int32_t * m, SimdDInt32 gmx_unused x)
 static inline SimdDInt32 gmx_simdcall
 simdLoadUDI(const std::int32_t *m)
 {
-    return simdLoadDI(m);
+    SimdDInt32 a;
+    simdLoadDI(m, &a);
+    return a;
 }
 
 static inline void gmx_simdcall

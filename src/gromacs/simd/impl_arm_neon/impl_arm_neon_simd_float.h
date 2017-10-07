@@ -100,13 +100,11 @@ class SimdFIBool
         uint32x4_t  simdInternal_;
 };
 
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline void gmx_simdcall
+simdLoad(const float *m, SimdFloat *a)
 {
     assert(std::size_t(m) % 16 == 0);
-    return {
-               vld1q_f32(m)
-    };
+    *a = { vld1q_f32(m) };
 }
 
 static inline void gmx_simdcall
@@ -138,13 +136,11 @@ setZeroF()
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadFI(const std::int32_t * m, SimdFInt32 *a)
 {
     assert(std::size_t(m) % 16 == 0);
-    return {
-               vld1q_s32(m)
-    };
+    *a = { vld1q_s32(m) };
 }
 
 static inline void gmx_simdcall

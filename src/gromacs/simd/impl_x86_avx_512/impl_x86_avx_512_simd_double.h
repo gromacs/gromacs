@@ -100,13 +100,11 @@ class SimdDIBool
         __mmask16  simdInternal_;
 };
 
-static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+static inline void gmx_simdcall
+simdLoad(const double *m, SimdDouble *a)
 {
     assert(std::size_t(m) % 64 == 0);
-    return {
-               _mm512_load_pd(m)
-    };
+    *a = { _mm512_load_pd(m) };
 }
 
 static inline void gmx_simdcall
@@ -138,13 +136,11 @@ setZeroD()
     };
 }
 
-static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadDI(const std::int32_t * m, SimdDInt32 *a)
 {
     assert(std::size_t(m) % 32 == 0);
-    return {
-               _mm256_load_si256(reinterpret_cast<const __m256i *>(m))
-    };
+    *a = { _mm256_load_si256(reinterpret_cast<const __m256i *>(m)) };
 }
 
 static inline void gmx_simdcall

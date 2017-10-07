@@ -101,13 +101,11 @@ class SimdDIBool
         uint32x2_t  simdInternal_;
 };
 
-static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+static inline void gmx_simdcall
+simdLoad(const double *m, SimdDouble *a)
 {
     assert(std::size_t(m) % 16 == 0);
-    return {
-               vld1q_f64(m)
-    };
+    *a = { vld1q_f64(m) };
 }
 
 static inline void gmx_simdcall
@@ -139,13 +137,11 @@ setZeroD()
     };
 }
 
-static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadDI(const std::int32_t * m, SimdDInt32 *a)
 {
     assert(std::size_t(m) % 8 == 0);
-    return {
-               vld1_s32(m)
-    };
+    *a = { vld1_s32(m) };
 }
 
 static inline void gmx_simdcall

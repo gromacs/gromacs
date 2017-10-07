@@ -103,12 +103,10 @@ class SimdFIBool
 // Note that the interfaces we use here have been a mess in xlc;
 // currently version 13.1.5 is required.
 
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline void gmx_simdcall
+simdLoad(const float *m, SimdFloat *a)
 {
-    return {
-               *reinterpret_cast<const __vector float *>(m)
-    };
+    *a = { *reinterpret_cast<const __vector float *>(m) };
 }
 
 static inline void gmx_simdcall
@@ -139,12 +137,10 @@ setZeroF()
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline void gmx_simdcall
+simdLoadFI(const std::int32_t * m, SimdFInt32 *a)
 {
-    return {
-               *reinterpret_cast<const __vector int *>(m)
-    };
+    *a = { *reinterpret_cast<const __vector int *>(m) };
 }
 
 static inline void gmx_simdcall
