@@ -118,7 +118,7 @@ class SimdFIBool
 };
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     return {
                vec_ld(0, const_cast<float *>(m))
@@ -140,7 +140,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     return {
                vec_ld(0, const_cast<int *>(m))
