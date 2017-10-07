@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -91,6 +91,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
         ) 
     set(_cxx_flags
+        --language=c++ # particularly useful for CUDA files
         -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
