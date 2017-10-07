@@ -144,7 +144,7 @@ gatherLoadTranspose(const float *        base,
                     SimdFloat *          v2,
                     SimdFloat *          v3)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), v0, v1, v2, v3);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v0, v1, v2, v3);
 }
 
 template <int align>
@@ -154,7 +154,7 @@ gatherLoadTranspose(const float *        base,
                     SimdFloat *          v0,
                     SimdFloat *          v1)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), v0, v1);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v0, v1);
 }
 
 static const int c_simdBestPairAlignmentFloat = 2;
@@ -171,7 +171,7 @@ gatherLoadUTranspose(const float *        base,
 
     assert(std::size_t(offset) % 64 == 0);
 
-    simdoffset = simdLoadFI(offset);
+    simdoffset = simdLoad(offset, SimdFInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
@@ -207,7 +207,7 @@ transposeScatterStoreU(float *              base,
 
     assert(std::size_t(offset) % 64 == 0);
 
-    simdoffset = simdLoadFI(offset);
+    simdoffset = simdLoad(offset, SimdFInt32Tag());
 
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),

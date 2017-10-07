@@ -196,7 +196,7 @@ class SimdDIBool
  * \return SIMD variable with data loaded.
  */
 static inline SimdDouble gmx_simdcall
-simdLoad(const double *m)
+simdLoad(const double *m, SimdDoubleTag = {})
 {
     SimdDouble a;
 
@@ -275,7 +275,7 @@ setZeroD()
  * \return SIMD integer variable.
  */
 static inline SimdDInt32 gmx_simdcall
-simdLoadDI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdDInt32Tag)
 {
     SimdDInt32 a;
 

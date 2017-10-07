@@ -104,7 +104,7 @@ class SimdFIBool
 // currently version 13.1.5 is required.
 
 static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+simdLoad(const float *m, SimdFloatTag = {})
 {
     return {
                *reinterpret_cast<const __vector float *>(m)
@@ -140,7 +140,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+simdLoad(const std::int32_t * m, SimdFInt32Tag)
 {
     return {
                *reinterpret_cast<const __vector int *>(m)
