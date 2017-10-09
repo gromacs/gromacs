@@ -50,7 +50,7 @@
 #define GMX_SIMD_HAVE_DINT32_LOGICAL            0
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS        0
 #define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT     0
-#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT   1
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT   0  // Although there is support, it is disabled because rsqrt(GMX_FLOAT_MAX) is off
 #define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT     1
 #define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT          0
 #define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT         0
