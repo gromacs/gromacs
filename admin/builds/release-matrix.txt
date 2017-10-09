@@ -39,4 +39,4 @@ icc-18 double release
 clang-4 static double release
 
 # Test with GPU support
-gcc-5 gpu cuda-7.5 release
+gcc-5 gpu cuda-8.0 release
