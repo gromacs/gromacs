@@ -154,14 +154,12 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                 pmeFinalizeTest(pmeSafe.get(), mode.first);
 
                                 /* Check the outputs */
-                                TestReferenceChecker checker(refData.rootChecker());
-                                const auto           ulpTolerance = 8;
-                                checker.setDefaultTolerance(relativeToleranceAsUlp(10.0, ulpTolerance));
+                                TestReferenceChecker          checker(refData.rootChecker());
 
                                 SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
                                 /* Transformed grid */
                                 TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                                const auto                    ulpToleranceGrid = 8;
+                                const auto                    ulpToleranceGrid = 16;
                                 gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                                 for (const auto &point : nonZeroGridValuesOutput)
                                 {
@@ -183,7 +181,9 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                     Matrix3x3  virial;
                                     std::tie(energy, virial) = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), mode.first, method);
                                     /* Energy */
-                                    checker.checkReal(energy, "Energy");
+                                    TestReferenceChecker energyChecker(checker);
+                                    energyChecker.setDefaultTolerance(relativeToleranceAsUlp(10.0, 40));
+                                    energyChecker.checkReal(energy, "Energy");
                                     /* Virial */
                                     TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
                                     virialChecker.setDefaultTolerance(relativeToleranceAsUlp(1000, 8));
