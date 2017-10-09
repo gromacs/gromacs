@@ -63,7 +63,9 @@ if releng_path and os.path.isdir(releng_path):
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'
+# gmx_min_sphinx is set from the expected minimum version of Sphinx
+# in CMakeLists.txt
+needs_sphinx = gmx_min_sphinx
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
