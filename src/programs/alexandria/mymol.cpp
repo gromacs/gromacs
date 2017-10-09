@@ -834,6 +834,14 @@ void MyMol::addShells(const Poldata          &pd,
             {
                 p.a[0] = renum[i];
                 p.a[1] = renum[i]+1;
+                if(bHaveVSites_)
+                {
+                    auto vsite = pd.findVsite(atomtype);
+                    if (vsite != pd.getVsiteEnd())
+                    {
+                        pol /= vsite->nvsite();
+                    }
+                }
                 p.c[0] = convert2gmx(pol, polarUnit);
                 add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
             }

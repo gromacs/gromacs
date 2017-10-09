@@ -538,9 +538,6 @@ static void gmx_molprop_read_babel(const char          *g09,
                                                   100*fgp->GetY(),
                                                   100*fgp->GetZ(),
                                                   fgp->GetV());
-
-            //printf("ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
-            //      espid, 100*fgp->GetX(), 100*fgp->GetY(), 100*fgp->GetZ(), fgp->GetV());
             espv.push_back(ep);
         }
         merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxPotential);

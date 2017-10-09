@@ -310,7 +310,7 @@ class Poldata
          *
          * \param[in] ptype  Polarizability Type
          */
-        FfatypeIterator ptypeToAtype(const std::string &ptype)
+        FfatypeConstIterator ptypeToAtype(const std::string &ptype) const
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [ptype](Ffatype const &f)
