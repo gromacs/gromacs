@@ -308,6 +308,7 @@ rsqrt(SimdFloat x)
     };
 }
 
+#if GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT
 static inline SimdFloat gmx_simdcall
 rsqrtIter(SimdFloat lu, SimdFloat x)
 {
@@ -315,6 +316,7 @@ rsqrtIter(SimdFloat lu, SimdFloat x)
                vmulq_f32(lu.simdInternal_, vrsqrtsq_f32(vmulq_f32(lu.simdInternal_, lu.simdInternal_), x.simdInternal_))
     };
 }
+#endif
 
 static inline SimdFloat gmx_simdcall
 rcp(SimdFloat x)
