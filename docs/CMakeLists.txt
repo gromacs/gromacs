@@ -58,12 +58,14 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
+set(EXPECTED_SPHINX_VERSION 1.4.1)
+
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
-find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -146,6 +148,7 @@ if (SPHINX_FOUND)
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
             EXPECTED_DOXYGEN_VERSION
+            EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
@@ -254,15 +257,15 @@ if (SPHINX_FOUND)
 else()
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
-            "HTML pages cannot be built because Sphinx is not available"
+            "HTML pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
-            "INSTALL cannot be built because Sphinx is not available"
+            "INSTALL cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
-            "man pages cannot be built because Sphinx is not available"
+            "man pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
 endif()
 
@@ -292,7 +295,7 @@ if (NOT PYTHON_EXECUTABLE)
 elseif (NOT SPHINX_FOUND)
     # Hardly anything gets built if Sphinx is not available, so don't bother.
     set(HTML_BUILD_IS_POSSIBLE OFF)
-    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx is required")
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is required")
 endif()
 if (NOT MANUAL_BUILD_IS_POSSIBLE)
     list(APPEND HTML_BUILD_WARNINGS

@@ -247,7 +247,7 @@ module dependency graphs
 __ doxygen-page-modulegraph_
 
 Sphinx
-  `Sphinx <http://sphinx-doc.org/>`_; at least version 1.2.3) is used
+  `Sphinx <http://sphinx-doc.org/>`_; at least version |EXPECTED_SPHINX_VERSION| is used
   for building some parts of the documentation from reStructuredText
   source files.
 
