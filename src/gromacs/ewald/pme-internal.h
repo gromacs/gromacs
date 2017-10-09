@@ -55,13 +55,8 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "pme-gpu-types.h"

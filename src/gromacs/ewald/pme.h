@@ -48,20 +48,16 @@
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
 
-#include <stdio.h>
-
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "pme-gpu-types.h"
 
+struct interaction_const_t;
 struct t_commrec;
 struct t_inputrec;
+struct t_nrnb;
 struct pme_gpu_t;
 struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
