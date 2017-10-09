@@ -699,12 +699,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                     }
                     if (bFound)
                     {
-                        double val, T;
-                        if (mpi.getProp(mpo, iqmExp, lot, "", exp_type, &val, NULL, &T))
+                        double val, T = -1;
+                        if (mpi.getProp(mpo, iqmExp, lot, "", exp_type, &val, nullptr, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, lot, "", "", &val, NULL, &T))
+                        else if (mpi.getProp(mpo, iqmQM, lot, "", "", &val, nullptr, &T))
                         {
                             nqm++;
                         }
@@ -728,6 +728,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
              */
             /* Construct group name from element composition */
             /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
+            
             
             auto atype = pd.ptypeToAtype(pType->getType().c_str());
             snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
