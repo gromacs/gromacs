@@ -617,7 +617,8 @@ static int decompose_frag(FILE                             *fplog,
     std::vector<std::string> leg;
     for (auto p = ptypes.begin(); p < ptypes.end(); ++p)
     {
-        leg.push_back(p->name());
+        auto atype = pd.ptypeToAtype(p->name().c_str());
+        leg.push_back(atype->getType());
     }
     std::vector<const char*> legend;
     for (auto l = leg.begin(); l < leg.end(); ++l)

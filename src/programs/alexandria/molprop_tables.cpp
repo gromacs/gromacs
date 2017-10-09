@@ -694,7 +694,10 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                         std::string pt;
                         if (pd.atypeToPtype(ani->getAtom(), pt))
                         {
-                            bFound = true;
+                            if(pt == pType->getType())
+                            {
+                                bFound = true;
+                            }
                         }
                     }
                     if (bFound)
@@ -704,7 +707,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, lot, "", "", &val, nullptr, &T))
+                        T = -1;
+                        if (mpi.getProp(mpo, iqmQM, lot, "", "electronic", &val, nullptr, &T))
                         {
                             nqm++;
                         }

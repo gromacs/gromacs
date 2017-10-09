@@ -1020,7 +1020,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-     if (iQM == iqmExp)
+    if (iQM == iqmExp)
     {
         for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
