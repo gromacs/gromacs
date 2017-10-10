@@ -61,16 +61,35 @@ struct swaphistory_t;
 
 /*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
  */
-struct ObservablesHistory
+class ObservablesHistory
 {
-    //! History for energy observables, used for output only
-    std::unique_ptr<energyhistory_t> energyHistory;
+    public:
+        //! History for energy observables, used for output only
+        std::unique_ptr<energyhistory_t> energyHistory;
 
-    //! Essential dynamics and flooding history
-    std::unique_ptr<edsamhistory_t> edsamHistory;
+        //! Essential dynamics and flooding history
+        std::unique_ptr<edsamhistory_t> edsamHistory;
 
-    //! Ion/water position swapping history
-    std::unique_ptr<swaphistory_t> swapHistory;
+        //! Ion/water position swapping history
+        std::unique_ptr<swaphistory_t> swapHistory;
+
+        //! Default constructor
+        ObservablesHistory();
+
+        //! Copy constructor
+        ObservablesHistory(const ObservablesHistory &observablesHistory);
+
+        //! Move constructor
+        ObservablesHistory(ObservablesHistory &&observablesHistory);
+
+        //! Destructor
+        ~ObservablesHistory();
+
+        //! Copy assignment operator
+        ObservablesHistory &operator= (const ObservablesHistory &observablesHistory);
+
+        //! Move assignment operator
+        ObservablesHistory &operator= (ObservablesHistory &&observablesHistory);
 };
 
 #endif
