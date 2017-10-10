@@ -67,7 +67,7 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 struct t_swapcoords;
-struct ObservablesHistory;
+class ObservablesHistory;
 
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
