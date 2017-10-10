@@ -711,10 +711,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
             /* Construct group name from element composition */
             /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
             
-            
-            auto atype = pd.ptypeToAtype(pType->getType().c_str());
             snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
-                     atype->getType().c_str(),
+                     pType->getType().c_str(),
                      (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "",
                      (nqm > 0)      ? gmx_itoa(nqm).c_str()      : "",
                      (pType->getPolarizability() > 0)  ? gmx_ftoa(pType->getPolarizability()).c_str()  : "",
