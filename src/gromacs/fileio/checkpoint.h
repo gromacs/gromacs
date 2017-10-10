@@ -48,8 +48,8 @@ extern "C" {
 #endif
 
 class energyhistory_t;
+class ObservablesHistory;
 struct gmx_file_position_t;
-struct ObservablesHistory;
 struct t_commrec;
 struct t_fileio;
 struct t_inputrec;

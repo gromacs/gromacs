@@ -45,9 +45,9 @@
 
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
-struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
+class ObservablesHistory;
 
 #ifdef __cplusplus
 extern "C" {
