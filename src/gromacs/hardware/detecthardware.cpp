@@ -386,8 +386,7 @@ hardwareTopologyPrepareDetection()
     (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
 
     // Modify this conditional when/if x86 or PowerPC starts to sleep some cores
-    if (c_architecture != Architecture::X86 &&
-        c_architecture != Architecture::PowerPC)
+    if (!c_isX86 && !c_isPowerPC)
     {
         int                      countConfigured  = sysconf(_SC_NPROCESSORS_CONF);
         std::vector<std::thread> workThreads(countConfigured);
@@ -433,7 +432,7 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
         GMX_LOG(mdlog.info).
             appendTextFormatted("Note: %d CPUs configured, but only %d were detected to be online.\n", countConfigured, countFromDetection);
 
-        if (c_architecture == Architecture::X86 &&
+        if (c_isX86 &&
             countConfigured == 2*countFromDetection)
         {
             GMX_LOG(mdlog.info).
@@ -441,7 +440,7 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
         }
         // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
         // We only warn if it is completely disabled since default performance drops with SMT8.
-        if (c_architecture == Architecture::PowerPC &&
+        if (c_isPowerPC &&
             countConfigured == 8*countFromDetection)
         {
             GMX_LOG(mdlog.info).

@@ -44,27 +44,47 @@
 namespace gmx
 {
 
-//! Enum for GROMACS CPU hardware detection support
-enum class Architecture
-{
-    Unknown, //! Not one of the cases below
-    X86,     //! X86
-    Arm,     //! ARM
-    PowerPC  //! IBM PowerPC
-};
-
-//! Constant that tells what the architecture is
-static constexpr Architecture c_architecture =
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
-    Architecture::X86;
-#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
-    Architecture::Arm;
-#elif defined __powerpc__ || defined __ppc__ || defined __PPC__
-    Architecture::PowerPC;
+//! Whether the target architecture is 386.
+static constexpr bool c_is386 =
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86
+    true
 #else
-    Architecture::Unknown;
+    false
 #endif
+;
+//! Whether the target architecture is 64-bit x86.
+static constexpr bool c_isX86_64 =
+#if defined __x86_64__ || defined __x86_64 || \
+    defined __amd64__ || defined __amd64 || \
+    defined _M_X64 || defined _M_AMD64
+    true
+#else
+    false
+#endif
+;
+
+//! Whether the target architecture is any x86.
+static constexpr bool c_isX86 = c_is386 || c_isX86_64;
+
+//! Whether the target architecture is ARM.
+static constexpr bool c_isArm =
+#if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
+    true
+#else
+    false
+#endif
+;
+
+//! Whether the target architecture is PowerPC.
+static constexpr bool c_isPowerPC =
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__
+    true
+#else
+    false
+#endif
+;
+
+static constexpr bool c_isUnknownArchitecture = !(c_isX86 || c_isArm || c_isPowerPC);
 
 }      // namespace gmx
 

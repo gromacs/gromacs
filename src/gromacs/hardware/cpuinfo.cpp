@@ -128,6 +128,13 @@ trimString(std::string * s)
     s->erase(std::find_if(s->rbegin(), s->rend(), [](char &c) -> bool { return !std::isspace(c); }).base(), s->end());
 }
 
+static constexpr bool c_usingPic =
+#if defined(__PIC__)
+    true
+#else
+    false
+#endif
+;
 
 /******************************************************************************
  *                                                                            *
@@ -154,7 +161,7 @@ executeX86CpuID(unsigned int     gmx_unused level,
                 unsigned int *              ecx,
                 unsigned int *              edx)
 {
-    if (c_architecture == Architecture::X86)
+    if (c_isX86)
     {
 #if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
 
@@ -164,17 +171,24 @@ executeX86CpuID(unsigned int     gmx_unused level,
         *ebx = 0;
         *edx = 0;
 
-#    if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
-        // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
-        __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
-                              "cpuid            \n\t"
-                              "xchgl %%ebx, %1  \n\t"
-                              : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
-#    else
-        // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
-        __asm__ __volatile__ ("cpuid            \n\t"
-                              : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
-#    endif
+        if (c_is386 && c_usingPic)
+        {
+            // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
+            __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
+                                  "cpuid            \n\t"
+                                  "xchgl %%ebx, %1  \n\t"
+                                  : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
+        }
+        else if (c_isX86_64)
+        {
+            // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
+            __asm__ __volatile__ ("cpuid            \n\t"
+                                  : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
+        }
+        else
+        {
+            // Not x86, could happen when a compiler targetting non-x86 pretends to be GCC
+        }
         return 0;
 
 #elif defined _MSC_VER
@@ -873,7 +887,7 @@ CpuInfo CpuInfo::detect()
 {
     CpuInfo result;
 
-    if (c_architecture == Architecture::X86)
+    if (c_isX86)
     {
         result.vendor_ = detectX86Vendor();
 
@@ -892,11 +906,11 @@ CpuInfo CpuInfo::detect()
     else
     {
         // Not x86
-        if (c_architecture == Architecture::Arm)
+        if (c_isArm)
         {
             result.vendor_  = CpuInfo::Vendor::Arm;
         }
-        else if (c_architecture == Architecture::PowerPC)
+        else if (c_isPowerPC)
         {
             result.vendor_  = CpuInfo::Vendor::Ibm;
         }
