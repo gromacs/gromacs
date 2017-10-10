@@ -41,6 +41,8 @@
 #ifndef GMX_MDLIB_SWAPHISTORY_H
 #define GMX_MDLIB_SWAPHISTORY_H
 
+#include "gromacs/mdtypes/md_enums.h"
+
 /* History of an ion type used in position swapping
  */
 typedef struct swapstateIons_t
