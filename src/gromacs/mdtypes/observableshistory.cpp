@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,38 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*
- * This file contains data types containing essential dynamics and
- * flooding data to be stored in the checkpoint file.
- */
+#include "gmxpre.h"
 
-#ifndef GMX_MDLIB_EDSAMHISTORY_H
-#define GMX_MDLIB_EDSAMHISTORY_H
+#include "observableshistory.h"
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/mdtypes/edsamhistory.h"
+#include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/swaphistory.h"
 
-/* Helper structure to be able to make essential dynamics / flooding group(s) whole
- *
- * If one uses essential dynamics or flooding on a group of atoms from
- * more than one molecule, we cannot make this group whole with
- * do_pbc_first_mtop(). We assume that the ED group has the correct PBC
- * representation at the beginning of the simulation and keep track
- * of the shifts to always get it into that representation.
- * For proper restarts from a checkpoint we store the positions of the
- * reference group at the time of checkpoint writing.
- */
-typedef struct edsamhistory_t
-{
-    gmx_bool      bFromCpt;     // Did we start from a checkpoint file?
-    int           nED;          // No. of ED/Flooding data sets, if <1 no ED
-    int          *nref;         // No. of atoms in i'th reference structure
-    int          *nav;          // Same for average structure
-    rvec        **old_sref;     // Positions of the reference atoms at the last time step (with correct PBC representation)
-    rvec        **old_sref_p;   // Pointer to these positions
-    rvec        **old_sav;      // Same for the average positions
-    rvec        **old_sav_p;    // Pointer to these positions
-}
-edsamhistory_t;
-
-#endif
+ObservablesHistory::ObservablesHistory()  = default;
+ObservablesHistory::~ObservablesHistory() = default;
