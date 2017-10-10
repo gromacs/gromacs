@@ -53,10 +53,12 @@ enum class Architecture
     PowerPC  //! IBM PowerPC
 };
 
+#define GMX_IS_X86_32 (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86)
+#define GMX_IS_X86_64 (defined __x86_64__ || defined __x86_64 || defined __amd64__ || defined __amd64 || defined _M_X64 || defined _M_AMD64)
+
 //! Constant that tells what the architecture is
 static constexpr Architecture c_architecture =
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+#if GMX_IS_X86_32 || GMX_IS_X86_64
     Architecture::X86;
 #elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
     Architecture::Arm;
