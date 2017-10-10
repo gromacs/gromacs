@@ -61,7 +61,7 @@ typedef struct gmx_edsam *gmx_edsam_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct ObservablesHistory;
+class ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
