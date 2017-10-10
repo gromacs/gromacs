@@ -170,11 +170,12 @@ executeX86CpuID(unsigned int     gmx_unused level,
                               "cpuid            \n\t"
                               "xchgl %%ebx, %1  \n\t"
                               : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
-#    else
+#    elif (defined __amd64__ || defined __amd64 || defined __x86_64__ || __x86_64 || defined _M_X64 || defined _M_AMD64)
         // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
         __asm__ __volatile__ ("cpuid            \n\t"
                               : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
 #    endif
+        // Not x86, could happen when a compiler targetting non-x86 pretends to be GCC
         return 0;
 
 #elif defined _MSC_VER
