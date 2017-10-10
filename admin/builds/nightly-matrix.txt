@@ -1,0 +1,21 @@
+# Comment line(s) preceding each configuration document the main
+# intent behind that configuration, so that we can correctly judge
+# whether to preserve that during maintenance decisions.
+#
+# Other configurations might coincidentally test such configurations
+# (e.g. because they are the current default), but it is appropriate
+# to intend to teach each feature (or a feature combination) exactly
+# once, and for the intent to be reflected precisely in the
+# configuration syntax, so that the configurations are stable even
+# if the defaults change in future.
+#
+# The phrase "at time of release" refers to either the initial
+# GROMACS release from that branch, or the next expected release
+# from that branch. (We will tend not to retroactively support
+# newer infrastructure in CI, unless it's either easy or of
+# high impact.)
+
+# Test clang on ARM v8
+# Test ARM_NEON SIMD
+clang-3.9 simd=ARM_NEON_ASIMD release-with-assert
+

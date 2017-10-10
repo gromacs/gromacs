@@ -512,7 +512,14 @@ if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
     endif()
     foreach(callconv ${CALLCONV_LIST})
         set(callconv_compile_var "_callconv_${callconv}")
-        check_c_source_compiles("int ${callconv} f(int i) {return i;} int main(void) {return f(0);}" ${callconv_compile_var})
+        # Some compilers warn about targets for which attributes are
+        # ignored (e.g. clang on ARM), and in such cases we want this
+        # check to lead to using no attribute in subsequent GROMACS
+        # compilation, to avoid issuing the warning for lots of files.
+        check_c_source_compiles("
+#pragma GCC diagnostic error \"-Wignored-attributes\"
+int ${callconv} f(int i) {return i;} int main(void) {return f(0);}
+" ${callconv_compile_var})
         if(${callconv_compile_var})
             set(GMX_SIMD_CALLING_CONVENTION "${callconv}" CACHE INTERNAL "Calling convention for SIMD routines" FORCE)
             break()
