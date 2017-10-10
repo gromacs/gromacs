@@ -164,16 +164,19 @@ executeX86CpuID(unsigned int     gmx_unused level,
         *ebx = 0;
         *edx = 0;
 
-#    if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
+#    if GMX_IS_X86_32 && defined(__PIC__)
         // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
         __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
                               "cpuid            \n\t"
                               "xchgl %%ebx, %1  \n\t"
                               : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
-#    else
+#    elif GMX_IS_X86_64
         // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
         __asm__ __volatile__ ("cpuid            \n\t"
                               : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
+#    else
+        // Not a normal x86, which could happen when a compiler
+        // targetting non-x86 pretends to be GCC.
 #    endif
         return 0;
 
