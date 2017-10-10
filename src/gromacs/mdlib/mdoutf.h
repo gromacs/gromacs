@@ -44,10 +44,10 @@
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
+class ObservablesHistory;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct MdrunOptions;
-struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
