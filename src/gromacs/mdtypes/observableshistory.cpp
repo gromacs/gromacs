@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,51 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
- *
- * \brief
- * This file contains the definition of a container for history data
- * for simulation observables.
- *
- * The container is used for storing the simulation state data that needs
- * to be written to / read from checkpoint file. This struct should only
- * contain pure observable data. Microstate data should be in t_state.
- * The state of the mdrun machinery is also stored elsewhere.
- *
- * \author Berk Hess
- *
- * \inlibraryapi
- * \ingroup module_mdtypes
- */
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/edsamhistory.h"
+#include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/mdtypes/observableshistory.h"
 
-#ifndef GMX_MDLIB_OBSERVABLESHISTORY_H
-#define GMX_MDLIB_OBSERVABLESHISTORY_H
-
-#include <memory>
-
-class energyhistory_t;
-struct edsamhistory_t;
-struct swaphistory_t;
-
-/*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
- */
-class ObservablesHistory
+ObservablesHistory::ObservablesHistory()
 {
-    public:
-        //! History for energy observables, used for output only
-        std::unique_ptr<energyhistory_t> energyHistory;
+}
 
-        //! Essential dynamics and flooding history
-        std::unique_ptr<edsamhistory_t> edsamHistory;
-
-        //! Ion/water position swapping history
-        std::unique_ptr<swaphistory_t> swapHistory;
-
-        //! Constructor
-        ObservablesHistory();
-        
-        //! Destructor
-        ~ObservablesHistory();
-};
-
-#endif
+ObservablesHistory::~ObservablesHistory()
+{
+}

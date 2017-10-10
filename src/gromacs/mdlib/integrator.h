@@ -58,12 +58,12 @@ struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_output_env_t;
 struct MdrunOptions;
-struct ObservablesHistory;
 struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 class t_state;
+class ObservablesHistory;
 
 namespace gmx
 {
