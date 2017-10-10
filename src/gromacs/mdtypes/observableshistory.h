@@ -71,6 +71,9 @@ struct ObservablesHistory
 
     //! Ion/water position swapping history
     std::unique_ptr<swaphistory_t> swapHistory;
+
+    //! Default destructor
+    ~ObservablesHistory();
 };
 
 #endif
