@@ -57,44 +57,29 @@
 namespace alexandria
 {
 
-class LongTable
+typedef struct {
+    char       *ptype, *miller, *bosque;
+    gmx_stats_t lsq;
+    int         nexp, nqm;
+} t_sm_lsq;
+
+class ExpData
 {
-    private:
-        FILE                    *fp_;
-        const char              *font_;
-        std::string              caption_;
-        std::string              columns_;
-        std::string              label_;
-        std::vector<std::string> headLines_;
-        bool                     bLandscape_;
     public:
-        //! Constructor with a file pointer
-        LongTable(FILE *fp, bool bLandscape, const char *font);
+        double      val_, err_, temp_;
+        std::string ref_, conf_, type_, unit_;
 
-        //! Constructor with a file name
-        LongTable(const char *fn, bool bLandscape);
+        ExpData(double val, double err, double temp, std::string ref, std::string conf, std::string type, std::string unit)
+        { val_ = val; err_ = err; temp_ = temp; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
+};
 
-        //! Destructor
-        ~LongTable() {};
-
-        void setCaption(const char *caption) { caption_.assign(caption); }
-
-        void setLabel(const char *label) { label_.assign(label); }
-
-        //! Generate columns entry with first column left aligned and other center
-        void setColumns(int nColumns);
-
-        void setColumns(const char *columns) { columns_.assign(columns); }
-
-        void addHeadLine(const char *headline) { headLines_.push_back(headline); }
-
-        void printHeader();
-
-        void printFooter();
-
-        void printLine(std::string line);
-
-        void printHLine();
+class CalcData
+{
+    public:
+        double val_, err_, temp_;
+        int    found_;
+        CalcData(double val, double err, double temp, int found)
+        { val_ = val; err_ = err; temp_ = temp; found_ = found; }
 };
 
 LongTable::LongTable(FILE *fp, bool bLandscape, const char *font)
@@ -102,7 +87,7 @@ LongTable::LongTable(FILE *fp, bool bLandscape, const char *font)
     fp_         = fp;
     bLandscape_ = bLandscape;
     font_       = font;
-    if (NULL == fp_)
+    if (nullptr == fp_)
     {
         GMX_THROW(gmx::FileIOError("File not open"));
     }
@@ -112,7 +97,7 @@ LongTable::LongTable(const char *fn, bool bLandscape)
 {
     fp_         = fopen(fn, "w");
     bLandscape_ = bLandscape;
-    if (NULL == fp_)
+    if (nullptr == fp_)
     {
         GMX_THROW(gmx::FileIOError("Could not open file"));
     }
@@ -133,7 +118,7 @@ void LongTable::printHeader()
     {
         fprintf(fp_, "\\begin{landscape}\n");
     }
-    if (NULL != font_)
+    if (nullptr != font_)
     {
         fprintf(fp_, "\\begin{%s}\n", font_);
     }
@@ -162,7 +147,7 @@ void LongTable::printHeader()
 void LongTable::printFooter()
 {
     fprintf(fp_, "\\end{longtable}\n");
-    if (NULL != font_)
+    if (nullptr != font_)
     {
         fprintf(fp_, "\\end{%s}\n", font_);
     }
@@ -253,7 +238,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
     char                               buf[256];
     gmx_stats_t                        lsq;
     std::vector<gmx_stats_t>           lsqtot;
-    LongTable                          lt(fp, true, NULL);
+    LongTable                          lt(fp, true, nullptr);
     CompositionSpecs                   cs;
     const char                        *alex = cs.searchCS(iCalexandria)->name();
 
@@ -442,7 +427,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
     for (auto &k : lsqtot)
     {
         real mse;
-        if (gmx_stats_get_mse_mae(k, &mse, NULL) ==
+        if (gmx_stats_get_mse_mae(k, &mse, nullptr) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mse);
@@ -459,7 +444,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
     for (auto &k : lsqtot)
     {
         real mae;
-        if (gmx_stats_get_mse_mae(k, NULL, &mae) ==
+        if (gmx_stats_get_mse_mae(k, nullptr, &mae) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mae);
@@ -642,12 +627,6 @@ static void atomtype_tab_header(LongTable &lt)
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
-
-typedef struct {
-    char       *ptype, *miller, *bosque;
-    gmx_stats_t lsq;
-    int         nexp, nqm;
-} t_sm_lsq;
 
 static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                                              const Poldata        &pd,
@@ -972,25 +951,6 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
     }
 }
 
-class ExpData
-{
-    public:
-        double      val_, err_, temp_;
-        std::string ref_, conf_, type_, unit_;
-
-        ExpData(double val, double err, double temp, std::string ref, std::string conf, std::string type, std::string unit)
-        { val_ = val; err_ = err; temp_ = temp; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
-};
-
-class CalcData
-{
-    public:
-        double val_, err_, temp_;
-        int    found_;
-        CalcData(double val, double err, double temp, int found)
-        { val_ = val; err_ = err; temp_ = temp; found_ = found; }
-};
-
 void gmx_molprop_prop_table(FILE                 *fp,
                             MolPropObservable     mpo,
                             real                  rel_toler,
@@ -1043,7 +1003,7 @@ void gmx_molprop_prop_table(FILE                 *fp,
                 switch (mpo)
                 {
                     case MPO_DIPOLE:
-                        for (MolecularDipoleIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
+                        for (auto mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
                         {
                             if (mdi->getType().compare(exp_type) == 0)
                             {
@@ -1058,7 +1018,7 @@ void gmx_molprop_prop_table(FILE                 *fp,
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (MolecularPolarizabilityIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
+                        for (auto mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
                         {
                             if (mdi->getType().compare(exp_type) == 0)
                             {
@@ -1113,7 +1073,7 @@ void gmx_molprop_prop_table(FILE                 *fp,
                         cd.push_back(CalcData(0, 0, 0, 0));
                     }
                 }
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Found %d experiments and %d calculations for %s\n",
                             (int)ed.size(), nqm, exp_type);

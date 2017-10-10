@@ -51,6 +51,48 @@ extern char *itoa(int f);
 
 namespace alexandria
 {
+
+class LongTable
+{
+    private:
+        FILE                    *fp_;
+        const char              *font_;
+        std::string              caption_;
+        std::string              columns_;
+        std::string              label_;
+        std::vector<std::string> headLines_;
+        bool                     bLandscape_;
+    public:
+        //! Constructor with a file pointer
+        LongTable(FILE *fp, bool bLandscape, const char *font);
+
+        //! Constructor with a file name
+        LongTable(const char *fn, bool bLandscape);
+
+        //! Destructor
+        ~LongTable() {};
+
+        void setCaption(const char *caption) { caption_.assign(caption); }
+
+        void setLabel(const char *label) { label_.assign(label); }
+
+        //! Generate columns entry with first column left aligned and other center
+        void setColumns(int nColumns);
+
+        void setColumns(const char *columns) { columns_.assign(columns); }
+
+        void addHeadLine(const char *headline) { headLines_.push_back(headline); }
+
+        void printHeader();
+
+        void printFooter();
+
+        void printLine(std::string line);
+
+        void printHLine();
+};
+
+
 /*! \brief
  * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category
  *
