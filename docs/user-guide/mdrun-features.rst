@@ -139,10 +139,13 @@ This is a module to help embed a membrane protein into an equilibrated
 lipid bilayer at a position and orientation specified by the user. 
 
 This method was initially described as a ProtSqueeze technique 
-(Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94) and 
-later implemented in |Gromacs| as g_membed tool (Wolf et al, J Comp Chem 31 (2010) 2169-2174). 
+(`Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94`_) and 
+later implemented in |Gromacs| as g_membed tool (`Wolf et al, J Comp Chem 31 (2010) 2169-2174`_). 
 Currently the functionality of g_membed is available in mdrun if 
 ``-membed`` option is specified (see below).
+
+.. _Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94: https://dx.doi.org/10.1021/ci600553y
+.. _Wolf et al, J Comp Chem 31 (2010) 2169-2174: http://onlinelibrary.wiley.com/doi/10.1002/jcc.21507/full
 
 The main advantage is that it is possible to use very complex lipid bilayers
 with a number of different components that have been relaxed for a

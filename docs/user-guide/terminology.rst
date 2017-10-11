@@ -224,6 +224,8 @@ doesn't necessarily mean something is wrong. It just shows the above: an
 average structure from a simulation is not necessarily a physically meaningful
 structure.
 
+.. _blowing-up:
+
 Blowing up
 ----------
 
@@ -348,3 +350,25 @@ Other sources of possible problems are in the biomolecule topology itself.
    don't. You probably have missing atoms or some terrible input geometry.
 
 .. _reference manual: gmx-manual-parent-dir_
+
+.. _gmx-force-field:
+
+Force field
+-----------
+
+Add information about force field definition here
+
+
+.. _gmx-residue:
+
+Residue
+-------
+
+Add definition of a residue here
+
+.. _gmx-energy-min:
+
+Energy minimisation
+-------------------
+
+Add short explanation of energy minimization here
