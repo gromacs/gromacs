@@ -32,3 +32,4 @@ For background on algorithms and implementations, see the
    cmdline
    environment-variables
    terminology
+   common-errors
