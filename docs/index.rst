@@ -19,9 +19,9 @@ Contents:
 
 * `Reference Manual`_ (PDF format)
 
-* Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_
+.. * Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_
 
-* Coping with `errors while using |Gromacs| <http://www.gromacs.org/Documentation/Errors>`_
+.. * Coping with `errors while using |Gromacs| <http://www.gromacs.org/Documentation/Errors>`_
 
 * Links to `tutorial material <http://www.gromacs.org/Documentation/Tutorials>`_
 

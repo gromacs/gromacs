@@ -147,8 +147,8 @@ transfer the buffer size printed by :ref:`gmx grompp` to your NVE [.mdp] file.
 
 When a GPU is used, nstlist is automatically increased by :ref:`gmx mdrun`,
 usually to 20 or more; rlist is increased along to stay below the
-target energy drift. Further information on [running :ref:`gmx mdrun` with
-GPUs] is available.
+target energy drift. Further information on running :ref:`gmx mdrun` with
+GPUs :ref:`is available<gmx-mdrun-on-gpu>`.
 
 Further information
 -------------------
@@ -157,6 +157,6 @@ For further information on algorithmic and implementation details of
 the Verlet cut-off scheme and the MxN kernels, as well as detailed
 performance analysis, please consult the following article:
 
-Páll, S. and Hess, B. A flexible algorithm for calculating pair
+`Páll, S. and Hess, B. A flexible algorithm for calculating pair
 interactions on SIMD architectures. Comput. Phys. Commun. 184,
-2641–2650 (2013). <http://dx.doi.org/10.1016/j.cpc.2013.06.003>
+2641–2650 (2013). <http://dx.doi.org/10.1016/j.cpc.2013.06.003>`__

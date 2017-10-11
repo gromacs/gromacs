@@ -1,3 +1,5 @@
+.. _gmx-floating-point:
+
 Floating point arithmetic
 =========================
 

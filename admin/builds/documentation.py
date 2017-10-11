@@ -58,7 +58,7 @@ def do_build(context):
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.4'))
+        doxygen_version='1.8.5', sphinx_version='1.4.1'))
     context.run_cmake(cmake_opts);
     context.build_target(target='gmx', parallel=True,
             continue_on_failure=True)
@@ -128,11 +128,26 @@ def do_build(context):
 
     ignore_urls = ['html-full', 'html-user', 'html-lib', '.tar.gz', '_sources']
     cmd = ['linkchecker', 'docs/html/index.html', '-f',
-            context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc']
+            context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc',
+            '-Fxml']
     for url in ignore_urls:
         cmd.extend(['--ignore-url', url])
-    # TODO: Actually check the linkchecker results
-    context.run_cmd(cmd, ignore_failure=True)
+
+    context.run_cmd(cmd, ignore_failure=False)
+
+    logfile = os.path.join(context.workspace.build_dir,
+        'docs/linkchecker-out.xml')
+    if os.path.isfile(logfile):
+        with open(logfile, 'r') as f:
+            manual_log = f.read()
+            if re.search(r'URLError:', manual_log):
+                context.mark_unstable('non resolvable URL in webpage')
+            if re.search(r'warnings', manual_log):
+                context.mark_unstable('empty pages in web documentation')
+        context.publish_logs([logfile], category='webpage')
+
+    if context.failed:
+        return
 
     if release:
         version_info = context.read_cmake_variable_file('VersionInfo.cmake')
