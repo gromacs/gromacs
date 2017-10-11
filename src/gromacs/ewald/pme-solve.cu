@@ -151,22 +151,22 @@ __global__ void pme_solve_kernel(const struct pme_gpu_cuda_kernel_params_t kerne
     if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor) & (gridLineIndex < gridLinesPerBlock))
     {
         /* The offset should be equal to the global thread index for coalesced access */
-        const int            gridIndex     = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
-        float2 __restrict__ *gm_gridCell   = gm_grid + gridIndex;
+        const int             gridIndex     = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
+        float2 * __restrict__ gm_gridCell   = gm_grid + gridIndex;
 
-        const int            kMajor = indexMajor + localOffsetMajor;
+        const int             kMajor  = indexMajor + localOffsetMajor;
         /* Checking either X in XYZ, or Y in YZX cases */
-        const float          mMajor = (kMajor < maxkMajor) ? kMajor : (kMajor - nMajor);
+        const float           mMajor  = (kMajor < maxkMajor) ? kMajor : (kMajor - nMajor);
 
-        const int            kMiddle = indexMiddle + localOffsetMiddle;
-        float                mMiddle = kMiddle;
+        const int             kMiddle = indexMiddle + localOffsetMiddle;
+        float                 mMiddle = kMiddle;
         /* Checking Y in XYZ case */
         if (gridOrdering == GridOrderingInternal::XYZ)
         {
             mMiddle = (kMiddle < maxkMiddle) ? kMiddle : (kMiddle - nMiddle);
         }
-        const int       kMinor        = localOffsetMinor + indexMinor;
-        float           mMinor        = kMinor;
+        const int             kMinor  = localOffsetMinor + indexMinor;
+        float                 mMinor  = kMinor;
         /* Checking X in YZX case */
         if (gridOrdering == GridOrderingInternal::YZX)
         {
@@ -451,7 +451,7 @@ void pme_gpu_solve(const pme_gpu_t *pmeGpu, t_complex *h_grid,
 
     const int maxBlockSize      = c_solveMaxThreadsPerBlock;
     const int gridLineSize      = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int gridLinesPerBlock = max(maxBlockSize / gridLineSize, 1);
+    const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
     const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
     const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
     const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
