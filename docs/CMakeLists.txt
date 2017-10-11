@@ -117,6 +117,7 @@ if (SPHINX_FOUND)
         dev-manual/testutils.rst
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
+        dev-manual/documentation-generation.rst
         fragments/doxygen-links.rst
         install-guide/index.rst
         user-guide/index.rst

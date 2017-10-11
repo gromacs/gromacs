@@ -90,8 +90,8 @@ simulations. Some stages are optional for some kinds of simulations.
    Berendsen until after the density is stabilized, before a further
    switch to a barostat that produces the correct ensemble), then move
    further (if needed) to reach your production simulation ensemble
-   (e.g. NVT, NVE). If you have problems here with the system `blowing
-   up <http://www.gromacs.org/Documentation/Terminology/Blowing_Up>`_,
+   (e.g. NVT, NVE). If you have problems here with the system :ref:`blowing
+   up <blowing-up>`,
    consider using the suggestions on that page, e.g. position
    restraints on solutes, or not using bond constraints, or using
    smaller integration timesteps, or several gentler heating stage(s).
@@ -109,7 +109,7 @@ simulations. Some stages are optional for some kinds of simulations.
     with how the force field was derived and how to measure the
     property or phenomena of interest.
 
-.. _Reference Manual: `gmx-manual`_
+.. _Reference Manual: `gmx-manual-parent-dir`_
 
 Tips and tricks
 ---------------

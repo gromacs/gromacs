@@ -27,5 +27,6 @@ The guide is currently split into a few main parts:
    overview
    build-system
    relocatable-binaries
+   documentation-generation
    style
    tools
