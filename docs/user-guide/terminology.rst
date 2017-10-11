@@ -224,6 +224,8 @@ doesn't necessarily mean something is wrong. It just shows the above: an
 average structure from a simulation is not necessarily a physically meaningful
 structure.
 
+.. _blowing-up:
+
 Blowing up
 ----------
 
@@ -282,6 +284,8 @@ particular timestep size, there are a couple of basic solutions:
 
 Better system preparation is a way to make sure that forces don't get large, if
 the problems are occurring near the beginning of a simulation.
+
+.. _system-diagnosis:
 
 Diagnosing an unstable system
 -----------------------------
@@ -348,3 +352,57 @@ Other sources of possible problems are in the biomolecule topology itself.
    don't. You probably have missing atoms or some terrible input geometry.
 
 .. _reference manual: gmx-manual-parent-dir_
+
+.. _gmx-md:
+
+Molecular dynamics
+------------------
+
+Say what is MD actually.
+
+.. _gmx-force-field:
+
+Force field
+-----------
+
+Force fields are sets of potential functions and parametrized interactions that can be used to study
+physical systems. A general introduction to their history, function and use is beyond the scope of this
+guide, and the user is asked to consult either the relevant literature or 
+try to start at the relevant `Wikipedia page`_.
+
+.. _Wikipedia page: https://en.wikipedia.org/wiki/Force_field_(chemistry)
+
+.. _gmx-vdw:
+
+van der Waals radius
+--------------------
+
+Add what this means here.
+
+.. _gmx-residue:
+
+Residue
+-------
+
+Add definition of a residue here.
+
+.. _gmx-energy-min:
+
+Energy minimisation
+-------------------
+
+Add short explanation of energy minimization here.
+
+.. _gmx-PME:
+
+Particle Mesh Ewald
+-------------------
+
+Add info here for PME in |Gromacs|
+
+.. _gmx-thermostats:
+
+Thermostats in |Gromacs|
+------------------------
+
+Short definition of a thermostat goes here.
