@@ -104,6 +104,8 @@ if (SPHINX_FOUND)
         download.rst
         dev-manual/index.rst
         dev-manual/build-system.rst
+        dev-manual/commitstyle.rst
+        dev-manual/documentation-generation.rst
         dev-manual/doxygen.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
@@ -113,6 +115,7 @@ if (SPHINX_FOUND)
         dev-manual/naming.rst
         dev-manual/overview.rst
         dev-manual/relocatable-binaries.rst
+        dev-manual/reportstyle.rst
         dev-manual/style.rst
         dev-manual/testutils.rst
         dev-manual/tools.rst

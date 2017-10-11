@@ -224,6 +224,8 @@ doesn't necessarily mean something is wrong. It just shows the above: an
 average structure from a simulation is not necessarily a physically meaningful
 structure.
 
+.. _blowing-up:
+
 Blowing up
 ----------
 
