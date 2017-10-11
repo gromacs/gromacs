@@ -159,7 +159,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
                             /* Transformed grid */
                             TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                            const auto                    ulpToleranceGrid = 16;
+                            const auto                    ulpToleranceGrid = 40;
                             gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
