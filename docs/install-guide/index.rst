@@ -324,8 +324,8 @@ Other optional build components
   source already.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
-  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx 1.2.4,
-  and pygments.
+  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx 
+  |EXPECTED_SPHINX_VERSION|, and pygments.
 * The |Gromacs| utility programs often write data files in formats
   suitable for the Grace plotting tool, but it is straightforward to
   use these files in other plotting programs, too.
@@ -338,6 +338,8 @@ resources available on the web, which we suggest you search for when
 you encounter problems not covered here. The material below applies
 specifically to builds on Unix-like systems, including Linux, and Mac
 OS X. For other platforms, see the specialist instructions below.
+
+.. _configure-cmake:
 
 Configuring with CMake
 ----------------------
@@ -1012,6 +1014,8 @@ follow these steps to find the solution:
    questions, so you will get an answer faster if you provide as much
    information as you think could possibly help. High quality bug
    reports tend to receive rapid high quality answers.
+
+.. _gmx-special-build:
 
 Special instructions for some platforms
 =======================================

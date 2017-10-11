@@ -8,6 +8,8 @@
 Molecular dynamics parameters (.mdp options)
 ============================================
 
+.. _mdp-general:
+
 General information
 -------------------
 

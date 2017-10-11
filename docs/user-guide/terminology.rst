@@ -24,6 +24,8 @@ waters, fluctuations of 500-600 bar are standard. Since the fluctuations go
 down with the square root of the number of particles, a system of 21600 water
 molecules (100 times larger) will still have pressure fluctuations of 50-60 bar.
 
+.. _gmx-pbc:
+
 Periodic boundary conditions
 ----------------------------
 
@@ -95,6 +97,8 @@ the first frame using the reference structure provided with -s. If the reference
 structure (run input file) is not clustered/whole, using ``-pbc nojump``
 will undo steps 1 and 2.
 
+.. _gmx-thermostats:
+
 Thermostats
 -----------
 
@@ -129,6 +133,8 @@ think of the role of a thermostat as ensuring that we have
 See `Reference Manual`_ for details on how temperature coupling is applied and
 the types currently available.
 
+.. _gmx-thermostats-do:
+
 What to do
 ^^^^^^^^^^
 
@@ -142,6 +148,8 @@ Some hints on practices that generally are a good idea:
   the first bullet in `What not to do`_). In some cases, using
   ``tc-grps = System`` may lead to the "hot solvent/cold solute" problem
   described in the 3rd reference in `Further reading`_.
+
+.. _gmx-thermostats-dont:
 
 What not to do
 ^^^^^^^^^^^^^^
@@ -165,15 +173,15 @@ Some hints on practices that generally not a good idea to use:
 Further reading
 ^^^^^^^^^^^^^^^
 
-#. Cheng, A. & Merz, K. M. Application of the nosé- hoover chain algorithm to
+#. `Cheng, A. & Merz, K. M. Application of the nosé- hoover chain algorithm to
    the study of protein dynamics. *J. Phys. Chem.* **100** (5), 1927–1937
-   (1996).
-#. Mor, A., Ziv, G. & Levy, Y. Simulations of proteins with inhomogeneous
+   (1996). <http://pubs.acs.org/doi/abs/10.1021/jp951968y>`__
+#. `Mor, A., Ziv, G. & Levy, Y. Simulations of proteins with inhomogeneous
    degrees of freedom: the effect of thermostats. *J. Comput. Chem.* **29**
-   (12), 1992–1998 (2008).
-#. Lingenheil, M., Denschlag, R., Reichold, R. & Tavan, P. The
+   (12), 1992–1998 (2008). <http://dx.doi.org/10.1002/jcc.20951>`__
+#. `Lingenheil, M., Denschlag, R., Reichold, R. & Tavan, P. The
    "hot-solvent/cold-solute" problem revisited. *J. Chem. Theory Comput.* **4**
-   (8), 1293–1306 (2008).
+   (8), 1293–1306 (2008). <http://pubs.acs.org/doi/abs/10.1021/ct8000365>`__
 
 Energy conservation
 -------------------
@@ -223,6 +231,8 @@ and find artifacts like unphysical bond lengths, weird structures, etc., this
 doesn't necessarily mean something is wrong. It just shows the above: an
 average structure from a simulation is not necessarily a physically meaningful
 structure.
+
+.. _blowing-up:
 
 Blowing up
 ----------
@@ -282,6 +292,8 @@ particular timestep size, there are a couple of basic solutions:
 
 Better system preparation is a way to make sure that forces don't get large, if
 the problems are occurring near the beginning of a simulation.
+
+.. _system-diagnosis:
 
 Diagnosing an unstable system
 -----------------------------
@@ -348,3 +360,50 @@ Other sources of possible problems are in the biomolecule topology itself.
    don't. You probably have missing atoms or some terrible input geometry.
 
 .. _reference manual: gmx-manual-parent-dir_
+
+.. _gmx-md:
+
+Molecular dynamics
+------------------
+
+.. TODO refer to reference manual definitions
+
+.. _gmx-force-field:
+
+Force field
+-----------
+
+Force fields are sets of potential functions and parametrized interactions that can be used to study
+physical systems. A general introduction to their history, function and use is beyond the scope of this
+guide, and the user is asked to consult either the relevant literature or 
+try to start at the relevant `Wikipedia page`_.
+
+.. _Wikipedia page: https://en.wikipedia.org/wiki/Force_field_(chemistry)
+
+.. _gmx-vdw:
+
+van der Waals radius
+--------------------
+
+Add what this means here.
+
+.. _gmx-residue:
+
+Residue
+-------
+
+Add definition of a residue here.
+
+.. _gmx-energy-min:
+
+Energy minimisation
+-------------------
+
+Add short explanation of energy minimization here.
+
+.. _gmx-PME:
+
+Particle Mesh Ewald
+-------------------
+
+Add info here for PME in |Gromacs|
