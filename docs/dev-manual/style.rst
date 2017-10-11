@@ -1,6 +1,11 @@
 Style guidelines
 ================
 
+.. _style-guidelines:
+
+Different style guidelines are available under the respective sections of
+this page. 
+
 .. toctree::
    :maxdepth: 2
 
@@ -8,6 +13,9 @@ Style guidelines
    includestyle
    naming
    language-features
+   doxygen
+   reportstyle
+   commitstyle
 
 :doc:`formatting`
   Guidelines for indentation and other code formatting.
@@ -20,5 +28,9 @@ Style guidelines
 :ref:`dev-doxygen-guidelines`
   Guidelines for using Doxygen to document the source code are currently in a
   section on the page on general Doxygen usage.
+:doc:`reportstyle`
+  Guidelines for preparing and formatting bug reports on redmine.
+:doc:`commitstyle`
+  Guidelines for formatting git commits when sending in proposed fixes for code review.
 
 .. TODO: Add more guidelines
