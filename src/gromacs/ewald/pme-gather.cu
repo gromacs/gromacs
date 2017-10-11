@@ -251,14 +251,14 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
     const int    blockSize      = atomsPerBlock * atomDataSize;
 
     /* These are the atom indices - for the shared and global memory */
-    const int                   atomIndexLocal    = threadIdx.z;
-    const int                   atomIndexOffset   = blockIdx.x * atomsPerBlock;
-    const int                   atomIndexGlobal   = atomIndexOffset + atomIndexLocal;
+    const int         atomIndexLocal    = threadIdx.z;
+    const int         atomIndexOffset   = blockIdx.x * atomsPerBlock;
+    const int         atomIndexGlobal   = atomIndexOffset + atomIndexLocal;
 
-    const size_t                splineParamsSize             = atomsPerBlock * DIM * order;
-    const size_t                gridlineIndicesSize          = atomsPerBlock * DIM;
-    __shared__ int              sm_gridlineIndices[gridlineIndicesSize];
-    __shared__ float2           sm_splineParams[splineParamsSize]; /* Theta/dtheta pairs  as .x/.y */
+    const int         splineParamsSize             = atomsPerBlock * DIM * order;
+    const int         gridlineIndicesSize          = atomsPerBlock * DIM;
+    __shared__ int    sm_gridlineIndices[gridlineIndicesSize];
+    __shared__ float2 sm_splineParams[splineParamsSize]; /* Theta/dtheta pairs  as .x/.y */
 
     /* Spline Y/Z coordinates */
     const int ithy = threadIdx.y;
