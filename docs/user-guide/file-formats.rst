@@ -891,7 +891,7 @@ factor, typically 1000, so that you have coordinates in pm.
 These are rounded to integer values. Then several other tricks are
 performed, for instance making use of the fact that atoms close
 in sequence are usually close in space too (e.g. a water molecule).
-To this end, the <i>xdr</i> library is extended with a special routine
+To this end, the *xdr* library is extended with a special routine
 to write 3-D float coordinates.
 
 .. link is broken: This routine was written by Frans van Hoesel
@@ -993,4 +993,4 @@ for inclusion in eg. LaTeX documents, but also for other word processors.
 A sample Grace session with |Gromacs| data is shown below:
 
 .. image:: xvgr.gif
-   :alt:  hallo
+   :alt:  Sample xvg graphic produced using the |Gromacs| tools
