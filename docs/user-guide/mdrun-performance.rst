@@ -367,8 +367,8 @@ cases.
 ``-gcom``
     During the simulation :ref:`gmx mdrun` must communicate between all ranks to
     compute quantities such as kinetic energy. By default, this
-    happens whenever plausible, and is influenced by a lot of [.mdp
-    options](#mdp-options). The period between communication phases
+    happens whenever plausible, and is influenced by a lot of :ref:`[.mdp]
+    options<mdp-general>`. The period between communication phases
     must be a multiple of :mdp:`nstlist`, and defaults to
     the minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
     ``mdrun -gcom`` sets the number of steps that must elapse between
@@ -631,6 +631,8 @@ TODO In future patch:
 TODO In future patch: import wiki page stuff on performance checklist; maybe here,
 maybe elsewhere
 
+.. _gmx-mdrun-on-gpu:
+
 Running mdrun with GPUs
 -----------------------
 
@@ -645,7 +647,7 @@ available to date (up to and including Maxwell, compute capability 5.2).
 
 Application clocks can be set using the NVIDIA system managemet tool
 ``nvidia-smi``. If the system permissions allow, :ref:`gmx mdrun` has
-built-in support to set application clocks if built with NVML support. # TODO add ref to relevant section
+built-in support to set application clocks if built with :ref:`NVML support<CUDA GPU acceleration>`. 
 Note that application clocks are a global setting, hence affect the
 performance of all applications that use the respective GPU(s).
 For this reason, :ref:`gmx mdrun` sets application clocks at initialization
@@ -811,7 +813,7 @@ Run setup
   sites (``gmx pdb2gmx -vsite h``).
 * For massively parallel runs with PME, you might need to try different numbers
   of PME ranks (``gmx mdrun -npme ???``) to achieve best performance;
-  ``gmx tune_pme`` can help automate this search.
+  :ref:`gmx tune_pme` can help automate this search.
 * For massively parallel runs (also ``gmx mdrun -multidir``), or with a slow
   network, global communication can become a bottleneck and you can reduce it
   with ``gmx mdrun -gcom`` (note that this does affect the frequency of
