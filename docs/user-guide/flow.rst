@@ -110,7 +110,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    analysis [
      label="Analysis\ngmx ...\ngmx view"
      tooltip="Your favourite GROMACS analysis tool"
-     URL="../onlinehelp/bytopic.html"
+     URL="cmdline.html#commands-by-topic"
    ]
 
    mdrun -> analysis [
