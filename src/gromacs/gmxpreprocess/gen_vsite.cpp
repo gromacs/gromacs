@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1806,9 +1806,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 }
 
             }
-            else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
-                         DvdS 19-01-04 */
-                (gmx_strncasecmp(*at->atomname[Heavy], "OW", 2) == 0) )
+            else if ( (nrHatoms == 2) && (nrbonds == 2) &&
+                      (at->atom[Heavy].atomnumber == 8) )
             {
                 bAddVsiteParam = FALSE; /* this is water: skip these hydrogens */
                 if (bFirstWater)
