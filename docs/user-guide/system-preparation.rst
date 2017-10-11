@@ -59,9 +59,9 @@ simulations. Some stages are optional for some kinds of simulations.
    `MKTOP <http://www.aribeiro.net.br/mktop>`_ (for OPLS/AA) or your
    favourite text editor in concert with chapter 5 of the |Gromacs|
    `Reference Manual`_. For the AMBER force fields, `antechamber
-   <http://amber.scripps.edu/antechamber/antechamber.html>`_ or
-   `acpype <https://code.google.com/archive/p/acpype/>`_ might be
-   appropriate.
+   <http://amber.scripps.edu/antechamber/antechamber.html>`__ or
+   `acpype <https://github.com/choderalab/mmtools/blob/master/converters/acpype.py>`__
+   might be appropriate.
 
 6. Describe a simulation box (e.g. using :ref:`gmx editconf`) whose
    size is appropriate for the eventual density you would like, fill
@@ -71,7 +71,8 @@ simulations. Some stages are optional for some kinds of simulations.
    need to edit your topology file to stay current with your
    coordinate file.
 
-7. Run an energy minimization on the system (using :ref:`gmx grompp`
+7. Run an :ref:`energy minimization <gmx-energy-min>` 
+   on the system (using :ref:`gmx grompp`
    and :ref:`gmx mdrun`). This is required to sort out any bad
    starting structures caused during generation of the system, which
    may cause the production simulation to crash. It may be necessary
@@ -82,7 +83,7 @@ simulations. Some stages are optional for some kinds of simulations.
    distance restraints should be evaluated carefully.
 
 8. Select the appropriate simulation parameters for the equilibration
-   simulation (defined in .mdp file). You need to choose simulation
+   simulation (defined in :ref:`mdp` file). You need to choose simulation
    parameters that are consistent with how force field was
    derived. You may need to simulate at NVT with position restraints
    on your solvent and/or solute to get the temperature almost right,
@@ -90,8 +91,8 @@ simulations. Some stages are optional for some kinds of simulations.
    Berendsen until after the density is stabilized, before a further
    switch to a barostat that produces the correct ensemble), then move
    further (if needed) to reach your production simulation ensemble
-   (e.g. NVT, NVE). If you have problems here with the system `blowing
-   up <http://www.gromacs.org/Documentation/Terminology/Blowing_Up>`_,
+   (e.g. NVT, NVE). If you have problems here with the system :ref:`blowing
+   up <blowing-up>`,
    consider using the suggestions on that page, e.g. position
    restraints on solutes, or not using bond constraints, or using
    smaller integration timesteps, or several gentler heating stage(s).
@@ -104,12 +105,12 @@ simulations. Some stages are optional for some kinds of simulations.
    <http://www.gromacs.org/Documentation/How-tos/Trajectory_Visualization>`_).
 
 10. Select the appropriate simulation parameters for the production
-    simulation (defined in .mdp file). In particular, be careful not
+    simulation (defined in :ref:`mdp` file). In particular, be careful not
     to re-generate the velocities. You still need to be consistent
     with how the force field was derived and how to measure the
     property or phenomena of interest.
 
-.. _Reference Manual: `gmx-manual`_
+.. _Reference Manual: `gmx-manual-parent-dir`_
 
 Tips and tricks
 ---------------

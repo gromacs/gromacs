@@ -21,6 +21,8 @@ For background on algorithms and implementations, see the
 
    getting-started
    floating-point
+   how-to
+   force-fields
    system-preparation
    cutoff-schemes
    mdrun-features
@@ -32,3 +34,4 @@ For background on algorithms and implementations, see the
    cmdline
    environment-variables
    terminology
+   faq
