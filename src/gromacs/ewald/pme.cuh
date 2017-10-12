@@ -45,8 +45,6 @@
 #ifndef GMX_EWALD_PME_CUH
 #define GMX_EWALD_PME_CUH
 
-#include "config.h"
-
 #include <cassert>
 
 #include <array>
@@ -234,10 +232,6 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
 /* CUDA texture reference functions which reside in respective kernel files
  * (due to texture references having scope of a translation unit).
  */
-#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
-extern texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
-extern texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
-#endif
 /*! Returns the reference to the gridlineIndices texture. */
 texture<int, 1, cudaReadModeElementType>   &pme_gpu_get_gridline_texref();
 /*! Returns the reference to the fractShifts texture. */
