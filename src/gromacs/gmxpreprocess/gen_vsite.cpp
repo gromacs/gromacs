@@ -1806,9 +1806,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 }
 
             }
-            else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
-                         DvdS 19-01-04 */
-                (gmx_strncasecmp(*at->atomname[Heavy], "OW", 2) == 0) )
+            else if ( (nrHatoms == 2) && (nrbonds == 2) &&
+                      (at->atom[Heavy].atomnumber == 8) )
             {
                 bAddVsiteParam = FALSE; /* this is water: skip these hydrogens */
                 if (bFirstWater)
