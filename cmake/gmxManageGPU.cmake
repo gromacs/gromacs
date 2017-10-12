@@ -215,8 +215,8 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
 endmacro ()
 
 macro(enable_multiple_cuda_compilation_units)
-    message(STATUS "Enabling multiple compilation units for the CUDA modules.")
-    set_property(CACHE GMX_CUDA_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
+    message(STATUS "Enabling multiple compilation units for the CUDA non-bonded module.")
+    set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
 endmacro()
 
 include(CMakeDependentOption)
@@ -271,14 +271,14 @@ macro(gmx_gpu_setup)
     endif() # GMX_GPU
 
     if (GMX_CLANG_CUDA)
-        set (_GMX_CUDA_SINGLE_COMPILATION_UNIT_DEFAULT FALSE)
+        set (_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT FALSE)
     else()
-        set (_GMX_CUDA_SINGLE_COMPILATION_UNIT_DEFAULT TRUE)
+        set (_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT TRUE)
     endif()
-    cmake_dependent_option(GMX_CUDA_SINGLE_COMPILATION_UNIT
-        "Whether to compile the CUDA modules using a single compilation unit." ${_GMX_CUDA_SINGLE_COMPILATION_UNIT_DEFAULT}
+    cmake_dependent_option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+        "Whether to compile the CUDA non-bonded module using a single compilation unit." ${_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT}
         "GMX_GPU" ON)
-    mark_as_advanced(GMX_CUDA_SINGLE_COMPILATION_UNIT)
+    mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
 
     if (GMX_GPU AND NOT GMX_CLANG_CUDA)
         # We need to use single compilation unit for kernels:
@@ -288,11 +288,11 @@ macro(gmx_gpu_setup)
         if(_gmx_cuda_target_changed OR NOT GMX_GPU_DETECTION_DONE)
             if((NOT GMX_CUDA_TARGET_SM AND NOT GMX_CUDA_TARGET_COMPUTE) OR
                 (GMX_CUDA_TARGET_SM MATCHES "2[01]" OR GMX_CUDA_TARGET_COMPUTE MATCHES "2[01]"))
-                message(STATUS "Enabling single compilation unit for the CUDA modules. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
-                set_property(CACHE GMX_CUDA_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
+                message(STATUS "Enabling single compilation unit for the CUDA non-bonded module. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
+                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
             else()
-                message(STATUS "Enabling multiple compilation units for the CUDA modules.")
-                set_property(CACHE GMX_CUDA_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
+                message(STATUS "Enabling multiple compilation units for the CUDA non-bonded module.")
+                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
             endif()
         endif()
     endif()
