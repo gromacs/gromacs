@@ -383,9 +383,9 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
     assert(atomsPerBlock <= warp_size);
 
     /* Writing or adding the final forces component-wise, single warp */
-    const size_t blockForcesSize = atomsPerBlock * DIM;
-    const int    numIter         = (blockForcesSize + warp_size - 1) / warp_size;
-    const int    iterThreads     = blockForcesSize / numIter;
+    const int blockForcesSize = atomsPerBlock * DIM;
+    const int numIter         = (blockForcesSize + warp_size - 1) / warp_size;
+    const int iterThreads     = blockForcesSize / numIter;
     if (threadLocalId < iterThreads)
     {
 #pragma unroll
