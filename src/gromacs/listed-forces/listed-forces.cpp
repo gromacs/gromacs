@@ -665,6 +665,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_mdatoms             *md,
                 t_fcdata                    *fcd,
                 int                         *global_atom_index,
+                int                          efep,
                 int                          flags)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
@@ -711,6 +712,17 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                                    fcd, global_atom_index);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+            }
+            /* The following part takes care of the correct accounting of the energy from bonded terms in extended ensemble
+             * simulations. With this, the change in potential energy from changing bonded terms is included when calculating
+             * the state weights for the different parts of the ensemble.
+             */
+            if (efep == efepEXPANDED)
+            {
+                for (int i = 1; i < enerd->n_lambda; i++)
+                {
+                    enerd->enerpart_lambda[i] -= enerd->enerpart_lambda[0];
+                }
             }
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
