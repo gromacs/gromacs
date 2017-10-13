@@ -363,7 +363,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     idef, (const rvec *) x, hist, f, fr,
                     &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-                    flags);
+                    ir->efep, flags);
 
     where();
 
