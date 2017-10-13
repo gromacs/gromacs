@@ -2203,8 +2203,9 @@ $\langle \rond_i\!\!(t) \rond_j\!\!(t+s) \rangle =
     2 m_i \gamma_i k_B T \delta(s) \delta_{ij}$.
 When $1/\gamma_i$ is large compared to the time scales present in the system,
 one could see stochastic dynamics as molecular dynamics with stochastic
-temperature-coupling. The advantage compared to MD with Berendsen
-temperature-coupling is that in case of SD the generated ensemble is known.
+temperature-coupling. But any processes that take longer than $1/\gamma_i$,
+e.g. hydrodynamics, will be dampened. Since each degree of freedom is coupled
+independently to a heat bath, equilibration of fast modes occurs rapidly.
 For simulating a system in vacuum there is the additional advantage that there is no
 accumulation of errors for the overall translational and rotational
 degrees of freedom.
