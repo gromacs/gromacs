@@ -109,10 +109,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             TestReferenceData    refData;
             TestReferenceChecker checker(refData.rootChecker());
             auto                 singlePrecisionUlps = 6;
-            /* P3M moduli use polynomial expansions that are strongly affected by rounding errors. */
-            auto                 doublePrecisionUlps = (moduliType == ModuliType::P3M) ? 10 : singlePrecisionUlps;
-            auto                 tolerance           = relativeToleranceAsPrecisionDependentUlp(1.0, singlePrecisionUlps, doublePrecisionUlps);
-            checker.setDefaultTolerance(tolerance);
+            checker.setDefaultTolerance(getSplineTolerance(singlePrecisionUlps));
 
             /* Perform a correctness check */
             const char *dimString[] = { "X", "Y", "Z" };
