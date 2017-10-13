@@ -383,8 +383,7 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posMass_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return constArrayRefFromVector<real>(data().posMass_.begin(),
-                                                 data().posMass_.begin() + posCount());
+            return makeArrayRef(data().posMass_).subArray(0, posCount());
         }
         //! Returns charges for this selection as a continuous array.
         ArrayRef<const real> charges() const
@@ -394,8 +393,7 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posCharge_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return constArrayRefFromVector<real>(data().posCharge_.begin(),
-                                                 data().posCharge_.begin() + posCount());
+            return makeArrayRef(data().posCharge_).subArray(0, posCount());
         }
         /*! \brief
          * Returns reference IDs for this selection as a continuous array.
