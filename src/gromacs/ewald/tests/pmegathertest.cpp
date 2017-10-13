@@ -340,15 +340,13 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
         //! Sets the input atom data references once
         static void SetUpTestCase()
         {
-            auto                gridLineIndicesIt = c_sampleGridLineIndicesFull.begin();
-            auto                chargesIt         = c_sampleChargesFull.begin();
+            size_t start = 0;
             for (auto atomCount : atomCounts)
             {
                 AtomSizedData atomData;
-                atomData.gridLineIndices = GridLineIndicesVector::fromVector(gridLineIndicesIt, gridLineIndicesIt + atomCount);
-                gridLineIndicesIt       += atomCount;
-                atomData.charges         = ChargesVector::fromVector(chargesIt, chargesIt + atomCount);
-                chargesIt               += atomCount;
+                atomData.gridLineIndices = GridLineIndicesVector(c_sampleGridLineIndicesFull).subArray(start, atomCount);
+                atomData.charges         = ChargesVector(c_sampleChargesFull).subArray(start, atomCount);
+                start                   += atomCount;
                 atomData.coordinates.resize(atomCount, RVec {1e6, 1e7, -1e8});
                 /* The coordinates are intentionally bogus in this test - only the size matters; the gridline indices are fed directly as inputs */
                 for (auto pmeOrder : pmeOrders)
@@ -357,10 +355,8 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                     const size_t             dimSize = atomCount * pmeOrder;
                     for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
                     {
-                        splineData.splineValues[dimIndex] = SplineParamsDimVector::fromVector(c_sampleSplineValuesFull.begin() + dimIndex * dimSize,
-                                                                                              c_sampleSplineValuesFull.begin() + (dimIndex + 1) * dimSize);
-                        splineData.splineDerivatives[dimIndex] = SplineParamsDimVector::fromVector(c_sampleSplineDerivativesFull.begin() + dimIndex * dimSize,
-                                                                                                   c_sampleSplineDerivativesFull.begin() + (dimIndex + 1) * dimSize);
+                        splineData.splineValues[dimIndex]      = SplineParamsDimVector(c_sampleSplineValuesFull).subArray(dimIndex * dimSize, dimSize);
+                        splineData.splineDerivatives[dimIndex] = SplineParamsDimVector(c_sampleSplineDerivativesFull).subArray(dimIndex * dimSize, dimSize);
                     }
                     atomData.splineDataByPmeOrder[pmeOrder] = splineData;
                 }
@@ -430,7 +426,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                     /* Explicitly copying the sample forces to be able to modify them */
                     auto inputForcesFull(c_sampleForcesFull);
                     GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
-                    auto forces = ForcesVector::fromVector(inputForcesFull.begin(), inputForcesFull.begin() + atomCount);
+                    auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
 
                     /* Running the force gathering itself */
                     pmePerformGather(pmeSafe.get(), mode.first, inputForceTreatment, forces);

@@ -290,9 +290,6 @@ class AnalysisDataStorageImpl
 class AnalysisDataStorageFrameData
 {
     public:
-        //! Shorthand for a iterator into storage value containers.
-        typedef std::vector<AnalysisDataValue>::const_iterator ValueIterator;
-
         //! Indicates what operations have been performed on a frame.
         enum Status
         {
@@ -355,7 +352,7 @@ class AnalysisDataStorageFrameData
          * Adds a new point set to this frame.
          */
         void addPointSet(int dataSetIndex, int firstColumn,
-                         ValueIterator begin, ValueIterator end);
+                         ArrayRef<const AnalysisDataValue> v);
         /*! \brief
          * Finalizes the frame during AnalysisDataStorage::finishFrame().
          *
@@ -610,13 +607,12 @@ AnalysisDataStorageFrameData::startFrame(
 
 void
 AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
-                                          ValueIterator begin, ValueIterator end)
+                                          ArrayRef<const AnalysisDataValue> v)
 {
-    const int                valueCount = end - begin;
+    const int                valueCount = v.size();
     AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
                                           dataSetIndex, firstColumn);
-    AnalysisDataPointSetRef  pointSet(header(), pointSetInfo,
-                                      constArrayRefFromVector<AnalysisDataValue>(begin, end));
+    AnalysisDataPointSetRef  pointSet(header(), pointSetInfo, v);
     storageImpl().modules_->notifyParallelPointsAdd(pointSet);
     if (storageImpl().shouldNotifyImmediately())
     {
@@ -626,7 +622,7 @@ AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
     {
         pointSets_.emplace_back(values_.size(), valueCount,
                                 dataSetIndex, firstColumn);
-        std::copy(begin, end, std::back_inserter(values_));
+        std::copy(v.begin(), v.end(), std::back_inserter(values_));
     }
 }
 
@@ -663,8 +659,7 @@ AnalysisDataStorageFrameData::pointSet(int index) const
     GMX_ASSERT(index >= 0 && index < pointSetCount(),
                "Invalid point set index");
     return AnalysisDataPointSetRef(
-            header_, pointSets_[index],
-            constArrayRefFromVector<AnalysisDataValue>(values_.begin(), values_.end()));
+            header_, pointSets_[index], values_);
 }
 
 }   // namespace internal
@@ -735,17 +730,15 @@ AnalysisDataStorageFrame::finishPointSet()
                        "Should not be called for non-multipoint data");
     if (bPointSetInProgress_)
     {
-        std::vector<AnalysisDataValue>::const_iterator begin
-            = values_.begin() + currentOffset_;
-        std::vector<AnalysisDataValue>::const_iterator end
-            = begin + columnCount_;
-        int firstColumn = 0;
-        while (begin != end && !begin->isSet())
+        size_t begin       = currentOffset_;
+        size_t end         = begin + columnCount_;
+        int    firstColumn = 0;
+        while (begin != end && !values_[begin].isSet())
         {
             ++begin;
             ++firstColumn;
         }
-        while (end != begin && !(end-1)->isSet())
+        while (end != begin && !values_[end-1].isSet())
         {
             --end;
         }
@@ -753,7 +746,9 @@ AnalysisDataStorageFrame::finishPointSet()
         {
             firstColumn = 0;
         }
-        data_->addPointSet(currentDataSet_, firstColumn, begin, end);
+        data_->addPointSet(currentDataSet_, firstColumn,
+                           makeConstArrayRef(values_).
+                               subArray(begin, end-begin));
     }
     clearValues();
 }
