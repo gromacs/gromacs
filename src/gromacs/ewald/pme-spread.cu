@@ -78,8 +78,8 @@ constexpr int c_spreadMaxWarpsPerBlock = 8;
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
 //! Texture references for CC 2.x
-texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
-texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
+static texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
+static texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
 
 /*! Returns the reference to the gridlineIndices texture. */
 texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
