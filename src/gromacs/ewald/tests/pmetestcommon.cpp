@@ -60,6 +60,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -82,6 +84,12 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
     return implemented;
+}
+
+FloatingPointTolerance getSplineTolerance(gmx_int64_t toleranceUlps)
+{
+    /* Double precision is more affected by error propagation, as moduli are always computed in double. */
+    return relativeToleranceAsPrecisionDependentUlp(1.0, toleranceUlps, 2 * toleranceUlps);
 }
 
 //! PME initialization - internal

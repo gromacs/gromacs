@@ -114,6 +114,9 @@ typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 //! Tells if this generally valid PME input is supported for this mode
 bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
 
+//! Returns tolerance of anything directly influenced by B-Splines (relaxed for double precision)
+class FloatingPointTolerance getSplineTolerance(gmx_int64_t toleranceUlps);
+
 // PME stages
 
 // TODO: currently PME initializations do not store CodePath. They probably should (unless we would need mixed CPU-GPU execution?).
