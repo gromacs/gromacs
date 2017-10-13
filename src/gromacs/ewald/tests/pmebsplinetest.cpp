@@ -109,8 +109,8 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             TestReferenceData    refData;
             TestReferenceChecker checker(refData.rootChecker());
             auto                 singlePrecisionUlps = 6;
-            /* P3M moduli use polynomial expansions that are strongly affected by rounding errors. */
-            auto                 doublePrecisionUlps = (moduliType == ModuliType::P3M) ? 10 : singlePrecisionUlps;
+            /* Double precision is more affected by error propagation, as moduli are always computed in double. */
+            auto                 doublePrecisionUlps = 12;
             auto                 tolerance           = relativeToleranceAsPrecisionDependentUlp(1.0, singlePrecisionUlps, doublePrecisionUlps);
             checker.setDefaultTolerance(tolerance);
 
