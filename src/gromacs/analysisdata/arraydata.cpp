@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,11 +72,10 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
     {
         return AnalysisDataFrameRef();
     }
-    std::vector<AnalysisDataValue>::const_iterator begin
-        = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
             AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-            constArrayRefFromVector<AnalysisDataValue>(begin, begin + columnCount()),
+            makeConstArrayRef(value_).
+                subArray(index * columnCount(), columnCount()),
             constArrayRefFromArray(&pointSetInfo_, 1));
 }
 
@@ -176,18 +175,17 @@ AbstractAnalysisArrayData::valuesReady()
     }
     bReady_ = true;
 
-    std::vector<AnalysisDataValue>::const_iterator valueIter = value_.begin();
     AnalysisDataModuleManager                     &modules   = moduleManager();
     modules.notifyDataStart(this);
-    for (int i = 0; i < rowCount(); ++i, valueIter += columnCount())
+    for (int i = 0; i < rowCount(); ++i)
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         modules.notifyFrameStart(header);
         modules.notifyPointsAdd(
                 AnalysisDataPointSetRef(
                         header, pointSetInfo_,
-                        constArrayRefFromVector<AnalysisDataValue>(valueIter,
-                                                                   valueIter + columnCount())));
+                        makeConstArrayRef(value_).
+                            subArray(i*columnCount(), columnCount())));
         modules.notifyFrameFinish(header);
     }
     modules.notifyDataFinish();

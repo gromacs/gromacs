@@ -149,9 +149,25 @@ TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
     };                                                          \
     size_t (aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
 
+#define DEFINE_NON_CONST_ARRAY(a, aSize)                        \
+    typename TestFixture::NonConstValueType (a)[] = {           \
+        static_cast<typename TestFixture::ValueType>(1.2),      \
+        static_cast<typename TestFixture::ValueType>(2.4),      \
+        static_cast<typename TestFixture::ValueType>(3.1)       \
+    };                                                          \
+    size_t (aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
+
+
 TYPED_TEST(ArrayRefTest, MakeWithAssignmentWorks)
 {
     DEFINE_ARRAY(a, aSize);
+    typename TestFixture::ArrayRefType arrayRef = a;
+    this->runTests(a, aSize, a, arrayRef);
+}
+
+TYPED_TEST(ArrayRefTest, MakeWithNonConstAssignmentWorks)
+{
+    DEFINE_NON_CONST_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef = a;
     this->runTests(a, aSize, a, arrayRef);
 }
@@ -163,6 +179,13 @@ TYPED_TEST(ArrayRefTest, ConstructWithTemplateConstructorWorks)
     this->runTests(a, aSize, a, arrayRef);
 }
 
+TYPED_TEST(ArrayRefTest, ConstructWithNonConstTemplateConstructorWorks)
+{
+    DEFINE_NON_CONST_ARRAY(a, aSize);
+    typename TestFixture::ArrayRefType arrayRef(a);
+    this->runTests(a, aSize, a, arrayRef);
+}
+
 TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
 {
     DEFINE_ARRAY(a, aSize);
@@ -170,36 +193,30 @@ TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
     this->runTests(a, aSize, a, arrayRef);
 }
 
-TYPED_TEST(ArrayRefTest, MakeFromPointersWorks)
+TYPED_TEST(ArrayRefTest, ConstructFromNonConstPointersWorks)
 {
-    DEFINE_ARRAY(a, aSize);
-    typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromPointers(a, a + aSize);
+    DEFINE_NON_CONST_ARRAY(a, aSize);
+    typename TestFixture::ArrayRefType arrayRef(a, a + aSize);
     this->runTests(a, aSize, a, arrayRef);
 }
 
-TYPED_TEST(ArrayRefTest, MakeFromArrayWorks)
-{
-    DEFINE_ARRAY(a, aSize);
-    typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromArray(a, aSize);
-    this->runTests(a, aSize, a, arrayRef);
-}
+template<bool c, typename T>
+using makeConstIf_t = typename std::conditional<c, const T, T>::type;
 
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
-    std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
-    typename TestFixture::ArrayRefType                   arrayRef(v);
+    makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value,
+                  std::vector<typename TestFixture::NonConstValueType> > v(a, a + aSize);
+    typename TestFixture::ArrayRefType                                   arrayRef(v);
     this->runTests(a, v.size(), v.data(), arrayRef);
 }
 
-TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
+TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
     std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
-    typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
+    typename TestFixture::ArrayRefType                   arrayRef(v);
     this->runTests(a, v.size(), v.data(), arrayRef);
 }
 
