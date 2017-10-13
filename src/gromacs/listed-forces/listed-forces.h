@@ -144,6 +144,7 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 const t_mdatoms                *md,
                 struct t_fcdata                *fcd,
                 int                            *global_atom_index,
+                int                             efep,
                 int                             flags);
 
 #ifdef __cplusplus

@@ -1124,6 +1124,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
         }
+        /* Fix proposed by Sebastian Wingbergmühle for issue 2264, concerning the accounting of changes to the bonded
+         * interactions in expended ensemble simulations
+         */
+        if (bDoExpanded)
+        {
+            bDoFEP  = TRUE;
+        }
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||

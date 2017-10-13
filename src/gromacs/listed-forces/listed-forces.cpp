@@ -668,6 +668,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 const t_mdatoms             *md,
                 t_fcdata                    *fcd,
                 int                         *global_atom_index,
+                int                          efep,
                 int                          flags)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
@@ -714,6 +715,16 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                                    fcd, global_atom_index);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+            }
+            /* Fix proposed by Sebastian Wingbergmühle for issue 2264, concerning the accounting of changes to the bonded
+             * interactions in expended ensemble simulations
+             */
+            if (efep == efepEXPANDED)
+            {
+                for (int i = 1; i < enerd->n_lambda; i++)
+                {
+                    enerd->enerpart_lambda[i] -= enerd->enerpart_lambda[0];
+                }
             }
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
