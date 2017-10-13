@@ -49,6 +49,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/texturesupport.cuh"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -77,20 +78,120 @@ constexpr int c_spreadMaxWarpsPerBlock = 8;
 //! Spreading max block size in threads
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
-//! Texture references for CC 2.x
-texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
-texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
+// Texture references were the only way to use textures with CC 2.0,
+// but you can only refer to them in the translation unit where they
+// were defined, and in device code never via indirection.
+//
+// They are also not supported at all by clang+CUDA, which also warns
+// about unused extern symbols if our code would always create a
+// static texture object even though we sometimes don't intend to use
+// it.
+//
+// So we need to use some tricks to have code that always works and
+// compiles without warnings.
+#if !DISABLE_CUDA_TEXTURES && GMX_PTX_ARCH < 300
 
-/*! Returns the reference to the gridlineIndices texture. */
-texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
+//! Texture wrapper, required for CC 2.x
+texture<int, 1, cudaReadModeElementType> g_gridlineIndicesTableTexture;
+
+//! Texture wrapper, required for CC 2.x
+texture<float, 1, cudaReadModeElementType> g_fractionalShiftsTableTexture;
+
+//! Fetch the value by \p index from the gridline indices texture.
+static __forceinline__ __device__
+int fetchFromGridlineIndicesTexture(const TextureWrapperType<int> & /*wrapper*/,
+                                    int                           index)
 {
-    return gridlineIndicesTableTextureRef;
+    assert(index >= 0);
+    return tex1Dfetch(g_gridlineIndicesTableTexture, index);
 }
 
-/*! Returns the reference to the fractShifts texture. */
-texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
+//! Fetch the value by \p index from the wrapped fractional shifts texture.
+static __forceinline__ __device__
+float fetchFromFractionalShiftsTexture(const TextureWrapperType<float> & /*wrapper*/,
+                                       int                             index)
 {
-    return fractShiftsTableTextureRef;
+    assert(index >= 0);
+    return tex1Dfetch(g_fractionalShiftsTableTexture, index);
+}
+
+#else
+
+/*! \brief Fetch the value by \p index from a wrapped texture
+ *
+ * Depending on what support is compiled, it fetches parameters either
+ * using direct load or texture objects. Fetching from the object is
+ * the preferred behaviour on CC >= 3.0.
+ *
+ * \tparam[in] T        Raw data type
+ * \param[in] wrapper   Wrapped texture type
+ * \param[in] index     Non-negative element index
+ * \returns             The value from the table at \p index
+ */
+template <typename T>
+static __forceinline__ __device__
+T fetchFromTextureWrapper(const TextureWrapperType<T> &wrapper,
+                          int                          index)
+{
+    assert(index >= 0);
+    T result;
+#if DISABLE_CUDA_TEXTURES
+    result = LDG(wrapper.d_pointer + index);
+#else
+    assert(!c_disableCudaTextures);
+#  if GMX_PTX_ARCH >= 300
+    result = tex1Dfetch<T>(wrapper.object, index);
+#  else
+#    error "This path should not be compiled at all "
+#  endif
+#endif
+    return result;
+}
+
+//! Fetch the value by \p index from the wrapped gridline indices texture.
+static __forceinline__ __device__
+int fetchFromGridlineIndicesTexture(const TextureWrapperType<int> &wrapper,
+                                    int                            index)
+{
+    return fetchFromTextureWrapper(wrapper, index);
+}
+
+//! Fetch the value by \p index from the wrapped fractional shifts texture.
+static __forceinline__ __device__
+float fetchFromFractionalShiftsTexture(const TextureWrapperType<float> &wrapper,
+                                       int                              index)
+{
+    return fetchFromTextureWrapper(wrapper, index);
+}
+
+#endif
+
+void fillGridlineIndicesTable(TextureWrapperType<int> *gridlineIndicesTable,
+                              const int *h_pointer, int numElem)
+{
+#if !DISABLE_CUDA_TEXTURES && GMX_PTX_ARCH < 300
+    gridlineIndicesTable->reference = &g_gridlineIndicesTableTexture;
+#endif
+    fillTextureWrapper<int>(gridlineIndicesTable, h_pointer, numElem);
+}
+
+void destroyGridlineIndicesTable(TextureWrapperType<int> *gridlineIndicesTable)
+{
+    destroyTextureWrapper<int>(gridlineIndicesTable);
+}
+
+void fillFractionalShiftsTable(TextureWrapperType<float> *fractionalShiftsTable,
+                               const float *h_pointer, int numElem)
+{
+#if !DISABLE_CUDA_TEXTURES && GMX_PTX_ARCH < 300
+    fractionalShiftsTable->reference = &g_fractionalShiftsTableTexture;
+#endif
+    fillTextureWrapper<float>(fractionalShiftsTable, h_pointer, numElem);
+}
+
+void destroyFractionalShiftsTable(TextureWrapperType<float> *fractionalShiftsTable)
+{
+    destroyTextureWrapper<float>(fractionalShiftsTable);
 }
 
 /*! \brief
@@ -247,10 +348,8 @@ __device__ __forceinline__ void calculate_splines(const pme_gpu_cuda_kernel_para
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
-            sm_fractCoords[sharedMemoryIndex] += fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, kernelParams.fractShiftsTableTexture,
-                                                                           fractShiftsTableTextureRef, tableIndex);
-            sm_gridlineIndices[sharedMemoryIndex] = fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable, kernelParams.gridlineIndicesTableTexture,
-                                                                              gridlineIndicesTableTextureRef, tableIndex);
+            sm_fractCoords[sharedMemoryIndex]    += fetchFromFractionalShiftsTexture(kernelParams.fractionalShiftsTable, tableIndex);
+            sm_gridlineIndices[sharedMemoryIndex] = fetchFromGridlineIndicesTexture(kernelParams.gridlineIndicesTable, tableIndex);
             gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
         }
 

@@ -50,6 +50,7 @@
 #include <array>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
+#include "gromacs/gpu_utils/texturesupport.cuh"
 
 #include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
 #include "pme-timings.cuh"
@@ -222,19 +223,21 @@ struct pme_gpu_cuda_t
  */
 struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
 {
-    /* These are CUDA texture objects, related to the grid size. */
-    /*! \brief CUDA texture object for accessing grid.d_fractShiftsTable */
-    cudaTextureObject_t fractShiftsTableTexture;
-    /*! \brief CUDA texture object for accessing grid.d_gridlineIndicesTable */
-    cudaTextureObject_t gridlineIndicesTableTexture;
+    /*! \brief Wraps some form of CUDA texture object for accessing grid.d_fractShiftsTable */
+    TextureWrapperType<float> fractionalShiftsTable;
+    /*! \brief Wraps some form of CUDA texture object for accessing grid.d_gridlineIndicesTable */
+    TextureWrapperType<int>   gridlineIndicesTable;
 };
 
-/* CUDA texture reference functions which reside in respective kernel files
- * (due to texture references having scope of a translation unit).
- */
-/*! Returns the reference to the gridlineIndices texture. */
-texture<int, 1, cudaReadModeElementType>   &pme_gpu_get_gridline_texref();
-/*! Returns the reference to the fractShifts texture. */
-texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref();
+//! Prepare and fill \c gridlineIndicesTable from \c numElem elements from \c h_pointer.
+void fillGridlineIndicesTable(TextureWrapperType<int> *gridlineIndicesTable,
+                              const int *h_pointer, int numElem);
+//! Destroy \c gridlineIndicesTable.
+void destroyGridlineIndicesTable(TextureWrapperType<int> *gridlineIndicesTable);
+//! Prepare and fill \c fractionalShiftsTable from \c numElem elements from \c h_pointer.
+void fillFractionalShiftsTable(TextureWrapperType<float> *fractionalShiftsTable,
+                               const float *h_pointer, int numElem);
+//! Destroy \c fractionalShiftsTable.
+void destroyFractionalShiftsTable(TextureWrapperType<float> *fractionalShiftsTable);
 
 #endif

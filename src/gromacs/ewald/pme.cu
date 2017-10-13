@@ -354,32 +354,19 @@ void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *pmeGPU)
 
     const int    newFractShiftsSize  = cellCount * (nx + ny + nz);
 
-    initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
-                         kernelParamsPtr->fractShiftsTableTexture,
-                         &pme_gpu_get_fract_shifts_texref(),
-                         pmeGPU->common->fsh.data(),
-                         newFractShiftsSize,
-                         pmeGPU->deviceInfo);
-
-    initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
-                         kernelParamsPtr->gridlineIndicesTableTexture,
-                         &pme_gpu_get_gridline_texref(),
-                         pmeGPU->common->nn.data(),
-                         newFractShiftsSize,
-                         pmeGPU->deviceInfo);
+    fillGridlineIndicesTable(&kernelParamsPtr->gridlineIndicesTable,
+                             pmeGPU->common->nn.data(),
+                             newFractShiftsSize);
+    fillFractionalShiftsTable(&kernelParamsPtr->fractionalShiftsTable,
+                              pmeGPU->common->fsh.data(),
+                              newFractShiftsSize);
 }
 
 void pme_gpu_free_fract_shifts(const pme_gpu_t *pmeGPU)
 {
-    auto *kernelParamsPtr = pmeGPU->kernelParams.get();
-    destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
-                            kernelParamsPtr->fractShiftsTableTexture,
-                            &pme_gpu_get_fract_shifts_texref(),
-                            pmeGPU->deviceInfo);
-    destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
-                            kernelParamsPtr->gridlineIndicesTableTexture,
-                            &pme_gpu_get_gridline_texref(),
-                            pmeGPU->deviceInfo);
+    auto        *kernelParamsPtr = pmeGPU->kernelParams.get();
+    destroyGridlineIndicesTable(&kernelParamsPtr->gridlineIndicesTable);
+    destroyFractionalShiftsTable(&kernelParamsPtr->fractionalShiftsTable);
 }
 
 void pme_gpu_sync_output_energy_virial(const pme_gpu_t *pmeGPU)

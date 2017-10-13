@@ -41,6 +41,7 @@
 #include <cstdlib>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/texturesupport.cuh"
 #include "gromacs/utility/smalloc.h"
 
 /*** Generic CUDA data operation wrappers ***/
@@ -219,64 +220,6 @@ static inline bool use_texobj(const gmx_device_info_t *dev_info)
     assert(!c_disableCudaTextures);
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     return (dev_info->prop.major >= 3);
-}
-
-/*! \brief Set up texture object for an array of type T.
- *
- * Set up texture object for an array of type T and bind it to the device memory
- * \p d_ptr points to.
- *
- * \tparam[in] T        Raw data type
- * \param[out] texObj   texture object to initialize
- * \param[in]  d_ptr    pointer to device global memory to bind \p texObj to
- * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
- */
-template <typename T>
-static void setup1DTexture(cudaTextureObject_t &texObj,
-                           void                *d_ptr,
-                           size_t               sizeInBytes)
-{
-    assert(!c_disableCudaTextures);
-
-    cudaError_t      stat;
-    cudaResourceDesc rd;
-    cudaTextureDesc  td;
-
-    memset(&rd, 0, sizeof(rd));
-    rd.resType                = cudaResourceTypeLinear;
-    rd.res.linear.devPtr      = d_ptr;
-    rd.res.linear.desc        = cudaCreateChannelDesc<T>();
-    rd.res.linear.sizeInBytes = sizeInBytes;
-
-    memset(&td, 0, sizeof(td));
-    td.readMode                 = cudaReadModeElementType;
-    stat = cudaCreateTextureObject(&texObj, &rd, &td, NULL);
-    CU_RET_ERR(stat, "cudaCreateTextureObject failed");
-}
-
-/*! \brief Set up texture reference for an array of type T.
- *
- * Set up texture object for an array of type T and bind it to the device memory
- * \p d_ptr points to.
- *
- * \tparam[in] T        Raw data type
- * \param[out] texObj   texture reference to initialize
- * \param[in]  d_ptr    pointer to device global memory to bind \p texObj to
- * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
- */
-template <typename T>
-static void setup1DTexture(const struct texture<T, 1, cudaReadModeElementType> *texRef,
-                           const void                                          *d_ptr,
-                           size_t                                              sizeInBytes)
-{
-    assert(!c_disableCudaTextures);
-
-    cudaError_t           stat;
-    cudaChannelFormatDesc cd;
-
-    cd   = cudaCreateChannelDesc<T>();
-    stat = cudaBindTexture(nullptr, texRef, d_ptr, &cd, sizeInBytes);
-    CU_RET_ERR(stat, "cudaBindTexture failed");
 }
 
 template <typename T>
