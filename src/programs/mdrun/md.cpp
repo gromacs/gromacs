@@ -1064,6 +1064,14 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
         }
+        /* To account correctly for changes in bonded terms between different parts of the ensemble when using
+         * extended ensemble simulations, changes in those interactions need to be accounted for in addition to
+         * nonbonded ones. For this, the free energy perturbation option needs to be set here.
+         */
+        if (bDoExpanded)
+        {
+            bDoFEP  = TRUE;
+        }
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
