@@ -784,7 +784,7 @@ computeSpecialForces(FILE             *fplog,
             Awh &awh = *inputrec->awh;
             enerd->term[F_COM_PULL] +=
                 awh.applyBiasForcesAndUpdateBias(inputrec->pull_work,
-                                                 inputrec->ePBC, mdatoms, box, f, virial,
+                                                 inputrec->ePBC, *mdatoms, box, f, virial,
                                                  cr->ms, t, step, wcycle, fplog);
         }
     }

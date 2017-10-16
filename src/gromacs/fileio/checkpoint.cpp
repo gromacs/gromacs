@@ -163,7 +163,7 @@ enum {
     eawhhEQUILIBRATEHISTOGRAM,
     eawhhHISTSIZE,
     eawhhNPOINTS,
-    eawhhCOORDPOINT, eawhhREFGRIDPOINT,
+    eawhhCOORDPOINT, eawhhUMBRELLAGRIDPOINT,
     eawhhUPDATELIST,
     eawhhSCALEDSAMPLEWEIGHT,
     eawhhNUMUPDATES,
@@ -176,7 +176,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_equilibrateHistogram",
     "awh_histsize",
     "awh_npoints",
-    "awh_coordpoint", "awh_refGridpoint",
+    "awh_coordpoint", "awh_umbrellaGridpoint",
     "awh_updatelist",
     "awh_scaledSampleWeight",
     "awh_numupdates"
@@ -1543,14 +1543,14 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                         do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_covering, list);
                         do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_tot, list);
                         do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_ref, list);
-                        do_cpt_int_err(xd, eawhh_names[i], &psh.last_update_index, list);
+                        do_cpt_step_err(xd, eawhh_names[i], &psh.last_update_index, list);
                         do_cpt_double_err(xd, eawhh_names[i], &psh.log_pmfsum, list);
                         do_cpt_double_err(xd, eawhh_names[i], &psh.visits_iteration, list);
                         do_cpt_double_err(xd, eawhh_names[i], &psh.visits_tot, list);
                     }
                     break;
-                case eawhhREFGRIDPOINT:
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->refGridpoint), list); break;
+                case eawhhUMBRELLAGRIDPOINT:
+                    do_cpt_int_err(xd, eawhh_names[i], &(state->umbrellaGridpoint), list); break;
                 case eawhhUPDATELIST:
                     do_cpt_int_err(xd, eawhh_names[i], &(state->origin_index_updatelist), list);
                     do_cpt_int_err(xd, eawhh_names[i], &(state->end_index_updatelist), list);
@@ -1560,7 +1560,7 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     do_cpt_double_err(xd, eawhh_names[i], &(state->maxScaledSampleWeight), list);
                     break;
                 case eawhhNUMUPDATES:
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->numUpdates), list);
+                    do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
@@ -1839,7 +1839,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1<<eawhhEQUILIBRATEHISTOGRAM) |
                         (1<<eawhhHISTSIZE) |
                         (1<<eawhhNPOINTS) |
-                        (1<<eawhhCOORDPOINT) | (1<<eawhhREFGRIDPOINT) |
+                        (1<<eawhhCOORDPOINT) | (1<<eawhhUMBRELLAGRIDPOINT) |
                         (1<<eawhhUPDATELIST) |
                         (1<<eawhhSCALEDSAMPLEWEIGHT) |
                         (1<<eawhhNUMUPDATES));

@@ -40,7 +40,7 @@
  * Implements the "accelerated weight histogram" sampling method.
  *
  * This class provides the interface between the AWH module and
- * other modules using it. Currently AWH only act on COM pull
+ * other modules using it. Currently AWH can only act on COM pull
  * reaction coordinates, but this can easily be extended to other
  * types of reaction coordinates.
  *
@@ -106,7 +106,7 @@ class BiasCoupledToSystem;
  * The BiasCoupledToSystem class takes care of the reaction coordinate input
  * and force output for the single Bias object it containts.
  * The Bias class is a container and wrapper for a object BiasState + helpers.
- * All computation takes place in the BiasState object.
+ * All computation takes place in the BiasState object and its sub-classes.
  * The Bias class also contains a BiasWriter object that takes care of i/o.
  * Additionally, there are, currently quite messy, files that care of
  * parameter reading and checkpointing. These should be rewritten when we
@@ -167,7 +167,7 @@ class Awh
 
         /*! \brief Peform an AWH update, to be called every MD step.
          *
-         * An update has two main tasks: apply the bias force and improve
+         * An update has two tasks: apply the bias force and improve
          * the bias and the free energy estimate that AWH keeps internally.
          *
          * For the first task, AWH retrieves the pull coordinate values from the pull struct.
@@ -198,7 +198,7 @@ class Awh
          */
         real applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                           int                     ePBC,
-                                          const t_mdatoms        *mdatoms,
+                                          const t_mdatoms        &mdatoms,
                                           const matrix            box,
                                           rvec                   *force,
                                           tensor                  virial,
@@ -237,12 +237,9 @@ class Awh
         void restoreStateFromHistory(const AwhHistory *awhHistory,
                                      const t_commrec  *cr);
 
-        /*! \brief Returns string "AWH" for registering AWH as an external potential with pull.
+        /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
-        static const char *externalPotentialString()
-        {
-            return "AWH";
-        }
+        static const char *externalPotentialString();
 
         /*! \brief Register the AWH biased coordinates with pull.
          *

@@ -38,6 +38,9 @@
  * \brief
  * Declares and defined the PointState class.
  *
+ * Since nearly all operations on PointState objects occur in loops over
+ * (parts of) the grid of an AWH bias, all methods should be inlined.
+ *
  * \author Viveca Lindahl
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_awh
@@ -89,7 +92,7 @@ class PointState
          *
          * \param[in] psh  Coordinate point history to copy from.
          */
-        void setFromHistory(const AwhPointStateHistory &psh)
+        inline void setFromHistory(const AwhPointStateHistory &psh)
         {
             target_             = psh.target;
             freeEnergy_         = psh.free_energy;
@@ -104,23 +107,42 @@ class PointState
         }
 
         /*! \brief
+         * Store the state of a point in a history struct.
+         *
+         * \param[in,out] psh  Coordinate point history to copy to.
+         */
+        inline void storeState(AwhPointStateHistory *psh) const
+        {
+            psh->target              = target_;
+            psh->free_energy         = freeEnergy_;
+            psh->bias                = bias_;
+            psh->weightsum_iteration = weightsumIteration_;
+            psh->weightsum_tot       = weightsumTot_;
+            psh->weightsum_ref       = weightsumRef_;
+            psh->last_update_index   = lastUpdateIndex_;
+            psh->log_pmfsum          = logPmfsum_;
+            psh->visits_iteration    = numVisitsIteration_;
+            psh->visits_tot          = numVisitsTot_;
+        }
+
+        /*! \brief
          * Query if the point is in the target region.
          *
          * \returns true if the point is in the target region.
          */
-        bool inTargetRegion() const
+        inline bool inTargetRegion() const
         {
             return target_ > 0;
         }
 
         /*! \brief Return the bias function estimate. */
-        double bias() const
+        inline double bias() const
         {
             return bias_;
         }
 
         /*! \brief Set the target to zero and the bias to minus infinity. */
-        void setTargetToZero()
+        inline void setTargetToZero()
         {
             target_ = 0;
             /* the bias = log(target) + const = -infty */
@@ -128,30 +150,28 @@ class PointState
         }
 
         /*! \brief Return the free energy. */
-        double freeEnergy() const
+        inline double freeEnergy() const
         {
             return freeEnergy_;
         }
 
-        /*! \brief Set the free energy.
-         *
-         * TODO: Replace this setter function with a more elegant solution.
+        /*! \brief Set the free energy, only to be used at initialization.
          *
          * \param[in] freeEnergy  The free energy.
          */
-        void setFreeEnergy(double freeEnergy)
+        inline void setFreeEnergy(double freeEnergy)
         {
             freeEnergy_ = freeEnergy;
         }
 
         /*! \brief Return the target. */
-        double target() const
+        inline double target() const
         {
             return target_;
         }
 
         /*! \brief Return the weight accumulated since the last update. */
-        double weightsumIteration() const
+        inline double weightsumIteration() const
         {
             return weightsumIteration_;
         }
@@ -160,31 +180,25 @@ class PointState
          *
          * \param[in] weight  The amount to add to the weight
          */
-        void increaseWeightsumIteration(double weight)
+        inline void increaseWeightsumIteration(double weight)
         {
             weightsumIteration_ += weight;
         }
 
         /*! \brief Returns the accumulated weight */
-        double weightsumTot() const
+        inline double weightsumTot() const
         {
             return weightsumTot_;
         }
 
         /*! \brief Return the reference weight histogram. */
-        double weightsumRef() const
+        inline double weightsumRef() const
         {
             return weightsumRef_;
         }
 
-        /*! \brief Return the last update that was performed (in units of number of updates). */
-        int lastUpdateIndex() const
-        {
-            return lastUpdateIndex_;
-        }
-
         /*! \brief Return log(PMFsum). */
-        double logPmfsum() const
+        inline double logPmfsum() const
         {
             return logPmfsum_;
         }
@@ -195,19 +209,19 @@ class PointState
          *
          * \param[in] logPmfsum  The log(PMFsum).
          */
-        void setLogPmfsum(double logPmfsum)
+        inline void setLogPmfsum(double logPmfsum)
         {
             logPmfsum_ = logPmfsum;
         }
 
         /*! \brief Return the number of visits since the last update */
-        double numVisitsIteration() const
+        inline double numVisitsIteration() const
         {
             return numVisitsIteration_;
         }
 
         /*! \brief Return the total number of visits */
-        double numVisitsTot() const
+        inline double numVisitsTot() const
         {
             return numVisitsTot_;
         }
@@ -216,13 +230,13 @@ class PointState
          *
          * \param[in] targetConstantWeight  The target weight factor.
          */
-        void setTargetConstantWeight(double targetConstantWeight)
+        inline void setTargetConstantWeight(double targetConstantWeight)
         {
             targetConstantWeight_ = targetConstantWeight;
         }
 
         /*! \brief Updates the bias of a point. */
-        void updateBias()
+        inline void updateBias()
         {
             GMX_ASSERT(target_ > 0, "AWH target distribution must be > 0 to calculate the point bias.");
 
@@ -233,7 +247,7 @@ class PointState
          *
          * \param[in] histogramSize  The weight histogram size.
          */
-        void setInitialReferenceWeightHistogram(double histogramSize)
+        inline void setInitialReferenceWeightHistogram(double histogramSize)
         {
             weightsumRef_ = histogramSize*target_;
         }
@@ -242,7 +256,7 @@ class PointState
          *
          * \param[in] minimumFreeEnergy  The free energy at the minimum;
          */
-        void normalizeFreeEnergyAndPmfSum(double minimumFreeEnergy)
+        inline void normalizeFreeEnergyAndPmfSum(double minimumFreeEnergy)
         {
             if (inTargetRegion())
             {
@@ -271,8 +285,10 @@ class PointState
          * \param[in] logPmfsumScaling      Scale factor for the reference PMF histogram.
          * \returns true if at least one update was applied.
          */
-        bool updateSkipped(const BiasParams &params, int numUpdates,
-                           double weighthistScaling, double logPmfsumScaling)
+        inline bool updateSkipped(const BiasParams &params,
+                                  gmx_int64_t       numUpdates,
+                                  double            weighthistScaling,
+                                  double            logPmfsumScaling)
         {
             GMX_ASSERT(params.skipUpdates(), "Calling function for skipped updates when skipping updates is not allowed");
 
@@ -282,8 +298,8 @@ class PointState
             }
 
             /* The most current past update */
-            int lastUpdateIndex   = numUpdates;
-            int numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
+            gmx_int64_t lastUpdateIndex   = numUpdates;
+            gmx_int64_t numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
 
             if (numUpdatesSkipped == 0)
             {
@@ -313,10 +329,10 @@ class PointState
          * \param[in] weighthistScaling   Scaling factor for the reference weight histogram.
          * \param[in] logPmfsumScaling    Log of the scaling factor for the PMF histogram.
          */
-        void updateNew(const BiasParams &params,
-                       int               numUpdates,
-                       double            weighthistScaling,
-                       double            logPmfsumScaling)
+        inline void updateNew(const BiasParams &params,
+                              gmx_int64_t       numUpdates,
+                              double            weighthistScaling,
+                              double            logPmfsumScaling)
         {
             GMX_RELEASE_ASSERT(lastUpdateIndex_ == numUpdates, "When doing a normal update, the point update index should match the global index, otherwise we lost (skipped?) updates.");
 
@@ -333,7 +349,7 @@ class PointState
          *
          * \param[in] convolvedBias  The convolved bias.
          */
-        void samplePmf(double convolvedBias)
+        inline void samplePmf(double convolvedBias)
         {
             if (inTargetRegion())
             {
@@ -352,7 +368,8 @@ class PointState
          * \param[in] params          The AWH bias parameters.
          * \param[in] weightAtPoint   Sampled probability weight at this point.
          */
-        void updateFreeEnergy(const BiasParams &params, double weightAtPoint)
+        inline void updateFreeEnergy(const BiasParams &params,
+                                     double            weightAtPoint)
         {
             double weighthistSampled  = weightsumRef() + weightAtPoint;
             double weighthistTarget   = weightsumRef() + params.updateWeight*target_;
@@ -370,7 +387,9 @@ class PointState
          * \param[in] weightAtPoint  Sampled probability weight at this point.
          * \param[in] scaleFactor    Factor to rescale the histogram with.
          */
-        void updateWeightHistogram(const BiasParams &params, double weightAtPoint, double scaleFactor)
+        inline void updateWeightHistogram(const BiasParams &params,
+                                          double            weightAtPoint,
+                                          double            scaleFactor)
         {
             if (params.idealWeighthistUpdate)
             {
@@ -404,8 +423,10 @@ class PointState
          * \param[in] weighthistScaling  Scaling factor for the reference weight histogram.
          * \param[in] logPmfsumScaling   Log of the scaling factor for the PMF histogram.
          */
-        void update(const BiasParams &params,
-                    double weightAtPoint, double weighthistScaling, double logPmfsumScaling)
+        inline void update(const BiasParams &params,
+                           double            weightAtPoint,
+                           double            weighthistScaling,
+                           double            logPmfsumScaling)
         {
             updateFreeEnergy(params, weightAtPoint);
             updateWeightHistogram(params, weightAtPoint, weighthistScaling);
@@ -422,7 +443,8 @@ class PointState
          * \param[in] freeEnergyCutoff  The cut-off for the free energy for target type "cutoff".
          * \returns the updated value of the target.
          */
-        double updateTarget(const BiasParams &params, double freeEnergyCutoff)
+        inline double updateTarget(const BiasParams &params,
+                                   double            freeEnergyCutoff)
         {
             switch (params.eTarget)
             {
@@ -454,15 +476,15 @@ class PointState
          * \param[in] weightsum  The weightsum value
          * \param[in] numVisits  The number of visits
          */
-        void setPartialWeightAndCount(double weightsum,
-                                      double numVisits)
+        inline void setPartialWeightAndCount(double weightsum,
+                                             double numVisits)
         {
             weightsumIteration_ = weightsum;
             numVisitsIteration_ = numVisits;
         }
 
         /*! \brief Add the weights and counts accumulated between updates. */
-        void addPartialWeightAndCount()
+        inline void addPartialWeightAndCount()
         {
             weightsumTot_ += weightsumIteration_;
             numVisitsTot_ += numVisitsIteration_;
@@ -472,23 +494,23 @@ class PointState
          *
          * \param[in] scaleFactor  Factor to scale with.
          */
-        void scaleTarget(double scaleFactor)
+        inline void scaleTarget(double scaleFactor)
         {
             target_ *= scaleFactor;
         }
 
     private:
-        double bias_;                  /**< Current biasing function estimate */
-        double freeEnergy_;            /**< Current estimate of the convolved free energy/PMF. */
-        double target_;                /**< Current target distribution, normalized to 1 */
-        double targetConstantWeight_;  /**< Constant target weight, from user data. */
-        double weightsumIteration_;    /**< Accumulated weight this iteration. */
-        double weightsumTot_;          /**< Accumulated weights, never reset */
-        double weightsumRef_;          /**< The reference weight histogram determining the free energy updates */
-        int    lastUpdateIndex_;       /**< The last update that was performed at this point (in units of number of updates). */
-        double logPmfsum_;             /**< Logarithm of the PMF histogram (for 1 replica) */
-        double numVisitsIteration_;    /**< Visits to this bin this iteration. */
-        double numVisitsTot_;          /**< Accumulated visits to this bin */
+        double      bias_;                  /**< Current biasing function estimate */
+        double      freeEnergy_;            /**< Current estimate of the convolved free energy/PMF. */
+        double      target_;                /**< Current target distribution, normalized to 1 */
+        double      targetConstantWeight_;  /**< Constant target weight, from user data. */
+        double      weightsumIteration_;    /**< Accumulated weight this iteration. */
+        double      weightsumTot_;          /**< Accumulated weights, never reset */
+        double      weightsumRef_;          /**< The reference weight histogram determining the free energy updates */
+        gmx_int64_t lastUpdateIndex_;       /**< The last update that was performed at this point, in units of number of updates. */
+        double      logPmfsum_;             /**< Logarithm of the PMF histogram (for 1 replica) */
+        double      numVisitsIteration_;    /**< Visits to this bin this iteration. */
+        double      numVisitsTot_;          /**< Accumulated visits to this bin */
 };
 
 }      // namespace gmx

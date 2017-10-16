@@ -246,7 +246,7 @@ void BiasCoupledToSystem::calcForceAndUpdateBias(const awh_dvec          coordVa
 /* Peform an AWH update every MD step. */
 real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                        int                     ePBC,
-                                       const t_mdatoms        *mdatoms,
+                                       const t_mdatoms        &mdatoms,
                                        const matrix            box,
                                        rvec                   *force,
                                        tensor                  virial,
@@ -256,6 +256,9 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                        gmx_wallcycle          *wallcycle,
                                        FILE                   *fplog)
 {
+    GMX_ASSERT(pull_work, "Need a valid pull object");
+    GMX_ASSERT(force, "Need a valid force object");
+
     wallcycle_start(wallcycle, ewcAWH);
 
     t_pbc  pbc;
@@ -298,7 +301,7 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
         for (int d = 0; d < biasCTS.bias().ndim(); d++)
         {
             apply_external_pull_coord_force(pull_work, biasCTS.pullCoordIndex(d),
-                                            biasForce[d], mdatoms, force, virial);
+                                            biasForce[d], &mdatoms, force, virial);
         }
     }
 
@@ -362,10 +365,17 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
     }
 }
 
+const char * Awh::externalPotentialString()
+{
+    return "AWH";
+}
+
 /* Register the AWH biased coordinates with pull. */
 void Awh::registerAwhWithPull(const AwhParams &awhParams,
                               struct pull_t   *pull_work)
 {
+    GMX_RELEASE_ASSERT(pull_work, "Need a valid pull object");
+
     for (int k = 0; k < awhParams.numBias; k++)
     {
         const AwhBiasParams &biasParams = awhParams.awhBiasParams[k];

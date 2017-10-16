@@ -56,6 +56,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "biasparams.h"
 #include "biasstate.h"
@@ -160,7 +161,12 @@ class Bias
          * \param[in] dim         The dimension.
          * \param[in] coordValue  The coordinate value.
          */
-        void setCoordValue(int dim, double coordValue);
+        inline void setCoordValue(int dim, double coordValue)
+        {
+            GMX_RELEASE_ASSERT(dim >= 0 && dim < ndim(), "The dimension should be in range");
+            
+            state_.setCoordValue(grid(), dim, coordValue);
+        };
 
         /*! \brief
          * Evolves the bias at every step.
@@ -204,38 +210,38 @@ class Bias
         void doSkippedUpdatesForAllPoints();
 
         //! Returns the dimensionality of the bias.
-        int ndim() const
+        inline int ndim() const
         {
             return dimParams_.size();
         }
 
         /*! \brief Returns the dimension parameters.
          */
-        const std::vector<DimParams> &dimParams() const
+        inline const std::vector<DimParams> &dimParams() const
         {
             return dimParams_;
         }
 
         //! Returns the grid
-        const Grid &grid() const
+        inline const Grid &grid() const
         {
             return *grid_.get();
         }
 
         //! Returns the bias parameters
-        const BiasParams &params() const
+        inline const BiasParams &params() const
         {
             return params_;
         }
 
         //! Returns the global state of the bias.
-        const BiasState &state() const
+        inline const BiasState &state() const
         {
             return state_;
         }
 
         //! Returns the index of the bias.
-        int biasIndex() const
+        inline int biasIndex() const
         {
             return params_.biasIndex;
         }
