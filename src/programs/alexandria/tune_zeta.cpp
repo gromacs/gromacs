@@ -250,11 +250,11 @@ void OptZeta::calcDeviation()
                     {
                         ener_[ermsBOUNDS] += fabs(qq);
                     }
-                    /*if(nullptr != mymol.shellfc_)
+                    if(nullptr != mymol.shellfc_)
                     {
                        qq += mymol.topology_->atoms.atom[j+1].q;
                     }
-                    ener_[ermsCHARGE] += gmx::square(qq - mymol.qESP_[i++]);*/
+                    ener_[ermsCHARGE] += 10*gmx::square(qq - mymol.qCM5_[i++]);
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -327,22 +327,18 @@ void OptZeta::polData2TuneZeta()
     {   
         if (!ai->isConst())
         {
-            auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
+            auto ei   = pd_.findEem(iChargeDistributionModel_, ai->name());
             GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");       
-            auto nzeta = ei->getNzeta();
-            for (int k = 0; k < nzeta; k++)
+            auto zeta = ei->getZeta(0);
+            if (0 != zeta)
             {
-                auto zeta = ei->getZeta(k);
-                if (0 != zeta)
-                {
-                    param_.push_back(std::move(zeta));
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
-                              ai->name().c_str(), iChargeDistributionModel_);
-                }
+                param_.push_back(std::move(zeta));
             }
+            else
+            {
+                gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
+                          ai->name().c_str(), iChargeDistributionModel_);
+            }            
         }      
     }
     if (bOptHfac_)
@@ -355,7 +351,9 @@ void OptZeta::tuneZeta2PolData()
 {
     int   n = 0;
     char  zstr[STRLEN];
+    char  z_sig[STRLEN];
     char  buf[STRLEN];
+    char  buf_sig[STRLEN];
         
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -366,16 +364,21 @@ void OptZeta::tuneZeta2PolData()
             GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
-            zstr[0] = '\0';
-            auto nzeta = ei->getNzeta();
+            zstr[0]  = '\0';
+            z_sig[0] = '\0';
+            auto nzeta  = ei->getNzeta();
+            auto zeta   = param_[n];
+            auto sigma  = psigma_[n++];
             for (auto i = 0; i < nzeta; i++)
             {
-                auto zeta = param_[n++];
                 sprintf(buf, "%g ", zeta);
+                sprintf(buf_sig, "%g ", sigma);
                 strcat(zstr, buf);
+                strcat(z_sig, buf_sig);
             }                
             ei->setRowZetaQ(rowstr, zstr, qstr);
             ei->setZetastr(zstr);
+            ei->setZeta_sigma(z_sig);
         }               
     }
     if (bOptHfac_)
@@ -423,12 +426,9 @@ double OptZeta::objFunction(const double v[])
     {
         if (!ai->isConst())
         {                       
-            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-            for (auto i = 0; i < nzeta; i++)
-            {
-                auto zeta = param_[n++];
-                bounds += harmonic(zeta, zeta_min_, zeta_max_);
-            }       
+            auto zeta = param_[n++];
+            bounds += harmonic(zeta, zeta_min_, zeta_max_);
+     
         }
     }   
     if (bOptHfac_)
