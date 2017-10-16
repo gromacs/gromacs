@@ -788,6 +788,78 @@ computeSpecialForces(t_commrec        *cr,
     }
 }
 
+
+static inline void launchOrCommunicateToConcurrentPMETask(t_commrec        *cr,
+                                                          gmx_int64_t       step,
+                                                          gmx_wallcycle_t   wcycle,
+                                                          const t_forcerec *fr,
+                                                          matrix            box,
+                                                          rvec              x[],
+                                                          const real       *lambda,
+                                                          int               flags,
+                                                          bool              useGpuPme,
+                                                          bool              pmeRunMode)
+{
+#if GMX_MPI
+    bool usingMPI = true;
+#else
+    bool usingMPI = false;
+#endif
+
+    if (usingMPI && !(cr->duty & DUTY_PME))
+    {
+        /* Send particle coordinates to the PME ranks.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */
+        wallcycle_start(wcycle, ewcPP_PMESENDX);
+        gmx_pme_send_coordinates(cr, box, x,
+                                 lambda[efptCOUL], lambda[efptVDW],
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 step);
+        wallcycle_stop(wcycle, ewcPP_PMESENDX);
+    }
+
+
+    /* Launching PME on GPU */
+    assert(useGpuPme == (cr->duty & DUTY_PME));
+    // LJ-PME is not supported
+    assert(useGpuPme == (!EVDW_PME(fr->ic->vdwtype)));
+    // we have to be using PME if we are here
+    assert(useGpuPme == (EEL_PME(fr->ic->eeltype)));
+
+    if (useGpuPme)
+    {
+        assert(fr->n_tpi >= 0);
+        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+        {
+            int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+            if (flags & GMX_FORCE_FORCES)
+            {
+                pme_flags |= GMX_PME_CALC_F;
+            }
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                pme_flags |= GMX_PME_CALC_ENER_VIR;
+            }
+            if (fr->n_tpi > 0)
+            {
+                /* We don't calculate f, but we do want the potential */
+                pme_flags |= GMX_PME_CALC_POT;
+            }
+
+            pme_gpu_prepare_step(fr->pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pme_flags);
+            pme_gpu_launch_spread(fr->pmedata, x, wcycle);
+            if (pmeRunMode == PmeRunMode::GPU)
+            {
+                pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
+            }
+        }
+    }
+
+}
+
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -824,7 +896,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
     const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
-    const bool useGpuPme  = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+    const bool useGpuPme  = ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid)) &&
+        EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -895,52 +968,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                  fr->shift_vec, nbv->nbat);
 
-#if GMX_MPI
-    if (!(cr->duty & DUTY_PME))
-    {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
-        wallcycle_start(wcycle, ewcPP_PMESENDX);
-        gmx_pme_send_coordinates(cr, box, x,
-                                 lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
-                                 step);
-        wallcycle_stop(wcycle, ewcPP_PMESENDX);
-    }
-#endif /* GMX_MPI */
-
-    /* Launching PME on GPU */
-    if (useGpuPme && EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
-    {
-        assert(fr->n_tpi >= 0);
-        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
-        {
-            int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-            if (flags & GMX_FORCE_FORCES)
-            {
-                pme_flags |= GMX_PME_CALC_F;
-            }
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                pme_flags |= GMX_PME_CALC_ENER_VIR;
-            }
-            if (fr->n_tpi > 0)
-            {
-                /* We don't calculate f, but we do want the potential */
-                pme_flags |= GMX_PME_CALC_POT;
-            }
-
-            pme_gpu_prepare_step(fr->pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pme_flags);
-            pme_gpu_launch_spread(fr->pmedata, x, wcycle);
-            if (pmeRunMode == PmeRunMode::GPU)
-            {
-                pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-            }
-        }
-    }
+    launchOrCommunicateToConcurrentPMETask(cr, step, wcycle, fr, box, x, lambda, flags, useGpuPme, pmeRunMode);
 
     /* do gridding for pair search */
     if (bNS)
