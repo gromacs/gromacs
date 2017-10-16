@@ -94,8 +94,14 @@ struct t_commrec {
     /* Not used yet: int threadid, nthreads; */
     /* The nodeid in the PP/PME, PP or PME group */
     int      nodeid;
-    MPI_Comm mpi_comm_mysim;
-    MPI_Comm mpi_comm_mygroup;
+
+    /* MPI communicators within a single simulation
+     * Note: other parts of the code may further subset these communicators.
+     */
+    MPI_Comm mpi_comm_mysim;           /* communicator including all ranks of
+                                          a single simulation */
+    MPI_Comm mpi_comm_mygroup;         /* subset of mpi_comm_mysim including only
+                                          the ranks in the same group (PP or PME) */
 
     /* MPI ranks and a communicator within a physical node for hardware access */
     MPI_Comm       mpi_comm_physicalnode; /* communicator for all ranks of the physical node
