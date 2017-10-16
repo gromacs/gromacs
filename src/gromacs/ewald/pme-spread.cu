@@ -82,13 +82,13 @@ texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
 texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
 
 /*! Returns the reference to the gridlineIndices texture. */
-texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
+const struct texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
 {
     return gridlineIndicesTableTextureRef;
 }
 
 /*! Returns the reference to the fractShifts texture. */
-texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
+const struct texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
 {
     return fractShiftsTableTextureRef;
 }
@@ -247,10 +247,20 @@ __device__ __forceinline__ void calculate_splines(const pme_gpu_cuda_kernel_para
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
-            sm_fractCoords[sharedMemoryIndex] += fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, kernelParams.fractShiftsTableTexture,
-                                                                           fractShiftsTableTextureRef, tableIndex);
-            sm_gridlineIndices[sharedMemoryIndex] = fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable, kernelParams.gridlineIndicesTableTexture,
-                                                                              gridlineIndicesTableTextureRef, tableIndex);
+            sm_fractCoords[sharedMemoryIndex] +=
+                fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable,
+                                          kernelParams.fractShiftsTableTexture,
+#if DISABLE_CUDA_TEXTURES == 0
+                                          fractShiftsTableTextureRef,
+#endif
+                                          tableIndex);
+            sm_gridlineIndices[sharedMemoryIndex] =
+                fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
+                                          kernelParams.gridlineIndicesTableTexture,
+#if DISABLE_CUDA_TEXTURES == 0
+                                          gridlineIndicesTableTextureRef,
+#endif
+                                          tableIndex);
             gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
         }
 

@@ -42,6 +42,8 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <cmath>
 
 /* The rest */
