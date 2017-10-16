@@ -99,6 +99,23 @@ static __global__ void k_dummy_test(void)
 {
 }
 
+void nbnxnPrevent20PtxOnLaterDevice(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
+
+    if (devInfo->prop.major < 3)
+    {
+        return;
+    }
+    cudaFuncAttributes attributes;
+
+    cudaError_t stat = cudaFuncGetAttributes(&attributes, k_dummy_test);
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    bool ptxVersionIs20 = (attributes.ptxVersion < 30);
+
+    GMX_RELEASE_ASSERT(!ptxVersionIs20, "Trying to run on a CC >= 3.0 device code compiled at runtime from 2.0 source. Pass the appropriate value to GMX_CUDA_TARGET_SM or a >=3.0 value to GMX_CUDA_TARGET_COMPUTE.");
+}
 
 /*!
  * \brief Runs GPU sanity checks.
@@ -468,6 +485,8 @@ void init_gpu(const gmx::MDLogger &mdlog, int rank,
     {
         fprintf(stderr, "Initialized GPU ID #%d: %s\n", deviceInfo->id, deviceInfo->prop.name);
     }
+
+    nbnxnPrevent20PtxOnLaterDevice(deviceInfo);
 
     //Ignoring return value as NVML errors should be treated not critical.
     init_gpu_application_clocks(mdlog, deviceInfo);
