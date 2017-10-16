@@ -94,12 +94,47 @@ static int  cuda_max_device_count = 32;
 
 static bool cudaProfilerRun      = ((getenv("NVPROF_ID") != NULL));
 
-/** Dummy kernel used for sanity checking. */
-static __global__ void k_dummy_test(void)
+/** \brief Dummy kernel used for sanity checking. */
+static __global__ void dummyTestKernel(void)
 {
 }
 
+void prevent20PtxOnLaterDevice(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
 
+    if (devInfo->prop.major < 3)
+    {
+        return;
+    }
+
+    cudaFuncAttributes attributes;
+    cudaFuncGetAttributes(&attributes, nb_kfunc_ener_prune_ptr[i][j]);
+    bool ptxVersionIs2x = (attributes.ptxVersion < 30);
+    
+    cudaError_t stat = cudaGetLastError();
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    GMX_RELEASE_ASSERT(!ptxVersionIs2x, "GPU device code targeting copute capability 2.0 has been used in runtime compilation for the current >=3.0 compute capability device which is not compatible. Pass the appropriate value to GMX_CUDA_TARGET_SM or a >=3.0 value to GMX_CUDA_TARGET_COMPUTE.");
+}
+void Device(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
+
+    if (devInfo->prop.major < 3)
+    {
+        return;
+    }
+
+    cudaFuncAttributes attributes;
+    cudaFuncGetAttributes(&attributes, nb_kfunc_ener_prune_ptr[i][j]);
+    bool ptxVersionIs2x = (attributes.ptxVersion < 30);
+    
+    cudaError_t stat = cudaGetLastError();
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    GMX_RELEASE_ASSERT(!ptxVersionIs2x, "GPU device code targeting copute capability 2.0 has been used in runtime compilation for the current >=3.0 compute capability device which is not compatible. Pass the appropriate value to GMX_CUDA_TARGET_SM or a >=3.0 value to GMX_CUDA_TARGET_COMPUTE.");
+}
 /*!
  * \brief Runs GPU sanity checks.
  *
@@ -192,7 +227,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     /* try to execute a dummy kernel */
-    k_dummy_test<<< 1, 512>>> ();
+    dummyTestKernel<<< 1, 512>>> ();
     if (cudaThreadSynchronize() != cudaSuccess)
     {
         return -1;

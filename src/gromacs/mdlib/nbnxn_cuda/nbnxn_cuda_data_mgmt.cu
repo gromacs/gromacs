@@ -520,6 +520,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     nbnxn_cuda_init_const(nb, ic, listParams, nbat);
 
+    nbnxnPrevent20PtxOnLaterDevice(nb->dev_info);
+
     *p_nb = nb;
 
     if (debug)

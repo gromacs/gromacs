@@ -232,6 +232,40 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
     { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda      }
 };
 
+
+void nbnxnPrevent20PtxOnLaterDevice(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
+
+    if (devInfo->prop.major < 3)
+    {
+        return;
+    }
+
+    bool ptxVersionIs20 = false;
+
+    for (int i = 0; i < eelCuNR; i++)
+    {
+        for (int j = 0; j < evdwCuNR; j++)
+        {
+            cudaFuncAttributes attributes;
+
+            cudaFuncGetAttributes(&attributes, nb_kfunc_ener_prune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_ener_noprune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_noener_prune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_noener_noprune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+        }
+    }
+    cudaError_t stat = cudaGetLastError();
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    GMX_RELEASE_ASSERT(!ptxVersionIs20, "Incompatible GPU device code targeting copute capability 2.0 has been used in runtime compilation for the current >=3.0 compute capability device. Pass the appropriate value to GMX_CUDA_TARGET_SM or a >=3.0 value to GMX_CUDA_TARGET_COMPUTE.");
+}
+
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                                  eeltype,
                                                        int                                  evdwtype,
