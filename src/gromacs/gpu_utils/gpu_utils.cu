@@ -58,6 +58,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programcontext.h"
 
 #if HAVE_NVML
 #include <nvml.h>
@@ -99,6 +101,38 @@ static __global__ void k_dummy_test(void)
 {
 }
 
+static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
+
+    cudaFuncAttributes attributes;
+    cudaError_t        stat = cudaFuncGetAttributes(&attributes, k_dummy_test);
+
+    if (cudaErrorInvalidDeviceFunction == stat)
+    {
+        gmx_fatal(FARGS,
+                  "The %s binary was not compiled for the selected GPU "
+                  "(device ID #%d, compute capability %d.%d).\n"
+                  "When selecting target GPU architectures with GMX_CUDA_TARGET_SM, "
+                  "make sure to pass the appropriate architecture(s) corresponding to the "
+                  "device(s) intended to be used (see in the GPU info listing) or alternatively "
+                  "pass in GMX_CUDA_TARGET_COMPUTE an appropriate virtual architecture. ",
+                  gmx::getProgramContext().displayName(), devInfo->id,
+                  devInfo->prop.major, devInfo->prop.minor);
+    }
+
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    if (devInfo->prop.major >= 3 && attributes.ptxVersion < 30)
+    {
+        gmx_fatal(FARGS,
+                  "The GPU device code was compiled at runtime from 2.0 source which is "
+                  "not compatible with the selected GPU (device ID #%d, compute capability %d.%d). "
+                  "Pass the appropriate target in GMX_CUDA_TARGET_SM or a >=30 value to GMX_CUDA_TARGET_COMPUTE.",
+                  devInfo->id,
+                  devInfo->prop.major, devInfo->prop.minor);
+    }
+}
 
 /*!
  * \brief Runs GPU sanity checks.
@@ -468,6 +502,8 @@ void init_gpu(const gmx::MDLogger &mdlog, int rank,
     {
         fprintf(stderr, "Initialized GPU ID #%d: %s\n", deviceInfo->id, deviceInfo->prop.name);
     }
+
+    checkCompiledTargetCompatibility(deviceInfo);
 
     //Ignoring return value as NVML errors should be treated not critical.
     init_gpu_application_clocks(mdlog, deviceInfo);
