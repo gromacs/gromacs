@@ -800,6 +800,44 @@ computeSpecialForces(t_commrec        *cr,
     }
 }
 
+/*! \brief Launch the prepare_step and spread stages of PME GPU.
+ *
+ * \param[in]  pmedata       The PME structure
+ * \param[in]  box           The box matrix
+ * \param[in]  x             Coordinate array
+ * \param[in]  flags         Force flags
+ * \param[in]  wcycle        The wallcycle structure
+ */
+static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
+                                      matrix          box,
+                                      rvec            x[],
+                                      int             flags,
+                                      gmx_wallcycle_t wcycle)
+{
+    int pmeFlags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+    pmeFlags |= (flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0;
+    pmeFlags |= (flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0;
+
+    pme_gpu_prepare_step(pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pmeFlags);
+    pme_gpu_launch_spread(pmedata, x, wcycle);
+}
+
+/*! \brief Launch the FFT and gather stages of PME GPU
+ *
+ * This function only implements setting the output forces (no accumulation).
+ *
+ * \param[in]  pmedata        The PME structure
+ * \param[out] pmeGpuForces   The array of where the output forces are copied
+ * \param[in]  wcycle         The wallcycle structure
+ */
+static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
+                                     ArrayRef<RVec>    pmeGpuForces,
+                                     gmx_wallcycle_t   wcycle)
+{
+    pme_gpu_launch_complex_transforms(pmedata, wcycle);
+    pme_gpu_launch_gather(pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
+}
+
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -928,35 +966,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 #endif /* GMX_MPI */
 
-    /* Launching PME on GPU */
     if (useGpuPme)
     {
-        assert(fr->n_tpi >= 0);
-        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED)) // TODO consolidate these checks
-        {
-            int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-            if (flags & GMX_FORCE_FORCES)
-            {
-                pme_flags |= GMX_PME_CALC_F;
-            }
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                pme_flags |= GMX_PME_CALC_ENER_VIR;
-            }
-            if (fr->n_tpi > 0)
-            {
-                /* We don't calculate f, but we do want the potential */
-                pme_flags |= GMX_PME_CALC_POT;
-            }
-
-            pme_gpu_prepare_step(fr->pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pme_flags);
-            pme_gpu_launch_spread(fr->pmedata, x, wcycle);
-            if (pmeRunMode == PmeRunMode::GPU)
-            {
-                pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-                pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
-            }
-        }
+        launchPmeGpuSpread(fr->pmedata, box, x, flags, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1055,6 +1067,15 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
+    if (useGpuPme && pmeRunMode == PmeRunMode::GPU)
+    {
+        // In PME GPU mode we launch FFT / gather after the
+        // X copy/transform to allow overlap.
+        // Note that this is advantageous for the case where NB and PME
+        // tasks run on the same device, but may not be ideal otherwise.
+        launchPmeGpuFftAndGather(fr->pmedata, pmeGpuForces, wcycle);
+    }
+
     if (bUseGPU)
     {
         if (DOMAINDECOMP(cr))
@@ -1071,12 +1092,13 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (pmeRunMode == PmeRunMode::Hybrid)
+    if (useGpuPme && pmeRunMode == PmeRunMode::Hybrid)
     {
+
         // PME GPU - intermediate CPU work in mixed mode
-        // TODO - try moving this below till after do_force_lowlevel() / special forces?
-        pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-        pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
+        // TODO - move this below till after do_force_lowlevel() / special forces?
+        //        (to allow overlap of spread/drid D2H with some CPU work)
+        launchPmeGpuFftAndGather(fr->pmedata, pmeGpuForces, wcycle);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
