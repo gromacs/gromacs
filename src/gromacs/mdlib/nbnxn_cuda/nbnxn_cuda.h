@@ -43,6 +43,7 @@
 
 //! Set up the cache configuration for the non-bonded kernels.
 void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
+
 /*! \brief Return the reference to the nbfp texture.
  *
  *  Note: it can return junk when c_disableCudaTextures==false, but we don't
