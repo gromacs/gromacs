@@ -233,8 +233,8 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
  * (due to texture references having scope of a translation unit).
  */
 /*! Returns the reference to the gridlineIndices texture. */
-texture<int, 1, cudaReadModeElementType>   &pme_gpu_get_gridline_texref();
+const struct texture<int, 1, cudaReadModeElementType>   &pme_gpu_get_gridline_texref();
 /*! Returns the reference to the fractShifts texture. */
-texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref();
+const struct texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref();
 
 #endif
