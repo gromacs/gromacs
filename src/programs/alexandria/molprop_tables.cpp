@@ -686,7 +686,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, lot, "", "electronic", &val, nullptr, &T))
+                        else if (mpi.getProp(mpo, iqmQM, lot, "", (char *)"electronic", &val, nullptr, &T))
                         {
                             nqm++;
                         }
