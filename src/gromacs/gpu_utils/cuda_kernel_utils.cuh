@@ -100,14 +100,15 @@ template <typename T>
 static __forceinline__ __device__
 T fetchFromParamLookupTable(const T                  *d_ptr,
                             const cudaTextureObject_t texObj,
+#if DISABLE_CUDA_TEXTURES == 0
                             const struct texture<T, 1, cudaReadModeElementType> texRef,
+#endif
                             int index)
 {
     assert(index >= 0);
     T result;
 #if DISABLE_CUDA_TEXTURES
     GMX_UNUSED_VALUE(texObj);
-    GMX_UNUSED_VALUE(texRef);
     result = LDG(d_ptr + index);
 #else
     GMX_UNUSED_VALUE(d_ptr);
