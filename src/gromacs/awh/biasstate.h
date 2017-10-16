@@ -60,7 +60,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "coordinatestate.h"
 #include "dimparams.h"
+#include "histogramsize.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -423,17 +425,6 @@ class BiasState
          */
         void sampleProbabilityWeights(const Grid                &grid,
                                       const std::vector<double> &probWeightNeighbor);
-        /*! \brief
-         * Return the new reference weight histogram size for the current update.
-         *
-         * This function also takes care of checking for covering in the initial stage.
-         *
-         * \param[in] t          Time.
-         * \param[in] covered    True if the sampling interval has been covered enough.
-         * \param[in,out] fplog  Log file.
-         * \returns the new histogram size.
-         */
-        double newHistSize(double t, bool covered, FILE *fplog);
 
         /*! \brief
          * Sample observables for future updates or analysis.
@@ -447,25 +438,11 @@ class BiasState
                                double                     convolvedBias);
 
     public:
-        /*! \brief Returns the current coordinate value.
+        /*! \brief Returns the current coordinate state.
          */
-        const awh_dvec &coordValue() const
+        const CoordinateState &coordinateState() const
         {
-            return coordValue_;
-        };
-
-        /*! \brief Returns the grid point index for the current coordinate value.
-         */
-        int gridpointIndex() const
-        {
-            return gridpointIndex_;
-        }
-
-        /*! \brief Returns the index for the current reference grid point.
-         */
-        int refGridpoint() const
-        {
-            return refGridpoint_;
+            return coordinateState_;
         };
 
         /*! \brief Returns a const reference to the point state.
@@ -479,15 +456,12 @@ class BiasState
          */
         bool inInitialStage() const
         {
-            return inInitialStage_;
+            return histogramSize_.inInitialStage();
         };
 
         /* Data members */
     private:
-        /* Current coordinate state */
-        awh_dvec  coordValue_;        /**< Current coordinate value in (nm or rad) */
-        int       gridpointIndex_;    /**< The grid point index for the current coordinate value */
-        int       refGridpoint_;      /**< Index for the current reference grid point (for umbrella potential type) */
+        CoordinateState coordinateState_; /**< The Current coordinate state */
 
         /* The grid point state */
         std::vector<PointState> points_; /**< Vector of state of the grid points */
@@ -495,23 +469,11 @@ class BiasState
         /* Covering values for each point on the grid */
         std::vector<double> weightsumCovering_; /**< Accumulated weights for covering checks */
 
-        /* Track number of updates and part of the grid sampled since the last update. */
-        int       numUpdates_;        /**< The number of updates performed since the start of the simulation. */
+        HistogramSize       histogramSize_; /**< Histogram size related values. */
+
+        /* Track the part of the grid sampled since the last update. */
         awh_ivec  originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
         awh_ivec  endUpdatelist_;     /**< The end of the rectangular that has been sampled since last update. */
-
-        /* The histogram size sets the update size and so controls the convergence rate of the free energy and bias. */
-        double    histSize_;          /**< Size of reference weight histogram. */
-
-        /* Evolution of the histogram size. Initially histSize (and thus the convergence rate) is controlled
-           heuristically to get good initial estimates, i.e. increase the robustness of the method. */
-        bool      inInitialStage_;        /**< True if in the intial stage. */
-        bool      equilibrateHistogram_;  /**< True if samples are kept from accumulating until the sampled distribution is close enough to the target. */
-        double    scaledSampleWeight_;    /**< The log of the current sample weight, scaled because of the histogram rescaling. */
-        double    maxScaledSampleWeight_; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
-
-        /* Bool to avoid printing multiple, not so useful, messages to log */
-        bool      havePrintedAboutCovering_; /**< True if we have printed about covering to the log while equilibrateHistogram==true */
 };
 
 /* Here follow some utility functions used by multiple files in AWH */

@@ -1560,7 +1560,7 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     do_cpt_double_err(xd, eawhh_names[i], &(state->maxScaledSampleWeight), list);
                     break;
                 case eawhhNUMUPDATES:
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->numUpdates), list);
+                    do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
