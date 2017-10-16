@@ -158,7 +158,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t
 {
     int max_grid_x_size;
 
-    assert(dinfo);
+    assert(devInfo);
     /* CUDA does not accept grid dimension of 0 (which can happen e.g. with an
        empty domain) and that case should be handled before this point. */
     assert(nwork_units > 0);
@@ -231,6 +231,40 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
     { nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_cuda             },
     { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda      }
 };
+
+
+void nbnxnPrevent20PtxOnLaterDevice(const gmx_device_info_t *devInfo)
+{
+    assert(devInfo);
+
+    if (devInfo->prop.major < 3)
+    {
+        return;
+    }
+
+    bool ptxVersionIs20 = false;
+
+    for (int i = 0; i < eelCuNR; i++)
+    {
+        for (int j = 0; j < evdwCuNR; j++)
+        {
+            cudaFuncAttributes attributes;
+
+            cudaFuncGetAttributes(&attributes, nb_kfunc_ener_prune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_ener_noprune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_noener_prune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+            cudaFuncGetAttributes(&attributes, nb_kfunc_noener_noprune_ptr[i][j]);
+            ptxVersionIs20 |= (attributes.ptxVersion < 30);
+        }
+    }
+    cudaError_t stat = cudaGetLastError();
+    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+
+    GMX_RELEASE_ASSERT(!ptxVersionIs20, "Trying to run on a CC >= 3.0 device code compiled at runtime from 2.0 source. Pass the appropriate value to GMX_CUDA_TARGET_SM or a >=3.0 value to GMX_CUDA_TARGET_COMPUTE.");
+}
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                                  eeltype,
