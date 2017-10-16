@@ -135,6 +135,8 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
         }
     }
 
+    const CoordinateState &coordinateState = state_.coordinateState();
+
     /* Set the bias force and get the potential contribution from this bias.
      * The potential jump occurs at different times depending on how
      * the force is applied (and how the potential is normalized).
@@ -153,10 +155,10 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
     else
     {
         /* Umbrella force */
-        GMX_RELEASE_ASSERT(state_.points()[state_.refGridpoint()].inTargetRegion(),
+        GMX_RELEASE_ASSERT(state_.points()[coordinateState.refGridpoint()].inTargetRegion(),
                            "AWH bias grid point reference value is outside of the target region.");
         potential =
-            state_.calcUmbrellaForceAndPotential(dimParams_, grid(), state_.refGridpoint(), biasForce);
+            state_.calcUmbrellaForceAndPotential(dimParams_, grid(), coordinateState.refGridpoint(), biasForce);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -185,7 +187,7 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
         if (params_.convolveForce)
         {
             /* The update results in a potential jump, so we need the new convolved potential. */
-            newPotential = -calcConvolvedBias(dimParams_, grid(), state_.points(), state_.coordValue())*params_.invBeta;
+            newPotential = -calcConvolvedBias(dimParams_, grid(), state_.points(), coordinateState.coordValue())*params_.invBeta;
         }
     }
 
@@ -368,7 +370,7 @@ static void printPartitioningDomainInit(const std::string   &awhPrefix,
 
     const Grid &grid  = bias.grid();
 
-    int         my_id = getDomainId(awhBiasParams, grid, bias.state().gridpointIndex());
+    int         my_id = getDomainId(awhBiasParams, grid, bias.state().coordinateState().gridpointIndex());
 
     if (fplog != nullptr)
     {
@@ -490,7 +492,7 @@ Bias::Bias(FILE                          *fplog,
         /* Partitioning  modifies the target distribution and the weighthistogram outside of the target domain.
            The target domain is determined based on the current coordinate reference value. */
         int pointMin, pointMax;
-        getDomainBoundaryForPoint(awhBiasParams, grid(), state_.gridpointIndex(),
+        getDomainBoundaryForPoint(awhBiasParams, grid(), state_.coordinateState().gridpointIndex(),
                                   &pointMin, &pointMax);
 
         double newHistSizeInitial =

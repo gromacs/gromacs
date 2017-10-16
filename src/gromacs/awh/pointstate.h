@@ -178,7 +178,7 @@ class PointState
         }
 
         /*! \brief Return the last update that was performed (in units of number of updates). */
-        int lastUpdateIndex() const
+        gmx_int64_t lastUpdateIndex() const
         {
             return lastUpdateIndex_;
         }
@@ -271,7 +271,7 @@ class PointState
          * \param[in] logPmfsumScaling      Scale factor for the reference PMF histogram.
          * \returns true if at least one update was applied.
          */
-        bool updateSkipped(const BiasParams &params, int numUpdates,
+        bool updateSkipped(const BiasParams &params, gmx_int64_t numUpdates,
                            double weighthistScaling, double logPmfsumScaling)
         {
             GMX_ASSERT(params.skipUpdates(), "Calling function for skipped updates when skipping updates is not allowed");
@@ -282,8 +282,8 @@ class PointState
             }
 
             /* The most current past update */
-            int lastUpdateIndex   = numUpdates;
-            int numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
+            gmx_int64_t lastUpdateIndex   = numUpdates;
+            gmx_int64_t numUpdatesSkipped = lastUpdateIndex - lastUpdateIndex_;
 
             if (numUpdatesSkipped == 0)
             {
@@ -314,7 +314,7 @@ class PointState
          * \param[in] logPmfsumScaling    Log of the scaling factor for the PMF histogram.
          */
         void updateNew(const BiasParams &params,
-                       int               numUpdates,
+                       gmx_int64_t       numUpdates,
                        double            weighthistScaling,
                        double            logPmfsumScaling)
         {
@@ -478,17 +478,17 @@ class PointState
         }
 
     private:
-        double bias_;                  /**< Current biasing function estimate */
-        double freeEnergy_;            /**< Current estimate of the convolved free energy/PMF. */
-        double target_;                /**< Current target distribution, normalized to 1 */
-        double targetConstantWeight_;  /**< Constant target weight, from user data. */
-        double weightsumIteration_;    /**< Accumulated weight this iteration. */
-        double weightsumTot_;          /**< Accumulated weights, never reset */
-        double weightsumRef_;          /**< The reference weight histogram determining the free energy updates */
-        int    lastUpdateIndex_;       /**< The last update that was performed at this point (in units of number of updates). */
-        double logPmfsum_;             /**< Logarithm of the PMF histogram (for 1 replica) */
-        double numVisitsIteration_;    /**< Visits to this bin this iteration. */
-        double numVisitsTot_;          /**< Accumulated visits to this bin */
+        double      bias_;                  /**< Current biasing function estimate */
+        double      freeEnergy_;            /**< Current estimate of the convolved free energy/PMF. */
+        double      target_;                /**< Current target distribution, normalized to 1 */
+        double      targetConstantWeight_;  /**< Constant target weight, from user data. */
+        double      weightsumIteration_;    /**< Accumulated weight this iteration. */
+        double      weightsumTot_;          /**< Accumulated weights, never reset */
+        double      weightsumRef_;          /**< The reference weight histogram determining the free energy updates */
+        gmx_int64_t lastUpdateIndex_;       /**< The last update that was performed at this point (in units of number of updates). */
+        double      logPmfsum_;             /**< Logarithm of the PMF histogram (for 1 replica) */
+        double      numVisitsIteration_;    /**< Visits to this bin this iteration. */
+        double      numVisitsTot_;          /**< Accumulated visits to this bin */
 };
 
 }      // namespace gmx

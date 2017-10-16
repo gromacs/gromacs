@@ -364,7 +364,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
     double potential = 0;
     for (size_t d = 0; d < dimParams.size(); d++)
     {
-        double dev = getDeviationFromPointAlongGridaxis(grid, d, point, coordValue_[d]);
+        double dev = getDeviationFromPointAlongGridaxis(grid, d, point, coordinateState_.coordValue()[d]);
 
         double k   = dimParams[d].k;
 
@@ -388,7 +388,7 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
     }
 
     /* Only neighboring points have non-negligible contribution. */
-    const std::vector<int> &neighbor = grid.point(gridpointIndex_).neighbor;
+    const std::vector<int> &neighbor = grid.point(coordinateState_.gridpointIndex()).neighbor;
     for (size_t n = 0; n < neighbor.size(); n++)
     {
         double weightNeighbor = probWeightNeighbor[n];
@@ -407,38 +407,6 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
     }
 }
 
-/*! \brief
- * Sample a new reference point given the current coordinate value.
- *
- * It is assumed that the probability distribution has been updated.
- *
- * \param[in] grid                The grid.
- * \param[in] gridpointIndex      The grid point, sets the neighborhood.
- * \param[in] probWeightNeighbor  Probability weights of the neighbors.
- * \param[in] step                Step number, needed for the random number generator.
- * \param[in] seed                Random seed.
- * \param[in] indexSeed           Second random seed, should be the bias Index.
- * \returns the index of the sampled point.
- */
-static int sampleReferenceGridpoint(const Grid                &grid,
-                                    int                        gridpointIndex,
-                                    const std::vector<double> &probWeightNeighbor,
-                                    gmx_int64_t                step,
-                                    int                        seed,
-                                    int                        indexSeed)
-{
-    /* Sample new reference value from the probability distribution which is defined for the neighboring
-       points of the current coordinate value.*/
-    const std::vector<int> &neighbor = grid.point(gridpointIndex).neighbor;
-
-    /* In order to use the same seed for all AWH biases and get independent
-       samples we use the index of the bias. */
-    int n_sampled  = get_sample_from_distribution(probWeightNeighbor, neighbor.size(),
-                                                  step, seed, indexSeed);
-
-    return neighbor[n_sampled];
-}
-
 /* Move the center point of the umbrella potential. */
 double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
@@ -449,11 +417,11 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                int                           indexSeed)
 {
     /* Generate and set a new coordinate reference value */
-    refGridpoint_ = sampleReferenceGridpoint(grid, gridpointIndex_, probWeightNeighbor, step, seed, indexSeed);
+    coordinateState_.sampleReferenceGridpoint(grid, coordinateState_.gridpointIndex(), probWeightNeighbor, step, seed, indexSeed);
 
     awh_dvec newForce;
     double   newPotential =
-        calcUmbrellaForceAndPotential(dimParams, grid, refGridpoint_, newForce);
+        calcUmbrellaForceAndPotential(dimParams, grid,  coordinateState_.refGridpoint(), newForce);
 
     /*  A modification of the reference value at time t will lead to a different
         force over t-dt/2 to t and over t to t+dt/2. For high switching rates
@@ -518,11 +486,12 @@ void BiasState::setSkippedUpdateHistogramScaleFactors(const BiasParams &params,
 {
     GMX_ASSERT(params.skipUpdates(), "Calling function for skipped updates when skipping updates is not allowed");
 
-    if (inInitialStage_)
+    if (histogramSize_.inInitialStage())
     {
         /* In between global updates the reference histogram size is kept constant so we trivially know what the
             histogram size was at the time of the skipped update. */
-        setHistogramUpdateScaleFactors(params, histSize_, histSize_,
+        double histSize = histogramSize_.histSize();
+        setHistogramUpdateScaleFactors(params, histSize, histSize,
                                        weighthistScaling, logPmfsumScaling);
     }
     else
@@ -542,7 +511,7 @@ void BiasState::doSkippedUpdatesForAllPoints(const BiasParams &params)
 
     for (auto &pointState : points_)
     {
-        bool bUpdated = pointState.updateSkipped(params, numUpdates_, weighthistScaling, logPmfsumScaling);
+        bool bUpdated = pointState.updateSkipped(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
 
         /* Update the bias for this point only if there were skipped updates in the past to avoid calculating the log unneccessarily */
         if (bUpdated)
@@ -561,10 +530,10 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
     setSkippedUpdateHistogramScaleFactors(params, &weighthistScaling, &logPmfsumScaling);
 
     /* For each neighbor point of the center point, refresh its state by adding the results of all past, skipped updates. */
-    const std::vector<int> &neighbors = grid.point(gridpointIndex_).neighbor;
+    const std::vector<int> &neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
     for (auto &neighbor : neighbors)
     {
-        bool didUpdate = points_[neighbor].updateSkipped(params, numUpdates_, weighthistScaling, logPmfsumScaling);
+        bool didUpdate = points_[neighbor].updateSkipped(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
 
         if (didUpdate)
         {
@@ -653,11 +622,12 @@ static void makeLocalUpdateList(const Grid                    &grid,
 /* Reset the range used to make the local update list. */
 void BiasState::resetLocalUpdateRange(const Grid &grid)
 {
+    const int gridpointIndex = coordinateState_.gridpointIndex();
     for (int d = 0; d < grid.ndim(); d++)
     {
         /* This gives the  minimum range consisting only of the current closest point. */
-        originUpdatelist_[d] = grid.point(gridpointIndex_).index[d];
-        endUpdatelist_[d]    = grid.point(gridpointIndex_).index[d];
+        originUpdatelist_[d] = grid.point(gridpointIndex).index[d];
+        endUpdatelist_[d]    = grid.point(gridpointIndex).index[d];
     }
 }
 
@@ -720,68 +690,6 @@ static void sumHistograms(std::vector<PointState> *pointState,
     {
         (*pointState)[iglobal].addPartialWeightAndCount();
     }
-}
-
-/* Returns the new size of the reference weight histogram in the initial stage. */
-double BiasState::newHistSizeInitialStage(const BiasParams &params,
-                                          double            t,
-                                          bool              detectedCovering,
-                                          FILE             *fplog)
-{
-    /* The histogram size is kept constant until the sampling region has been covered
-       and the the current sample weight is large enough and the histogram is ready. */
-    if (!detectedCovering ||
-        (scaledSampleWeight_ < maxScaledSampleWeight_) ||
-        equilibrateHistogram_)
-    {
-        return histSize_;
-    }
-
-    /* Reset the covering weight histogram. If we got this far we are either entering a
-       new covering stage with a new covering histogram or exiting the initial stage
-       altogether. */
-    std::fill(weightsumCovering_.begin(), weightsumCovering_.end(), 0);
-
-    /*  The current sample weigth is now the maximum. */
-    double prevMaxScaledSampleWeight = maxScaledSampleWeight_;
-    maxScaledSampleWeight_ = scaledSampleWeight_;
-
-    /* Increase the histogram size by a constant scale factor if we can, i.e. if the sample weight
-       resulting from such a scaling is still larger than the previous maximum sample weight
-       (ensuring that the sample weights at the end of each covering stage are monotonically
-       increasing). If we cannot, exit the initial stage without changing the histogram size. */
-
-    /* The scale factor. The value is not very critical but should obviously be > 1 (or the exit
-       will happen very late) and probably < 5 or so (or there will be no initial stage). */
-    static const double growthFactor = 3;
-
-    /* The scale factor is in most cases very close to the histogram growth factor. */
-    double              scaleFactor = growthFactor/(1. + params.updateWeight*params.localWeightScaling/histSize_);
-
-    bool                bExit       = (scaledSampleWeight_ - std::log(scaleFactor) <= prevMaxScaledSampleWeight);
-    double              histSizeNew = bExit ? histSize_ : histSize_*growthFactor;
-
-    /* Update the AWH bias about the exit. */
-    inInitialStage_ = !bExit;
-
-    /* Print information about coverings and if there was an exit. */
-    if (fplog != nullptr)
-    {
-        std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
-        fprintf(fplog, "%s covering at t = %g ps. Decreased the update size.\n", prefix.c_str(), t);
-
-        if (bExit)
-        {
-            fprintf(fplog, "%s out of the initial stage at t = %g.\n", prefix.c_str(), t);
-            /* It would be nice to have a way of estimating a minimum time until exit but it
-               is difficult because the exit time is determined by how long it takes to cover
-               relative to the time it takes to "regaining" enough sample weight. The latter
-               is easy to calculate, but how the former depends on the histogram size
-               is not known. */
-        }
-        fflush(fplog);
-    }
-    return histSizeNew;
 }
 
 /*! \brief
@@ -988,110 +896,6 @@ bool BiasState::isCovered(const BiasParams             &params,
 }
 
 /*! \brief
- * Checks if the histogram has equilibrated to the target distribution.
- *
- * The histogram is considered equilibrated if, for a minimum fraction of
- * the target region, the relative error of the sampled weight relative
- * to the target is less than a tolerance value.
- *
- * \param[in] pointStates  The state of the bias points.
- * \returns true if the histogram is equilibrated.
- */
-static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
-{
-    /* Get the total weight of the total weight histogram; needed for normalization. */
-    double totalWeight     = 0;
-    int    numTargetPoints = 0;
-    for (auto &pointState : pointStates)
-    {
-        if (!pointState.inTargetRegion())
-        {
-            continue;
-        }
-        totalWeight += pointState.weightsumTot();
-        numTargetPoints++;
-    }
-    GMX_RELEASE_ASSERT(totalWeight > 0, "No samples when normalizing AWH histogram.");
-    double              inverseTotalWeight   = 1./totalWeight;
-
-    /* Points with target weight below a certain cutoff are ignored. */
-    static const double minTargetCutoff  = 0.05;
-    double              minTargetWeight  = 1./numTargetPoints*minTargetCutoff;
-
-    /* Points with error less than this tolerance pass the check.*/
-    static const double errorTolerance   = 0.2;
-
-    /* Sum up weight of points that do or don't pass the check. */
-    double equilibratedWeight    = 0;
-    double notEquilibratedWeight = 0;
-    for (auto &pointState : pointStates)
-    {
-        double targetWeight  = pointState.target();
-        double sampledWeight = pointState.weightsumTot()*inverseTotalWeight;
-
-        /* Ignore these points. */
-        if (!pointState.inTargetRegion() || targetWeight < minTargetWeight)
-        {
-            continue;
-        }
-
-        if (std::fabs(sampledWeight/targetWeight - 1) > errorTolerance)
-        {
-            notEquilibratedWeight += targetWeight;
-        }
-        else
-        {
-            equilibratedWeight += targetWeight;
-        }
-    }
-
-    /* It is enough if sampling in at least a fraction of the target region follows the target
-       distribution. Boundaries will in general fail and this should be ignored (to some extent). */
-    static const double minFraction = 0.8;
-
-    return equilibratedWeight/(equilibratedWeight + notEquilibratedWeight) > minFraction;;
-}
-
-/* Return the new reference weight histogram size for the current update. */
-double BiasState::newHistSize(const BiasParams &params,
-                              double            t,
-                              bool              covered,
-                              FILE             *fplog)
-{
-    double histSizeNew;
-    if (inInitialStage_)
-    {
-        /* Only bother with checking equilibration if we have covered already. */
-        if (equilibrateHistogram_ && covered)
-        {
-            /* The histogram is equilibrated at most once. */
-            equilibrateHistogram_ = !histogramIsEquilibrated(points_);
-
-            std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
-            if (!equilibrateHistogram_)
-            {
-                fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);
-            }
-            else if (!havePrintedAboutCovering_)
-            {
-                fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
-                havePrintedAboutCovering_ = true; /* Just print once. */
-            }
-        }
-
-        /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
-        histSizeNew = newHistSizeInitialStage(params, t, covered, fplog);
-    }
-    else
-    {
-        /* If not in the initial stage, the histogram grows at a linear, possibly scaled down, rate. */
-        histSizeNew = histSize_ + params.updateWeight*params.localWeightScaling;
-    }
-
-    return histSizeNew;
-}
-
-/*! \brief
  * Normalizes the free energy and PMF sum.
  *
  * \param[in] pointState  The state of the points.
@@ -1162,14 +966,14 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
     bool detectedCovering = false;
-    if (inInitialStage_)
+    if (histogramSize_.inInitialStage())
     {
         detectedCovering = (isCheckStep(params, points_, step) &&
                             isCovered(params, dimParams, grid, ms));
     }
 
     /* The weighthistogram size after this update. */
-    double histSizeNew = newHistSize(params, t, detectedCovering, fplog);
+    double histSizeNew = histogramSize_.newHistSize(params, t, detectedCovering, points_, weightsumCovering_, fplog);
 
     /* Make the update list. Usually we try to only update local points,
      * but if the update has non-trivial or non-deterministic effects
@@ -1203,7 +1007,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     {
         setSkippedUpdateHistogramScaleFactors(params, &weighthistScalingSkipped, &logPmfsumScalingSkipped);
     }
-    setHistogramUpdateScaleFactors(params, histSizeNew, histSize_,
+    setHistogramUpdateScaleFactors(params, histSizeNew, histogramSize_.histSize(),
                                    &weighthistScalingNew, &logPmfsumScalingNew);
 
     /* Update free energy and reference weight histogram for points in the update list. */
@@ -1214,19 +1018,15 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
         /* Do updates from previous update steps that were skipped because this point was at that time non-local. */
         if (params.skipUpdates())
         {
-            pointStateToUpdate->updateSkipped(params, numUpdates_, weighthistScalingSkipped, logPmfsumScalingSkipped);
+            pointStateToUpdate->updateSkipped(params, histogramSize_.numUpdates(), weighthistScalingSkipped, logPmfsumScalingSkipped);
         }
 
         /* Now do an update with new sampling data. */
-        pointStateToUpdate->updateNew(params, numUpdates_, weighthistScalingNew, logPmfsumScalingNew);
+        pointStateToUpdate->updateNew(params, histogramSize_.numUpdates(), weighthistScalingNew, logPmfsumScalingNew);
     }
 
     /* Only update the histogram size after we are done with the local point updates */
-    histSize_ = histSizeNew;
-
-    /* The weight of new samples relative to previous ones change when the histogram is
-       rescaled. We keep the log since this number can become very large. */
-    scaledSampleWeight_ -= std::log(weighthistScalingNew);
+    histogramSize_.setHistSize(histSizeNew, weighthistScalingNew);
 
     if (needToNormalizeFreeEnergy)
     {
@@ -1247,7 +1047,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     }
 
     /* Increase the update counter. */
-    numUpdates_ += 1;
+    histogramSize_.incrementNumUpdates();
 }
 
 /* Update the probability weights and the convolved bias. */
@@ -1256,7 +1056,7 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
                                                            std::vector<double>          *weight) const
 {
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
-    const std::vector<int> &neighbors = grid.point(gridpointIndex_).neighbor;
+    const std::vector<int> &neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
     weight->resize(neighbors.size());
 
@@ -1266,7 +1066,7 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
         int neighbor = neighbors[n];
         (*weight)[n] = biasedWeightFromPoint(dimParams, points_, grid,
                                              neighbor, points_[neighbor].bias(),
-                                             coordValue_);
+                                             coordinateState_.coordValue());
         weightSum   += (*weight)[n];
     }
     GMX_RELEASE_ASSERT(weightSum > 0, "zero probability weight when updating AWH probability weights.");
@@ -1308,7 +1108,7 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
 void BiasState::sampleProbabilityWeights(const Grid                &grid,
                                          const std::vector<double> &probWeightNeighbor)
 {
-    const std::vector<int> &neighbor = grid.point(gridpointIndex_).neighbor;
+    const std::vector<int> &neighbor = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
     /* Save weights for next update */
     for (size_t n = 0; n < neighbor.size(); n++)
@@ -1373,10 +1173,10 @@ void BiasState::sampleCoordAndPmf(const Grid                &grid,
     /* Only save coordinate data that is in range (the given index is always
      * in range even if the coordinate value is not).
      */
-    if (grid.covers(coordValue_))
+    if (grid.covers(coordinateState_.coordValue()))
     {
         /* Save PMF sum and keep a histogram of the sampled coordinate values */
-        points_[gridpointIndex_].samplePmf(convolvedBias);
+        points_[coordinateState_.gridpointIndex()].samplePmf(convolvedBias);
     }
 
     /* Save probability weights for the update */
@@ -1384,15 +1184,11 @@ void BiasState::sampleCoordAndPmf(const Grid                &grid,
 }
 
 /* Update the coordinate value with coordValue. */
-void BiasState::setCoordValue(const Grid &grid, int dim, double coordValue)
+void BiasState::setCoordValue(const Grid &grid,
+                              int         dim,
+                              double      coordValue)
 {
-    coordValue_[dim] = coordValue;
-
-    /* The grid point closest to the coordinate value defines the current
-     * neighborhood of points. Besides at steps when global updates and/or
-     * checks are performed, only the neighborhood will be touched.
-     */
-    gridpointIndex_ = grid.nearestIndex(coordValue_);
+    coordinateState_.setCoordValue(grid, dim, coordValue);
 }
 
 /* Update the bias history with a new state. */
@@ -1402,7 +1198,7 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
     GMX_RELEASE_ASSERT(biasHistory->pointState.size() == points_.size(), "The AWH history setup does not match the AWH state.");
 
     AwhBiasStateHistory *stateHistory = &biasHistory->state;
-    stateHistory->refGridpoint        = refGridpoint_;
+    stateHistory->refGridpoint        = coordinateState_.refGridpoint();
 
     for (size_t m = 0; m < biasHistory->pointState.size(); m++)
     {
@@ -1422,18 +1218,12 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
         psh->visits_tot           = ps.numVisitsTot();
     }
 
-    stateHistory->in_initial              = inInitialStage_;
-    stateHistory->equilibrateHistogram    = equilibrateHistogram_;
-    stateHistory->histSize                = histSize_;
+    histogramSize_.storeState(stateHistory);
 
     stateHistory->origin_index_updatelist = multidimGridindexToLinear(grid,
                                                                       originUpdatelist_);
     stateHistory->end_index_updatelist    = multidimGridindexToLinear(grid,
                                                                       endUpdatelist_);
-
-    stateHistory->scaledSampleWeight      = scaledSampleWeight_;
-    stateHistory->maxScaledSampleWeight   = maxScaledSampleWeight_;
-    stateHistory->numUpdates              = numUpdates_;
 }
 
 /* Restore the bias state from history. */
@@ -1442,7 +1232,7 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
 {
     const AwhBiasStateHistory &stateHistory = biasHistory.state;
 
-    refGridpoint_ = stateHistory.refGridpoint;
+    coordinateState_.restoreFromHistory(stateHistory);
 
     for (size_t m = 0; m < points_.size(); m++)
     {
@@ -1454,16 +1244,10 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
         weightsumCovering_[m] = biasHistory.pointState[m].weightsum_covering;
     }
 
-    inInitialStage_         = stateHistory.in_initial;
-    equilibrateHistogram_   = stateHistory.equilibrateHistogram;
-    histSize_               = stateHistory.histSize;
+    histogramSize_.restoreFromHistory(stateHistory);
 
     linearGridindexToMultidim(grid, stateHistory.origin_index_updatelist, originUpdatelist_);
     linearGridindexToMultidim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
-
-    scaledSampleWeight_     = stateHistory.scaledSampleWeight;
-    maxScaledSampleWeight_  = stateHistory.maxScaledSampleWeight;
-    numUpdates_             = stateHistory.numUpdates;
 }
 
 /* Broadcast the bias state over the MPI ranks in this simulation. */
@@ -1521,9 +1305,10 @@ double BiasState::partitionDomain(const Grid &grid,
         pointState.scaleTarget(invTargetSum);
     }
 
-    histSize_ *= targetSum;
+    /* Multiply the histogram size by targetSum */
+    histogramSize_.setHistSize(targetSum*histogramSize_.histSize(), 1.0);
 
-    return histSize_;
+    return histogramSize_.histSize();
 }
 
 /* Convolves the PMF and sets the initial free energy to its convolution. */
@@ -1754,7 +1539,7 @@ void BiasState::normalizePmf(int numSharingSims)
             expSumF   += std::exp(-pointState.freeEnergy());
         }
     }
-    double numSamples = histSize_/numSharingSims;
+    double numSamples = histogramSize_.histSize()/numSharingSims;
 
     /* Renormalize */
     double logRenorm = std::log(numSamples*expSumF/expSumPmf);
@@ -1814,7 +1599,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
     }
 
     /* Set the initial reference weighthistogram. */
-    const double histogramSize = histSize_;
+    const double histogramSize = histogramSize_.histSize();
     for (auto &pointState : points_)
     {
         pointState.setInitialReferenceWeightHistogram(histogramSize);
@@ -1829,29 +1614,13 @@ BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
                      double                        histSizeInitial,
                      const std::vector<DimParams> &dimParams,
                      const Grid                   &grid) :
-    numUpdates_(0),
-    histSize_(histSizeInitial),
-    inInitialStage_(awhBiasParams.eGrowth == eawhgrowthEXP_LINEAR),
-    equilibrateHistogram_(awhBiasParams.equilibrateHistogram),
-    /* The initial sample weight is set to 1 and we keep the logarithm. */
-    scaledSampleWeight_(0),
-    maxScaledSampleWeight_(0),
-    havePrintedAboutCovering_(false)
+    coordinateState_(awhBiasParams, dimParams, grid),
+    histogramSize_(awhBiasParams, histSizeInitial)
 {
-    for (size_t d = 0; d < dimParams.size(); d++)
-    {
-        coordValue_[d] = dimParams[d].scaleUserInputToInternal(awhBiasParams.dimParams[d].coordValueInit);
-    }
-
-    /* Set initial coordinate reference value to the one closest to the initial reference value given in pull.
-       More correctly one would sample from the biased distribution, but it doesn't really matter. */
-    gridpointIndex_ = grid.nearestIndex(coordValue_);
-    refGridpoint_   = gridpointIndex_;
-
     /* The minimum and maximum multidimensional point indices that are affected by the next update */
     for (size_t d = 0; d < dimParams.size(); d++)
     {
-        int index_d          = grid.point(gridpointIndex_).index[d];
+        int index_d          = grid.point(coordinateState_.gridpointIndex()).index[d];
         originUpdatelist_[d] = index_d;
         endUpdatelist_[d]    = index_d;
     }
