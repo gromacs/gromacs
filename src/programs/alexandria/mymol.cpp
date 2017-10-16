@@ -1839,6 +1839,17 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }
         CalcQMbasedMoments(qMulliken_, &dip_mulliken_, mu_mulliken_, Q_mulliken_);
+        if (immOK == imm && esp_dipole_found)
+        {
+            matrix rotmatrix;
+            rvec   tmpvec;
+            for(m = 0; m < DIM; m++)
+            {
+                calc_rotmatrix(Q_mulliken_[m], Q_esp_[m], rotmatrix);
+                mvmul(rotmatrix, Q_mulliken_[m], tmpvec);
+                copy_rvec(tmpvec, Q_mulliken_[m]);
+            }
+        }
     }
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
@@ -1857,7 +1868,18 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 j++;
             }
         }
-        CalcQMbasedMoments(qHirshfeld_, &dip_hirshfeld_, mu_hirshfeld_, Q_hirshfeld_);     
+        CalcQMbasedMoments(qHirshfeld_, &dip_hirshfeld_, mu_hirshfeld_, Q_hirshfeld_); 
+        if (immOK == imm && esp_dipole_found)
+        {
+            matrix rotmatrix;
+            rvec   tmpvec;
+            for(m = 0; m < DIM; m++)
+            {
+                calc_rotmatrix(Q_hirshfeld_[m], Q_esp_[m], rotmatrix);
+                mvmul(rotmatrix, Q_hirshfeld_[m], tmpvec);
+                copy_rvec(tmpvec, Q_hirshfeld_[m]);
+            }
+        }    
     }
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
@@ -1876,7 +1898,18 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 j++;
             }
         }
-        CalcQMbasedMoments(qCM5_, &dip_cm5_, mu_cm5_, Q_cm5_);     
+        CalcQMbasedMoments(qCM5_, &dip_cm5_, mu_cm5_, Q_cm5_);  
+        if (immOK == imm && esp_dipole_found)
+        {
+            matrix rotmatrix;
+            rvec   tmpvec;
+            for(m = 0; m < DIM; m++)
+            {
+                calc_rotmatrix(Q_cm5_[m], Q_esp_[m], rotmatrix);
+                mvmul(rotmatrix, Q_cm5_[m], tmpvec);
+                copy_rvec(tmpvec, Q_cm5_[m]);
+            }
+        }   
     } 
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
