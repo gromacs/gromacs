@@ -845,6 +845,7 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
                    const std::string        &name,
                    const std::string        &rowstr,
                    const std::string        &zetastr,
+                   const std::string        &zeta_sigma,
                    const std::string        &qstr,
                    double                    J0,
                    double                    J0_sigma,
@@ -855,6 +856,7 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
       name_(name),
       rowstr_(rowstr),
       zetastr_(zetastr),
+      zeta_sigma_(zeta_sigma),
       qstr_(qstr),
       J0_(J0),
       J0_sigma_(J0_sigma),
@@ -876,6 +878,7 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &name_);
         gmx_send_str(cr, dest, &rowstr_);
         gmx_send_str(cr, dest, &zetastr_);
+        gmx_send_str(cr, dest, &zeta_sigma_);
         gmx_send_str(cr, dest, &qstr_);
         gmx_send_double(cr, dest, J0_);
         gmx_send_double(cr, dest, J0_sigma_);
@@ -912,6 +915,7 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &name_);
         gmx_recv_str(cr, src, &rowstr_);
         gmx_recv_str(cr, src, &zetastr_);
+        gmx_recv_str(cr, src, &zeta_sigma_);
         gmx_recv_str(cr, src, &qstr_);
         J0_         = gmx_recv_double(cr, src);
         J0_sigma_   = gmx_recv_double(cr, src);

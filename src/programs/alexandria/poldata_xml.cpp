@@ -113,7 +113,7 @@ enum {
     exmlCENTRAL, exmlATTACHED, exmlNUMATTACH,
     exmlEEMPROPS, exmlEEMPROP, exmlMODEL, 
     exmlJ0, exmlJ0_SIGMA, exmlCHI0, exmlCHI0_SIGMA, 
-    exmlZETA, exmlROW, exmlEEMPROP_REF, 
+    exmlZETA, exmlZETA_SIGMA, exmlROW, exmlEEMPROP_REF, 
     exmlEPREF, exmlCHARGES, exmlANGLE_UNIT, exmlLENGTH_UNIT,
     exmlDISTANCE, exmlNCONTROLATOMS, exmlNUMBER, exmlVTYPE,
     exmlANGLE,
@@ -147,7 +147,7 @@ const char * exml_names[exmlNR] = {
     "symmetric_charges", "sym_charge",
     "central", "attached", "numattach",
     "eemprops", "eemprop", "model", 
-    "jaa", "jaa_sigma", "chi", "chi_sigma", "zeta", "row",
+    "jaa", "jaa_sigma", "chi", "chi_sigma", "zeta", "zeta_sigma", "row",
     "eemprop_ref", "epref", "charge", "angle_unit", "length_unit",
     "distance", "ncontrolatoms", "number", "vtype", "angle"
 };
@@ -436,16 +436,17 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlEEMPROP:
-            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlNAME])       &&
-                NN(xbuf[exmlJ0])    && NN(xbuf[exmlJ0_SIGMA])   &&
-                NN(xbuf[exmlCHI0])  && NN(xbuf[exmlCHI0_SIGMA]) &&
-                NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES])    &&
-                NN(xbuf[exmlROW]))
+            if (NN(xbuf[exmlMODEL])   && NN(xbuf[exmlNAME])       &&
+                NN(xbuf[exmlJ0])      && NN(xbuf[exmlJ0_SIGMA])   &&
+                NN(xbuf[exmlCHI0])    && NN(xbuf[exmlCHI0_SIGMA]) &&
+                NN(xbuf[exmlZETA])    && NN(xbuf[exmlZETA_SIGMA]) &&
+                NN(xbuf[exmlCHARGES]) && NN(xbuf[exmlROW]))
             {
                 Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
                              xbuf[exmlNAME],
                              xbuf[exmlROW],
                              xbuf[exmlZETA],
+                             xbuf[exmlZETA_SIGMA],
                              xbuf[exmlCHARGES],
                              my_atof(xbuf[exmlJ0].c_str()),
                              my_atof(xbuf[exmlJ0_SIGMA].c_str()),
@@ -811,6 +812,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_double(grandchild, exml_names[exmlCHI0], eep->getChi0());
         add_xml_double(grandchild, exml_names[exmlCHI0_SIGMA], eep->getChi0_sigma());
         add_xml_char(grandchild, exml_names[exmlZETA], eep->getZetastr());
+        add_xml_char(grandchild, exml_names[exmlZETA_SIGMA], eep->getZeta_sigma());
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
     }
