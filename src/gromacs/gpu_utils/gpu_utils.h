@@ -235,5 +235,11 @@ void resetGpuProfiler(void) CUDA_FUNC_TERM
 CUDA_FUNC_QUALIFIER
 void stopGpuProfiler(void) CUDA_FUNC_TERM
 
+/*! \brief Check that we're not trying to run PTX 2.0 JIT-ed code on >=3.0 devices.
+ *
+ * \param[in] devInfo   Device info data structure.
+ */
+void nbnxnPrevent20PtxOnLaterDevice(const gmx_device_info_t *devInfo);
+
 
 #endif
