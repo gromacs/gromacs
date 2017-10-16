@@ -82,15 +82,23 @@ texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
 texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
 
 /*! Returns the reference to the gridlineIndices texture. */
-texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
+const struct texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
 {
+#if DISABLE_CUDA_TEXTURES
+    return nullptr;
+#else
     return gridlineIndicesTableTextureRef;
+#endif
 }
 
 /*! Returns the reference to the fractShifts texture. */
-texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
+const struct texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
 {
+#if DISABLE_CUDA_TEXTURES
+    return nullptr;
+#else
     return fractShiftsTableTextureRef;
+#endif
 }
 
 /*! \brief
