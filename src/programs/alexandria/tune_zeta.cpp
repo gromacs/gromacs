@@ -250,11 +250,6 @@ void OptZeta::calcDeviation()
                     {
                         ener_[ermsBOUNDS] += fabs(qq);
                     }
-                    if(nullptr != mymol.shellfc_)
-                    {
-                       qq += mymol.topology_->atoms.atom[j+1].q;
-                    }
-                    ener_[ermsCHARGE] += 10*gmx::square(qq - mymol.qCM5_[i++]);
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
