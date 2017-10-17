@@ -458,7 +458,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                             ewaldOutput.vir_q);
             }
 
-            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME) && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU))
+            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) &&
+                thisRankHasDuty(cr, DUTY_PME) && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);

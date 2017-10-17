@@ -144,7 +144,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 
     /*  With CUDA detect only on one rank per host, with OpenCL need do
      *  the detection on all PP ranks */
-    bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && (cr->duty & DUTY_PP));
+    bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasDuty(cr, DUTY_PP));
 
     if (rank_local == 0 || isOpenclPpRank)
     {

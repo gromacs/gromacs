@@ -853,7 +853,7 @@ int Mdrunner::mdrunner()
                           hwinfo->nthreads_hw_avail,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
-                          (cr->duty & DUTY_PP) == 0,
+                          !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
 #ifndef NDEBUG
@@ -876,7 +876,7 @@ int Mdrunner::mdrunner()
          * across PP ranks on a node, with possible multiple devices
          * or sharing devices on a node, either from the user
          * selection, or automatically. */
-        bool rankCanUseGpu = cr->duty & DUTY_PP;
+        bool rankCanUseGpu = thisRankHasDuty(cr, DUTY_PP);
         gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hw_opt);
     }
 
@@ -910,7 +910,7 @@ int Mdrunner::mdrunner()
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
     int                shortRangedDeviceId   = -1;
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         if (!gpuTaskAssignment.empty())
         {
@@ -956,7 +956,7 @@ int Mdrunner::mdrunner()
     }
 
     snew(nrnb, 1);
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
@@ -1042,7 +1042,7 @@ int Mdrunner::mdrunner()
 
         int nthread_local;
         /* threads on this MPI process or TMPI thread */
-        if (cr->duty & DUTY_PP)
+        if (thisRankHasDuty(cr, DUTY_PP))
         {
             nthread_local = gmx_omp_nthreads_get(emntNonbonded);
         }
@@ -1075,7 +1075,7 @@ int Mdrunner::mdrunner()
             gmx_bcast_sim(sizeof(nTypePerturbed), &nTypePerturbed, cr);
         }
 
-        if (cr->duty & DUTY_PME)
+        if (thisRankHasDuty(cr, DUTY_PME))
         {
             try
             {
@@ -1106,7 +1106,7 @@ int Mdrunner::mdrunner()
         signal_handler_install();
     }
 
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Assumes uniform use of the number of OpenMP threads */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
