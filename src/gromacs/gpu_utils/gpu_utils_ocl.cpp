@@ -433,50 +433,6 @@ size_t sizeof_gpu_dev_info(void)
     return sizeof(gmx_device_info_t);
 }
 
-/*! \brief Prints the name of a kernel function pointer.
- *
- * \param[in]    kernel   OpenCL kernel
- * \returns               CL_SUCCESS if the operation was successful, an OpenCL error otherwise.
- */
-cl_int dbg_ocl_kernel_name(const cl_kernel kernel)
-{
-    cl_int cl_error;
-    char   kernel_name[256];
-    cl_error = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME,
-                               sizeof(kernel_name), &kernel_name, NULL);
-    if (cl_error)
-    {
-        printf("No kernel found!\n");
-    }
-    else
-    {
-        printf("%s\n", kernel_name);
-    }
-    return cl_error;
-}
-
-/*! \brief Prints the name of a kernel function pointer.
- *
- * \param[in]    kernel   OpenCL kernel
- * \returns               CL_SUCCESS if the operation was successful, an OpenCL error otherwise.
- */
-cl_int dbg_ocl_kernel_name_address(void* kernel)
-{
-    cl_int cl_error;
-    char   kernel_name[256];
-    cl_error = clGetKernelInfo((cl_kernel)kernel, CL_KERNEL_FUNCTION_NAME,
-                               sizeof(kernel_name), &kernel_name, NULL);
-    if (cl_error)
-    {
-        printf("No kernel found!\n");
-    }
-    else
-    {
-        printf("%s\n", kernel_name);
-    }
-    return cl_error;
-}
-
 void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free)
