@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,9 +99,9 @@ const t_interaction_function interaction_function[F_NRE] =
     def_angle   ("G96ANGLES", "G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
     def_angle   ("RESTRANGLES", "Restricted Angles", 3, 2, 2,  eNR_ANGLES, restrangles),
     def_angle   ("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2,  eNR_LINEAR_ANGLES, linear_angles ),
-    def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0, 0,          cross_bond_bond ),
-    def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0, 0,          cross_bond_angle ),
-    def_angle   ("UREY_BRADLEY", "U-B",          3, 4, 4,  0,          urey_bradley ),
+    def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0, eNR_CROSS_BOND_BOND, cross_bond_bond ),
+    def_bonded  ("CROSS_BOND_ANGLE", "BA-Cross",   3, 4, 0, eNR_CROSS_BOND_ANGLE, cross_bond_angle ),
+    def_angle   ("UREY_BRADLEY", "U-B",          3, 4, 4,  eNR_UREY_BRADLEY, urey_bradley ),
     def_angle   ("QANGLES", "Quartic Angles",    3, 6, 0,  eNR_QANGLES, quartic_angles ),
     def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
     def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
@@ -133,10 +133,10 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("COUL_RECIP", "Coul. recip."                                       ),
     def_nofc    ("LJ_RECIP", "LJ recip."                                            ),
     def_nofc    ("DPD",      "DPD"                                                  ),
-    def_bondnb  ("POLARIZATION", "Polarization", 2, 1, 0,  0,          polarize      ),
+    def_bondnb  ("POLARIZATION", "Polarization", 2, 1, 0,  eNR_POLARIZE, polarize      ),
     def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
     def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
-    def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0, 0,          anharm_polarize      ),
+    def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0, eNR_ANHARM_POL, anharm_polarize      ),
     def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
     def_bonded  ("FBPOSRES", "Flat-bottom posres", 1, 3, 0, eNR_FBPOSRES, unimplemented ),
     def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),

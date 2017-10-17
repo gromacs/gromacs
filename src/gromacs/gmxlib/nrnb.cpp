@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,7 +189,11 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 4fd",              110 },
     { "Virtual Site 4fdn",             254 },
     { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 }
+    { "Mixed Generalized Born stuff",   10 },
+    { "CMAP",                         1700 }, // Estimate!
+    { "Urey-Bradley",                  183 },
+    { "Cross-Bond-Bond",               163 },
+    { "Cross-Bond-Angle",              163 }
 };
 
 static void pr_two(FILE *out, int c, int i)
