@@ -41,6 +41,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
@@ -127,6 +128,23 @@ struct t_commrec {
     mpi_in_place_buf_t *mpb;
 };
 
+/*! \brief
+ * A convenience getter for the commrec duty task assignment;
+ * asserts that duty is actually valid (have been initialized).
+ *
+ * \param[in] cr    Communication structure pointer
+ * \param[in] task  A single task's corresponding DUTY_ flag. Combinations are not supported.
+ *
+ * \returns Whether this task is assigned to this rank.
+ */
+inline bool isRunningTask(const t_commrec *cr, int task)
+{
+    GMX_ASSERT((task == DUTY_PME) || (task == DUTY_PP), "Invalid task type");
+    GMX_ASSERT(cr, "Invalid commrec pointer");
+    GMX_ASSERT(cr->duty, "Commrec task assignment was not initialized!");
+    return (cr->duty & task);
+}
+
 //! True if this is a simulation with more than 1 node
 #define PAR(cr)        ((cr)->nnodes > 1)
 
@@ -134,7 +152,7 @@ struct t_commrec {
 #define MASTER(cr)     (((cr)->nodeid == 0) || !PAR(cr))
 
 //! True if this is the particle-particle master
-#define SIMMASTER(cr)  ((MASTER(cr) && ((cr)->duty & DUTY_PP)) || !PAR(cr))
+#define SIMMASTER(cr)  ((MASTER(cr) && isRunningTask((cr), DUTY_PP)) || !PAR(cr))
 
 //! The node id for this rank
 #define RANK(cr, nodeid)    (nodeid)
