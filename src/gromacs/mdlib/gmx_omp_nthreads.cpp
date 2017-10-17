@@ -524,8 +524,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;
 
-    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
-        (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+    bSepPME = (thisRankHasDuty(cr, DUTY_PP) != thisRankHasDuty(cr, DUTY_PME));
 
     manage_number_of_openmp_threads(mdlog, cr, bOMP,
                                     nthreads_hw_avail,

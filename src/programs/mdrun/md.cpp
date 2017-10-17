@@ -1873,7 +1873,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
             wcycle_set_reset_counters(wcycle, -1);
-            if (!(cr->duty & DUTY_PME))
+            if (!thisRankHasDuty(cr, DUTY_PME))
             {
                 /* Tell our PME node to reset its counters */
                 gmx_pme_send_resetcounters(cr, step);
@@ -1904,7 +1904,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         close_trx(status);
     }
 
-    if (!(cr->duty & DUTY_PME))
+    if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Tell the PME only node to finish */
         gmx_pme_send_finish(cr);

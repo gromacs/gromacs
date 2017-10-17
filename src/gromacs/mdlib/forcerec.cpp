@@ -3119,7 +3119,7 @@ void init_forcerec(FILE                *fp,
     snew(fr->ns, 1);
     init_ns(fp, cr, fr->ns, fr, mtop);
 
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         gmx_nonbonded_setup(fr, bGenericKernelOnly);
     }
@@ -3168,7 +3168,7 @@ void free_gpu_resources(const t_forcerec        *fr,
     gmx_bool bIsPPrankUsingGPU;
     char     gpu_err_str[STRLEN];
 
-    bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
+    bIsPPrankUsingGPU = thisRankHasDuty(cr, DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
 
     if (bIsPPrankUsingGPU)
     {

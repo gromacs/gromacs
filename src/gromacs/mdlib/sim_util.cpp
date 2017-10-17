@@ -837,7 +837,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
-    const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME) &&
+    const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
     // a comment for uncrustify
     const ArrayRef<RVec> pmeGpuForces = *fr->forceBufferIntermediate;
@@ -912,7 +912,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                  fr->shift_vec, nbv->nbat);
 
 #if GMX_MPI
-    if (!(cr->duty & DUTY_PME))
+    if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
@@ -1188,7 +1188,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     reset_enerdata(enerd);
     clear_rvecs(SHIFTS, fr->fshift);
 
-    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
+    if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
         wallcycle_start(wcycle, ewcPPDURINGPME);
         dd_force_flop_start(cr->dd, nrnb);
@@ -1508,7 +1508,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (PAR(cr) && !(cr->duty & DUTY_PME))
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -1635,7 +1635,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
 #if GMX_MPI
-    if (!(cr->duty & DUTY_PME))
+    if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
@@ -1723,7 +1723,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                        x, box, fr, &top->idef, graph, fr->born);
     }
 
-    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
+    if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
         wallcycle_start(wcycle, ewcPPDURINGPME);
         dd_force_flop_start(cr->dd, nrnb);
@@ -1844,7 +1844,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (PAR(cr) && !(cr->duty & DUTY_PME))
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -2567,7 +2567,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
         sfree(nrnb_tot);
     }
 
-    if ((cr->duty & DUTY_PP) && DOMAINDECOMP(cr))
+    if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
     {
         print_dd_statistics(cr, inputrec, fplog);
     }
@@ -2578,7 +2578,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
      * to task parallelism. */
     int nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
     int nthreads_pme = gmx_omp_nthreads_get(emntPME);
-    wallcycle_scale_by_num_threads(wcycle, cr->duty == DUTY_PME, nthreads_pp, nthreads_pme);
+    wallcycle_scale_by_num_threads(wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
     auto cycle_sum(wallcycle_sum(cr, wcycle));
 
     if (printReport)

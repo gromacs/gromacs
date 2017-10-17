@@ -5407,7 +5407,7 @@ void dd_setup_dlb_resource_sharing(t_commrec            *cr,
     gmx_domdec_t *dd;
     MPI_Comm      mpi_comm_pp_physicalnode;
 
-    if (!(cr->duty & DUTY_PP) || gpu_id < 0)
+    if (!thisRankHasDuty(cr, DUTY_PP) || gpu_id < 0)
     {
         /* Only ranks with short-ranged tasks (currently) use GPUs.
          * If we don't have GPUs assigned, there are no resources to share.
@@ -5688,7 +5688,7 @@ static void make_pp_communicator(FILE                 *fplog,
          */
         snew(comm->ddindex2simnodeid, dd->nnodes);
         snew(buf, dd->nnodes);
-        if (cr->duty & DUTY_PP)
+        if (thisRankHasDuty(cr, DUTY_PP))
         {
             buf[dd_index(dd->nc, dd->ci)] = cr->sim_nodeid;
         }
@@ -5749,7 +5749,7 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
         int *buf;
         snew(comm->ddindex2simnodeid, dd->nnodes);
         snew(buf, dd->nnodes);
-        if (cr->duty & DUTY_PP)
+        if (thisRankHasDuty(cr, DUTY_PP))
         {
             buf[dd_index(dd->nc, dd->ci)] = cr->sim_nodeid;
         }
@@ -5894,7 +5894,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
-                       cr->duty,
+                       getThisRankDuties(cr),
                        dd_index(comm->ntot, dd->ci),
                        &cr->mpi_comm_mygroup);
     }
@@ -5933,7 +5933,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
-                       cr->duty,
+                       getThisRankDuties(cr),
                        cr->nodeid,
                        &cr->mpi_comm_mygroup);
         MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
@@ -5943,7 +5943,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     if (fplog)
     {
         fprintf(fplog, "This rank does only %s work.\n\n",
-                (cr->duty & DUTY_PP) ? "particle-particle" : "PME-mesh");
+                thisRankHasDuty(cr, DUTY_PP) ? "particle-particle" : "PME-mesh");
     }
 }
 
@@ -5988,7 +5988,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
 #endif
     }
 
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Copy or make a new PP communicator */
         make_pp_communicator(fplog, dd, cr, CartReorder);
@@ -5998,7 +5998,7 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
         receive_ddindex2simnodeid(dd, cr);
     }
 
-    if (!(cr->duty & DUTY_PME))
+    if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Set up the commnuication to our PME node */
         dd->pme_nodeid           = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
@@ -7274,7 +7274,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     make_dd_communicators(fplog, cr, dd, options.rankOrder);
 
-    if (cr->duty & DUTY_PP)
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
         set_ddgrid_parameters(fplog, dd, options.dlbScaling, mtop, ir, ddbox);
 
@@ -9744,7 +9744,7 @@ void dd_partition_system(FILE                *fplog,
         make_local_gb(cr, fr->born, ir->gb_algorithm);
     }
 
-    if (!(cr->duty & DUTY_PME))
+    if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr,

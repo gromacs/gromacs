@@ -283,7 +283,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     snew(hash_pp_s, nrank_world);
 
     hash_s[rank_world]    = myhash;
-    hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
+    hash_pp_s[rank_world] = thisRankHasDuty(cr, DUTY_PP) ? myhash : -1;
 
     MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -305,7 +305,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
         if (hash_pp[i] == myhash)
         {
             nrank_pp_intranode++;
-            if ((cr->duty & DUTY_PP) && i < rank_world)
+            if (thisRankHasDuty(cr, DUTY_PP) && i < rank_world)
             {
                 rank_pp_intranode++;
             }
@@ -326,13 +326,13 @@ void gmx_init_intranode_counters(t_commrec *cr)
     if (debug)
     {
         char sbuf[STRLEN];
-        if ((cr->duty & DUTY_PP) && (cr->duty & DUTY_PME))
+        if (thisRankHasDuty(cr, DUTY_PP) && thisRankHasDuty(cr, DUTY_PME))
         {
             sprintf(sbuf, "PP+PME");
         }
         else
         {
-            sprintf(sbuf, "%s", (cr->duty & DUTY_PP) ? "PP" : "PME");
+            sprintf(sbuf, "%s", thisRankHasDuty(cr, DUTY_PP) ? "PP" : "PME");
         }
         fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
                 "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
