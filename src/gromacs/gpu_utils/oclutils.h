@@ -108,11 +108,9 @@ struct gmx_device_runtime_data_t
     cl_program program; /**< OpenCL program */
 };
 
-#if !defined(NDEBUG)
 /* Debugger callable function that prints the name of a kernel function pointer */
 cl_int dbg_ocl_kernel_name(const cl_kernel kernel);
 cl_int dbg_ocl_kernel_name_address(void* kernel);
-#endif
 
 
 /*! \brief Launches asynchronous host to device memory copy. */

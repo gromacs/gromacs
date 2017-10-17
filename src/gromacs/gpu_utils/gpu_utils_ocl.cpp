@@ -52,6 +52,8 @@
 
 #include <memory.h>
 
+#include "oclutils.h"
+
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/ocl_compiler.h"
 #include "gromacs/gpu_utils/oclutils.h"
