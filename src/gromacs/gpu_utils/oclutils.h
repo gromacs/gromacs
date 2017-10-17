@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,12 +107,6 @@ struct gmx_device_runtime_data_t
     cl_context context; /**< OpenCL context */
     cl_program program; /**< OpenCL program */
 };
-
-#if !defined(NDEBUG)
-/* Debugger callable function that prints the name of a kernel function pointer */
-cl_int dbg_ocl_kernel_name(const cl_kernel kernel);
-cl_int dbg_ocl_kernel_name_address(void* kernel);
-#endif
 
 
 /*! \brief Launches asynchronous host to device memory copy. */
