@@ -479,7 +479,7 @@ static void finish_em(t_commrec *cr, gmx_mdoutf_t outf,
                       gmx_walltime_accounting_t walltime_accounting,
                       gmx_wallcycle_t wcycle)
 {
-    if (!(cr->duty & DUTY_PME))
+    if (!isRunningTask(cr, DUTY_PME))
     {
         /* Tell the PME only node to finish */
         gmx_pme_send_finish(cr);
