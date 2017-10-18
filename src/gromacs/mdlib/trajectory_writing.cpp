@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -176,7 +176,7 @@ do_md_trajectory_writing(FILE           *fplog,
              * at the last step.
              */
             fprintf(stderr, "\nWriting final coordinates.\n");
-            if (fr->bMolPBC)
+            if (fr->bMolPBC && !ir->bPeriodicMols)
             {
                 /* Make molecules whole only for confout writing */
                 do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
