@@ -70,8 +70,6 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "bias.h"
-#include "grid.h"
-#include "pointstate.h"
 
 namespace gmx
 {
@@ -320,7 +318,7 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        awhHistory->bias[k].pointState.resize(biasCoupledToSystem_[k].bias().state().points().size());
+        biasCoupledToSystem_[k].bias().state().initHistoryFromState(&awhHistory->bias[k]);
     }
 }
 

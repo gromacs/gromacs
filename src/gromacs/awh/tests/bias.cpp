@@ -36,6 +36,8 @@
 
 #include "gromacs/awh/bias.h"
 
+#include <cmath>
+
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -56,6 +58,72 @@ namespace gmx
 
 namespace test
 {
+
+//! Struct that gathers all input for setting up and using a Bias
+struct AwhTestParameters
+{
+    double                 beta;
+    double                 mdTimeStep;
+
+    double                 convfactor;
+
+    struct AwhDimParams    awhDimParams;
+    struct AwhBiasParams   awhBiasParams;
+    struct AwhParams       awhParams;
+
+    std::vector<DimParams> dimParams;
+};
+
+//! Helper function to set up the C-style AWH parameters for the test
+static AwhTestParameters getAwhTestParameters(int eawhgrowth,
+                                              int eawhpotential)
+{
+    AwhTestParameters params;
+
+    params.beta       = 0.4;
+    params.mdTimeStep = 0.1;
+
+    AwhDimParams &awhDimParams = params.awhDimParams;
+
+    awhDimParams.period           = 0;
+    awhDimParams.diffusion        = 0.1;
+    awhDimParams.origin           = 0.5;
+    awhDimParams.end              = 1.5;
+    awhDimParams.numInterval      = 1;
+    awhDimParams.intervalOverlap  = 1;
+    awhDimParams.coverDiameter    = 0;
+
+    AwhBiasParams &awhBiasParams = params.awhBiasParams;
+
+    awhBiasParams.ndim                 = 1;
+    awhBiasParams.dimParams            = &awhDimParams;
+    awhBiasParams.eTarget              = eawhtargetCONSTANT;
+    awhBiasParams.targetBetaScaling    = 0;
+    awhBiasParams.targetCutoff         = 0;
+    awhBiasParams.eGrowth              = eawhgrowth;
+    awhBiasParams.bUserData            = 0;
+    awhBiasParams.errorInitial         = 0.5;
+    awhBiasParams.bShare               = false;
+    awhBiasParams.equilibrateHistogram = false;
+
+    double                 convFactor  = 1;
+    double                 k           = 1000;
+    int                    seed        = 93471803;
+
+    params.dimParams.push_back(DimParams(convFactor, k, params.beta));
+
+    AwhParams             &awhParams = params.awhParams;
+
+    awhParams.numBias                    = 1;
+    awhParams.awhBiasParams              = &awhBiasParams;
+    awhParams.seed                       = seed;
+    awhParams.nstOut                     = 0;
+    awhParams.nstSampleCoord             = 1;
+    awhParams.numSamplesUpdateFreeEnergy = 10;
+    awhParams.ePotential                 = eawhpotential;
+
+    return params;
+}
 
 //! Database of 21 test coordinates that represent a trajectory */
 const double g_coords[] = {
@@ -91,9 +159,9 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
 {
     public:
         //! Random seed for AWH MC sampling
-        static const int c_seed = 93471803;
+        int                   seed_;
 
-        //! Updated water atom positions to constrain (DIM reals per atom)
+        //! Coordinates representing a trajectory in time
         std::vector<double>   coordinates_;
         //! The awh Bias
         std::unique_ptr<Bias> bias_;
@@ -126,50 +194,14 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
             // such that we can measure the effects of different parameters.
             // The idea is to, among other things, have part of the interval
             // not covered by samples.
-            AwhDimParams awhDimParams;
+            const AwhTestParameters params = getAwhTestParameters(eawhgrowth, eawhpotential);
 
-            awhDimParams.period           = 0;
-            awhDimParams.diffusion        = 0.1;
-            awhDimParams.origin           = 0.5;
-            awhDimParams.end              = 1.5;
-            awhDimParams.numInterval      = 1;
-            awhDimParams.intervalOverlap  = 1;
-            awhDimParams.coverDiameter    = 0;
-
-            AwhBiasParams awhBiasParams;
-
-            awhBiasParams.ndim                 = 1;
-            awhBiasParams.dimParams            = &awhDimParams;
-            awhBiasParams.eTarget              = eawhtargetCONSTANT;
-            awhBiasParams.targetBetaScaling    = 0;
-            awhBiasParams.targetCutoff         = 0;
-            awhBiasParams.eGrowth              = eawhgrowth;
-            awhBiasParams.bUserData            = 0;
-            awhBiasParams.errorInitial         = 0.5;
-            awhBiasParams.bShare               = false;
-            awhBiasParams.equilibrateHistogram = false;
-
-            double                 convFactor  = 1;
-            double                 k           = 1000;
-            double                 beta        = 0.4;
-            double                 mdTimeStep  = 0.1;
-
-            std::vector<DimParams> dimParams   = { DimParams(convFactor, k, beta) };
-
-            AwhParams              awhParams;
-
-            awhParams.numBias                    = 1;
-            awhParams.awhBiasParams              = &awhBiasParams;
-            awhParams.seed                       = c_seed;
-            awhParams.nstOut                     = 0;
-            awhParams.nstSampleCoord             = 1;
-            awhParams.numSamplesUpdateFreeEnergy = 10;
-            awhParams.ePotential                 = eawhpotential;
+            seed_ = params.awhParams.seed;
 
             int numSamples = coordinates_.size() - 1; // No sample taken at step 0
-            GMX_RELEASE_ASSERT(numSamples % awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
+            GMX_RELEASE_ASSERT(numSamples % params.awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
 
-            bias_ = std::unique_ptr<Bias>(new Bias(nullptr, nullptr, -1, awhParams, awhBiasParams, dimParams, beta, mdTimeStep, disableUpdateSkips));
+            bias_ = std::unique_ptr<Bias>(new Bias(nullptr, nullptr, -1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, params.mdTimeStep, disableUpdateSkips));
         }
 };
 
@@ -201,7 +233,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
         awh_dvec biasForce;
         double   potential = 0;
         bias.calcForceAndUpdateBias(biasForce, &potential, &potentialJump,
-                                    nullptr, step, step, c_seed, nullptr);
+                                    nullptr, step, step, seed_, nullptr);
 
         force.push_back(biasForce[0]);
 
@@ -253,5 +285,53 @@ INSTANTIATE_TEST_CASE_P(WithParameters, BiasTest,
                                     ::testing::Values(eawhgrowthLINEAR, eawhgrowthEXP_LINEAR),
                                     ::testing::Values(eawhpotentialUMBRELLA, eawhpotentialCONVOLVED),
                                     ::testing::Values(BiasParams::DisableUpdateSkips::yes, BiasParams::DisableUpdateSkips::no)));
+
+// Test that we detect coverings and exit the initial stage at the correct step
+TEST(BiasTest, DoesCovering)
+{
+    const AwhTestParameters params       = getAwhTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
+    const AwhDimParams     &awhDimParams = params.awhParams.awhBiasParams[0].dimParams[0];
+
+    Bias                    bias(nullptr, nullptr, -1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, params.mdTimeStep);
+
+    /* We use a trajectory of the sum of two sines to cover the reaction
+     * coordinate range in a semi-realistic way. The period is 8*pi=25.1
+     * and we get out of the initial stage after two coverings at the last
+     * extreme in the second period, which is at step 480.
+     */
+    GMX_RELEASE_ASSERT(params.mdTimeStep == 0.1, "We need a time step of 0.1 to properly sample the sinusoidal fluctuations and our reference exit step is set using this time step.");
+    const gmx_int64_t exitStepRef = 480;
+    const double      midPoint    = 0.5*(awhDimParams.end + awhDimParams.origin);
+    const double      halfWidth   = 0.5*(awhDimParams.end - awhDimParams.origin);
+
+    bool              inInitialStage = bias.state().inInitialStage();
+    /* Normally this loop exits at exitStepRef, but we extend with failure */
+    gmx_int64_t       step;
+    for (step = 0; step <= 2*exitStepRef; step++)
+    {
+        double t     = step*params.mdTimeStep;
+        double coord = midPoint + halfWidth*(0.5*std::sin(0.5*t) + 0.55*std::sin(0.75*t));
+        bias.setCoordValue(0, coord);
+
+        awh_dvec biasForce;
+        double   potential     = 0;
+        double   potentialJump = 0;
+        bias.calcForceAndUpdateBias(biasForce, &potential, &potentialJump,
+                                    nullptr, step, step, params.awhParams.seed, nullptr);
+
+        inInitialStage = bias.state().inInitialStage();
+        if (!inInitialStage)
+        {
+            break;
+        }
+    }
+
+    EXPECT_EQ(false, inInitialStage);
+    if (!inInitialStage)
+    {
+        EXPECT_EQ(exitStepRef, step);
+    }
+}
+
 } // namespace
 } // namespace
