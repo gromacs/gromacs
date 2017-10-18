@@ -486,7 +486,7 @@ void BiasState::setSkippedUpdateHistogramScaleFactors(const BiasParams &params,
 {
     GMX_ASSERT(params.skipUpdates(), "Calling function for skipped updates when skipping updates is not allowed");
 
-    if (histogramSize_.inInitialStage())
+    if (inInitialStage())
     {
         /* In between global updates the reference histogram size is kept constant so we trivially know what the
             histogram size was at the time of the skipped update. */
@@ -966,7 +966,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
     bool detectedCovering = false;
-    if (histogramSize_.inInitialStage())
+    if (inInitialStage())
     {
         detectedCovering = (isCheckStep(params, points_, step) &&
                             isCovered(params, dimParams, grid, ms));
@@ -1181,6 +1181,12 @@ void BiasState::sampleCoordAndPmf(const Grid                &grid,
 
     /* Save probability weights for the update */
     sampleProbabilityWeights(grid, probWeightNeighbor);
+}
+
+/* Allocate and initialize an AWH history with the given AWH state. */
+void BiasState::initHistoryFromState(AwhBiasHistory *biasHistory) const
+{
+    biasHistory->pointState.resize(points_.size());
 }
 
 /* Update the bias history with a new state. */

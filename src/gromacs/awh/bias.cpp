@@ -499,4 +499,7 @@ Bias::Bias(FILE                          *fplog,
     }
 }
 
+/* Destructor */
+Bias::~Bias() = default;
+
 } // namespace gmx

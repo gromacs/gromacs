@@ -123,6 +123,17 @@ class BiasState
         void broadcast(const t_commrec *cr);
 
         /*! \brief
+         * Allocate and initialize a bias history with the given bias state.
+         *
+         * This function will be called at the start of a new simulation.
+         * Note that only constant data will be initialized here.
+         * History data is set by \ref updateHistory.
+         *
+         * \param[in,out] biasHistory  AWH history to initialize.
+         */
+        void initHistoryFromState(AwhBiasHistory *biasHistory) const;
+
+        /*! \brief
          * Update the bias history with a new state.
          *
          * \param[out] biasHistory  Bias history struct.

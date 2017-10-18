@@ -153,6 +153,9 @@ class Bias
              double                         mdTimeStep,
              BiasParams::DisableUpdateSkips disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
+        /*! \brief Destructor */
+        ~Bias();
+
         /*! \brief
          * Update the coordinate value of dimension \p dim.
          *
