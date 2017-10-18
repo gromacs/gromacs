@@ -52,6 +52,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
+#include "mymol_low.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "molprop.h"
@@ -67,16 +68,6 @@ struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_topology;
-
-enum immStatus {
-    immUnknown,
-    immOK, immZeroDip, immNoQuad, immCharged,
-    immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
-    immChargeGeneration, immLOT,
-    immQMInconsistency, immTest, immNoData,
-    immGenShells, immGenBonds, immCommProblem, immZeroZeta, immInsufficientDATA,
-    immNoDipole, immNR
-};
 
 enum eDih {
     edihNo, edihOne, edihAll, edihNR

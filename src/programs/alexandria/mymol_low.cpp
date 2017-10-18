@@ -330,9 +330,9 @@ real calc_relposition(const Poldata     &pd,
     return relative_position;
 }
 
-void updatePlist(const Poldata             &pd,
-                 std::vector<PlistWrapper> &plist,
-                 t_topology                *top)
+immStatus updatePlist(const Poldata             &pd,
+                      std::vector<PlistWrapper> &plist,
+                      t_topology                *top)
 {
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
@@ -368,6 +368,10 @@ void updatePlist(const Poldata             &pd,
                                 b->c[n++] = gmx::doubleFromString(pi->c_str());
                             }
                         }
+                        else
+                        {
+                            return immNotSupportedBond;
+                        }
                     }
                     else
                     {
@@ -401,6 +405,10 @@ void updatePlist(const Poldata             &pd,
                                     b->c[n++] = r13;
                                 }
                             }
+                        }
+                        else
+                        {
+                            return immNotSupportedAngle;
                         }
                     }
                     else
@@ -441,6 +449,10 @@ void updatePlist(const Poldata             &pd,
                                 }
                             }
                         }
+                        else
+                        {
+                            return immNotSupportedDihedral;
+                        }
                     }
                     else
                     {
@@ -451,6 +463,7 @@ void updatePlist(const Poldata             &pd,
             }
         }
     }
+    return immOK;
 }
 
 std::vector<double> getDoubles(const std::string &s)

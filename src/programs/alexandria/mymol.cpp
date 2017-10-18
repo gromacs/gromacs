@@ -98,16 +98,30 @@ const char *immsg(immStatus imm)
 {
     static const char *msg[immNR] = {
         "Unknown status",
-        "OK", "Zero Dipole", "No Quadrupole", "Charged",
-        "Atom type problem", "Atom number problem", "Converting from molprop",
-        "Determining bond order", "RESP Initialization",
-        "Charge generation", "Requested level of theory missing",
+        "OK", 
+        "Zero Dipole", 
+        "No Quadrupole", 
+        "Charged",
+        "Atom type problem", 
+        "Atom number problem", 
+        "Converting from molprop",
+        "Determining bond order", 
+        "RESP Initialization",
+        "Charge generation", 
+        "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
-        "Not in training set", "No experimental data",
-        "Generating shells", "Generating bonds", "Communicating MolProp",
-        "Zeta is zero", "The number of data is lower than mindata", "No Dipole moment"
+        "Not in training set", 
+        "No experimental data",
+        "Generating shells", 
+        "Generating bonds", 
+        "Communicating MolProp",
+        "Zeta is zero", 
+        "The number of data is lower than mindata", 
+        "No Dipole moment",
+        "NotSupportedBond", 
+        "NotSupportedAngle", 
+        "NotSupportedDihedral"
     };
-
     return msg[imm];
 } 
 
@@ -378,13 +392,10 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
             }
         }
     }
-    if (bUseVsites && bNeedVsites_)
-    {
-        auto anr = topology_->atoms.nr;
-        gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, 
-                             &x, plist_, symtab_, atype_, &excls_, state_);
-        bHaveVSites_ = (topology_->atoms.nr > anr);
-    }
+    auto anr = topology_->atoms.nr;
+    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, 
+                         &x, plist_, symtab_, atype_, &excls_, state_);
+    bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
 /*
@@ -727,7 +738,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        updatePlist(pd, plist_, topology_);
+        imm = updatePlist(pd, plist_, topology_);
     }
     if (immOK == imm)
     {

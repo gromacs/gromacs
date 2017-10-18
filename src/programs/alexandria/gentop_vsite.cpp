@@ -946,8 +946,9 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
             delete_params(plist, ftl, a);
             delete_params(plist, ftp, a);
             delete_params(plist, fti, a);
-
-            if (bUseVsites)
+            
+            //if (bUseVsites) adding vsite for linears need to be fixed
+            if (0)
             {                
                 /* Complicated algorithm, watch out */
                 for (j = 0; (j < linear_[i].nline-1); j++)

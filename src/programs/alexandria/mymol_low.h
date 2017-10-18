@@ -55,6 +55,35 @@
 #include "qgen_eem.h"
 #include "qgen_resp.h"
 
+
+enum immStatus {
+    immUnknown,
+    immOK, 
+    immZeroDip, 
+    immNoQuad, 
+    immCharged,
+    immAtomTypes, 
+    immAtomNumber, 
+    immMolpropConv, 
+    immBondOrder, 
+    immRespInit,
+    immChargeGeneration, 
+    immLOT,
+    immQMInconsistency, 
+    immTest, 
+    immNoData,
+    immGenShells, 
+    immGenBonds, 
+    immCommProblem, 
+    immZeroZeta, 
+    immInsufficientDATA,
+    immNoDipole, 
+    immNotSupportedBond, 
+    immNotSupportedAngle, 
+    immNotSupportedDihedral, 
+    immNR
+};
+
 namespace alexandria
 {
 
@@ -109,9 +138,9 @@ real calc_relposition(const Poldata     &pd,
                       const std::string  aaj,
                       const std::string  aak);  
                       
-void updatePlist(const Poldata             &pd,
-                 std::vector<PlistWrapper> &plist,
-                 t_topology                *top);
+immStatus updatePlist(const Poldata             &pd,
+                      std::vector<PlistWrapper> &plist,
+                      t_topology                *top);
                  
 std::vector<double> getDoubles(const std::string &s);
 
