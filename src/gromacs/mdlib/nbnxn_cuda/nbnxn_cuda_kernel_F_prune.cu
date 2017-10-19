@@ -34,7 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
