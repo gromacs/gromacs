@@ -104,6 +104,42 @@ static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 //@}
 
+/*! \brief Macros defining platform-dependent defaults for the prune kernel's j4 processing concurrency.
+ *
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ */
+/*! @{ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       4
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    4
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   4
+#else
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#endif
+/*! @} */
+/*! \brief Constants for platform-dependent defaults for the prune kernel's j4 processing concurrency.
+ *
+ *  Initialized using macros that can be overridden at compile-time (using #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY).
+ */
+/*! @{ */
+const int c_oclPruneKernelJ4ConcurrencyAMD     = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD;
+const int c_oclPruneKernelJ4ConcurrencyNVIDIA  = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA;
+const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
+/*! @} */
+
+inline int getOclPruneKernelJ4Concurrency(int vendorId)
+{
+    assert(vendorId < OCL_VENDOR_UNKNOWN);
+    switch (vendorId)
+    {
+        case OCL_VENDOR_AMD:    return c_oclPruneKernelJ4ConcurrencyAMD;     break;
+        case OCL_VENDOR_NVIDIA: return c_oclPruneKernelJ4ConcurrencyNVIDIA;  break;
+        default:                return c_oclPruneKernelJ4ConcurrencyDefault; break;
+    }
+}
+
 /* Uncomment this define to enable kernel debugging */
 //#define DEBUG_OCL
 

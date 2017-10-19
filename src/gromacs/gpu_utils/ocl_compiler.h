@@ -46,6 +46,7 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/gmxocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 
 namespace gmx

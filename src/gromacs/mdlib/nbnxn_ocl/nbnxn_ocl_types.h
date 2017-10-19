@@ -45,18 +45,8 @@
 #ifndef NBNXN_OPENCL_TYPES_H
 #define NBNXN_OPENCL_TYPES_H
 
-/*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
-   features that were deprecated in 2.0, so that they don't warn about
-   it. */
-#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
-#ifdef __APPLE__
-#    include <OpenCL/opencl.h>
-#else
-#    include <CL/opencl.h>
-#endif
-
+#include "gromacs/gpu_utils/gmxocl.h"
 #include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
-#include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
@@ -66,45 +56,6 @@
 
 //! Define 1/sqrt(pi)
 #define M_FLOAT_1_SQRTPI 0.564189583547756f
-
-/*! \brief Macros defining platform-dependent defaults for the prune kernel's j4 processing concurrency.
- *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
- */
-/*! @{ */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       4
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    4
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   4
-#else
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#endif
-/*! @} */
-/*! \brief Constants for platform-dependent defaults for the prune kernel's j4 processing concurrency.
- *
- *  Initialized using macros that can be overridden at compile-time (using #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY).
- */
-/*! @{ */
-const int c_oclPruneKernelJ4ConcurrencyAMD     = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD;
-const int c_oclPruneKernelJ4ConcurrencyNVIDIA  = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA;
-const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
-/*! @} */
-
-/*! \brief Returns the j4 processing concurrency parameter for the vendor \p vendorId
- *  \param vendorId takes values from #ocl_vendor_id_t.
- */
-static inline int getOclPruneKernelJ4Concurrency(int vendorId)
-{
-    assert(vendorId < OCL_VENDOR_UNKNOWN);
-    switch (vendorId)
-    {
-        case OCL_VENDOR_AMD:    return c_oclPruneKernelJ4ConcurrencyAMD;     break;
-        case OCL_VENDOR_NVIDIA: return c_oclPruneKernelJ4ConcurrencyNVIDIA;  break;
-        default:                return c_oclPruneKernelJ4ConcurrencyDefault; break;
-    }
-}
 
 
 #ifdef __cplusplus

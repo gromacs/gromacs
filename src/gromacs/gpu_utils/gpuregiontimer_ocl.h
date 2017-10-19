@@ -46,7 +46,7 @@
 
 #include <array>
 
-#include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/gpu_utils/gmxocl.h"
 
 #include "gpuregiontimer.h"
 
