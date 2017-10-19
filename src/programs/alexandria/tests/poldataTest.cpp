@@ -65,7 +65,6 @@ class PoldataTest : public ::testing::Test
         static  alexandria::Poldata                      pd_;
         gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
-        static const  int numModels = 3;
         static   std::vector<std::string>                atomNames;
         static std::string atomName;
 
@@ -88,9 +87,8 @@ class PoldataTest : public ::testing::Test
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-            alexandria::FfatypeIterator iter = pd_.getAtypeBegin();
-            atomName = iter->getType();
-            for (; iter != pd_.getAtypeEnd(); iter++)
+            atomName = pd_.findAtype("ha")->getType();
+            for (auto iter = pd_.getAtypeBegin(); iter != pd_.getAtypeEnd(); iter++)
             {
                 atomNames.push_back(iter->getType());
             }
@@ -104,7 +102,6 @@ class PoldataTest : public ::testing::Test
 };
 
 alexandria::Poldata      PoldataTest::pd_;
-const int                PoldataTest::numModels;
 std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
@@ -154,12 +151,15 @@ TEST_F(PoldataTest, addAtype){
 
 TEST_F (PoldataTest, Ptype)
 {
-    alexandria::PtypeConstIterator ptype = pd_.getPtypeBegin();
-    checker_.checkString(ptype->getType(), "type");
-    checker_.checkString(ptype->getMiller(), "miller");
-    checker_.checkString(ptype->getBosque(), "bosque");
-    checker_.checkDouble(ptype->getPolarizability(), "polarizability");
-    checker_.checkDouble(ptype->getSigPol(), "sigPol");
+    auto ptype = pd_.findPtype("p_ha");
+    if (ptype != pd_.getPtypeEnd())
+    {
+        checker_.checkString(ptype->getType(), "type");
+        checker_.checkString(ptype->getMiller(), "miller");
+        checker_.checkString(ptype->getBosque(), "bosque");
+        checker_.checkDouble(ptype->getPolarizability(), "polarizability");
+        checker_.checkDouble(ptype->getSigPol(), "sigPol");
+    }
 }
 
 TEST_F (PoldataTest, Miller)
@@ -181,11 +181,14 @@ TEST_F (PoldataTest, Bosque)
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>      chi0s;
+    std::vector<ChargeDistributionModel> eqd;
+    eqd.push_back(eqdAXpp);
+    eqd.push_back(eqdAXpg);
+    eqd.push_back(eqdAXps);
 
-
-    for (int model = 0; model < numModels; model++)
+    for (auto model : eqd)
     {
-        chi0s.push_back(pd_.getChi0((ChargeDistributionModel)model, atomName));
+        chi0s.push_back(pd_.getChi0(model, atomName));
     }
     checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");
 }
@@ -193,6 +196,7 @@ TEST_F (PoldataTest, chi)
 TEST_F (PoldataTest, row){
     std::vector<double>      rows;
     int numAtoms = 3;
+    int numModels = 3;
 
     for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
@@ -209,7 +213,8 @@ TEST_F (PoldataTest, zeta)
 {
     std::vector<double>      zetas;
     int numAtoms = 3;
-
+    int numModels = 3;
+    
     for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
         for (int model = 0; model <  numModels; model++)

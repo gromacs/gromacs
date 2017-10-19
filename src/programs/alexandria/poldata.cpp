@@ -686,7 +686,8 @@ double Poldata::getChi0(ChargeDistributionModel   eqdModel,
     }
     else
     {
-        gmx_fatal(FARGS, "No chi0 data for eqdModel %d and name %s", eqdModel, name.c_str());
+        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and name %s", 
+                  getEemtypeName(eqdModel), name.c_str());
     }
     return -1;
 }
