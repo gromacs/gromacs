@@ -30,7 +30,8 @@ gcc-5 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
 gcc-4.8 nranks=1 gpu cuda-7.5 simd=sse4.1
 
 # Test MPMD PME with library MPI
-clang-3.4 npme=1 nranks=2 mpi
+# disable OpenMP because clang 3.4 does not support it anyway and it triggers a warning
+clang-3.4 npme=1 nranks=2 mpi no-openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test SSE2 SIMD
