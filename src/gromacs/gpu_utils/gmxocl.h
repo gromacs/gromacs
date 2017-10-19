@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,28 +32,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *  \brief Internal API of the OpenCL non-bonded module.
+/*! \libinternal \file
+ * \brief Declare GROMACS wrapper include file for including
+ * the OpenCL main headers in a portable and warning-free way.
  *
- *  \author Szilárd Páll <pall.szilard@gmail.com>
- *  \ingroup module_mdlib
- */
-
-#include "gmxpre.h"
-
-#ifndef NBNXN_OCL_INTERNAL_H
-#define NBNXN_OCL_INTERNAL_H
-
-/*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
+ * We need to silence deprecation warnings for the OpenCL
+ * functionality we use, since the only properly portable things are
+ * also the deprecated things.
  *
- *  \param[in] vdwType The VdW interaction/implementation type as defined by evdwOcl in nbnxn_ocl_types.h.
- *  \returns           True if combination rules are used by the run
+ * Also, Apple does things in its own way, which we should hide.
+ *
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \inlibraryapi
  */
-bool useLjCombRule(int vdwType);
+#ifndef GMX_GPU_UTILS_GMXOCL_H
+#define GMX_GPU_UTILS_GMXOCL_H
 
-/*! \brief Returns the j4 processing concurrency parameter for the vendor \p vendorId
- *  \param vendorId takes values from #ocl_vendor_id_t.
- */
-int getOclPruneKernelJ4Concurrency(int vendorId);
+/*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
+   features that were deprecated in 2.0, so that they don't warn about
+   it. */
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#ifdef __APPLE__
+#    include <OpenCL/opencl.h>
+#else
+#    include <CL/opencl.h>
+#endif
 
-#endif /* NBNXN_OCL_INTERNAL_H */
+#endif

@@ -60,6 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
 /*! \brief Stringifies the input argument
