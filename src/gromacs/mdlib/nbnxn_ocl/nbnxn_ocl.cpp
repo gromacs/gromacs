@@ -840,25 +840,9 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 {
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
-    int               iloc = -1;
 
     /* determine interaction locality from atom locality */
-    if (LOCAL_A(aloc))
-    {
-        iloc = eintLocal;
-    }
-    else if (NONLOCAL_A(aloc))
-    {
-        iloc = eintNonlocal;
-    }
-    else
-    {
-        char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
-
-        gmx_incons(stmp);
-    }
+    int              iloc = gpuAtomToInteractionLocality(aloc);
 
     cl_atomdata_t   *adat    = nb->atdat;
     cl_timers_t     *t       = nb->timers;
@@ -884,17 +868,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         return;
     }
 
-    /* calculate the atom data index range based on locality */
-    if (LOCAL_A(aloc))
-    {
-        adat_begin  = 0;
-        adat_len    = adat->natoms_local;
-    }
-    else
-    {
-        adat_begin  = adat->natoms_local;
-        adat_len    = adat->natoms - adat->natoms_local;
-    }
+    getGpuAtomRange(adat, aloc, adat_begin, adat_len);
 
     /* beginning of timed D2H section */
     if (bDoTime)
@@ -1005,24 +979,9 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
 {
     /* NOTE:  only implemented for single-precision at this time */
     cl_int gmx_unused      cl_error;
-    int                    iloc = -1;
 
     /* determine interaction locality from atom locality */
-    if (LOCAL_A(aloc))
-    {
-        iloc = eintLocal;
-    }
-    else if (NONLOCAL_A(aloc))
-    {
-        iloc = eintNonlocal;
-    }
-    else
-    {
-        char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
-        gmx_incons(stmp);
-    }
+    int iloc = gpuAtomToInteractionLocality(aloc);
 
     cl_plist_t                       *plist    = nb->plist[iloc];
     cl_timers_t                      *timers   = nb->timers;
