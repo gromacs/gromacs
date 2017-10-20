@@ -53,6 +53,8 @@
 
 #include <string>
 
+#include "gromacs/utility/gmxassert.h"
+
 /*! \brief OpenCL vendor IDs */
 typedef enum {
     OCL_VENDOR_NVIDIA = 0,
@@ -134,5 +136,16 @@ void ocl_pfree(void *h_ptr);
 
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error);
+
+/*! \brief Calls clFinish() in the stream \p s.
+ *
+ * \param[in] s stream to synchronize with
+ */
+static inline void gpuStreamSynchronize(cl_command_queue s)
+{
+    cl_int cl_error = clFinish(s);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error,
+                       ("Error caught during clFinish:" + ocl_get_error_string(cl_error)).c_str());
+}
 
 #endif
