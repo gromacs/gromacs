@@ -213,4 +213,14 @@ static inline void rvec_inc(rvec a, const float3 b)
     a[ZZ] = z;
 }
 
+/*! \brief Calls cudaStreamSynchronize() in the stream \p s.
+ *
+ * \param[in] s stream to synchronize with
+ */
+static inline void gpuStreamSynchronize(cudaStream_t s)
+{
+    cudaError_t stat = cudaStreamSynchronize(s);
+    CU_RET_ERR(stat, "cudaStreamSynchronize failed");
+}
+
 #endif

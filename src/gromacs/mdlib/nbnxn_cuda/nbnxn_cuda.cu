@@ -736,44 +736,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
-// TODO Unify!
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
-                            int flags, int aloc,
-                            real *e_lj, real *e_el, rvec *fshift)
-{
-    /* determine interaction locality from atom locality */
-    int iLocality = gpuAtomToInteractionLocality(aloc);
-
-    /* Launch wait/update timers & counters and do reduction into staging buffers
-       BUT skip it when during the non-local phase there was actually no work to do.
-       This is consistent with nbnxn_gpu_launch_kernel.
-
-       NOTE: if timing with multiple GPUs (streams) becomes possible, the
-       counters could end up being inconsistent due to not being incremented
-       on some of the nodes! */
-    if (!canSkipWork(nb, iLocality))
-    {
-        cudaError_t stat = cudaStreamSynchronize(nb->stream[iLocality]);
-        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
-
-        bool calcEner   = flags & GMX_FORCE_ENERGY;
-        bool calcFshift = flags & GMX_FORCE_VIRIAL;
-
-        /* turn energy calculation always on/off (for debugging/testing only) */
-        calcEner = (calcEner || always_ener) && !never_ener;
-
-        nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner, nb->bDoTime);
-
-        nbnxn_gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, *e_lj, *e_el, fshift);
-    }
-
-    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
-    nb->timers->didPrune[iLocality] = nb->timers->didRollingPrune[iLocality] = false;
-
-    /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
-    nb->plist[iLocality]->haveFreshList = false;
-}
-
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
     return nbfp_texref;

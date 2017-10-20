@@ -49,10 +49,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct nbnxn_atomdata_t;
 
 /*! \brief
@@ -122,11 +118,23 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
 
 /*! \brief
- * Wait for the asynchronously launched nonbonded calculations and data
+ * Wait for the asynchronously launched nonbonded tasks and data
  * transfers to finish.
+ *
+ * Also does timing accounting and internal stagin buffer reduction.
+ * As this is called at the end of the step, it also resets the pair list and
+ * pruning flags.
+ *
+ * \param[in] nb The nonbonded data GPU structure
+ * \param[in] flags Force flags
+ * \param[in] aloc Atom locality identifier
+ * \param[out] e_lj Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
+template <typename NbnxnGpu>
+void nbnxn_gpu_wait_for_gpu(NbnxnGpu gmx_unused        *nb,
                             int             gmx_unused  flags,
                             int             gmx_unused  aloc,
                             real            gmx_unused *e_lj,
@@ -136,9 +144,5 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
