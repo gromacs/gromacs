@@ -362,12 +362,12 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
 
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
-                      PmeGatherInputHandling inputTreatment, ForcesVector &forces)
+                      PmeForceOutputHandling inputTreatment, ForcesVector &forces)
 {
     pme_atomcomm_t *atc                     = &(pme->atc[0]);
     const size_t    atomCount               = atc->n;
     GMX_RELEASE_ASSERT(forces.size() == atomCount, "Invalid force buffer size");
-    const bool      forceReductionWithInput = (inputTreatment == PmeGatherInputHandling::ReduceWith);
+    const bool      forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
     const real      scale                   = 1.0;
     const size_t    threadIndex             = 0;
     const size_t    gridIndex               = 0;
@@ -389,7 +389,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             break;
 
         case CodePath::CUDA:
-            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), !forceReductionWithInput, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), inputTreatment, reinterpret_cast<float *>(fftgrid));
             break;
 
         default:

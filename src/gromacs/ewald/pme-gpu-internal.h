@@ -502,15 +502,14 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGp
  *
  * \param[in]     pmeGpu           The PME GPU structure.
  * \param[in,out] h_forces         The host buffer with input and output forces.
- * \param[in]     overwriteForces  True: h_forces are output-only.
- *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
+ * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                        float           *CUDA_FUNC_ARGUMENT(h_forces),
-                                        bool             CUDA_FUNC_ARGUMENT(overwriteForces),
-                                        const float     *CUDA_FUNC_ARGUMENT(h_grid)
+CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t       *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                        float                 *CUDA_FUNC_ARGUMENT(h_forces),
+                                        PmeForceOutputHandling CUDA_FUNC_ARGUMENT(forceTreatment),
+                                        const float           *CUDA_FUNC_ARGUMENT(h_grid)
                                         ) CUDA_FUNC_TERM
 
 

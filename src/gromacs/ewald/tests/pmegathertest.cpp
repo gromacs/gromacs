@@ -325,7 +325,7 @@ typedef std::map<size_t, AtomSizedData> InputDataByAtomCount;
  * The rest of the atom-related input data - gridline indices, spline theta values, spline dtheta values, atom charges -
  * is looked up in the inputAtomDataSets_ test fixture variable.
  */
-typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, PmeGatherInputHandling, size_t> GatherInputParameters;
+typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, PmeForceOutputHandling, size_t> GatherInputParameters;
 
 //! Test fixture
 class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
@@ -376,7 +376,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             IVec                      gridSize;
             size_t                    atomCount;
             SparseRealGridValuesInput nonZeroGridValues;
-            PmeGatherInputHandling    inputForceTreatment;
+            PmeForceOutputHandling    inputForceTreatment;
             std::tie(box, pmeOrder, gridSize, nonZeroGridValues, inputForceTreatment, atomCount) = GetParam();
             auto inputAtomData       = s_inputAtomDataSets_[atomCount];
             auto inputAtomSplineData = inputAtomData.splineDataByPmeOrder[pmeOrder];
@@ -413,7 +413,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                               gridSize[XX], gridSize[YY], gridSize[ZZ],
                                               pmeOrder,
                                               atomCount,
-                                              (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
+                                              (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                               ));
 
                     PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
@@ -460,7 +460,7 @@ INSTANTIATE_TEST_CASE_P(SaneInput, PmeGatherTest, ::testing::Combine(::testing::
                                                                          ::testing::ValuesIn(pmeOrders),
                                                                          ::testing::ValuesIn(c_sampleGridSizes),
                                                                          ::testing::ValuesIn(c_sampleGrids),
-                                                                         ::testing::Values(PmeGatherInputHandling::Overwrite, PmeGatherInputHandling::ReduceWith),
+                                                                         ::testing::Values(PmeForceOutputHandling::Set, PmeForceOutputHandling::ReduceWithInput),
                                                                          ::testing::ValuesIn(atomCounts)));
 
 }

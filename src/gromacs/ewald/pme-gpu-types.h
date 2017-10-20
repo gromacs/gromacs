@@ -74,6 +74,14 @@ enum PmeRunMode
     Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
 };
 
+//! PME gathering output forces treatment
+enum class PmeForceOutputHandling
+{
+    Set,             /**< Gather simply writes into provided force buffer */
+    ReduceWithInput, /**< Gather adds its output to the buffer.
+                        On GPU, that means additional H2D copy before the kernel launch. */
+};
+
 #if GMX_GPU == GMX_GPU_CUDA
 
 struct pme_gpu_cuda_t;

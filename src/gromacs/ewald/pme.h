@@ -293,20 +293,19 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t       *pme,
                                        gmx_wallcycle_t  wcycle);
 
 /*! \brief
- * Launches last stage of PME on GPU - force gathering.
+ * Launches last stage of PME on GPU - force gathering and D2H force transfer.
  *
  * \param[in]  pme               The PME data structure.
  * \param[in]  wcycle            The wallclock counter.
  * \param[in,out] forces         The array of local atoms' resulting forces.
- * \param[in]  overwriteForces   The boolean which tells whether the gathering kernel stores
- *                               the output reciprocal forces into the host array (true),
- *                               or copies its contents to the GPU first, and accumulates
- *                               (false). The reduction is non-atomic.
+ * \param[in]  forceTreatment    Tells how data in h_forces should be treated. The gathering kernel either stores
+ *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
+ *                               and accumulates. The reduction is non-atomic.
  */
-void pme_gpu_launch_gather(const gmx_pme_t      *pme,
-                           gmx_wallcycle_t       wcycle,
-                           rvec                 *forces,
-                           bool                  overwriteForces);
+void pme_gpu_launch_gather(const gmx_pme_t        *pme,
+                           gmx_wallcycle_t         wcycle,
+                           rvec                   *forces,
+                           PmeForceOutputHandling  forceTreatment);
 
 /*! \brief
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy

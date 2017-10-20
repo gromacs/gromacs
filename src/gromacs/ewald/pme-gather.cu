@@ -410,14 +410,14 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
     }
 }
 
-void pme_gpu_gather(const pme_gpu_t *pmeGpu,
-                    float           *h_forces,
-                    bool             overwriteForces,
-                    const float     *h_grid
+void pme_gpu_gather(const pme_gpu_t       *pmeGpu,
+                    float                 *h_forces,
+                    PmeForceOutputHandling forceTreatment,
+                    const float           *h_grid
                     )
 {
     /* Copying the input CPU forces for reduction */
-    if (!overwriteForces)
+    if (forceTreatment != PmeForceOutputHandling::Set)
     {
         pme_gpu_copy_input_forces(pmeGpu, h_forces);
     }
@@ -452,7 +452,7 @@ void pme_gpu_gather(const pme_gpu_t *pmeGpu,
     pme_gpu_start_timing(pmeGpu, gtPME_GATHER);
     if (order == 4)
     {
-        if (overwriteForces)
+        if (forceTreatment == PmeForceOutputHandling::Set)
         {
             pme_gather_kernel<4, true, wrapX, wrapY> <<< nBlocks, dimBlock, 0, stream>>> (*kernelParamsPtr);
         }

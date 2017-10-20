@@ -94,12 +94,6 @@ typedef SparseGridValuesOutput<real> SparseRealGridValuesOutput;
 typedef SparseGridValuesOutput<t_complex> SparseComplexGridValuesOutput;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
-//! PME gathering input forces treatment
-enum class PmeGatherInputHandling
-{
-    Overwrite,
-    ReduceWith,
-};
 //! PME solver type
 enum class PmeSolveAlgorithm
 {
@@ -143,7 +137,7 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
                      GridOrdering gridOrdering, bool computeEnergyAndVirial);
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
-                      PmeGatherInputHandling inputTreatment, ForcesVector &forces);
+                      PmeForceOutputHandling inputTreatment, ForcesVector &forces);
 //! PME test finalization before fetching the outputs
 void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode);
 

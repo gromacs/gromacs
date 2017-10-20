@@ -839,9 +839,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
-    // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
-    const ArrayRef<RVec> pmeGpuForces                = *fr->forceBufferIntermediate;
-    constexpr bool       pmeGpuAccumulateInputForces = false;
+    // a comment for uncrustify
+    const ArrayRef<RVec> pmeGpuForces = *fr->forceBufferIntermediate;
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -955,7 +954,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (pmeRunMode == PmeRunMode::GPU)
             {
                 pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-                pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), !pmeGpuAccumulateInputForces);
+                pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
             }
         }
     }
@@ -1077,7 +1076,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         // PME GPU - intermediate CPU work in mixed mode
         // TODO - try moving this below till after do_force_lowlevel() / special forces?
         pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-        pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), !pmeGpuAccumulateInputForces);
+        pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
