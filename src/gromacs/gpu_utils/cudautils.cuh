@@ -42,6 +42,7 @@
 #include <nvml.h>
 #endif /* HAVE_NVML */
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
@@ -197,5 +198,19 @@ void destroyParamLookupTable(T                         *d_ptr,
                              cudaTextureObject_t        texObj,
                              const struct texture<T, 1, cudaReadModeElementType> *texRef,
                              const gmx_device_info_t   *devInfo);
+
+/*! \brief Add a triplets stored in a float3 to an rvec variable. */
+static inline void rvec_inc(rvec a, const float3 b)
+{
+    real x, y, z;
+
+    x = a[XX]+b.x;
+    y = a[YY]+b.x;
+    z = a[ZZ]+b.z;
+
+    a[XX] = x;
+    a[YY] = y;
+    a[ZZ] = z;
+}
 
 #endif
