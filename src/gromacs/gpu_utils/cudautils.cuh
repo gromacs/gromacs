@@ -42,6 +42,8 @@
 #include <nvml.h>
 #endif /* HAVE_NVML */
 
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
@@ -197,5 +199,26 @@ void destroyParamLookupTable(T                         *d_ptr,
                              cudaTextureObject_t        texObj,
                              const struct texture<T, 1, cudaReadModeElementType> *texRef,
                              const gmx_device_info_t   *devInfo);
+
+/*! \brief Add a triplets stored in a float3 to an rvec variable.
+ * 
+ * \param[out]  a Rvec to increment
+ * \param[in]   b Float triplet to increment with.
+ */
+static inline void rvec_inc(rvec a, const float3 b)
+{
+    rvec tmp = {b.x, b.y, b.z};
+    rvec_inc(a, tmp);
+}
+
+/*! \brief Calls cudaStreamSynchronize() in the stream \p s.
+ *
+ * \param[in] s stream to synchronize with
+ */
+static inline void gpuStreamSynchronize(cudaStream_t s)
+{
+    cudaError_t stat = cudaStreamSynchronize(s);
+    CU_RET_ERR(stat, "cudaStreamSynchronize failed");
+}
 
 #endif

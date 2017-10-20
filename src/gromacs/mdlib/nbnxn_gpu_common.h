@@ -33,9 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements common routines for different NBNXN GPU implementations
+ * \brief Common functions for the different NBNXN GPU implementations.
  *
- * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Szilard Pall <pall.szilard@gmail.com>
+ *
  * \ingroup module_mdlib
  */
 
@@ -53,21 +54,14 @@
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "nbnxn_ocl/nbnxn_ocl_types.h"
 #endif
+
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/stringutil.h"
 
-
-/*! \brief An early return condition for empty NB GPU workloads
- *
- * This is currently used for non-local kernels/transfers only.
- * Skipping the local kernel is more complicated, since the
- * local part of the force array also depends on the non-local kernel.
- * The skip of the local kernel is taken care of separately.
- */
-static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
-{
-    assert(nb && nb->plist[iloc]);
-    return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
-}
+#include "nbnxn_gpu_common_utils.h"
 
 /*! \brief Check that atom locality values are valid for the GPU module.
  *
@@ -140,6 +134,201 @@ static inline void getGpuAtomRange(const AtomDataT *atomData,
         atomRangeBegin  = atomData->natoms_local;
         atomRangeLen    = atomData->natoms - atomData->natoms_local;
     }
+}
+
+
+/*! \brief Count pruning kernel time if either kernel has been triggered
+ *
+ *  We do the accounting for either of the two pruning kernel flavors:
+ *   - 1st pass prune: ran during the current step (prior to the force kernel);
+ *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
+ *
+ * Note that the resetting of cu_timers_t::didPrune and cu_timers_t::didRollingPrune should happen
+ * after calling this function.
+ *
+ * \param[in] timers   structs with GPU timer objects
+ * \param[inout] timings  GPU task timing data
+ * \param[in] iloc        interaction locality
+ */
+template <typename GpuTimers>
+static void countPruneKernelTime(GpuTimers                 *timers,
+                                 gmx_wallclock_gpu_nbnxn_t *timings,
+                                 const int                  iloc)
+{
+    // We might have not done any pruning (e.g. if we skipped with empty domains).
+    if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
+    {
+        return;
+    }
+
+    if (timers->didPrune[iloc])
+    {
+        timings->pruneTime.c++;
+        timings->pruneTime.t += timers->prune_k[iloc].getLastRangeTime();
+    }
+
+    if (timers->didRollingPrune[iloc])
+    {
+        timings->dynamicPruneTime.c++;
+        timings->dynamicPruneTime.t += timers->rollingPrune_k[iloc].getLastRangeTime();
+    }
+}
+
+/*! \brief Reduce data staged internally in the nbnxn module.
+ *
+ * Shift forces and electrostatic/LJ energies copied from the GPU into
+ * a module-internal staging area are immediately reduced (CPU-side buffers passed)
+ * after having waited for the transfers' completion.
+ *
+ * Note that this function should always be called after the transfers into the
+ * staging buffers has completed.
+ *
+ * \tparam     StagingData    Type of staging data
+ * \param[in]  nbst           Nonbonded staging data
+ * \param[in]  iLocality      Interaction locality specifier
+ * \param[in]  reduceEnergies True if energy reduction should be done
+ * \param[in]  reduceFshift   True if shift force reduction should be done
+ * \param[out] e_lj           Variable to accumulate LJ energy into
+ * \param[out] e_el           Variable to accumulate electrostatic energy into
+ * \param[out] fshift         Pointer to the array of shift forces to accumulate into
+ */
+template <typename StagingData>
+static inline void nbnxn_gpu_reduce_staged_outputs(const StagingData &nbst,
+                                                   int                iLocality,
+                                                   bool               reduceEnergies,
+                                                   bool               reduceFshift,
+                                                   real              *e_lj,
+                                                   real              *e_el,
+                                                   rvec              *fshift)
+{
+    /* add up energies and shift forces (only once at local F wait) */
+    if (LOCAL_I(iLocality))
+    {
+        if (reduceEnergies)
+        {
+            *e_lj += *nbst.e_lj;
+            *e_el += *nbst.e_el;
+        }
+
+        if (reduceFshift)
+        {
+            for (int i = 0; i < SHIFTS; i++)
+            {
+                rvec_inc(fshift[i], nbst.fshift[i]);
+            }
+        }
+    }
+}
+
+/*! \brief Do the per-step timing accounting of the nonbonded tasks.
+ *
+ *  Does timing accumulation and call-count increments for the nonbonded kernels.
+ *  Note that this function should be called after the current step's nonbonded
+ *  nonbonded tasks have completed with the exception of the rolling pruning kernels
+ *  that are accounted for during the following step.
+ *
+ * \tparam     GpuTimers         GPU timers type
+ * \tparam     GpuPairlist       Pair list type
+ * \param[out] timings           Pointer to the NB GPU timings data
+ * \param[in]  timers            Pointer to GPU timers data
+ * \param[in]  plist             Pointer to the pair list data
+ * \param[in]  atomLocality      Atom locality specifier
+ * \param[in]  didEnergyKernels  True if energy kernels have been called in the current step
+ * \param[in]  doTiming          True if timing is enabled.
+ *
+ */
+template <typename GpuTimers, typename GpuPairlist>
+static inline void nbnxn_gpu_accumulate_timings(struct gmx_wallclock_gpu_nbnxn_t *timings,
+                                                GpuTimers                        *timers,
+                                                const GpuPairlist                *plist,
+                                                int                               atomLocality,
+                                                bool                              didEnergyKernels,
+                                                bool                              doTiming)
+{
+    /* timing data accumulation */
+    if (!doTiming)
+    {
+        return;
+    }
+
+    /* determine interaction locality from atom locality */
+    int iLocality = gpuAtomToInteractionLocality(atomLocality);
+
+    /* only increase counter once (at local F wait) */
+    if (LOCAL_I(iLocality))
+    {
+        timings->nb_c++;
+        timings->ktime[plist->haveFreshList ? 1 : 0][didEnergyKernels ? 1 : 0].c += 1;
+    }
+
+    /* kernel timings */
+    timings->ktime[plist->haveFreshList ? 1 : 0][didEnergyKernels ? 1 : 0].t +=
+        timers->nb_k[iLocality].getLastRangeTime();
+
+    /* X/q H2D and F D2H timings */
+    timings->nb_h2d_t += timers->nb_h2d[iLocality].getLastRangeTime();
+    timings->nb_d2h_t += timers->nb_d2h[iLocality].getLastRangeTime();
+
+    /* Count the pruning kernel times for both cases:1st pass (at search step)
+       and rolling pruning (if called at the previous step).
+       We do the accounting here as this is the only sync point where we
+       know (without checking or additional sync-ing) that prune tasks in
+       in the current stream have completed (having just blocking-waited
+       for the force D2H). */
+    countPruneKernelTime(timers, timings, iLocality);
+
+    /* only count atdat and pair-list H2D at pair-search step */
+    if (timers->didPairlistH2D[iLocality])
+    {
+        /* atdat transfer timing (add only once, at local F wait) */
+        if (LOCAL_A(atomLocality))
+        {
+            timings->pl_h2d_c++;
+            timings->pl_h2d_t += timers->atdat.getLastRangeTime();
+        }
+
+        timings->pl_h2d_t += timers->pl_h2d[iLocality].getLastRangeTime();
+
+        /* Clear the timing flag for the next step */
+        timers->didPairlistH2D[iLocality] = false;
+    }
+}
+
+// Documented in nbnxn_gpu.h
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
+                            int              flags,
+                            int              aloc,
+                            real            *e_lj,
+                            real            *e_el,
+                            rvec            *fshift)
+{
+    /* determine interaction locality from atom locality */
+    int iLocality = gpuAtomToInteractionLocality(aloc);
+
+    /* Launch wait/update timers & counters and do reduction into staging buffers
+       BUT skip it when during the non-local phase there was actually no work to do.
+       This is consistent with nbnxn_gpu_launch_kernel.
+
+       NOTE: if timing with multiple GPUs (streams) becomes possible, the
+       counters could end up being inconsistent due to not being incremented
+       on some of the nodes! */
+    if (!canSkipWork(nb, iLocality))
+    {
+        gpuStreamSynchronize(nb->stream[iLocality]);
+
+        bool calcEner   = flags & GMX_FORCE_ENERGY;
+        bool calcFshift = flags & GMX_FORCE_VIRIAL;
+
+        nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner, nb->bDoTime);
+
+        nbnxn_gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, e_lj, e_el, fshift);
+    }
+
+    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
+    nb->timers->didPrune[iLocality] = nb->timers->didRollingPrune[iLocality] = false;
+
+    /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
+    nb->plist[iLocality]->haveFreshList = false;
 }
 
 #endif
