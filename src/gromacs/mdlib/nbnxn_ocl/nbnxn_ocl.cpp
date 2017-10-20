@@ -83,6 +83,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/gpu_utils/oclutils.h"
 
 #include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
@@ -933,6 +934,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 }
 
+#if 0
 /*! \brief
  * Wait for the asynchronously launched nonbonded calculations and data
  * transfers to finish.
@@ -953,9 +955,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
        on some of the nodes! */
     if (!canSkipWork(nb, iLocality))
     {
-        /* Actual sync point. Waits for everything to be finished in the command queue. TODO: Find out if a more fine grained solution is needed */
-        cl_int gmx_unused cl_error = clFinish(nb->stream[iLocality]);
-        assert(CL_SUCCESS == cl_error);
+        gpuStreamSynchronize(nb->stream[iLocality]);
 
         bool calcEner   = flags & GMX_FORCE_ENERGY;
         bool calcFshift = flags & GMX_FORCE_VIRIAL;
@@ -975,6 +975,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
     nb->plist[iLocality]->haveFreshList = false;
 }
+#endif
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
