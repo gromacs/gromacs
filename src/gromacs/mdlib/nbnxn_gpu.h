@@ -122,8 +122,19 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
 
 /*! \brief
- * Wait for the asynchronously launched nonbonded calculations and data
+ * Wait for the asynchronously launched nonbonded tasks and data
  * transfers to finish.
+ *
+ * Also does timing accounting and reduction of the internal staging buffers.
+ * As this is called at the end of the step, it also resets the pair list and
+ * pruning flags.
+ *
+ * \param[in] nb The nonbonded data GPU structure
+ * \param[in] flags Force flags
+ * \param[in] aloc Atom locality identifier
+ * \param[out] e_lj Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
