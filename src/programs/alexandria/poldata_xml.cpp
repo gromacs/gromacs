@@ -439,14 +439,14 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             if (NN(xbuf[exmlMODEL])   && NN(xbuf[exmlNAME])       &&
                 NN(xbuf[exmlJ0])      && NN(xbuf[exmlJ0_SIGMA])   &&
                 NN(xbuf[exmlCHI0])    && NN(xbuf[exmlCHI0_SIGMA]) &&
-                NN(xbuf[exmlZETA])    && //NN(xbuf[exmlZETA_SIGMA]) &&
+                NN(xbuf[exmlZETA])    && NN(xbuf[exmlZETA_SIGMA]) &&
                 NN(xbuf[exmlCHARGES]) && NN(xbuf[exmlROW]))
             {
                 Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
                              xbuf[exmlNAME],
                              xbuf[exmlROW],
                              xbuf[exmlZETA],
-                             NN(xbuf[exmlZETA_SIGMA]) ? xbuf[exmlZETA_SIGMA] : "0",
+                             xbuf[exmlZETA_SIGMA],
                              xbuf[exmlCHARGES],
                              my_atof(xbuf[exmlJ0].c_str()),
                              my_atof(xbuf[exmlJ0_SIGMA].c_str()),

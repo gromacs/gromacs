@@ -84,7 +84,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             const char *conf     = (char *)"minimum";
             const char *basis    = (char *)"";
             const char *jobtype  = (char *)"Pop";
-            int         maxpot   = 0;
+            int         maxpot   = 100;
             int         nsymm    = 0;
 
             //read input file for poldata

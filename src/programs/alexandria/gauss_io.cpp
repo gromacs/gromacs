@@ -66,10 +66,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
                                           int                                              natom,
                                           int                                              maxPotential)
 {
-    if (maxPotential > 100)
-    {
-        gmx_fatal(FARGS, "You cannot have more than 100 percent of the available ESP points.\n");
-    }
+    maxPotential = std::min(maxPotential, 100);
     /*std::sort(espv.begin()+natom, espv.end(),
               [](const alexandria::ElectrostaticPotential &a,
                  const alexandria::ElectrostaticPotential &b)
@@ -160,16 +157,16 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
     return nullptr;
 }
 
-static void gmx_molprop_read_babel(const char          *g09,
-                                   alexandria::MolProp &mpt,
-                                   const char          *molnm,
-                                   const char          *iupac,
-                                   const char          *conformation,
-                                   const char          *basisset,
-                                   int                  maxPotential,
-                                   int                  nsymm,
-                                   const char          *forcefield,
-                                   alexandria::jobType  jobtype)
+void ReadGauss(const char          *g09,
+               alexandria::MolProp &mpt,
+               const char          *molnm,
+               const char          *iupac,
+               const char          *conformation,
+               const char          *basisset,
+               int                  maxPotential,
+               int                  nsymm,
+               const char          *forcefield,
+               const char          *jobType)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol           mol;
@@ -183,7 +180,8 @@ static void gmx_molprop_read_babel(const char          *g09,
     OpenBabel::OBFreeGrid     *esp;
     OpenBabel::OBPcharges     *OBpc;
     OpenBabel::OBElementTable *OBet;
-       
+    alexandria::jobType        jobtype = alexandria::string2jobType(jobType);
+
     std::vector<alexandria::ElectrostaticPotential> espv;
     std::vector<std::string> charge_scheme = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
     const char              *reference     = "Ghahremanpour2016a";
@@ -522,7 +520,7 @@ static void gmx_molprop_read_babel(const char          *g09,
 
     // Electrostatic potential
     esp = (OpenBabel::OBFreeGrid *) mol.GetData("Electrostatic Potential");
-    if (nullptr != esp)
+    if (nullptr != esp && maxPotential > 0)
     {
         OpenBabel::OBFreeGridPoint        *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
@@ -545,22 +543,3 @@ static void gmx_molprop_read_babel(const char          *g09,
 }
 #endif
 
-void ReadGauss(const char          *g09,
-               alexandria::MolProp &mp,
-               const char          *molnm,
-               const char          *iupac,
-               const char          *conf,
-               const char          *basis,
-               int                  maxpot,
-               int                  nsymm,
-               const char          *forcefield,
-               const char          *jobtype)
-{
-#if HAVE_LIBOPENBABEL2
-    gmx_molprop_read_babel(g09, mp, molnm, iupac, conf, basis,
-                           maxpot, nsymm, forcefield,
-                           alexandria::string2jobType(jobtype));
-#else
-    gmx_fatal(FARGS, "For reading Gaussian input you need to link to OpenBabel");
-#endif
-}
