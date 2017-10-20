@@ -298,25 +298,8 @@ typedef struct cl_plist
     int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 }cl_plist_t;
 
-/*! \internal
- * \brief OpenCL events used for timing GPU kernels and H2D/D2H transfers.
- *
- * The two-sized arrays hold the local and non-local values and should always
- * be indexed with eintLocal/eintNonlocal.
- */
-typedef struct cl_timers
-{
-    GpuRegionTimer atdat;              /**< timer for atom data transfer (every PS step)            */
-    GpuRegionTimer nb_h2d[2];          /**< timer for x/q H2D transfers (l/nl, every step)          */
-    GpuRegionTimer nb_d2h[2];          /**< timer for f D2H transfer (l/nl, every step)             */
-    GpuRegionTimer pl_h2d[2];          /**< timer for pair-list H2D transfers (l/nl, every PS step) */
-    bool           didPairlistH2D[2];  /**< true when a pair-list transfer has been done at this step */
-    GpuRegionTimer nb_k[2];            /**< timer for non-bonded kernels (l/nl, every step)         */
-    GpuRegionTimer prune_k[2];         /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
-    bool           didPrune[2];        /**< true when we timed pruning and the timings need to be accounted for */
-    GpuRegionTimer rollingPrune_k[2];  /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
-    bool           didRollingPrune[2]; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
-} cl_timers_t;
+
+typedef struct nbnxn_gpu_timers_t cl_timers_t;
 
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
