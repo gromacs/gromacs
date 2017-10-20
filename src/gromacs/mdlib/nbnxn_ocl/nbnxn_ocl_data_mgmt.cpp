@@ -58,7 +58,7 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu.h"
-#include "gromacs/mdlib/nbnxn_gpu_common.h"
+#include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_gpu_jit_support.h"
 #include "gromacs/mdtypes/interaction_const.h"

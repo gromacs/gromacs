@@ -57,6 +57,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
+#include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -146,12 +147,6 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
    -- only for benchmarking purposes */
 static const bool bUseCudaLaunchKernel =
     (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == NULL);
-
-/* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
-static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
-static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
-static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
-
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
 static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t *dinfo)
@@ -350,9 +345,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
 
-    /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener;
-
     /* Don't launch the non-local kernel if there is no work to do.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
@@ -438,7 +430,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]) || always_prune,
+                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]),
                                     nb->dev_info);
 
     /* Kernel launch config:
@@ -734,170 +726,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         t->nb_d2h[iloc].closeTimingRegion(stream);
     }
-}
-
-/*! \brief Count pruning kernel time if either kernel has been triggered
- *
- *  We do the accounting for either of the two pruning kernel flavors:
- *   - 1st pass prune: ran during the current step (prior to the force kernel);
- *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
- *
- * Note that the resetting of cu_timers_t::didPrune and cu_timers_t::didRollingPrune should happen
- * after calling this function.
- *
- * \param[in] timers      structs with CUDA timer objects
- * \param[inout] timings  GPU task timing data
- * \param[in] iloc        interaction locality
- */
-static void countPruneKernelTime(cu_timers_t               *timers,
-                                 gmx_wallclock_gpu_nbnxn_t *timings,
-                                 const int                  iloc)
-{
-    // We might have not done any pruning (e.g. if we skipped with empty domains).
-    if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
-    {
-        return;
-    }
-
-    if (timers->didPrune[iloc])
-    {
-        timings->pruneTime.c++;
-        timings->pruneTime.t += timers->prune_k[iloc].getLastRangeTime();
-    }
-    if (timers->didRollingPrune[iloc])
-    {
-        timings->dynamicPruneTime.c++;
-        timings->dynamicPruneTime.t += timers->rollingPrune_k[iloc].getLastRangeTime();
-    }
-}
-
-/*! \brief Count pruning kernel time if either kernel has been triggered */
-static void nbnxn_gpu_reduce_staged_outputs(nb_staging   nbst,
-                                            int          iLocality,
-                                            bool         reduceEnergies,
-                                            bool         reduceFshift,
-                                            real        *e_lj,
-                                            real        *e_el,
-                                            rvec        *fshift)
-{
-    /* turn energy calculation always on/off (for debugging/testing only) */
-    reduceEnergies = (reduceEnergies || always_ener) && !never_ener;
-
-    /* add up energies and shift forces (only once at local F wait) */
-    if (LOCAL_I(iLocality))
-    {
-        if (reduceEnergies)
-        {
-            *e_lj += *nbst.e_lj;
-            *e_el += *nbst.e_el;
-        }
-
-        if (reduceFshift)
-        {
-            for (int i = 0; i < SHIFTS; i++)
-            {
-                fshift[i][0] += nbst.fshift[i].x;
-                fshift[i][1] += nbst.fshift[i].y;
-                fshift[i][2] += nbst.fshift[i].z;
-            }
-        }
-    }
-}
-
-/*! \brief Do the per-step timing accounting of the nonbonded tasks. */
-static void nbnxn_gpu_accumulate_timings(struct gmx_wallclock_gpu_nbnxn_t *timings,
-                                         cu_timers_t                      *timers,
-                                         const cu_plist_t                 *plist,
-                                         int                               atomLocality,
-                                         bool                              didEnergyKernels,
-                                         bool                              doTiming)
-{
-    /* timing data accumulation */
-    if (!doTiming)
-    {
-        return;
-    }
-
-    /* determine interaction locality from atom locality */
-    int iLocality = gpuAtomToInteractionLocality(atomLocality);
-
-    /* turn energy calculation always on/off (for debugging/testing only) */
-    didEnergyKernels = (didEnergyKernels || always_ener) && !never_ener;
-
-    /* only increase counter once (at local F wait) */
-    if (LOCAL_I(iLocality))
-    {
-        timings->nb_c++;
-        timings->ktime[plist->haveFreshList ? 1 : 0][didEnergyKernels ? 1 : 0].c += 1;
-    }
-
-    /* kernel timings */
-    timings->ktime[plist->haveFreshList ? 1 : 0][didEnergyKernels ? 1 : 0].t +=
-        timers->nb_k[iLocality].getLastRangeTime();
-
-    /* X/q H2D and F D2H timings */
-    timings->nb_h2d_t += timers->nb_h2d[iLocality].getLastRangeTime();
-    timings->nb_d2h_t += timers->nb_d2h[iLocality].getLastRangeTime();
-
-    /* Count the pruning kernel times for both cases:1st pass (at search step)
-       and rolling pruning (if called at the previous step).
-       We do the accounting here as this is the only sync point where we
-       know (without checking or additional sync-ing) that prune tasks in
-       in the current stream have completed (having just blocking-waited
-       for the force D2H). */
-    countPruneKernelTime(timers, timings, iLocality);
-
-    /* only count atdat and pair-list H2D at pair-search step */
-    if (timers->didPairlistH2D[iLocality])
-    {
-        /* atdat transfer timing (add only once, at local F wait) */
-        if (LOCAL_A(atomLocality))
-        {
-            timings->pl_h2d_c++;
-            timings->pl_h2d_t += timers->atdat.getLastRangeTime();
-        }
-
-        timings->pl_h2d_t += timers->pl_h2d[iLocality].getLastRangeTime();
-
-        /* Clear the timing flag for the next step */
-        timers->didPairlistH2D[iLocality] = false;
-    }
-
-
-}
-
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
-                            int flags, int aloc,
-                            real *e_lj, real *e_el, rvec *fshift)
-{
-    /* determine interaction locality from atom locality */
-    int iLocality = gpuAtomToInteractionLocality(aloc);
-
-    /* Launch wait/update timers & counters and do reduction into staging buffers
-       BUT skip it when during the non-local phase there was actually no work to do.
-       This is consistent with nbnxn_gpu_launch_kernel.
-
-       NOTE: if timing with multiple GPUs (streams) becomes possible, the
-       counters could end up being inconsistent due to not being incremented
-       on some of the nodes! */
-    if (!canSkipWork(nb, iLocality))
-    {
-        cudaError_t stat = cudaStreamSynchronize(nb->stream[iLocality]);
-        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
-
-        bool calcEner   = flags & GMX_FORCE_ENERGY;
-        bool calcFshift = flags & GMX_FORCE_VIRIAL;
-
-        nbnxn_gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, calcEner, nb->bDoTime);
-
-        nbnxn_gpu_reduce_staged_outputs(nb->nbst, iLocality, calcEner, calcFshift, e_lj, e_el, fshift);
-    }
-
-    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
-    nb->timers->didPrune[iLocality] = nb->timers->didRollingPrune[iLocality] = false;
-
-    /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
-    nb->plist[iLocality]->haveFreshList = false;
 }
 
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
