@@ -837,8 +837,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
-    rvec          *pmeGpuForces                = as_rvec_array(fr->forceBufferIntermediate->data());
-    constexpr bool pmeGpuAccumulateInputForces = false;
+    rvec *pmeGpuForces = as_rvec_array(fr->forceBufferIntermediate->data());
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -952,7 +951,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (pmeRunMode == PmeRunMode::GPU)
             {
                 pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-                pme_gpu_launch_gather(fr->pmedata, wcycle, pmeGpuForces, !pmeGpuAccumulateInputForces);
+                pme_gpu_launch_gather(fr->pmedata, wcycle, pmeGpuForces, PmeGatherInputHandling::Overwrite);
             }
         }
     }
@@ -1074,7 +1073,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         // PME GPU - intermediate CPU work in mixed mode
         // TODO - try moving this below till after do_force_lowlevel() / special forces?
         pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
-        pme_gpu_launch_gather(fr->pmedata, wcycle, pmeGpuForces, !pmeGpuAccumulateInputForces);
+        pme_gpu_launch_gather(fr->pmedata, wcycle, pmeGpuForces, PmeGatherInputHandling::Overwrite);
     }
 
     /* Communicate coordinates and sum dipole if necessary +

@@ -74,6 +74,13 @@ enum PmeRunMode
     Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
 };
 
+//! PME gathering input forces treatment
+enum class PmeGatherInputHandling
+{
+    Overwrite,
+    ReduceWith,
+};
+
 #if GMX_GPU == GMX_GPU_CUDA
 
 struct pme_gpu_cuda_t;
