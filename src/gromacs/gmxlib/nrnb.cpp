@@ -189,7 +189,11 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 4fd",              110 },
     { "Virtual Site 4fdn",             254 },
     { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 }
+    { "Mixed Generalized Born stuff",   10 },
+    { "CMAP",                         1700 }, // Estimate!
+    { "Urey-Bradley",                  183 },
+    { "Cross-Bond-Bond",               163 },
+    { "Cross-Bond-Angle",              163 }
 };
 
 static void pr_two(FILE *out, int c, int i)

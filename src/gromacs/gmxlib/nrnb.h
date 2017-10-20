@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,7 +116,8 @@ enum
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
     eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
     eNR_VSITE4FDN,            eNR_VSITEN,               eNR_GB,
-    eNR_CMAP,
+    eNR_CMAP,                 eNR_UREY_BRADLEY,         eNR_CROSS_BOND_BOND,
+    eNR_CROSS_BOND_ANGLE,
     eNRNB
 };
 
