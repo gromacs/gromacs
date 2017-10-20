@@ -299,7 +299,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
                            gmx_wallcycle_t gmx_unused       wcycle,
                            rvec                            *forces,
-                           bool                             overwriteForces)
+                           PmeGatherInputHandling           forceTreatment)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -312,7 +312,7 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces), overwriteForces, reinterpret_cast<float *>(fftgrid));
+    pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces), forceTreatment, reinterpret_cast<float *>(fftgrid));
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }

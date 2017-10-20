@@ -381,7 +381,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             break;
 
         case CodePath::CUDA:
-            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), !forceReductionWithInput, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), inputTreatment, reinterpret_cast<float *>(fftgrid));
             break;
 
         default:

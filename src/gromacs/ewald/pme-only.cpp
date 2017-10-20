@@ -626,11 +626,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             const bool boxChanged = true;
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
-            constexpr bool pmeGpuAccumulateInputForces = false;
             pme_gpu_prepare_step(pme, boxChanged, box, wcycle, pmeFlags);
             pme_gpu_launch_spread(pme, pme_pp->x, wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, pme_pp->f, !pmeGpuAccumulateInputForces);
+            pme_gpu_launch_gather(pme, wcycle, pme_pp->f, PmeGatherInputHandling::Overwrite);
             pme_gpu_wait_for_gpu(pme, wcycle, vir_q, &energy_q);
         }
         else
