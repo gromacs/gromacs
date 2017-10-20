@@ -48,8 +48,8 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -116,7 +116,6 @@ enum evdwCu {
 typedef struct cu_plist     cu_plist_t;
 typedef struct cu_atomdata  cu_atomdata_t;
 typedef struct cu_nbparam   cu_nbparam_t;
-typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
 /*! \endcond */
 
@@ -229,24 +228,9 @@ struct cu_plist
 };
 
 /** \internal
- * \brief CUDA timers used for timing GPU kernels and H2D/D2H transfers.
- *
- * The two-sized arrays hold the local and non-local values and should always
- * be indexed with eintLocal/eintNonlocal.
+ * \brief Typedef of actual timer type.
  */
-struct cu_timers
-{
-    GpuRegionTimer atdat;              /**< timer for atom data transfer (every PS step)            */
-    GpuRegionTimer nb_h2d[2];          /**< timer for x/q H2D transfers (l/nl, every step)          */
-    GpuRegionTimer nb_d2h[2];          /**< timer for f D2H transfer (l/nl, every step)             */
-    GpuRegionTimer pl_h2d[2];          /**< timer for pair-list H2D transfers (l/nl, every PS step) */
-    bool           didPairlistH2D[2];  /**< true when a pair-list transfer has been done at this step */
-    GpuRegionTimer nb_k[2];            /**< timer for non-bonded kernels (l/nl, every step)         */
-    GpuRegionTimer prune_k[2];         /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
-    bool           didPrune[2];        /**< true when we timed pruning and the timings need to be accounted for */
-    GpuRegionTimer rollingPrune_k[2];  /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
-    bool           didRollingPrune[2]; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
-};
+typedef struct nbnxn_gpu_timers_t cu_timers_t;
 
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
