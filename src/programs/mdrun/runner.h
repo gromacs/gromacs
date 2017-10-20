@@ -80,6 +80,114 @@ namespace gmx
  * without needing to re-initialize these components (as currently
  * happens always for the master rank, and differently for the spawned
  * ranks with thread-MPI).
+ *
+ * Interaction diagram for mdrun preparation phase:
+ *
+ * \msc
+ *     Mdrunner,
+ *     Options,
+ *     MpiRuntime,
+ *     MultiSim,
+ *     MpiEnv,
+ *     Hardware,
+ *     TaskStrategy,
+ *     Inputrec,
+ *     Heuristics,
+ *     TmpiSetup,
+ *     DutySetup,
+ *     DomDec,
+ *     TaskAssignment,
+ *     NbModule,
+ *     PmeModule,
+ *     Integrator;
+ *
+ *     Options box Options [ label="commandline and environment variables" ],
+ *     MpiRuntime box MpiRuntime [ label="different for Tmpi" ],
+ *     MultiSim box MultiSim [ label="trivial for Tmpi" ],
+ *     Hardware box Hardware [ label="detected on each node" ],
+ *     TaskStrategy box TaskStrategy [ label="are NB or PME on GPUs" ],
+ *     TmpiSetup box TmpiSetup [ label="currently\nget_\nnthreads_\nmpi()" ],
+ *     DutySetup box DutySetup [ label="rank NB and/or PME duty" ],
+ *     DomDec box DomDec [ label="Also MPMD PME" ],
+ *     TaskAssignment box TaskAssignment [ label="responsibility for its node" ];
+ *
+ *     MpiRuntime => MpiEnv [ label="sets up" ];
+ *     Mdrunner => Options [ label="parse\nuser input" ];
+ *     Options => MultiSim [ label="sets up" ];
+ *     MpiEnv => MultiSim [ label="sets up" ];
+ *     Mdrunner => Hardware [ label="detect hardware" ];
+ *     Mdrunner => Inputrec [ label="read from .tpr" ];
+ *     Options => TaskStrategy [ label="gives manual control of" ];
+ *     MultiSim => TaskStrategy [ label="influences" ];
+ *     Hardware => TaskStrategy [ label="determines default behaviour of" ];
+ *     Options => TmpiSetup [ label="gives manual control of" ];
+ *     Hardware => TmpiSetup [ label="determines default behaviour of" ];
+ *     TaskStrategy => TmpiSetup [ label="determines default behaviour of" ];
+ *     Heuristics => TmpiSetup [ label="determines\ndefault\nbehaviour of" ];
+ *     Inputrec => TmpiSetup [ label="influences" ];
+ *     TmpiSetup => MpiEnv [ label="sets up" ];
+ *     --- [ label="thread-MPI now behaves the same as real MPI" ];
+ *     Options => DomDec [ label="gives manual control of" ];
+ *     MpiEnv => DomDec [ label="context for" ];
+ *     DomDec => MpiEnv [ label="continues to fill" ];
+ *     Options => DutySetup [ label="gives manual control of" ];
+ *     DomDec => DutySetup [ label="handles default duty assignment" ];
+ *     Options => TaskAssignment [ label="gives manual control of" ];
+ *     Hardware => TaskAssignment [ label="determines default behaviour of" ];
+ *     TaskStrategy => TaskAssignment [ label="determines" ];
+ *     DutySetup => TaskAssignment [ label="determines" ];
+ *     Options => NbModule [ label="gives manual control of" ];
+ *     Hardware => NbModule [ label="chooses default buffer size" ];
+ *     TaskAssignment => NbModule [ label="gives device\nIDs to" ];
+ *     TaskAssignment => PmeModule [ label="gives device\nIDs to" ];
+ *     DomDec => Integrator [ label="used by" ];
+ *     NbModule => Integrator [ label="used by" ];
+ *     PmeModule => Integrator [ label="used by" ];
+ *
+ * \endmsc
+ */
+/*   
+ *
+ *
+ *     runner,
+ *     module [ URL="\ref gmx::TrajectoryAnalysisModule" ],
+ *     data [ label="analysis data", URL="\ref module_analysisdata" ];
+ *
+ *     runner box module [ label="caller owns runner and module objects" ];
+ *     module => data [ label="create (in constructor)" ];
+ *     runner => module [ label="initOptions()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::initOptions()" ];
+ *     runner => runner [ label="parse user input" ];
+ *     runner => module [ label="optionsFinished()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::optionsFinished()" ];
+ *     runner => runner [ label="initialize topology\nand selections" ];
+ *     runner => module [ label="initAnalysis()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::initAnalysis()" ];
+ *     module => data [ label="initialize" ];
+ *     runner => runner [ label="read frame 0" ];
+ *     runner => module [ label="initAfterFirstFrame()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::initAfterFirstFrame()" ];
+ *     --- [ label="loop over frames starts" ];
+ *     runner => runner [ label="initialize frame 0" ];
+ *     runner => module [ label="analyzeFrame(0)",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::analyzeFrame()" ];
+ *     module => data [ label="add data",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     module => data [ label="finishFrame()",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
+ *     runner => data [ label="finishFrameSerial()",
+ *                      URL="\ref gmx::AnalysisData::finishFrameSerial()" ];
+ *     runner => runner [ label="read and initialize frame 1" ];
+ *     runner => module [ label="analyzeFrame(1)",
+ *                         URL="\ref gmx::TrajectoryAnalysisModule::analyzeFrame()" ];
+ *     ...;
+ *     --- [ label="loop over frames ends" ];
+ *     runner => module [ label="finishAnalysis()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::finishAnalysis()" ];
+ *     module => data [ label="post-process data" ];
+ *     runner => module [ label="writeOutput()",
+ *                        URL="\ref gmx::TrajectoryAnalysisModule::writeOutput()" ];
+ * \endmsc
  */
 class Mdrunner
 {
