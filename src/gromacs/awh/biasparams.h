@@ -106,6 +106,24 @@ class BiasParams
         }
 
         /*! \brief
+         * Returns the initial histogram size.
+         */
+        double histSizeInitial() const
+        {
+            return histSizeInitial_;
+        }
+
+        /*! \brief
+         * Sets the initial histogram size.
+         *
+         * \param[in] histSizeInitial  The new value for the initial histogram size.
+         */
+        void setHistSizeInitial(double histSizeInitial)
+        {
+            histSizeInitial_ = histSizeInitial;
+        }
+
+        /*! \brief
          * Returns the the radius that needs to be sampled around a point before it is considered covered.
          */
         const awh_ivec &coverRadius() const
@@ -146,8 +164,8 @@ class BiasParams
         const int     numSharedUpdate;            /**< The number of (multi-)simulations sharing the bias update */
         const double  updateWeight;               /**< The probability weight accumulated for each update. */
         const double  localWeightScaling;         /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
-        const double  histSizeInitial;            /**< Initial reference weight histogram size. */
     private:
+        double        histSizeInitial_;           /**< Initial reference weight histogram size. */
         awh_ivec      coverRadius_;               /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
     public:
         const bool    convolveForce;              /**< True if we convolve the force, false means use MC between umbrellas. */

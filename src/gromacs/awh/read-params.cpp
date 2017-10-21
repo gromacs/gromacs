@@ -194,6 +194,30 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
                       prefix, dimParams->origin, prefix, dimParams->end, EPULLGEOM(epullgDIHEDRAL));
         }
     }
+    if (bComment)
+    {
+        CTYPE("The number of subintervals to partition the coordinate interval into");
+    }
+    sprintf(opt, "%s-ninterval", prefix);
+    ITYPE(opt, dimParams->numInterval, 1);
+    if (dimParams->numInterval > 1)
+    {
+    }
+    if (dimParams->numInterval <= 0)
+    {
+        gmx_fatal(FARGS, "%s (%d) needs to a positive number", opt, dimParams->numInterval);
+    }
+    if (bComment)
+    {
+        CTYPE("Overlap of the coordinate subintervals used when partitioning the interval");
+    }
+    sprintf(opt, "%s-interval-overlap", prefix);
+    RTYPE(opt, dimParams->intervalOverlap, 1.);
+    if (dimParams->intervalOverlap < 0 || dimParams->intervalOverlap > 1)
+    {
+        gmx_fatal(FARGS, "%s (%g) only takes values in the range of 0 to 1",
+                  opt, dimParams->intervalOverlap);
+    }
 
     if (bComment)
     {
@@ -220,6 +244,34 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
  */
 static void checkInputConsistencyAwhBias(const AwhBiasParams *awhBiasParams, warninp_t wi)
 {
+    char warningmsg[STRLEN];
+
+    /* Settings for partitioning the AWH domain */
+    for (int d = 0; d < awhBiasParams->ndim; d++)
+    {
+        if (awhBiasParams->dimParams[d].numInterval > 1)
+        {
+            if (awhBiasParams->bShare)
+            {
+                gmx_fatal(FARGS, "Partitioning the AWH dimension %d into %d intervals is not compatible "
+                          "with having sharing simulations since all intervals need to be identical.",
+                          d + 1, awhBiasParams->dimParams[d].numInterval);
+            }
+            else if (awhBiasParams->dimParams[d].intervalOverlap == 1)
+            {
+                sprintf(warningmsg, "Splitting the interval of independent simulations "
+                        "with an overlap of 1 has no effect. "
+                        "Perhaps you forgot to set the interval overlap in the mdp file?" );
+                warning(wi, warningmsg);
+            }
+        }
+        else if ((awhBiasParams->dimParams[d].numInterval == 1) && (awhBiasParams->dimParams[d].intervalOverlap < 1))
+        {
+            gmx_fatal(FARGS, "With a single AWH subinterval the AWH overlap can only equal 1. "
+                      "Perhaps you forgot to set the number of AWH subintervals in the mdp file?");
+        }
+    }
+
     /* Covering diameter and sharing warning. */
     for (int d = 0; d < awhBiasParams->ndim; d++)
     {

@@ -229,7 +229,7 @@ Awh::Awh(FILE              *fplog,
 
         /* Construct the bias, will be moved into biasCoupledToSystem */
         std::unique_ptr<Bias> biasPtr =
-            std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t));
+            std::unique_ptr<Bias>(new Bias(fplog, cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t));
 
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
     }

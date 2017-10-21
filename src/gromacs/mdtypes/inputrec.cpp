@@ -664,6 +664,8 @@ static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParam
     PR("diffusion", awhDimParams->diffusion);
     PR("start", awhDimParams->origin);
     PR("end", awhDimParams->end);
+    PI("ninterval", awhDimParams->numInterval);
+    PR("interval-overlap", awhDimParams->intervalOverlap);
     PR("cover-diameter", awhDimParams->coverDiameter);
 }
 
@@ -1151,6 +1153,8 @@ static void cmp_awhDimParams(FILE *fp, const gmx::AwhDimParams *dimp1, const gmx
     cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
+    cmp_int(fp, "inputrec->awhParams->bias?->dim->ninterval", dimIndex, dimp1->numInterval, dimp2->numInterval);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->interval_overlap", dimIndex, dimp1->intervalOverlap, dimp2->intervalOverlap, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex, dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter, dimp2->coverDiameter, ftol, abstol);
 }

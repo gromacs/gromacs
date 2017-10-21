@@ -218,8 +218,6 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, cr)),
     updateWeight(numSamplesUpdateFreeEnergy*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
-    // Estimate and initialize histSizeInitial, depends on the grid.
-    histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
@@ -235,6 +233,9 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
         double spacing         = gridAxis[d].spacing();
         coverRadius_[d]        = spacing > 0 ?  static_cast<int>(std::round(coverRadiusInNm/spacing)) : 0;
     }
+
+    /* Estimate and initialize histSizeInitial. The estimation depends on the grid. */
+    histSizeInitial_ = getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep);
 }
 
 } // namespace gmx

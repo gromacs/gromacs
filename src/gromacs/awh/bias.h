@@ -133,6 +133,7 @@ class Bias
         /*! \brief
          * Constructor.
          *
+         * \param[in,out] fplog              Log file.
          * \param[in] cr                     Struct for communication.
          * \param[in] biasIndexInCollection  Index of the bias in collection.
          * \param[in] awhParams              AWH parameters.
@@ -142,7 +143,8 @@ class Bias
          * \param[in] mdTimeStep             The MD time step.
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing
          */
-        Bias(const t_commrec               *cr,
+        Bias(FILE                          *fplog,
+             const t_commrec               *cr,
              int                            biasIndexInCollection,
              const AwhParams               &awhParams,
              const AwhBiasParams           &awhBiasParams,

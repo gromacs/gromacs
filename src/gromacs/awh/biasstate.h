@@ -142,6 +142,18 @@ class BiasState
         void updateHistory(AwhBiasHistory *biasHistory,
                            const Grid     &grid) const;
 
+        /*! \brief
+         * Partition the sampling domain.
+         *
+         * \param[in] grid       The grid setup.
+         * \param[in] pointMin   Minimum boundary point index.
+         * \param[in] pointMax   Maximum boundary point index.
+         * \returns the new histogram size.
+         */
+        double partitionDomain(const Grid &grid,
+                               int         pointMin,
+                               int         pointMax);
+
     private:
         /*! \brief
          * Convolves the PMF and sets the initial free energy to its convolution.

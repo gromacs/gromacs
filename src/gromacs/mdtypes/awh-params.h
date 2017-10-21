@@ -93,6 +93,8 @@ struct AwhDimParams
     double diffusion;        /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
     double origin;           /**< Start value of the interval. */
     double end;              /**< End value of the interval. */
+    int    numInterval;      /**< The number of subintervals to split the interval into along this dimension. */
+    double intervalOverlap;  /**< Subinterval overlap (as a fractional value in [0, 1]). */
     double coordValueInit;   /**< The initial coordinate value. */
     double coverDiameter;    /**< The diameter that needs to be sampled around a point before it is considered covered. */
 };

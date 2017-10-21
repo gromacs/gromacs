@@ -1253,6 +1253,54 @@ void BiasState::broadcast(const t_commrec *cr)
     gmx_bcast(points_.size()*sizeof(PointState), points_.data(), cr);
 }
 
+
+/* Partition sampling domain. */
+double BiasState::partitionDomain(const Grid &grid,
+                                  int         pointMin,
+                                  int         pointMax)
+{
+    awh_ivec    domainIMinDim, domainIMaxDim, numPointsDim;
+
+    /* Convert linear index to multidimensional index */
+    for (int d = 0; d < grid.ndim(); d++)
+    {
+        numPointsDim[d] = grid.axis(d).numPoints();
+    }
+    linearArrayIndexToMultidim(pointMin, grid.ndim(), numPointsDim, domainIMinDim);
+    linearArrayIndexToMultidim(pointMax, grid.ndim(), numPointsDim, domainIMaxDim);
+
+    double targetSum = 0.;
+    for (size_t m = 0; m < points_.size(); m++)
+    {
+        PointState &pointState = points_[m];
+        for (int d = 0; d < grid.ndim(); d++)
+        {
+            int index_d = grid.point(m).index[d];
+            if (index_d < domainIMinDim[d] ||
+                index_d > domainIMaxDim[d])
+            {
+                pointState.setTargetToZero();
+            }
+        }
+        targetSum += pointState.target();
+    }
+
+    /* Renormalize target distribution to 1.
+     * NOTE: The total histogram size in state still needs to be scaled down.
+     */
+    GMX_RELEASE_ASSERT(targetSum > 0, "Each partition should have a non-zero target distribution");
+    double invTargetSum = 1/targetSum;
+    for (auto &pointState : points_)
+    {
+        pointState.scaleTarget(invTargetSum);
+    }
+
+    /* Multiply the histogram size by targetSum */
+    histogramSize_.setHistSize(targetSum*histogramSize_.histSize(), 1.0);
+
+    return histogramSize_.histSize();
+}
+
 /* Convolves the PMF and sets the initial free energy to its convolution. */
 void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                             const Grid                    &grid,

@@ -2056,6 +2056,22 @@ AWH adaptive biasing
    (0.0) \[nm\]/\[rad\]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
 
+.. mdp:: awh1-dim1-ninterval
+
+   (1)
+   Number of subintervals to partition the sampling interval
+   \[:mdp:`awh1-dim1-start`, :mdp:`awh1-dim1-end`\] into. This will limit sampling
+   to the subinterval that the initial coordinate value falls into. The intended use
+   of this option is for multisimulation runs where the initial configurations
+   are prepared such that each subinterval gets sampled by at least 1 simulation.
+
+.. mdp:: awh1-dim1-interval-overlap
+
+   (1.0)
+   Overlap between subintervals when :mdp:`awh1-dim1-ninterval` > 1. The overlap
+   takes values in \[0,1\], where 0 means that all subintervals are disjoint and 1
+   means that all subintervals are identical.
+
 .. mdp:: awh1-dim1-cover-diameter
 
    (0.0)) \[nm\]/\[rad\]

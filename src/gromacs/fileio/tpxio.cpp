@@ -685,6 +685,8 @@ static void do_awhBias(t_fileio *fio, gmx::AwhBiasParams *awhBiasParams, gmx_boo
         gmx_fio_do_int(fio, dimParams->pullCoordIndex);
         gmx_fio_do_double(fio, dimParams->period);
         gmx_fio_do_double(fio, dimParams->diffusion);
+        gmx_fio_do_int(fio, dimParams->numInterval);
+        gmx_fio_do_double(fio, dimParams->intervalOverlap);
         gmx_fio_do_double(fio, dimParams->coordValueInit);
         gmx_fio_do_double(fio, dimParams->coverDiameter);
     }
