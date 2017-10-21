@@ -44,6 +44,7 @@
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -57,12 +58,10 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/textreader.h"
 
-#include "coulombintegrals/coulombintegrals.h"
 #include "nmsimplex.h"
 #include "poldata.h"
 #include "qgen_resp.h"
 #include "regression.h"
-
 
 namespace alexandria
 {

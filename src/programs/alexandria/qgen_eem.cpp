@@ -42,6 +42,7 @@
 
 #include <cctype>
 
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -52,7 +53,6 @@
 
 #include "molprop.h"
 #include "poldata.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {

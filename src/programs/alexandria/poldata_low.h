@@ -45,13 +45,13 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
 #include "plistwrapper.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
