@@ -179,7 +179,7 @@ do_md_trajectory_writing(FILE               *fplog,
              * at the last step.
              */
             fprintf(stderr, "\nWriting final coordinates.\n");
-            if (fr->bMolPBC)
+            if (fr->bMolPBC && !ir->bPeriodicMols)
             {
                 /* Make molecules whole only for confout writing */
                 do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
