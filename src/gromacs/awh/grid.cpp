@@ -727,9 +727,9 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
 
 /* Maps each point in the grid to a point in the data grid. */
 void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
-                       const double* const *data, int ndata,
-                       const char *datafilename, const Grid &grid,
-                       const char *correctFormatMessage)
+                       const double* const *data, int numDatapoints,
+                       const std::string &datafilename, const Grid &grid,
+                       const std::string &correctFormatMessage)
 {
     /* Transform the data into a grid in order to map each grid point to a data point
        using the grid functions. */
@@ -737,8 +737,8 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
 
     /* Count the number of points for each dimension. Each dimension
        has its own stride. */
-    int              stride         = 1;
-    int              npointsCounted = 0;
+    int              stride           = 1;
+    int              numPointsCounted = 0;
     std::vector<int> numPoints(grid.ndim());
     for (int d = grid.ndim() - 1; d >= 0; d--)
     {
@@ -750,28 +750,29 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
             numPointsInDim++;
             pointIndex       += stride;
         }
-        while ((pointIndex < ndata) && (!gmx_within_tol(firstValue, data[d][pointIndex], GMX_REAL_EPS)));
+        while (pointIndex < numDatapoints &&
+               !gmx_within_tol(firstValue, data[d][pointIndex], GMX_REAL_EPS));
 
         /* The stride in dimension dimension d - 1 equals the number of points
            dimension d. */
         stride = numPointsInDim;
 
-        npointsCounted = (npointsCounted == 0) ? numPointsInDim : npointsCounted*numPointsInDim;
+        numPointsCounted = (numPointsCounted == 0) ? numPointsInDim : numPointsCounted*numPointsInDim;
 
-        numPoints[d]   = numPointsInDim;
+        numPoints[d]     = numPointsInDim;
     }
 
-    if (npointsCounted != ndata)
+    if (numPointsCounted != numDatapoints)
     {
         gmx_fatal(FARGS, "Could not extract data properly from %s. Wrong data format?"
                   "\n\n%s",
-                  datafilename, correctFormatMessage);
+                  datafilename.c_str(), correctFormatMessage.c_str());
     }
 
     /* The data grid has the data that was read and the properties of the AWH grid */
     for (int d = 0; d < grid.ndim(); d++)
     {
-        axis_.push_back(GridAxis(data[d][0], data[d][ndata - 1],
+        axis_.push_back(GridAxis(data[d][0], data[d][numDatapoints - 1],
                                  grid.axis(d).period(), numPoints[d]));
     }
 
@@ -787,7 +788,7 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
             gmx_fatal(FARGS, "%s does not contain data for all coordinate values. "
                       "Make sure your input data covers the whole sampling domain "
                       "and is correctly formatted. \n\n%s",
-                      datafilename, correctFormatMessage);
+                      datafilename.c_str(), correctFormatMessage.c_str());
         }
         (*gridpointToDatapoint)[m] = getNearestIndexInGrid(grid.point(m).coordValue, axis_);
     }

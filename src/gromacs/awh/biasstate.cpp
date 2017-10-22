@@ -341,7 +341,9 @@ int BiasState::checkHistograms(const Grid  &grid,
                                   "If you are not certain about your settings you might want to increase your pull force constant or "
                                   "modify your sampling region.\n",
                                   biasIndex + 1, t, pointValueString.c_str(), maxHistogramRatio);
-            fprintf(fplog, "%s", wrap_lines(warningMessage.c_str(), c_linewidth, c_indent, FALSE));
+            gmx::TextLineWrapper wrapper;
+            wrapper.settings().setLineLength(c_linewidth);
+            fprintf(fplog, "%s", wrapper.wrapToString(warningMessage).c_str());
 
             numWarnings++;
         }
@@ -1322,54 +1324,53 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
                                              int                           biasIndex,
                                              std::vector<PointState>      *pointState)
 {
-    char          filename[STRLEN];
-
     /* Read the PMF and target distribution.
        From the PMF, the convolved PMF, or the reference value free energy, can be calculated
        base on the force constant. The free energy and target together determine the bias.
      */
+    std::string filename;
     if (numBias == 1)
     {
-        sprintf(filename, "awh-init.xvg");
+        filename = "awh-init.xvg";
     }
     else
     {
-        sprintf(filename, "awh%d-init.xvg", biasIndex + 1);
+        filename = formatString("awh%d-init.xvg", biasIndex + 1);
     }
 
-    char buf[STRLEN];
-    sprintf(buf,
-            "%s is expected in the following format. "
-            "The first ndim column(s) should contain the coordinate values for each point, "
-            " each column containing values of one dimension (in ascending order). "
-            "For a multidimensional coordinate, points should be listed "
-            "in the order obtained by traversing lower dimensions first. "
-            "E.g. for two-dimensional grid of size nxn: "
-            "(1, 1), (1, 2),..., (1, n), (2, 1), (2, 2), ..., , (n, n - 1), (n, n). "
-            "Column ndim +  1 should contain the PMF value for each coordinate value. "
-            "The target distribution values should be in column ndim + 2  or column ndim + 5. "
-            "Make sure there input file ends with a new line but has no trailing new lines.",
-            filename);
-    char correctFormatMessage[STRLEN];
-    sprintf(correctFormatMessage, "%s", wrap_lines(buf, c_linewidth, c_indent, FALSE));
+    std::string correctFormatMessage =
+        formatString("%s is expected in the following format. "
+                     "The first ndim column(s) should contain the coordinate values for each point, "
+                     " each column containing values of one dimension (in ascending order). "
+                     "For a multidimensional coordinate, points should be listed "
+                     "in the order obtained by traversing lower dimensions first. "
+                     "E.g. for two-dimensional grid of size nxn: "
+                     "(1, 1), (1, 2),..., (1, n), (2, 1), (2, 2), ..., , (n, n - 1), (n, n). "
+                     "Column ndim +  1 should contain the PMF value for each coordinate value. "
+                     "The target distribution values should be in column ndim + 2  or column ndim + 5. "
+                     "Make sure there input file ends with a new line but has no trailing new lines.",
+                     filename.c_str());
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setLineLength(c_linewidth);
+    correctFormatMessage = wrapper.wrapToString(correctFormatMessage).c_str();
 
     double  **data;
-    int       nrows, ncols;
-    nrows = read_xvg(filename, &data, &ncols);
+    int       numColumns;
+    int       numRows = read_xvg(filename.c_str(), &data, &numColumns);
 
     /* Check basic data properties here. Grid takes care of more complicated things. */
 
-    if (nrows <= 0)
+    if (numRows <= 0)
     {
-        gmx_fatal(FARGS, "%s is empty!.\n\n%s", filename, correctFormatMessage);
+        gmx_fatal(FARGS, "%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
     }
 
     /* Less than 2 points is not useful for PMF or target. */
-    if (nrows <  2)
+    if (numRows <  2)
     {
         gmx_fatal(FARGS, "%s contains too few data points (%d)."
                   "The minimum number of points is 2.",
-                  filename, nrows);
+                  filename.c_str(), numRows);
     }
 
     /* Make sure there are enough columns of data.
@@ -1379,32 +1380,32 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
        is how AWH output is written (x, y, z being other AWH variables). For this format,
        trailing columns are ignored.
      */
-    int colindex_target;
-    int ncols_min    = dimParams.size() + 2;
-    int colindex_pmf = dimParams.size();
-    if (ncols == ncols_min)
+    int columnIndexTarget;
+    int numColumnsMin  = dimParams.size() + 2;
+    int columnIndexPmf = dimParams.size();
+    if (numColumns == numColumnsMin)
     {
-        colindex_target = colindex_pmf + 1;
+        columnIndexTarget = columnIndexPmf + 1;
     }
     else
     {
-        colindex_target = colindex_pmf + 4;
+        columnIndexTarget = columnIndexPmf + 4;
     }
 
-    if (ncols < ncols_min)
+    if (numColumns < numColumnsMin)
     {
         gmx_fatal(FARGS, "The number of columns in %s (%d) should be at least %d."
                   "\n\n%s",
-                  filename, correctFormatMessage);
+                  filename.c_str(), correctFormatMessage.c_str());
     }
 
     /* read_xvg can give trailing zero data rows for trailing new lines in the input. We allow 1 zero row,
        since this could be real data. But multiple trailing zero rows cannot correspond to valid data. */
-    int nZeroRows = findTrailingZeroRows(data, nrows, ncols);
-    if (nZeroRows > 1)
+    int numZeroRows = findTrailingZeroRows(data, numRows, numColumns);
+    if (numZeroRows > 1)
     {
         gmx_fatal(FARGS, "Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
-                  nZeroRows, filename);
+                  numZeroRows, filename.c_str());
     }
 
     /* Convert from user units to internal units before sending the data of to grid. */
@@ -1424,38 +1425,36 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     /* Get a data point for each AWH grid point so that they all get data. */
     std::vector<int> grid2data_index;
     grid2data_index.resize(grid.numPoints());
-    mapGridToDatagrid(&grid2data_index, data, nrows, filename, grid, correctFormatMessage);
+    mapGridToDatagrid(&grid2data_index, data, numRows, filename, grid, correctFormatMessage);
 
     /* Extract the data for each grid point */
-    bool target_is_zero = true;
+    bool targetIsZero = true;
     for (size_t m = 0; m < pointState->size(); m++)
     {
-        double target;
-
-        (*pointState)[m].setLogPmfsum(-data[colindex_pmf][grid2data_index[m]]);
-        target = data[colindex_target][grid2data_index[m]];
+        (*pointState)[m].setLogPmfsum(-data[columnIndexPmf][grid2data_index[m]]);
+        double target = data[columnIndexTarget][grid2data_index[m]];
 
         /* Check if the values are allowed. */
         if (target < 0)
         {
             gmx_fatal(FARGS, "Target distribution weight at point %d (%g) in %s is negative.",
-                      m, target, filename);
+                      m, target, filename.c_str());
         }
         if (target > 0)
         {
-            target_is_zero = false;
+            targetIsZero = false;
         }
         (*pointState)[m].setTargetConstantWeight(target);
     }
 
-    if (target_is_zero)
+    if (targetIsZero)
     {
         gmx_fatal(FARGS, "The target weights given in column %d in %s are all 0",
-                  filename, colindex_target);
+                  filename.c_str(), columnIndexTarget);
     }
 
     /* Free the arrays. */
-    for (int m = 0; m < ncols; m++)
+    for (int m = 0; m < numColumns; m++)
     {
         sfree(data[m]);
     }
