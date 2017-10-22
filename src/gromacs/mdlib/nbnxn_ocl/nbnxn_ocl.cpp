@@ -76,6 +76,7 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu.h"
 #include "gromacs/mdlib/nbnxn_gpu_common.h"
+#include "gromacs/mdlib/nbnxn_gpu_common_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -104,6 +105,10 @@ static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 //@}
+
+#if 0
+template void nbnxn_gpu_wait_for_gpu<gmx_nbnxn_ocl_t>(gmx_nbnxn_ocl_t *, int, int, real *, real *, rvec *);
+#endif
 
 /* Uncomment this define to enable kernel debugging */
 //#define DEBUG_OCL

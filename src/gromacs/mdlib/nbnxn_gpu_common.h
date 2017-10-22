@@ -33,9 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements common routines for different NBNXN GPU implementations
+ * \brief Common functions for the different NBNXN GPU implementations.
  *
- * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_mdlib
  */
 
@@ -59,21 +58,9 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "nbnxn_gpu.h"
+#include "nbnxn_gpu_common_utils.h"
+#include "nbnxn_gpu_types.h"
 
-
-/*! \brief An early return condition for empty NB GPU workloads
- *
- * This is currently used for non-local kernels/transfers only.
- * Skipping the local kernel is more complicated, since the
- * local part of the force array also depends on the non-local kernel.
- * The skip of the local kernel is taken care of separately.
- */
-static inline bool canSkipWork(const gmx_nbnxn_gpu_t *nb, int iloc)
-{
-    assert(nb && nb->plist[iloc]);
-    return (iloc == eintNonlocal) && (nb->plist[iloc]->nsci == 0);
-}
 
 /*! \brief Check that atom locality values are valid for the GPU module.
  *
@@ -271,8 +258,9 @@ static void nbnxn_gpu_reduce_staged_outputs(const StagingData     &nbst,
     }
 }
 
-template <typename NbnxnGpu>
-void nbnxn_gpu_wait_for_gpu(NbnxnGpu *nb,
+//template <typename NbnxnGpu>
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
+                            //NbnxnGpu *nb,
                             int       flags,
                             int       aloc,
                             real     *e_lj,
@@ -311,12 +299,5 @@ void nbnxn_gpu_wait_for_gpu(NbnxnGpu *nb,
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
     nb->plist[iLocality]->haveFreshList = false;
 }
-
-#if GMX_GPU == GMX_GPU_CUDA
-template void nbnxn_gpu_wait_for_gpu<gmx_nbnxn_cuda_t>(gmx_nbnxn_cuda_t *, int, int, real *, real *, rvec *);
-#endif
-#if GMX_GPU == GMX_GPU_OPENCL
-template void nbnxn_gpu_wait_for_gpu<gmx_nbnxn_ocl_t>(gmx_nbnxn_ocl_t *, int, int, real *, real *, rvec *);
-#endif
 
 #endif

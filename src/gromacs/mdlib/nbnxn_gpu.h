@@ -132,9 +132,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
-template <typename NbnxnGpu>
+//template <typename NbnxnGpu>
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(NbnxnGpu gmx_unused        *nb,
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused        *nb,
+                            //NbnxnGpu        gmx_unused *nb,
                             int             gmx_unused  flags,
                             int             gmx_unused  aloc,
                             real            gmx_unused *e_lj,
