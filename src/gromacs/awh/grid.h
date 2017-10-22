@@ -55,6 +55,7 @@
 #define GMX_AWH_GRID_H
 
 #include <memory>
+#include <string>
 
 #include "dimparams.h" /* This is needed for awh_dvec */
 
@@ -348,13 +349,17 @@ bool getNextPointInSubgrid(const Grid &grid,
  *
  * \param[out] gridpointToDatapoint  Array mapping each grid point to a data point index.
  * \param[in] data                   2D array in format ndim x ndatapoints with data grid point values.
- * \param[in] ndatapoints            Number of data points.
+ * \param[in] numDatapoints          Number of data points.
  * \param[in] datafilename           The data filename.
  * \param[in] grid                   The grid.
  * \param[in] correctFormatMessage   String to include in error message if extracting the data fails.
  */
-void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint, const double* const *data, int ndatapoints,
-                       const char *datafilename, const Grid &grid, const char *correctFormatMessage);
+void mapGridToDatagrid(std::vector<int>    *gridpointToDatapoint,
+                       const double* const *data,
+                       int                  numDatapoints,
+                       const std::string    datafilename,
+                       const Grid          &grid,
+                       const std::string    correctFormatMessage);
 
 /*! \brief
  * Get the deviation along one dimension from the given value to a point in the grid.
