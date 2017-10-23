@@ -37,11 +37,6 @@
 #ifndef slater_integrals_h
 #define slater_integrals_h
 
-#ifdef HAVE_LIBCLN
-#define SLATER_MAX 6
-#else
-#define SLATER_MAX 3
-#endif
 
 double Coulomb_SS(double r,int i,int j,double xi,double xj);
 

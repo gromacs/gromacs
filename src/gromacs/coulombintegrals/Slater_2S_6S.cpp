@@ -32,10 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+ 
 #include "gmxpre.h"
-
 #include "slater_low.h"
 
+#if HAVE_LIBCLN
 cl_R Slater_2S_6S(cl_R r, cl_R xi, cl_R xj)
 {
     cl_R S, rxi, rxj;
@@ -293,3 +294,5 @@ cl_R Slater_6S_2S(cl_R r, cl_R xi, cl_R xj)
 {
     return Slater_2S_6S(r, xj, xi);
 }
+
+#endif

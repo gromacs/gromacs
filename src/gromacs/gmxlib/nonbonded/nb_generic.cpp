@@ -35,11 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gmxpre.h"
-
 #include "nb_generic.h"
-
 #include <cmath>
 
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -74,10 +73,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          izeta, jzeta, zeff;
+    real          izeta, jzeta, zeff, irow, jrow;
     real          c, c2, c6, c5, c12, c6grid, cexp1, cexp2; //br is removed
     real *        charge;
     real *        zeta;
+    real *        row;
     real *        shiftvec;
     real *        vdwparam, *vdwgridparam;
     int *         type;
@@ -196,6 +196,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     charge              = mdatoms->chargeA;
     zeta                = mdatoms->zetaA;
+    row                 = mdatoms->row;
     type                = mdatoms->typeA;
     facel               = fr->epsfac;
     shiftvec            = fr->shift_vec[0];
@@ -218,6 +219,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         iz               = shZ + x[ii3+2];
         iq               = facel*charge[ii];
         izeta            = zeta[ii];
+        irow             = row[ii];
         nti              = nvdwparam*ntype*type[ii];
         vctot            = 0;
         vvdwtot          = 0;
@@ -261,8 +263,9 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /* Coulomb interaction. ielec==0 means no interaction */
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
-	              qq            = iq*charge[jnr];
+                qq            = iq*charge[jnr];
                 jzeta         = zeta[jnr];
+                jrow          = row[jnr];
                 switch (ielec)
                 {
                     case GMX_NBKERNEL_ELEC_NONE:
@@ -274,34 +277,39 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         {
                             velec        = qq*rinv;
                             felec        = velec*rinvsq;
-
-                            if (debug)
-                            {
-                                fprintf(debug, "Zeta: local ai = %d aj = %d izeta = %.3f jzeta = %.3f zeff = %.3f r = %.3f qq = %.3f velec = %.3f, felec = %.3f\n", ii, jnr, izeta, jzeta, zeff, r, qq, velec, felec);
-                            }
                         }
                         else
                         {
-                            if (izeta == 0)
+                            if (irow == 0 && jrow == 0)
                             {
-                                zeff = jzeta;
+                                if (izeta == 0)
+                                {
+                                    zeff = jzeta;
+                                }
+                                else if (jzeta == 0)
+                                {
+                                    zeff = izeta;
+                                } 
+                                else
+                                {
+                                    zeff = izeta*jzeta/sqrt(gmx::square(izeta)+gmx::square(jzeta));
+                                }
+                                r           = rsq*rinv;
+                                velec       = qq*erf(r*zeff)*rinv;
+                                felec       = (qq*rinv)*(erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv));
                             }
-                            else if (jzeta == 0)
-                            {
-                                zeff = izeta;
-                            } 
                             else
                             {
-                                zeff = izeta*jzeta/sqrt(gmx::square(izeta)+gmx::square(jzeta));
-                            }
-                            r           = rsq*rinv;
-                            velec       = qq*erf(r*zeff)*rinv;
-                            felec       = (qq*rinv)*(erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv));
-
-                            if (debug)
-                            {
-                              fprintf(debug, "Zeta: local ai = %d aj = %d izeta = %.3f jzeta = %.3f zeff = %.3f r = %.3f qq = %.3f velec = %.3f, felec = %.3f erf = %.3f\n",
-                                      ii, jnr, izeta, jzeta, zeff, r, qq, velec, felec, erf(r*zeff));
+                                if (irow < 0 || jrow < 0)
+                                {
+                                    gmx_fatal(FARGS, "Row cannot be negative in Slater wave function.\n");
+                                }
+                                else
+                                {
+                                    r     = rsq*rinv;
+                                    velec = qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
+                                    felec = (qq*rinv)*DCoulomb_SS(r, irow, jrow, izeta, jzeta);
+                                }
                             }
                         }
                         /* The shift for the Coulomb potential is stored in

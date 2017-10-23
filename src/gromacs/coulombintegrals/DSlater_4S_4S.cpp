@@ -36,6 +36,7 @@
 
 #include "slater_low.h"
 
+#if HAVE_LIBCLN
 cl_R DSlater_4S_4S(cl_R r, cl_R xi, cl_R xj)
 {
     cl_R S, rxi, rxj;
@@ -1123,3 +1124,4 @@ cl_R DSlater_4S_4S(cl_R r, cl_R xi, cl_R xj)
     }
     return S;
 }
+#endif

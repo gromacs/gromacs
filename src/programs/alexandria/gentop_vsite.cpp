@@ -823,7 +823,7 @@ void GentopVsites::gen_Vsites(const Poldata             &pd,
                     newatoms->atom[iat + j].qB            = 0;
                     newatoms->atom[iat + j].zetaA         = 0;
                     newatoms->atom[iat + j].zetaB         = 0;
-                    newatoms->atom[iat + j].atomnumber    = 0;
+                    newatoms->atom[iat + j].atomnumber    = atoms->atom[i].atomnumber;
                     sprintf(buf, "%sL%d", get_atomtype_name(atoms->atom[i].type, atype), j);
                     newname[iat + j] = strdup(buf);
                     auto vsite                            = add_atomtype(atype, symtab, vsite_atom, buf, &vs, 0, 0, 0, 0, 0, 0, 0);

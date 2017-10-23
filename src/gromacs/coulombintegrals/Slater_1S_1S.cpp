@@ -32,11 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+ 
 #include "gmxpre.h"
-
 #include "slater_low.h"
 
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
 cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
 {
     cl_R S, rxi, rxj;
@@ -54,7 +54,7 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
         }
         else
         {
-            S = (1LL/r)*((-24LL + 24LL*exp(2LL*rxi) - 33LL*rxi - 18LL*Power(rxi, 2LL) - 4LL*Power(rxi, 3LL))/
+            S = (1LL/r)*((-24LL + 24LL*exp(2LL*rxi) - 33LL*rxi - 18LL*Pow(rxi, 2LL) - 4LL*Pow(rxi, 3LL))/
 
                          (24LL*exp(2LL*rxi))
 
@@ -66,23 +66,23 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
     {
         if (r == 0LL)
         {
-            S = (xi*xj*(Power(xi, 2LL) + 3LL*xi*xj + Power(xj, 2LL)))/Power(xi + xj, 3LL)
+            S = (xi*xj*(Pow(xi, 2LL) + 3LL*xi*xj + Pow(xj, 2LL)))/Pow(xi + xj, 3LL)
 
             ;
         }
         else
         {
-            S = (1LL/r)*((exp(2LL*(rxi + rxj))*Power(Power(rxi, 2LL) - Power(rxj, 2LL), 3LL) +
+            S = (1LL/r)*((exp(2LL*(rxi + rxj))*Pow(Pow(rxi, 2LL) - Pow(rxj, 2LL), 3LL) +
 
-                          exp(2LL*rxj)*Power(rxj, 4LL)*
+                          exp(2LL*rxj)*Pow(rxj, 4LL)*
 
-                          (-3LL*Power(rxi, 2LL) - Power(rxi, 3LL) + Power(rxj, 2LL) + rxi*Power(rxj, 2LL)) -
+                          (-3LL*Pow(rxi, 2LL) - Pow(rxi, 3LL) + Pow(rxj, 2LL) + rxi*Pow(rxj, 2LL)) -
 
-                          exp(2LL*rxi)*Power(rxi, 4LL)*
+                          exp(2LL*rxi)*Pow(rxi, 4LL)*
 
-                          (Power(rxi, 2LL)*(1LL + rxj) - Power(rxj, 2LL)*(3LL + rxj)))/
+                          (Pow(rxi, 2LL)*(1LL + rxj) - Pow(rxj, 2LL)*(3LL + rxj)))/
 
-                         (exp(2LL*(rxi + rxj))*Power(rxi - rxj, 3LL)*Power(rxi + rxj, 3LL))
+                         (exp(2LL*(rxi + rxj))*Pow(rxi - rxj, 3LL)*Pow(rxi + rxj, 3LL))
 
                          );
         }
@@ -109,7 +109,7 @@ double Slater_1S_1S(double r, double xi, double xj)
         }
         else
         {
-            S = (1/r)*((-24 + 24*exp(2*rxi) - 33*rxi - 18*power(rxi, 2) - 4*power(rxi, 3))/
+            S = (1/r)*((-24 + 24*exp(2*rxi) - 33*rxi - 18*pow(rxi, 2) - 4*pow(rxi, 3))/
 
                          (24*exp(2*rxi))
 
@@ -121,23 +121,23 @@ double Slater_1S_1S(double r, double xi, double xj)
     {
         if (r == 0)
         {
-            S = (xi*xj*(power(xi, 2) + 3*xi*xj + power(xj, 2)))/power(xi + xj, 3)
+            S = (xi*xj*(pow(xi, 2) + 3*xi*xj + pow(xj, 2)))/pow(xi + xj, 3)
 
             ;
         }
         else
         {
-            S = (1/r)*((exp(2*(rxi + rxj))*power(power(rxi, 2) - power(rxj, 2), 3) +
+            S = (1/r)*((exp(2*(rxi + rxj))*pow(pow(rxi, 2) - pow(rxj, 2), 3) +
 
-                          exp(2*rxj)*power(rxj, 4)*
+                          exp(2*rxj)*pow(rxj, 4)*
 
-                          (-3*power(rxi, 2) - power(rxi, 3) + power(rxj, 2) + rxi*power(rxj, 2)) -
+                          (-3*pow(rxi, 2) - pow(rxi, 3) + pow(rxj, 2) + rxi*pow(rxj, 2)) -
 
-                          exp(2*rxi)*power(rxi, 4)*
+                          exp(2*rxi)*pow(rxi, 4)*
 
-                          (power(rxi, 2)*(1 + rxj) - power(rxj, 2)*(3 + rxj)))/
+                          (pow(rxi, 2)*(1 + rxj) - pow(rxj, 2)*(3 + rxj)))/
 
-                         (exp(2*(rxi + rxj))*power(rxi - rxj, 3)*power(rxi + rxj, 3))
+                         (exp(2*(rxi + rxj))*pow(rxi - rxj, 3)*pow(rxi + rxj, 3))
 
                          );
         }

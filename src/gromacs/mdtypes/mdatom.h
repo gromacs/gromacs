@@ -132,6 +132,9 @@ typedef struct t_mdatoms {
     real                   *zetaA;
     //! 1/Width of the Gaussian diffuse charge in the B state (unit 1/nm)
     real                   *zetaB;
+    //! Atom row in periodic table
+    real                   *row;
+    
 } t_mdatoms;
 
 #endif

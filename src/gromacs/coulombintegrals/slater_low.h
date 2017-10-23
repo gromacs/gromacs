@@ -41,7 +41,7 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
 /* slater_integrals.cpp (c) 2008 Paul J. van Maaren and David van der Spoel */
 #include <cln/cln.h>
 
@@ -231,7 +231,6 @@ extern cl_R DNuclear_5S(cl_R r, cl_R xi);
 extern cl_R DNuclear_6S(cl_R r, cl_R xi);
 
 #else
-
 #include <cmath>
 
 extern double Slater_1S_1S(double r, double xi, double xj);
@@ -244,67 +243,13 @@ extern double Slater_1S_3S(double r, double xi, double xj);
 
 extern double Slater_3S_1S(double r, double xi, double xj);
 
-extern double Slater_1S_4S(double r, double xi, double xj);
-
-extern double Slater_4S_1S(double r, double xi, double xj);
-
-extern double Slater_1S_5S(double r, double xi, double xj);
-
-extern double Slater_5S_1S(double r, double xi, double xj);
-
-extern double Slater_1S_6S(double r, double xi, double xj);
-
-extern double Slater_6S_1S(double r, double xi, double xj);
-
 extern double Slater_2S_2S(double r, double xi, double xj);
 
 extern double Slater_2S_3S(double r, double xi, double xj);
 
 extern double Slater_3S_2S(double r, double xi, double xj);
 
-extern double Slater_2S_4S(double r, double xi, double xj);
-
-extern double Slater_4S_2S(double r, double xi, double xj);
-
-extern double Slater_2S_5S(double r, double xi, double xj);
-
-extern double Slater_5S_2S(double r, double xi, double xj);
-
-extern double Slater_2S_6S(double r, double xi, double xj);
-
-extern double Slater_6S_2S(double r, double xi, double xj);
-
 extern double Slater_3S_3S(double r, double xi, double xj);
-
-extern double Slater_3S_4S(double r, double xi, double xj);
-
-extern double Slater_4S_3S(double r, double xi, double xj);
-
-extern double Slater_3S_5S(double r, double xi, double xj);
-
-extern double Slater_5S_3S(double r, double xi, double xj);
-
-extern double Slater_3S_6S(double r, double xi, double xj);
-
-extern double Slater_6S_3S(double r, double xi, double xj);
-
-extern double Slater_4S_4S(double r, double xi, double xj);
-
-extern double Slater_4S_5S(double r, double xi, double xj);
-
-extern double Slater_5S_4S(double r, double xi, double xj);
-
-extern double Slater_4S_6S(double r, double xi, double xj);
-
-extern double Slater_6S_4S(double r, double xi, double xj);
-
-extern double Slater_5S_5S(double r, double xi, double xj);
-
-extern double Slater_5S_6S(double r, double xi, double xj);
-
-extern double Slater_6S_5S(double r, double xi, double xj);
-
-extern double Slater_6S_6S(double r, double xi, double xj);
 
 extern double DSlater_1S_1S(double r, double xi, double xj);
 
@@ -316,67 +261,13 @@ extern double DSlater_1S_3S(double r, double xi, double xj);
 
 extern double DSlater_3S_1S(double r, double xi, double xj);
 
-extern double DSlater_1S_4S(double r, double xi, double xj);
-
-extern double DSlater_4S_1S(double r, double xi, double xj);
-
-extern double DSlater_1S_5S(double r, double xi, double xj);
-
-extern double DSlater_5S_1S(double r, double xi, double xj);
-
-extern double DSlater_1S_6S(double r, double xi, double xj);
-
-extern double DSlater_6S_1S(double r, double xi, double xj);
-
 extern double DSlater_2S_2S(double r, double xi, double xj);
 
 extern double DSlater_2S_3S(double r, double xi, double xj);
 
 extern double DSlater_3S_2S(double r, double xi, double xj);
 
-extern double DSlater_2S_4S(double r, double xi, double xj);
-
-extern double DSlater_4S_2S(double r, double xi, double xj);
-
-extern double DSlater_2S_5S(double r, double xi, double xj);
-
-extern double DSlater_5S_2S(double r, double xi, double xj);
-
-extern double DSlater_2S_6S(double r, double xi, double xj);
-
-extern double DSlater_6S_2S(double r, double xi, double xj);
-
 extern double DSlater_3S_3S(double r, double xi, double xj);
-
-extern double DSlater_3S_4S(double r, double xi, double xj);
-
-extern double DSlater_4S_3S(double r, double xi, double xj);
-
-extern double DSlater_3S_5S(double r, double xi, double xj);
-
-extern double DSlater_5S_3S(double r, double xi, double xj);
-
-extern double DSlater_3S_6S(double r, double xi, double xj);
-
-extern double DSlater_6S_3S(double r, double xi, double xj);
-
-extern double DSlater_4S_4S(double r, double xi, double xj);
-
-extern double DSlater_4S_5S(double r, double xi, double xj);
-
-extern double DSlater_5S_4S(double r, double xi, double xj);
-
-extern double DSlater_4S_6S(double r, double xi, double xj);
-
-extern double DSlater_6S_4S(double r, double xi, double xj);
-
-extern double DSlater_5S_5S(double r, double xi, double xj);
-
-extern double DSlater_5S_6S(double r, double xi, double xj);
-
-extern double DSlater_6S_5S(double r, double xi, double xj);
-
-extern double DSlater_6S_6S(double r, double xi, double xj);
 
 extern double Nuclear_1S(double r, double xi);
 
@@ -384,24 +275,11 @@ extern double Nuclear_2S(double r, double xi);
 
 extern double Nuclear_3S(double r, double xi);
 
-extern double Nuclear_4S(double r, double xi);
-
-extern double Nuclear_5S(double r, double xi);
-
-extern double Nuclear_6S(double r, double xi);
-
 extern double DNuclear_1S(double r, double xi);
 
 extern double DNuclear_2S(double r, double xi);
 
 extern double DNuclear_3S(double r, double xi);
 
-extern double DNuclear_4S(double r, double xi);
-
-extern double DNuclear_5S(double r, double xi);
-
-extern double DNuclear_6S(double r, double xi);
-
 #endif
-
 #endif

@@ -471,12 +471,12 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        if (nullptr == tabfn && iChargeDistributionModel == eqdAXps)
+        /*if (nullptr == tabfn && iChargeDistributionModel == eqdAXps)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
                       "model without a potential table. Please supply a table file.",
                       getEemtypeName(iChargeDistributionModel));
-        }
+                      }*/
         imm = mymol.GenerateCharges(pd,
                                     mdlog,
                                     aps,

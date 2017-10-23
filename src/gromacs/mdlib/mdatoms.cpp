@@ -49,9 +49,46 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #define ALMOST_ZERO 1e-30
+
+static real getAtomRow(int atomnumber)
+{
+    if (atomnumber == 1 || atomnumber == 2)
+    {
+        return 1;
+    }
+    else if (atomnumber >= 3 && atomnumber <= 10)
+    {
+        return 2;
+    }
+    else if (atomnumber >= 11 && atomnumber <= 18)
+    {
+        return 3;
+    }
+    else if (atomnumber >= 19 && atomnumber <= 36)
+    {
+        return 4;
+    }
+    else if (atomnumber >= 37 && atomnumber <= 54)
+    {
+        return 5;
+    }
+    else if (atomnumber >= 55 && atomnumber <= 86)
+    {
+        return 6;
+    }
+    else if (atomnumber >= 87 && atomnumber <= 118)
+    {
+        return 7;
+    }
+    else
+    {
+        gmx_fatal(FARGS, "Atom number does not exist in periodic table %d.\n", atomnumber);
+    }
+}
 
 t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
@@ -152,6 +189,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         srenew(md->invMassPerDim, md->nalloc);
         srenew(md->chargeA, md->nalloc);
         srenew(md->zetaA, md->nalloc);
+        srenew(md->row, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
@@ -329,7 +367,8 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     md->invMassPerDim[i][d] = 1.0/mA;
                 }
             }
-
+            
+            md->row[i]          = getAtomRow(atom.atomnumber);
             md->chargeA[i]      = atom.q;
             md->zetaA[i]        = atom.zetaA;
             md->typeA[i]        = atom.type;

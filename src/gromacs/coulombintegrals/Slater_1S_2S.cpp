@@ -36,7 +36,7 @@
 
 #include "slater_low.h"
 
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
 cl_R Slater_1S_2S(cl_R r, cl_R xi, cl_R xj)
 {
     cl_R S, rxi, rxj;
@@ -129,9 +129,9 @@ double Slater_1S_2S(double r, double xi, double xj)
         }
         else
         {
-            S = (1/r)*((-240 + 240*exp(2*rxi) - 375*rxi - 270*power(rxi, 2) - 115*power(rxi, 3) -
+            S = (1/r)*((-240 + 240*exp(2*rxi) - 375*rxi - 270*pow(rxi, 2) - 115*pow(rxi, 3) -
 
-                          30*power(rxi, 4) - 4*power(rxi, 5))/(240*exp(2*rxi))
+                          30*pow(rxi, 4) - 4*pow(rxi, 5))/(240*exp(2*rxi))
 
                          );
         }
@@ -141,37 +141,37 @@ double Slater_1S_2S(double r, double xi, double xj)
     {
         if (r == 0)
         {
-            S = (xi*xj*(power(xi, 4) + 5*power(xi, 3)*xj + 10*power(xi, 2)*power(xj, 2) +
+            S = (xi*xj*(pow(xi, 4) + 5*pow(xi, 3)*xj + 10*pow(xi, 2)*pow(xj, 2) +
 
-                        10*xi*power(xj, 3) + 2*power(xj, 4)))/(2*power(xi + xj, 5))
+                        10*xi*pow(xj, 3) + 2*pow(xj, 4)))/(2*pow(xi + xj, 5))
 
             ;
         }
         else
         {
-            S = (1/r)*((6*exp(2*(rxi + rxj))*power(power(rxi, 2) - power(rxj, 2), 5) +
+            S = (1/r)*((6*exp(2*(rxi + rxj))*pow(pow(rxi, 2) - pow(rxj, 2), 5) +
 
-                          6*exp(2*rxj)*power(rxj, 6)*
+                          6*exp(2*rxj)*pow(rxj, 6)*
 
-                          (-4*power(rxi, 4) - power(rxi, 5) - 5*power(rxi, 2)*power(rxj, 2) +
+                          (-4*pow(rxi, 4) - pow(rxi, 5) - 5*pow(rxi, 2)*pow(rxj, 2) +
 
-                           power(rxj, 4) + rxi*power(rxj, 4)) -
+                           pow(rxj, 4) + rxi*pow(rxj, 4)) -
 
-                          exp(2*rxi)*power(rxi, 4)*
+                          exp(2*rxi)*pow(rxi, 4)*
 
-                          (power(rxi, 6)*(6 + 9*rxj + 6*power(rxj, 2) + 2*power(rxj, 3)) -
+                          (pow(rxi, 6)*(6 + 9*rxj + 6*pow(rxj, 2) + 2*pow(rxj, 3)) -
 
-                           3*power(rxi, 4)*power(rxj, 2)*
+                           3*pow(rxi, 4)*pow(rxj, 2)*
 
-                           (10 + 15*rxj + 10*power(rxj, 2) + 2*power(rxj, 3)) +
+                           (10 + 15*rxj + 10*pow(rxj, 2) + 2*pow(rxj, 3)) +
 
-                           3*power(rxi, 2)*power(rxj, 4)*
+                           3*pow(rxi, 2)*pow(rxj, 4)*
 
-                           (20 + 33*rxj + 14*power(rxj, 2) + 2*power(rxj, 3)) -
+                           (20 + 33*rxj + 14*pow(rxj, 2) + 2*pow(rxj, 3)) -
 
-                           power(rxj, 6)*(84 + 63*rxj + 18*power(rxj, 2) + 2*power(rxj, 3))))/
+                           pow(rxj, 6)*(84 + 63*rxj + 18*pow(rxj, 2) + 2*pow(rxj, 3))))/
 
-                         (6*exp(2*(rxi + rxj))*power(rxi - rxj, 5)*power(rxi + rxj, 5))
+                         (6*exp(2*(rxi + rxj))*pow(rxi - rxj, 5)*pow(rxi + rxj, 5))
 
                          );
         }

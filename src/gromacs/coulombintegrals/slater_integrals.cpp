@@ -42,7 +42,9 @@
 #include "coulombintegrals.h"
 #include "slater_low.h"
 
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
+
+#define SLATER_MAX_CLN 6
 
 cl_R Nuclear_1S(cl_R r, cl_R xi)
 {
@@ -238,7 +240,7 @@ cl_R DNuclear_6S(cl_R r, cl_R xi)
 
 typedef cl_R t_slater_SS_func (cl_R r, cl_R xi, cl_R xj);
 typedef cl_R t_slater_NS_func (cl_R r, cl_R xi);
-t_slater_SS_func (*Slater_SS[SLATER_MAX][SLATER_MAX]) = {
+t_slater_SS_func (*Slater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
     {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S ,  Slater_1S_4S,  Slater_1S_5S,  Slater_1S_6S},
     {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S ,  Slater_2S_4S,  Slater_2S_5S,  Slater_2S_6S},
     {  Slater_3S_1S,  Slater_3S_2S,  Slater_3S_3S ,  Slater_3S_4S,  Slater_3S_5S,  Slater_3S_6S},
@@ -247,7 +249,7 @@ t_slater_SS_func (*Slater_SS[SLATER_MAX][SLATER_MAX]) = {
     {  Slater_6S_1S,  Slater_6S_2S,  Slater_6S_3S,   Slater_6S_4S,  Slater_6S_5S,  Slater_6S_6S}
 };
 
-t_slater_SS_func (*DSlater_SS[SLATER_MAX][SLATER_MAX]) = {
+t_slater_SS_func (*DSlater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
     {  DSlater_1S_1S,  DSlater_1S_2S,  DSlater_1S_3S ,  DSlater_1S_4S,  DSlater_1S_5S,  DSlater_1S_6S},
     {  DSlater_2S_1S,  DSlater_2S_2S,  DSlater_2S_3S ,  DSlater_2S_4S,  DSlater_2S_5S,  DSlater_2S_6S},
     {  DSlater_3S_1S,  DSlater_3S_2S,  DSlater_3S_3S ,  DSlater_3S_4S,  DSlater_3S_5S,  DSlater_3S_6S},
@@ -256,11 +258,11 @@ t_slater_SS_func (*DSlater_SS[SLATER_MAX][SLATER_MAX]) = {
     {  DSlater_6S_1S,  DSlater_6S_2S,  DSlater_6S_3S,   DSlater_6S_4S,  DSlater_6S_5S,  DSlater_6S_6S}
 };
 
-t_slater_NS_func (*Slater_NS[SLATER_MAX]) = {
+t_slater_NS_func (*Slater_NS[SLATER_MAX_CLN]) = {
     Nuclear_1S,  Nuclear_2S,  Nuclear_3S ,  Nuclear_4S,  Nuclear_5S,  Nuclear_6S
 };
 
-t_slater_NS_func (*DSlater_NS[SLATER_MAX]) = {
+t_slater_NS_func (*DSlater_NS[SLATER_MAX_CLN]) = {
     DNuclear_1S,  DNuclear_2S,  DNuclear_3S ,  DNuclear_4S,  DNuclear_5S,  DNuclear_6S
 };
 
@@ -279,6 +281,8 @@ static char *my_ftoa(double d)
 #else
 /* NOT HAVE_LIBCLN */
 
+#define SLATER_MAX 3
+
 double Nuclear_1S(double r, double xi)
 {
     double S = 0;
@@ -292,7 +296,7 @@ double Nuclear_1S(double r, double xi)
 double Nuclear_2S(double r, double xi)
 {
     double S = 0;
-    S = 1/r - (6 + 9*r*xi + 6*power(r, 2)*power(xi, 2) + 2*power(r, 3)*power(xi, 3))/
+    S = 1/r - (6 + 9*r*xi + 6*pow(r, 2)*pow(xi, 2) + 2*pow(r, 3)*pow(xi, 3))/
 
         (6*exp(2*r*xi)*r)
 
@@ -304,65 +308,11 @@ double Nuclear_2S(double r, double xi)
 double Nuclear_3S(double r, double xi)
 {
     double S = 0;
-    S = 1/r - (45 + 75*r*xi + 60*power(r, 2)*power(xi, 2) +
+    S = 1/r - (45 + 75*r*xi + 60*pow(r, 2)*pow(xi, 2) +
 
-                 30*power(r, 3)*power(xi, 3) + 10*power(r, 4)*power(xi, 4) +
+                 30*pow(r, 3)*pow(xi, 3) + 10*pow(r, 4)*pow(xi, 4) +
 
-                 2*power(r, 5)*power(xi, 5))/(45*exp(2*r*xi)*r)
-
-    ;
-
-    return S;
-}
-
-double Nuclear_4S(double r, double xi)
-{
-    double S = 0;
-    S = 1/r - (1260 + 2205*r*xi + 1890*power(r, 2)*power(xi, 2) +
-
-                 1050*power(r, 3)*power(xi, 3) + 420*power(r, 4)*power(xi, 4) +
-
-                 126*power(r, 5)*power(xi, 5) + 28*power(r, 6)*power(xi, 6) +
-
-                 4*power(r, 7)*power(xi, 7))/(1260*exp(2*r*xi)*r)
-
-    ;
-
-    return S;
-}
-
-double Nuclear_5S(double r, double xi)
-{
-    double S = 0;
-    S = 1/r - (14175 + 25515*r*xi + 22680*power(r, 2)*power(xi, 2) +
-
-                 13230*power(r, 3)*power(xi, 3) + 5670*power(r, 4)*power(xi, 4) +
-
-                 1890*power(r, 5)*power(xi, 5) + 504*power(r, 6)*power(xi, 6) +
-
-                 108*power(r, 7)*power(xi, 7) + 18*power(r, 8)*power(xi, 8) +
-
-                 2*power(r, 9)*power(xi, 9))/(14175*exp(2*r*xi)*r)
-
-    ;
-
-    return S;
-}
-
-double Nuclear_6S(double r, double xi)
-{
-    double S = 0;
-    S = 1/r - (935550 + 1715175*r*xi + 1559250*power(r, 2)*power(xi, 2) +
-
-                 935550*power(r, 3)*power(xi, 3) + 415800*power(r, 4)*power(xi, 4) +
-
-                 145530*power(r, 5)*power(xi, 5) + 41580*power(r, 6)*power(xi, 6) +
-
-                 9900*power(r, 7)*power(xi, 7) + 1980*power(r, 8)*power(xi, 8) +
-
-                 330*power(r, 9)*power(xi, 9) + 44*power(r, 10)*power(xi, 10) +
-
-                 4*power(r, 11)*power(xi, 11))/(935550*exp(2*r*xi)*r)
+                 2*pow(r, 5)*pow(xi, 5))/(45*exp(2*r*xi)*r)
 
     ;
 
@@ -372,9 +322,9 @@ double Nuclear_6S(double r, double xi)
 double DNuclear_1S(double r, double xi)
 {
     double S = 0;
-    S = power(r, -2) - (1 + 2*r*xi + 2*power(r, 2)*power(xi, 2))/
+    S = pow(r, -2) - (1 + 2*r*xi + 2*pow(r, 2)*pow(xi, 2))/
 
-        (exp(2*r*xi)*power(r, 2))
+        (exp(2*r*xi)*pow(r, 2))
 
     ;
 
@@ -384,11 +334,11 @@ double DNuclear_1S(double r, double xi)
 double DNuclear_2S(double r, double xi)
 {
     double S = 0;
-    S = power(r, -2) - (3 + 6*r*xi + 6*power(r, 2)*power(xi, 2) +
+    S = pow(r, -2) - (3 + 6*r*xi + 6*pow(r, 2)*pow(xi, 2) +
 
-                          4*power(r, 3)*power(xi, 3) + 2*power(r, 4)*power(xi, 4))/
+                          4*pow(r, 3)*pow(xi, 3) + 2*pow(r, 4)*pow(xi, 4))/
 
-        (3*exp(2*r*xi)*power(r, 2))
+        (3*exp(2*r*xi)*pow(r, 2))
 
     ;
 
@@ -398,78 +348,19 @@ double DNuclear_2S(double r, double xi)
 double DNuclear_3S(double r, double xi)
 {
     double S = 0;
-    S = power(r, -2) - (45 + 90*r*xi + 90*power(r, 2)*power(xi, 2) +
+    S = pow(r, -2) - (45 + 90*r*xi + 90*pow(r, 2)*pow(xi, 2) +
 
-                          60*power(r, 3)*power(xi, 3) + 30*power(r, 4)*power(xi, 4) +
+                          60*pow(r, 3)*pow(xi, 3) + 30*pow(r, 4)*pow(xi, 4) +
 
-                          12*power(r, 5)*power(xi, 5) + 4*power(r, 6)*power(xi, 6))/
+                          12*pow(r, 5)*pow(xi, 5) + 4*pow(r, 6)*pow(xi, 6))/
 
-        (45*exp(2*r*xi)*power(r, 2))
-
-    ;
-
-    return S;
-}
-
-double DNuclear_4S(double r, double xi)
-{
-    double S = 0;
-    S = power(r, -2) - (315 + 630*r*xi + 630*power(r, 2)*power(xi, 2) +
-
-                          420*power(r, 3)*power(xi, 3) + 210*power(r, 4)*power(xi, 4) +
-
-                          84*power(r, 5)*power(xi, 5) + 28*power(r, 6)*power(xi, 6) +
-
-                          8*power(r, 7)*power(xi, 7) + 2*power(r, 8)*power(xi, 8))/
-
-        (315*exp(2*r*xi)*power(r, 2))
+        (45*exp(2*r*xi)*pow(r, 2))
 
     ;
 
     return S;
 }
 
-double DNuclear_5S(double r, double xi)
-{
-    double S = 0;
-    S = power(r, -2) - (14175 + 28350*r*xi + 28350*power(r, 2)*power(xi, 2) +
-
-                          18900*power(r, 3)*power(xi, 3) + 9450*power(r, 4)*power(xi, 4) +
-
-                          3780*power(r, 5)*power(xi, 5) + 1260*power(r, 6)*power(xi, 6) +
-
-                          360*power(r, 7)*power(xi, 7) + 90*power(r, 8)*power(xi, 8) +
-
-                          20*power(r, 9)*power(xi, 9) + 4*power(r, 10)*power(xi, 10))/
-
-        (14175*exp(2*r*xi)*power(r, 2))
-
-    ;
-
-    return S;
-}
-
-double DNuclear_6S(double r, double xi)
-{
-    double S = 0;
-    S = power(r, -2) - (467775 + 935550*r*xi + 935550*power(r, 2)*power(xi, 2) +
-
-                          623700*power(r, 3)*power(xi, 3) + 311850*power(r, 4)*power(xi, 4) +
-
-                          124740*power(r, 5)*power(xi, 5) + 41580*power(r, 6)*power(xi, 6) +
-
-                          11880*power(r, 7)*power(xi, 7) + 2970*power(r, 8)*power(xi, 8) +
-
-                          660*power(r, 9)*power(xi, 9) + 132*power(r, 10)*power(xi, 10) +
-
-                          24*power(r, 11)*power(xi, 11) + 4*power(r, 12)*power(xi, 12))/
-
-        (467775*exp(2*r*xi)*power(r, 2))
-
-    ;
-
-    return S;
-}
 
 typedef double t_slater_SS_func (double r, double xi, double xj);
 typedef double t_slater_NS_func (double r, double xi);
@@ -498,10 +389,10 @@ t_slater_NS_func (*DSlater_NS[SLATER_MAX]) = {
 
 extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
 {
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if ((i > SLATER_MAX) || (j > SLATER_MAX))
+    if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
     {
         fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
         exit(1);
@@ -549,14 +440,20 @@ extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
     return double_approx(cS);
     
 #else
-    /* NOT HAVE_LIBCLN */
-    
+    /* NOT HAVE_LIBCLN */    
     double S = 0;
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
-        exit(1);
+        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+    }    
+    if (i > SLATER_MAX)
+    {
+        i = SLATER_MAX;
     }
+    if (j > SLATER_MAX)
+    {
+        j = SLATER_MAX;
+    }    
     if ((i > 0) && (j > 0))
     {
         S = Slater_SS[i-1][j-1](r, xi, xj);
@@ -600,7 +497,7 @@ extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
 
 extern "C" double Nuclear_SS(double r, int i, double xi)
 {
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
     if (xi == 0)
@@ -660,10 +557,10 @@ extern "C" double Nuclear_SS(double r, int i, double xi)
 
 extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 {
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if ((i > SLATER_MAX) || (j > SLATER_MAX))
+    if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
     {
         fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
         exit(1);
@@ -710,12 +607,18 @@ extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     }
     return double_approx(cS);
 #else
-    double S = 0;
-    
+    double S = 0;    
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
-        exit(1);
+        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+    }    
+    if (i > SLATER_MAX)
+    {
+        i = SLATER_MAX;
+    }
+    if (j > SLATER_MAX)
+    {
+        j = SLATER_MAX;
     }
     if ((i > 0) && (j > 0))
     {
@@ -760,10 +663,10 @@ extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 
 extern "C" double DNuclear_SS(double r, int i, double xi)
 {
-#ifdef HAVE_LIBCLN
+#if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if (i > SLATER_MAX)
+    if (i > SLATER_MAX_CLN)
     {
         fprintf(stderr, "Slater-Nuclear integral %d not supported.\n", i);
         exit(1);
@@ -788,12 +691,11 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
     }
 #else
     double S = 0;
-
     if (i > SLATER_MAX)
     {
-        fprintf(stderr, "Slater-Nuclear integral %d not supported.\n", i);
-        exit(1);
-    }
+        fprintf(stderr, "Slater-Nuclear integral %d not supported without the CLN libraray. Thus, it will reduce to the SLATER_MAX\n", i);
+        i = SLATER_MAX;
+    }    
     if (r == 0)
     {
         return 0;
@@ -813,8 +715,8 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
 #endif
 }
 
-#ifdef HAVE_LIBCLN
-cl_R Power(cl_R a, int b)
+#if HAVE_LIBCLN
+cl_R Pow(cl_R a, int b)
 {
     int  minus = 0;
     cl_R cP;
@@ -834,7 +736,7 @@ cl_R Power(cl_R a, int b)
     }
     if ((b % 2) == 0)
     {
-        cP = Power(a*a, b/2);
+        cP = Pow(a*a, b/2);
         if (minus)
         {
             return ONE/cP;
@@ -846,7 +748,7 @@ cl_R Power(cl_R a, int b)
     }
     else if ((b % 2) == 1)
     {
-        cP = a*Power(a*a, b/2);
+        cP = a*Pow(a*a, b/2);
         if (minus)
         {
             return ONE/cP;

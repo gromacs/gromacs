@@ -944,7 +944,7 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atom[j]               = topology_->atoms.atom[i];
             newatoms->atom[j].m             = 0;
             newatoms->atom[j].mB            = 0;
-            newatoms->atom[j].atomnumber    = 0;
+            newatoms->atom[j].atomnumber    = topology_->atoms.atom[i].atomnumber;
             sprintf(buf, "%s_s", atomtype.c_str());
             newname[j]                      = strdup(buf);
             newatoms->atomname[j]           = put_symtab(symtab_, buf);
