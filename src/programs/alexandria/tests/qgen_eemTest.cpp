@@ -130,8 +130,7 @@ class EemTest : public gmx::test::CommandLineTestBase
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
 
-            mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 false, false, edih, false, nullptr);
+            mp_.GenerateTopology(aps_, pd_, lot, model, false, false, edih, false, false, nullptr);
 
             // Needed for GenerateCharges
             real           hfac        = 0;

@@ -121,7 +121,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec               *inputrec   = mdModules.inputrec();
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
-            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, nullptr);
+            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, false, nullptr);
             
             //Needed for GenerateCharges
             real           hfac        = 0;
