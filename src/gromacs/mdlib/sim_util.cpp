@@ -228,10 +228,12 @@ static void pme_gpu_reduce_outputs(ForceWithVirial           *forceWithVirial,
                                    const tensor               vir_Q,
                                    real                       Vlr_q)
 {
+    wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
     GMX_ASSERT(forceWithVirial, "Invalid force pointer");
     forceWithVirial->addVirialContribution(vir_Q);
     enerd->term[F_COUL_RECIP] += Vlr_q;
     sum_forces(as_rvec_array(forceWithVirial->force_.data()), pmeForces);
+    wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
 }
 
 static void calc_virial(int start, int homenr, rvec x[], rvec f[],
@@ -1418,8 +1420,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         real   Vlr_q;
         pme_gpu_wait_for_gpu(fr->pmedata, wcycle, vir_Q, &Vlr_q);
 
-        pme_gpu_reduce_outputs(&forceWithVirial, pmeGpuForces,
-                               enerd, vir_Q, Vlr_q);
+        pme_gpu_reduce_outputs(&forceWithVirial,
+                               *fr->forceBufferIntermediate,
+                               enerd, vir_Q, Vlr_q, wcycle);
     }
 
     if (bUseOrEmulGPU)
