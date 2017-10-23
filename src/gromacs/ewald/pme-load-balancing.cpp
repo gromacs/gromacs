@@ -100,8 +100,19 @@ struct pme_setup_t {
 const int  PMETunePeriod = 50;
 /*! \brief Trigger PME load balancing at more than 5% PME overload */
 const real loadBalanceTriggerFactor = 1.05;
+/*! \brief Scale the grid by a most at factor 1.7.
+ *
+ * This still leaves room for about 4-4.5x decrease in grid spacing while limiting the cases where
+ * large imbalance leads to extreme cutoff scaling for marginal benefits.
+ *
+ * This should help to avoid:
+ *   - large increase in power consumption for little performance gain
+ *   - increasing communication volume
+ *   - limiting DLB
+ */
+const real c_maxSpacingScaling = 1.7;
 /*! \brief In the initial scan, step by grids that are at least a factor 0.8 coarser */
-const real gridScaleFactor = 0.8;
+const real gridpointsScaleFactor = 0.8;
 /*! \brief In the initial scan, try to skip grids with uneven x/y/z spacing,
  * checking if the "efficiency" is more than 5% worse than the previous grid.
  */
@@ -115,12 +126,12 @@ const real maxFluctuationAccepted = 1.02;
 
 /*! \brief Enumeration whose values describe the effect limiting the load balancing */
 enum epmelb {
-    epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimNR
+    epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimMAXSCALING, epmelblimNR
 };
 
 /*! \brief Descriptive strings matching ::epmelb */
 const char *pmelblim_str[epmelblimNR] =
-{ "no", "box size", "domain decompostion", "PME grid restriction" };
+{ "no", "box size", "domain decompostion", "PME grid restriction", "maximum allowed grid scaling" };
 
 struct pme_load_balancing_t {
     gmx_bool     bSepPMERanks;       /**< do we have separate PME ranks? */
@@ -666,6 +677,13 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 }
             }
 
+            if (OK &&
+                pme_lb->setup[pme_lb->cur+1].spacing > c_maxSpacingScaling*pme_lb->setup[0].spacing)
+            {
+                OK               = FALSE;
+                pme_lb->elimited = epmelblimMAXSCALING;
+            }
+
             if (OK && ir->ePBC != epbcNONE)
             {
                 OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlistOuter)
@@ -707,7 +725,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                !(pme_lb->setup[pme_lb->cur].grid[XX]*
                  pme_lb->setup[pme_lb->cur].grid[YY]*
                  pme_lb->setup[pme_lb->cur].grid[ZZ] <
-                 gridsize_start*gridScaleFactor
+                 gridsize_start*gridpointsScaleFactor
                  &&
                  pme_lb->setup[pme_lb->cur].grid_efficiency <
                  pme_lb->setup[pme_lb->cur-1].grid_efficiency*relativeEfficiencyFactor));
