@@ -486,6 +486,7 @@ void MolDip::Read(FILE            *fp,
                                              bPairs,
                                              bDihedral, 
                                              bPolar,
+                                             false,
                                              tabfn);                                             
                 if (bCheckSupport && immOK == imm)
                 {
@@ -619,6 +620,7 @@ void MolDip::Read(FILE            *fp,
                                          false,
                                          bDihedral, 
                                          bPolar,
+                                         false,
                                          tabfn);
 
             if (immOK == imm)

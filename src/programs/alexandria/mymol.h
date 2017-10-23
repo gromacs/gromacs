@@ -269,6 +269,7 @@ class MyMol
                                    bool                      bPairs,
                                    bool                      bDih,
                                    bool                      bAddShells,
+                                   bool                      bBASTAT,
                                    const char               *tabfn);
         /*! \brief
          *  Computes isotropic polarizability at the presence of external

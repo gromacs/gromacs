@@ -648,6 +648,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bPairs,
                                   bool                    bDih,
                                   bool                    bAddShells,
+                                  bool                    bBASTAT,
                                   const char             *tabfn)
 {
     immStatus   imm = immOK;
@@ -738,7 +739,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        imm = updatePlist(pd, plist_, topology_);
+        imm = updatePlist(pd, plist_, topology_, bBASTAT);
     }
     if (immOK == imm)
     {

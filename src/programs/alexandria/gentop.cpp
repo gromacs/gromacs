@@ -63,7 +63,7 @@ static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
     int   i, changed;
     char *ptr, buf[128];
 
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; i < atoms->nr; i++)
     {
         changed = 0;
         strncpy(buf, *(atoms->atomname[i]), sizeof(buf));
@@ -466,6 +466,7 @@ int alex_gentop(int argc, char *argv[])
                                  bPairs, 
                                  bDihedral,
                                  bPolar,
+                                 false,
                                  tabfn);
 
     if (immOK == imm)

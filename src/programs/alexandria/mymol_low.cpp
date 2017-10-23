@@ -332,7 +332,8 @@ real calc_relposition(const Poldata     &pd,
 
 immStatus updatePlist(const Poldata             &pd,
                       std::vector<PlistWrapper> &plist,
-                      t_topology                *top)
+                      t_topology                *top,
+                      bool                       bBASTAT)
 {
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
@@ -368,7 +369,7 @@ immStatus updatePlist(const Poldata             &pd,
                                 b->c[n++] = gmx::doubleFromString(pi->c_str());
                             }
                         }
-                        else
+                        else if (!bBASTAT)
                         {
                             return immNotSupportedBond;
                         }
@@ -406,7 +407,7 @@ immStatus updatePlist(const Poldata             &pd,
                                 }
                             }
                         }
-                        else
+                        else if (!bBASTAT)
                         {
                             return immNotSupportedAngle;
                         }
@@ -449,7 +450,7 @@ immStatus updatePlist(const Poldata             &pd,
                                 }
                             }
                         }
-                        else
+                        else if (!bBASTAT)
                         {
                             return immNotSupportedDihedral;
                         }
