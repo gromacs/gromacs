@@ -6838,6 +6838,36 @@ static tng_function_status tng_molecule_chains_residue_pointers_update
     return(TNG_SUCCESS);
 }
 
+/**
+ * @brief Update atoms->residue pointers (after new memory for
+ * molecule->residues has been allocated).
+ * @param tng_data The trajectory container containing the molecule.
+ * @param mol The molecule that contains the chains that need to be
+ * updated.
+ * @returns TNG_SUCCESS (0) if successful.
+ */
+static tng_function_status tng_molecule_atoms_residue_pointers_update
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t mol)
+{
+    tng_atom_t atom;
+    tng_residue_t residue;
+    int64_t i, j, atom_offset = 0;
+    (void)tng_data;
+
+    for(i = 0; i < mol->n_residues; i++)
+    {
+        residue = &mol->residues[i];
+        for(j = 0; j < residue->n_atoms; j++)
+        {
+            atom = &mol->atoms[j + atom_offset];
+            atom->residue = residue;
+        }
+        atom_offset += residue->n_atoms;
+    }
+    return(TNG_SUCCESS);
+}
+
 tng_function_status DECLSPECDLLEXPORT tng_version_major
                 (const tng_trajectory_t tng_data,
                  int *version)
@@ -7810,6 +7840,7 @@ tng_function_status DECLSPECDLLEXPORT tng_chain_residue_w_id_add
     *residue = &molecule->residues[curr_index + chain->n_residues];
 
     tng_molecule_chains_residue_pointers_update(tng_data, molecule);
+    tng_molecule_atoms_residue_pointers_update(tng_data, molecule);
 
     (*residue)->name = 0;
     tng_residue_name_set(tng_data, *residue, name);
