@@ -228,7 +228,7 @@ AlignedAllocationPolicy::free(void *p)
 
 // === PageAlignedAllocationPolicy
 
-//! Return a page size, from a sysconf query if available, or a default guess (4096 bytes).
+//! Return a page size, from a sysconf/WinAPI query if available, or a default guess (4096 bytes).
 //! \todo Move this function into sysinfo.cpp where other OS-specific code/includes live
 static std::size_t getPageSize()
 {

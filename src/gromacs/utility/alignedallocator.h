@@ -126,7 +126,7 @@ class PageAlignedAllocationPolicy
     public:
         /*! \brief Return the alignment size of memory pages on this system.
          *
-         * Guesses 4096 on Windows, otherwise queries sysconf. */
+         * Queries sysconf/WinAPI, otherwise guesses 4096. */
         static std::size_t
         alignment();
         /*! \brief Allocate memory aligned to alignment() bytes.
