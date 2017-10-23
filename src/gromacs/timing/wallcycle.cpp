@@ -105,7 +105,8 @@ static const char *wcn[ewcNR] =
     "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
     "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
     "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
-    "PME wait for PP", "Wait + Recv. PME F", "Wait PME GPU spread", "Wait PME GPU gather", "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
+    "PME wait for PP", "Wait + Recv. PME F", "Wait PME GPU spread", "Wait PME GPU gather", "Reduce PME GPU F",
+    "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
     "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"

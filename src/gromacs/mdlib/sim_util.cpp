@@ -1394,9 +1394,11 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         real   Vlr_q;
         pme_gpu_wait_for_gpu(fr->pmedata, wcycle, vir_Q, &Vlr_q);
 
+        wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
         pme_gpu_reduce_outputs(&forceWithVirial,
                                *fr->forceBufferIntermediate,
                                enerd, vir_Q, Vlr_q);
+        wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
     }
 
     if (bUseOrEmulGPU)
