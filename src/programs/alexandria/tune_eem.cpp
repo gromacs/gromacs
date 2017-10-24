@@ -712,7 +712,7 @@ void OptEEM::optRun(FILE                   *fp,
 }
 }
 
-int alex_tune_dip(int argc, char *argv[])
+int alex_tune_eem(int argc, char *argv[])
 {
     static const char          *desc[] = {
         "tune_eem read a series of molecules and corresponding experimental",

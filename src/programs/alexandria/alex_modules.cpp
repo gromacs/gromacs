@@ -47,7 +47,7 @@
 
 int alex_gentop(int argc, char *argv[]);
 int alex_tune_fc(int argc, char *argv[]);
-int alex_tune_dip(int argc, char *argv[]);
+int alex_tune_eem(int argc, char *argv[]);
 int alex_tune_pol(int argc, char *argv[]);
 int alex_poldata_test(int argc, char *argv[]);
 int alex_gauss2molprop(int argc, char *argv[]);
@@ -92,8 +92,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize atomic polarizabilities");
     registerModule(manager, &alex_tune_zeta, "tune_zeta",
                    "Optimize the distribution of Gaussian and Slater charges");
-    registerModule(manager, &alex_tune_dip, "tune_dip",
-                   "Optimize electrostatics parameters");
+    registerModule(manager, &alex_tune_eem, "tune_eem",
+                   "Optimize parameters of the EEM algorithm");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
     registerModule(manager, &alex_analyze, "analyze",
@@ -119,7 +119,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("bastat");
         group.addModule("tune_pol");
         group.addModule("tune_zeta");
-        group.addModule("tune_dip");
+        group.addModule("tune_eem");
         group.addModule("tune_fc");
         group.addModule("gauss2molprop");
         group.addModule("molprop_check");
