@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -452,7 +452,7 @@ static void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol,
     if (a2)
     {
         cmp_int(fp, "atoms->nr", -1, a1->nr, a2->nr);
-        for (i = 0; (i < a1->nr); i++)
+        for (i = 0; i < std::min(a1->nr, a2->nr); i++)
         {
             cmp_atom(fp, i, &(a1->atom[i]), &(a2->atom[i]), ftol, abstol);
         }
