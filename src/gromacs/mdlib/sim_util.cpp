@@ -800,6 +800,42 @@ computeSpecialForces(t_commrec        *cr,
     }
 }
 
+/*! \brief Communicate the coordinates to separate PME ranks.
+ *
+ * \param[in] cr        Pointer to MPI communication data
+ * \param[in] step      Current step counter
+ * \param[in]  box      The box matrix
+ * \param[in]  x        Coordinate array
+ * \param[in] lambda    Pointer to free energy lambda array
+ * \param[in] flags     Force flags
+ * \param[in]  wcycle   The wallcycle structure
+ */
+static inline void sendCoordinatesToPmeRanks(t_commrec        *cr,
+                                             gmx_int64_t       step,
+                                             matrix            box,
+                                             rvec              x[],
+                                             const real       *lambda,
+                                             int               flags,
+                                             gmx_wallcycle_t   wcycle)
+{
+    bool usingMPI = GMX_MPI;
+
+    if (usingMPI && !(cr->duty & DUTY_PME))
+    {
+        /* Send particle coordinates to the PME ranks.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */
+        wallcycle_start(wcycle, ewcPP_PMESENDX);
+        gmx_pme_send_coordinates(cr, box, x,
+                                 lambda[efptCOUL], lambda[efptVDW],
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 step);
+        wallcycle_stop(wcycle, ewcPP_PMESENDX);
+    }
+}
+
 /*! \brief Launch the prepare_step and spread stages of PME GPU.
  *
  * \param[in]  pmedata       The PME structure
@@ -949,22 +985,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                  fr->shift_vec, nbv->nbat);
 
-#if GMX_MPI
-    if (!thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
-        wallcycle_start(wcycle, ewcPP_PMESENDX);
-        gmx_pme_send_coordinates(cr, box, x,
-                                 lambda[efptCOUL], lambda[efptVDW],
-                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
-                                 step);
-        wallcycle_stop(wcycle, ewcPP_PMESENDX);
-    }
-#endif /* GMX_MPI */
+    sendCoordinatesToPmeRanks(cr, step, box, x, lambda, flags, wcycle);
 
     if (useGpuPme)
     {
