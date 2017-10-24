@@ -44,12 +44,14 @@
 
 #include <algorithm>
 #include <chrono>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -91,12 +93,12 @@ namespace gmx
 //! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
 
-//! The globally shared hwinfo structure
-static gmx_hw_info_t      *hwinfo_g;
+//! The hwinfo structure (common to all threads in this process).
+static std::unique_ptr<gmx_hw_info_t> hwinfo_g;
 //! A reference counter for the hwinfo structure
-static int                 n_hwinfo = 0;
+static int                            n_hwinfo = 0;
 //! A lock to protect the hwinfo structure
-static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t            hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 //! Detect GPUs, if that makes sense to attempt.
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
@@ -451,7 +453,6 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
 #endif
 }
 
-
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
     int ret;
@@ -466,7 +467,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
     /* only initialize the hwinfo structure if it is not already initalized */
     if (n_hwinfo == 0)
     {
-        snew(hwinfo_g, 1);
+        hwinfo_g = compat::make_unique<gmx_hw_info_t>();
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
 
@@ -499,7 +500,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
 
-    return hwinfo_g;
+    return hwinfo_g.get();
 }
 
 bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info)
@@ -507,7 +508,7 @@ bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info)
     return gpu_info.n_dev_compatible > 0;
 }
 
-void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
+void gmx_hardware_info_free()
 {
     int ret;
 
@@ -521,11 +522,6 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
     n_hwinfo--;
 
 
-    if (hwinfo != hwinfo_g)
-    {
-        gmx_incons("hwinfo < hwinfo_g");
-    }
-
     if (n_hwinfo < 0)
     {
         gmx_incons("n_hwinfo < 0");
@@ -536,7 +532,7 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
         delete hwinfo_g->cpuInfo;
         delete hwinfo_g->hardwareTopology;
         free_gpu_info(&hwinfo_g->gpu_info);
-        sfree(hwinfo_g);
+        hwinfo_g.reset();
     }
 
     ret = tMPI_Thread_mutex_unlock(&hw_info_lock);

@@ -120,7 +120,7 @@ void PmeTestEnvironment::SetUp()
 
 void PmeTestEnvironment::TearDown()
 {
-    gmx_hardware_info_free(hardwareInfo_);
+    gmx_hardware_info_free();
 }
 
 }
