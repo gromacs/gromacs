@@ -57,13 +57,13 @@ class MDLogger;
  * it. It will run a preamble before executing cpu and hardware checks, and
  * then run consistency checks afterwards. The results will also be made
  * available on all nodes.
- * Caller is responsible for freeing this pointer.
+ * Caller is responsible for calling gmx_hardware_info_free() when finished.
  */
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
                                    const t_commrec     *cr);
 
 /*! \brief Free the hwinfo structure */
-void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
+void gmx_hardware_info_free();
 
 //! Return whether compatible GPUs were found.
 bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
