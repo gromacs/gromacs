@@ -83,6 +83,8 @@ int minimalPmeGridSize(int pmeOrder);
  * When all restrictions are obeyed, true is returned.
  * Argument useThreads tells if any MPI rank doing PME uses more than 1 threads.
  * If at calling useThreads is unknown, pass true for conservative checking.
+ *
+ * The PME GPU restrictions are checked separately during pme_gpu_init().
  */
 bool gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,

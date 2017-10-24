@@ -359,24 +359,6 @@ inline bool pme_gpu_active(const gmx_pme_t *pme)
     return (pme != nullptr) && (pme->runMode != PmeRunMode::CPU);
 }
 
-/*! \brief Check restrictions on pme_order and the PME grid nkx,nky,nkz.
- *
- * With bFatal=TRUE, a fatal error is generated on violation,
- * bValidSettings=NULL can be passed.
- * With bFatal=FALSE, *bValidSettings reports the validity of the settings.
- * bUseThreads tells if any MPI rank doing PME uses more than 1 threads.
- * If at calling you bUseThreads is unknown, pass TRUE for conservative
- * checking.
- *
- * TODO: the GPU restrictions are checked separately during pme_gpu_init().
- */
-void gmx_pme_check_restrictions(int pme_order,
-                                int nkx, int nky, int nkz,
-                                int nnodes_major,
-                                gmx_bool bUseThreads,
-                                gmx_bool bFatal,
-                                gmx_bool *bValidSettings);
-
 /*! \brief Tell our PME-only node to switch to a new grid size */
 void gmx_pme_send_switchgrid(t_commrec *cr,
                              ivec       grid_size,
