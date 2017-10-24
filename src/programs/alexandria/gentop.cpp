@@ -247,7 +247,7 @@ int alex_gentop(int argc, char *argv[])
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "HIDDENUse CONECT records in an input pdb file to signify bonds" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "Generate virtual sites for linear groups. Check and double check." },
+          "Generate virtual sites. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
           "HIDDENSkip virtual sites in the input file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},

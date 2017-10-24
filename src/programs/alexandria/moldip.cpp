@@ -337,7 +337,8 @@ void MolDip::Init(t_commrec                *cr,
                   gmx_bool                  bFitZeta, 
                   gmx_hw_info_t            *hwinfo,
                   gmx_bool                  bfullTensor,
-                  int                       mindata)
+                  int                       mindata,
+                  gmx_bool                  bGenViste)
 {
     cr_                         = cr;
     bQM_                        = bQM;
@@ -368,6 +369,7 @@ void MolDip::Init(t_commrec                *cr,
     bPol_                       = bPol;
     hwinfo_                     = hwinfo;
     bfullTensor_                = bfullTensor;
+    bGenViste_                  = bGenViste;
     mindata_                    = mindata;
 }
 
@@ -482,7 +484,7 @@ void MolDip::Read(FILE            *fp,
                                              pd_,
                                              lot,
                                              iChargeDistributionModel_,
-                                             false,
+                                             bGenViste_,
                                              bPairs,
                                              bDihedral, 
                                              bPolar,
@@ -616,8 +618,8 @@ void MolDip::Read(FILE            *fp,
                                          pd_,
                                          lot, 
                                          iChargeDistributionModel_,
-                                         false,
-                                         false,
+                                         bGenViste_,
+                                         bPairs,
                                          bDihedral, 
                                          bPolar,
                                          false,

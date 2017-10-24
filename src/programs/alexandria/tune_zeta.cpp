@@ -159,7 +159,9 @@ class OptZeta : public MolDip
                            const char             *mucorr, 
                            const char             *Qcorr,
                            const char             *espcorr,
-                           const char             *alphacorr, 
+                           const char             *alphacorr,
+                           const char             *isopolCorr,
+                           const char             *anisopolCorr, 
                            real                    dip_toler, 
                            real                    quad_toler, 
                            const gmx_output_env_t *oenv,
@@ -778,6 +780,8 @@ void OptZeta::print_results(FILE                   *fp,
                             const char             *Qcorr,
                             const char             *EspCorr, 
                             const char             *alphaCorr,
+                            const char             *isopolCorr,
+                            const char             *anisopolCorr,
                             real                    dip_toler, 
                             real                    quad_toler, 
                             const gmx_output_env_t *oenv,
@@ -789,7 +793,7 @@ void OptZeta::print_results(FILE                   *fp,
     real          aver = 0, error = 0, qDESP = 0;
     
     FILE          *dipc, *muc,  *Qc;
-    FILE          *hh,   *espc, *alphac;   
+    FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc;   
         
     struct AtomTypeLsq {
         std::string atomtype;
@@ -799,7 +803,8 @@ void OptZeta::print_results(FILE                   *fp,
         eprDESP, eprESP, eprMPA, eprHPA, eprCM5, eprNR
     };
     
-    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp, lsq_alpha, lsq_isoPol;
+    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR];
+    gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol;
     const char               *eprnm[eprNR] = {"DESP", "ESP", "MPA", "HPA", "CM5"};
     std::vector<AtomTypeLsq>  lsqt;
 
@@ -809,10 +814,11 @@ void OptZeta::print_results(FILE                   *fp,
         lsq_dip[i]  = gmx_stats_init();
         lsq_mu[i]   = gmx_stats_init();
     }
-    lsq_esp     = gmx_stats_init();
-    lsq_alpha   = gmx_stats_init();
-    lsq_isoPol  = gmx_stats_init();
-    n           = 0;
+    lsq_esp      = gmx_stats_init();
+    lsq_alpha    = gmx_stats_init();
+    lsq_isoPol   = gmx_stats_init();
+    lsq_anisoPol = gmx_stats_init();
+    n            = 0;
     
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -896,8 +902,8 @@ void OptZeta::print_results(FILE                   *fp,
             if(bPolar)
             {
                 mol.CalcPolarizability(10, cr_, nullptr);
-
                 gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_, 0, 0);
+                gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
@@ -1051,10 +1057,20 @@ void OptZeta::print_results(FILE                   *fp,
     
     if (bPolar)
     {
-        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
+        alphac = xvgropen(alphaCorr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "QM", "DESP", oenv);
         xvgr_symbolize(alphac, 1, eprnm, oenv);
         print_lsq_set(alphac, lsq_alpha);
         fclose(alphac);
+        
+        isopolc = xvgropen(isopolCorr, "Isotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
+        xvgr_symbolize(isopolc, 1, eprnm, oenv);
+        print_lsq_set(isopolc, lsq_isoPol);
+        fclose(isopolc);
+        
+        anisopolc = xvgropen(anisopolCorr, "Anisotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
+        xvgr_symbolize(anisopolc, 1, eprnm, oenv);
+        print_lsq_set(anisopolc, lsq_anisoPol);
+        fclose(anisopolc);
     }
 
     fprintf(fp, "hfac = %g\n", hfac_);
@@ -1095,6 +1111,7 @@ void OptZeta::print_results(FILE                   *fp,
     gmx_stats_free(lsq_esp);
     gmx_stats_free(lsq_alpha);
     gmx_stats_free(lsq_isoPol);
+    gmx_stats_free(lsq_anisoPol);
 }
 }
 
@@ -1151,6 +1168,8 @@ int alex_tune_zeta(int argc, char *argv[])
         { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
         { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
         { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
+        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
+        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
@@ -1200,6 +1219,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static gmx_bool             bBound        = false;
     static gmx_bool             bQuadrupole   = false;
     static gmx_bool             bDipole       = false;
+    static gmx_bool             bGenVSites    = false;
     static gmx_bool             bZero         = true;  
     static gmx_bool             bGaussianBug  = true;     
     static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
@@ -1297,7 +1317,9 @@ int alex_tune_zeta(int argc, char *argv[])
         { "-bound", FALSE, etBOOL, {&bBound},
           "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
         { "-temp",    FALSE, etREAL, {&temperature},
-          "'Temperature' for the Monte Carlo simulation" }
+          "'Temperature' for the Monte Carlo simulation" },
+        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
+          "Generate virtual sites. Check and double check." }
     };
 
     FILE                 *fp;
@@ -1341,12 +1363,6 @@ int alex_tune_zeta(int argc, char *argv[])
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
-
-    if (iChargeDistributionModel == eqdAXps  &&  nullptr == tabfn)
-    {
-        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
-                  "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
-    }
     
     if (iChargeDistributionModel == eqdAXpp  || 
         iChargeDistributionModel == eqdAXpg  || 
@@ -1381,7 +1397,8 @@ int alex_tune_zeta(int argc, char *argv[])
              false,
              hwinfo,
              bfullTensor,
-             mindata);
+             mindata,
+             bGenVSites);
             
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
@@ -1397,7 +1414,7 @@ int alex_tune_zeta(int argc, char *argv[])
              false,
              bPolar,
              bZPE,
-             opt2fn_null("-table", NFILE, fnm),
+             tabfn,
              qcycle,
              qtol);
             
@@ -1436,6 +1453,8 @@ int alex_tune_zeta(int argc, char *argv[])
                           opt2fn("-thetacorr", NFILE, fnm), 
                           opt2fn("-espcorr",   NFILE, fnm),
                           opt2fn("-alphacorr", NFILE, fnm),
+                          opt2fn("-isopol",    NFILE, fnm),
+                          opt2fn("-anisopol",  NFILE, fnm),
                           dip_toler, 
                           quad_toler, 
                           oenv,

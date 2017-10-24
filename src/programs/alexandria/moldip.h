@@ -46,17 +46,28 @@
 #include "mymol.h"
 
 typedef struct {
-    int       n, nopt, nconst, nopt_c;
+    int       n;
+    int       nopt;
+    int       nconst;
+    int       nopt_c;
+    int      *tot_count;
+    int      *count;
     char    **name;
-    int      *tot_count, *count;
     gmx_bool *bConst;
 } t_index_count;
 
 extern char *opt_index_count(t_index_count *ic);
 
 enum {
-    ermsBOUNDS, ermsMU, ermsQUAD, ermsCHARGE, ermsESP,
-    ermsEPOT, ermsForce2, ermsTOT, ermsNR
+    ermsBOUNDS = 0, 
+    ermsMU     = 1, 
+    ermsQUAD   = 2, 
+    ermsCHARGE = 3, 
+    ermsESP    = 4,
+    ermsEPOT   = 5, 
+    ermsForce2 = 6, 
+    ermsTOT    = 7, 
+    ermsNR     = 9
 };
 
 namespace alexandria
@@ -174,6 +185,7 @@ class MolDip
         gmx_bool                        bGaussianBug_;
         gmx_bool                        bFitZeta_;
         gmx_bool                        bfullTensor_;
+        gmx_bool                        bGenViste_;
         Poldata                         pd_;
         t_commrec                      *cr_;
         t_inputrec                     *inputrec_;
@@ -220,7 +232,8 @@ class MolDip
                   gmx_bool                  bFitZeta, 
                   gmx_hw_info_t            *hwinfo,
                   gmx_bool                  bfullTensor,
-                  int                       mindata);
+                  int                       mindata,
+                  gmx_bool                  bGenViste);
 
         void Read(FILE                      *fp,
                   const char                *fn,

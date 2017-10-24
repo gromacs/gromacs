@@ -1438,6 +1438,7 @@ int alex_tune_dip(int argc, char *argv[])
     static gmx_bool             bESP          = false;
     static gmx_bool             bFitZeta      = false; 
     static gmx_bool             bFitAlpha     = false;
+    static gmx_bool             bGenVSites    = false;
     static gmx_bool             bZero         = true;  
     static gmx_bool             bGaussianBug  = true;     
     static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
@@ -1541,7 +1542,9 @@ int alex_tune_dip(int argc, char *argv[])
         { "-bound", FALSE, etBOOL, {&bBound},
           "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
         { "-temp",    FALSE, etREAL, {&temperature},
-          "'Temperature' for the Monte Carlo simulation" }
+          "'Temperature' for the Monte Carlo simulation" },
+        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
+          "Generate virtual sites. Check and double check." }
     };
 
     FILE                 *fp;
@@ -1585,12 +1588,6 @@ int alex_tune_dip(int argc, char *argv[])
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
-
-    if (iChargeDistributionModel == eqdAXps  &&  nullptr == tabfn)
-    {
-        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
-                  "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
-    }
     
     if (iChargeDistributionModel == eqdAXpp  || 
         iChargeDistributionModel == eqdAXpg  || 
@@ -1622,7 +1619,8 @@ int alex_tune_dip(int argc, char *argv[])
              bFitZeta,
              hwinfo,
              bfullTensor,
-             mindata);
+             mindata,
+             bGenVSites);
             
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
@@ -1638,7 +1636,7 @@ int alex_tune_dip(int argc, char *argv[])
              false,
              bPolar,
              bZPE,
-             opt2fn_null("-table", NFILE, fnm),
+             tabfn,
              qcycle,
              qtol);
             
@@ -1662,7 +1660,9 @@ int alex_tune_dip(int argc, char *argv[])
     opt.optRun(MASTER(cr) ? stderr : nullptr,
                fp,
                maxiter,
-               nrun, step, seed,
+               nrun, 
+               step, 
+               seed,
                oenv,
                nprint,
                opt2fn("-conv", NFILE, fnm),

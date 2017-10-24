@@ -2007,6 +2007,7 @@ int alex_tune_fc(int argc, char *argv[])
     static gmx_bool       bfullTensor   = false;
     static gmx_bool       bGaussianBug  = true;
     static gmx_bool       bZero         = true;  
+    static gmx_bool       bGenVSites    = false;
     static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char    *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     static bool           bOpt[eitNR]   = {true, false, false, false, false, false, false, false, false, false};
@@ -2085,7 +2086,9 @@ int alex_tune_fc(int argc, char *argv[])
         { "-weight", FALSE, etBOOL, {&bWeighted},
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
         { "-compress", FALSE, etBOOL, {&compress},
-          "Compress output XML file" }
+          "Compress output XML file" },
+        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
+          "Generate virtual sites. Check and double check." }
     };
     
     FILE                 *fp;
@@ -2132,14 +2135,6 @@ int alex_tune_fc(int argc, char *argv[])
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
-    
-    if ((iChargeDistributionModel == eqdAXs    || 
-         iChargeDistributionModel == eqdAXps ) && 
-        nullptr == tabfn)
-    {
-        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
-                  "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
-    }
 
     if (iChargeDistributionModel == eqdAXpp  || 
         iChargeDistributionModel == eqdAXpg  || 
@@ -2174,7 +2169,8 @@ int alex_tune_fc(int argc, char *argv[])
              bFitZeta, 
              hwinfo,
              bfullTensor,
-             mindata);
+             mindata,
+             bGenVSites);
 
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
