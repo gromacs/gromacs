@@ -47,5 +47,5 @@
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char * const gpu_detect_res_str[egpuNR] =
 {
-    "compatible", "inexistent", "incompatible", "insane"
+    "compatible", "nonexistent", "incompatible", "insane"
 };
