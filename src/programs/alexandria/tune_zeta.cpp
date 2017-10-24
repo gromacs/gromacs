@@ -963,8 +963,9 @@ void OptZeta::print_results(FILE                   *fp,
     print_stats(fp, (char *)"Quadrupoles   (Buckingham)", lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");
     if (bPolar)
     {
-        print_stats(fp, (char *)"Polarizability (A^3)",  lsq_alpha, false,  (char *)"QM", (char *)"DESP");
+        print_stats(fp, (char *)"Principal Components of Polarizability (A^3)",  lsq_alpha, false,  (char *)"QM", (char *)"DESP");
         print_stats(fp, (char *)"Isotropic Polarizability (A^3)",  lsq_isoPol, false,  (char *)"QM", (char *)"DESP");
+        print_stats(fp, (char *)"Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  (char *)"QM", (char *)"DESP");
     }
     fprintf(fp, "\n");
 
@@ -1423,8 +1424,7 @@ int alex_tune_zeta(int argc, char *argv[])
         fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymol_.size());
     }
     if (iChargeDistributionModel != eqdAXp  &&
-        iChargeDistributionModel != eqdAXpp &&
-        iChargeDistributionModel != eqdAXps)
+        iChargeDistributionModel != eqdAXpp)
     {
         if (MASTER(cr))
         {
