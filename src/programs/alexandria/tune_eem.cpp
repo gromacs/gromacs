@@ -765,6 +765,8 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
         { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
         { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
+        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
+        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
