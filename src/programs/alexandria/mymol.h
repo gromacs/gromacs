@@ -70,11 +70,17 @@ struct t_inputrec;
 struct t_topology;
 
 enum eDih {
-    edihNo, edihOne, edihAll, edihNR
+    edihNo, 
+    edihOne, 
+    edihAll, 
+    edihNR
 };
 
 enum eSupport {
-    eSupportNo, eSupportLocal, eSupportRemote, eSupportNR
+    eSupportNo, 
+    eSupportLocal, 
+    eSupportRemote, 
+    eSupportNR
 };
 
 namespace alexandria

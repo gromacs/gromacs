@@ -70,52 +70,7 @@
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-
-
-static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,
-                        char *xaxis, char *yaxis)
-{
-    real a, da, b, db, chi2, rmsd, Rfit;
-    int  n;
-
-    if (bHeader)
-    {
-        fprintf(fp, "Fitting data to y = ax+b, where x = %s and y = %s\n", xaxis, yaxis);
-        fprintf(fp, "%-12s %5s %13s %13s %8s %8s\n",
-                "Property", "N", "a", "b", "R", "RMSD");
-        fprintf(fp, "---------------------------------------------------------------\n");
-    }
-    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-    gmx_stats_get_rmsd(lsq, &rmsd);
-    gmx_stats_get_npoints(lsq, &n);
-    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
-            prop, n, a, da, b, db, Rfit*100, rmsd);
-}
-
-static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
-{
-    real   x, y;
-
-    fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
-    {
-        fprintf(fp, "%10g  %10g\n", x, y);
-    }
-    fprintf(fp, "&\n");
-}
-
-static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
-                           const gmx_output_env_t * oenv)
-{
-    int i;
-
-    xvgr_legend(xvgf, nsym, leg, oenv);
-    for (i = 0; (i < nsym); i++)
-    {
-        xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
-        fprintf(xvgf, "@ s%d symbol %d\n", i, i+1);
-    }
-}
+#include "tuning_utility.h"
 
 namespace alexandria
 {
@@ -151,31 +106,7 @@ class OptZeta : public MolDip
                          double max)
        {
            return (x < min) ? (gmx::square(x-min)) : ((x > max) ? (gmx::square(x-max)) : 0);
-       }
-     
-        void print_results(FILE *fp, 
-                           const char             *qhisto,
-                           const char             *dipcorr,
-                           const char             *mucorr, 
-                           const char             *Qcorr,
-                           const char             *espcorr,
-                           const char             *alphacorr,
-                           const char             *isopolCorr,
-                           const char             *anisopolCorr, 
-                           real                    dip_toler, 
-                           real                    quad_toler, 
-                           const gmx_output_env_t *oenv,
-                           bool                    bPolar);
-        
-        void print_dipole(FILE  *fp, 
-                          MyMol *mol, 
-                          char  *calc_name, 
-                          real   toler);
-    
-        void print_quadrapole(FILE  *fp, 
-                              MyMol *mol, 
-                              char  *calc_name, 
-                              real   toler);                              
+       }                              
         
         void polData2TuneZeta();
         
@@ -243,7 +174,8 @@ void OptZeta::calcDeviation()
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
                 auto qq     = mymol.topology_->atoms.atom[j].q;
                 qtot       += qq;
-                if (mymol.topology_->atoms.atom[j].ptype == eptAtom)
+                if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
+                    mymol.topology_->atoms.atom[j].ptype == eptNucleus)
                 {
                     if (((qq < 0) && (atomnr == 1)) ||
                         ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
@@ -538,582 +470,6 @@ void OptZeta::optRun(FILE *fp, FILE *fplog, int maxiter,
         }
     }
 }
-
-void OptZeta::print_quadrapole(FILE  *fp, 
-                               MyMol *mol,
-                               char  *calc_name,
-                               real   q_toler)
-{
-    tensor dQ;
-    real   delta = 0;
-    
-    if (nullptr != calc_name)
-    {
-        if (strcmp(calc_name, (char *)"DESP") == 0)
-        {
-            m_sub(mol->Q_elec_, mol->Q_calc_, dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
-                    mol->Q_calc_[XX][XX], mol->Q_calc_[XX][YY], mol->Q_calc_[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_calc_[YY][YY], mol->Q_calc_[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", mol->Q_calc_[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-        }
-        else if (strcmp(calc_name, (char *)"ESP") == 0)
-        {
-            m_sub(mol->Q_elec_, mol->Q_esp_, dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
-                    mol->Q_esp_[XX][XX], mol->Q_esp_[XX][YY], mol->Q_esp_[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_esp_[YY][YY], mol->Q_esp_[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", mol->Q_esp_[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-        }
-        else if (strcmp(calc_name, (char *)"MPA") == 0)
-        {
-            m_sub(mol->Q_elec_, mol->Q_mulliken_, dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
-                    mol->Q_mulliken_[XX][XX], mol->Q_mulliken_[XX][YY], mol->Q_mulliken_[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_mulliken_[YY][YY], mol->Q_mulliken_[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", mol->Q_mulliken_[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-        }
-        else if (strcmp(calc_name, (char *)"HPA") == 0)
-        {
-            m_sub(mol->Q_elec_, mol->Q_hirshfeld_, dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
-                    mol->Q_hirshfeld_[XX][XX], mol->Q_hirshfeld_[XX][YY], mol->Q_hirshfeld_[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_hirshfeld_[YY][YY], mol->Q_hirshfeld_[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", mol->Q_hirshfeld_[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-        }
-        else if (strcmp(calc_name, (char *)"CM5") == 0)
-        {
-            m_sub(mol->Q_elec_, mol->Q_cm5_, dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
-                    mol->Q_cm5_[XX][XX], mol->Q_cm5_[XX][YY], mol->Q_cm5_[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_cm5_[YY][YY], mol->Q_cm5_[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", mol->Q_cm5_[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-        }
-        else
-        {
-            fprintf(fp, "Quadrupole analysis (6 independent components only)\n");
-            fprintf(fp,
-                    "QM   (%6.2f %6.2f %6.2f)\n"
-                    "     (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)\n",
-                    mol->Q_elec_[XX][XX], mol->Q_elec_[XX][YY], mol->Q_elec_[XX][ZZ],
-                    "", mol->Q_elec_[YY][YY], mol->Q_elec_[YY][ZZ],
-                    "", "", mol->Q_calc_[ZZ][ZZ]);
-        }
-    }
-}
-
-void OptZeta::print_dipole(FILE  *fp, 
-                           MyMol *mol, 
-                           char  *calc_name, 
-                           real   toler)
-{
-    rvec dmu;
-    real ndmu, cosa;
-    char ebuf[32];
-
-    if (nullptr != calc_name)
-    {
-        if (strcmp(calc_name, (char *)"DESP") == 0)
-        {
-            rvec_sub(mol->mu_elec_, mol->mu_calc_, dmu);
-            ndmu = norm(dmu);
-            cosa = cos_angle(mol->mu_elec_, mol->mu_calc_);
-            if (ndmu > toler)
-            {
-                sprintf(ebuf, "XXX");
-            }
-            else if (fabs(cosa) < 0.1)
-            {
-                sprintf(ebuf, "YYY");
-            }
-            else
-            {
-                ebuf[0] = '\0';
-            }
-            fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                    calc_name, mol->mu_calc_[XX], mol->mu_calc_[YY], mol->mu_calc_[ZZ], 
-                    norm(mol->mu_calc_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        }
-        else if (strcmp(calc_name, (char *)"ESP") == 0)
-        {
-            rvec_sub(mol->mu_elec_, mol->mu_esp_, dmu);
-            ndmu = norm(dmu);
-            cosa = cos_angle(mol->mu_elec_, mol->mu_esp_);
-            if (ndmu > toler)
-            {
-                sprintf(ebuf, "XXX");
-            }
-            else if (fabs(cosa) < 0.1)
-            {
-                sprintf(ebuf, "YYY");
-            }
-            else
-            {
-                ebuf[0] = '\0';
-            }
-            fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                    calc_name, mol->mu_esp_[XX], mol->mu_esp_[YY], mol->mu_esp_[ZZ], 
-                    norm(mol->mu_esp_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        }
-        else if (strcmp(calc_name, (char *)"MPA") == 0)
-        {
-            rvec_sub(mol->mu_elec_, mol->mu_mulliken_, dmu);
-            ndmu = norm(dmu);
-            cosa = cos_angle(mol->mu_elec_, mol->mu_mulliken_);
-            if (ndmu > toler)
-            {
-                sprintf(ebuf, "XXX");
-            }
-            else if (fabs(cosa) < 0.1)
-            {
-                sprintf(ebuf, "YYY");
-            }
-            else
-            {
-                ebuf[0] = '\0';
-            }
-            fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                    calc_name, mol->mu_mulliken_[XX], mol->mu_mulliken_[YY], mol->mu_mulliken_[ZZ], 
-                    norm(mol->mu_mulliken_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        }
-        else if (strcmp(calc_name, (char *)"HPA") == 0)
-        {
-            rvec_sub(mol->mu_elec_, mol->mu_hirshfeld_, dmu);
-            ndmu = norm(dmu);
-            cosa = cos_angle(mol->mu_elec_, mol->mu_hirshfeld_);
-            if (ndmu > toler)
-            {
-                sprintf(ebuf, "XXX");
-            }
-            else if (fabs(cosa) < 0.1)
-            {
-                sprintf(ebuf, "YYY");
-            }
-            else
-            {
-                ebuf[0] = '\0';
-            }
-            fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                    calc_name, mol->mu_hirshfeld_[XX], mol->mu_hirshfeld_[YY], mol->mu_hirshfeld_[ZZ], 
-                    norm(mol->mu_hirshfeld_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        }
-        else if (strcmp(calc_name, (char *)"CM5") == 0)
-        {
-            rvec_sub(mol->mu_elec_, mol->mu_cm5_, dmu);
-            ndmu = norm(dmu);
-            cosa = cos_angle(mol->mu_elec_, mol->mu_cm5_);
-            if (ndmu > toler)
-            {
-                sprintf(ebuf, "XXX");
-            }
-            else if (fabs(cosa) < 0.1)
-            {
-                sprintf(ebuf, "YYY");
-            }
-            else
-            {
-                ebuf[0] = '\0';
-            }
-            fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                    calc_name, mol->mu_cm5_[XX], mol->mu_cm5_[YY], mol->mu_cm5_[ZZ], 
-                    norm(mol->mu_cm5_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        }
-        else
-        {
-            fprintf(fp, "Dipole analysis\n");
-            fprintf(fp, "QM   (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
-                    mol->mu_elec_[XX], mol->mu_elec_[YY], mol->mu_elec_[ZZ], norm(mol->mu_elec_));
-        }
-    }
-}
-
-void OptZeta::print_results(FILE                   *fp, 
-                            const char             *qhisto,
-                            const char             *DipCorr,
-                            const char             *MuCorr, 
-                            const char             *Qcorr,
-                            const char             *EspCorr, 
-                            const char             *alphaCorr,
-                            const char             *isopolCorr,
-                            const char             *anisopolCorr,
-                            real                    dip_toler, 
-                            real                    quad_toler, 
-                            const gmx_output_env_t *oenv,
-                            bool                    bPolar)
-{
-    int           i    = 0, j     = 0, n     = 0;
-    int           nout = 0, mm    = 0, nn    = 0;
-    real          sse  = 0, rms   = 0, sigma = 0;
-    real          aver = 0, error = 0, qDESP = 0;
-    
-    FILE          *dipc, *muc,  *Qc;
-    FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc;   
-        
-    struct AtomTypeLsq {
-        std::string atomtype;
-        gmx_stats_t lsq;
-    };    
-    enum {
-        eprDESP, eprESP, eprMPA, eprHPA, eprCM5, eprNR
-    };
-    
-    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR];
-    gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol;
-    const char               *eprnm[eprNR] = {"DESP", "ESP", "MPA", "HPA", "CM5"};
-    std::vector<AtomTypeLsq>  lsqt;
-
-    for (int i = 0; i < eprNR; i++)
-    {
-        lsq_quad[i] = gmx_stats_init();
-        lsq_dip[i]  = gmx_stats_init();
-        lsq_mu[i]   = gmx_stats_init();
-    }
-    lsq_esp      = gmx_stats_init();
-    lsq_alpha    = gmx_stats_init();
-    lsq_isoPol   = gmx_stats_init();
-    lsq_anisoPol = gmx_stats_init();
-    n            = 0;
-    
-    auto *ic = indexCount();
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        AtomTypeLsq k;
-        k.atomtype.assign(ai->name());
-        k.lsq = gmx_stats_init();
-        lsqt.push_back(std::move(k));
-    }       
-    for (auto &mol: mymol_)
-    {
-        if (mol.eSupp_ != eSupportNo)
-        {
-            fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
-                    mol.molProp()->getMolname().c_str(),
-                    mol.molProp()->getCharge(),
-                    mol.molProp()->getMultiplicity());
-                        
-            mol.CalcDipole();
-            print_dipole(fp, &mol, (char *)"QM",   dip_toler);
-            print_dipole(fp, &mol, (char *)"DESP", dip_toler);
-            print_dipole(fp, &mol, (char *)"ESP",  dip_toler);
-            print_dipole(fp, &mol, (char *)"MPA",  dip_toler);
-            print_dipole(fp, &mol, (char *)"HPA",  dip_toler);
-            print_dipole(fp, &mol, (char *)"CM5",  dip_toler);
-
-            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
-            
-            mol.CalcQuadrupole();
-            print_quadrapole(fp, &mol, (char *)"QM",   quad_toler);
-            print_quadrapole(fp, &mol, (char *)"DESP", quad_toler);
-            print_quadrapole(fp, &mol, (char *)"ESP",  quad_toler);
-            print_quadrapole(fp, &mol, (char *)"MPA",  quad_toler);
-            print_quadrapole(fp, &mol, (char *)"HPA",  quad_toler);
-            print_quadrapole(fp, &mol, (char *)"CM5",  quad_toler);
-            
-            rms = mol.espRms();
-            fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);                                  
-            auto nEsp     = mol.Qgresp_.nEsp();
-            auto EspPoint = mol.Qgresp_.espPoint();
-            for (size_t i = 0; i < nEsp; i++)
-            {
-                gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(),eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
-            }
-            
-            gmx_stats_add_point(lsq_dip[eprDESP], mol.dip_elec_, mol.dip_calc_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprESP],  mol.dip_elec_, mol.dip_esp_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprMPA],  mol.dip_elec_, mol.dip_mulliken_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprHPA],  mol.dip_elec_, mol.dip_hirshfeld_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprCM5],  mol.dip_elec_, mol.dip_cm5_, 0, 0);
-            
-            for (mm = 0; mm < DIM; mm++)
-            {
-                gmx_stats_add_point(lsq_mu[eprDESP], mol.mu_elec_[mm], mol.mu_calc_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprESP],  mol.mu_elec_[mm], mol.mu_esp_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprMPA],  mol.mu_elec_[mm], mol.mu_mulliken_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprHPA],  mol.mu_elec_[mm], mol.mu_hirshfeld_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprCM5],  mol.mu_elec_[mm], mol.mu_cm5_[mm], 0, 0);
-                
-                if (bfullTensor_)
-                {
-                    for (nn = 0; nn < DIM; nn++)
-                    {
-                        gmx_stats_add_point(lsq_quad[eprDESP], mol.Q_elec_[mm][nn], mol.Q_calc_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][nn], mol.Q_esp_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][nn], mol.Q_mulliken_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][nn], mol.Q_hirshfeld_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][nn], mol.Q_cm5_[mm][nn], 0, 0);
-                    }
-                }
-                else
-                {
-                    gmx_stats_add_point(lsq_quad[eprDESP], mol.Q_elec_[mm][mm], mol.Q_calc_[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][mm], mol.Q_esp_[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][mm], mol.Q_mulliken_[mm][nn], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][mm], mol.Q_hirshfeld_[mm][nn], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][mm], mol.Q_cm5_[mm][nn], 0, 0);
-
-                }
-            }
-            if(bPolar)
-            {
-                mol.CalcPolarizability(10, cr_, nullptr);
-                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_, 0, 0);
-                gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
-                for (mm = 0; mm < DIM; mm++)
-                {
-                    gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
-                }
-            }
-            
-            fprintf(fp, "Atom   Type      q_DESP     q_ESP     q_MPA     q_HPA     q_CM5       x       y       z\n");
-            for (j = i = 0; j < mol.topology_->atoms.nr; j++)
-            {
-                if (mol.topology_->atoms.atom[j].ptype == eptAtom)
-                {               
-                    const char *at = *(mol.topology_->atoms.atomtype[j]);
-                    if(indexCount_.isOptimized(at))
-                    {
-                        auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                      [at](const AtomTypeLsq &atlsq)
-                                                      {
-                                                          return atlsq.atomtype.compare(at) == 0;
-                                                      });                                                 
-                        if (k != lsqt.end())
-                        {
-                            qDESP = mol.topology_->atoms.atom[j].q;
-                            if(nullptr != mol.shellfc_)
-                            {
-                                qDESP += mol.topology_->atoms.atom[j+1].q;
-                            }
-                            gmx_stats_add_point(k->lsq, mol.qESP_[i], qDESP, 0, 0);
-                        }                        
-                        fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                                mol.topology_->atoms.atom[j].atomnumber,
-                                j+1,
-                                *(mol.topology_->atoms.atomtype[j]),
-                                qDESP, 
-                                mol.qESP_[i],
-                                mol.qMulliken_[i],
-                                mol.qHirshfeld_[i],
-                                mol.qCM5_[i],
-                                mol.state_->x[j][XX], 
-                                mol.state_->x[j][YY], 
-                                mol.state_->x[j][ZZ]); 
-                    }
-                    i++;
-                }
-            }
-            fprintf(fp, "\n");
-            n++;
-        }
-    }
-
-    fprintf(fp, "Dipoles are %s in DESP Parametrization.\n",     (bDipole_ ?     "used" : "not used"));
-    fprintf(fp, "Quadrupoles are %s in DESP Parametrization.\n", (bQuadrupole_ ? "used" : "not used"));
-    fprintf(fp, "\n");
-
-    print_stats(fp, (char *)"ESP           (Hartree/e)",  lsq_esp,           true,  (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Dipoles       (Debye)",      lsq_mu[eprDESP],   false, (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Dipole Moment (Debye)",      lsq_dip[eprDESP],  false, (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Quadrupoles   (Buckingham)", lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");
-    if (bPolar)
-    {
-        print_stats(fp, (char *)"Principal Components of Polarizability (A^3)",  lsq_alpha, false,  (char *)"QM", (char *)"DESP");
-        print_stats(fp, (char *)"Isotropic Polarizability (A^3)",  lsq_isoPol, false,  (char *)"QM", (char *)"DESP");
-        print_stats(fp, (char *)"Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  (char *)"QM", (char *)"DESP");
-    }
-    fprintf(fp, "\n");
-
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprESP],   true,  (char *)"QM", (char *)"ESP");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprESP],  false, (char *)"QM", (char *)"ESP");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprESP], false, (char *)"QM", (char *)"ESP");       
-    fprintf(fp, "\n");
-
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprMPA],   true,  (char *)"QM", (char *)"MPA");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprMPA],  false, (char *)"QM", (char *)"MPA");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprMPA], false, (char *)"QM", (char *)"MPA");   
-    fprintf(fp, "\n");
-
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprHPA],   true,  (char *)"QM", (char *)"HPA");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprHPA],  false, (char *)"QM", (char *)"HPA");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprHPA], false, (char *)"QM", (char *)"HPA");   
-    fprintf(fp, "\n");
-
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprCM5],   true,  (char *)"QM", (char *)"CM5");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprCM5],  false, (char *)"QM", (char *)"CM5");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprCM5], false, (char *)"QM", (char *)"CM5");   
-    fprintf(fp, "\n");
-    
-    std::vector<const char*> atypes;
-    for (const auto &k : lsqt)
-    {
-        atypes.push_back(k.atomtype.c_str());
-    }
-    
-    hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
-    
-    fprintf(fp, "\nZeta parameters are optimized for %zu atom types:\n", atypes.size());    
-    for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
-    {
-        int   nbins;
-        if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
-        {
-            real *x, *y;
-            fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
-            if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
-            {
-                fprintf(hh, "@type xy\n");
-                for (int i = 0; i < nbins; i++)
-                {
-                    fprintf(hh, "%10g  %10g\n", x[i], y[i]);
-                }
-                fprintf(hh, "&\n");
-                
-                free(x);
-                free(y);
-            }
-        }
-        gmx_stats_free(k->lsq);
-    }
-    fclose(hh);
-    fprintf(fp, "\n");
-    
-    dipc = xvgropen(DipCorr, "Dipole Moment (Debye)", "QM", "Empirical", oenv);
-    xvgr_symbolize(dipc, 5, eprnm, oenv);
-    print_lsq_set(dipc, lsq_dip[eprDESP]);
-    print_lsq_set(dipc, lsq_dip[eprESP]);
-    print_lsq_set(dipc, lsq_dip[eprMPA]);
-    print_lsq_set(dipc, lsq_dip[eprHPA]);
-    print_lsq_set(dipc, lsq_dip[eprCM5]);
-    fclose(dipc);
-    
-    muc = xvgropen(MuCorr, "Dipoles (Debye)", "QM", "Empirical", oenv);
-    xvgr_symbolize(muc, 5, eprnm, oenv);
-    print_lsq_set(muc, lsq_mu[eprDESP]);
-    print_lsq_set(muc, lsq_mu[eprESP]);
-    print_lsq_set(muc, lsq_mu[eprMPA]);
-    print_lsq_set(muc, lsq_mu[eprHPA]);
-    print_lsq_set(muc, lsq_mu[eprCM5]);
-    fclose(muc);
-
-    Qc = xvgropen(Qcorr, "Quadrupoles (Buckingham)", "QM", "Empirical", oenv);
-    xvgr_symbolize(Qc, 5, eprnm, oenv);
-    print_lsq_set(Qc, lsq_quad[eprDESP]);
-    print_lsq_set(Qc, lsq_quad[eprESP]);
-    print_lsq_set(Qc, lsq_quad[eprMPA]);
-    print_lsq_set(Qc, lsq_quad[eprHPA]);
-    print_lsq_set(Qc, lsq_quad[eprCM5]);
-    fclose(Qc);
-    
-    espc = xvgropen(EspCorr, "Electrostatic Potential (Hartree/e)", "QM", "DESP", oenv);
-    xvgr_symbolize(espc, 1, eprnm, oenv);
-    print_lsq_set(espc, lsq_esp);
-    fclose(espc);
-    
-    if (bPolar)
-    {
-        alphac = xvgropen(alphaCorr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "QM", "DESP", oenv);
-        xvgr_symbolize(alphac, 1, eprnm, oenv);
-        print_lsq_set(alphac, lsq_alpha);
-        fclose(alphac);
-        
-        isopolc = xvgropen(isopolCorr, "Isotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
-        xvgr_symbolize(isopolc, 1, eprnm, oenv);
-        print_lsq_set(isopolc, lsq_isoPol);
-        fclose(isopolc);
-        
-        anisopolc = xvgropen(anisopolCorr, "Anisotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
-        xvgr_symbolize(anisopolc, 1, eprnm, oenv);
-        print_lsq_set(anisopolc, lsq_anisoPol);
-        fclose(anisopolc);
-    }
-
-    fprintf(fp, "hfac = %g\n", hfac_);
-    gmx_stats_get_ase(lsq_mu[eprDESP], &aver, &sigma, &error);
-    sigma = sqrt(sse/n);
-    nout  = 0;
-    fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
-    fprintf(fp, "----------------------------------\n");
-    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "DESP", "QM", "Deviation (Debye)");
-            
-    for (auto &mol : mymol_)
-    {
-        auto deviation = std::abs(mol.dip_calc_ - mol.dip_elec_);
-        if ((mol.eSupp_ != eSupportNo) &&
-            (mol.dip_elec_ > sigma) &&
-            (deviation > 2*sigma))
-        {
-            fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
-                    mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc_, mol.dip_elec_, deviation);
-            nout++;
-        }
-    }
-    if (nout)
-    {
-        printf("There were %d outliers. See at the very bottom of the log file\n", nout);
-    }
-    else
-    {
-        printf("No outliers! Well done.\n");
-    }
-    for (int i = 0; i < eprNR; i++)
-    {
-        gmx_stats_free(lsq_quad[i]);
-        gmx_stats_free(lsq_mu[i]);
-        gmx_stats_free(lsq_dip[i]);    
-    }
-    gmx_stats_free(lsq_esp);
-    gmx_stats_free(lsq_alpha);
-    gmx_stats_free(lsq_isoPol);
-    gmx_stats_free(lsq_anisoPol);
-}
 }
 
 int alex_tune_zeta(int argc, char *argv[])
@@ -1200,6 +556,8 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 fc_quad       = 1;
     static real                 fc_charge     = 1;
     static real                 fc_esp        = 1;
+    static real                 fc_epot       = 0;
+    static real                 fc_force      = 0;
     static real                 th_toler      = 170;
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
@@ -1279,6 +637,10 @@ int alex_tune_zeta(int argc, char *argv[])
           "Force constant in the penalty function for the magnitude of the electrostatic potential." },
         { "-fc_charge",  FALSE, etREAL, {&fc_charge},
           "Force constant in the penalty function for the magnitude of the charges with respect to the ESP charges." },
+        { "-fc_epot",  FALSE, etREAL, {&fc_epot},
+          "Force constant in the penalty function for the magnitude of the potential energy." },
+        { "-fc_force",  FALSE, etREAL, {&fc_force},
+          "Force constant in the penalty function for the magnitude of the force." },
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
@@ -1360,7 +722,6 @@ int alex_tune_zeta(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
     
-    alexandria::OptZeta            opt(bDipole, bQuadrupole, watoms, lot);
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
@@ -1372,6 +733,7 @@ int alex_tune_zeta(int argc, char *argv[])
         bPolar = true;
     }
     
+    alexandria::OptZeta opt(bDipole, bQuadrupole, watoms, lot);
     opt.Init(cr,
              bQM,
              bGaussianBug,
@@ -1389,8 +751,8 @@ int alex_tune_zeta(int argc, char *argv[])
              fc_quad,
              fc_charge,
              fc_esp,
-             1,
-             1,
+             fc_epot,
+             fc_force,
              fixchi,
              bOptHfac,
              hfac, 
@@ -1446,19 +808,27 @@ int alex_tune_zeta(int argc, char *argv[])
     }
     if (MASTER(cr))
     {
-        opt.print_results(fp,  
-                          opt2fn("-qhisto",    NFILE, fnm),
-                          opt2fn("-dipcorr",   NFILE, fnm),
-                          opt2fn("-mucorr",    NFILE, fnm),
-                          opt2fn("-thetacorr", NFILE, fnm), 
-                          opt2fn("-espcorr",   NFILE, fnm),
-                          opt2fn("-alphacorr", NFILE, fnm),
-                          opt2fn("-isopol",    NFILE, fnm),
-                          opt2fn("-anisopol",  NFILE, fnm),
-                          dip_toler, 
-                          quad_toler, 
-                          oenv,
-                          bPolar);
+        auto *ic = opt.indexCount();
+        print_electric_props(fp,  
+                             opt.mymol_,
+                             opt2fn("-qhisto",    NFILE, fnm),
+                             opt2fn("-dipcorr",   NFILE, fnm),
+                             opt2fn("-mucorr",    NFILE, fnm),
+                             opt2fn("-thetacorr", NFILE, fnm), 
+                             opt2fn("-espcorr",   NFILE, fnm),
+                             opt2fn("-alphacorr", NFILE, fnm),
+                             opt2fn("-isopol",    NFILE, fnm),
+                             opt2fn("-anisopol",  NFILE, fnm),
+                             dip_toler, 
+                             quad_toler, 
+                             oenv,
+                             bPolar,
+                             bDipole,
+                             bQuadrupole,
+                             opt.bfullTensor_,
+                             ic,
+                             opt.hfac_,
+                             opt.cr_);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);
