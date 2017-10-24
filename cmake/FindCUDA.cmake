@@ -39,13 +39,16 @@
 # GROMACS developers README
 # -------------------------
 #
-# This file is taken from CMake git tag v3.4.3
-# Modules/FindCUDA.cmake. Several other supporting cmake files from
-# Modules/FindCUDA/*cmake are also required, and these are also copied
-# from the CMake repo, unmodified.
+# This file is taken from CMake git tag v.3.4.3 Modules/FindCUDA.cmake
+# and modified to use --include-path and --system-include for the
+# include paths required for nvcc to function. Those are the supported
+# flags for nvcc, so should continue to function. Several other
+# supporting cmake files from Modules/FindCUDA/*cmake are also
+# required, and these are also copied from the CMake repo, unmodified.
 #
-# The main file is modified only to make FindPackageHandleStandardArgs
-# able to find those required supporting cmake files.
+# The main file is modified further to make
+# FindPackageHandleStandardArgs able to find those required supporting
+# cmake files.
 #
 # Once CMake 3.7.0 is required for GROMACS, then the fix for CMake
 # issue #14201 contained therein may remove the need for GROMACS to
@@ -1252,7 +1255,7 @@ macro(CUDA_WRAP_SRCS cuda_target format generated_files)
   endif()
 
   # Initialize our list of includes with the user ones followed by the CUDA system ones.
-  set(CUDA_NVCC_INCLUDE_ARGS ${CUDA_NVCC_INCLUDE_ARGS_USER} "-I${CUDA_INCLUDE_DIRS}")
+  set(CUDA_NVCC_INCLUDE_ARGS ${CUDA_NVCC_INCLUDE_ARGS_USER} --system-include;${CUDA_INCLUDE_DIRS})
   # Get the include directories for this directory and use them for our nvcc command.
   # Remove duplicate entries which may be present since include_directories
   # in CMake >= 2.8.8 does not remove them.
@@ -1260,7 +1263,7 @@ macro(CUDA_WRAP_SRCS cuda_target format generated_files)
   list(REMOVE_DUPLICATES CUDA_NVCC_INCLUDE_DIRECTORIES)
   if(CUDA_NVCC_INCLUDE_DIRECTORIES)
     foreach(dir ${CUDA_NVCC_INCLUDE_DIRECTORIES})
-      list(APPEND CUDA_NVCC_INCLUDE_ARGS -I${dir})
+      list(APPEND CUDA_NVCC_INCLUDE_ARGS --include-path;${dir})
     endforeach()
   endif()
 
