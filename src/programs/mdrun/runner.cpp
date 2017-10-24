@@ -1205,7 +1205,7 @@ int Mdrunner::mdrunner()
         free_membed(membed);
     }
 
-    gmx_hardware_info_free(hwinfo);
+    gmx_hardware_info_free();
 
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
