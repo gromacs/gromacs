@@ -876,7 +876,7 @@ int Mdrunner::mdrunner()
          * or sharing devices on a node, either from the user
          * selection, or automatically. */
         bool rankCanUseGpu = thisRankHasDuty(cr, DUTY_PP);
-        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hw_opt);
+        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hwinfo->compatibleGpus, hw_opt);
     }
 
     reportGpuUsage(mdlog, hwinfo->gpu_info, !hw_opt.gpuIdTaskAssignment.empty(),

@@ -496,6 +496,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
 
         gmx_detect_gpus(mdlog, cr);
         gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
+        hwinfo_g->compatibleGpus = getCompatibleGpus(hwinfo_g->gpu_info);
     }
     /* increase the reference counter */
     n_hwinfo++;

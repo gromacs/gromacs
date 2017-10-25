@@ -74,15 +74,6 @@ class MDLogger;
  */
 std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment);
 
-/*! \brief Filter the compatible GPUs
- *
- * This function filters gpu_info.gpu_dev for compatible GPUs based
- * on the previously run compatibility tests.
- *
- * \param[in]     gpu_info    Information detected about GPUs, including compatibility
- * \return                    vector of IDs of GPUs already recorded as compatible */
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
-
 /*! \brief Assign PP ranks to valid GPU IDs.
  *
  * Will return a validated mapping from PP ranks (ie tasks that can
@@ -96,7 +87,8 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
  *
  * \param[in]     rankCanUseGpu          Whether this rank can execute a task on a GPU.
  * \param[in]     cr                     Communication record.
- * \param[in]     gpu_info               Information detected about GPUs, including compatibility.
+ * \param[in]     gpu_info               Information detected about GPUs
+ * \param[in]     compatibleGpus         Vector of GPUs that are compatible
  * \param[in]     hw_opt                 Parallelisation options, including any user-specified GPU task assignment.
  *
  * \returns  A valid GPU selection.
@@ -104,6 +96,7 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
 std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
                                   const t_commrec        *cr,
                                   const gmx_gpu_info_t   &gpu_info,
+                                  const std::vector<int> &compatibleGpus,
                                   const gmx_hw_opt_t     &hw_opt);
 
 } // namespace

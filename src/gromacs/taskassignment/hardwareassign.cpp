@@ -204,25 +204,10 @@ static void exitUnlessUserGpuTaskAssignmentIsValid(const gmx_gpu_info_t   &gpu_i
     }
 }
 
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
-{
-    // Possible minor over-allocation here, but not important for anything
-    std::vector<int> compatibleGpus;
-    compatibleGpus.reserve(gpu_info.n_dev);
-    for (int i = 0; i < gpu_info.n_dev; i++)
-    {
-        GMX_ASSERT(gpu_info.gpu_dev, "Invalid gpu_info.gpu_dev");
-        if (isGpuCompatible(gpu_info, i))
-        {
-            compatibleGpus.push_back(i);
-        }
-    }
-    return compatibleGpus;
-}
-
 std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
                                   const t_commrec        *cr,
                                   const gmx_gpu_info_t   &gpu_info,
+                                  const std::vector<int> &compatibleGpus,
                                   const gmx_hw_opt_t     &hw_opt)
 {
     std::vector<int> taskAssignment;
@@ -232,7 +217,6 @@ std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
         return taskAssignment;
     }
 
-    auto compatibleGpus = getCompatibleGpus(gpu_info);
     if (!hw_opt.gpuIdTaskAssignment.empty())
     {
         auto userGpuTaskAssignment = parseGpuTaskAssignment(hw_opt.gpuIdTaskAssignment);

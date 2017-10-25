@@ -33,13 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Stub functions for non-GPU builds
+ *  \brief Function definitions for non-GPU builds
  *
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 #include "gmxpre.h"
 
 #include "gpu_utils.h"
+
+#include "gromacs/hardware/gpu_hw_info.h"
 
 /*! \brief Set allocation functions used by the GPU host
  *
@@ -51,4 +53,17 @@ void gpu_set_host_malloc_and_free(bool,
 {
     *nb_alloc = nullptr;
     *nb_free  = nullptr;
+}
+
+//! This function is documented in the header file
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t & /*gpu_info*/)
+{
+    // There can't be any compatible GPUs
+    return std::vector<int>();
+}
+
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t & /*gpu_info*/,
+                                           int                    /*index*/)
+{
+    return gpu_detect_res_str[egpuNonexistent];
 }
