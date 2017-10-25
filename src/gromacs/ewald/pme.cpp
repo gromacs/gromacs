@@ -505,6 +505,24 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
+//TODO: move into common header
+template <unsigned int factor>
+static size_t roundUpToMultipleOfFactor(size_t number)
+{
+    static_assert(factor > 0 && (factor & (factor - 1)) == 0, "factor should be >0 and a power of 2");
+
+    /* We need to add a most factor-1 and because factor is a power of 2,
+     * we get the result by masking out the bits corresponding to factor-1.
+     */
+    return (number + factor - 1) & ~(factor - 1);
+}
+
+#if GMX_SIMD_HAVE_REAL
+constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
+#else
+constexpr int c_simdWidth = 1;
+#endif
+
 int gmx_pme_init(struct gmx_pme_t   **pmedata,
                  t_commrec           *cr,
                  int                  nnodes_major,
@@ -747,9 +765,12 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
         gmx_incons("More than one communication pulse required for grid overlap communication along the major dimension while using threads");
     }
 
-    snew(pme->bsp_mod[XX], pme->nkx);
-    snew(pme->bsp_mod[YY], pme->nky);
-    snew(pme->bsp_mod[ZZ], pme->nkz);
+    snew_aligned(pme->bsp_mod[XX], roundUpToMultipleOfFactor<c_simdWidth>(pme->nkx), c_simdWidth*sizeof(real));
+    snew_aligned(pme->bsp_mod[YY], roundUpToMultipleOfFactor<c_simdWidth>(pme->nky), c_simdWidth*sizeof(real));
+    snew_aligned(pme->bsp_mod[ZZ], roundUpToMultipleOfFactor<c_simdWidth>(pme->nkz), c_simdWidth*sizeof(real));
+    std::fill(pme->bsp_mod[XX]+pme->nkx, pme->bsp_mod[XX]+roundUpToMultipleOfFactor<c_simdWidth>(pme->nkx), 1);
+    std::fill(pme->bsp_mod[YY]+pme->nky, pme->bsp_mod[YY]+roundUpToMultipleOfFactor<c_simdWidth>(pme->nky), 1);
+    std::fill(pme->bsp_mod[ZZ]+pme->nkz, pme->bsp_mod[ZZ]+roundUpToMultipleOfFactor<c_simdWidth>(pme->nkz), 1);
 
     pme->gpu     = pmeGPU; /* Carrying over the single GPU structure */
     pme->runMode = runMode;
