@@ -49,7 +49,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -105,8 +104,7 @@ void PmeTestEnvironment::SetUp()
 
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     TestHardwareContexts gpuContexts;
-    const auto           compatibleGpus = getCompatibleGpus(hardwareInfo_->gpu_info);
-    for (int gpuIndex : compatibleGpus)
+    for (int gpuIndex : hardwareInfo_->compatibleGpus)
     {
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);

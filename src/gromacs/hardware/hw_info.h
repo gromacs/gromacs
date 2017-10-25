@@ -36,6 +36,7 @@
 #define GMX_HARDWARE_HWINFO_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -54,6 +55,7 @@ struct gmx_hw_info_t
 {
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
+    std::vector<int>      compatibleGpus;          /* Contains the device IDs of all GPUs that are compatible */
 
     int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
                                                       is based on the number of CPUs reported as available

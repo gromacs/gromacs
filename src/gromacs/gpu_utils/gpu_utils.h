@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -74,15 +76,14 @@ class MDLogger;
 GPU_FUNC_QUALIFIER
 int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
-/*! \brief Return whether the GPU with given \c index is compatible, ie suitable for use.
+/*! \brief Return a container of the detected GPUs that are compatible.
  *
- * \param[in]   gpu_info    Information about detected GPUs
- * \param[in]   index       index of GPU to ask about
- * \returns                 Whether the GPU is compatible.
- */
-GPU_FUNC_QUALIFIER
-bool isGpuCompatible(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
-                     int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN(false)
+ * This function filters the result of the detection for compatible
+ * GPUs, based on the previously run compatibility tests.
+ *
+ * \param[in]     gpu_info    Information detected about GPUs, including compatibility.
+ * \return                    vector of IDs of GPUs already recorded as compatible */
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
 
 /*! \brief Return a string describing how compatible the GPU with given \c index is.
  *
@@ -90,9 +91,8 @@ bool isGpuCompatible(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
  * \param[in]   index       index of GPU to ask about
  * \returns                 A null-terminated C string describing the compatibility status, useful for error messages.
  */
-GPU_FUNC_QUALIFIER
 const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
-                                           int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN("")
+                                           int GPU_FUNC_ARGUMENT(index));
 
 /*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
  *
