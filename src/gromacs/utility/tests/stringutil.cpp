@@ -431,22 +431,6 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
               "WrappedAt14WithTrailingWhitespace");
 }
 
-TEST(StringUtilityTest, ParseDigitsFromString)
-{
-    using ::testing::ElementsAre;
-    using ::testing::IsEmpty;
-    EXPECT_THAT(parseDigitsFromString("01"), ElementsAre(0, 1));
-    EXPECT_THAT(parseDigitsFromString("0,1"), ElementsAre(0, 1));
-    EXPECT_THAT(parseDigitsFromString(",0,1"), ElementsAre(0, 1));
-    EXPECT_THAT(parseDigitsFromString("0,1,"), ElementsAre(0, 1));
-    EXPECT_THAT(parseDigitsFromString(",0,1,"), ElementsAre(0, 1));
-    EXPECT_THAT(parseDigitsFromString(","), IsEmpty());
-    EXPECT_THAT(parseDigitsFromString(",,"), IsEmpty());
-    EXPECT_THAT(parseDigitsFromString(""), IsEmpty());
-    EXPECT_THROW(parseDigitsFromString("a"), InvalidInputError);
-    EXPECT_THROW(parseDigitsFromString("0a"), InvalidInputError);
-}
-
 } // namespace
 } // namespace
 } // namespace
