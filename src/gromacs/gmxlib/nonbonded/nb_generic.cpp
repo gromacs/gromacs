@@ -73,7 +73,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          izeta, jzeta, zeff, irow, jrow;
+    real          izeta, jzeta, irow, jrow;
     real          c, c2, c6, c5, c12, c6grid, cexp1, cexp2; //br is removed
     real *        charge;
     real *        zeta;
@@ -275,28 +275,16 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         /* Vanilla cutoff coulomb */
                         if (izeta == 0 && jzeta == 0)
                         {
-                            velec        = qq*rinv;
-                            felec        = velec*rinvsq;
+                            velec         = qq*rinv;
+                            felec         = velec*rinvsq;
                         }
                         else
                         {
                             if (irow == 0 && jrow == 0)
                             {
-                                if (izeta == 0)
-                                {
-                                    zeff = jzeta;
-                                }
-                                else if (jzeta == 0)
-                                {
-                                    zeff = izeta;
-                                } 
-                                else
-                                {
-                                    zeff = izeta*jzeta/sqrt(gmx::square(izeta)+gmx::square(jzeta));
-                                }
-                                r           = rsq*rinv;
-                                velec       = qq*erf(r*zeff)*rinv;
-                                felec       = (qq*rinv)*(erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv));
+                                r         = rsq*rinv;
+                                velec     = qq*Coulomb_GG(r, izeta, jzeta);
+                                felec     = (qq*rinv)*DCoulomb_GG(r, izeta, jzeta);
                             }
                             else
                             {

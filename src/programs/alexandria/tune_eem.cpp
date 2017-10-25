@@ -983,7 +983,9 @@ int alex_tune_eem(int argc, char *argv[])
     }
     
     alexandria::OptEEM  opt(bESP, bDipole, bQuadrupole, bFitAlpha, watoms, lot);
-    opt.Init(cr, bQM, bGaussianBug,
+    opt.Init(cr, 
+             bQM, 
+             bGaussianBug,
              iChargeDistributionModel,
              iChargeGenerationAlgorithm,
              rDecrZeta,
@@ -992,7 +994,8 @@ int alex_tune_eem(int argc, char *argv[])
              zeta_min, 
              J0_max,
              Chi0_max,
-             zeta_max, fc_bound, 
+             zeta_max, 
+             fc_bound, 
              fc_mu,
              fc_quad,
              fc_charge,

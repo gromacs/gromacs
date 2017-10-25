@@ -1971,8 +1971,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             imm = immNoData;
         }
     }
-    if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                              lot, "", (char *)"electronic",
+    if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth), lot, "", 
+                              (bQM ? (char *)"electronic" : (char *)"dipole"),
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
     {       

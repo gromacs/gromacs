@@ -133,7 +133,7 @@ static void make_index_count(IndexCount               *ic,
     }
     if (nullptr != opt_elem)
     {
-        update_index_count_bool(ic, pd, opt_elem, false, true, iDistributionModel);
+        update_index_count_bool(ic, pd, opt_elem, false, false, iDistributionModel);
     }
     else
     {
@@ -564,16 +564,13 @@ void MolDip::Read(FILE            *fp,
                         ntopol++;
                         if (nullptr != debug)
                         {
-                            fprintf(debug, "Added %s, ntopol = %d\n",
-                                    mymol.molProp()->getMolname().c_str(),
-                                    ntopol);
+                            fprintf(debug, "Added %s, ntopol = %d\n", mymol.molProp()->getMolname().c_str(), ntopol);
                         }
                     }
                 }
                 if ((immOK != imm) && (nullptr != debug))
                 {
-                    fprintf(debug, "IMM: Dest: %d %s - %s\n",
-                            dest, mpi->getMolname().c_str(), immsg(imm));
+                    fprintf(debug, "IMM: Dest: %d %s - %s\n", dest, mpi->getMolname().c_str(), immsg(imm));
                 }
             }
             else
