@@ -252,7 +252,7 @@ class BiasState
                             const std::vector<double>    &probWeightNeighbor,
                             awh_dvec                      biasForce,
                             gmx_int64_t                   step,
-                            int                           seed,
+                            gmx_int64_t                   seed,
                             int                           indexSeed);
 
     private:
