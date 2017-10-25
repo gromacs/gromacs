@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -425,7 +425,7 @@ selectByNotMask(float a, bool mask)
  *       outside such code.
  */
 static inline float
-blend(float a, float b, float sel)
+blend(float a, float b, bool sel)
 {
     return sel ? b : a;
 }
@@ -827,7 +827,7 @@ selectByNotMask(double a, bool mask)
  *       outside such code.
  */
 static inline double
-blend(double a, double b, double sel)
+blend(double a, double b, bool sel)
 {
     return sel ? b : a;
 }
@@ -1009,7 +1009,7 @@ selectByNotMask(std::int32_t a, bool mask)
  *       outside such code.
  */
 static inline std::int32_t
-blend(std::int32_t a, std::int32_t b, float sel)
+blend(std::int32_t a, std::int32_t b, bool sel)
 {
     return sel ? b : a;
 }
