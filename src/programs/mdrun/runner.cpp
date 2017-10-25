@@ -102,6 +102,7 @@
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/taskassignment/resourcedivision.h"
+#include "gromacs/taskassignment/usergpuids.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -473,13 +474,20 @@ int Mdrunner::mdrunner()
      * count. */
     EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
                                                EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
+    std::vector<int>    userGpuIds;
+    try
+    {
+        userGpuIds = parseUserGpuIds(hw_opt.gpuIdTaskAssignment);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     bool                forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
-    if (!hw_opt.gpuIdTaskAssignment.empty() && forceUseCpu)
+    if (!userGpuIds.empty() && forceUseCpu)
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
-    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && hw_opt.gpuIdTaskAssignment.empty() && (emulateGpuNonbonded == EmulateGpuNonbonded::No);
+    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !userGpuIds.empty();
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && userGpuIds.empty() && (emulateGpuNonbonded == EmulateGpuNonbonded::No);
     GMX_RELEASE_ASSERT(!(forceUsePhysicalGpu && tryUsePhysicalGpu), "Must either force use of "
                        "GPUs for short-ranged interactions, or try to use them, not both.");
     const PmeRunMode pmeRunMode = PmeRunMode::CPU;
@@ -585,6 +593,7 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
+                                                userGpuIds,
                                                 domdecOptions.numPmeRanks,
                                                 nonbondedOnGpu,
                                                 inputrec, mtop,
@@ -870,17 +879,31 @@ int Mdrunner::mdrunner()
     std::vector<int> gpuTaskAssignment;
     if (nonbondedOnGpu)
     {
-        /* Currently the DD code assigns duty to ranks that can
-         * include PP work that currently can be executed on a single
-         * GPU, if present and compatible.  This has to be coordinated
-         * across PP ranks on a node, with possible multiple devices
-         * or sharing devices on a node, either from the user
-         * selection, or automatically. */
+        // Currently the DD code assigns duty to ranks that can
+        // include PP work that currently can be executed on a single
+        // GPU, if present and compatible.  This has to be coordinated
+        // across PP ranks on a node, with possible multiple devices
+        // or sharing devices on a node, either from the user
+        // selection, or automatically.
+        //
+        // GPU ID assignment strings, if provided, cover all the ranks on
+        // a node. If nodes or the process placement on them are
+        // heterogeneous, then the GMX_GPU_ID environment variable must be
+        // set by a user who also wishes to direct GPU ID assignment.
+        // Thus the implementation of task assignment can assume it has a
+        // GPU ID assignment appropriate for the node upon which its
+        // process is running.
+        //
+        // Valid GPU ID assignments are an ordered set of digits that
+        // identify GPU device IDs (e.g. as understood by the GPU runtime,
+        // and subject to environment modification such as with
+        // CUDA_VISIBLE_DEVICES) that will be used for the GPU-suitable
+        // tasks on all of the ranks of that node.
         bool rankCanUseGpu = thisRankHasDuty(cr, DUTY_PP);
-        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hwinfo->compatibleGpus, hw_opt);
+        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hwinfo->compatibleGpus, userGpuIds);
     }
 
-    reportGpuUsage(mdlog, hwinfo->gpu_info, !hw_opt.gpuIdTaskAssignment.empty(),
+    reportGpuUsage(mdlog, hwinfo->gpu_info, !userGpuIds.empty(),
                    gpuTaskAssignment, cr->nrank_pp_intranode, cr->nnodes > 1);
 
     if (!gpuTaskAssignment.empty())

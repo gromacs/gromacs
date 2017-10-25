@@ -686,18 +686,6 @@ class TextLineWrapper
         TextLineWrapperSettings settings_;
 };
 
-/*! \brief Construct a vector of decimal digits parsed from an \c input string.
- *
- * \param[in]  input  String that must contain only decimal digits, or only
- *                    decimal digits separated by comma delimiters.
- *
- * \returns           Vector of any digits found in \c input.
- *
- * \throws  std::bad_alloc if out of memory
- *          InvalidInputError if an invalid digit character is found.
- */
-std::vector<int> parseDigitsFromString(const std::string &input);
-
 //! \}
 
 } // namespace gmx
