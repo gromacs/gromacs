@@ -47,21 +47,24 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
 
-/*! \brief Generate a sample from a discrete probability distribution defined on [0, ndistr - 1].
+/*! \brief Generate a sample from a discrete probability distribution defined on [0, distr.size() - 1].
  *
- * \param[in] distr      Normalized probability distribution to generate a sample from.
- * \param[in] ndistr     Length of distr.
+ * \param[in] distr  Normalized probability distribution to generate a sample from.
  * \param[in] step   Time step needed by the random number generator.
  * \param[in] seed   Random seed needed by the random number generator.
  * \param[in] iseed  Second random seed.
  * \returns a sample in [0, ndistr - 1]
  */
-int get_sample_from_distribution(const std::vector<double> &distr, int ndistr, gmx_int64_t step, gmx_int64_t seed, int iseed);
+int getSampleFromDistribution(gmx::ArrayRef<const double> distr,
+                              gmx_int64_t                 step,
+                              gmx_int64_t                 seed,
+                              int                         iseed);
 
 /*! \brief Returns the exponent c where exp(c) = exp(a) + exp(b).
  *
@@ -69,21 +72,20 @@ int get_sample_from_distribution(const std::vector<double> &distr, int ndistr, g
  * \param[in] b     Second exponent.
  * \returns c.
  */
-double expsum(double a, double b);
-
+double expSum(double a,
+              double b);
 
 /*! \brief
  * Returns an approximation of the geometry factor used for initializing the AWH update size.
  *
  * The geometry factor is defined as the following sum of Gaussians:
  * sum_{k!=0} exp(-0.5*(k*pi*x)^2)/(pi*k)^2,
- * where k is a dim-dimensional integer vector with k_i in {0,1,..}.
+ * where k is a xArray.size()-dimensional integer vector with k_i in {0,1,..}.
  *
- * \param[in] xarray  dim-dimensional array to evaluate.
- * \param[in] ndim    The number of dimension.
+ * \param[in] xArray  Array to evaluate.
  * \returns the geometry factor.
  */
-double gaussian_geometry_factor(const double *xarray, int ndim);
+double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray);
 
 } // namespace gmx
 

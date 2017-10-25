@@ -101,7 +101,7 @@ void Bias::doSkippedUpdatesForAllPoints()
 void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
                                   double *awhPotential, double *potentialJump,
                                   const gmx_multisim_t *ms,
-                                  double t, gmx_int64_t step, int seed,
+                                  double t, gmx_int64_t step, gmx_int64_t seed,
                                   FILE *fplog)
 {
     if (step < 0)

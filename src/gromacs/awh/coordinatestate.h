@@ -95,7 +95,7 @@ class CoordinateState
                                      int                        gridpointIndex,
                                      const std::vector<double> &probWeightNeighbor,
                                      gmx_int64_t                step,
-                                     int                        seed,
+                                     gmx_int64_t                seed,
                                      int                        indexSeed);
 
         /*! \brief Update the coordinate value with coordValue.

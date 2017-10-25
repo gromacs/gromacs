@@ -353,7 +353,7 @@ class PointState
         {
             if (inTargetRegion())
             {
-                logPmfsum_           = expsum(logPmfsum_, -convolvedBias);
+                logPmfsum_           = expSum(logPmfsum_, -convolvedBias);
                 numVisitsIteration_ += 1;
             }
         }

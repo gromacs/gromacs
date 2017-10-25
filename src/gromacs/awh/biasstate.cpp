@@ -415,7 +415,7 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const std::vector<double>    &probWeightNeighbor,
                                awh_dvec                      biasForce,
                                gmx_int64_t                   step,
-                               int                           seed,
+                               gmx_int64_t                   seed,
                                int                           indexSeed)
 {
     /* Generate and set a new coordinate reference value */

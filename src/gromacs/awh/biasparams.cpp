@@ -145,9 +145,8 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
                                          const std::vector<GridAxis> &gridAxis, double samplingTimestep)
 {
     /* Get diffusion factor */
-    awh_dvec x;
-    int      numDimToSkip = 0;
-    double   L2invD       = 0.;
+    double              L2invD = 0.;
+    std::vector<double> x;
     for (size_t d = 0; d < gridAxis.size(); d++)
     {
         double L = gridAxis[d].length();
@@ -155,19 +154,13 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
         {
             L2invD   += awhBiasParams.dimParams[d].diffusion/(L*L);
             double s  = 1./std::sqrt(dimParams[d].betak);
-            x[d]      = s/L;
-        }
-        else
-        {
-            /* Avoid division by zero for the rare case when there is only one point along one dimension */
-            numDimToSkip += 1;
-            x[d]          = 1;
+            x.push_back(s/L);
         }
     }
     GMX_RELEASE_ASSERT(L2invD > 0, "We need at least one dimension with non-zero length");
     L2invD               = 1./L2invD;
     double errorInitial2 = awhBiasParams.errorInitial*awhBiasParams.errorInitial;
-    double histSize      = L2invD*gaussian_geometry_factor(x, gridAxis.size() - numDimToSkip)/(errorInitial2*samplingTimestep);
+    double histSize      = L2invD*gaussianGeometryFactor(x)/(errorInitial2*samplingTimestep);
 
     return histSize;
 }
