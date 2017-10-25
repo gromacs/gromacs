@@ -331,6 +331,7 @@ class SingleRankChecker
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      gmx_hw_opt_t           *hw_opt,
+                     const std::vector<int> &userGpuIds,
                      int                     numPmeRanks,
                      bool                    nonbondedOnGpu,
                      const t_inputrec       *inputrec,
@@ -345,8 +346,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     /* If the user made a GPU task assignment, that sets the number of thread-MPI ranks. */
-    auto userGpuTaskAssignment = gmx::parseGpuTaskAssignment(hw_opt->gpuIdTaskAssignment);
-    int  numGpuIdsSupplied     = static_cast<int>(userGpuTaskAssignment.size());
+    int  numGpuIdsSupplied = static_cast<int>(userGpuIds.size());
 
     /* TODO Here we handle the case where the user set GPU IDs, and
        further below we handle the case where the algorithm does not
