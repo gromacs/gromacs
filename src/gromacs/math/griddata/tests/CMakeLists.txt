@@ -34,4 +34,5 @@
 
 gmx_add_unit_test(griddataUnitTests griddata-test
                   columnmajorlattice.cpp
+                  canonicalvectorbasis.cpp
                   )
