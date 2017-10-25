@@ -33,5 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_install_headers(
+    canonicalvectorbasis.h
     columnmajorlattice.h
     )
