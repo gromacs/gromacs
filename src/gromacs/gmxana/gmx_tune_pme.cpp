@@ -42,6 +42,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <string>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -61,6 +62,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/taskassignment/usergpuids.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -752,57 +754,18 @@ static void check_mdrun_works(gmx_bool    bThreads,
 }
 
 /* Handles the no-GPU case by emitting an empty string. */
-static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const std::vector<int> &gpu_ids)
+static std::string make_gpu_id_command_line(int numRanks, int numPmeRanks, const std::vector<int> &gpu_ids)
 {
-    char       *command_line, *ptr;
-    const char *flag = "-gpu_id ";
-    int         flag_length;
-
-    /* Reserve enough room for the option name, enough single-digit
-       GPU ids (since that is currently all that is possible to use
-       with mdrun), and a terminating NULL. */
-    flag_length = std::strlen(flag);
-    snew(command_line, flag_length + numRanks + 1);
-    ptr = command_line;
-
     /* If the user has given no eligible GPU IDs, or we're trying the
      * default behaviour, then there is nothing for g_tune_pme to give
      * to mdrun -gpu_id */
     if (!gpu_ids.empty() && numPmeRanks > -1)
     {
-        size_t numPpRanks, max_num_ranks_for_each_GPU;
-
-        /* Write the option flag */
-        std::strcpy(ptr, flag);
-        ptr += flag_length;
-
-        numPpRanks                 = numRanks - numPmeRanks;
-        max_num_ranks_for_each_GPU = numPpRanks / gpu_ids.size();
-        if (max_num_ranks_for_each_GPU * gpu_ids.size() != numPpRanks)
-        {
-            /* Some GPUs will receive more work than others, which
-             * we choose to be those with the lowest indices */
-            max_num_ranks_for_each_GPU++;
-        }
-
-        /* Loop over all eligible GPU ids */
-        for (size_t gpu_id = 0, rank = 0; gpu_id < gpu_ids.size(); gpu_id++)
-        {
-            size_t rank_for_this_GPU;
-            /* Loop over all PP ranks for GPU with ID gpu_id, building the
-               assignment string. */
-            for (rank_for_this_GPU = 0;
-                 rank_for_this_GPU < max_num_ranks_for_each_GPU && rank < numPpRanks;
-                 rank++, rank_for_this_GPU++)
-            {
-                *ptr = '0' + gpu_ids[gpu_id];
-                ptr++;
-            }
-        }
+        return "-gpu_id " + gmx::makeGpuIdString(gpu_ids, numRanks - numPmeRanks);
     }
-    *ptr = '\0';
 
-    return command_line;
+
+    return std::string();
 }
 
 static void launch_simulation(
@@ -819,26 +782,26 @@ static void launch_simulation(
         const std::vector<int>   &gpu_ids)        /* Vector of GPU IDs for
                                                    * constructing mdrun command lines */
 {
-    char  *command, *cmd_gpu_ids;
+    char  *command;
 
 
     /* Make enough space for the system call command,
      * (200 extra chars for -npme ... etc. options should suffice): */
     snew(command, std::strlen(cmd_mpirun)+std::strlen(cmd_mdrun)+std::strlen(cmd_np)+std::strlen(args_for_mdrun)+std::strlen(simulation_tpr)+200);
 
-    cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes, gpu_ids);
+    auto cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes, gpu_ids);
 
     /* Note that the -passall options requires args_for_mdrun to be at the end
      * of the command line string */
     if (bThreads)
     {
         sprintf(command, "%s%s-npme %d -s %s %s %s",
-                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids);
+                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids.c_str());
     }
     else
     {
         sprintf(command, "%s%s%s -npme %d -s %s %s %s",
-                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids);
+                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids.c_str());
     }
 
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch ? "Using" : "Please use", command);
@@ -1435,7 +1398,7 @@ static void do_the_tests(
         int                       presteps,       /* DLB equilibration steps, is checked    */
         gmx_int64_t               cpt_steps,      /* Time step counter in the checkpoint    */
         gmx_bool                  bCheck,         /* Check whether benchmark mdrun works    */
-        const std::vector<int>   &gpu_ids)        /* Vector of GPU IDs for
+        const std::vector<int>   &gpu_ids)        /* GPU IDs for
                                                    * constructing mdrun command lines */
 {
     int      i, nr, k, ret, count = 0, totaltests;
@@ -1522,11 +1485,9 @@ static void do_the_tests(
         /* Loop over various numbers of PME nodes: */
         for (i = 0; i < *pmeentries; i++)
         {
-            char *cmd_gpu_ids = nullptr;
-
             pd = &perfdata[k][i];
 
-            cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes[i], gpu_ids);
+            auto cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes[i], gpu_ids);
 
             /* Loop over the repeats for each scenario: */
             for (nr = 0; nr < repeats; nr++)
@@ -1538,7 +1499,7 @@ static void do_the_tests(
                  * at the end of the command line string */
                 snew(pd->mdrun_cmd_line, cmdline_length);
                 sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s %s %s",
-                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench, cmd_gpu_ids);
+                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench, cmd_gpu_ids.c_str());
 
                 /* To prevent that all benchmarks fail due to a show-stopper argument
                  * on the mdrun command line, we make a quick check first.
@@ -1636,7 +1597,6 @@ static void do_the_tests(
                     break;
                 }
             } /* end of repeats loop */
-            sfree(cmd_gpu_ids);
         }     /* end of -npme loop */
     }         /* end of tpr file loop */
 
@@ -2455,7 +2415,7 @@ int gmx_tune_pme(int argc, char *argv[])
                 bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa), pa);
     /* Check any GPU IDs passed make sense, and fill the data structure for them */
-    auto gpu_ids = gmx::parseDigitsFromString(eligible_gpu_ids);
+    auto gpu_ids = gmx::parseUserGpuIds(eligible_gpu_ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
