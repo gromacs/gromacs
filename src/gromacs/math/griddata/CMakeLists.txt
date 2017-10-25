@@ -38,4 +38,5 @@ gmx_install_headers(
     canonicalvectorbasis.h
     columnmajorlattice.h
     grid.h
+    griddata.h
     )
