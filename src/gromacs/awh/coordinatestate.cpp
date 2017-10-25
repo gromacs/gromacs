@@ -81,7 +81,7 @@ CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
                                          int                        gridpointIndex,
                                          const std::vector<double> &probWeightNeighbor,
                                          gmx_int64_t                step,
-                                         int                        seed,
+                                         gmx_int64_t                seed,
                                          int                        indexSeed)
 {
     /* Sample new umbrella reference value from the probability distribution
@@ -91,9 +91,8 @@ CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
 
     /* In order to use the same seed for all AWH biases and get independent
        samples we use the index of the bias. */
-    int n_sampled      = get_sample_from_distribution(probWeightNeighbor,
-                                                      neighbor.size(),
-                                                      step, seed, indexSeed);
+    int n_sampled      = getSampleFromDistribution(probWeightNeighbor,
+                                                   step, seed, indexSeed);
 
     umbrellaGridpoint_ = neighbor[n_sampled];
 }

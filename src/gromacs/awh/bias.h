@@ -192,7 +192,7 @@ class Bias
                                     const gmx_multisim_t *ms,
                                     double                t,
                                     gmx_int64_t           step,
-                                    int                   seed,
+                                    gmx_int64_t           seed,
                                     FILE                 *fplog);
 
         /*! \brief
