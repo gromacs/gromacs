@@ -641,15 +641,12 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_child_val(child, exml_names[exmlAVERAGE], ptr);
         ptr = gmx_ftoa(error).c_str();
         add_xml_child_val(child, exml_names[exmlERROR], ptr);
-        if ((x != 0) || (y != 0) || (z != 0))
-        {
-            ptr = gmx_ftoa(x).c_str();
-            add_xml_child_val(child, exml_names[exmlX], ptr);
-            ptr = gmx_ftoa(y).c_str();
-            add_xml_child_val(child, exml_names[exmlY], ptr);
-            ptr = gmx_ftoa(z).c_str();
-            add_xml_child_val(child, exml_names[exmlZ], ptr);
-        }
+        ptr = gmx_ftoa(x).c_str();
+        add_xml_child_val(child, exml_names[exmlX], ptr);
+        ptr = gmx_ftoa(y).c_str();
+        add_xml_child_val(child, exml_names[exmlY], ptr);
+        ptr = gmx_ftoa(z).c_str();
+        add_xml_child_val(child, exml_names[exmlZ], ptr);
     }
 
     for (auto mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++)
@@ -664,24 +661,18 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_child_val(child, exml_names[exmlAVERAGE], ptr);
         ptr = gmx_ftoa(error).c_str();
         add_xml_child_val(child, exml_names[exmlERROR], ptr);
-        if ((xx != 0) || (yy != 0) || (zz != 0))
-        {
-            ptr = gmx_ftoa(xx).c_str();
-            add_xml_child_val(child, exml_names[exmlXX], ptr);
-            ptr = gmx_ftoa(yy).c_str();
-            add_xml_child_val(child, exml_names[exmlYY], ptr);
-            ptr = gmx_ftoa(zz).c_str();
-            add_xml_child_val(child, exml_names[exmlZZ], ptr);
-        }
-        if ((xy != 0) || (xz != 0) || (yz != 0))
-        {
-            ptr = gmx_ftoa(xy).c_str();
-            add_xml_child_val(child, exml_names[exmlXY], ptr);
-            ptr = gmx_ftoa(xz).c_str();
-            add_xml_child_val(child, exml_names[exmlXZ], ptr);
-            ptr = gmx_ftoa(yz).c_str();
-            add_xml_child_val(child, exml_names[exmlYZ], ptr);
-        }
+        ptr = gmx_ftoa(xx).c_str();
+        add_xml_child_val(child, exml_names[exmlXX], ptr);
+        ptr = gmx_ftoa(yy).c_str();
+        add_xml_child_val(child, exml_names[exmlYY], ptr);
+        ptr = gmx_ftoa(zz).c_str();
+        add_xml_child_val(child, exml_names[exmlZZ], ptr);
+        ptr = gmx_ftoa(xy).c_str();
+        add_xml_child_val(child, exml_names[exmlXY], ptr);
+        ptr = gmx_ftoa(xz).c_str();
+        add_xml_child_val(child, exml_names[exmlXZ], ptr);
+        ptr = gmx_ftoa(yz).c_str();
+        add_xml_child_val(child, exml_names[exmlYZ], ptr);
     }
 
     for (auto mq_it = exper.BeginQuadrupole();

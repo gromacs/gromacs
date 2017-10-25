@@ -563,7 +563,7 @@ void print_electric_props(FILE                           *fp,
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
     
-    fprintf(fp, "\nZeta parameters are optimized for %zu atom types:\n", atypes.size());    
+    fprintf(fp, "\nParameters are optimized for %zu atom types:\n", atypes.size());    
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;

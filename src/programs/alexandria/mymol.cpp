@@ -1833,6 +1833,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         CalcQMbasedMoments(qESP_, &dip_esp_, mu_esp_, Q_esp_);
         esp_dipole_found = true;
     }
+    T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
                               (char *)"Mulliken charges",
@@ -1863,6 +1864,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }
     }
+    T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
                               (char *)"Hirshfeld charges",
@@ -1893,6 +1895,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }    
     }
+    T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
                               (char *)"CM5 charges",
@@ -1923,6 +1926,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }   
     } 
+    T = -1;
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
@@ -1971,6 +1975,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             imm = immNoData;
         }
     }
+    T = -1;
     if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth), lot, "", 
                               (bQM ? (char *)"electronic" : (char *)"dipole"),
                               &value, &error, &T, myref, mylot,
@@ -2013,6 +2018,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     {
       imm = immNoDipole;
     }
+    T = -1;
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
                               lot, "", (char *)"electronic",
                               &value, &error, &T, myref, mylot,
@@ -2036,7 +2042,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 copy_rvec(tmpvec, Q_elec_[m]);
             }
         }
-    }  
+    }
+    T = -1;  
     if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, 
                               lot, "", (char *)"electronic", 
                               &value, &error, &T, myref, mylot, 

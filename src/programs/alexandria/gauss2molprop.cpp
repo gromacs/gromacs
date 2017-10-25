@@ -138,14 +138,12 @@ int alex_gauss2molprop(int argc, char *argv[])
     for (i = 0; (i < nfn); i++)
     {
         alexandria::MolProp mmm;
-
         ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
                   maxpot, nsymm, pd.getForceField().c_str(), jobtype);
-        mp.push_back(mmm);
+        mp.push_back(std::move(mmm));
     }
 
-    printf("Succesfully read %d molprops from %d Gaussian files.\n",
-           (int)mp.size(), nfn);
+    printf("Succesfully read %d molprops from %d Gaussian files.\n", (int)mp.size(), nfn);
     alexandria::MolSelect gms;
     MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
     merge_doubles(mp, nullptr, TRUE);
