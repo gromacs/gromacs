@@ -40,6 +40,9 @@
 #include "pme-solve.h"
 
 #include <cmath>
+#include <cstring>
+
+#include "absl/utility/utility.h"
 
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/units.h"
@@ -85,7 +88,7 @@ struct pme_solve_work_t
 constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
 #else
 /* We can use any alignment > 0, so we use 4 */
-constexpr int c_simdWidth = 4;
+constexpr int c_simdWidth = 1; //TODO: check whether that is a disadvantage. Some new code requires it
 #endif
 
 /* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
@@ -314,11 +317,143 @@ gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<real> r
 #endif
 
 #if defined PME_SIMD_SOLVE
-using PME_T = SimdReal;
+using PME_T     = SimdReal;
+using PME_INT_T = SimdInt32;
 #else
-using PME_T = real;
+using PME_T     = real;
+using PME_INT_T = int32_t;
 #endif
 
+//generateArray: Create constexpr array using constexpr function
+//TODO: move to utility
+namespace detail
+{
+template<typename T, typename G, T... Ns>
+constexpr auto generateArray(G g, absl::integer_sequence<T, Ns...>) noexcept
+    ->std::array<T, sizeof ... (Ns)>
+{
+    return {{
+                g(Ns) ...
+            }};
+}
+template<typename T>
+struct identity
+{
+    T operator()(T x) { return x; }
+};
+}
+
+template<typename T, T N, typename G = detail::identity<T> >
+constexpr auto generateArray(G g = {}) noexcept->std::array<T, N> {
+    static_assert(N >= T {}, "no negative sizes");
+    return detail::generateArray<T, G>(g, absl::make_integer_sequence<T, N>{});
+}
+
+//TODO: Complete and move to simd.h
+#if GMX_SIMD_HAVE_REAL
+static inline SimdReal &operator+=(SimdReal &x, SimdReal y)
+{
+    x = x+y;
+    return x;
+}
+
+//shuffle: shuffle 2 input SIMD vectors using constexpr mapping function
+template<typename G>
+static inline SimdReal
+shuffle(SimdReal a, SimdReal b, G g = {})
+{
+    alignas(64) constexpr auto idx = generateArray<int, GMX_SIMD_REAL_WIDTH>(g);
+#if (defined(__GNUC__) && !defined(__clang__) && !defined(__ICC))
+    int iv __attribute__ ((vector_size (sizeof(int)*GMX_SIMD_REAL_WIDTH)));
+    memcpy(&iv, idx.data(), sizeof(int)*GMX_SIMD_REAL_WIDTH);
+    return __builtin_shuffle(a.simdInternal_, b.simdInternal_, iv);
+#else
+    alignas(64) float x[2*GMX_SIMD_REAL_WIDTH], z[GMX_SIMD_REAL_WIDTH];
+    store(x, a);
+    store(x+GMX_SIMD_REAL_WIDTH, b);
+#pragma omp simd
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        GMX_ASSERT(g(i) < 2*GMX_SIMD_REAL_WIDTH, "shuffle functor out of range");
+        z[i] = x[idx[i]];
+    }
+    return load<SimdReal>(z);
+#endif
+}
+
+template<typename G>
+static inline SimdReal
+shuffle(SimdReal a, G g = {})
+{
+    alignas(64) constexpr auto idx = generateArray<int, GMX_SIMD_REAL_WIDTH>(g);
+#if (defined(__GNUC__) && !defined(__clang__) && !defined(__ICC))
+    int iv __attribute__ ((vector_size (sizeof(int)*GMX_SIMD_REAL_WIDTH)));
+    memcpy(&iv, idx.data(), sizeof(int)*GMX_SIMD_REAL_WIDTH);
+    return __builtin_shuffle(a.simdInternal_, iv);
+#else
+    alignas(64) float x[GMX_SIMD_REAL_WIDTH], z[GMX_SIMD_REAL_WIDTH];
+    store(x, a);
+#pragma omp simd
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        GMX_ASSERT(g(i) < GMX_SIMD_REAL_WIDTH, "shuffle functor out of range");
+        z[i] = x[idx[i]];
+    }
+    return load<SimdReal>(z);
+#endif
+}
+
+#else //GMX_HAVE_SIMD_REAL
+template<typename G>
+static inline real
+shuffle(real a, real b, G g = {})
+{
+    static_assert(g(0) == 0 || g(0) == 1, "shuffle functor out of range");
+    return g(0) ? b : a;
+}
+template<typename G>
+static inline real
+shuffle(real a, G g = {})
+{
+    static_assert(g(0) == 0, "shuffle functor out of range");
+    return a;
+}
+#endif
+
+#if defined __ICC || (defined __GNUC__ && __GNUC__ < 5 && !defined __clang__) || (defined __clang__ && (__clang_major__ < 4 || (__clang_major__ == 3 && __clang_minor__ < 7)))
+#define CONSTEXPR_FUNCTOR_WORKAROUND(x) x() = default; constexpr x(const x&){}
+#else
+#define CONSTEXPR_FUNCTOR_WORKAROUND(x)
+#endif
+
+template<int m, int a>
+struct ifma      {
+    constexpr int operator()(int x) const { return x*m+a; }
+    CONSTEXPR_FUNCTOR_WORKAROUND(ifma)
+};
+
+template<int m, int a>
+struct ifda      {
+    constexpr int operator()(int x) const { return x/m+a; }
+    CONSTEXPR_FUNCTOR_WORKAROUND(ifda)
+};
+
+template <typename T>
+static inline void gmx_simdcall
+expand2(T src, T* dst1, T* dst2)
+{
+    *dst1 = shuffle<ifda<2, 0> >(src);
+    *dst2 = shuffle<ifda<2, c_simdWidth/2> >(src);
+}
+
+template <typename T>
+static inline T gmx_simdcall
+transpose2Add(T a, T b)
+{
+    const T x = shuffle<ifma<2, 0> >(a, b);
+    const T y = shuffle<ifma<2, 1> >(a, b);
+    return x+y;
+}
 int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                   gmx_bool bEnerVir,
                   int nthread, int thread)
@@ -331,15 +466,8 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     real                     mx, my, mz;
     real                     ewaldcoeff = pme->ewaldcoeff_q;
     real                     factor     = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
-    real                     ets2, struct2, vfactor, ets2vf;
-    real                     d1, d2, energy = 0;
+    real                     d1, d2;
     real                     by, bz;
-    real                     virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
-    real                     rxx, ryx, ryy, rzx, rzy, rzz;
-    struct pme_solve_work_t *work;
-    real                    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *eterm, *m2inv;
-    real                     mhxk, mhyk, mhzk, m2k;
-    real                     corner_fac;
     ivec                     complex_order;
     ivec                     local_ndata, local_offset, local_size;
     real                     elfac;
@@ -357,6 +485,7 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                                       local_offset,
                                       local_size);
 
+    real                     rxx, ryx, ryy, rzx, rzy, rzz;
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
     ryy = pme->recipbox[YY][YY];
@@ -367,19 +496,11 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
 
-    work  = &pme->solve_work[thread];
-    mhx   = work->mhx;
-    mhy   = work->mhy;
-    mhz   = work->mhz;
-    m2    = work->m2;
-    denom = work->denom;
-    tmp1  = work->tmp1;
-    eterm = work->eterm;
-    m2inv = work->m2inv;
 
     iyz0 = local_ndata[YY]*local_ndata[ZZ]* thread   /nthread;
     iyz1 = local_ndata[YY]*local_ndata[ZZ]*(thread+1)/nthread;
 
+    PME_T energy_S(0), virxx_S(0), virxy_S(00), virxz_S(0), viryy_S(0), viryz_S(0), virzz_S(0);
     for (iyz = iyz0; iyz < iyz1; iyz++)
     {
         iy = iyz/local_ndata[ZZ];
@@ -405,7 +526,7 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
         bz = pme->bsp_mod[ZZ][kz];
 
         /* 0.5 correction for corner points */
-        corner_fac = 1;
+        real corner_fac = 1;
         if (kz == 0 || kz == (nz+1)/2)
         {
             corner_fac = 0.5;
@@ -434,79 +555,62 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
              * depend on kx for triclinic unit cells.
              */
 
-            /* Two explicit loops to avoid a conditional inside the loop */
-            for (kx = kxstart; kx < maxkx; kx++)
+            alignas(c_simdWidth*sizeof(int)) std::array<int32_t, c_simdWidth> indexBuf = generateArray<int32_t, c_simdWidth>();
+
+            p0 -= kxstart; //HACK: Needed to get offset right while starting at 0. Refactor. Easy when else of "if (bEnerVir)" is converted too.
+            for (kx = 0; kx < kxend; kx += c_simdWidth, p0 += c_simdWidth)
             {
-                mx = kx;
+                const PME_INT_T kx_S = kx + load<PME_INT_T>(indexBuf.data());
 
-                mhxk      = mx * rxx;
-                mhyk      = mx * ryx + my * ryy;
-                mhzk      = mx * rzx + my * rzy + mz * rzz;
-                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
-                mhx[kx]   = mhxk;
-                mhy[kx]   = mhyk;
-                mhz[kx]   = mhzk;
-                m2[kx]    = m2k;
-                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -factor*m2k;
-            }
+                auto            inRange = cvtIB2B(kx_S < PME_INT_T(kxend) && PME_INT_T(kxstart-1) < kx_S);
 
-            for (kx = maxkx; kx < kxend; kx++)
-            {
-                mx = (kx - nx);
+                const PME_T     mx = cvtI2R(kx_S - selectByNotMask(PME_INT_T(nx), kx_S < PME_INT_T(maxkx)));
 
-                mhxk      = mx * rxx;
-                mhyk      = mx * ryx + my * ryy;
-                mhzk      = mx * rzx + my * rzy + mz * rzz;
-                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
-                mhx[kx]   = mhxk;
-                mhy[kx]   = mhyk;
-                mhz[kx]   = mhzk;
-                m2[kx]    = m2k;
-                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -factor*m2k;
-            }
+                const PME_T     mhx   = mx * rxx;
+                const PME_T     mhy   = mx * ryx + my * ryy;
+                const PME_T     mhz   = mx * rzx + my * rzy + mz * rzz;
+                const PME_T     m2    = mhx*mhx + mhy*mhy + mhz*mhz;
+                const PME_T     m2inv = maskzInv(m2, inRange);
 
-            for (kx = kxstart; kx < kxend; kx++)
-            {
-                m2inv[kx] = 1.0/m2[kx];
-            }
+                const PME_T     denom = m2inv*gmx::inv(bz*by*load<PME_T>(pme->bsp_mod[XX]+kx));
 
-            calc_exponentials_q(kxstart, kxend, elfac,
-                                ArrayRef<PME_T>(denom, denom+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
-                                ArrayRef<PME_T>(tmp1, tmp1+roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
-                                ArrayRef<PME_T>(eterm, eterm+roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
+                const PME_T     eterm = elfac * denom * gmx::exp(-factor*m2);
 
-            for (kx = kxstart; kx < kxend; kx++, p0++)
-            {
-                d1      = p0->re;
-                d2      = p0->im;
+                const PME_T     etermB1 = blend(PME_T(1), eterm, inRange);
 
-                p0->re  = d1*eterm[kx];
-                p0->im  = d2*eterm[kx];
+                PME_T           etermLo, etermHi;
+                expand2(etermB1, &etermLo, &etermHi); //TODO: consider storage of simd-width many real, then imag. neither expand2, transpose2Add, nor unaligned load is needed
 
-                struct2 = 2.0*(d1*d1+d2*d2);
+                const PME_T p_S0 = loadU<PME_T>(reinterpret_cast<real*>(p0));
+                const PME_T p_S1 = loadU<PME_T>(reinterpret_cast<real*>(p0)+c_simdWidth);
+                storeU(reinterpret_cast<real*>(p0), p_S0 * etermLo);
+                storeU(reinterpret_cast<real*>(p0)+c_simdWidth, p_S1 * etermHi);
 
-                tmp1[kx] = eterm[kx]*struct2;
-            }
+                const PME_T struct2  = 2.0*transpose2Add(p_S0*p_S0, p_S1*p_S1);
 
-            for (kx = kxstart; kx < kxend; kx++)
-            {
-                ets2     = corner_fac*tmp1[kx];
-                vfactor  = (factor*m2[kx] + 1.0)*2.0*m2inv[kx];
-                energy  += ets2;
+                const PME_T ets2     = corner_fac*eterm*struct2;
+                const PME_T vfactor  = (factor*m2 + 1.0)*2.0*m2inv;
 
-                ets2vf   = ets2*vfactor;
-                virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
-                virxy   += ets2vf*mhx[kx]*mhy[kx];
-                virxz   += ets2vf*mhx[kx]*mhz[kx];
-                viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
-                viryz   += ets2vf*mhy[kx]*mhz[kx];
-                virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+                energy_S += ets2;
+
+                const PME_T ets2vf   = ets2*vfactor;
+                virxx_S += ets2vf*mhx*mhx - ets2;
+                virxy_S += ets2vf*mhx*mhy;
+                virxz_S += ets2vf*mhx*mhz;
+                viryy_S += ets2vf*mhy*mhy - ets2;
+                viryz_S += ets2vf*mhy*mhz;
+                virzz_S += ets2vf*mhz*mhz - ets2;
             }
         }
         else
         {
+            real                     mhxk, mhyk, mhzk, m2k;
+
+            struct pme_solve_work_t *work  = &pme->solve_work[thread];
+            real                    *denom = work->denom;
+            real                    *tmp1  = work->tmp1;
+            real                    *eterm = work->eterm;
+
             /* We don't need to calculate the energy and the virial.
              * In this case the triclinic overhead is small.
              */
@@ -553,15 +657,23 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
             }
         }
     }
-
     if (bEnerVir)
     {
+        real energy = reduce(energy_S);
+        real virxx  = reduce(virxx_S);
+        real virxy  = reduce(virxy_S);
+        real virxz  = reduce(virxz_S);
+        real viryy  = reduce(viryy_S);
+        real viryz  = reduce(viryz_S);
+        real virzz  = reduce(virzz_S);
+
         /* Update virial with local values.
          * The virial is symmetric by definition.
          * this virial seems ok for isotropic scaling, but I'm
          * experiencing problems on semiisotropic membranes.
          * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
          */
+        struct pme_solve_work_t *work = &pme->solve_work[thread];
         work->vir_q[XX][XX] = 0.25*virxx;
         work->vir_q[YY][YY] = 0.25*viryy;
         work->vir_q[ZZ][ZZ] = 0.25*virzz;
