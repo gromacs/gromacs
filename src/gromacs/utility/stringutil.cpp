@@ -463,25 +463,4 @@ TextLineWrapper::wrapToVector(const std::string &input) const
     return result;
 }
 
-std::vector<int> parseDigitsFromString(const std::string &input)
-{
-    std::vector<int>   digits;
-    std::istringstream ss(input);
-    std::string        token;
-    digits.reserve(input.length());
-    token.reserve(input.length());
-    while (std::getline(ss, token, ','))
-    {
-        for (const auto &c : token)
-        {
-            if (std::isdigit(c) == 0)
-            {
-                GMX_THROW(InvalidInputError(formatString("Invalid character in digit-only string: \"%c\"\n", c)));
-            }
-            digits.push_back(c - '0');
-        }
-    }
-    return digits;
-}
-
 } // namespace gmx
