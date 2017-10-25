@@ -32,6 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_install_headers(
-    columnmajorlattice.h
-    )
+gmx_add_unit_test(griddataUnitTests griddata-test
+                  columnmajorlattice.cpp
+                  )

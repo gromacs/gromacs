@@ -51,4 +51,5 @@ add_subdirectory(griddata)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
+    add_subdirectory(griddata/tests)
 endif()
