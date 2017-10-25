@@ -35,5 +35,6 @@
 file(GLOB MATH_SOURCES)
 
 gmx_install_headers(
+    canonicalvectorbasis.h
     columnmajorlattice.h
     )
