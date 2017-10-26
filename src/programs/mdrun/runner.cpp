@@ -441,7 +441,7 @@ int Mdrunner::mdrunner()
     t_fcdata                 *fcd           = nullptr;
     real                      ewaldcoeff_q  = 0;
     real                      ewaldcoeff_lj = 0;
-    struct gmx_pme_t        **pmedata       = nullptr;
+    gmx_pme_t                *sepPmeData    = nullptr;
     gmx_vsite_t              *vsite         = nullptr;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
@@ -1013,11 +1013,6 @@ int Mdrunner::mdrunner()
         {
             ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
             ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
-            pmedata       = &fr->pmedata;
-        }
-        else
-        {
-            pmedata = nullptr;
         }
     }
     else
@@ -1028,8 +1023,11 @@ int Mdrunner::mdrunner()
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
-        snew(pmedata, 1);
     }
+
+    // This reference hides the fact that PME data is owned by runner on PME-only ranks and by forcerec on other ranks
+    GMX_ASSERT(thisRankHasDuty(cr, DUTY_PP) == (fr != nullptr), "Double-checking that only PME-only ranks have no forcerec");
+    gmx_pme_t * &pmedata = fr ? fr->pmedata : sepPmeData;
 
     if (hw_opt.thread_affinity != threadaffOFF)
     {
@@ -1080,12 +1078,12 @@ int Mdrunner::mdrunner()
             try
             {
                 gmx_device_info_t *pmeGpuInfo = nullptr;
-                gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
-                             mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                             mdrunOptions.reproducible,
-                             ewaldcoeff_q, ewaldcoeff_lj,
-                             nthreads_pme,
-                             pmeRunMode, nullptr, pmeGpuInfo, mdlog);
+                pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
+                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                                       mdrunOptions.reproducible,
+                                       ewaldcoeff_q, ewaldcoeff_lj,
+                                       nthreads_pme,
+                                       pmeRunMode, nullptr, pmeGpuInfo, mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1172,7 +1170,7 @@ int Mdrunner::mdrunner()
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode);
+        gmx_pmeonly(pmedata, cr, nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1183,13 +1181,13 @@ int Mdrunner::mdrunner()
     finish_run(fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
-               fr ? fr->pmedata : nullptr,
+               pmedata,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     // Free PME data
     if (pmedata)
     {
-        gmx_pme_destroy(*pmedata); // TODO: pmedata is always a single element list, refactor
+        gmx_pme_destroy(pmedata);
         pmedata = nullptr;
     }
 
