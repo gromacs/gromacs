@@ -285,6 +285,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                                 r           = rsq*rinv;
                                 velec       = qq*Coulomb_GG(r, izeta, jzeta);
                                 felec       = (qq*rinv)*DCoulomb_GG(r, izeta, jzeta);
+                                //printf("r: %0.3f izeta: %0.3f  jzeta: %0.3f\n", r, izeta, jzeta);
                             }
                             else
                             {

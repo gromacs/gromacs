@@ -1030,7 +1030,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       iter      = 0;
     
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
-    GenerateGromacs(mdlog, cr, tabfn, hwinfo);
+    GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
     if (bSymmetricCharges)
     {
         auto bonds = SearchPlist(plist_, eitBONDS);
@@ -1209,10 +1209,11 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     return imm;
 }
 
-immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
-                                 t_commrec           *cr,
-                                 const char          *tabfn,
-                                 gmx_hw_info_t       *hwinfo)
+immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
+                                 t_commrec                 *cr,
+                                 const char                *tabfn,
+                                 gmx_hw_info_t             *hwinfo,
+                                 ChargeDistributionModel    ieqd)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
     auto nalloc = 2*topology_->atoms.nr + 1;
@@ -1235,11 +1236,18 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     setup_bonded_threading(fr_, &ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
-    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
+    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);   
     
     if (nullptr != shellfc_)
     {
         make_local_shells(cr, mdatoms_, shellfc_);
+    }
+    if (ieqd != eqdAXs && ieqd != eqdAXps)
+    {
+        for (auto i = 0; i < mtop_->natoms; i++)
+        {
+            mdatoms_->row[i] = 0;
+        }
     }
     return immOK;
 }
@@ -1253,7 +1261,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     clear_mat (force_vir);
     for (auto i = 0; i < mtop_->natoms; i++)
     {
-        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;     
+        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
         if (nullptr != debug)
         {
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);

@@ -454,10 +454,11 @@ class MyMol
          */
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
-        immStatus GenerateGromacs(const gmx::MDLogger &mdlog,
-                                  t_commrec           *cr,
-                                  const char          *tabfn,
-                                  gmx_hw_info_t       *hwinfo);
+        immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
+                                  t_commrec                *cr,
+                                  const char               *tabfn,
+                                  gmx_hw_info_t            *hwinfo,
+                                  ChargeDistributionModel   iModel);
 
         /*! \brief
          * Generate cube
