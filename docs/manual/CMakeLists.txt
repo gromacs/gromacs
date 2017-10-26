@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@ option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OF
 mark_as_advanced(GMX_BUILD_MANUAL)
 
 set(MANUAL_BUILD_IS_POSSIBLE ON)
+set(IMAGE_CONVERT_POSSIBLE ON)
 set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
+set(NO_IMAGE_CONVERT_REASON)
 if (NOT GMX_BUILD_MANUAL)
     # Make sure we only do detection of manual-building dependencies
     # when the user opted in for that.
@@ -54,18 +56,22 @@ else()
     if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
-
+        if (NOT IMAGEMAGICK_CONVERT)
+            set(IMAGE_CONVERT_POSSIBLE OFF)
+            set(NO_IMAGE_CONVERT_REASON "Can not convert files for online or pdf manual")
+        endif()
         # TODO Later, identify other dependencies like bibtex,
         # make_index, date, some graphics conversion program,
         # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
     endif()
+
 endif()
 
 if(MANUAL_BUILD_IS_POSSIBLE)
     LATEX_GET_OUTPUT_PATH(output_dir)
 
     # Avoid generating a global "html" target that clashes with the
-    # html target from program generaion of help text in share/html.
+    # html target from program generation of help text in share/html.
     set(LATEX2HTML_CONVERTER off)
 
     # This helps make the index look decent.
@@ -74,40 +80,59 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     # to improve the index generation. Don't replace UseLATEX.cmake
     # blindly from upstream!
 
-    # Here follows various custom CMake "commands" that call our various
-    # GROMACS helper scripts to make bits of the manual from the installed
-    # binaries and/or source distribution, as appropriate.
-    #
-    # Only files that can be built should be listed in DEPENDS. Makefile
-    # rules are generated for those files.
-
-    # Finally, the command to build the manual.
-
-    ADD_LATEX_DOCUMENT(gromacs.tex
-        # Normal LaTeX \included files
-        INPUTS algorithms.tex  defunits.tex    implement.tex  macros.tex     special.tex
-        analyse.tex     files.tex       topology.tex
-        averages.tex    forcefield.tex  gromacs.tex    intro.tex      programs.tex
-
-        # CMake does variable replacement in these files
-        CONFIGURE macros.tex
-
-        BIBFILES monster.bib unpubl.bib
-        IMAGE_DIRS plots
-        DEFAULT_PDF
-        USE_INDEX
-        )
-endif()
-
-if(MANUAL_BUILD_IS_POSSIBLE)
     # An explicit "make manual" will still be required for the manual
     # to be built.
-    add_custom_target(manual DEPENDS pdf)
-else()
+    ADD_LATEX_DOCUMENT(Gromacs.tex
+        DEFAULT_PDF
+        )
+
+
     add_custom_target(manual
+        DEPENDS sphinx-create-texman
+        DEPENDS pdf
+        )
+else()
+        add_custom_target(manual
         COMMAND ${CMAKE_COMMAND} -E echo
         "Cannot build PDF manual, because ${MANUAL_BUILD_NOT_POSSIBLE_REASON}"
         VERBATIM)
 endif()
+if(IMAGE_CONVERT_POSSIBLE)
+    # Need extra step to prepare the png files for input below
+    add_custom_target(sphinx-image-conv-png
+        DEPENDS sphinx-input sphinx-programs
+        COMMAND
+            mogrify -format png -density 300 -units PixelsPerInch *.eps *.pdf
+        WORKING_DIRECTORY
+            "${SPHINX_INPUT_DIR}/web-manual/plots/"
+        COMMENT "Preparing png files for webpage"
+        VERBATIM
+        )
+    # Need extra step to prepare the pdf files for input below
+    add_custom_target(sphinx-image-conv-pdf
+        DEPENDS sphinx-input sphinx-programs
+        COMMAND
+            mogrify -format pdf -density 300 -units PixelsPerInch *.eps
+        WORKING_DIRECTORY
+            "${SPHINX_INPUT_DIR}/web-manual/plots/"
+        COMMENT "Preparing pdf files for print manual"
+        VERBATIM
+        )
+else()
+    # need dummy commands so that we don't break other things
+    add_custom_target(sphinx-image-conv-png
+        DEPENDS sphinx-input sphinx-programs
+        COMMAND ${CMAKE_COMMAND} -E echo
+        "Cannot convert images for web manual, skipping this part"
+        VERBATIM
+        )
+    add_custom_target(sphinx-image-conv-pdf
+        DEPENDS sphinx-input sphinx-programs
+        COMMAND ${CMAKE_COMMAND} -E echo
+        "Cannot convert images for pdf manual, skipping this part"
+        VERBATIM
+        )
+endif()
 
 set(MANUAL_BUILD_IS_POSSIBLE ${MANUAL_BUILD_IS_POSSIBLE} PARENT_SCOPE)
+set(IMAGE_CONVERT_POSSIBLE ${IMAGE_CONVERT_POSSIBLE} PARENT_SCOPE)

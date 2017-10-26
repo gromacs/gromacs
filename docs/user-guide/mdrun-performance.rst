@@ -121,9 +121,9 @@ The algorithms in :ref:`gmx mdrun` and their implementations are most relevant
 when choosing how to make good use of the hardware. For details,
 see the Reference Manual. The most important of these are
 
-.. glossary::
-
 .. _gmx-domain-decomp:
+
+.. glossary::
 
     Domain Decomposition
         The domain decomposition (DD) algorithm decomposes the
