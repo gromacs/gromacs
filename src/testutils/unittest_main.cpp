@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,13 +60,27 @@
 #define TEST_USES_MPI false
 #endif
 
+#ifndef TEST_USES_HARDWARE_DETECTION
+//! Whether the test expects/supports running with knowledge of the hardware.
+#define TEST_USES_HARDWARE_DETECTION false
+namespace gmx
+{
+namespace test
+{
+//! Implement a stub definition for tests that don't ask for a real one.
+void callAddGlobalTestEnvironment() {};
+}
+}
+#endif
+
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char *argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, TEST_USES_MPI,
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH,
+                               TEST_USES_MPI, TEST_USES_HARDWARE_DETECTION,
                                &argc, &argv);
     int errcode = RUN_ALL_TESTS();
     ::gmx::test::finalizeTestUtils();

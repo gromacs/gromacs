@@ -158,7 +158,7 @@ std::unique_ptr<TestProgramContext> g_testContext;
 
 //! \cond internal
 void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
-                   int *argc, char ***argv)
+                   bool usesHardwareDetection, int *argc, char ***argv)
 {
 #ifndef NDEBUG
     gmx_feenableexcept();
@@ -180,6 +180,10 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
             }
             finalizeForCommandLine();
             std::exit(1);
+        }
+        if (usesHardwareDetection)
+        {
+            callAddGlobalTestEnvironment();
         }
         g_testContext.reset(new TestProgramContext(context));
         setProgramContext(g_testContext.get());
