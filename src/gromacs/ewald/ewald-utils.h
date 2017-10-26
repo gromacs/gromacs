@@ -47,11 +47,10 @@
 #ifndef GMX_EWALD_UTILS_H
 #define GMX_EWALD_UTILS_H
 
-#include <assert.h>
-
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 /*! \brief Computes the Ewald splitting coefficient for Coulomb
@@ -128,8 +127,8 @@ class EwaldBoxZScaler
         void scaleBox(const matrix box,
                       matrix       scaledBox)
         {
-            assert(box);
-            assert(scaledBox);
+            GMX_ASSERT(box, "invalid source box pointer");
+            GMX_ASSERT(scaledBox, "invalid target box pointer");
 
             copy_mat(box, scaledBox);
             if (scaleWithWalls_)

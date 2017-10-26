@@ -40,7 +40,6 @@
 
 #include "config.h"
 
-#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -596,7 +595,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
         dvdl_nb[i]  = 0;
     }
 
-    assert(gmx_omp_nthreads_get(emntNonbonded) == nbl_lists->nnbl);
+    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_lists->nnbl, "Number of lists should be same as number of NB threads");
 
     wallcycle_sub_start(wcycle, ewcsNONBONDED);
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
