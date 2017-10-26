@@ -50,7 +50,6 @@
 
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
@@ -91,27 +90,31 @@ typedef std::list<TestHardwareContext> TestHardwareContexts;
 /*! \internal \brief
  * This class performs one-time test initialization (enumerating the hardware)
  */
+// cppcheck-suppress noConstructor
 class PmeTestEnvironment : public ::testing::Environment
 {
     private:
         //! General hardware info
-        unique_cptr<gmx_hw_info_t, gmx_hardware_info_free> hardwareInfo_;
+        gmx_hw_info_t *hardwareInfo_;
         //! Storage of hardware contexts
-        std::map<CodePath, TestHardwareContexts>           hardwareContextsByMode_;
-        //! Simple GPU initialization, allowing for PME to work on GPU
-        void hardwareInit();
+        std::map<CodePath, TestHardwareContexts> hardwareContextsByMode_;
 
     public:
-        //! Default
-        ~PmeTestEnvironment() = default;
         //! This is called by GTest framework once to query the hardware
-        void SetUp();
+        virtual void SetUp();
+        //! This is called by GTest framework once to clean up
+        virtual void TearDown();
         //! Get available hardware contexts for given code path
-        const TestHardwareContexts &getHardwareContexts(CodePath mode){return hardwareContextsByMode_.at(mode); }
+        const TestHardwareContexts &getHardwareContexts(CodePath mode) const {return hardwareContextsByMode_.at(mode); }
 };
 
-//! The test environment
-extern PmeTestEnvironment * const pmeEnv;
+//! Get the test environment
+const PmeTestEnvironment *getPmeTestEnv();
+
+/*! \brief This constructs the test environment during setup of the
+ * unit test so that they can use the hardware context. */
+void callAddGlobalTestEnvironment();
+
 }
 }
 #endif

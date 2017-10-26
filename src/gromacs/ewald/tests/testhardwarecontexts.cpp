@@ -52,24 +52,48 @@
 #include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
 namespace test
 {
 
-//! This constructs the test environment
-PmeTestEnvironment * const pmeEnv = (PmeTestEnvironment *)::testing::AddGlobalTestEnvironment(new PmeTestEnvironment);
+/* Implements the "construct on first use" idiom to avoid any static
+ * initialization order fiasco.
+ *
+ * Note that thread-safety of the initialization is guaranteed by the
+ * C++11 language standard.
+ *
+ * The pointer itself (not the memory it points to) has no destructor,
+ * so there is no deinitialization issue.  See
+ * https://isocpp.org/wiki/faq/ctors for discussion of alternatives
+ * and trade-offs. */
+const PmeTestEnvironment *getPmeTestEnv()
+{
+    static PmeTestEnvironment *pmeTestEnvironment = nullptr;
+    if (pmeTestEnvironment == nullptr)
+    {
+        // Ownership of the TestEnvironment is taken by GoogleTest, so nothing can leak
+        pmeTestEnvironment = static_cast<PmeTestEnvironment *>(::testing::AddGlobalTestEnvironment(new PmeTestEnvironment));
+    }
+    return pmeTestEnvironment;
+}
+
+void callAddGlobalTestEnvironment()
+{
+    getPmeTestEnv();
+}
 
 //! Simple hardware initialization
-void PmeTestEnvironment::hardwareInit()
+static gmx_hw_info_t *hardwareInit()
 {
     unique_cptr<t_commrec, done_commrec> commrec(init_commrec());
     gmx_init_intranode_counters(commrec.get());
     LoggerBuilder builder;
     LoggerOwner   logOwner(builder.build());
     MDLogger      log(logOwner.logger());
-    hardwareInfo_.reset(gmx_detect_hardware(log, commrec.get()));
+    return gmx_detect_hardware(log, commrec.get());
 }
 
 void PmeTestEnvironment::SetUp()
@@ -77,7 +101,7 @@ void PmeTestEnvironment::SetUp()
     TestHardwareContext emptyContext("", nullptr);
     hardwareContextsByMode_[CodePath::CPU].push_back(emptyContext);
 
-    hardwareInit();
+    hardwareInfo_ = hardwareInit();
 
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     TestHardwareContexts gpuContexts;
@@ -87,13 +111,16 @@ void PmeTestEnvironment::SetUp()
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        auto       *gpuInfo     = reinterpret_cast<gmx_device_info_t *>(reinterpret_cast<char *>(hardwareInfo_->gpu_info.gpu_dev) + gpuIndex * sizeof_gpu_dev_info());
-        //TODO move previous line to gpu_utils and reuse in hardwareassign.cpp
-        gpuContexts.emplace_back(TestHardwareContext(description.c_str(), gpuInfo));
+        gpuContexts.emplace_back(TestHardwareContext(description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
     }
 #if GMX_GPU == GMX_GPU_CUDA
     hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
 #endif
+}
+
+void PmeTestEnvironment::TearDown()
+{
+    gmx_hardware_info_free(hardwareInfo_);
 }
 
 }
