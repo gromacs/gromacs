@@ -1,3 +1,5 @@
+.. _defunits:
+
 Definitions and Units
 =====================
 
@@ -29,8 +31,8 @@ We define the *lowercase* subscripts :math:`i`, :math:`j`, :math:`k` and
 .. math::
 
    \begin{aligned}
-   {\mbox{\boldmath ${r}$}}_ij	=	{\mbox{\boldmath ${r}$}}_j-{\mbox{\boldmath ${r}$}}_i	\\
-   {r_{ij}}=	| {\mbox{\boldmath ${r}$}}_ij |\end{aligned}
+   {\mbox{\boldmath ${r}$}}_ij	=	{\mbox{\boldmath ${r}$}}_j-{{\mbox{\boldmath ${r}$}}_i}\\
+   {r_{ij}}=	| {\mbox{\boldmath ${r}$}}_ij | \end{aligned}
 
 The force on particle :math:`i` is denoted by
 :math:`{\mbox{\boldmath ${F}$}}_i` and
@@ -266,11 +268,11 @@ Mixed or Double precision
 -------------------------
 
 |Gromacs| can be compiled in either mixed or double precision.
-Documentation of previous |Gromacs| versions referred to “single
-precision”, but the implementation has made selective use of double
+Documentation of previous |Gromacs| versions referred to *single
+precision*, but the implementation has made selective use of double
 precision for many years. Using single precision for all variables would
-lead to a significant reduction in accuracy. Although in “mixed
-precision” all state vectors, i.e. particle coordinates, velocities and
+lead to a significant reduction in accuracy. Although in *mixed
+precision* all state vectors, i.e. particle coordinates, velocities and
 forces, are stored in single precision, critical variables are double
 precision. A typical example of the latter is the virial, which is a sum
 over all forces in the system, which have varying signs. In addition, in
@@ -288,7 +290,7 @@ The energies in mixed precision are accurate up to the last decimal, the
 last one or two decimals of the forces are non-significant. The virial
 is less accurate than the forces, since the virial is only one order of
 magnitude larger than the size of each element in the sum over all atoms
-(sec. [sec:virial]). In most cases this is not really a problem, since
+(sec. :ref:`virial`). In most cases this is not really a problem, since
 the fluctuations in the virial can be two orders of magnitude larger
 than the average. Using cut-offs for the Coulomb interactions cause
 large errors in the energies, forces, and virial. Even when using a

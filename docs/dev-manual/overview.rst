@@ -257,8 +257,8 @@ Developer guide
   Contains reStructuredText source files used to build the developer guide.
   The build rules are in :file:`docs/CMakeLists.txt`.
 
-The organization of the developer guide is explained on the :doc:`front page of
-the guide <index>`.
+The organization of the developer guide is explained on the :ref:`front page of
+the guide <dev guide>`.
 
 Doxygen documentation
 ^^^^^^^^^^^^^^^^^^^^^

@@ -1,6 +1,6 @@
-***************
-Developer guide
-***************
+.. _dev guide:
+
+.. highlight:: bash
 
 This set of pages contains guidelines, instructions, and explanations related
 to |Gromacs| development.  The actual code is documented in Doxygen
