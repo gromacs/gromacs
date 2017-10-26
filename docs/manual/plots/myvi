@@ -1,9 +1,0 @@
-#!/bin/csh -f
-
-vi $1 << EOF
-/Bound
-/
-dd:1
-p
-dd:wq
-EOF
