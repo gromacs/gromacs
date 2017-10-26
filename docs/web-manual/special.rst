@@ -1,5 +1,9 @@
+.. _special:
+
 Special Topics
 ==============
+
+.. _dgimplement:
 
 Free energy implementation
 --------------------------
@@ -93,7 +97,7 @@ or for finite differences:
 
 .. math:: \Delta F \approx \int \sum \langle \nabla H \rangle \cdot \Delta\lambda
 
-The external `pymbar script <https://SimTK.org/home/pymbar>`__
+The external `pymbar script <https://SimTK.org/home/pymbar>`
 can compute this integral automatically
 from the |Gromacs| ``dhdl.xvg`` output.
 
@@ -130,9 +134,9 @@ Entropic effects
 
 When a distance between two atoms or the centers of mass of two groups
 is constrained or restrained, there will be a purely entropic
-contribution to the PMF due to the rotation of the two groups Neumann
-(1980). For a system of two non-interacting masses the potential of mean
-force is:
+contribution to the PMF due to the rotation of the two
+groups \ :ref:`134 <refRMNeumann1980a>`. For a system of two
+non-interacting masses the potential of mean force is:
 
 .. math:: V_{pmf}(r) = -(n_c - 1) k_B T \log(r)
 
@@ -155,7 +159,7 @@ applied to the system, which means that the system is no longer in
 equilibrium. Although in the limit of very slow pulling the system is
 again in equilibrium, for many systems this limit is not reachable
 within reasonable computational time. However, one can use the Jarzynski
-relation Jarzynski () to obtain the equilibrium free-energy difference
+relation \ :ref:`135 <refJarzynski1997a>` to obtain the equilibrium free-energy difference
 :math:`\Delta G` between two distances from many non-equilibrium
 simulations:
 
@@ -166,10 +170,12 @@ where :math:`W_{AB}` is the work performed to force the system along
 one path from state A to B, the angular bracket denotes averaging over a
 canonical ensemble of the initial state A and :math:`\beta=1/k_B T`.
 
+.. _pull:
+
 The pull code
 -------------
 
-[sec:pull] The pull code applies forces or constraints between the
+:ref:`pull` The pull code applies forces or constraints between the
 centers of mass of one or more pairs of groups of atoms. Each pull
 reaction coordinate is called a “coordinate” and it operates on usually
 two, but sometimes more, pull groups. A pull group can be part of one or
@@ -285,7 +291,7 @@ profile is a cosine with a single period in the unit cell. Its phase is
 optimized to give the maximum sum of weights, including mass weighting.
 This provides a unique and continuous reference position that is nearly
 identical to the plain center of mass position in case all atoms are all
-within a half of the unit-cell length. See ref O. Engin and Hess (2010)
+within a half of the unit-cell length. See ref :ref:`136 <refEngin2010a>`
 for details.
 
 When relative weights :math:`w_i` are used during the calculations,
@@ -327,7 +333,7 @@ reference group with (nearly) fixed orientation, e.g. a membrane protein
 embedded in a membrane along x/y while pulling along z. If your
 reference group does not have a fixed orientation, you should probably
 use ``pull-coord?-geometry = direction-relative``, see
-:numref:`Fig. (%s) <fig-pulldirrel>`. Since the potential now depends
+:numref:`Fig. %s <fig-pulldirrel>`. Since the potential now depends
 on the coordinates of two additional groups defining the orientation,
 the torque forces will work on these two groups.
 
@@ -386,23 +392,26 @@ simultaneously. This is not done in |Gromacs|. This means that for
 simulations with ``constraints = all-bonds`` in the :ref:`mdp` file pulling is,
 strictly speaking, limited to whole molecules or groups of molecules. In
 some cases this limitation can be avoided by using the free energy code,
-see sec. [sec:fepmf]. In practice, the errors caused by not iterating
+see sec. :ref:`fepmf`. In practice, the errors caused by not iterating
 the two constraint algorithms can be negligible when the pull group
 consists of a large amount of atoms and/or the pull force is small. In
 such cases, the constraint correction displacement of the pull group is
 small compared to the bond lengths.
 
+.. _awh:
+
 Adaptive biasing with AWH
 -------------------------
 
-[sec:awh] The accelerated weight histogram method (AWH) Lindahl, Lidmar,
-and Hess (2014) calculates the PMF along a reaction coordinate by adding
+:ref:`awh` The accelerated weight histogram method
+:ref:`137 <reflindahl2014accelerated>` calculates the PMF along a reaction coordinate by adding
 an adaptively determined biasing potential. AWH flattens free energy
 barriers along the reaction coordinate by applying a history-dependent
 potential to the system that “fills up” free energy minima. This is
 similar in spirit to other adaptive biasing potential methods, e.g. the
-Wang-Landau Wang and Landau (2001), local elevation Huber, Torda, and
-Gunsteren (1994) and metadynamics Laio and Parrinello (2002) methods.
+Wang-Landau \ :ref:`138 <refwang2001efficient>`, local
+elevation \ :ref:`139 <refhuber1994local>` and
+metadynamics \ :ref:`140 <reflaio2002escaping>` methods.
 The initial sampling stage of AWH makes the method robust against the
 choice of input parameters. Furthermore, the target distribution along
 the reaction coordinate may be chosen freely.
@@ -425,7 +434,7 @@ obtained by multiplication with :math:`k_BT=1/\beta`. In the simulation,
 For a multidimensional reaction coordinate :math:`\xi`, the sampling
 interval is the Cartesian product :math:`I=\Pi_{\mu} I_{\mu}` (a rectangular
 domain). The connection between atom coordinates and :math:`\lambda` is
-established through the extended ensemble Lyubartsev et al. (1992),
+established through the extended ensemble \ :ref:`68 <refLyubartsev1992>`,
 
 .. math:: P(x,\lambda) = \frac{1}{\mathcal{Z}}e^{g(\lambda) - Q(\xi(x),\lambda) - V(x)},
           :label: eqawhpxlambda
@@ -448,7 +457,7 @@ where :math:`F(\lambda)` is the free energy
 
 Being the convolution of the PMF with the Gaussian defined by the
 harmonic potential, :math:`F(\lambda)` is a smoothened version of the
-PMF. :eq:`Eq. (%s) <eqawhplambda>` shows that in order to obtain
+PMF. :eq:`Eq. %s <eqawhplambda>` shows that in order to obtain
 :math:`P(\lambda)=\rho(\lambda)`, :math:`F(\lambda)` needs to be
 determined accurately. Thus, AWH adaptively calculates
 :math:`F(\lambda)` and simultaneously converges :math:`P(\lambda)`
@@ -467,10 +476,10 @@ energy estimate :math:`F_n(\lambda)` and target distribution
 .. math:: g_n(\lambda) = \ln \rho_n(\lambda) +F_n(\lambda),
           :label: eqawhgrhofrelation
 
-which is consistent with :eq:`Eq. (%s) <eqawhplambda>`. Note that also the
+which is consistent with :eq:`Eq. %s <eqawhplambda>`. Note that also the
 target distribution may be updated during the simulation (see examples
-in section [sec:awh:targets]). Substituting this choice of :math:`g=g_n`
-back into :eq:`Eq. (%s) <eqawhplambda>` yields the simple free energy update
+in section :ref:`awhtargets`). Substituting this choice of :math:`g=g_n`
+back into :eq:`Eq. %s <eqawhplambda>` yields the simple free energy update
 
 .. math:: \Delta F_n(\lambda) 
           = F(\lambda) - F_n(\lambda) 
@@ -490,7 +499,7 @@ Accumulating these probability weights yields
 :math:`\int P_n(\lambda|x) P_n(x) dx = P_n(\lambda)` has been used. The
 :math:`\omega_n(\lambda|x)` weights are thus the samples of the AWH
 method. With the limited amount of sampling one has in practice, update
-scheme :eq:`(%s) <eqawhdfnaive>` yields very noisy results. AWH instead applies a
+scheme :eq:`%s <eqawhdfnaive>` yields very noisy results. AWH instead applies a
 free energy update that has the same form but which can be applied
 repeatedly with limited and localized sampling,
 
@@ -498,7 +507,7 @@ repeatedly with limited and localized sampling,
 
 Here :math:`W_n(\lambda)` is the *reference weight histogram*
 representing prior sampling. The update for :math:`W(\lambda)`,
-disregarding the initial stage (see section [sec:awh:initial-stage]), is
+disregarding the initial stage (see section :ref:`awhinitialstage`), is
 
 .. math:: W_{n+1}(\lambda) = W_n(\lambda) + \sum_t\rho_n(\lambda).
           :label: eqawhwupdate
@@ -508,16 +517,16 @@ samples. There are two important things to note about the free energy
 update. First, sampling is driven away from oversampled, currently local
 regions. For such :math:`\lambda` values,
 :math:`\omega_n(\lambda) > \rho_n(\lambda)` and
-:math:`\Delta F_n(\lambda) < 0`, which by :eq:`Eq. (%s) <eqawhgrhofrelation>`
+:math:`\Delta F_n(\lambda) < 0`, which by :eq:`Eq. %s <eqawhgrhofrelation>`
 implies :math:`\Delta g_n(\lambda) < 0` (assuming
 :math:`\Delta \rho_n \equiv 0`). Thus, the probability to sample
-:math:`\lambda` decreases after the update (see :eq:`Eq. (%s) <eqawhplambda>`).
+:math:`\lambda` decreases after the update (see :eq:`Eq. %s <eqawhplambda>`).
 Secondly, the normalization of the histogram
 :math:`N_n=\sum_\lambda W_n(\lambda)`, determines the update size
 :math:`| \Delta F(\lambda) |`. For instance, for a single sample
 :math:`\omega(\lambda|x)`, the shape of the update is approximately a
 Gaussian function of width :math:`\sigma=1/\sqrt{\beta k}` and height
-:math:`\propto 1/N_n` Lindahl, Lidmar, and Hess (2014),
+:math:`\propto 1/N_n` :ref:`137 <reflindahl2014accelerated>`,
 
 .. math:: | \Delta F_n(\lambda) | \propto \frac{1}{N_n} e^{-\frac{1}{2} \beta k (\xi(x) - \lambda)^2}.
           :label: eqawhdfsize
@@ -528,10 +537,10 @@ converge.
 
 Note that quantity of interest to the user is not :math:`F(\lambda)` but
 the PMF :math:`\Phi(\xi)`. :math:`\Phi(\xi)` is extracted by reweighting
-samples :math:`\xi(t)` on the fly Lindahl, Lidmar, and Hess (2014) (see
-also section [sec:awh:reweight]) and will converge at the same rate as
-:math:`F(\lambda)`, see :numref:`Fig. (%s) <fig-awhbiasevolution1>`. The PMF will be
-written to output (see section [sec:awh:usage]).
+samples :math:`\xi(t)` on the fly \ :ref:`137 <reflindahl2014accelerated>` (see
+also section :ref:`awhreweight`) and will converge at the same rate as
+:math:`F(\lambda)`, see :numref:`Fig. %s <fig-awhbiasevolution1>`. The PMF will be
+written to output (see section :ref:`awhusage`).
 
 Applying the bias to the system
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -540,7 +549,7 @@ The bias potential can be applied to the system in two ways. Either by
 applying a harmonic potential centered at :math:`\lambda(t)`, which is
 sampled using (rejection-free) Monte-Carlo sampling from the conditional
 distribution :math:`\omega_n(\lambda | x(t)) = P_n(\lambda | x(t))`, see
-:eq:`Eq. (%s) <eqawhomega>`. This is also called Gibbs sampling or independence
+:eq:`Eq. %s <eqawhomega>`. This is also called Gibbs sampling or independence
 sampling. Alternatively, and by default in the code, the following
 *convolved bias potential* can be applied,
 
@@ -549,7 +558,7 @@ sampling. Alternatively, and by default in the code, the following
 
 These two approaches are equivalent in the sense that they give rise to
 the same biased probabilities :math:`P_n(x)`
-(cf. :eq:`(%s) <eqawhpxlambda>`) while the dynamics are clearly
+(cf. :eq:`%s <eqawhpxlambda>`) while the dynamics are clearly
 different in the two cases. This choice does not affect the internals of
 the AWH algorithm, only what force and potential AWH returns to the MD
 engine.
@@ -593,36 +602,38 @@ engine.
         right), which after exiting the initial stage should estimate global
         free energy differences fairly accurately.
 
+.. _awhinitialstage:
+
 The initial stage
 ~~~~~~~~~~~~~~~~~
 
 Initially, when the bias potential is far from optimal, samples will be
 highly correlated. In such cases, letting :math:`W(\lambda)` accumulate
-samples as prescribed by :eq:`Eq. (%s) <eqawhwupdate>`, entails
+samples as prescribed by :eq:`Eq. %s <eqawhwupdate>`, entails
 a too rapid decay of the free energy update size. This motivates
 splitting the simulation into an *initial stage* where the weight
 histogram grows according to a more restrictive and robust protocol, and
 a *final stage* where the the weight histogram grows linearly at the
-sampling rate (:eq:`Eq. (%s) <eqawhwupdate>`). The AWH initial
-stage takes inspiration from the well-known Wang-Landau algorithm Wang
-and Landau (2001), although there are differences in the details.
+sampling rate (:eq:`Eq. %s <eqawhwupdate>`). The AWH initial
+stage takes inspiration from the well-known Wang-Landau algorithm \ :ref:`138 <refwang2001efficient>`,
+although there are differences in the details.
 
 In the initial stage the update size is kept constant (by keeping
 :math:`N_n` constant) until a transition across the sampling interval
 has been detected, a “covering”. For the definition of a covering, see
-:eq:`Eq. (%s) <eqawhcovering>` below. After a covering has
+:eq:`Eq. %s <eqawhcovering>` below. After a covering has
 occurred, :math:`N_n` is scaled up by a constant “growth factor”
 :math:`\gamma`, chosen heuristically as :math:`\gamma=3`. Thus, in the
 initial stage :math:`N_n` is set dynamically as
 :math:`N_{n} = \gamma^{m} N_0`, where :math:`m` is the number of
 coverings. Since the update size scales as :math:`1/N` (
-:eq:`Eq. (%s) <eqawhdfsize>`) this leads to a close to
+:eq:`Eq. %s <eqawhdfsize>`) this leads to a close to
 exponential decay of the update size in the initial stage, see
-:numref:`Fig. (%s) <fig-awhbiasevolution1>`.
+:numref:`Fig. %s <fig-awhbiasevolution1>`.
 
 The update size directly determines the rate of change of
 :math:`F_n(\lambda)` and hence, from
-:eq:`Eq. (%s) <eqawhgrhofrelation>`, also the rate of change of
+:eq:`Eq. %s <eqawhgrhofrelation>`, also the rate of change of
 the bias funcion :math:`g_n(\lambda)` Thus initially, when :math:`N_n`
 is kept small and updates large, the system will be driven along the
 reaction coordinate by the constantly fluctuating bias. If :math:`N_0`
@@ -632,7 +643,7 @@ the free energy. The second transition, using :math:`N_1=\gamma N_0`
 refines this estimate further. Thus, rather than very carefully filling
 free energy minima using a small initial update size, the sampling
 interval is sweeped back-and-forth multiple times, using a wide range of
-update sizes, see :numref:`Fig. (%s) <fig-awhbiasevolution1>`. This
+update sizes, see :numref:`Fig. %s <fig-awhbiasevolution1>`. This
 way, the initial stage also makes AWH robust against the choice of
 :math:`N_0`.
 
@@ -665,12 +676,12 @@ Exit from the initial stage
 For longer times, when major free energy barriers have largely been
 flattened by the converging bias potential, the histogram
 :math:`W(\lambda)` should grow at the actual sampling rate and the
-initial stage needs to be exited Belardinelli and Pereyra (2007). There
-are multiple reasonable (heuristic) ways of determining when this
+initial stage needs to be exited \ :ref:`141 <refbelardinelli2007fast>`.
+There are multiple reasonable (heuristic) ways of determining when this
 transition should take place. One option is to postulate that the number
 of samples in the weight histogram :math:`N_n` should never exceed the
 actual number of collected samples, and exit the initial stage when this
-condition breaks Lindahl, Lidmar, and Hess (2014). In the initial stage,
+condition breaks \ :ref:`137 <reflindahl2014accelerated>`. In the initial stage,
 :math:`N` grows close to exponentially while the collected number of
 samples grows linearly, so an exit will surely occur eventually. Here we
 instead apply an exit criterion based on the observation that
@@ -681,7 +692,7 @@ by a factor :math:`\gamma` corresponds to scaling up the weight of old
 data. Briefly, the exit criterion is devised such that the weight of a
 sample collected *after* the initial stage is always larger or equal to
 the weight of a sample collected *during* the initial stage, see
-:numref:`Fig. (%s) <fig-awhbiasevolution1>`. This is consistent with
+:numref:`Fig. %s <fig-awhbiasevolution1>`. This is consistent with
 scaling down early, noisy data.
 
 The initial stage exit criterion will now be described in detail. We
@@ -704,10 +715,12 @@ the relative weight of a new sample relative to an old sample is still
 growing fast. If on the contrary :math:`s < \gamma`, and this defines
 the exit from the initial stage, then the initial stage is over and from
 now :math:`N` simply grows at the sampling rate (see
-:eq:`Eq. (%s) <eqawhwupdate>`). To really ensure that
+:eq:`Eq. %s <eqawhwupdate>`). To really ensure that
 :math:`s\ge 1` holds before exiting, so that samples after the exit have
 at least the sample weight of older samples, the last covering stage is
 extended by a sufficient number of updates.
+
+.. _awhtargets:
 
 Choice of target distribution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -747,7 +760,7 @@ that both :math:`\rho_{\mathrm{cut}}(\lambda)` and
 :math:`\rho_{\mathrm{Boltz}}(\lambda)` depend on :math:`F(\lambda)`,
 which needs to be substituted by the current best estimate
 :math:`F_n(\lambda)`. Thus, the target distribution is also updated
-(consistently with :eq:`Eq. (%s) <eqawhgrhofrelation>`).
+(consistently with :eq:`Eq. %s <eqawhgrhofrelation>`).
 
 There is in fact an alternative approach to obtaining
 :math:`\rho_{\mathrm{Boltz}}(\lambda)` as the limiting target
@@ -755,8 +768,8 @@ distribution in AWH, which is particular in the way the weight histogram
 :math:`W(\lambda)` and the target distribution :math:`\rho` are updated
 and coupled to each other. This yields an evolution of the bias
 potential which is very similar to that of well-tempered
-metadynamics Barducci, Bussi, and Parrinello (2008), see Lindahl,
-Lidmar, and Hess (2014) for details. Because of the popularity and
+metadynamics \ :ref:`142 <refbarducci2008well>`,
+see \ :ref:`137 <reflindahl2014accelerated>` for details. Because of the popularity and
 success of well-tempered metadynamics, this is a special case worth
 considering. In this case :math:`\rho` is a function of the reference
 weight histogram
@@ -764,7 +777,7 @@ weight histogram
 .. math:: \rho_{\mathrm{Boltz,loc}}(\lambda) \propto W(\lambda), 
 
 and the update of the weight histogram is modified (cf.
-:eq:`Eq. (%s) <eqawhwupdate>`)
+:eq:`Eq. %s <eqawhwupdate>`)
 
 .. math:: W_{n+1}(\lambda) =  W_{n}(\lambda) + s_{\beta}\sum_t \omega(\lambda | x(t)).
 
@@ -779,7 +792,7 @@ continue to fluctuate around the correct value. This illustrates the
 inherent coupling between the convergence and choice of target
 distribution for this special choice of target. Furthermore note that
 when using :math:`\rho=\rho_{\mathrm{Boltz,loc}}` there is no initial
-stage (section [sec:awh:initial-stage]). The rescaling of the weight
+stage (section :ref:`awhinitialstage`). The rescaling of the weight
 histogram applied in the initial stage is a global operation, which is
 incompatible :math:`\rho_{\mathrm{Boltz,loc}}` only depending locally on
 the sampling history.
@@ -807,7 +820,7 @@ of) indepedendent biases.
 If the defined sampling interval is large relative to the diffusion time
 of the reaction coordinate, traversing the sampling interval multiple
 times as is required by the initial stage
-(section [sec:awh:initial-stage]) may take an infeasible mount of
+(section :ref:`awhinitialstage`) may take an infeasible mount of
 simulation time. In these cases it could be advantageous to parallelize
 the work and have a group of multiple “walkers” :math:`\xi^{(i)}(t)`
 share a single bias potential. This can be achieved by collecting
@@ -832,7 +845,7 @@ Furthermore, the “covering” or transition criterion of the initial stage
 should to be generalized to detect when the sampling interval has been
 collectively traversed. One alternative is to just use the same
 criterion as for a single walker (but now with more samples), see
-:eq:`Eq. (%s) <eqawhcovering>`. However, in contrast to the
+:eq:`Eq. %s <eqawhcovering>`. However, in contrast to the
 single walker case this does not ensure that any real transitions across
 the sampling interval has taken place; in principle all walkers could be
 sampling only very locally and still cover the whole interval. Just as
@@ -843,12 +856,14 @@ A stricter criterion, which helps avoid such issues, is to require that
 before a simulation marks a point :math:`\lambda_{\mu}` along dimension
 :math:`\mu` as visited, and shares this with the other walkers, also all
 points within a certain diameter :math:`D_{\mathrm{cover}}` should have
-been visited (i.e.fulfill :eq:`Eq. (%s) <eqawhcovering>`).
+been visited (i.e.fulfill :eq:`Eq. %s <eqawhcovering>`).
 Increasing :math:`D_{\mathrm{cover}}` increases robustness, but may slow
 down convergence. For the maximum value of :math:`D_{\mathrm{cover}}`,
 equal to the length of the sampling interval, the sampling interval is
 considered covered when at least one walker has independently traversed
 the sampling interval.
+
+.. _awhreweight:
 
 Reweighting and combining biased data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -857,7 +872,7 @@ Often one may want to, post-simulation, calculate the unbiased PMF
 :math:`\Phi(u)` of another variable :math:`u(x)`. :math:`\Phi(u)` can be
 estimated using :math:`\xi`-biased data by reweighting (“unbiasing”) the
 trajectory using the bias potential :math:`U_{n(t)}`, see
-:eq:`Eq. (%s) <eqawhbiaspotential>`. Essentially, one bins the
+:eq:`Eq. %s <eqawhbiaspotential>`. Essentially, one bins the
 biased data along :math:`u` and removes the effect of :math:`U_{n(t)}`
 by dividing the weight of samples :math:`u(t)` by
 :math:`e^{-U_{n(t)}(\xi(t))}`,
@@ -880,15 +895,16 @@ initial stage data, one should use the sample weights that are inferred
 by the repeated rescaling of the histogram in the initial stage, for the
 sake of consistency. Initial stage samples would then in any case be
 heavily scaled down relative to final stage samples. Note that
-:eq:`Eq. (%s) <eqawhunbias>` can also be used to combine data
+:eq:`Eq. %s <eqawhunbias>` can also be used to combine data
 from multiple simulations (by adding another sum also over the
 trajectory set). Furthermore, when multiple independent AWH biases have
 generated a set of PMF estimates :math:`\{\hat{\Phi}^{(i)}(\xi)\}`, a
 combined best estimate :math:`\hat{\Phi}(\xi)` can be obtained by
 applying self-consistent exponential averaging. More details on this
-procedure and a derivation of :eq:`Eq. (%s) <eqawhunbias>`
-(using slightly different notation) can be found in Lindahl, Villa, and
-Hess (2017).
+procedure and a derivation of :eq:`Eq. %s <eqawhunbias>`
+(using slightly different notation) can be found in :ref:`143 <reflindahl2017sequence>`.
+
+.. _awhfriction:
 
 The friction metric
 ~~~~~~~~~~~~~~~~~~~
@@ -911,11 +927,11 @@ Here
 :math:`\mathcal F_\mu(x,\lambda) = k_\mu (\xi_\mu(x) - \lambda_\mu)` is
 the force along dimension :math:`\mu` from an harmonic potential
 centered at :math:`\lambda` and
-:math:`\delta \mathcal F_\mu(x,\lambda) = \mathcal F_\mu(x,\lambda) - {\left<{\mathcal F_\mu(x,\lambda)}\right>}`
+:math:`\delta \mathcal F_{\mu}(x,\lambda) = \mathcal F_{\mu}(x,\lambda) - \left<{\mathcal F_\mu(x,\lambda)}\right>`
 is the deviation of the force. The factors :math:`\omega(\lambda|x(t))`,
-see :eq:`Eq (%s) <eqawhomega>`, reweight the samples.
-:math:`\eta_{\mu\nu}(\lambda)` is a friction tensor Sivak and Crooks
-(2012). Its matrix elements are inversely proportional to local
+see :eq:`Eq %s <eqawhomega>`, reweight the samples.
+:math:`\eta_{\mu\nu}(\lambda)` is a friction
+tensor \ :ref:`144 <refsivak2012thermodynamic>`. Its matrix elements are inversely proportional to local
 diffusion coefficients. A measure of sampling (in)efficiency at each
 :math:`\lambda` is given by
 
@@ -924,6 +940,8 @@ diffusion coefficients. A measure of sampling (in)efficiency at each
 
 A large value of :math:`\eta^{\frac{1}{2}}(\lambda)` indicates slow
 dynamics and long correlation times, which may require more sampling.
+
+.. _awhusage:
 
 Usage
 ~~~~~
@@ -943,8 +961,8 @@ Setting the initial update size
 The initial value of the weight histogram size :math:`N` sets the
 initial update size (and the rate of change of the bias). When :math:`N`
 is kept constant, like in the initial stage, the average variance of the
-free energy scales as :math:`\varepsilon^2 \sim 1/(ND)` Lindahl, Lidmar,
-and Hess (2014), for a simple model system with constant diffusion
+free energy scales as :math:`\varepsilon^2 \sim 1/(ND)`
+:ref:`137 <reflindahl2014accelerated>`, for a simple model system with constant diffusion
 :math:`D` along the reaction coordinate. This provides a ballpark
 estimate used by AWH to initialize :math:`N` in terms of more meaningful
 quantities
@@ -990,14 +1008,14 @@ As with any method, the choice of reaction coordinate(s) is critical. If
 a single reaction coordinate does not suffice, identifying a second
 reaction coordinate and sampling the two-dimensional landscape may help.
 In this case, using a target distribution with a free energy cutoff (see
-:eq:`Eq. (%s) <eqawhrhocut>`) might be required to avoid
+:eq:`Eq. %s <eqawhrhocut>`) might be required to avoid
 sampling uninteresting regions of very high free energy. Obtaining
 accurate free energies for reaction coordinates of much higher
 dimensionality than 3 or possibly 4 is generally not feasible.
 
 Monitoring the transition rate of :math:`\xi(t)`, across the sampling
 interval is also advisable. For reliable statistics (e.g. when
-reweighting the trajectory as described in section [sec:awh:reweight]),
+reweighting the trajectory as described in section :ref:`awhreweight`),
 one would generally want to observe at least a few transitions after
 having exited the initial stage. Furthermore, if the dynamics of the
 reaction coordinate suddenly changes, this may be a sign of e.g. a
@@ -1005,9 +1023,9 @@ reaction coordinate problem.
 
 Difficult regions of sampling may also be detected by calculating the
 friction tensor :math:`\eta_{\mu\nu}(\lambda)` in the sampling interval,
-see section [sec:awh:friction]. :math:`\eta_{\mu\nu}(\lambda)` as well
+see section :ref:`awhfriction`. :math:`\eta_{\mu\nu}(\lambda)` as well
 as the sampling efficiency measure :math:`\eta^{\frac{1}{2}}(\lambda)`
-(:eq:`Eq. (%s) <eqawhsqrtmetric>`) are written to the energy file and can be
+(:eq:`Eq. %s <eqawhsqrtmetric>`) are written to the energy file and can be
 extracted with :ref:`gmx awh`. A high peak in
 :math:`\eta^{\frac{1}{2}}(\lambda)` indicates that this region requires
 longer time to sample properly.
@@ -1019,21 +1037,23 @@ This module can be used to enforce the rotation of a group of atoms, as
 *e.g.* a protein subunit. There are a variety of rotation potentials,
 among them complex ones that allow flexible adaptations of both the
 rotated subunit as well as the local rotation axis during the
-simulation. An example application can be found in ref. Kutzner, Czub,
-and Grubmüller (2011).
+simulation. An example application can be found in ref.
+:ref:`145 <refKutzner2011>`.
 
 .. _fig-rotation:
 
 .. figure:: plots/rotation.*
    :width: 13.00000cm
 
-   Comparison of fixed and flexible axis rotation. A: Rotating the
-   sketched shape inside the white tubular cavity can create artifacts
-   when a fixed rotation axis (dashed) is used. More realistically, the
-   shape would revolve like a flexible pipe-cleaner (dotted) inside the
-   bearing (gray). B: Fixed rotation around an axis with a pivot point
-   specified by the vector . C: Subdividing the rotating fragment into
-   slabs with separate rotation axes (:math:`\uparrow`) and pivot points
+   Comparison of fixed and flexible axis rotation. A:
+   Rotating the sketched shape inside the white tubular cavity can
+   create artifacts when a fixed rotation axis (dashed) is used. More
+   realistically, the shape would revolve like a flexible pipe-cleaner
+   (dotted) inside the bearing (gray). B: Fixed rotation
+   around an axis :math:`{\mbox{\boldmath ${v}$}}` with a pivot point
+   specified by the vector :math:`{\mbox{\boldmath ${u}$}}`.
+   C: Subdividing the rotating fragment into slabs with
+   separate rotation axes (:math:`\uparrow`) and pivot points
    (:math:`\bullet`) for each slab allows for flexibility. The distance
    between two slabs with indices :math:`n` and :math:`n+1` is
    :math:`\Delta x`.
@@ -1050,13 +1070,13 @@ and Grubmüller (2011).
    B: radial motion potential :math:`V^\mathrm{rm}` and
    flexible potential :math:`V^\mathrm{flex}`, C–D: radial
    motion2 potential :math:`V^\mathrm{rm2}` and flexible2 potential
-   :math:`V^\mathrm{flex2}` for :math:`\epsilon' = 0`\ nm\ :math:`^2`
-   (C) and :math:`\epsilon' = 0.01`\ nm\ :math:`^2`
+   :math:`V^\mathrm{flex2}` for :math:`\epsilon'\mathrm{ = }0\mathrm{ nm}^2`
+   (C) and :math:`\epsilon'\mathrm{ = }0.01\mathrm{nm}^2`
    (D). The rotation axis is perpendicular to the plane
    and marked by :math:`\otimes`. The light gray contours indicate
    Boltzmann factors :math:`e^{-V/(k_B T)}` in the
    :math:`{\mbox{\boldmath ${x}$}}_j`-plane for :math:`T=300`\ K and
-   :math:`k=200`\ kJ/(mol\ :math:`\cdot`\ nm\ :math:`^2`). The green
+   :math:`k\mathrm{ = }200\mathrm{kJ}/(\mathrm{mol }\cdot\mathrm{nm}^2)`. The green
    arrow shows the direction of the force
    :math:`{\mbox{\boldmath ${F}$}}_{\!j}` acting on atom :math:`j`; the
    blue dashed line indicates the motion of the reference position.
@@ -1067,7 +1087,7 @@ Fixed Axis Rotation
 Stationary Axis with an Isotropic Potential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the fixed axis approach (see :numref:`Fig. (%s) B <fig-rotation>`),
+In the fixed axis approach (see :numref:`Fig. %s B <fig-rotation>`),
 torque on a group of :math:`N` atoms with positions
 :math:`{\mbox{\boldmath ${x}$}}_i` (denoted “rotation group”) is applied
 by rotating a reference set of atomic positions – usually their initial
@@ -1083,7 +1103,7 @@ around the axis. In the simplest case, the “springs” are described by a
 harmonic potential,
 
 .. math:: V^\mathrm{iso} = \frac{k}{2} \sum_{i=1}^{N} w_i \left[ \mathbf{\Omega}(t)
-          ({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${u}$}})  \right]^2 ,
+          ({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${u}$}})  \right]^2
           :label: eqnpotiso
 
 with optional mass-weighted prefactors :math:`w_i = N \, m_i/M` with
@@ -1099,12 +1119,12 @@ total mass :math:`M = \sum_{i=1}^N m_i`. The rotation matrix
    v_x v_y{\,\xi\,}+ v_z\sin\omega t  & \cos\omega t + v_y^2{\,\xi\,}& v_y v_z{\,\xi\,}- v_x\sin\omega t\\
    v_x v_z{\,\xi\,}- v_y\sin\omega t  & v_y v_z{\,\xi\,}+ v_x\sin\omega t  & \cos\omega t + v_z^2{\,\xi\,}\\
    \end{array}
-   \right) ,
+   \right)
 
 where :math:`v_x`, :math:`v_y`, and :math:`v_z` are the components of
 the normalized rotation vector :math:`\hat{{\mbox{\boldmath ${v}$}}}`,
 and :math:`{\,\xi\,}:= 1-\cos(\omega t)`. As illustrated in
-:numref:`Fig.  (%s) A <fig-equipotential>` for a single atom :math:`j`,
+:numref:`Fig.  %s A <fig-equipotential>` for a single atom :math:`j`,
 the rotation matrix :math:`\mathbf{\Omega}(t)` operates on the initial
 reference positions
 :math:`{\mbox{\boldmath ${y}$}}_j^0 = {\mbox{\boldmath ${x}$}}_j(t_0)`
@@ -1115,7 +1135,7 @@ blue dashed line), resulting in the force
 .. math:: {\mbox{\boldmath ${F}$}}_{\!j}^\mathrm{iso} 
           = -\nabla_{\!j} \, V^\mathrm{iso} 
           = k \, w_j \left[
-          \mathbf{\Omega}(t) ({\mbox{\boldmath ${y}$}}_j^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_j - {\mbox{\boldmath ${u}$}} ) \right] ,
+          \mathbf{\Omega}(t) ({\mbox{\boldmath ${y}$}}_j^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_j - {\mbox{\boldmath ${u}$}} ) \right]
           :label: eqnforcefixed
 
 which is directed towards the reference position.
@@ -1150,14 +1170,13 @@ with forces
           :label: eqnforceisopf
 
 Without mass-weighting, the pivot :math:`{\mbox{\boldmath ${x}$}}_c` is
-the geometrical center of the group. [sec:fixed]
+the geometrical center of the group.
 
 Parallel Motion Potential Variant
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The forces generated by the isotropic potentials
-(:eq:`eqns. (%s) <eqnpotiso>` and
-:eq:`(%s) <eqnpotisopf>`) also contain components parallel to the
+(eqns. :eq:`%s <eqnpotiso>` and :eq:`%s <eqnpotisopf>`) also contain components parallel to the
 rotation axis and thereby restrain motions along the axis of either the
 whole rotation group (in case of :math:`V^\mathrm{iso}`) or within the
 rotation group, in case of 
@@ -1176,7 +1195,7 @@ distance vectors between reference and actual positions
 
 onto the plane perpendicular to the rotation vector,
 
-.. math:: {\mbox{\boldmath ${r}$}}_i^\perp :=  {\mbox{\boldmath ${r}$}}_i - ({\mbox{\boldmath ${r}$}}_i \cdot \hat{{\mbox{\boldmath ${v}$}}})\hat{{\mbox{\boldmath ${v}$}}} ,
+.. math:: {\mbox{\boldmath ${r}$}}_i^\perp :=  {\mbox{\boldmath ${r}$}}_i - ({\mbox{\boldmath ${r}$}}_i \cdot \hat{{\mbox{\boldmath ${v}$}}})\hat{{\mbox{\boldmath ${v}$}}}
           :label: eqnproject
 
 yielding
@@ -1202,7 +1221,7 @@ and similarly
 Pivot-Free Parallel Motion Potential
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Replacing in :eq:`eqn. (%s) <eqnpotpm>` the fixed pivot
+Replacing in eqn. :eq:`%s <eqnpotpm>` the fixed pivot
 :math:`{\mbox{\boldmath ${u}$}}` by the center of mass
 :math:`{\mbox{\boldmath ${x_c}$}}` yields the pivot-free variant of the
 parallel motion potential. With
@@ -1236,7 +1255,7 @@ rotation axis (for the parallel motion potentials). As a result, radial
 forces restrict radial motions of the atoms. The two subsequent types of
 rotation potentials, :math:`V^\mathrm{rm}` and :math:`V^\mathrm{rm2}`, drastically
 reduce or even eliminate this effect. The first variant, :math:`V^\mathrm{rm}`
-(:numref:`Fig. (%s) B <fig-equipotential>`), eliminates all force
+(:numref:`Fig. %s B <fig-equipotential>`), eliminates all force
 components parallel to the vector connecting the reference atom and the
 rotation axis,
 
@@ -1297,12 +1316,12 @@ potential read
 Radial Motion 2 Alternative Potential
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As seen in :numref:`Fig. (%s) B <fig-equipotential>`, the force
+As seen in :numref:`Fig. %s B <fig-equipotential>`, the force
 resulting from :math:`V^\mathrm{rm}` still contains a small, second-order
 radial component. In most cases, this perturbation is tolerable; if not,
 the following alternative, :math:`V^\mathrm{rm2}`, fully eliminates the
 radial contribution to the force, as depicted in
-:numref:`Fig. (%s) C <fig-equipotential>`,
+:numref:`Fig. %s C <fig-equipotential>`,
 
 .. math:: V^\mathrm{rm2} = 
           \frac{k}{2} \sum_{i=1}^{N} w_i\, 
@@ -1313,7 +1332,7 @@ radial contribution to the force, as depicted in
           :label: eqnpotrm2
 
 where a small parameter :math:`\epsilon'` has been introduced to avoid
-singularities. For :math:`\epsilon'=0`\ nm\ :math:`^2`, the
+singularities. For :math:`\epsilon'\mathrm{ = }0\mathrm{nm}^2`, the
 equipotential planes are spanned by :math:`{\mbox{\boldmath ${x}$}}_i -
 {\mbox{\boldmath ${u}$}}` and :math:`\hat{{\mbox{\boldmath ${v}$}}}`,
 yielding a force perpendicular to
@@ -1322,12 +1341,12 @@ contracting or expanding structural parts that moved away from or toward
 the rotation axis.
 
 Choosing a small positive :math:`\epsilon'` (*e.g.*,
-:math:`\epsilon'=0.01`\ nm\ :math:`^2`,
-:numref:`Fig. (%s) D <fig-equipotential>`) in the denominator of
-:eq:`eqn. (%s) <eqnpotrm2>` yields a well-defined potential and
+:math:`\epsilon'\mathrm{ = }0.01\mathrm{nm}^2`,
+:numref:`Fig. %s D <fig-equipotential>`) in the denominator of
+eqn. :eq:`%s <eqnpotrm2>` yields a well-defined potential and
 continuous forces also close to the rotation axis, which is not the case
-for :math:`\epsilon'=0`\ nm\ :math:`^2`
-(:numref:`Fig. (%s) C <fig-equipotential>`). With
+for :math:`\epsilon'\mathrm{ = }0\mathrm{nm}^2`
+(:numref:`Fig. %s C <fig-equipotential>`). With
 
 .. math::
 
@@ -1403,18 +1422,18 @@ the force on atom :math:`j` reads
 Flexible Axis Rotation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As sketched in :numref:`Fig. (%s) <fig-rotation>` A–B, the rigid body
+As sketched in :numref:`Fig. %s <fig-rotation>` A–B, the rigid body
 behavior of the fixed axis rotation scheme is a drawback for many
 applications. In particular, deformations of the rotation group are
 suppressed when the equilibrium atom positions directly depend on the
 reference positions. To avoid this limitation,
-:eq:`eqns. (%s) <eqnpotrmpf>` and :eq:`(%s) <eqnpotrm2pf>`
+eqns. :eq:`%s <eqnpotrmpf>` and :eq:`%s <eqnpotrm2pf>`
 will now be generalized towards a “flexible axis” as sketched in
-:numref:`Fig. (%s) C <fig-rotation>`. This will be achieved by
+:numref:`Fig. %s C <fig-rotation>`. This will be achieved by
 subdividing the rotation group into a set of equidistant slabs
 perpendicular to the rotation vector, and by applying a separate
 rotation potential to each of these slabs.
-:numref:`Fig. (%s) C <fig-rotation>` shows the midplanes of the slabs
+:numref:`Fig. %s C <fig-rotation>` shows the midplanes of the slabs
 as dotted straight lines and the centers as thick black dots.
 
 To avoid discontinuities in the potential and in the forces, we define
@@ -1452,7 +1471,7 @@ A most convenient choice is :math:`\sigma = 0.7 \Delta x` and
 
 which yields a nearly constant sum, essentially independent of
 :math:`{\mbox{\boldmath ${x}$}}_i` (dashed line in
-:numref:`Fig. (%s) <fig-gaussian>`), *i.e.*,
+:numref:`Fig. %s <fig-gaussian>`), *i.e.*,
 
 .. math:: \sum_{n \in Z} g_n({\mbox{\boldmath ${x}$}}_i) =  1 + \epsilon({\mbox{\boldmath ${x}$}}_i) \, ,
           :label: eqnnormal
@@ -1495,7 +1514,7 @@ Flexible Axis Potential
 We consider two flexible axis variants. For the first variant, the slab
 segmentation procedure with Gaussian weighting is applied to the radial
 motion potential
-(:eq:`eqn. (%s) <eqnpotrmpf>` / :numref:`Fig. (%s) B <fig-equipotential>`),
+(eqn. :eq:`%s <eqnpotrmpf>` / :numref:`Fig. %s B <fig-equipotential>`),
 yielding as the contribution of slab :math:`n`
 
 .. math::  V^n = 
@@ -1513,7 +1532,7 @@ and a total potential function
           :label: eqnpotflex
 
 Note that the global center of mass :math:`{\mbox{\boldmath ${x}$}}_c`
-used in :eq:`eqn. (%s) <eqnpotrmpf>` is now replaced by
+used in eqn. :eq:`%s <eqnpotrmpf>` is now replaced by
 :math:`{\mbox{\boldmath ${x}$}}_c^n`, the center of mass of the slab.
 With
 
@@ -1586,25 +1605,25 @@ tolerated. With this assumption, the forces
     {\mbox{\boldmath ${F}$}}^\mathrm{flex\mhyphen t}
    
 have the same form as
-:eq:`eqn. (%s) <eqnpotflexforce>`.
+eqn. :eq:`%s <eqnpotflexforce>`.
 
 Flexible Axis 2 Alternative Potential
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this second variant, slab segmentation is applied to
-:math:`V^\mathrm{rm2}` (:eq:`eqn. (%s) <eqnpotrm2pf>`), resulting in
+:math:`V^\mathrm{rm2}` (eqn. :eq:`%s <eqnpotrm2pf>`), resulting in
 a flexible axis potential without radial force contributions
-(:numref:`Fig. (%s) C <fig-equipotential>`),
+(:numref:`Fig. %s C <fig-equipotential>`),
 
 .. math::   V{^\mathrm{flex2}}= 
             \frac{k}{2} \sum_{i=1}^{N} \sum_n w_i\,g_n({\mbox{\boldmath ${x}$}}_i) 
             \frac{\left[ (\hat{{\mbox{\boldmath ${v}$}}} \times ( {\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${x}$}}_c^n ))
             \cdot \mathbf{\Omega}(t)({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${y}$}}_c^n) \right]^2}
             {\| \hat{{\mbox{\boldmath ${v}$}}} \times ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${x}$}}_c^n) \|^2 +
-            \epsilon'} \, .
+            \epsilon'}
             :label: eqnpotflex2
 
- With
+With
 
 .. math:: \begin{aligned}
           {\mbox{\boldmath ${r}$}}_i^n & := & \mathbf{\Omega}(t)({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${y}$}}_c^n)\\
@@ -1648,30 +1667,14 @@ the force on atom :math:`j` reads
           \end{aligned}
           :label: eqnpotflex2force
 
-Applying transformation (:eq:`(%s) <eqntrafo>`) yields a
+Applying transformation :eq:`%s <eqntrafo>` yields a
 “translation-tolerant” version of the flexible2 potential,
-
-.. math::
-    \mathchardef\mhyphen="2D
-    V{^\mathrm{flex2\mhyphen t}}
-    
-Again, assuming that
+:math:`V{^\mathrm{flex2 - t}}`. Again, assuming that
 :math:`\partial {\mbox{\boldmath ${x}$}}_c / \partial x`,
 :math:`\partial {\mbox{\boldmath ${x}$}}_c /
 \partial y`, :math:`\partial {\mbox{\boldmath ${x}$}}_c / \partial z`
-are small, the resulting equations for
-
-.. math::
-    \mathchardef\mhyphen="2D
-    V{^\mathrm{flex2\mhyphen t}}
-    
-and
-
-.. math::
-    \mathchardef\mhyphen="2D
-    {\mbox{\boldmath ${F}$}}{^\mathrm{flex2\mhyphen t}}
-   
-are similar
+are small, the resulting equations for :math:`V{^\mathrm{flex2 - t}}`
+and :math:`{\mbox{\boldmath ${F}$}}{^\mathrm{flex2 - t}}` are similar
 to those of :math:`V^\mathrm{flex2}` and
 :math:`{\mbox{\boldmath ${F}$}}^\mathrm{flex2}`.
 
@@ -1688,15 +1691,15 @@ file is found, :math:`{\mbox{\boldmath ${x}$}}_i(t=0)` are used as
 reference positions and written to :ref:`trr` such that they
 can be used for subsequent setups. All parameters of the potentials such
 as :math:`k`, :math:`\epsilon'`, etc.
-(:numref:`Table (%s) <tab-vars>`) are provided as :ref:`mdp`
+(:numref:`Table %s <tab-vars>`) are provided as :ref:`mdp`
 parameters; ``rot-type`` selects the type of the potential.
 The option ``rot-massw`` allows to choose whether or not to
 use mass-weighted averaging. For the flexible potentials, a cutoff value
 :math:`g_n^\mathrm{min}` (typically :math:`g_n^\mathrm{min}=0.001`)
-makes shure that only significant contributions to :math:`V` and
+makes sure that only significant contributions to :math:`V` and
 :math:`{\mbox{\boldmath ${F}$}}` are evaluated, *i.e.* terms with
 :math:`g_n({\mbox{\boldmath ${x}$}}) < g_n^\mathrm{min}` are omitted.
-:numref:`Table (%s) <tab-quantities>` summarizes observables that are
+:numref:`Table %s <tab-quantities>` summarizes observables that are
 written to additional output files and which are described below.
 
 .. |ROTISO| replace:: V\ :math:`^{\mathrm{iso}}`
@@ -1714,7 +1717,7 @@ written to additional output files and which are described below.
 .. |KUNIT| replace:: :math:`\frac{\mathrm{kJ}}{\mathrm{mol} \cdot \mathrm{nm}^2}`
 .. |BFX| replace:: **x**
 .. |KMA| replace:: :math:`k`
-.. |VECV| replace:: :math:`\hat{\mbox{boldmath{$v$}}}`
+.. |VECV| replace:: :math:`\hat{\mbox{\boldmath{$v$}}}`
 .. |VECU| replace:: :math:`{\mbox{\boldmath{$u$}}}`
 .. |OMEG| replace:: :math:`\omega`
 .. |EPSP| replace:: :math:`{\epsilon}'`
@@ -1722,17 +1725,17 @@ written to additional output files and which are described below.
 .. |GMIN| replace:: :math:`g_n^\mathrm{min}`
 .. |CIPS| replace:: :math:`^\circ`\ /ps
 .. |NM2| replace:: nm\ :math:`^2`
-.. |REF1| replace:: (\ :eq:`eqnpotiso`\ )
-.. |REF2| replace:: (\ :eq:`eqnpotisopf`\ )
-.. |REF3| replace:: (\ :eq:`eqnpotpm`\ )
-.. |REF4| replace:: (\ :eq:`eqnpotpmpf`\ )
-.. |REF5| replace:: (\ :eq:`eqnpotrm`\ )
-.. |REF6| replace:: (\ :eq:`eqnpotrmpf`\ )
-.. |REF7| replace:: (\ :eq:`eqnpotrm2`\ )
-.. |REF8| replace:: (\ :eq:`eqnpotrm2pf`\ )
-.. |REF9| replace:: (\ :eq:`eqnpotflex`\ )
-.. |REF10| replace:: (\ :eq:`eqnpotflext`\ )
-.. |REF11| replace:: (\ :eq:`eqnpotflex2`\ )
+.. |REF1| replace:: \ :eq:`eqnpotiso`
+.. |REF2| replace:: \ :eq:`eqnpotisopf`
+.. |REF3| replace:: \ :eq:`eqnpotpm`
+.. |REF4| replace:: \ :eq:`eqnpotpmpf`
+.. |REF5| replace:: \ :eq:`eqnpotrm`
+.. |REF6| replace:: \ :eq:`eqnpotrmpf`
+.. |REF7| replace:: \ :eq:`eqnpotrm2`
+.. |REF8| replace:: \ :eq:`eqnpotrm2pf`
+.. |REF9| replace:: \ :eq:`eqnpotflex`
+.. |REF10| replace:: \ :eq:`eqnpotflext`
+.. |REF11| replace:: \ :eq:`eqnpotflex2`
 
 .. _tab-vars:
 
@@ -1778,19 +1781,21 @@ written to additional output files and which are described below.
            +-------------------+------------+---------+---------+--------+--------+--------+--------+-----------+-----------+
 
 
+| 
+
 .. |VT|      replace:: :math:`V(t)`
 .. |THET|    replace:: :math:`\theta_\mathrm{ref}(t)`
 .. |THETAV|  replace:: :math:`\theta_\mathrm{av}(t)`
 .. |THETFIT| replace:: :math:`\theta_\mathrm{fit}(t)`, :math:`\theta_\mathrm{fit}(t,n)`
-.. |YVEC|    replace:: :math:`{\mbox{boldmath{$y$}}}_{0}(n)`, :math:`{\mbox{boldmath{$x$}}}_{0}(t,n)`
+.. |YVEC|    replace:: :math:`{\mbox{\boldmath{$y$}}}_{0}(n)`, :math:`{\mbox{\boldmath{$x$}}}_{0}(t,n)`
 .. |TAUT|    replace:: :math:`\tau(t)`
 .. |TAUTN|   replace:: :math:`\tau(t,n)`
-.. |REFT|  replace:: :numref:`see Table (%s) <tab-vars>`
+.. |REFT|  replace:: :numref:`see Table %s <tab-vars>`
 .. |REFEQ| replace:: :math:`\theta_\mathrm{ref}(t)=\omega t`
-.. |REF12| replace:: (\ :eq:`eqnavangle`\ )               
-.. |REF13| replace:: (\ :eq:`eqnrmsdfit`\ )               
-.. |REF14| replace:: (\ :eq:`eqndefx0`\ ,\ :eq:`eqndefy0`\ )
-.. |REF15| replace:: (\ :eq:`eqntorque`\ )                
+.. |REF12| replace:: \ :eq:`eqnavangle`
+.. |REF13| replace:: \ :eq:`eqnrmsdfit`
+.. |REF14| replace:: \ :eq:`eqndefx0`\ ,\ :eq:`eqndefy0`
+.. |REF15| replace:: \ :eq:`eqntorque` 
 
 .. _tab-quantities:
 
@@ -1835,7 +1840,7 @@ Here, :math:`r_i` is the distance of the reference position to the
 rotation axis, and the difference angles :math:`\theta_i` are determined
 from the atomic positions, projected onto a plane perpendicular to the
 rotation axis through pivot point :math:`{\mbox{\boldmath ${u}$}}` (see
-:eq:`eqn. (%s) <eqnproject>` for the definition of
+eqn. :eq:`%s <eqnproject>` for the definition of
 :math:`\perp`),
 
 .. math::
@@ -1868,7 +1873,7 @@ fit,
 To determine the local angle for each slab :math:`n`, both reference
 and actual positions are weighted with the Gaussian function of slab
 :math:`n`, and :math:`\theta_\mathrm{fit}(t,n)` is calculated as in
-:eq:`eqn. (%s) <eqnrmsdfit>`) from the Gaussian-weighted
+eqn. :eq:`%s <eqnrmsdfit>` from the Gaussian-weighted
 positions.
 
 For all angles, the :ref:`mdp` input option
@@ -1924,8 +1929,8 @@ the pulse. Special cases occur when :math:`\sigma` = 0 (non-pulsed
 field) and for :math:`\omega` is 0 (static field).
 
 This simulated laser-pulse was applied to simulations of melting
-ice Caleman and Spoel (2008). A pulsed electric field may look ike
-:numref:`Fig. (%s) <fig-field>`. In the supporting information of that paper the impact
+ice \ :ref:`146 <refCaleman2008a>`. A pulsed electric field may look ike
+:numref:`Fig. %s <fig-field>`. In the supporting information of that paper the impact
 of an applied electric field on a system under periodic boundary
 conditions is analyzed. It is described that the effective electric
 field under PBC is larger than the applied field, by a factor depending
@@ -1935,7 +1940,7 @@ corrected for. But for a system where the dielectric varies over time,
 for example a membrane protein with a pore that opens and closes during
 the simulation, this way of applying an electric field is not useful.
 In such cases one can use the computational electrophysiology protocol
-described in the next section (sec. [sec:compel]).
+described in the next section (sec. :ref:`compel`).
 
 .. _fig-field:
 
@@ -1968,16 +1973,18 @@ yields an oscillating electric field with :math:`E_0` = 2 V/nm,
 
 yields an pulsed-oscillating electric field with :math:`E_0` = 2 V/nm,
 :math:`\omega` = 150/ps and :math:`t_0` = 5 ps and :math:`\sigma` = 1
-ps. Read more in ref. Caleman and Spoel (2008). Note that the input file
+ps. Read more in ref. \ :ref:`146 <refCaleman2008a>`. Note that the input file
 format is changed from the undocumented older version. A figure like
-:numref:`Fig. (%s) <fig-field>` may be produced by passing the
+:numref:`Fig. %s <fig-field>` may be produced by passing the
 ``-field`` option to :ref:`gmx mdrun`.
+
+.. _compel:
 
 Computational Electrophysiology
 -------------------------------
 
-The Computational Electrophysiology (CompEL) protocol Kutzner et al.
-(2011) allows the simulation of ion flux through membrane channels,
+The Computational Electrophysiology (CompEL) protocol
+:ref:`147 <refKutzner2011b>` allows the simulation of ion flux through membrane channels,
 driven by transmembrane potentials or ion concentration gradients. Just
 as in real cells, CompEL establishes transmembrane potentials by
 sustaining a small imbalance of charges :math:`\Delta q` across the
@@ -2001,7 +2008,7 @@ In a CompEL setup, the simulation system is divided into two
 compartments **A** and **B** with independent ion concentrations. This
 is best achieved by using double bilayer systems with a copy (or copies)
 of the channel/pore of interest in each bilayer
-(:numref:`Fig. (%s) <fig-compelsetup>` A, B). If the channel axes
+(:numref:`Fig. %s <fig-compelsetup>` A, B). If the channel axes
 point in the same direction, channel flux is observed simultaneously at
 positive and negative potentials in this way, which is for instance
 important for studying channel rectification.
@@ -2021,7 +2028,7 @@ important for studying channel rectification.
 The potential difference :math:`\Delta U` across the membrane is easily
 calculated with the :ref:`gmx potential <gmx potential>` utility. By this, the potential drop
 along :math:`z` or the pore axis is exactly known in each time interval
-of the simulation (:numref:`Fig. (%s) <fig-compelsetup>` C). Type and number of ions
+of the simulation (:numref:`Fig. %s <fig-compelsetup>` C). Type and number of ions
 :math:`n_i` of charge :math:`q_i`, traversing the channel in the
 simulation, are written to the swapions.xvg output file, from which the
 average channel conductance :math:`G` in each interval :math:`\Delta t`
@@ -2054,13 +2061,13 @@ The following :ref:`mdp` options control the CompEL protocol:
     swap-frequency = 100      ; Swap attempt frequency
 
 Choose ``Z`` if your membrane is in the :math:`xy`-plane
-(:numref:`Fig. (%s) <fig-compelsetup>`). Ions will be exchanged
+(:numref:`Fig. %s <fig-compelsetup>`). Ions will be exchanged
 between compartments depending on their :math:`z`-positions alone.
 ``swap-frequency`` determines how often a swap attempt will
 be made. This step requires that the positions of the split groups, the
 ions, and possibly the solvent molecules are communicated between the
 parallel processes, so if chosen too small it can decrease the
-simulation performance. The ``Position`` swapping entry in
+simulation performance. The ``Position swapping`` entry in
 the cycle and time accounting table at the end of the
 ``md.log`` file summarizes the amount of runtime spent in
 the swap module.
@@ -2079,7 +2086,7 @@ which are usually the centers of the channels. If
 ``yes``, the center of mass of each index group is used as
 boundary, here in :math:`z`-direction. Otherwise, the geometrical
 centers will be used (:math:`\times` in
-:numref:`Fig. (%s) <fig-compelsetup>` A). If, such as here, a membrane
+:numref:`Fig. %s <fig-compelsetup>` A). If, such as here, a membrane
 channel is selected as split group, the center of the channel will
 define the dividing plane between the compartments (dashed horizontal
 lines). All index groups must be defined in the index file.
@@ -2095,7 +2102,7 @@ volumes, one can offset the swap exchange plane with the
 ``bulk-offset`` parameter. A value of 0.0 means no offset
 :math:`b`, values :math:`-1.0 < b < 0` move the swap exchange plane
 closer to the lower, values :math:`0 < b < 1.0` closer to the upper
-membrane. :numref:`Fig. (%s) <fig-compelsetup>` A (left) depicts that
+membrane. :numref:`Fig. %s <fig-compelsetup>` A (left) depicts that
 for the **A** compartment.
 
 ::
@@ -2178,7 +2185,7 @@ double-layered system.
 To suppress large fluctuations of the membranes along the swap
 direction, it may be useful to apply a harmonic potential (acting only
 in the swap dimension) between each of the two channel and/or bilayer
-centers using umbrella pulling (see section [sec:pull]).
+centers using umbrella pulling (see section :ref:`pull`).
 
 Multimeric channels
 ^^^^^^^^^^^^^^^^^^^
@@ -2193,15 +2200,17 @@ check whether that is the case:
 -  ``GMX_COMPELDUMP``: output the starting structure after
    it has been made whole to :ref:`pdb` file.
 
+.. _fepmf:
+
 Calculating a PMF using the free-energy code
 --------------------------------------------
 
-The free-energy coupling-parameter approach (see sec. [sec:fecalc])
+The free-energy coupling-parameter approach (see sec. :ref:`fecalc`)
 provides several ways to calculate potentials of mean force. A potential
 of mean force between two atoms can be calculated by connecting them
 with a harmonic potential or a constraint. For this purpose there are
 special potentials that avoid the generation of extra exclusions,
-see sec. [sec:excl]. When the position of the minimum or the constraint
+see sec. :ref:`excl`. When the position of the minimum or the constraint
 length is 1 nm more in state B than in state A, the restraint or
 constraint force is given by :math:`\partial H/\partial \lambda`. The
 distance between the atoms can be changed as a function of
@@ -2213,7 +2222,7 @@ code can also handle atoms that are connected by constraints.
 
 Potentials of mean force can also be calculated using position
 restraints. With position restraints, atoms can be linked to a position
-in space with a harmonic potential (see [subsec:positionrestraint]).
+in space with a harmonic potential (see :ref:`positionrestraint`).
 These positions can be made a function of the coupling parameter
 :math:`\lambda`. The positions for the A and the B states are supplied
 to :ref:`grompp <gmx grompp>` with the ``-r`` and ``-rb`` options, respectively. One could use this
@@ -2231,6 +2240,8 @@ walls where one wants to measure the force required to change the
 separation between the boundaries or walls. Because the boundaries (or
 walls) already need to be fixed, the position restraints do not limit
 the system in its sampling.
+
+.. _rmfast:
 
 Removing fastest degrees of freedom
 -----------------------------------
@@ -2256,7 +2267,7 @@ be done by defining them as virtual interaction sites instead of normal
 atoms. Whereas a normal atom is connected to the molecule with bonds,
 angles and dihedrals, a virtual site’s position is calculated from the
 position of three nearby heavy atoms in a predefined manner (see also
-sec. [sec:virtual\_sites]). For the hydrogens in water and in hydroxyl,
+sec. :ref:`virtualsites`). For the hydrogens in water and in hydroxyl,
 sulfhydryl, or amine groups, no degrees of freedom can be removed,
 because rotational freedom should be preserved. The only other option
 available to slow down these motions is to increase the mass of the
@@ -2265,8 +2276,8 @@ This will increase the moment of inertia of the water molecules and the
 hydroxyl, sulfhydryl, or amine groups, without affecting the equilibrium
 properties of the system and without affecting the dynamical properties
 too much. These constructions will shortly be described in
-sec. [sec:vsitehydro] and have previously been described in full
-detail Feenstra, Hess, and Berendsen (1999).
+sec. :ref:`vsitehydro` and have previously been described in full
+detail \ :ref:`148 <reffeenstra99>`.
 
 Using both virtual sites and modified masses, the next bottleneck is
 likely to be formed by the improper dihedrals (which are used to
@@ -2292,6 +2303,8 @@ constructions for the aromatic residues are based on the bond lengths
 and angles for the geometry as described in the force fields, but these
 parameters are hard-coded into :ref:`pdb2gmx <gmx pdb2gmx>` due to the complex nature of the
 construction needed for a whole aromatic group.
+
+.. _vsitehydro:
 
 Hydrogen bond-angle vibrations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2329,13 +2342,13 @@ the bonded heavy atom.
 
 Taking into account these considerations, the hydrogen atoms in a
 protein naturally fall into several categories, each requiring a
-different approach (see also :numref:`Fig. (%s) <fig-vsitehydro>`).
+different approach (see also :numref:`Fig. %s <fig-vsitehydro>`).
 
 -  *hydroxyl (-OH) or sulfhydryl (-SH) hydrogen:* 
    The only internal degree of freedom in a hydroxyl group
    that can be constrained is the bending of the C-O-H
    angle. This angle is fixed by defining an additional bond of
-   appropriate length, see :numref:`Fig. (%s) A<fig-vsitehydro>`.
+   appropriate length, see :numref:`Fig. %s A<fig-vsitehydro>`.
    Doing so removes the high-frequency angle bending, but leaves the
    dihedral rotational freedom. The same goes for a sulfhydryl group.
    **Note** that in these cases the hydrogen is not treated as a virtual
@@ -2349,7 +2362,7 @@ different approach (see also :numref:`Fig. (%s) <fig-vsitehydro>`).
    hydrogen atom is positioned at a fixed distance from the bonded heavy
    atom on a line going through the bonded heavy atom and a point on the
    line through both second bonded atoms, see
-   :numref:`Fig. (%s) B<fig-vsitehydro>`.
+   :numref:`Fig. %s B<fig-vsitehydro>`.
 
 -  *planar amine (-NH*:math:`_2`) *hydrogens:* The method
    used for the single amide hydrogen is not well suited for planar
@@ -2357,7 +2370,7 @@ different approach (see also :numref:`Fig. (%s) <fig-vsitehydro>`).
    define the direction of the hydrogen atoms. Instead, the hydrogen is
    constructed at a fixed distance from the nitrogen atom, with a fixed
    angle to the carbon atom, in the plane defined by one of the other
-   heavy atoms, see :numref:`Fig. (%s) C<fig-vsitehydro>`.
+   heavy atoms, see :numref:`Fig. %s C<fig-vsitehydro>`.
 
 -  *amine group (umbrella -NH*:math:`_2` *or
    -NH*:math:`_3^+`)* hydrogens:* Amine hydrogens with
@@ -2374,7 +2387,7 @@ different approach (see also :numref:`Fig. (%s) <fig-vsitehydro>`).
    and hydrogen atoms are constructed as linear combinations of the two
    carbon-mass vectors and their outer product, resulting in an amine
    group with rotational freedom intact, but without other internal
-   degrees of freedom. See :numref:`Fig. (%s) D<fig-vsitehydro>`.
+   degrees of freedom. See :numref:`Fig. %s D<fig-vsitehydro>`.
 
 .. figure:: plots/dumaro.*
    :width: 15.00000cm
@@ -2396,14 +2409,14 @@ perfectly planar group without the inherently unstable constraints that
 are necessary to keep normal atoms in a plane. The basic approach is to
 define three atoms or dummy masses with constraints between them to fix
 the geometry and create the rest of the atoms as simple virtual sites
-type (see sec. [sec:virtual\_sites]) from these three. Each of the
+type (see sec. :ref:`virtualsites`) from these three. Each of the
 aromatic residues require a different approach:
 
 -  *Phenylalanine:* C\ :math:`_\gamma`,
    C\ :math:`_{{\epsilon}1}`, and
    C\ :math:`_{{\epsilon}2}` are kept as normal atoms,
    but with each a mass of one third the total mass of the phenyl group.
-   See :numref:`Fig. (%s) A<fig-vsitehydro>`.
+   See :numref:`Fig. %s A<fig-vsitehydro>`.
 
 -  *Tyrosine:* The ring is treated identically to the phenylalanine
    ring. Additionally, constraints are defined between
@@ -2417,7 +2430,7 @@ aromatic residues require a different approach:
    between C\ :math:`_\gamma` and
    H\ :math:`_{\eta}`. **Note** that the hydrogen is not
    treated as a virtual site. See
-   :numref:`Fig. (%s) B<fig-vsitehydro>`.
+   :numref:`Fig. %s B<fig-vsitehydro>`.
 
 -  *Tryptophan:* C\ :math:`_\beta` is kept as a normal
    atom and two dummy masses are created at the center of mass of each
@@ -2426,13 +2439,13 @@ aromatic residues require a different approach:
    C\ :math:`_{{\epsilon}2}` are each counted half for
    each ring). This keeps the overall center of mass and the moment of
    inertia almost (but not quite) equal to what it was. See
-   :numref:`Fig. (%s) C<fig-vsitehydro>`.
+   :numref:`Fig. %s C<fig-vsitehydro>`.
 
 -  *Histidine:* C\ :math:`_\gamma`,
    C\ :math:`_{{\epsilon}1}` and
    N\ :math:`_{{\epsilon}2}` are kept as normal atoms,
    but with masses redistributed such that the center of mass of the
-   ring is preserved. See :numref:`Fig. (%s) D<fig-vsitehydro>`.
+   ring is preserved. See :numref:`Fig. %s D<fig-vsitehydro>`.
 
 Viscosity calculation
 ---------------------
@@ -2455,7 +2468,7 @@ Einstein relation:
    \right\rangle_{t_0}
 
 This can be done with :ref:`gmx energy <gmx energy>`. This method converges
-very slowly Hess (2002b), and as such a nanosecond simulation might not
+very slowly \ :ref:`149 <refHess2002a>`, and as such a nanosecond simulation might not
 be long enough for an accurate determination of the viscosity. The
 result is very dependent on the treatment of the electrostatics. Using a
 (short) cut-off results in large noise on the off-diagonal pressure
@@ -2463,7 +2476,7 @@ elements, which can increase the calculated viscosity by an order of
 magnitude.
 
 |Gromacs| also has a non-equilibrium method for determining the
-viscosity Hess (2002b). This makes use of the fact that energy, which is
+viscosity \ :ref:`149 <refHess2002a>`. This makes use of the fact that energy, which is
 fed into system by external forces, is dissipated through viscous
 friction. The generated heat is removed by coupling to a heat bath. For
 a Newtonian liquid adding a small force will result in a velocity
@@ -2524,8 +2537,9 @@ to obtain an accurate value for the viscosity.
 The heat generated by the viscous friction is removed by coupling to a
 heat bath. Because this coupling is not instantaneous the real
 temperature of the liquid will be slightly lower than the observed
-temperature. Berendsen derived this temperature shift Berendsen (1991),
-which can be written in terms of the shear rate as:
+temperature. Berendsen derived this temperature
+shift \ :ref:`31 <refBerendsen91>`, which can be written in terms of the
+shear rate as:
 
 .. math:: T_s = \frac{\eta\,\tau}{2 \rho\,C_v} \mbox{sh}_{\max}^2
 
@@ -2543,10 +2557,12 @@ of the correlation time of the liquid.
 
 Two quantities are written to the energy file, along with their averages
 and fluctuations: :math:`V` and :math:`1/\eta`, as obtained from
-([visc]).
+(:eq:`%s <eqvisc>`).
 
 Tabulated interaction functions
 -------------------------------
+
+.. _cubicspline:
 
 Cubic splines for potentials
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2656,10 +2672,11 @@ When you add the following lines in your :ref:`mdp` file:
     vdwtype         = User
     rvdw            = 1.0
 
-mdrun will read a single non-bonded table file, or multiple when
-energygrp-table is set (see below). The name of the file(s) can be set
-with the :ref:`mdrun <gmx mdrun>` option -table. The table file should contain seven
-columns of table look-up data in the order: :math:`x`, :math:`f(x)`,
+:ref:`mdrun <gmx mdrun>` will read a single non-bonded table file, or
+multiple when ``energygrp-table`` is set (see below). The
+name of the file(s) can be set with the :ref:`mdrun <gmx mdrun>` option
+``-table``. The table file should contain seven columns of
+table look-up data in the order: :math:`x`, :math:`f(x)`,
 :math:`-f'(x)`, :math:`g(x)`, :math:`-g'(x)`, :math:`h(x)`,
 :math:`-h'(x)`. The :math:`x` should run from 0 to :math:`r_c+1` (the
 value of ``table_extension`` can be changed in the :ref:`mdp` file). You can
@@ -2709,14 +2726,14 @@ enzymes, is to use a combination of quantum mechanics (QM) and molecular
 mechanics (MM). The reacting parts of the system are treated quantum
 mechanically, with the remainder being modeled using the force field.
 The current version of |Gromacs| provides interfaces to several popular
-Quantum Chemistry packages (MOPAC Dewar (1983), GAMESS-UK Guest et al.
-(1987), Gaussian Frisch et al. (n.d.) and CPMD Car and Parrinello
-(1985)).
+Quantum Chemistry packages (MOPAC :ref:`150 <refmopac>`,
+GAMESS-UK \ :ref:`151 <refgamess-uk>`, Gaussian \ :ref:`152 <refg03>` and
+CPMD \ :ref:`153 <refCar85a>`).
 
 |Gromacs| interactions between the two subsystems are either handled as
-described by Field *et al.* Field, Bash, and Karplus (1990) or within
-the ONIOM approach by Morokuma and coworkers Maseras and Morokuma (1995;
-Svensson et al. 1996).
+described by Field et al. :ref:`154 <refField90a>` or within
+the ONIOM approach by Morokuma and coworkers \ :ref:`155 <refMaseras96a>`,
+:ref:`156 <refSvensson96a>`.
 
 Overview
 ^^^^^^^^
@@ -2800,7 +2817,7 @@ defined as a virtual site atom:
     [ virtual_sites2 ]
     LA QMatom MMatom 1 0.65
 
-See sec. [sec:vsitetop] for more details on how virtual sites are
+See sec. :ref:`vsitetop` for more details on how virtual sites are
 treated. The link atom is replaced at every step of the simulation.
 
 In addition, the bond itself is replaced by a constraint:
@@ -2935,7 +2952,7 @@ Using VMD plug-ins for trajectory file I/O
 
 |Gromacs|
 tools are able to use the plug-ins found in an existing installation of
-`VMD <http://www.ks.uiuc.edu/Research/vmd>`__ in order to read and write
+`VMD <http://www.ks.uiuc.edu/Research/vmd>` in order to read and write
 trajectory files in formats that are not native to |Gromacs|. You will be
 able to supply an AMBER DCD-format trajectory filename directly to
 |Gromacs| tools, for example.
@@ -2955,13 +2972,13 @@ Interactive Molecular Dynamics
 ------------------------------
 
 |Gromacs| supports the interactive molecular dynamics (IMD) protocol as
-implemented by `VMD <http://www.ks.uiuc.edu/Research/vmd>`__ to control
+implemented by `VMD <http://www.ks.uiuc.edu/Research/vmd>` to control
 a running simulation in NAMD. IMD allows to monitor a running |Gromacs|
 simulation from a VMD client. In addition, the user can interact with
 the simulation by pulling on atoms, residues or fragments with a mouse
 or a force-feedback device. Additional information about the |Gromacs|
 implementation and an exemplary |Gromacs| IMD system can be found `on this
-homepage <http://www.mpibpc.mpg.de/grubmueller/interactivemd>`__.
+homepage <http://www.mpibpc.mpg.de/grubmueller/interactivemd>`.
 
 Simulation input preparation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -3032,8 +3049,8 @@ Embedding proteins into the membranes
 
 |Gromacs| is capable of inserting the protein into pre-equilibrated lipid
 bilayers with minimal perturbation of the lipids using the method, which
-was initially described as a ProtSqueeze technique,Yesylevskyy (2007)
-and later implemented as g_membed tool. Wolf et al. (2010) Currently the
+was initially described as a ProtSqueeze technique, \ :ref:`157 <refYesylevskyy2007>`
+and later implemented as g_membed tool \ :ref:`158 <refWolf2010>`. Currently the
 functionality of g_membed is available in mdrun as described in the
 user guide.
 
