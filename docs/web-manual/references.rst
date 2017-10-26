@@ -102,6 +102,18 @@ P3M: Influence Functions and Error Estimates.” *J. Chem. Theory Comput.*
 
 .. raw:: html
 
+   <div id="ref-barducci2008well">
+
+Barducci, Alessandro, Giovanni Bussi, and Michele Parrinello. 2008.
+“Well-Tempered Metadynamics: A Smoothly Converging and Tunable
+Free-Energy Method.” *Physical Review Letters* 100 (2). APS: 020603.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    <div id="ref-Basconi2013">
 
 Basconi, Joseph E., and Michael R. Shirts. 2013. “Effects of Temperature
@@ -147,6 +159,17 @@ A. de Groot and J. Nadrchal, 252–56. Singapore: World Scientific.
 Bekker, H., E. J. Dijkstra, M. K. R. Renardus, and H. J. C. Berendsen.
 1995. “An Efficient, Box Shape Independent Non-Bonded Force and Virial
 Algorithm for Molecular Dynamics.” *Mol. Sim.* 14: 137–52.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-belardinelli2007fast">
+
+Belardinelli, RE, and VD Pereyra. 2007. “Fast Algorithm to Calculate
+Density of States.” *Physical Review E* 75 (4). APS: 046701.
 
 .. raw:: html
 
@@ -968,6 +991,19 @@ Funct. Gen.* 65: 712–25.
 
 .. raw:: html
 
+   <div id="ref-huber1994local">
+
+Huber, Thomas, Andrew E Torda, and Wilfred F van Gunsteren. 1994. “Local
+Elevation: A Method for Improving the Searching Properties of Molecular
+Dynamics Simulation.” *Journal of Computer-Aided Molecular Design* 8
+(6). Springer: 695–708.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    <div id="ref-Hukushima96a">
 
 Hukushima, K., and K. Nemoto. 1996. “Exchange Monte Carlo Method and
@@ -1125,6 +1161,18 @@ Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail.”
 
 .. raw:: html
 
+   <div id="ref-laio2002escaping">
+
+Laio, Alessandro, and Michele Parrinello. 2002. “Escaping Free-Energy
+Minima.” *Proceedings of the National Academy of Sciences* 99 (20).
+National Acad Sciences: 12562–6.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    <div id="ref-Lamoureux2003a">
 
 Lamoureux, G., and B. Roux. 2003. “Modeling Induced Polarization with
@@ -1214,6 +1262,31 @@ Simulations on Distributed Memory Machines.” *Comput. Phys. Commun.* 67
 Lindahl, E., B. Hess, and D. van der Spoel. 2001. “GROMACS 3.0: A
 Package for Molecular Simulation and Trajectory Analysis.” *J. Mol.
 Mod.* 7: 306–17.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-lindahl2014accelerated">
+
+Lindahl, Viveca, Jack Lidmar, and Berk Hess. 2014. “Accelerated Weight
+Histogram Method for Exploring Free Energy Landscapes.” *The Journal of
+Chemical Physics* 141 (4). AIP: 044110.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-lindahl2017sequence">
+
+Lindahl, Viveca, Alessandra Villa, and Berk Hess. 2017. “Sequence
+Dependency of Canonical Base Pair Opening in the DNA Double Helix.”
+*PLoS Computational Biology* 13 (4). Public Library of Science:
+e1005463.
 
 .. raw:: html
 
@@ -1325,7 +1398,6 @@ MacKerell, Alexander D., and Nilesh K. Banavali. 2000. “All-Atom
 Empirical Force Field for Nucleic Acids: II. Application to Molecular
 Dynamics Simulations of DNA and RNA in Solution.” *J. Comp. Chem.* 21
 (2). John Wiley & Sons, Inc.: 105–20.
-doi:\ `10.1002/(SICI)1096-987X(20000130)21:2<105::AID-JCC3>3.0.CO;2-P <https://doi.org/10.1002/(SICI)1096-987X(20000130)21:2<105::AID-JCC3>3.0.CO;2-P>`__.
 
 .. raw:: html
 
@@ -1753,6 +1825,17 @@ of Multiple Equilibrium Simulations.” *J. Chem. Phys.* 129: 124105.
 
 .. raw:: html
 
+   <div id="ref-sivak2012thermodynamic">
+
+Sivak, David A, and Gavin E Crooks. 2012. “Thermodynamic Metrics and
+Optimal Paths.” *Physical Review Letters* 108 (19). APS: 190602.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    <div id="ref-PSmith93c">
 
 Smith, P. E., and W. F. van Gunsteren. 1993. “The Viscosity of SPC and
@@ -1940,6 +2023,18 @@ ensemble.” *J. Phys. A.* 59: 5629–51.
 Verlet., L. 1967. “Computer experiments on classical fluids. I.
 Thermodynamical properties of Lennard-Jones molecules.” *Phys. Rev.*
 159: 98–103.
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-wang2001efficient">
+
+Wang, Fugao, and DP Landau. 2001. “Efficient, Multiple-Range Random Walk
+Algorithm to Calculate the Density of States.” *Physical Review Letters*
+86 (10). APS: 2050.
 
 .. raw:: html
 
