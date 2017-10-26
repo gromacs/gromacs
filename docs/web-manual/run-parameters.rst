@@ -4,11 +4,7 @@ Run parameters and Programs
 Online documentation
 --------------------
 
-More documentation is
-available online from the
-`|Gromacs| web site <http://manual.gromacs.org/documentation>`__.
-
-In addition, we install standard UNIX man pages for all the programs. If
+We install standard UNIX man pages for all the programs. If
 you have sourced the ``GMXRC`` script in the |Gromacs| binary directory for
 your host they should already be present in your ``MANPATH`` environment
 variable, and you should be able to type *e.g.* ``man gmx-grompp``. You can
@@ -32,5 +28,5 @@ Run Parameters
 
 The descriptions of :ref:`mdp` parameters can be found at
 under the link above both in your local |Gromacs| installation,
-or in the `release web manual <http://manual.gromacs.org/current/mdp-options.html>`__.
+or :ref:`here <mdp-general>`.
 
