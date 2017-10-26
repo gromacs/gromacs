@@ -116,7 +116,7 @@ void ewald_LRcorrection(int numAtomsLocal,
     gmx_bool    bDoingLBRule  = (fr->ljpme_combination_rule == eljpmeLB);
     gmx_bool    bNeedLongRangeCorrection;
 
-    assert(ir);
+    GMX_ASSERT(ir, "Invalid inputrec pointer");
     matrix          scaledBox;
     EwaldBoxZScaler boxScaler(*ir);
     boxScaler.scaleBox(box, scaledBox);
