@@ -58,14 +58,14 @@ def do_build(context):
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.4.1'))
+        doxygen_version='1.8.5', sphinx_version='1.6.1'))
     context.run_cmake(cmake_opts);
     context.build_target(target='gmx', parallel=True,
             continue_on_failure=True)
 
     context.build_target(target='manual', parallel=False,
             target_descr='PDF manual', continue_on_failure=True)
-    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
+    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/Gromacs.log')
     if os.path.isfile(logfile):
         with open(logfile, 'r') as f:
             manual_log = f.read()

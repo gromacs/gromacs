@@ -162,7 +162,7 @@ from run A:
 .. math::  X_{1,n+m}^{AB} ~=~ X_{1,n}^A + X_{1,m}^B
            :label: eqnpscomb
 
- When we want to compute the partial variance from the two components we
+When we want to compute the partial variance from the two components we
 have to make a correction :math:`\Delta\sigma`:
 
 .. math:: \sigma_{1,n+m}^{AB} ~=~ \sigma_{1,n}^A + \sigma_{1,m}^B +\Delta\sigma

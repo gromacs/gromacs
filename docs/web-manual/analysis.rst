@@ -41,7 +41,7 @@ series of angles by *triples* of *atom numbers*, dihedrals by
 *quadruples* of *atom numbers* and bonds or vectors (in a molecule) by
 *pairs* of *atom numbers*. When appropriate the type of index file will
 be specified for the following analysis programs. To help creating such
-:ref:`index files <ndx>` ``(index.ndx)``, there are a couple of programs to generate
+:ref:`index file <ndx>` ``index.ndx``), there are a couple of programs to generate
 them, using either your input configuration or the topology. To generate
 an index file consisting of a series of *atom numbers* (as in the
 example of :math:`g_{AB}`), use :ref:`gmx make_ndx`
@@ -299,8 +299,9 @@ radius :math:`r_{max}` (see :numref:`Fig. (%s) <fig-rdfex>` C).
 
 Usually the value of :math:`r_{max}` is half of the box length. The
 averaging is also performed in time. In practice the analysis program
-gmx rdf divides the system into spherical slices (from :math:`r` to
-:math:`r+dr`, see :numref:`Fig. (%s) <fig-rdfex>` A) and makes a histogram in stead of
+:ref:`gmx rdf <gmx rdf>` divides the system
+into spherical slices (from :math:`r` to :math:`r+dr`, see
+:numref:`Fig. (%s) <fig-rdfex>` A) and makes a histogram in stead of
 the :math:`\delta`-function. An example of the RDF of oxygen-oxygen in
 SPC water Berendsen et al. (1981) is given in :numref:`Fig. (%s) <fig-rdf>`
 
@@ -415,11 +416,11 @@ vector :math:`{\mbox{\boldmath ${p}$}}`:
           :label: eqncorrleg
 
 where :math:`P_n(x)` is the :math:`n^{th}` order Legendre
-polynomial. [3]_ Such correlation times can actually be obtained
+polynomial. [1]_ Such correlation times can actually be obtained
 experimentally using *e.g.* NMR or other relaxation experiments. |Gromacs|
 can compute correlations using the 1\ :math:`^{st}` and 2\ :math:`^{nd}`
 order Legendre polynomial (:eq:`eqn. (%s) <eqncorrleg>`). This can also be used
-for rotational autocorrelation (gmx rotacf) and dipole autocorrelation
+for rotational autocorrelation (:ref:`gmx rotacf`) and dipole autocorrelation
 (:ref:`gmx dipoles <gmx dipoles>`).
 
 In order to study torsion angle dynamics, we define a dihedral
@@ -545,7 +546,7 @@ function to estimate the error in time-correlated data due to Hess Hess
 where :math:`\tau_1` and :math:`\tau_2` are time constants (with
 :math:`\tau_2 \ge \tau_1`) and :math:`\alpha` usually is close to 1 (in
 the fitting procedure it is enforced that :math:`0\leq\alpha\leq 1`).
-This is used in gmx analyze for error estimation using
+This is used in :ref:`gmx analyze <gmx analyze>` for error estimation using
 
 .. math:: \lim_{t\rightarrow\infty}\varepsilon(t) = \sigma\sqrt{\frac{2(\alpha\tau_1+(1-\alpha)\tau_2)}{T}}
 
