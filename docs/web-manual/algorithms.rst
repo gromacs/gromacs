@@ -35,7 +35,7 @@ Periodic boundary conditions
 
 .. _fig-pbc:
 
-.. figure:: plots/pbctric.eps
+.. figure:: plots/pbctric.*
 
    Periodic boundary conditions in two dimensions.
 
@@ -111,7 +111,7 @@ used in a periodic system.
 
 .. _fig-boxshapes:
 
-.. figure:: plots/rhododec.eps
+.. figure:: plots/rhododec.*
 
      A rhombic dodecahedron and truncated octahedron (arbitrary
      orientations).
@@ -400,7 +400,7 @@ Coordinates and velocities
 
 .. _fig-maxwell:
 
-.. figure:: plots/maxwell.eps
+.. figure:: plots/maxwell.*
 
    A Maxwell-Boltzmann velocity distribution, generated from
    random numbers.
@@ -433,7 +433,7 @@ the velocity distribution :math:`\sqrt{kT/m_i}`. Since the resulting
 total energy will not correspond exactly to the required temperature
 :math:`T`, a correction is made: first the center-of-mass motion is
 removed and then all velocities are scaled so that the total energy
-corresponds exactly to :math:`T` (see :eq:`eqn. (%s) <eqn-ET>`).
+corresponds exactly to :math:`T` (see :eq:`eqn. (%s) <eqnET>`).
 
 Center-of-mass motion
 ^^^^^^^^^^^^^^^^^^^^^
@@ -745,7 +745,7 @@ buffer calculation and results in a smaller buffer size.
 
 .. _fig-verletdrift:
 
-.. figure:: plots/verlet-drift.eps
+.. figure:: plots/verlet-drift.*
 
    Energy drift per atom for an SPC/E water system at 300K with a
    time step of 2 fs and a pair-list update period of 10 steps
@@ -810,7 +810,7 @@ image.
 
 .. _fig-grid:
 
-.. figure:: plots/nstric.eps
+.. figure:: plots/nstric.*
 
    Grid search in two dimensions. The arrows are the box vectors.
 
@@ -966,7 +966,7 @@ The leap-frog integrator
 
 .. _fig-leapfrog:
 
-.. figure:: plots/leapfrog.eps
+.. figure:: plots/leapfrog.*
 
    The Leap-Frog integration method. The algorithm is called
    Leap-Frog because :math:`{\mbox{\boldmath ${r}$}}` and
@@ -1160,7 +1160,7 @@ A non-standard variant of velocity Verlet which averages the kinetic
 energies :math:`KE(t+{{\frac{1}{2}}{{\Delta t}}})` and
 :math:`KE(t-{{\frac{1}{2}}{{\Delta t}}})`, exactly like leap-frog, is
 also now implemented in |Gromacs| (as :ref:`mdp` file option
-``md-vv-avek``). Without temperature and pressure coupling,
+:mdp-value:`integrator=md-vv-avek`). Without temperature and pressure coupling,
 velocity Verlet with half-step-averaged kinetic energies and leap-frog
 will be identical up to numerical precision. For temperature- and
 pressure-control schemes, however, velocity Verlet with
@@ -1169,10 +1169,11 @@ will be discussed in the section in thermostats and barostats.
 
 The half-step-averaged kinetic energy and temperature are slightly more
 accurate for a given step size; the difference in average kinetic
-energies using the half-step-averaged kinetic energies (*md* and
-*md-vv-avek*) will be closer to the kinetic energy obtained in the limit
+energies using the half-step-averaged kinetic energies (
+:mdp-value:`integrator=md` and :mdp-value:`integrator=md-vv-avek`
+) will be closer to the kinetic energy obtained in the limit
 of small step size than will the full-step kinetic energy (using
-``md-vv``). For NVE simulations, this difference is usually not
+:mdp-value:`integrator=md-vv`). For NVE simulations, this difference is usually not
 significant, since the positions and velocities of the particles are
 still identical; it makes a difference in the way the the temperature of
 the simulations are **interpreted**, but **not** in the trajectories that
@@ -1829,7 +1830,7 @@ at the cost of an extra round of global communication, and can compute,
 mod any integration errors, the true NPT ensemble.
 
 The full equations, combining both pressure coupling and temperature
-coupling, are taken from Martyna *et al.* Martyna et al. (1996) and
+coupling, are taken from Martyna et al. Martyna et al. (1996) and
 Tuckerman Tuckerman et al. (2006) and are referred to here as MTTK
 equations (Martyna-Tuckerman-Tobias-Klein). We introduce for convenience
 :math:`\epsilon = (1/3)\ln (V/V_0)`, where :math:`V_0` is a reference
@@ -2313,7 +2314,7 @@ here.
 
 .. _fig-lincs:
 
-.. figure:: plots/lincs.eps
+.. figure:: plots/lincs.*
 
    The three position updates needed for one time step. The dashed
    line is the old bond of length :math:`d`, the solid lines are the new
@@ -2746,7 +2747,7 @@ the right-hand term.
 
 .. _fig-free1:
 
-.. figure:: plots/free1.eps
+.. figure:: plots/free1.*
 
             Free energy cycles. **A:** to calculate :math:`\Delta G_{12}`, the free
             energy difference between the binding of inhibitor **I** to enzymes
@@ -2754,7 +2755,7 @@ the right-hand term.
 
 .. _fig-free2:
 
-.. figure:: plots/free2.eps
+.. figure:: plots/free2.*
 
             Free energy cycles. **B:** to calculate
             :math:`\Delta G_{12}`, the free energy difference for binding of
@@ -2764,7 +2765,7 @@ the right-hand term.
 If we want to compute the difference in free energy of binding of two
 inhibitors **I** and **I**\ :math:`^{\prime}` to an enzyme **E**
 (:numref:`Fig. (%s) <fig-free2>`) we can again use
-:eq:`eqn. (%s) eqnddg>` to compute the desired property.
+:eq:`eqn. (%s) <eqnddg>` to compute the desired property.
 
 Free energy differences between two molecular species can be calculated
 in |Gromacs| using the “slow-growth” method. Such free energy differences
@@ -3135,7 +3136,7 @@ example of a zone setup is shown in Fig. 
 
 .. _fig-ddcells:
 
-.. figure:: plots/dd-cells.eps
+.. figure:: plots/dd-cells.*
 
    A non-staggered domain decomposition grid of
    3\ :math:`\times`\ 2\ :math:`\times`\ 2 cells. Coordinates in zones 1
@@ -3172,14 +3173,14 @@ due to four reasons:
 So we need a dynamic load balancing algorithm where the volume of each
 domain decomposition cell can be adjusted *independently*. To achieve
 this, the 2- or 3-D domain decomposition grids need to be staggered.
-:numref:`Fig. (%s) <figddtric>` shows the most general case in 2-D.
+:numref:`Fig. (%s) <fig-ddtric>` shows the most general case in 2-D.
 Due to the staggering, one might require two distance checks for
 deciding if a charge group needs to be communicated: a non-bonded
 distance and a bonded distance check.
 
 .. _fig-ddtric:
 
-.. figure:: plots/dd-tric.eps
+.. figure:: plots/dd-tric.*
 
    The zones to communicate to the rank of zone 0, see the text
    for details. :math:`r_c` and :math:`r_b` are the non-bonded and
@@ -3258,7 +3259,7 @@ communicated.
 
 .. _fig-plincs:
 
-.. figure:: plots/par-lincs2.eps
+.. figure:: plots/par-lincs2.*
 
    Example of the parallel setup of P-LINCS with one molecule
    split over three domain decomposition cells, using a matrix expansion
@@ -3364,7 +3365,7 @@ machine during the PME calculations.
 
 .. _fig-mpmdpme:
 
-.. figure:: plots/mpmd-pme.eps
+.. figure:: plots/mpmd-pme.*
 
    Example of 8 ranks without (left) and with (right) MPMD. The
    PME communication (red arrows) is much higher on the left than on the
@@ -3420,7 +3421,7 @@ algorithms and communication for the algorithms that are not used.
 
 .. _fig-ddflow:
 
-.. figure:: plots/flowchart.eps
+.. figure:: plots/flowchart.*
 
    Flow chart showing the algorithms and communication (arrows)
    for a standard MD simulation with virtual sites, constraints and
