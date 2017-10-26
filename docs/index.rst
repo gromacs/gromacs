@@ -1,3 +1,4 @@
+=======================================
 Welcome to the |Gromacs| documentation!
 =======================================
 
@@ -7,7 +8,9 @@ Welcome to the |Gromacs| documentation!
     http://www.gromacs.org/Documentation/Acceleration_and_parallelization
     and http://www.gromacs.org/Documentation/Performance_checklist)
 
-Contents:
+.. only:: html
+
+        The complete documentation is also available as a `printable PDF here`_.
 
 .. toctree::
    :maxdepth: 2
@@ -15,16 +18,20 @@ Contents:
    download
    release-notes/index
    install-guide/index
-
    user-guide/index
 
-* `Reference Manual`_ (PDF format)
 
-.. * Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_
+Reference manual
+----------------
 
-.. * Coping with `errors while using |Gromacs| <http://www.gromacs.org/Documentation/Errors>`_
+The old LaTeX manual has been converted to the web version shown here
+to allow efficient cross linking between the short user guide and the full
+documentation. 
 
-* Links to `tutorial material <http://www.gromacs.org/Documentation/Tutorials>`_
+.. toctree::
+   :maxdepth: 2
+
+   web-manual/index
 
 Documentation for developers
 ----------------------------
@@ -52,7 +59,7 @@ locations in the developer guide.
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    dev-manual/index
 
@@ -82,4 +89,7 @@ Indices and tables
 
 * :ref:`genindex`
 
-.. _Reference Manual: `gmx-manual`_
+
+.. _printable PDF here: `gmx-manual`_
+
+

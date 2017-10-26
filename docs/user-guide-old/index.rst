@@ -14,26 +14,23 @@ This guide provides
 For getting, building and installing |Gromacs|, see the
 :doc:`/install-guide/index`.
 For background on algorithms and implementations, see the
-:ref:`reference manual part <gmx-reference-manual-rst>` of the documentation.
+`reference manual`_.
 
-.. TODO This is going to require more organization now that
-   we are getting more content available.
+.. _reference manual: gmx-manual-parent-dir_
 
 .. toctree::
    :maxdepth: 2
 
    getting-started
+   floating-point
    system-preparation
-   managing-simulations
-   faq
-   force-fields
    cutoff-schemes
-   cmdline
-   mdp-options
    mdrun-features
    mdrun-performance
+   managing-simulations
+   mdp-options
    run-time-errors
+   file-formats
    cmdline
-   terminology
    environment-variables
-   floating-point
+   terminology
