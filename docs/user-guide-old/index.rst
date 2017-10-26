@@ -23,8 +23,6 @@ For background on algorithms and implementations, see the
 
    getting-started
    floating-point
-   how-to
-   force-fields
    system-preparation
    cutoff-schemes
    mdrun-features
@@ -32,7 +30,7 @@ For background on algorithms and implementations, see the
    managing-simulations
    mdp-options
    run-time-errors
+   file-formats
    cmdline
    environment-variables
    terminology
-   faq
