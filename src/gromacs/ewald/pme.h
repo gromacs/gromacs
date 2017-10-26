@@ -94,20 +94,19 @@ bool gmx_pme_check_restrictions(int pme_order,
 
 /*! \brief Initialize \p pmedata
  *
- * \returns  0 indicates all well, non zero is an error code.
  * \throws   gmx::InconsistentInputError if input grid sizes/PME order are inconsistent.
  */
-int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
-                 int nnodes_major, int nnodes_minor,
-                 const t_inputrec *ir, int homenr,
-                 gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
-                 gmx_bool bReproducible,
-                 real ewaldcoeff_q, real ewaldcoeff_lj,
-                 int nthread,
-                 PmeRunMode runMode,
-                 pme_gpu_t *pmeGPU,
-                 gmx_device_info_t *gpuInfo,
-                 const gmx::MDLogger &mdlog);
+void gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
+                  int nnodes_major, int nnodes_minor,
+                  const t_inputrec *ir, int homenr,
+                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
+                  gmx_bool bReproducible,
+                  real ewaldcoeff_q, real ewaldcoeff_lj,
+                  int nthread,
+                  PmeRunMode runMode,
+                  pme_gpu_t *pmeGPU,
+                  gmx_device_info_t *gpuInfo,
+                  const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);

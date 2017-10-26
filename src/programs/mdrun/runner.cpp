@@ -444,7 +444,7 @@ int Mdrunner::mdrunner()
     struct gmx_pme_t        **pmedata       = nullptr;
     gmx_vsite_t              *vsite         = nullptr;
     gmx_constr_t              constr;
-    int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
+    int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
@@ -1080,18 +1080,14 @@ int Mdrunner::mdrunner()
             try
             {
                 gmx_device_info_t *pmeGpuInfo = nullptr;
-                status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
-                                      mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                      mdrunOptions.reproducible,
-                                      ewaldcoeff_q, ewaldcoeff_lj,
-                                      nthreads_pme,
-                                      pmeRunMode, nullptr, pmeGpuInfo, mdlog);
+                gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
+                             mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                             mdrunOptions.reproducible,
+                             ewaldcoeff_q, ewaldcoeff_lj,
+                             nthreads_pme,
+                             pmeRunMode, nullptr, pmeGpuInfo, mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            if (status != 0)
-            {
-                gmx_fatal(FARGS, "Error %d initializing PME", status);
-            }
         }
     }
 

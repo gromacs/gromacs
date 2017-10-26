@@ -99,13 +99,13 @@ static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 }
 /*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from pme_src.
  * This is only called when the PME cut-off/grid size changes.
  */
-int gmx_pme_reinit(struct gmx_pme_t **pmedata,
-                   t_commrec *        cr,
-                   struct gmx_pme_t * pme_src,
-                   const t_inputrec * ir,
-                   ivec               grid_size,
-                   real               ewaldcoeff_q,
-                   real               ewaldcoeff_lj);
+void gmx_pme_reinit(struct gmx_pme_t **pmedata,
+                    t_commrec *        cr,
+                    struct gmx_pme_t * pme_src,
+                    const t_inputrec * ir,
+                    ivec               grid_size,
+                    real               ewaldcoeff_q,
+                    real               ewaldcoeff_lj);
 
 
 /* Temporary suppression until these structs become opaque and don't live in
