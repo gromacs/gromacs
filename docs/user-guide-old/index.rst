@@ -18,24 +18,19 @@ For background on algorithms and implementations, see the
 
 .. _reference manual: gmx-manual-parent-dir_
 
-.. TODO This is going to require more organization now that
-   we are getting more content available.
-
 .. toctree::
    :maxdepth: 2
 
    getting-started
+   floating-point
    system-preparation
-   managing-simulations
-   faq
-   force-fields
    cutoff-schemes
-   cmdline
-   mdp-options
    mdrun-features
    mdrun-performance
+   managing-simulations
+   mdp-options
    run-time-errors
+   file-formats
    cmdline
-   terminology
    environment-variables
-   floating-point
+   terminology

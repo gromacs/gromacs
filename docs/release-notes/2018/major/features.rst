@@ -100,7 +100,7 @@ New mdp input for electric fields
 EW3DC for non-neutral systems
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Added the corrections to force and energy according to
-Ballenegger, Arnold, and Cerdà, J. Chem. Phys. 131, 094107 2009
+Ballenegger, Arnold, and Cerda, J. Chem. Phys. 131, 094107 2009
 (http://dx.doi.org/10.1063/1.3216473). Hinted that people
 read http://doi.org/10.1021/ct400626b to help make good choices.
 Added a warning in grompp for charged systems with Ewald.

@@ -911,7 +911,7 @@ Here
 :math:`\mathcal F_\mu(x,\lambda) = k_\mu (\xi_\mu(x) - \lambda_\mu)` is
 the force along dimension :math:`\mu` from an harmonic potential
 centered at :math:`\lambda` and
-:math:`\delta \mathcal F_\mu(x,\lambda) = \mathcal F_\mu(x,\lambda) - {\left<{\mathcal F_\mu(x,\lambda)}\right>}`
+:math:`\delta \mathcal F_{\mu}(x,\lambda) = \mathcal F_{\mu}(x,\lambda) - \left<{\mathcal F_\mu(x,\lambda)}\right>`
 is the deviation of the force. The factors :math:`\omega(\lambda|x(t))`,
 see :eq:`Eq (%s) <eqawhomega>`, reweight the samples.
 :math:`\eta_{\mu\nu}(\lambda)` is a friction tensor Sivak and Crooks
@@ -1027,13 +1027,15 @@ and Grubmüller (2011).
 .. figure:: plots/rotation.*
    :width: 13.00000cm
 
-   Comparison of fixed and flexible axis rotation. A: Rotating the
-   sketched shape inside the white tubular cavity can create artifacts
-   when a fixed rotation axis (dashed) is used. More realistically, the
-   shape would revolve like a flexible pipe-cleaner (dotted) inside the
-   bearing (gray). B: Fixed rotation around an axis with a pivot point
-   specified by the vector . C: Subdividing the rotating fragment into
-   slabs with separate rotation axes (:math:`\uparrow`) and pivot points
+   Comparison of fixed and flexible axis rotation. A:
+   Rotating the sketched shape inside the white tubular cavity can
+   create artifacts when a fixed rotation axis (dashed) is used. More
+   realistically, the shape would revolve like a flexible pipe-cleaner
+   (dotted) inside the bearing (gray). B: Fixed rotation
+   around an axis :math:`{\mbox{\boldmath ${v}$}}` with a pivot point
+   specified by the vector :math:`{\mbox{\boldmath ${u}$}}`.
+   C: Subdividing the rotating fragment into slabs with
+   separate rotation axes (:math:`\uparrow`) and pivot points
    (:math:`\bullet`) for each slab allows for flexibility. The distance
    between two slabs with indices :math:`n` and :math:`n+1` is
    :math:`\Delta x`.
@@ -1083,7 +1085,7 @@ around the axis. In the simplest case, the “springs” are described by a
 harmonic potential,
 
 .. math:: V^\mathrm{iso} = \frac{k}{2} \sum_{i=1}^{N} w_i \left[ \mathbf{\Omega}(t)
-          ({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${u}$}})  \right]^2 ,
+          ({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${u}$}})  \right]^2
           :label: eqnpotiso
 
 with optional mass-weighted prefactors :math:`w_i = N \, m_i/M` with
@@ -1099,7 +1101,7 @@ total mass :math:`M = \sum_{i=1}^N m_i`. The rotation matrix
    v_x v_y{\,\xi\,}+ v_z\sin\omega t  & \cos\omega t + v_y^2{\,\xi\,}& v_y v_z{\,\xi\,}- v_x\sin\omega t\\
    v_x v_z{\,\xi\,}- v_y\sin\omega t  & v_y v_z{\,\xi\,}+ v_x\sin\omega t  & \cos\omega t + v_z^2{\,\xi\,}\\
    \end{array}
-   \right) ,
+   \right)
 
 where :math:`v_x`, :math:`v_y`, and :math:`v_z` are the components of
 the normalized rotation vector :math:`\hat{{\mbox{\boldmath ${v}$}}}`,
@@ -1115,7 +1117,7 @@ blue dashed line), resulting in the force
 .. math:: {\mbox{\boldmath ${F}$}}_{\!j}^\mathrm{iso} 
           = -\nabla_{\!j} \, V^\mathrm{iso} 
           = k \, w_j \left[
-          \mathbf{\Omega}(t) ({\mbox{\boldmath ${y}$}}_j^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_j - {\mbox{\boldmath ${u}$}} ) \right] ,
+          \mathbf{\Omega}(t) ({\mbox{\boldmath ${y}$}}_j^0 - {\mbox{\boldmath ${u}$}}) - ({\mbox{\boldmath ${x}$}}_j - {\mbox{\boldmath ${u}$}} ) \right]
           :label: eqnforcefixed
 
 which is directed towards the reference position.
@@ -1176,7 +1178,7 @@ distance vectors between reference and actual positions
 
 onto the plane perpendicular to the rotation vector,
 
-.. math:: {\mbox{\boldmath ${r}$}}_i^\perp :=  {\mbox{\boldmath ${r}$}}_i - ({\mbox{\boldmath ${r}$}}_i \cdot \hat{{\mbox{\boldmath ${v}$}}})\hat{{\mbox{\boldmath ${v}$}}} ,
+.. math:: {\mbox{\boldmath ${r}$}}_i^\perp :=  {\mbox{\boldmath ${r}$}}_i - ({\mbox{\boldmath ${r}$}}_i \cdot \hat{{\mbox{\boldmath ${v}$}}})\hat{{\mbox{\boldmath ${v}$}}}
           :label: eqnproject
 
 yielding
@@ -1601,10 +1603,10 @@ a flexible axis potential without radial force contributions
             \frac{\left[ (\hat{{\mbox{\boldmath ${v}$}}} \times ( {\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${x}$}}_c^n ))
             \cdot \mathbf{\Omega}(t)({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${y}$}}_c^n) \right]^2}
             {\| \hat{{\mbox{\boldmath ${v}$}}} \times ({\mbox{\boldmath ${x}$}}_i - {\mbox{\boldmath ${x}$}}_c^n) \|^2 +
-            \epsilon'} \, .
+            \epsilon'}
             :label: eqnpotflex2
 
- With
+With
 
 .. math:: \begin{aligned}
           {\mbox{\boldmath ${r}$}}_i^n & := & \mathbf{\Omega}(t)({\mbox{\boldmath ${y}$}}_i^0 - {\mbox{\boldmath ${y}$}}_c^n)\\
@@ -2656,10 +2658,11 @@ When you add the following lines in your :ref:`mdp` file:
     vdwtype         = User
     rvdw            = 1.0
 
-mdrun will read a single non-bonded table file, or multiple when
-energygrp-table is set (see below). The name of the file(s) can be set
-with the :ref:`mdrun <gmx mdrun>` option -table. The table file should contain seven
-columns of table look-up data in the order: :math:`x`, :math:`f(x)`,
+:ref:`mdrun <gmx mdrun>` will read a single non-bonded table file, or
+multiple when ``energygrp-table`` is set (see below). The
+name of the file(s) can be set with the :ref:`mdrun <gmx mdrun>` option
+``-table``. The table file should contain seven columns of
+table look-up data in the order: :math:`x`, :math:`f(x)`,
 :math:`-f'(x)`, :math:`g(x)`, :math:`-g'(x)`, :math:`h(x)`,
 :math:`-h'(x)`. The :math:`x` should run from 0 to :math:`r_c+1` (the
 value of ``table_extension`` can be changed in the :ref:`mdp` file). You can
@@ -2714,7 +2717,7 @@ Quantum Chemistry packages (MOPAC Dewar (1983), GAMESS-UK Guest et al.
 (1985)).
 
 |Gromacs| interactions between the two subsystems are either handled as
-described by Field *et al.* Field, Bash, and Karplus (1990) or within
+described by Field et al. Field, Bash, and Karplus (1990) or within
 the ONIOM approach by Morokuma and coworkers Maseras and Morokuma (1995;
 Svensson et al. 1996).
 
