@@ -1,0 +1,93 @@
+% underscore.sty     12-Oct-2001   Donald Arseneau   asnd@triumf.ca
+% Make the "_" character print as "\textunderscore" in text.
+% Copyright 1998,2001 Donald Arseneau;  Distribute freely if unchanged.
+% Instructions follow after the definitions.
+
+\ProvidesPackage{underscore}[2001/10/12]
+
+\begingroup
+ \catcode`\_=\active
+ \gdef_{% \relax % No relax gives a small vulnerability in alignments
+   \ifx\if@safe@actives\iftrue % must be outermost test!
+      \string_%
+   \else
+      \ifx\protect\@typeset@protect
+         \ifmmode \sb \else \BreakableUnderscore \fi
+      \else
+         \ifx\protect\@unexpandable@protect \noexpand_%
+         \else \protect_%
+      \fi\fi
+    \fi}
+\endgroup
+
+% At begin: set catcode; fix \long \ttdefault so I can use it in comparisons; 
+\AtBeginDocument{%
+  {\immediate\write\@auxout{\catcode\number\string`\_ \string\active}}%
+  \catcode\string`\_\string=\active
+  \edef\ttdefault{\ttdefault}%
+}
+
+\newcommand{\BreakableUnderscore}{\leavevmode\nobreak\hskip\z@skip
+ \ifx\f@family\ttdefault \string_\else \textunderscore\fi
+ \usc@dischyph\nobreak\hskip\z@skip}
+
+\DeclareRobustCommand{\_}{%
+  \ifmmode \nfss@text{\textunderscore}\else \BreakableUnderscore \fi}
+
+\let\usc@dischyph\@dischyph
+\DeclareOption{nohyphen}{\def\usc@dischyph{\discretionary{}{}{}}}
+\DeclareOption{strings}{\catcode`\_=\active}
+
+\ProcessOptions
+\ifnum\catcode`\_=\active\else \endinput \fi
+
+%%%%%%%%   Redefine commands that use character strings   %%%%%%%%
+
+\@ifundefined{UnderscoreCommands}{\let\UnderscoreCommands\@empty}{}
+\expandafter\def\expandafter\UnderscoreCommands\expandafter{%
+  \UnderscoreCommands
+  \do\include \do\includeonly
+  \do\@input \do\@iinput \do\InputIfFileExists
+  \do\ref \do\pageref \do\newlabel
+  \do\bibitem \do\@bibitem \do\cite \do\nocite \do\bibcite
+}
+
+% Macro to redefine a macro to pre-process its string argument
+% with \protect -> \string.
+\def\do#1{% Avoid double processing if user includes command twice!
+ \@ifundefined{US\string_\expandafter\@gobble\string#1}{%
+   \edef\@tempb{\meaning#1}% Check if macro is just a protection shell...
+   \def\@tempc{\protect}%
+   \edef\@tempc{\meaning\@tempc\string#1\space\space}%
+   \ifx\@tempb\@tempc % just a shell: hook into the protected inner command
+     \expandafter\do
+       \csname \expandafter\@gobble\string#1 \expandafter\endcsname
+   \else % Check if macro takes an optional argument
+     \def\@tempc{\@ifnextchar[}%
+     \edef\@tempa{\def\noexpand\@tempa####1\meaning\@tempc}%
+     \@tempa##2##3\@tempa{##2\relax}%
+     \edef\@tempb{\meaning#1\meaning\@tempc}%
+     \edef\@tempc{\noexpand\@tempd \csname
+        US\string_\expandafter\@gobble\string#1\endcsname}%
+     \if \expandafter\@tempa\@tempb \relax 12\@tempa % then no optional arg
+       \@tempc #1\US@prot
+     \else  % There is optional arg
+       \@tempc #1\US@protopt
+     \fi
+   \fi
+ }{}}
+
+\def\@tempd#1#2#3{\let#1#2\def#2{#3#1}}
+
+\def\US@prot#1#2{\let\@@protect\protect \let\protect\string
+  \edef\US@temp##1{##1{#2}}\restore@protect\US@temp#1}
+\def\US@protopt#1{\@ifnextchar[{\US@protarg#1}{\US@prot#1}}
+\def\US@protarg #1[#2]{\US@prot{{#1[#2]}}}
+
+\UnderscoreCommands
+\let\do\relax \let\@tempd\relax  % un-do
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\endinput
+

@@ -1,0 +1,8 @@
+s/"\\\ve{F}"/"\\\\mbox{\\\\boldmath \${F}\$}}"/
+s/"\\\ve{force}"/"\\\\mbox{\\\\boldmath \${force}\$}}"/
+s/"\\\ve{-1}"/"\\\\mbox{\\\\boldmath \${-1}\$}}"/
+s/"\\\ve{E}"/"\\\\mbox{\\\\boldmath \${E}\$}}"/
+s/"\\\ve{E}"/"\\\\mbox{\\\\boldmath \${E}\$}}"/
+s/"\\\ve{r}"/"\\\\mbox{\\\\boldmath \${r}\$}}"/
+s/"\\\ve{r}"/"\\\\mbox{\\\\boldmath \${r}\$}}"/
+s/"\\\ve{E}"/"\\\\mbox{\\\\boldmath \${E}\$}}"/

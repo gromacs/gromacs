@@ -136,6 +136,83 @@ if (SPHINX_FOUND)
         user-guide/terminology.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif
+        web-manual/index.rst
+        web-manual/preface.rst
+        web-manual/introduction.rst
+        web-manual/definitions.rst
+        web-manual/algorithms.rst
+        web-manual/plots/angle.eps
+        web-manual/plots/bstretch.eps
+        web-manual/plots/chain.eps
+        web-manual/plots/dd-cells.eps
+        web-manual/plots/dd-tric.eps
+        web-manual/plots/decomp.eps
+        web-manual/plots/dih-def.eps
+        web-manual/plots/dih.eps
+        web-manual/plots/distm.eps
+        web-manual/plots/drift-all.eps
+        web-manual/plots/dssp.eps
+        web-manual/plots/dumaro.eps
+        web-manual/plots/dummies.eps
+        web-manual/plots/dumtypes.eps
+        web-manual/plots/f-angle.eps
+        web-manual/plots/f-bham.eps
+        web-manual/plots/f-bond.eps
+        web-manual/plots/fbposres.eps
+        web-manual/plots/f-dih.eps
+        web-manual/plots/f-dr.eps
+        web-manual/plots/field.eps
+        web-manual/plots/fig-02.eps
+        web-manual/plots/fig-04.eps
+        web-manual/plots/f-lj.eps
+        web-manual/plots/flowchart.eps
+        web-manual/plots/f-morse.eps
+        web-manual/plots/fp-highres.eps
+        web-manual/plots/f-pr.eps
+        web-manual/plots/f-rbs.eps
+        web-manual/plots/free1.eps
+        web-manual/plots/free2.eps
+        web-manual/plots/hbond.eps
+        web-manual/plots/hbond-insert.eps
+        web-manual/plots/hpr-wheel.eps
+        web-manual/plots/int-mat.eps
+        web-manual/plots/leapfrog.eps
+        web-manual/plots/lincs.eps
+        web-manual/plots/maxwell.eps
+        web-manual/plots/mdpar.eps
+        web-manual/plots/mpmd-pme.eps
+        web-manual/plots/msdwater.eps
+        web-manual/plots/ngmxdump.eps
+        web-manual/plots/nstric.eps
+        web-manual/plots/par-lincs2.eps
+        web-manual/plots/parsort.eps
+        web-manual/plots/pbctric.eps
+        web-manual/plots/phipsi.eps
+        web-manual/plots/pulldirrel.eps
+        web-manual/plots/pull.eps
+        web-manual/plots/pullref.eps
+        web-manual/plots/rama.eps
+        web-manual/plots/rdf.eps
+        web-manual/plots/rdfO-O.eps
+        web-manual/plots/rhododec.eps
+        web-manual/plots/ring.eps
+        web-manual/plots/ring-imp.eps
+        web-manual/plots/shiftf.eps
+        web-manual/plots/softcore.eps
+        web-manual/plots/subst-im.eps
+        web-manual/plots/tetra-im.eps
+        web-manual/plots/truncoct.eps
+        web-manual/plots/vcrf.eps
+        web-manual/plots/verlet-drift.eps
+        web-manual/plots/vsite-4fdn.eps
+        #        web-manual/functions.rst
+        #        web-manual/topologies.rst
+        #        web-manual/special.rst
+        #        web-manual/run-parameters.rst
+        #        web-manual/analysis.rst
+        #        web-manual/details.rst
+        #        web-manual/averages.rst
+        #        web-manual/references.rst
         conf.py
         links.dat
         )
