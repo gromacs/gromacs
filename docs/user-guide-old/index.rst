@@ -30,6 +30,7 @@ For background on algorithms and implementations, see the
    managing-simulations
    mdp-options
    run-time-errors
+   file-formats
    cmdline
    environment-variables
    terminology
