@@ -96,6 +96,8 @@ Commands by name
 
 .. include:: /fragments/byname.rst
 
+.. _commands-by-topic:
+
 Commands by topic
 -----------------
 
