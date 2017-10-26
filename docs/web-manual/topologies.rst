@@ -528,7 +528,7 @@ which can be selected in the :ref:`mdp` file. Both types of constraints can be
 perturbed in free-energy calculations by adding a second constraint
 distance (see [subsec:constraintforce]). Several types of bonds and
 angles (see :numref:`Table (%s) <tab-topfile2>`) can be converted automatically to
-constraints by grompp. There are several options for this in the :ref:`mdp`
+constraints by :ref:`grompp <gmx grompp>`. There are several options for this in the :ref:`mdp`
 file.
 
 We have also implemented the SETTLE algorithm Miyamoto and Kollman
@@ -1706,11 +1706,11 @@ topology. In most modern force fields, like OPLS/AA or Amber the rules
 are different, and the Ryckaert-Bellemans potential is used as a cosine
 series in combination with 1-4 interactions.
 
- **[ position_restraints ] :** harmonically restrain the selected particles to reference
+**[ position_restraints ] :** harmonically restrain the selected particles to reference
 positions ([subsec:positionrestraint]). The reference positions are read
 from a separate coordinate file by :ref:`grompp <gmx grompp>`.
 
- **[ dihedral_restraints ] :** restrain selected dihedrals to a reference value. The
+**[ dihedral_restraints ] :** restrain selected dihedrals to a reference value. The
 implementation of dihedral restraints is described in section
 [subsec:dihedralrestraint] of the manual. The parameters specified in
 the ``[dihedral_restraints]`` directive are as follows:
@@ -1729,9 +1729,9 @@ the ``[dihedral_restraints]`` directive are as follows:
 **#include “tip3p.itp” :** includes a topology file that was already
 constructed (see section [subsec:molitp]).
 
- **[ system ] :** title of your system, user-defined
+**[ system ] :** title of your system, user-defined
 
- **[ molecules ] :** this defines the total number of (sub)molecules in your system
+**[ molecules ] :** this defines the total number of (sub)molecules in your system
 that are defined in this :ref:`top`. In this example file, it stands for 1
 urea molecule dissolved in 1000 water molecules. The molecule type ``SOL``
 is defined in the ``tip3p.itp`` file. Each name here must correspond to a

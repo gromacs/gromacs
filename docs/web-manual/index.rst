@@ -1,13 +1,5 @@
 .. _gmx-reference-manual-rst:
 
-.. role:: math(raw)
-   :format: html latex
-..
-
-.. role:: raw-latex(raw)
-   :format: latex
-..
-
 ***********************
 Online reference manual
 ***********************
@@ -41,10 +33,8 @@ right away with coding for |Gromacs|.
 Manual contents:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
-.. contents::
-   :depth: 3
 
    preface
    introduction
@@ -59,3 +49,5 @@ Manual contents:
    details
    averages
    references
+
+
