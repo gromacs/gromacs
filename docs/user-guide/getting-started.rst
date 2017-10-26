@@ -1,3 +1,5 @@
+.. _gmx-getting-started:
+
 Getting started
 ===============
 

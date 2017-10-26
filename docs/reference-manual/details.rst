@@ -6,19 +6,18 @@ from complete, but we deemed it necessary to clarify some things that
 would otherwise be hard to understand.
 
 Single Sum Virial in |Gromacs|
-----------------------------
+------------------------------
 
 The virial :math:`\Xi` can be written in full tensor form as:
 
-.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^N~{\mbox{\boldmath ${r}$}}_ij\otimes{\mbox{\boldmath ${F}$}}_ij
+.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^N~\mathbf{r}_ij\otimes\mathbf{F}_{ij}
 
-where :math:`\otimes` denotes the *direct product* of two vectors. [4]_
+where :math:`\otimes` denotes the *direct product* of two vectors. [1]_
 When this is computed in the inner loop of an MD program 9
-multiplications and 9 additions are needed. [5]_
+multiplications and 9 additions are needed. [2]_
 
 Here it is shown how it is possible to extract the virial calculation
-from the inner loop Bekker, Berendsen, Dijkstra, Achterop, Drunen, et
-al. (1993a).
+from the inner loop \ :ref:`177 <refBekker93b>`.
 
 Virial
 ~~~~~~
@@ -26,20 +25,20 @@ Virial
 In a system with periodic boundary conditions, the periodicity must be
 taken into account for the virial:
 
-.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^{N}~{\mbox{\boldmath ${r}$}}_{ij}^n\otimes{\mbox{\boldmath ${F}$}}_ij
+.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^{N}~\mathbf{r}_{ij}^n\otimes\mathbf{F}_{ij}
 
-where :math:`{\mbox{\boldmath ${r}$}}_{ij}^n` denotes the distance
+where :math:`\mathbf{r}_{ij}^n` denotes the distance
 vector of the *nearest image* of atom :math:`i` from atom :math:`j`. In
 this definition we add a *shift vector* :math:`\delta_i` to the position
-vector :math:`{\mbox{\boldmath ${r}$}}_i` of atom :math:`i`. The
-difference vector :math:`{\mbox{\boldmath ${r}$}}_{ij}^n` is thus equal
+vector :math:`\mathbf{r}_i` of atom :math:`i`. The
+difference vector :math:`\mathbf{r}_{ij}^n` is thus equal
 to:
 
-.. math:: {\mbox{\boldmath ${r}$}}_{ij}^n~=~{\mbox{\boldmath ${r}$}}_i+\delta_i-{\mbox{\boldmath ${r}$}}_j
+.. math:: \mathbf{r}_{ij}^n~=~\mathbf{r}_i+\delta_i-\mathbf{r}_j
 
 or in shorthand:
 
-.. math:: {\mbox{\boldmath ${r}$}}_{ij}^n~=~{\mbox{\boldmath ${r}$}}_i^n-{\mbox{\boldmath ${r}$}}_j
+.. math:: \mathbf{r}_{ij}^n~=~\mathbf{r}_i^n-\mathbf{r}_j
 
 In a triclinic system, there are 27 possible images of :math:`i`; when
 a truncated octahedron is used, there are 15 possible images.
@@ -111,13 +110,13 @@ different shift vectors outside the kernels. We have also used
 .. math::
 
    \begin{aligned}
-   {\mbox{\boldmath ${F}$}}_i&~=~&\sum_{j=1}^N~{\mbox{\boldmath ${F}$}}_{ij}					\\
-   {\mbox{\boldmath ${F}$}}_j&~=~&\sum_{i=1}^N~{\mbox{\boldmath ${F}$}}_{ji}\end{aligned}
+   \mathbf{F}_i&~=~&\sum_{j=1}^N~\mathbf{F}_{ij}					\\
+   \mathbf{F}_j&~=~&\sum_{i=1}^N~\mathbf{F}_{ji}\end{aligned}
 
 which is the total force on :math:`i` with respect to :math:`j`.
 Because we use Newton’s Third Law:
 
-.. math:: {{\mbox{\boldmath ${F}$}}_{ij}}~=~-{{\mbox{\boldmath ${F}$}}_{ji}}
+.. math:: \mathbf{F}_{ij}~=~-\mathbf{F}_{ji}
 
 we must, in the implementation, double the term containing the shift
 :math:`\delta_i`. Similarly, in a few places we have summed the
@@ -177,19 +176,19 @@ have:
 .. math::
 
    \begin{aligned}
-   b	&~=~&	\|{\mbox{\boldmath ${r}$}}_{ij}^n\|					\\
+   b	&~=~&	\|\mathbf{r}_{ij}^n\|					\\
    V_b	&~=~&	\frac{1}{2} k_b(b-b_0)^2				\\
-   {\mbox{\boldmath ${F}$}}_i	&~=~&	-\nabla V_b					\\
-   	&~=~&	k_b(b-b_0)\frac{{\mbox{\boldmath ${r}$}}_{ij}^n}{b}			\\
-   {\mbox{\boldmath ${F}$}}_j	&~=~&	-{\mbox{\boldmath ${F}$}}_i\end{aligned}
+   \mathbf{F}_i	&~=~&	-\nabla V_b					\\
+   	&~=~&	k_b(b-b_0)\frac{\mathbf{r}_{ij}^n}{b}			\\
+   \mathbf{F}_j	&~=~&	-\mathbf{F}_i\end{aligned}
 
 The virial contribution from the bonds then is:
 
 .. math::
 
    \begin{aligned}
-   \Xi_b	&~=~&	-\frac{1}{2}({\mbox{\boldmath ${r}$}}_i^n\otimes{\mbox{\boldmath ${F}$}}_i~+~{\mbox{\boldmath ${r}$}}_j\otimes{\mbox{\boldmath ${F}$}}_j)	\\
-   	&~=~&	-\frac{1}{2}{\mbox{\boldmath ${r}$}}_{ij}^n\otimes{\mbox{\boldmath ${F}$}}_i\end{aligned}
+   \Xi_b	&~=~&	-\frac{1}{2}(\mathbf{r}_i^n\otimes\mathbf{F}_i~+~\mathbf{r}_j\otimes\mathbf{F}_j)	\\
+   	&~=~&	-\frac{1}{2}\mathbf{r}_{ij}^n\otimes\mathbf{F}_i\end{aligned}
 
 Virial from SHAKE
 ~~~~~~~~~~~~~~~~~
@@ -202,9 +201,9 @@ can be calculated afterward (when using *leap-frog*) by:
 .. math::
 
    \begin{aligned}
-   \Delta{\mbox{\boldmath ${r}$}}_i&~=~&{{\mbox{\boldmath ${r}$}}_i}(t+{\Delta t})-
-   [{\mbox{\boldmath ${r}$}}_i(t)+{\bf v}_i(t-\frac{{\Delta t}}{2}){\Delta t}+\frac{{\mbox{\boldmath ${F}$}}_i}{m_i}{\Delta t}^2]	\\
-   {\bf G}_i&~=~&\frac{m_i{\Delta}{{\mbox{\boldmath ${r}$}}_i}}{{\Delta t}^2i}\end{aligned}
+   \Delta\mathbf{r}_i&~=~&{\mathbf{r}_i}(t+{\Delta t})-
+   [\mathbf{r}_i(t)+{\bf v}_i(t-\frac{{\Delta t}}{2}){\Delta t}+\frac{\mathbf{F}_i}{m_i}{\Delta t}^2]	\\
+   {\bf G}_i&~=~&\frac{m_i{\Delta}{\mathbf{r}_i}}{{\Delta t}^2i}\end{aligned}
 
 This does not help us in the general case. Only when no periodicity is
 needed (like in rigid water) this can be used, otherwise we must add the
@@ -213,7 +212,7 @@ virial calculation in the inner loop of SHAKE.
 When it *is* applicable the virial can be calculated in the single sum
 way:
 
-.. math:: \Xi~=~-\frac{1}{2}\sum_i^{N_c}~{\mbox{\boldmath ${r}$}}_i\otimes{\mbox{\boldmath ${F}$}}_i
+.. math:: \Xi~=~-\frac{1}{2}\sum_i^{N_c}~\mathbf{r}_i\otimes\mathbf{F}_i
 
 where :math:`N_c` is the number of constrained atoms.
 
@@ -223,6 +222,8 @@ Optimizations
 Here we describe some of the algorithmic optimizations used in |Gromacs|,
 apart from parallelism.
 
+.. _waterloops:
+
 Inner Loops for Water
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -230,29 +231,29 @@ Inner Loops for Water
 for water molecules with other atoms, and yet another set of loops for
 interactions between pairs of water molecules. There highly optimized
 loops for two types of water models. For three site models similar to
-SPC Berendsen et al. (1981), *i.e.*:
+SPC \ :ref:`80 <refBerendsen81>`, *i.e.*:
 
 #. There are three atoms in the molecule.
 
 #. The whole molecule is a single charge group.
 
-#. The first atom has Lennard-Jones (sec. [sec:lj]) and Coulomb
-   (sec. [sec:coul]) interactions.
+#. The first atom has Lennard-Jones (sec. :ref:`lj`) and Coulomb
+   (sec. :ref:`coul`) interactions.
 
 #. Atoms two and three have only Coulomb interactions, and equal
    charges.
 
-These loops also works for the SPC/E Berendsen, Grigera, and Straatsma
-(1987) and TIP3P Jorgensen et al. (1983) water models. And for four site
-water models similar to TIP4P Jorgensen et al. (1983):
+These loops also works for the SPC/E \ :ref:`178 <refBerendsen87>` and
+TIP3P \ :ref:`128 <refJorgensen83>` water models. And for four site water
+models similar to TIP4P \ :ref:`128 <refJorgensen83>`:
 
 #. There are four atoms in the molecule.
 
 #. The whole molecule is a single charge group.
 
-#. The first atom has only Lennard-Jones (sec. [sec:lj]) interactions.
+#. The first atom has only Lennard-Jones (sec. :ref:`lj`) interactions.
 
-#. Atoms two and three have only Coulomb (sec. [sec:coul]) interactions,
+#. Atoms two and three have only Coulomb (sec. :ref:`coul`) interactions,
    and equal charges.
 
 #. Atom four has only Coulomb interactions.
