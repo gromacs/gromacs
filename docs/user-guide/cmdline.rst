@@ -1,3 +1,5 @@
+.. _gmx-cmdline:
+
 Command-line reference
 ======================
 

@@ -14,7 +14,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    input_pdb [
      label="eiwit.pdb"
      tooltip="Protein Databank file"
-     URL="file-formats.html#pdb"
+     URL="../reference-manual/file-formats.html#pdb"
      shape=none, width=0, height=0, margin=0
      group=input
    ]
@@ -37,7 +37,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    pdb2gmx -> editconf [
      label="conf.gro"
      labeltooltip="GROMACS coordinate file containing molecules from PDB file"
-     URL="file-formats.html#gro"
+     URL="../reference-manual/file-formats.html#gro"
    ]
 
    solvate [
@@ -51,18 +51,18 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    pdb2gmx -> solvate [
      label="topol.top"
      labeltooltip="GROMACS ascii topology file"
-     URL="file-formats.html#top"
+     URL="../reference-manual/file-formats.html#top"
    ]
    editconf -> solvate [
      label="conf.gro"
      labeltooltip="GROMACS coordinate file with adjusted box etc."
-     URL="file-formats.html#gro"
+     URL="../reference-manual/file-formats.html#gro"
    ]
 
    input_mdp [
      label="grompp.mdp"
      tooltip="Parameter file from grompp (controls all MD parameters)"
-     URL="file-formats.html#mdp"
+     URL="../reference-manual/file-formats.html#mdp"
      shape=none, width=0, height=0, margin=0
      group=input
    ]
@@ -80,12 +80,12 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    solvate -> grompp [
      label="conf.gro"
      labeltooltip="GROMACS coordinate file with water molecules added"
-     URL="file-formats.html#gro"
+     URL="../reference-manual/file-formats.html#gro"
    ]
    solvate -> grompp [
      label="topol.top"
      labeltooltip="GROMACS ascii topology file with water molecules added"
-     URL="file-formats.html#top"
+     URL="../reference-manual/file-formats.html#top"
    ]
 
    mdrun [
@@ -99,12 +99,12 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    grompp -> mdrun [
      label="topol.tpr"
      labeltooltip="Portable GROMACS binary run input file (contains all information to start MD run)"
-     URL="file-formats.html#tpr"
+     URL="../reference-manual/file-formats.html#tpr"
    ]
    mdrun -> mdrun [
      label="Continuation\nstate.cpt"
      labeltooltip="Checkpoint file"
-     URL="file-formats.html#cpt"
+     URL="../reference-manual/file-formats.html#cpt"
    ]
 
    analysis [
@@ -116,7 +116,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    mdrun -> analysis [
      label="traj.xtc / traj.trr"
      labeltooltip="Portable compressed trajectory / full precision portable trajectory"
-     URL="file-formats.html#xtc"
+     URL="../reference-manual/file-formats.html#xtc"
    ]
 
    energy [
@@ -128,5 +128,5 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    mdrun -> energy [
      label="ener.edr"
      labeltooltip="Portable energy file"
-     URL="file-formats.html#edr"
+     URL="../reference-manual/file-formats.html#edr"
    ]
