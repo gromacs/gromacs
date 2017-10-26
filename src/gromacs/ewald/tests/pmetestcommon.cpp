@@ -102,12 +102,11 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       real                      ewaldCoeff_lj = 1.0f
                                       )
 {
-    gmx_pme_t     *pmeDataRaw = nullptr;
     const MDLogger dummyLogger;
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
     t_commrec      dummyCommrec  = {0};
-    gmx_pme_init(&pmeDataRaw, &dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
-                 ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger);
+    gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
+                                                ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
