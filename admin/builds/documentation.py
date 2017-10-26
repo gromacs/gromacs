@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ def do_build(context):
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.4.1'))
+        doxygen_version='1.8.5', sphinx_version='1.6.1'))
     context.run_cmake(cmake_opts);
     context.build_target(target='gmx', parallel=True,
             continue_on_failure=True)

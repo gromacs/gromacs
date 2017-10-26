@@ -1,3 +1,5 @@
+.. _gmx-sysprep:
+
 System preparation
 ==================
 
