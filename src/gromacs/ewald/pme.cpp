@@ -505,22 +505,21 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-void gmx_pme_init(struct gmx_pme_t   **pmedata,
-                  t_commrec           *cr,
-                  int                  nnodes_major,
-                  int                  nnodes_minor,
-                  const t_inputrec    *ir,
-                  int                  homenr,
-                  gmx_bool             bFreeEnergy_q,
-                  gmx_bool             bFreeEnergy_lj,
-                  gmx_bool             bReproducible,
-                  real                 ewaldcoeff_q,
-                  real                 ewaldcoeff_lj,
-                  int                  nthread,
-                  PmeRunMode           runMode,
-                  pme_gpu_t           *pmeGPU,
-                  gmx_device_info_t   *gpuInfo,
-                  const gmx::MDLogger &mdlog)
+gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
+                        int                  nnodes_major,
+                        int                  nnodes_minor,
+                        const t_inputrec    *ir,
+                        int                  homenr,
+                        gmx_bool             bFreeEnergy_q,
+                        gmx_bool             bFreeEnergy_lj,
+                        gmx_bool             bReproducible,
+                        real                 ewaldcoeff_q,
+                        real                 ewaldcoeff_lj,
+                        int                  nthread,
+                        PmeRunMode           runMode,
+                        pme_gpu_t           *pmeGPU,
+                        gmx_device_info_t   *gpuInfo,
+                        const gmx::MDLogger &mdlog)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -859,7 +858,7 @@ void gmx_pme_init(struct gmx_pme_t   **pmedata,
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
     // no exception was thrown during the init, so we hand over the PME structure handle
-    *pmedata = pme.release();
+    return pme.release();
 }
 
 void gmx_pme_reinit(struct gmx_pme_t **pmedata,
@@ -902,9 +901,10 @@ void gmx_pme_reinit(struct gmx_pme_t **pmedata,
         // This is reinit which is currently only changing grid size/coefficients,
         // so we don't expect the actual logging.
         // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
-        gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                     &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
-                     pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
+        GMX_ASSERT(pmedata, "Invalid PME pointer");
+        *pmedata = gmx_pme_init(cr, pme_src->nnodes_major, pme_src->nnodes_minor,
+                                &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
+                                pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
         //TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
