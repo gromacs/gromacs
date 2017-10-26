@@ -1,16 +1,8 @@
 .. _gmx-reference-manual-rst:
 
-.. role:: math(raw)
-   :format: html latex
-..
-
-.. role:: raw-latex(raw)
-   :format: latex
-..
-
-***********************
-Online reference manual
-***********************
+****************
+Reference Manual
+****************
 
 .. highlight:: bash
 
@@ -18,13 +10,9 @@ This is the converted version of the LaTeX manual to rst,
 to allow cross-linking between the user guide and the reference
 material.
 
-image:: plots/peregrine
-        :height: 5.00000in
-
 .. TODO this needs to be carefully checked that I didn't mess anything up too bad
 
-This manual covers implementation details and can also be found as a 
-`printable pdf`_ (for those of you that hate trees).
+This part of the documentation covers implementation details of |Gromacs|.
 
 For quick simulation set-up and short explanations,
 please refer to the :ref:`User guide <user guide>`.
@@ -36,16 +24,9 @@ If you want to help with developing |Gromacs|, your are most welcome
 to read up on the :ref:`Developer Guide <dev guide>` and continue
 right away with coding for |Gromacs|.
 
-.. _printable pdf: gmx-manual-parent-dir_
-
-Manual contents:
-
 .. toctree::
-   :maxdepth: 1
-
-.. contents::
-   :depth: 3
-
+   :maxdepth: 2
+   
    preface
    introduction
    definitions
@@ -59,3 +40,5 @@ Manual contents:
    details
    averages
    references
+
+
