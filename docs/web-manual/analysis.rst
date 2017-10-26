@@ -233,7 +233,7 @@ for an example.
 Looking at your trajectory
 --------------------------
 
-.. figure:: plots/ngmxdump.eps
+.. figure:: plots/ngmxdump.*
 
    The window of :ref:`gmx view <gmx view>` showing a box of water.
 
@@ -295,7 +295,7 @@ with :math:`\langle\rho_B(r)\rangle` the particle density of type
 radius :math:`r_{max}` (see Fig. 
 C).
 
-.. figure:: plots/rdf.eps
+.. figure:: plots/rdf.*
 
     Definition of slices in :ref:`gmx rdf <gmx rdf>`: A. :math:`g_{AB}(r)`.
     B. :math:`g_{AB}(r,\theta)`. The slices are colored gray. C.
@@ -313,7 +313,7 @@ the :math:`\delta`-function. An example of the RDF of oxygen-oxygen in
 SPC water Berendsen et al. (1981) is given in
 Fig.
 
-.. figure:: plots/rdfO-O.eps
+.. figure:: plots/rdfO-O.*
 
     :math:`g_{OO}(r)` for Oxygen-Oxygen of SPC-water.
 
@@ -352,10 +352,8 @@ function
 (ACF)
 :math:`C_f(t)` for a property :math:`f(t)` is:
 
-.. math::
-
-   C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
-   \label{eqn:corr}
+.. math:: C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
+          :label: eqncorr
 
 where the notation on the right hand side indicates averaging over
 :math:`\xi`, *i.e.* over time origins. It is also possible to compute
@@ -369,19 +367,15 @@ however, in |Gromacs| there is no standard mechanism to do this
 program to compute cross correlations). The integral of the correlation
 function over time is the correlation time :math:`\tau_f`:
 
-.. math::
-
-   \tau_f  ~=~     \int_0^{\infty} C_f(t) {\rm d} t
-   \label{eqn:corrtime}
+.. math:: \tau_f  ~=~     \int_0^{\infty} C_f(t) {\rm d} t
+          :label: eqncorrtime
 
 In practice, correlation functions are calculated based on data points
 with discrete time intervals :math:`\Delta`\ t, so that the ACF from an
 MD simulation is:
 
-.. math::
-
-   C_f(j\Delta t)  ~=~     \frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
-   \label{eqn:corrmd}
+.. math:: C_f(j\Delta t)  ~=~     \frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
+          :label: eqncorrmd
 
 where :math:`N` is the number of available time frames for the
 calculation. The resulting ACF is obviously only available at time
@@ -434,10 +428,8 @@ Special forms of the ACF
 There are some important varieties on the ACF, *e.g.* the ACF of a
 vector :math:`{\mbox{\boldmath ${p}$}}`:
 
-.. math::
-
-   C_{{\mbox{\boldmath ${p}$}}}(t) ~=~       \int_0^{\infty} P_n(\cos\angle\left({\mbox{\boldmath ${p}$}}(\xi),{\mbox{\boldmath ${p}$}}(\xi+t)\right) {\rm d} \xi
-   \label{eqn:corrleg}
+.. math:: C_{{\mbox{\boldmath ${p}$}}}(t) ~=~       \int_0^{\infty} P_n(\cos\angle\left({\mbox{\boldmath ${p}$}}(\xi),{\mbox{\boldmath ${p}$}}(\xi+t)\right) {\rm d} \xi
+          :label: eqncorrleg
 
 where :math:`P_n(x)` is the :math:`n^{th}` order Legendre
 polynomial. 
@@ -456,19 +448,15 @@ can also be used for rotational autocorrelation (:ref:`gmx rotacf <gmx rotacf>`
 In order to study torsion angle dynamics, we define a dihedral
 autocorrelation function as Spoel and Berendsen (1997):
 
-.. math::
-
-   C(t)    ~=~     \left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
-   \label{eqn:coenk}
+.. math:: C(t)    ~=~     \left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
+          :label: eqncoenk
 
 **Note** that this is not a product of two functions as is generally
 used for correlation functions, but it may be rewritten as the sum of
 two products:
 
-.. math::
-
-   C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\theta(\tau))\sin(\theta(\tau+t))\right\rangle_{\tau}
-   \label{eqn:cot}
+.. math:: C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\theta(\tau))\sin(\theta(\tau+t))\right\rangle_{\tau}
+          :label: eqncot
 
 Some Applications
 ~~~~~~~~~~~~~~~~~
@@ -688,7 +676,7 @@ Mean Square Displacement
 An example of the mean square displacement of SPC water is given in
 Fig. 
 
-.. figure:: plots/msdwater.eps
+.. figure:: plots/msdwater.*
 
     Mean Square Displacement of SPC-water.
 
@@ -753,7 +741,7 @@ For the dihedral angles you can use either the “biochemical convention”
 (:math:`\phi = 0 \equiv trans`), see
 Fig.
 
-.. figure:: plots/dih-def.eps
+.. figure:: plots/dih-def.*
 
     Dihedral conventions: A. “Biochemical convention”. B. “Polymer
     convention”.
@@ -769,10 +757,11 @@ of a sphere (determined by a single position). Also the angle between a
 vector/plane compared to its position in the first frame is supported.
 For planes, :ref:`gmx gangle <gmx gangle>`
 uses the normal vector perpendicular to the plane. See
-Fig. 
-A, B, C) for the definitions.
+:numref:`Fig. (%s) <fig-sgangle>` A, B, C) for the definitions.
 
-.. figure:: plots/sgangle.pdf
+.. _fig-sgangle:
+
+.. figure:: plots/sgangle.*
 
     Angle options of :ref:`gmx gangle <gmx gangle>`: A. Angle between two
     vectors. B. Angle between two planes. C. Angle between a vector and the
@@ -790,10 +779,8 @@ Radius of gyration and distances
   calculate the *radius of gyration* with the program
   :ref:`gmx gyrate <gmx gyrate>` as follows:
 
-  .. math::
-
-     R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{{\frac{1}{2}}}
-     \label{eqn:rg}
+  .. math:: R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{{\frac{1}{2}}}
+            :label: eqnrg
 
 | where :math:`m_i` is the mass of atom :math:`i` and :math:`{\bf r}_i`
   the position of atom :math:`i` with respect to the center of mass of
@@ -803,10 +790,8 @@ Radius of gyration and distances
   by only summing the radii components orthogonal to each axis, for
   instance
 
-  .. math::
-
-     R_{g,x} ~=~ \left({\frac{\sum_i \left( r_{i,y}^2 + r_{i,z}^2 \right) m_i}{\sum_i m_i}}\right)^{{\frac{1}{2}}}
-     \label{eqn:rgaxis}
+  .. math:: R_{g,x} ~=~ \left({\frac{\sum_i \left( r_{i,y}^2 + r_{i,z}^2 \right) m_i}{\sum_i m_i}}\right)^{{\frac{1}{2}}}
+            :label: eqnrgaxis:
 
 Sometimes it is interesting to plot the *distance* between two atoms, or
 the *minimum* distance between two groups of atoms (*e.g.*: protein
@@ -837,9 +822,11 @@ certain groups there are several possibilities:
     ``xv``. If you want to view the axes and legend or if
     you want to print the matrix, you can convert it with
     :ref:`xpm2ps <gmx xpm2ps>` into a Postscript picture, see
-    Fig. 
+    :numref:`Fig. (%s) <fig-distm>`. 
 
-    .. figure:: plots/distm.eps
+.. _fig-distm:
+
+    .. figure:: plots/distm.*
 
        A minimum distance matrix for a
        peptide Spoel, Vogel, and Berendsen (1996).
@@ -859,10 +846,8 @@ Root mean square deviations in structure
   (eqn. 
   ).
 
-  .. math::
-
-     RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
-     \label{eqn:rmsd}
+  .. math:: RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
+            :label: eqnrmsd
 
 | where :math:`M = \sum_{i=1}^N m_i` and :math:`{\bf r}_i(t)` is the
   position of atom :math:`i` at time :math:`t`. **Note** that fitting
@@ -884,10 +869,8 @@ in a trajectory, they will clearly show up in such a matrix.
 Alternatively the :math:`RMSD` can be computed using a fit-free method
 with the program :ref:`gmx rmsdist <gmx rmsdist>`:
 
-.. math::
-
-   RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
-   \label{eqn:rmsdff}
+.. math:: RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
+          :label: eqnrmsdff
 
 where the *distance* **r**\ :math:`_{ij}` between atoms at time
 :math:`t` is compared with the distance between the same atoms at time
@@ -1077,7 +1060,7 @@ Hydrogen bonds
      \alpha  & \leq  & \alpha_{HB}   & = & 30^o              \\
      \end{array}
 
-.. figure:: plots/hbond.eps
+.. figure:: plots/hbond.*
 
    Geometrical Hydrogen bond criterion.
 
@@ -1090,7 +1073,7 @@ existing between two groups of atoms (which must be either identical or
 non-overlapping) or in specified donor-hydrogen-acceptor triplets, in
 the following ways:
 
-.. figure:: plots/hbond-insert.eps
+.. figure:: plots/hbond-insert.*
 
     Insertion of water into an H-bond. (1) Normal H-bond between two
     residues. (2) H-bonding bridge via a water molecule.
@@ -1116,19 +1099,15 @@ the following ways:
    autocorrelation functions of the existence functions (either 0 or 1)
    of all H-bonds:
 
-   .. math::
-
-      C(\tau) ~=~ \langle s_i(t)~s_i (t + \tau) \rangle
-      \label{eqn:hbcorr}
+   .. math:: C(\tau) ~=~ \langle s_i(t)~s_i (t + \tau) \rangle
+             :label: eqnhbcorr
 
 -  with :math:`s_i(t) = \{0,1\}` for H-bond :math:`i` at time
    :math:`t`. The integral of :math:`C(\tau)` gives a rough estimate of
    the average H-bond lifetime :math:`\tau_{HB}`:
 
-   .. math::
-
-      \tau_{HB} ~=~ \int_{0}^{\infty} C(\tau) d\tau
-      \label{eqn:hblife}
+   .. math::  \tau_{HB} ~=~ \int_{0}^{\infty} C(\tau) d\tau
+              :label: eqnhblife
 
 -  Both the integral and the complete autocorrelation function
    :math:`C(\tau)` will be output, so that more sophisticated analysis
@@ -1167,27 +1146,33 @@ during your run. For this, you can use the program
 commercial program ``DSSP``  Kabsch and Sander (1983). For
 further information, see the ``DSSP`` manual. A typical
 output plot of :ref:`gmx do_dssp <gmx do_dssp>` is given in
-Fig. 
+:nmref:`Fig. (%s) <fig-dssp>`.
 
-.. figure:: plots/dssp.eps
+.. _fig-dssp: 
+
+.. figure:: plots/dssp.*
 
    Analysis of the secondary structure elements of a peptide in time.
 
 One other important analysis of proteins is the so-called *Ramachandran
 plot*. This is the projection of the structure on the two dihedral
 angles :math:`\phi` and :math:`\psi` of the protein backbone, see
-Fig. 
+:numref:`Fig. (%s) <fig-phipsi>`: 
 
-.. figure:: plots/phipsi.eps
+.. _fig-phipsi:
+
+.. figure:: plots/phipsi.*
 
    Definition of the dihedral angles :math:`\phi` and :math:`\psi` of
    the protein backbone.
 
 To evaluate this Ramachandran plot you can use the program
 :ref:`gmx rama <gmx rama>`. A typical output
-is given in Fig.
+is given in :numref:`Fig. (%s) <fig-rama>`.
 
-.. figure:: plots/rama.eps 
+.. _fig.rama:
+
+.. figure:: plots/rama.* 
 
     Ramachandran plot of a small protein.
 
@@ -1195,9 +1180,11 @@ When studying :math:`\alpha`-helices it is useful to have a *helical
 wheel* projection of your peptide, to see whether a peptide is
 amphipathic. This can be done using the :ref:`gmx wheel <gmx wheel>`
 program. Two examples are plotted in
-Fig. 
+:numref:`Fig. (%s) <fig-hprwheel>`.
 
-.. figure:: plots/hpr-wheel.eps
+.. _fig-hprwheel:
+
+.. figure:: plots/hpr-wheel.*
 
    Helical wheel projection of the N-terminal helix of HPr.
 
@@ -1212,10 +1199,8 @@ Interface-related items
   :ref:`gmx order <gmx order>` can calculate
   order parameters using the equation:
 
-.. math::
-
-   S_{z} = \frac{3}{2}\langle {\cos^2{\theta_z}} \rangle - \frac{1}{2}
-   \label{eqn:Sgr}
+.. math:: S_{z} = \frac{3}{2}\langle {\cos^2{\theta_z}} \rangle - \frac{1}{2}
+          :label: eqnSgr
 
 where :math:`\theta_z` is the angle between the :math:`z`-axis of the
 simulation box and the molecular axis under consideration. The latter is
@@ -1237,10 +1222,8 @@ The electrostatic potential (:math:`\psi`) across the interface can be
 computed from a trajectory by evaluating the double integral of the
 charge density (:math:`\rho(z)`):
 
-.. math::
-
-   \psi(z) - \psi(-\infty) = - \int_{-\infty}^z dz' \int_{-\infty}^{z'} \rho(z'')dz''/ \epsilon_0 
-   \label{eqn:elpotgr}
+.. math:: \psi(z) - \psi(-\infty) = - \int_{-\infty}^z dz' \int_{-\infty}^{z'} \rho(z'')dz''/ \epsilon_0 
+          :label: eqnelpotgr
 
 where the position :math:`z=-\infty` is far enough in the bulk phase
 such that the field is zero. With this method, it is possible to “split”
