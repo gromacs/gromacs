@@ -2,7 +2,8 @@ So, you want to build the manual? This is now easy.
 
 1. Configure the main GROMACS repo with GMX_BUILD_MANUAL=on
 2. cmake will run some detection about whether this is possible
-3. Later, use "make manual," which will build GROMACS in the
+3. This means that you need sphinx to create the most up to date version
+4. Later, use "make manual," which will build GROMACS in the
    usual way, and use the generated binaries to build the manual.
 
 An installation of pdflatex and ImageMagick is assumed by the
