@@ -1,13 +1,5 @@
 .. _gmx-reference-manual-rst:
 
-.. role:: math(raw)
-   :format: html latex
-..
-
-.. role:: raw-latex(raw)
-   :format: latex
-..
-
 ***********************
 Online reference manual
 ***********************
@@ -18,7 +10,7 @@ This is the converted version of the LaTeX manual to rst,
 to allow cross-linking between the user guide and the reference
 material.
 
-image:: plots/peregrine
+.. figure:: plots/peregrine.*
         :height: 5.00000in
 
 .. TODO this needs to be carefully checked that I didn't mess anything up too bad
@@ -41,10 +33,8 @@ right away with coding for |Gromacs|.
 Manual contents:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
-.. contents::
-   :depth: 3
 
    preface
    introduction
@@ -59,3 +49,5 @@ Manual contents:
    details
    averages
    references
+
+

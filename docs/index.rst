@@ -1,3 +1,4 @@
+=======================================
 Welcome to the |Gromacs| documentation!
 =======================================
 
@@ -15,16 +16,25 @@ Contents:
    download
    release-notes/index
    install-guide/index
-
    user-guide/index
+
+
+Reference manual
+----------------
+
+The old LaTeX manual has been converted to the web version shown here
+to allow efficient cross linking between the short user guide and the full
+documentation. 
+
+For lovers of dead trees, the printable manual is still available here:
 
 * `Reference Manual`_ (PDF format)
 
-.. * Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_
+.. toctree::
+   :maxdepth: 2
 
-.. * Coping with `errors while using |Gromacs| <http://www.gromacs.org/Documentation/Errors>`_
+   web-manual/index
 
-* Links to `tutorial material <http://www.gromacs.org/Documentation/Tutorials>`_
 
 Documentation for developers
 ----------------------------
