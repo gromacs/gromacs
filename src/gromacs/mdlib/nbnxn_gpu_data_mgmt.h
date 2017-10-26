@@ -103,6 +103,10 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_gpu_t gmx_unused *nb,
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_free(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM
 
+/** Frees all GPU devices used for the nonbonded calculations. */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_free_devices(gmx_nbnxn_gpu_t gmx_unused *nb, int gmx_unused rank) GPU_FUNC_TERM
+
 /** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 GPU_FUNC_QUALIFIER
 struct gmx_wallclock_gpu_nbnxn_t *nbnxn_gpu_get_timings(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(nullptr)

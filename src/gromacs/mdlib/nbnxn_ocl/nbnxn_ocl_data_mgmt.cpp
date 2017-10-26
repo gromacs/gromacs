@@ -1240,6 +1240,13 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 }
 
 //! This function is documented in the header file
+void nbnxn_gpu_free_devices(gmx_nbnxn_ocl_t */*nb*/, int /*rank*/)
+{
+    // This is handled in nbnxn_gpu_free because each rank always has
+    // its own NB context, even with thread-MPI.
+}
+
+//! This function is documented in the header file
 gmx_wallclock_gpu_nbnxn_t *nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;

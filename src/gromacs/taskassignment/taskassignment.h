@@ -116,6 +116,12 @@ runTaskAssignment(const std::vector<int>     &userGpuIds,
                   const t_commrec            *cr,
                   const std::vector<GpuTask> &gpuTasksOnThisRank);
 
+template<GpuTask TaskType>
+bool hasTaskType(const GpuTaskMapping &mapping)
+{
+    return mapping.task_ == TaskType;
+}
+
 } // namespace
 
 #endif
