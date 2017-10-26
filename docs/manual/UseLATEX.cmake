@@ -378,8 +378,7 @@ MACRO(LATEX_GET_OUTPUT_PATH var)
   SET(${var})
   IF (LATEX_OUTPUT_PATH)
     IF ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
-        # we can ignore this, because we are using generated tex input files
-      MESSAGE("You cannot set LATEX_OUTPUT_PATH to the same directory that contains LaTeX input files originally. But we generate the files, so it is fine :)")
+      MESSAGE(SEND_ERROR "You cannot set LATEX_OUTPUT_PATH to the same directory that contains LaTeX input files.")
     ELSE ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
       SET(${var} "${LATEX_OUTPUT_PATH}")
     ENDIF ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -419,7 +418,7 @@ ENDMACRO(LATEX_ADD_CONVERT_COMMAND)
 # Makes custom commands to convert a file to a particular type.
 MACRO(LATEX_CONVERT_IMAGE output_files input_file output_extension convert_flags
     output_extensions other_files)
-  SET(input_dir ${LATEX_INPUT_FILES_DIR})
+  SET(input_dir ${CMAKE_CURRENT_SOURCE_DIR})
   LATEX_GET_OUTPUT_PATH(output_dir)
 
   GET_FILENAME_COMPONENT(extension "${input_file}" EXT)
@@ -470,7 +469,7 @@ ENDMACRO(LATEX_CONVERT_IMAGE)
 MACRO(LATEX_PROCESS_IMAGES dvi_outputs pdf_outputs)
   LATEX_GET_OUTPUT_PATH(output_dir)
   FOREACH(file ${ARGN})
-    IF (EXISTS "${LATEX_INPUT_FILES_DIR}/${file}")
+    IF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
       GET_FILENAME_COMPONENT(extension "${file}" EXT)
       SET(convert_flags)
 
@@ -500,9 +499,9 @@ MACRO(LATEX_PROCESS_IMAGES dvi_outputs pdf_outputs)
         LATEX_CONVERT_IMAGE(${pdf_outputs} "${file}" .pdf "${convert_flags}"
           "${LATEX_PDF_IMAGE_EXTENSIONS}" "${ARGN}")
       ENDIF (is_raster)
-    ELSE (EXISTS "${LATEX_INPUT_FILES_DIR}/${file}")
-      MESSAGE(WARNING "Could not find file ${LATEX_INPUT_FILES_DIR}/${file}.  Are you sure you gave relative paths to IMAGES?")
-    ENDIF (EXISTS "${LATEX_INPUT_FILES_DIR}/${file}")
+    ELSE (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
+      MESSAGE(WARNING "Could not find file ${CMAKE_CURRENT_SOURCE_DIR}/${file}.  Are you sure you gave relative paths to IMAGES?")
+    ENDIF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
   ENDFOREACH(file)
 ENDMACRO(LATEX_PROCESS_IMAGES)
 
@@ -521,36 +520,36 @@ ENDMACRO(LATEX_COPY_GLOBBED_FILES)
 MACRO(LATEX_COPY_INPUT_FILE file)
   LATEX_GET_OUTPUT_PATH(output_dir)
 
-  IF (EXISTS ${LATEX_INPUT_FILES_DIR}/${file})
+  IF (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${file})
     GET_FILENAME_COMPONENT(path ${file} PATH)
     FILE(MAKE_DIRECTORY ${output_dir}/${path})
 
     LATEX_LIST_CONTAINS(use_config ${file} ${LATEX_CONFIGURE})
     IF (use_config)
-      CONFIGURE_FILE(${LATEX_INPUT_FILES_DIR}/${file}
+      CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/${file}
         ${output_dir}/${file}
         @ONLY
         )
       ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/${file}
         COMMAND ${CMAKE_COMMAND}
         ARGS ${CMAKE_BINARY_DIR}
-        DEPENDS ${LATEX_INPUT_FILES_DIR}/${file}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file}
         )
     ELSE (use_config)
       ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/${file}
         COMMAND ${CMAKE_COMMAND}
-        ARGS -E copy ${LATEX_INPUT_FILES_DIR}/${file} ${output_dir}/${file}
-        DEPENDS ${LATEX_INPUT_FILES_DIR}/${file}
+        ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${output_dir}/${file}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file}
         )
     ENDIF (use_config)
-  ELSE (EXISTS ${LATEX_INPUT_FILES_DIR}/${file})
+  ELSE (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${file})
     IF (EXISTS ${output_dir}/${file})
       # Special case: output exists but input does not.  Assume that it was
       # created elsewhere and skip the input file copy.
     ELSE (EXISTS ${output_dir}/${file})
-      MESSAGE("Could not find input file ${LATEX_INPUT_FILES_DIR}/${file}")
+      MESSAGE("Could not find input file ${CMAKE_CURRENT_SOURCE_DIR}/${file}")
     ENDIF (EXISTS ${output_dir}/${file})
-  ENDIF (EXISTS ${LATEX_INPUT_FILES_DIR}/${file})
+  ENDIF (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${file})
 ENDMACRO(LATEX_COPY_INPUT_FILE)
 
 #############################################################################
@@ -618,10 +617,10 @@ MACRO(ADD_LATEX_TARGETS)
   # place them in LATEX_IMAGES.
   FOREACH(dir ${LATEX_IMAGE_DIRS})
     FOREACH(extension ${LATEX_IMAGE_EXTENSIONS})
-      IF (NOT EXISTS ${LATEX_INPUT_FILES_DIR}/${dir})
-        MESSAGE(WARNING "Image directory ${LATEX_INPUT_FILES_DIR}/${dir} does not exist.  Are you sure you gave relative directories to IMAGE_DIRS?")
-      ENDIF (NOT EXISTS ${LATEX_INPUT_FILES_DIR}/${dir})
-      FILE(GLOB files ${LATEX_INPUT_FILES_DIR}/${dir}/*${extension})
+      IF (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${dir})
+        MESSAGE(WARNING "Image directory ${CMAKE_CURRENT_SOURCE_DIR}/${dir} does not exist.  Are you sure you gave relative directories to IMAGE_DIRS?")
+      ENDIF (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${dir})
+      FILE(GLOB files ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/*${extension})
       FOREACH(file ${files})
         GET_FILENAME_COMPONENT(filename ${file} NAME)
         SET(LATEX_IMAGES ${LATEX_IMAGES} ${dir}/${filename})
@@ -694,18 +693,18 @@ MACRO(ADD_LATEX_TARGETS)
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
       ${MAKEINDEX_COMPILER} ${MAKEINDEX_COMPILER_FLAGS} ${LATEX_TARGET}.idx
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
-      ${CMAKE_CURRENT_SOURCE_DIR}/subindex Gromacs.ind > Gromacs.sind
+      ${CMAKE_CURRENT_SOURCE_DIR}/subindex gromacs.ind > gromacs.sind
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
-      mv Gromacs.sind Gromacs.ind)
+      mv gromacs.sind gromacs.ind)
     SET(make_pdf_command ${make_pdf_command}
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
       ${PDFLATEX_COMPILER} ${PDFLATEX_COMPILER_FLAGS} ${LATEX_MAIN_INPUT}
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
       ${MAKEINDEX_COMPILER} ${MAKEINDEX_COMPILER_FLAGS} ${LATEX_TARGET}.idx
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
-      ${CMAKE_CURRENT_SOURCE_DIR}/subindex Gromacs.ind > Gromacs.sind
+      ${CMAKE_CURRENT_SOURCE_DIR}/subindex gromacs.ind > gromacs.sind
       COMMAND ${CMAKE_COMMAND} -E chdir ${output_dir}
-      mv Gromacs.sind Gromacs.ind
+      mv gromacs.sind gromacs.ind
     )
   ENDIF (LATEX_USE_INDEX)
 
@@ -737,16 +736,13 @@ MACRO(ADD_LATEX_TARGETS)
   IF (PDFLATEX_COMPILER)
     ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/${LATEX_TARGET}.pdf
       COMMAND ${make_pdf_command}
-      DEPENDS sphinx-create-texman
       DEPENDS ${make_pdf_depends}
       )
     IF (LATEX_DEFAULT_PDF)
       ADD_CUSTOM_TARGET(${pdf_target}
-        DEPENDS sphinx-create-texman
         DEPENDS ${output_dir}/${LATEX_TARGET}.pdf)
     ELSE (LATEX_DEFAULT_PDF)
       ADD_CUSTOM_TARGET(${pdf_target}
-        DEPENDS sphinx-create-texman
         DEPENDS ${output_dir}/${LATEX_TARGET}.pdf)
     ENDIF (LATEX_DEFAULT_PDF)
   ENDIF (PDFLATEX_COMPILER)
@@ -795,27 +791,27 @@ MACRO(ADD_LATEX_DOCUMENT)
   IF (output_dir)
     PARSE_ADD_LATEX_ARGUMENTS(ADD_LATEX_DOCUMENT ${ARGV})
 
-#   LATEX_COPY_INPUT_FILE(${LATEX_MAIN_INPUT})
+    #LATEX_COPY_INPUT_FILE(${LATEX_MAIN_INPUT})
 
     FOREACH (bib_file ${LATEX_BIBFILES})
-      CONFIGURE_FILE(${LATEX_INPUT_FILES_DIR}/${bib_file}
+      CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/${bib_file}
         ${output_dir}/${bib_file}
         COPYONLY)
       ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/${bib_file}
         COMMAND ${CMAKE_COMMAND}
-        ARGS -E copy ${LATEX_INPUT_FILES_DIR}/${bib_file} ${output_dir}/${bib_file}
-        DEPENDS ${LATEX_INPUT_FILES_DIR}/${bib_file}
+        ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${bib_file} ${output_dir}/${bib_file}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${bib_file}
         )
     ENDFOREACH (bib_file)
 
-#   FOREACH (input ${LATEX_INPUTS})
-#     LATEX_COPY_INPUT_FILE(${input})
-#   ENDFOREACH(input)
+    FOREACH (input ${LATEX_INPUTS})
+      LATEX_COPY_INPUT_FILE(${input})
+    ENDFOREACH(input)
 
-#   LATEX_COPY_GLOBBED_FILES(${LATEX_INPUT_FILES_DIR}/*.cls ${output_dir})
-#   LATEX_COPY_GLOBBED_FILES(${LATEX_INPUT_FILES_DIR}/*.bst ${output_dir})
-#   LATEX_COPY_GLOBBED_FILES(${LATEX_INPUT_FILES_DIR}/*.clo ${output_dir})
-#   LATEX_COPY_GLOBBED_FILES(${LATEX_INPUT_FILES_DIR}/*.sty ${output_dir})
+    LATEX_COPY_GLOBBED_FILES(${CMAKE_CURRENT_SOURCE_DIR}/*.cls ${output_dir})
+    LATEX_COPY_GLOBBED_FILES(${CMAKE_CURRENT_SOURCE_DIR}/*.bst ${output_dir})
+    LATEX_COPY_GLOBBED_FILES(${CMAKE_CURRENT_SOURCE_DIR}/*.clo ${output_dir})
+    LATEX_COPY_GLOBBED_FILES(${CMAKE_CURRENT_SOURCE_DIR}/*.sty ${output_dir})
 
     ADD_LATEX_TARGETS(${ARGV})
   ENDIF (output_dir)
