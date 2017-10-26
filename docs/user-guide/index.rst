@@ -1,3 +1,5 @@
+.. _user guide:
+
 **********
 User guide
 **********
@@ -12,9 +14,7 @@ This guide provides
 For getting, building and installing |Gromacs|, see the
 :doc:`/install-guide/index`.
 For background on algorithms and implementations, see the
-`reference manual`_.
-
-.. _reference manual: gmx-manual-parent-dir_
+:ref:`reference manual part <gmx-reference-manual-rst>` of the documentation.
 
 .. TODO This is going to require more organization now that
    we are getting more content available.
@@ -33,7 +33,7 @@ For background on algorithms and implementations, see the
    mdrun-features
    mdrun-performance
    run-time-errors
-   file-formats
+   cmdline
    terminology
    environment-variables
    floating-point
