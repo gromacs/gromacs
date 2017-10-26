@@ -464,19 +464,11 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto             nonbondedTarget = findTaskTarget(nbpu_opt);
-    // TODO Connect these to actual mdrun arguments and some functionality
-    const char      *pme_opt     = "cpu";
-    auto             pmeTarget   = findTaskTarget(pme_opt);
-
+    auto             pmeTarget       = findTaskTarget(pme_opt);
     // TODO find a sensible home and behaviour for this
-    const char      *pme_fft_opt = "auto";
     GMX_UNUSED_VALUE(pme_fft_opt);
     //auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
-    //GMX_UNUSED_VALUE(pmeFftOptionString);
-
-    const PmeRunMode pmeRunMode = PmeRunMode::CPU;
-    //TODO this is a placeholder as PME on GPU is not permitted yet
-    //TODO should there exist a PmeRunMode::None value for consistency?
+    PmeRunMode pmeRunMode = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -613,6 +605,8 @@ int Mdrunner::mdrunner()
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuIds, canUseGpuForPme, cr->nnodes);
+        // TODO decide how to implement -pmefft support
+        pmeRunMode = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -694,6 +688,17 @@ int Mdrunner::mdrunner()
          * scaling is bad, but it's difficult to automate the setup.
          */
         domdecOptions.numPmeRanks = 0;
+    }
+    if (useGpuForPme)
+    {
+        if (domdecOptions.numPmeRanks < 0)
+        {
+            domdecOptions.numPmeRanks = 0; // separate GPU ranks not supported
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
+        }
     }
 
 #ifdef GMX_FAHCORE
@@ -961,23 +966,23 @@ int Mdrunner::mdrunner()
     check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
                                        cr, mdlog);
 
-    gmx_device_info_t *shortRangedDeviceInfo = nullptr;
-    int                shortRangedDeviceId   = -1;
+    gmx_device_info_t *nonbondedDeviceInfo = nullptr;
+    int                nonbondedDeviceId   = -1;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        if (!gpuTaskAssignment.empty())
+        // This works because only one task of each type is currently permitted.
+        auto nbGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Nonbonded>);
+        if (nbGpuTaskMapping != gpuTaskAssignment.end())
         {
-            GMX_RELEASE_ASSERT(gpuTaskAssignment.size() == 1, "A valid GPU assignment can only have one task per rank");
-            GMX_RELEASE_ASSERT(gpuTaskAssignment[0].task_ == gmx::GpuTask::Nonbonded, "A valid GPU assignment can only include short-ranged tasks");
-            shortRangedDeviceId   = gpuTaskAssignment[0].deviceId_;
-            shortRangedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, shortRangedDeviceId);
+            nonbondedDeviceId   = nbGpuTaskMapping->deviceId_;
+            nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
         }
     }
 
     if (DOMAINDECOMP(cr))
     {
         /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, shortRangedDeviceId);
+        dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
     }
 
     /* getting number of PP/PME threads
@@ -1021,7 +1026,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
-                      shortRangedDeviceInfo,
+                      nonbondedDeviceInfo,
                       FALSE,
                       pforce);
 
@@ -1131,15 +1136,26 @@ int Mdrunner::mdrunner()
 
         if (thisRankHasDuty(cr, DUTY_PME))
         {
+            gmx_device_info_t *pmeDeviceInfo = nullptr;
+            // This works because only one task of each type is currently permitted.
+            auto               pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
+            if (pmeGpuTaskMapping != gpuTaskAssignment.end())
+            {
+                pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
+            }
             try
             {
-                gmx_device_info_t *pmeGpuInfo = nullptr;
+                if (pmeDeviceInfo != nullptr && pmeDeviceInfo != nonbondedDeviceInfo)
+                {
+                    GMX_THROW(NotImplementedError
+                                  ("PME on a GPU can run only on the same GPU as nonbonded"));
+                }
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
                                        mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
-                                       pmeRunMode, nullptr, pmeGpuInfo, mdlog);
+                                       pmeRunMode, nullptr, pmeDeviceInfo, mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1248,7 +1264,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, shortRangedDeviceInfo);
+    free_gpu_resources(fr, cr, !gpuTaskAssignment.empty());
 
     if (doMembed)
     {

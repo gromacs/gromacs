@@ -3163,17 +3163,16 @@ void init_forcerec(FILE                *fp,
  */
 void free_gpu_resources(const t_forcerec        *fr,
                         const t_commrec         *cr,
-                        const gmx_device_info_t *deviceInfo)
+                        bool                     usingGpus)
 {
-    gmx_bool bIsPPrankUsingGPU;
-    char     gpu_err_str[STRLEN];
-
-    bIsPPrankUsingGPU = thisRankHasDuty(cr, DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
-
-    if (bIsPPrankUsingGPU)
+    if (fr && fr->nbv)
     {
-        /* free nbnxn data in GPU memory */
+        // Free any nbnxn data in GPU memory
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+    }
+
+    if (usingGpus)
+    {
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
     }
@@ -3187,21 +3186,27 @@ void free_gpu_resources(const t_forcerec        *fr,
      *
      * Note: it is safe to not call the barrier on the ranks which do not use GPU,
      * but it is easier and more futureproof to call it on the whole node.
+     *
+     * TODO We should use a shared_ptr to (some wrapper of?) any such
+     * context that is shared across thread-MPI ranks, so that we get
+     * both fast access during the simulation, and simple correct code
+     * for setup and shutdown.
+     *
+     * TODO Note that MULTISIM(cr) is always false with thread-MPI, so
+     * this conditional looks foolish. It should match that in
+     * gmx_fill_commrec_from_mpi, which has a TODO to construct a
+     * physical node communicator in all cases.
      */
-#if GMX_THREAD_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (GMX_THREAD_MPI && (PAR(cr) || MULTISIM(cr)))
     {
         gmx_barrier_physical_node(cr);
     }
-#endif  /* GMX_THREAD_MPI */
 
-    if (bIsPPrankUsingGPU)
+    if (fr && fr->nbv)
     {
-        /* uninitialize GPU (by destroying the context) */
-        if (!free_cuda_gpu(deviceInfo, gpu_err_str))
-        {
-            gmx_warning("On rank %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
-        }
+        nbnxn_gpu_free_devices(fr->nbv->gpu_nbv, cr->nodeid);
     }
+    // PME on GPU code does not currently initialize devices, but e.g. when
+    // we add support for PME-only ranks or multiple GPU tasks per rank,
+    // something will need to ensure things are freed.
 }

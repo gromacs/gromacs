@@ -102,8 +102,8 @@ parseUserGpuIds(const std::string &gpuIdString)
 }
 
 std::vector<int>
-makeGpuIds(const std::vector<int> &compatibleGpus,
-           size_t                  numGpuTasks)
+makeGpuIds(ArrayRef<const int> compatibleGpus,
+           size_t              numGpuTasks)
 {
     std::vector<int> gpuIdsToUse;
 

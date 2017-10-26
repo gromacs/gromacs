@@ -826,6 +826,25 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 }
 
 //! This function is documented in the header file
+void nbnxn_gpu_free_devices(gmx_nbnxn_cuda_t *nb, int rank)
+{
+    if (nb == NULL)
+    {
+        return;
+    }
+
+    char gpu_err_str[STRLEN];
+    if (!free_cuda_gpu(nb->dev_info, gpu_err_str))
+    {
+        // TODO Is it appropriate to assume that getting the current
+        // device ID is sufficient for such a message? Or should the NB
+        // module keep track of both device ID and info?
+        gmx_warning("On rank %d failed to free GPU #%d: %s",
+                    rank, get_current_cuda_gpu_device_id(), gpu_err_str);
+    }
+}
+
+//! This function is documented in the header file
 gmx_wallclock_gpu_nbnxn_t *nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
