@@ -505,22 +505,22 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-int gmx_pme_init(struct gmx_pme_t   **pmedata,
-                 t_commrec           *cr,
-                 int                  nnodes_major,
-                 int                  nnodes_minor,
-                 const t_inputrec    *ir,
-                 int                  homenr,
-                 gmx_bool             bFreeEnergy_q,
-                 gmx_bool             bFreeEnergy_lj,
-                 gmx_bool             bReproducible,
-                 real                 ewaldcoeff_q,
-                 real                 ewaldcoeff_lj,
-                 int                  nthread,
-                 PmeRunMode           runMode,
-                 pme_gpu_t           *pmeGPU,
-                 gmx_device_info_t   *gpuInfo,
-                 const gmx::MDLogger &mdlog)
+void gmx_pme_init(struct gmx_pme_t   **pmedata,
+                  t_commrec           *cr,
+                  int                  nnodes_major,
+                  int                  nnodes_minor,
+                  const t_inputrec    *ir,
+                  int                  homenr,
+                  gmx_bool             bFreeEnergy_q,
+                  gmx_bool             bFreeEnergy_lj,
+                  gmx_bool             bReproducible,
+                  real                 ewaldcoeff_q,
+                  real                 ewaldcoeff_lj,
+                  int                  nthread,
+                  PmeRunMode           runMode,
+                  pme_gpu_t           *pmeGPU,
+                  gmx_device_info_t   *gpuInfo,
+                  const gmx::MDLogger &mdlog)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -860,20 +860,17 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
 
     // no exception was thrown during the init, so we hand over the PME structure handle
     *pmedata = pme.release();
-
-    return 0;
 }
 
-int gmx_pme_reinit(struct gmx_pme_t **pmedata,
-                   t_commrec *        cr,
-                   struct gmx_pme_t * pme_src,
-                   const t_inputrec * ir,
-                   ivec               grid_size,
-                   real               ewaldcoeff_q,
-                   real               ewaldcoeff_lj)
+void gmx_pme_reinit(struct gmx_pme_t **pmedata,
+                    t_commrec *        cr,
+                    struct gmx_pme_t * pme_src,
+                    const t_inputrec * ir,
+                    ivec               grid_size,
+                    real               ewaldcoeff_q,
+                    real               ewaldcoeff_lj)
 {
     int        homenr;
-    int        ret;
 
     // Create a copy of t_inputrec fields that are used in gmx_pme_init().
     // TODO: This would be better as just copying a sub-structure that contains
@@ -905,21 +902,16 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
         // This is reinit which is currently only changing grid size/coefficients,
         // so we don't expect the actual logging.
         // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
-        ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
-                           pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
+        gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
+                     &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
+                     pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
         //TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    if (ret == 0)
-    {
-        /* We can easily reuse the allocated pme grids in pme_src */
-        reuse_pmegrids(&pme_src->pmegrid[PME_GRID_QA], &(*pmedata)->pmegrid[PME_GRID_QA]);
-        /* We would like to reuse the fft grids, but that's harder */
-    }
-
-    return ret;
+    /* We can easily reuse the allocated pme grids in pme_src */
+    reuse_pmegrids(&pme_src->pmegrid[PME_GRID_QA], &(*pmedata)->pmegrid[PME_GRID_QA]);
+    /* We would like to reuse the fft grids, but that's harder */
 }
 
 void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V)
