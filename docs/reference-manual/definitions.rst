@@ -1,3 +1,5 @@
+.. _defunits:
+
 Definitions and Units
 =====================
 
@@ -7,7 +9,7 @@ Notation
 The following conventions for mathematical typesetting are used
 throughout this document:
 
-.. |vecex| replace:: :math:`{\mbox{\boldmath{$r$}}_i}`
+.. |vecex| replace:: :math:`{\mathbf{r}_i}`
 .. |lenex| replace:: :math:`r_i`
 
 .. table:: 
@@ -23,24 +25,19 @@ throughout this document:
     +---------------+-------------+---------+
 
 We define the *lowercase* subscripts :math:`i`, :math:`j`, :math:`k` and
-:math:`l` to denote particles: :math:`{\mbox{\boldmath ${r}$}}_i` is the
+:math:`l` to denote particles: :math:`\mathbf{r}_i` is the
 *position vector* of particle :math:`i`, and using this notation:
 
 .. math::
 
    \begin{aligned}
-   {\mbox{\boldmath ${r}$}}_ij	=	{\mbox{\boldmath ${r}$}}_j-{\mbox{\boldmath ${r}$}}_i	\\
-   {r_{ij}}=	| {\mbox{\boldmath ${r}$}}_ij |\end{aligned}
+   \mathbf{r}_{ij}	=	\mathbf{r}_j-\mathbf{r}_i\\
+   r_{ij}=	| \mathbf{r}_{ij} | \end{aligned}
 
 The force on particle :math:`i` is denoted by
-:math:`{\mbox{\boldmath ${F}$}}_i` and
+:math:`\mathbf{F}_i` and
 
-.. math:: {\mbox{\boldmath ${F}$}}_{ij} = \mbox{force on $i$ exerted by $j$}
-
-Please note that we changed notation as of version 2.0 to
-:math:`{\mbox{\boldmath ${r}$}}_ij={\mbox{\boldmath ${r}$}}_j-{{\mbox{\boldmath ${r}$}}_i}`
-since this is the notation commonly used. If you encounter an error, let
-us know.
+.. math:: \mathbf{F}_{ij} = \mbox{force on $i$ exerted by $j$}
 
 MD units
 --------
@@ -53,13 +50,13 @@ The values used in |Gromacs| are
 taken from the CODATA Internationally recommended 2010 values of
 fundamental physical constants (see `NIST homepage <http://nist.gov>`__). 
 
-.. |tnm| replace:: nm :math:`= 10^{-9}` m
-.. |tu1| replace:: u (unified atomic mass unit) :math:`=`
-.. |tu2| replace:: :math:`1.660\,538\,921 \times 10^{-27}` kg
-.. |tti| replace:: ps :math:`= 10^{-12}` s
-.. |tc1| replace:: *e* :math:`=` elementary charge :math:`=`
-.. |tc2| replace:: :math:`1.602\,176\,565(\times 10^{-19}` C
-.. |tte| replace:: K
+.. |tnm| replace:: :math:`\mathrm{nm = }10^{-9}\ m`
+.. |tu1| replace:: u (unified atomic mass unit) =
+.. |tu2| replace:: :math:`1.660\,538\,921 \times 10^{-27}\ kg`
+.. |tti| replace:: :math:`\mathrm{ps = }10^{-12}\ s`
+.. |tc1| replace:: *e* = elementary charge =
+.. |tc2| replace:: :math:`1.602\,176\,565 \times 10^{-19}\ C`
+.. |tte| replace:: K 
 
 .. _table-basicunits:
 
@@ -81,7 +78,7 @@ fundamental physical constants (see `NIST homepage <http://nist.gov>`__).
     |              |        | |tc2| |
     +--------------+--------+-------+
     | temperature  |     T  | |tte| |
-    +--------------+----------------+
+    +--------------+--------+-------+
 
 
 
@@ -91,7 +88,7 @@ with these units are a set of derived units, given in
 :numref:`Table %s <table-derivedunits>`
 
 .. |tse|  replace:: :math:`E,V`
-.. |tsf|  replace:: :math:`{\mbox{\boldmath{$F$}}}`
+.. |tsf|  replace:: :math:`\mathbf{F}`
 .. |tsp|  replace:: :math:`p`
 .. |tsv|  replace:: :math:`v`
 .. |tsd|  replace:: :math:`\mu`
@@ -101,10 +98,10 @@ with these units are a set of derived units, given in
 .. |tduf|   replace:: :math:`\mathrm{kJ~mol}^{-1}~\mathrm{nm}^{-1}`
 .. |tdup|   replace:: bar
 .. |tduv|   replace:: :math:`\mathrm{nm~ps}^{-1} = 1000\mathrm{~m~s}^{-1}`
-.. |tdud|   replace:: :math:`\mathrm{\emph{e}nm}`
-.. |tduep1| replace:: :math:`\mathrm{kJ~mol}^{-1}\mathrm{~\emph{e}}^{-1} =`
-.. |tduep2| replace:: :math:`0.010\,364\,269\,19` Volt       
-.. |tduef1| replace:: :math:`\mathrm{kJ~mol}^{-1}\mathrm{~nm}^{-1}\mathrm{~\emph{e}}^{-1} =`
+.. |tdud|   replace:: :math:`\mathrm{e\ nm}`
+.. |tduep1| replace:: :math:`\mathrm{kJ~mol}^{-1}\mathrm{~e}^{-1} =`
+.. |tduep2| replace:: :math:`0.010\,364\,269\,19` Volt
+.. |tduef1| replace:: :math:`\mathrm{kJ~mol}^{-1}\mathrm{~nm}^{-1}\ \mathrm{e}^{-1} =`
 .. |tduef2| replace:: :math:`1.036\,426\,919 \times 10^7\mathrm{~V m}^{-1}`
 
 .. _table-derivedunits:
@@ -145,21 +142,21 @@ It relates the mechanical quantities to the electrical quantities as in
 .. math:: V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
 
 Electric potentials :math:`\Phi` and electric fields
-:math:`{\mbox{\boldmath ${E}$}}` are intermediate quantities in the
+:math:`\mathbf{E}` are intermediate quantities in the
 calculation of energies and forces. They do not occur inside |Gromacs|. If
 they are used in evaluations, there is a choice of equations and related
 units. We strongly recommend following the usual practice of including
 the factor :math:`f` in expressions that evaluate :math:`\Phi` and
-:math:`{\mbox{\boldmath ${E}$}}`:
+:math:`\mathbf{E}`:
 
 .. math::
 
    \begin{aligned}
-   \Phi({\mbox{\boldmath ${r}$}}) = f \sum_j \frac{q_j}{| {\mbox{\boldmath ${r}$}}-{\mbox{\boldmath ${r}$}}_j | } 	\\
-   {\mbox{\boldmath ${E}$}}({\mbox{\boldmath ${r}$}}) = f \sum_j q_j \frac{({\mbox{\boldmath ${r}$}}-{\mbox{\boldmath ${r}$}}_j)}{| {\mbox{\boldmath ${r}$}}-{\mbox{\boldmath ${r}$}}_j| ^3}\end{aligned}
+   \Phi(\mathbf{r}) = f \sum_j \frac{q_j}{| \mathbf{r}-\mathbf{r}_j | } 	\\
+   \mathbf{E}(\mathbf{r}) = f \sum_j q_j \frac{(\mathbf{r}-\mathbf{r}_j)}{| \mathbf{r}-\mathbf{r}_j| ^3}\end{aligned}
 
 With these definitions, :math:`q\Phi` is an energy and
-:math:`q{\mbox{\boldmath ${E}$}}` is a force. The units are those given
+:math:`q\mathbf{E}` is a force. The units are those given
 in :numref:`Table %s <table-derivedunits>`
 about 10 mV for potential.
 Thus, the potential of an electronic charge at a distance of 1 nm equals
@@ -266,11 +263,11 @@ Mixed or Double precision
 -------------------------
 
 |Gromacs| can be compiled in either mixed or double precision.
-Documentation of previous |Gromacs| versions referred to “single
-precision”, but the implementation has made selective use of double
+Documentation of previous |Gromacs| versions referred to *single
+precision*, but the implementation has made selective use of double
 precision for many years. Using single precision for all variables would
-lead to a significant reduction in accuracy. Although in “mixed
-precision” all state vectors, i.e. particle coordinates, velocities and
+lead to a significant reduction in accuracy. Although in *mixed
+precision* all state vectors, i.e. particle coordinates, velocities and
 forces, are stored in single precision, critical variables are double
 precision. A typical example of the latter is the virial, which is a sum
 over all forces in the system, which have varying signs. In addition, in
@@ -288,7 +285,7 @@ The energies in mixed precision are accurate up to the last decimal, the
 last one or two decimals of the forces are non-significant. The virial
 is less accurate than the forces, since the virial is only one order of
 magnitude larger than the size of each element in the sum over all atoms
-(sec. [sec:virial]). In most cases this is not really a problem, since
+(sec. :ref:`virial`). In most cases this is not really a problem, since
 the fluctuations in the virial can be two orders of magnitude larger
 than the average. Using cut-offs for the Coulomb interactions cause
 large errors in the energies, forces, and virial. Even when using a

@@ -3,26 +3,21 @@ Preface and Disclaimer
 
 |Gromacs| - |version|
 
-*Groningen Machine for Chemical Simulations*
-
-*Reference Manual*
-
 Contributions from:
 
-
-Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,
-Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen,
-Anton Feenstra, Sebastian Fritsch, Gerrit Groenhof,
-Christoph Junghans, Jochen Hub, Peter Kasson,
-Carsten Kutzner, Brad Lambeth, Per Larsson, Justin A. Lemkul,
-Viveca Lindahl, Magnus Lundborg, Erik Marklund, Pieter Meulenhoff,
-Teemu Murtola, Szilárd Páll, Sander Pronk,
-Roland Schulz, Michael Shirts, Alfons Sijbers,
-Peter Tieleman, Christian Wennberg and Maarten Wolf.
+Emile Apol, Rossen Apostolov, Paul Bauer,
+Herman J.C. Berendsen, Pär Bjelkmar, Aldert van Buuren,
+Rudi van Drunen, Anton Feenstra, Gerrit Groenhof,
+Aleksei Iupinov, Christoph Junghans, Anca Hamuraru,
+Vincent Hindriksen, Dimitrios Karkoulis, Peter Kasson,
+Jiri Kraus, Carsten Kutzner, Per Larsson,
+Justin A. Lemkul, Viveca Lindahl, Magnus Lundborg,
+Pieter Meulenhoff, Erik Marklund, Teemu Murtola,
+Szilárd Páll, Sander Pronk, Roland Schulz,
+Alexey Shvetsov, Michael Shirts, Alfons Sijbers,
+Peter Tieleman, Teemu Virolainen, Christian Wennberg and Maarten Wolf.
 
 Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.
-
-
 
 © 1991 -- 2000:
 
@@ -50,14 +45,6 @@ we release a new version of the software, so in general
 it is a good idea to use a manual with the same major and
 minor release number as your |Gromacs| installation. 
 
-On-line Resources
------------------
-
-You can find more documentation and other material at our homepage
-`www.gromacs.org <http://www.gromacs.org>`__. Among other things there
-is an on-line reference, several GROMACS mailing lists with archives and
-contributed topologies/force fields.
-
 Citation information
 --------------------
 
@@ -75,14 +62,14 @@ please refer to it as:
 However, we prefer that you cite (some of) the |Gromacs|
 papers:
 
-* Bekker, Berendsen, Dijkstra, Achterop, Drunen, et al. 1993b
-* Berendsen, Spoel, and Drunen 1995
-* Lindahl, Hess, and Spoel 2001
-* Spoel et al. 2005
-* Hess et al. 2008
-* Pronk et al. 2013
-* Páll et al. 2015
-* Abraham et al. 2015
+* \ :ref:`Bekker et al. (1993) <refBekker93a>`
+* \ :ref:`Berendsen et al. (1995) <refBerendsen95a>`
+* \ :ref:`Lindahl et al. (2001) <refLindahl2001a>`
+* \ :ref:`van der Spoel at al. (2005) <refSpoel2005a>`
+* \ :ref:`Hess et al. (2008) <refHess2008b>`
+* \ :ref:`Pronk et al. (2013) <refPronk2013>`
+* \ :ref:`Pall et al. (2015) <refPall2015>`
+* \ :ref:`Abraham et al. (2015) <refAbraham2015>`
 
 when you publish your results. Any future development depends on academic research
 grants, since the package is distributed as free software!
