@@ -1,6 +1,8 @@
 Introduction
 ============
 
+.. _compchem:
+
 Computational Chemistry and Molecular Modeling
 ----------------------------------------------
 
@@ -95,13 +97,12 @@ MD simulations solve Newton’s equations of motion for a system of
 
 .. math:: m_i \frac{\partial^2 {\mbox{\boldmath ${r}$}}_i}{\partial t^2}  = {\mbox{\boldmath ${F}$}}_i, \;i=1 \ldots N.
 
- The forces are the negative derivatives of a potential function
-:math:`V({\mbox{\boldmath ${r}$}}_1, 
-{\mbox{\boldmath ${r}$}}_2, \ldots, {\mbox{\boldmath ${r}$}}_N)`:
+The forces are the negative derivatives of a potential function
+:math:`V({\mbox{\boldmath ${r}$}}_1, {\mbox{\boldmath ${r}$}}_2, \ldots, {\mbox{\boldmath ${r}$}}_N)`:
 
 .. math:: {\mbox{\boldmath ${F}$}}_i = - \frac{\partial V}{\partial {\mbox{\boldmath ${r}$}}_i}
 
- The equations are solved simultaneously in small time steps. The system
+The equations are solved simultaneously in small time steps. The system
 is followed for some time, taking care that the temperature and pressure
 remain at the required values, and the coordinates are written to an
 output file at regular intervals. The coordinates as a function of time
@@ -116,8 +117,8 @@ perform checks on known experimental properties to assess the accuracy
 of the simulation. We list the approximations below.
 
 **The simulations are classical**
-    | 
-    | Using Newton’s equation of motion automatically implies the use of
+
+-     Using Newton’s equation of motion automatically implies the use of
       *classical mechanics* to describe the motion of atoms. This is all
       right for most atoms at normal temperatures, but there are
       exceptions. Hydrogen atoms are quite light and the motion of
@@ -139,71 +140,111 @@ of the simulation. We list the approximations below.
       in classical simulations. This means that practically all bond and
       bond-angle vibrations are suspect, and even hydrogen-bonded
       motions as translational or librational H-bond vibrations are
-      beyond the classical limit (see Table [tab:vibrations]). What can
-      we do?
+      beyond the classical limit (see
+      :numref:`Table %s <tab-vibrations>`)
+      What can we do? 
 
-    | Well, apart from real quantum-dynamical simulations, we can do one
+.. |H2CX| replace:: H\ :math:`_2`\ CX
+.. |OHO1| replace:: O-H\ :math:`\cdots`\ O
+.. |INCM| replace:: :math:`\mathrm{cm}~^{-1}`
+
+.. _tab-vibrations:
+
+.. table::
+        Typical vibrational frequencies (wavenumbers) in molecules and hydrogen-bonded
+        liquids. Compare :math:`kT/h = 200~\mathrm{cm}^{-1}` at 300 K.
+        :widths: auto
+        :align: center
+
+        +---------------+-------------+------------+
+        |               | type of     | wavenumber |
+        | type of bond  | vibration   | |INCM|     |
+        +===============+=============+============+
+        | C-H, O-H, N-H | stretch     | 3000--3500 |
+        +---------------+-------------+------------+
+        | C=C, C=O      | stretch     | 1700--2000 |
+        +---------------+-------------+------------+
+        | HOH           | bending     | 1600       |
+        +---------------+-------------+------------+
+        | C-C           | stretch     | 1400--1600 |
+        +---------------+-------------+------------+
+        | |H2CX|        | sciss, rock | 1000--1500 |
+        +---------------+-------------+------------+
+        | CCC           | bending     |  800--1000 |
+        +---------------+-------------+------------+
+        | |OHO1|        | libration   |  400--700  |
+        +---------------+-------------+------------+
+        | |OHO1|        | stretch     |   50--200  |
+        +---------------+-------------+------------+
+
+
+
+-     Well, apart from real quantum-dynamical simulations, we can do one
       of two things:
-    | (a) If we perform MD simulations using harmonic oscillators for
-      bonds, we should make corrections to the total internal energy
-      :math:`U = E_{kin} + E_{pot}` and specific heat :math:`C_V` (and
-      to entropy :math:`S` and free energy :math:`A` or :math:`G` if
-      those are calculated). The corrections to the energy and specific
-      heat of a one-dimensional oscillator with frequency :math:`\nu`
-      are: McQuarrie (1976)
 
-      .. math:: U^{QM} = U^{cl} +kT \left( {\frac{1}{2}}x - 1 + \frac{x}{e^x-1} \right)
+      (a)   If we perform MD simulations using harmonic oscillators for
+            bonds, we should make corrections to the total internal energy
+            :math:`U = E_{kin} + E_{pot}` and specific heat :math:`C_V` (and
+            to entropy :math:`S` and free energy :math:`A` or :math:`G` if
+            those are calculated). The corrections to the energy and specific
+            heat of a one-dimensional oscillator with frequency :math:`\nu`
+            are: McQuarrie (1976)
 
-      .. math:: C_V^{QM} = C_V^{cl} + k \left( \frac{x^2e^x}{(e^x-1)^2} - 1 \right),
+            .. math:: 
 
-       where :math:`x=h\nu /kT`. The classical oscillator absorbs too
-      much energy (:math:`kT`), while the high-frequency quantum
-      oscillator is in its ground state at the zero-point energy level
-      of :math:`\frac{1}{2} h\nu`.
-    | (b) We can treat the bonds (and bond angles) as *constraints* in
-      the equations of motion. The rationale behind this is that a
-      quantum oscillator in its ground state resembles a constrained
-      bond more closely than a classical oscillator. A good practical
-      reason for this choice is that the algorithm can use larger time
-      steps when the highest frequencies are removed. In practice the
-      time step can be made four times as large when bonds are
-      constrained than when they are oscillators Gunsteren and Berendsen
-      (1977). |Gromacs| has this option for the bonds and bond angles. The
-      flexibility of the latter is rather essential to allow for the
-      realistic motion and coverage of configurational space Gunsteren
-      and Karplus (1982).
+               U^{QM} = U^{cl} +kT \left( {\frac{1}{2}}x - 1 + \frac{x}{e^x-1} \right)
+
+            .. math:: 
+
+               C_V^{QM} = C_V^{cl} + k \left( \frac{x^2e^x}{(e^x-1)^2} - 1 \right)
+
+            where :math:`x=h\nu /kT`. The classical oscillator absorbs too
+            much energy (:math:`kT`), while the high-frequency quantum
+            oscillator is in its ground state at the zero-point energy level
+            of :math:`\frac{1}{2} h\nu`.
+
+      (b)   We can treat the bonds (and bond angles) as
+            *constraints* in the equations of
+            motion. The rationale behind this is that a quantum oscillator in
+            its ground state resembles a constrained bond more closely than a
+            classical oscillator. A good practical reason for this choice is
+            that the algorithm can use larger time steps when the highest
+            frequencies are removed. In practice the time step can be made
+            four times as large when bonds are constrained than when they are
+            oscillators Gunsteren and Berendsen (1977). |Gromacs| has this
+            option for the bonds and bond angles. The flexibility of the
+            latter is rather essential to allow for the realistic motion and
+            coverage of configurational space Gunsteren and Karplus (1982).
 
 **Electrons are in the ground state**
-    | 
-    | In MD we use a *conservative* force field that is a function of
+      In MD we use a *conservative* force field that is a function of
       the positions of atoms only. This means that the electronic
       motions are not considered: the electrons are supposed to adjust
       their dynamics instantly when the atomic positions change (the
-      *Born-Oppenheimer* approximation), and remain in their ground
-      state. This is really all right, almost always. But of course,
-      electron transfer processes and electronically excited states can
-      not be treated. Neither can chemical reactions be treated
-      properly, but there are other reasons to shy away from reactions
-      for the time being.
+      *Born-Oppenheimer*
+      approximation), and remain in their ground state. This is really
+      all right, almost always. But of course, electron transfer
+      processes and electronically excited states can not be treated.
+      Neither can chemical reactions be treated properly, but there are
+      other reasons to shy away from reactions for the time being.
 
 **Force fields are approximate**
-    | 
-    | Force fields provide the forces. They are not really a part of the
-      simulation method and their parameters can be modified by the user
-      as the need arises or knowledge improves. But the form of the
-      forces that can be used in a particular program is subject to
-      limitations. The force field that is incorporated in |Gromacs| is
-      described in Chapter 4. In the present version the force field is
-      pair-additive (apart from long-range Coulomb forces), it cannot
-      incorporate polarizabilities, and it does not contain fine-tuning
-      of bonded interactions. This urges the inclusion of some
-      limitations in this list below. For the rest it is quite useful
-      and fairly reliable for biologically-relevant macromolecules in
-      aqueous solution!
+      Force fields
+      provide the forces.
+      They are not really a part of the simulation method and their
+      parameters can be modified by the user as the need arises or
+      knowledge improves. But the form of the forces that can be used in
+      a particular program is subject to limitations. The force field
+      that is incorporated in |Gromacs| is described in Chapter 4. In the
+      present version the force field is pair-additive (apart from
+      long-range Coulomb forces), it cannot incorporate
+      polarizabilities, and it does not contain fine-tuning of bonded
+      interactions. This urges the inclusion of some limitations in this
+      list below. For the rest it is quite useful and fairly reliable
+      for biologically-relevant macromolecules in aqueous solution!
 
 **The force field is pair-additive**
-    | 
-    | This means that all *non-bonded* forces result from the sum of
+      This means that all *non-bonded* forces result from the sum of
       non-bonded pair interactions. Non pair-additive interactions, the
       most important example of which is interaction through atomic
       polarizability, are represented by *effective pair potentials*.
@@ -221,24 +262,24 @@ of the simulation. We list the approximations below.
       the next item compensates this effect a bit.
 
 **Long-range interactions are cut off**
-    | 
-    | In this version, |Gromacs| always uses a cut-off radius for the
-      Lennard-Jones interactions and sometimes for the Coulomb
-      interactions as well. The “minimum-image convention” used by
-      |Gromacs| requires that only one image of each particle in the
-      periodic boundary conditions is considered for a pair interaction,
-      so the cut-off radius cannot exceed half the box size. That is
-      still pretty big for large systems, and trouble is only expected
-      for systems containing charged particles. But then truly bad
-      things can happen, like accumulation of charges at the cut-off
-      boundary or very wrong energies! For such systems, you should
-      consider using one of the implemented long-range electrostatic
-      algorithms, such as particle-mesh Ewald Darden, York, and Pedersen
-      (1993; Essmann et al. 1995).
+      In this version, |Gromacs| always uses a
+      cut-off
+      radius for the Lennard-Jones
+      interactions and sometimes for the Coulomb interactions as well.
+      The “minimum-image convention” used by |Gromacs| requires that only
+      one image of each particle in the periodic boundary conditions is
+      considered for a pair interaction, so the cut-off radius cannot
+      exceed half the box size. That is still pretty big for large
+      systems, and trouble is only expected for systems containing
+      charged particles. But then truly bad things can happen, like
+      accumulation of charges at the cut-off boundary or very wrong
+      energies! For such systems, you should consider using one of the
+      implemented long-range electrostatic algorithms, such as
+      particle-mesh Ewald Darden, York, and Pedersen (1993); Essmann et
+      al. (1995).
 
 **Boundary conditions are unnatural**
-    | 
-    | Since system size is small (even 10,000 particles is small), a
+      Since system size is small (even 10,000 particles is small), a
       cluster of particles will have a lot of unwanted boundary with its
       environment (vacuum). We must avoid this condition if we wish to
       simulate a bulk system. As such, we use periodic boundary
@@ -255,9 +296,9 @@ of the simulation. We list the approximations below.
 Energy Minimization and Search Methods
 --------------------------------------
 
-As mentioned in sec. [sec:Compchem], in many cases energy minimization
+As mentioned in sec. :ref:`Compchem`, in many cases energy minimization
 is required. |Gromacs| provides a number of methods for local energy
-minimization, as detailed in sec. [sec:EM].
+minimization, as detailed in sec. :ref:`EM`.
 
 The potential energy function of a (macro)molecular system is a very
 complex landscape (or *hypersurface*) in a large number of dimensions.

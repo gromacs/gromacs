@@ -6,15 +6,15 @@ from complete, but we deemed it necessary to clarify some things that
 would otherwise be hard to understand.
 
 Single Sum Virial in |Gromacs|
-----------------------------
+------------------------------
 
 The virial :math:`\Xi` can be written in full tensor form as:
 
 .. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^N~{\mbox{\boldmath ${r}$}}_ij\otimes{\mbox{\boldmath ${F}$}}_ij
 
-where :math:`\otimes` denotes the *direct product* of two vectors. [4]_
+where :math:`\otimes` denotes the *direct product* of two vectors. [1]_
 When this is computed in the inner loop of an MD program 9
-multiplications and 9 additions are needed. [5]_
+multiplications and 9 additions are needed. [2]_
 
 Here it is shown how it is possible to extract the virial calculation
 from the inner loop Bekker, Berendsen, Dijkstra, Achterop, Drunen, et
@@ -117,7 +117,7 @@ different shift vectors outside the kernels. We have also used
 which is the total force on :math:`i` with respect to :math:`j`.
 Because we use Newton’s Third Law:
 
-.. math:: {{\mbox{\boldmath ${F}$}}_{ij}}~=~-{{\mbox{\boldmath ${F}$}}_{ji}}
+.. math:: {\mbox{\boldmath ${F}$}}_ij~=~-{\mbox{\boldmath ${F}$}}_ji
 
 we must, in the implementation, double the term containing the shift
 :math:`\delta_i`. Similarly, in a few places we have summed the
@@ -223,6 +223,8 @@ Optimizations
 Here we describe some of the algorithmic optimizations used in |Gromacs|,
 apart from parallelism.
 
+.. _waterloops:
+
 Inner Loops for Water
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -236,8 +238,8 @@ SPC Berendsen et al. (1981), *i.e.*:
 
 #. The whole molecule is a single charge group.
 
-#. The first atom has Lennard-Jones (sec. [sec:lj]) and Coulomb
-   (sec. [sec:coul]) interactions.
+#. The first atom has Lennard-Jones (sec. :ref:`lj`) and Coulomb
+   (sec. :ref:`coul`) interactions.
 
 #. Atoms two and three have only Coulomb interactions, and equal
    charges.
@@ -250,9 +252,9 @@ water models similar to TIP4P Jorgensen et al. (1983):
 
 #. The whole molecule is a single charge group.
 
-#. The first atom has only Lennard-Jones (sec. [sec:lj]) interactions.
+#. The first atom has only Lennard-Jones (sec. :ref:`lj`) interactions.
 
-#. Atoms two and three have only Coulomb (sec. [sec:coul]) interactions,
+#. Atoms two and three have only Coulomb (sec. :ref:`coul`) interactions,
    and equal charges.
 
 #. Atom four has only Coulomb interactions.

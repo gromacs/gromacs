@@ -1,3 +1,5 @@
+.. _analysis:
+
 Analysis
 ========
 
@@ -8,16 +10,18 @@ found in the online manual at
 `www.gromacs.org <http://www.gromacs.org>`__. The output files are often
 produced as finished Grace/Xmgr graphs.
 
-First, in sec. [sec:usinggroups], the group concept in analysis is
-explained. [subsec:selections] explains a newer concept of dynamic
+First, in sec. :ref:`usinggroups`, the group concept in analysis is
+explained. :ref:`selections` explains a newer concept of dynamic
 selections, which is currently supported by a few tools. Then, the
 different analysis tools are presented.
+
+.. _usinggroups:
 
 Using Groups
 ------------
 
-| In chapter [ch:algorithms], it was explained how *groups of atoms* can
-  be used in mdrun (see sec. [sec:groupconcept]). In most analysis
+| In chapter :ref:`algorithms`, it was explained how *groups of atoms* can
+  be used in mdrun (see sec. :ref:`groupconcept`). In most analysis
   programs, groups of atoms must also be chosen. Most programs can
   generate several default index groups, but groups can always be read
   from an index file. Let’s consider the example of a simulation of a
@@ -41,7 +45,7 @@ series of angles by *triples* of *atom numbers*, dihedrals by
 *quadruples* of *atom numbers* and bonds or vectors (in a molecule) by
 *pairs* of *atom numbers*. When appropriate the type of index file will
 be specified for the following analysis programs. To help creating such
-:ref:`index files <ndx>` ``(index.ndx)``, there are a couple of programs to generate
+:ref:`index file <ndx>` ``index.ndx``), there are a couple of programs to generate
 them, using either your input configuration or the topology. To generate
 an index file consisting of a series of *atom numbers* (as in the
 example of :math:`g_{AB}`), use :ref:`gmx make_ndx`
@@ -69,6 +73,8 @@ will suffice if that will distinguish the group from all others. There
 are ways to use Unix shell features to choose group names on the command
 line, rather than interactively. Consult
 `www.gromacs.org <http://www.gromacs.org>`__ for suggestions.
+
+.. _defaultgroups:
 
 Default Groups
 ~~~~~~~~~~~~~~
@@ -114,7 +120,7 @@ groups are generated to choose from:
 ``Prot-Masses``
     | protein atoms excluding dummy masses (as used in virtual site
       constructions of NH\ :math:`_3` groups and tryptophan
-      side-chains), see also sec. [sec:vsitetop]; this group is only
+      side-chains), see also sec. :ref:`vsitetop`; this group is only
       included when it differs from the ``Protein`` group
 
 ``Non-Protein``
@@ -156,6 +162,8 @@ file and is listed as a “Protein” entry. The process for determinding
 DNA, RNA, etc. is analogous. If you need to modify these
 classifications, then you can copy the file from the library directory
 into your working directory and edit the local copy.
+
+.. _selections:
 
 Selections
 ~~~~~~~~~~
@@ -239,7 +247,7 @@ Looking at your trajectory
   with this one is that it does not require OpenGL, which usually isn’t
   present on *e.g.* supercomputers. It is also possible to generate a
   hard-copy in Encapsulated Postscript format (see
-  :numref:`Fig. (%s) <fig-ngmxdump>`). If you want a faster and more
+  :numref:`Fig. %s <fig-ngmxdump>`). If you want a faster and more
   fancy viewer there are several programs that can read the |Gromacs|
   trajectory formats – have a look at our homepage
   (`www.gromacs.org <http://www.gromacs.org>`__) for updated links.
@@ -261,7 +269,7 @@ The *center-of-mass velocity*, defined as
 with :math:`M = \sum_{i=1}^N m_i` the total mass of the system, can be
 monitored in time by the program :ref:`gmx traj <gmx traj>` ``-com -ov``. It is however
 recommended to remove the center-of-mass velocity every step (see
-chapter [ch:algorithms])!
+chapter :ref:`algorithms`)!
 
 Radial distribution functions
 -----------------------------
@@ -284,7 +292,7 @@ with :math:`\langle\rho_B(r)\rangle` the particle density of type
 :math:`B` at a distance :math:`r` around particles :math:`A`, and
 :math:`\langle\rho_B\rangle_{local}` the particle density of type
 :math:`B` averaged over all spheres around particles :math:`A` with
-radius :math:`r_{max}` (see :numref:`Fig. (%s) <fig-rdfex>` C).
+radius :math:`r_{max}` (see :numref:`Fig. %s <fig-rdfex>` C).
 
 .. _fig-rdfex:
 
@@ -299,10 +307,11 @@ radius :math:`r_{max}` (see :numref:`Fig. (%s) <fig-rdfex>` C).
 
 Usually the value of :math:`r_{max}` is half of the box length. The
 averaging is also performed in time. In practice the analysis program
-gmx rdf divides the system into spherical slices (from :math:`r` to
-:math:`r+dr`, see :numref:`Fig. (%s) <fig-rdfex>` A) and makes a histogram in stead of
+:ref:`gmx rdf <gmx rdf>` divides the system
+into spherical slices (from :math:`r` to :math:`r+dr`, see
+:numref:`Fig. %s <fig-rdfex>` A) and makes a histogram in stead of
 the :math:`\delta`-function. An example of the RDF of oxygen-oxygen in
-SPC water Berendsen et al. (1981) is given in :numref:`Fig. (%s) <fig-rdf>`
+SPC water Berendsen et al. (1981) is given in :numref:`Fig. %s <fig-rdf>`
 
 .. _fig-rdf:
 
@@ -314,7 +323,7 @@ SPC water Berendsen et al. (1981) is given in :numref:`Fig. (%s) <fig-rdf>`
 With :ref:`gmx rdf <gmx rdf>` it is also possible to calculate an angle
 dependent rdf :math:`g_{AB}(r,\theta)`, where the angle :math:`\theta`
 is defined with respect to a certain laboratory axis :math:`{\bf e}`,
-see :numref:`Fig. (%s) <fig-rdfex>` B.
+see :numref:`Fig. %s <fig-rdfex>` B.
 
 .. math::
 
@@ -326,7 +335,7 @@ This :math:`g_{AB}(r,\theta)` is useful for analyzing anisotropic
 systems. **Note** that in this case the normalization
 :math:`\langle\rho_B\rangle_{local,\:\theta}` is the average density in
 all angle slices from :math:`\theta` to :math:`\theta + d\theta` up to
-:math:`r_{max}`, so angle dependent, see :numref:`Fig. (%s) <fig-rdfex>` D.
+:math:`r_{max}`, so angle dependent, see :numref:`Fig. %s <fig-rdfex>` D.
 
 Correlation functions
 ---------------------
@@ -371,7 +380,7 @@ points with the same interval :math:`\Delta`\ t. Since, for many
 applications, it is necessary to know the short time behavior of the ACF
 (*e.g.* the first 10 ps) this often means that we have to save the data
 with intervals much shorter than the time scale of interest. Another
-implication of :eq:`eqn. (%s) <eqncorrmd>` is that in principle we can not compute
+implication of :eq:`eqn. %s <eqncorrmd>` is that in principle we can not compute
 all points of the ACF with the same accuracy, since we have :math:`N-1`
 data points for :math:`C_f(\Delta t)` but only 1 for
 :math:`C_f((N-1)\Delta t)`. However, if we decide to compute only an ACF
@@ -386,7 +395,7 @@ intentionally do not use all the available points for very short time
 intervals (:math:`j << M`), but it makes it easier to interpret the
 results. Another aspect that may not be neglected when computing ACFs
 from simulation is that usually the time origins :math:`\xi`
-(:eq:`eqn. (%s) <eqncorr>`) are not statistically independent, which may introduce
+(:eq:`eqn. %s <eqncorr>`) are not statistically independent, which may introduce
 a bias in the results. This can be tested using a block-averaging
 procedure, where only time origins with a spacing at least the length of
 the time lag are included, *e.g.* using :math:`k` time origins with
@@ -401,7 +410,7 @@ Using FFT for computation of the ACF
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The computational cost for calculating an ACF according to
-:eq:`eqn. (%s) <eqncorrmd>` is proportional to :math:`N^2`, which is considerable.
+:eq:`eqn. %s <eqncorrmd>` is proportional to :math:`N^2`, which is considerable.
 However, this can be improved by using fast Fourier transforms to do the
 convolution Allen and Tildesley (1987).
 
@@ -415,11 +424,11 @@ vector :math:`{\mbox{\boldmath ${p}$}}`:
           :label: eqncorrleg
 
 where :math:`P_n(x)` is the :math:`n^{th}` order Legendre
-polynomial. [3]_ Such correlation times can actually be obtained
+polynomial. [1]_ Such correlation times can actually be obtained
 experimentally using *e.g.* NMR or other relaxation experiments. |Gromacs|
 can compute correlations using the 1\ :math:`^{st}` and 2\ :math:`^{nd}`
-order Legendre polynomial (:eq:`eqn. (%s) <eqncorrleg>`). This can also be used
-for rotational autocorrelation (gmx rotacf) and dipole autocorrelation
+order Legendre polynomial (:eq:`eqn. %s <eqncorrleg>`). This can also be used
+for rotational autocorrelation (:ref:`gmx rotacf`) and dipole autocorrelation
 (:ref:`gmx dipoles <gmx dipoles>`).
 
 In order to study torsion angle dynamics, we define a dihedral
@@ -450,7 +459,7 @@ relation Allen and Tildesley (1987):
 
 which is just the integral of the velocity autocorrelation function.
 There is a widely-held belief that the velocity ACF converges faster
-than the mean square displacement (sec. [sec:msd]), which can also be
+than the mean square displacement (sec. :ref:`msd`), which can also be
 used for the computation of diffusion constants. However, Allen &
 Tildesley Allen and Tildesley (1987) warn us that the long-time
 contribution to the velocity ACF can not be ignored, so care must be
@@ -466,7 +475,7 @@ follows by :ref:`gmx dipoles <gmx dipoles>`:
    \langle {\bf \mu}_i(\tau) \cdot {\bf \mu}_i(0) \rangle_{i \in A}
 
 with :math:`{\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j`. The dipole
-correlation time can be computed using :eq:`eqn. (%s) <eqncorrtime>`. 
+correlation time can be computed using :eq:`eqn. %s <eqncorrtime>`. 
 For some applications
 see (**???**).
 
@@ -545,7 +554,7 @@ function to estimate the error in time-correlated data due to Hess Hess
 where :math:`\tau_1` and :math:`\tau_2` are time constants (with
 :math:`\tau_2 \ge \tau_1`) and :math:`\alpha` usually is close to 1 (in
 the fitting procedure it is enforced that :math:`0\leq\alpha\leq 1`).
-This is used in gmx analyze for error estimation using
+This is used in :ref:`gmx analyze <gmx analyze>` for error estimation using
 
 .. math:: \lim_{t\rightarrow\infty}\varepsilon(t) = \sigma\sqrt{\frac{2(\alpha\tau_1+(1-\alpha)\tau_2)}{T}}
 
@@ -617,6 +626,8 @@ Medina, and Prosmiti (2012). This is implemented in
 
 .. :ref:`gmx viscosity <gmx viscosity>`. TODO no longer exists???
 
+.. _msd:
+
 Mean Square Displacement
 ------------------------
 
@@ -643,7 +654,7 @@ Mean Square Displacement
   studying lateral diffusion on interfaces.
 
 An example of the mean square displacement of SPC water is given in
-:numref:`Fig. (%s) <fig-msdwater>`.
+:numref:`Fig. %s <fig-msdwater>`.
 
 .. _fig-msdwater:
 
@@ -651,6 +662,8 @@ An example of the mean square displacement of SPC water is given in
     :width: 8.00000cm
 
     Mean Square Displacement of SPC-water.
+
+.. _bad:
 
 Bonds/distances, angles and dihedrals
 -------------------------------------
@@ -711,7 +724,7 @@ or quadruples of atom numbers:
 For the dihedral angles you can use either the “biochemical convention”
 (:math:`\phi = 0 \equiv cis`) or “polymer convention”
 (:math:`\phi = 0 \equiv trans`), see
-:numref:`Fig. (%s) <fig-dihdef>`.
+:numref:`Fig. %s <fig-dihdef>`.
 
 .. _fig-dihdef:
 
@@ -732,7 +745,7 @@ of a sphere (determined by a single position). Also the angle between a
 vector/plane compared to its position in the first frame is supported.
 For planes, :ref:`gmx gangle <gmx gangle>`
 uses the normal vector perpendicular to the plane. See
-:numref:`Fig. (%s) <fig-sgangle>` A, B, C) for the definitions.
+:numref:`Fig. %s <fig-sgangle>` A, B, C) for the definitions.
 
 .. _fig-sgangle:
 
@@ -744,6 +757,8 @@ uses the normal vector perpendicular to the plane. See
     :math:`z` axis. D. Angle between a vector and the normal of a sphere.
     Also other combinations are supported: planes and vectors can be used
     interchangeably.
+
+.. _rg:
 
 Radius of gyration and distances
 --------------------------------
@@ -776,7 +791,7 @@ certain groups there are several possibilities:
 
 *   The *distance between the geometrical centers* of two groups can be
     calculated with the program :ref:`gmx distance <gmx distance>`, as explained in
-    sec. [sec:bad].
+    sec. :ref:`bad`.
 
 *   The *minimum distance* between two groups of atoms during time can
     be calculated with the program :ref:`gmx mindist <gmx mindist>`. It also calculates the
@@ -794,7 +809,7 @@ certain groups there are several possibilities:
     residues. To visualize this matrix, you can use a program such as
     ``xv``. If you want to view the axes and legend or if you want to print
     the matrix, you can convert it with :ref:`xpm2ps <gmx xpm2ps>` into a Postscript
-    :numref:`Fig. (%s) <fig-distm>`. 
+    :numref:`Fig. %s <fig-distm>`. 
 
 .. _fig-distm:
 
@@ -807,6 +822,8 @@ certain groups there are several possibilities:
 *   Plotting these matrices for different time-frames, one can analyze
     changes in the structure, and *e.g.* forming of salt bridges.
 
+.. _rmsd:
+
 Root mean square deviations in structure
 ----------------------------------------
 
@@ -815,7 +832,7 @@ Root mean square deviations in structure
   molecule with respect to a reference structure can be calculated with
   the program :ref:`gmx rms <gmx rms>` by least-square fitting the structure to the
   reference structure (:math:`t_2 = 0`) and subsequently calculating the
-  :math:`RMSD` (:eq:`eqn. (%s) <eqnrmsd>`).
+  :math:`RMSD` (:eq:`eqn. %s <eqnrmsd>`).
 
   .. math:: RMSD(t_1,t_2) ~=~ \left[\frac{1}{M} \sum_{i=1}^N m_i \|{\bf r}_i(t_1)-{\bf r}_i(t_2)\|^2 \right]^{\frac{1}{2}}
             :label: eqnrmsd
@@ -829,7 +846,7 @@ Root mean square deviations in structure
 
 Instead of comparing the structures to the initial structure at time
 :math:`t=0` (so for example a crystal structure), one can also calculate
-:eq:`eqn. (%s) <eqnrmsd>` with a structure at time :math:`t_2=t_1-\tau`. This
+:eq:`eqn. %s <eqnrmsd>` with a structure at time :math:`t_2=t_1-\tau`. This
 gives some insight in the mobility as a function of :math:`\tau`. A
 matrix can also be made with the :math:`RMSD` as a function of
 :math:`t_1` and :math:`t_2`, which gives a nice graphical interpretation
@@ -845,6 +862,8 @@ with the program :ref:`gmx rmsdist <gmx rmsdist>`:
 where the *distance* **r**\ :math:`_{ij}` between atoms at time
 :math:`t` is compared with the distance between the same atoms at time
 :math:`0`.
+
+.. _covanal:
 
 Covariance analysis
 -------------------
@@ -1019,7 +1038,7 @@ Hydrogen bonds
 | The program :ref:`gmx hbond <gmx hbond>`
   analyzes the *hydrogen bonds* (H-bonds) between all possible donors D
   and acceptors A. To determine if an H-bond exists, a geometrical
-  criterion is used, see also :numref:`Fig. (%s) <fig-hbond>`:
+  criterion is used, see also :numref:`Fig. %s <fig-hbond>`:
 
   .. math::
 
@@ -1036,7 +1055,7 @@ Hydrogen bonds
    Geometrical Hydrogen bond criterion.
 
 The value of :math:`r_{HB} = 0.35 \mathrm{nm}` corresponds to the first minimum
-of the RDF of SPC water (see also :numref:`Fig. (%s) <fig-hbondinsert>`).
+of the RDF of SPC water (see also :numref:`Fig. %s <fig-hbondinsert>`).
 
 The program :ref:`gmx hbond <gmx hbond>` analyzes all hydrogen bonds
 existing between two groups of atoms (which must be either identical or
@@ -1108,7 +1127,7 @@ Protein-related items
   :ref:`gmx wheel <gmx wheel>`
 | To analyze structural changes of a protein, you can calculate the
   radius of gyration or the minimum residue distances over time (see
-  sec. [sec:rg]), or calculate the RMSD (sec. [sec:rmsd]).
+  sec. :ref:`rg`), or calculate the RMSD (sec. :ref:`rmsd`).
 
 You can also look at the changing of *secondary structure elements*
 during your run. For this, you can use the program 
@@ -1116,7 +1135,7 @@ during your run. For this, you can use the program
 commercial program ``DSSP``  Kabsch and Sander (1983). For
 further information, see the ``DSSP`` manual. A typical
 output plot of :ref:`gmx do_dssp <gmx do_dssp>` is given in
-:numref:`Fig. (%s) <fig-dssp>`.
+:numref:`Fig. %s <fig-dssp>`.
 
 .. _fig-dssp: 
 
@@ -1128,7 +1147,7 @@ output plot of :ref:`gmx do_dssp <gmx do_dssp>` is given in
 One other important analysis of proteins is the so-called *Ramachandran
 plot*. This is the projection of the structure on the two dihedral
 angles :math:`\phi` and :math:`\psi` of the protein backbone, see
-:numref:`Fig. (%s) <fig-phipsi>`: 
+:numref:`Fig. %s <fig-phipsi>`: 
 
 .. _fig-phipsi:
 
@@ -1140,7 +1159,7 @@ angles :math:`\phi` and :math:`\psi` of the protein backbone, see
 
 To evaluate this Ramachandran plot you can use the program
 :ref:`gmx rama <gmx rama>`. A typical output
-is given in :numref:`Fig. (%s) <fig-rama>`.
+is given in :numref:`Fig. %s <fig-rama>`.
 
 .. _fig-rama:
 
@@ -1153,7 +1172,7 @@ When studying :math:`\alpha`-helices it is useful to have a *helical
 wheel* projection of your peptide, to see whether a peptide is
 amphipathic. This can be done using the :ref:`gmx wheel <gmx wheel>`
 program. Two examples are plotted in
-:numref:`Fig. (%s) <fig-hprwheel>`.
+:numref:`Fig. %s <fig-hprwheel>`.
 
 .. _fig-hprwheel:
 

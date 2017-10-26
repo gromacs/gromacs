@@ -41,6 +41,8 @@ Topology files
     residue topology (ascii)
 :ref:`ndx`
     index file (ascii)
+:ref:`n2t`
+    atom naming definition (ascii)
 :ref:`atp`
     atom type library (ascii)
 :ref:`r2b`
@@ -540,6 +542,39 @@ The second group **Hydrogen** has 6 elements.
 
 An index file generation tool is available:
 :ref:`gmx make_ndx`.
+
+.. _n2t:
+
+n2t
+---
+
+This |Gromacs| file can be used to perform primitive translations between
+atom names found in structure files and the corresponding atom types.
+This is mostly useful for using utilities such as :ref:`gmx x2top`, but users
+should be aware that the knowledge in this file is extremely limited.
+
+An example file (``share/top/gromos53a5.ff/atomname2type.n2t``) is here:
+
+::
+
+    H       H    0.408  1.008  1  O     0.1
+    O       OA  -0.674 15.9994 2  C     0.14 H 0.1               
+    C       CH3  0.000 15.035  1  C     0.15         
+    C       CH0  0.266 12.011  4  C     0.15 C 0.15     C 0.15     O 0.14
+
+A short description of the file format follows:
+
+* Column 1: Elemental symbol of the atom/first character in the atom name.
+* Column 2: The atom type to be assigned.
+* Column 3: The charge to be assigned.
+* Column 4: The mass of the atom.
+* Column 5: The number N of other atoms to which this atom is bonded.
+  The number of fields that follow are related to this number;
+  for each atom, an elemental symbol and the reference distance for its bond length.
+* Columns 6-onward: The elemental symbols and reference bond lengths for N connections
+  (column 5) to the atom being assigned parameters (column 1). The reference bond
+  lengths have a tolerance of +/- 10% from the value specified in this file. Any bond
+  outside this tolerance will not be recognized as being connected to the atom being assigned parameters.
 
 .. _out:
 
