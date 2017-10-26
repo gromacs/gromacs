@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,7 @@ if(MANUAL_BUILD_IS_POSSIBLE)
         DEFAULT_PDF
         )
 
+    # Finally, the command to build the manual.
 
     add_custom_target(manual
         DEPENDS sphinx-create-texman
@@ -102,20 +103,10 @@ if(IMAGE_CONVERT_POSSIBLE)
     add_custom_target(sphinx-image-conv-png
         DEPENDS sphinx-input sphinx-programs
         COMMAND
-            mogrify -format png -density 300 -units PixelsPerInch *.eps *.pdf
+            mogrify -format png -density 300 -units PixelsPerInch *.pdf
         WORKING_DIRECTORY
             "${SPHINX_INPUT_DIR}/web-manual/plots/"
         COMMENT "Preparing png files for webpage"
-        VERBATIM
-        )
-    # Need extra step to prepare the pdf files for input below
-    add_custom_target(sphinx-image-conv-pdf
-        DEPENDS sphinx-input sphinx-programs
-        COMMAND
-            mogrify -format pdf -density 300 -units PixelsPerInch *.eps
-        WORKING_DIRECTORY
-            "${SPHINX_INPUT_DIR}/web-manual/plots/"
-        COMMENT "Preparing pdf files for print manual"
         VERBATIM
         )
 else()
@@ -124,12 +115,6 @@ else()
         DEPENDS sphinx-input sphinx-programs
         COMMAND ${CMAKE_COMMAND} -E echo
         "Cannot convert images for web manual, skipping this part"
-        VERBATIM
-        )
-    add_custom_target(sphinx-image-conv-pdf
-        DEPENDS sphinx-input sphinx-programs
-        COMMAND ${CMAKE_COMMAND} -E echo
-        "Cannot convert images for pdf manual, skipping this part"
         VERBATIM
         )
 endif()
