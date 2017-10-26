@@ -809,8 +809,8 @@ computeSpecialForces(t_commrec        *cr,
  * \param[in]  wcycle        The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
-                                      matrix          box,
-                                      rvec            x[],
+                                      const matrix    box,
+                                      const rvec      x[],
                                       int             flags,
                                       gmx_wallcycle_t wcycle)
 {
@@ -830,9 +830,9 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
  * \param[out] pmeGpuForces   The array of where the output forces are copied
  * \param[in]  wcycle         The wallcycle structure
  */
-static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
-                                     ArrayRef<RVec>    pmeGpuForces,
-                                     gmx_wallcycle_t   wcycle)
+static inline void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
+                                            ArrayRef<RVec>    pmeGpuForces,
+                                            gmx_wallcycle_t   wcycle)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
     pme_gpu_launch_gather(pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
