@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,11 @@ elseif (BUILD_IS_INSOURCE)
 else()
     include(UseLATEX.cmake)
 
+    if(NOT SPHINX_FOUND)
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
+    endif()
+
     if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
@@ -68,6 +73,23 @@ else()
 endif()
 
 if(MANUAL_BUILD_IS_POSSIBLE)
+    add_custom_command(
+        OUTPUT ${SPHINX_LATEX_FILE}
+        DEPENDS sphinx-programs sphinx-input
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -E -b latex
+            -w sphinx-latex.log
+            -d "${SPHINX_CACHE_DIR}"
+            "${SPHINX_INPUT_DIR}"
+            "${TEX_OUTPUT_DIR}"
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Preparing PDF manual LaTeX input files"
+        VERBATIM
+        )
+
+
     LATEX_GET_OUTPUT_PATH(output_dir)
 
     # Avoid generating a global "html" target that clashes with the
@@ -83,12 +105,13 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     # An explicit "make manual" will still be required for the manual
     # to be built.
     ADD_LATEX_DOCUMENT(Gromacs.tex
+        DEPENDS ${SPHINX_LATEX_FILE}
         DEFAULT_PDF
         )
 
+    # Finally, the command to build the manual.
 
     add_custom_target(manual
-        DEPENDS sphinx-create-texman
         DEPENDS pdf
         )
 else()
@@ -102,20 +125,10 @@ if(IMAGE_CONVERT_POSSIBLE)
     add_custom_target(sphinx-image-conv-png
         DEPENDS sphinx-input sphinx-programs
         COMMAND
-            mogrify -format png -density 300 -units PixelsPerInch *.eps *.pdf
+            mogrify -format png -density 300 -units PixelsPerInch *.pdf
         WORKING_DIRECTORY
-            "${SPHINX_INPUT_DIR}/web-manual/plots/"
+            "${SPHINX_INPUT_DIR}/reference-manual/plots/"
         COMMENT "Preparing png files for webpage"
-        VERBATIM
-        )
-    # Need extra step to prepare the pdf files for input below
-    add_custom_target(sphinx-image-conv-pdf
-        DEPENDS sphinx-input sphinx-programs
-        COMMAND
-            mogrify -format pdf -density 300 -units PixelsPerInch *.eps
-        WORKING_DIRECTORY
-            "${SPHINX_INPUT_DIR}/web-manual/plots/"
-        COMMENT "Preparing pdf files for print manual"
         VERBATIM
         )
 else()
@@ -123,13 +136,7 @@ else()
     add_custom_target(sphinx-image-conv-png
         DEPENDS sphinx-input sphinx-programs
         COMMAND ${CMAKE_COMMAND} -E echo
-        "Cannot convert images for web manual, skipping this part"
-        VERBATIM
-        )
-    add_custom_target(sphinx-image-conv-pdf
-        DEPENDS sphinx-input sphinx-programs
-        COMMAND ${CMAKE_COMMAND} -E echo
-        "Cannot convert images for pdf manual, skipping this part"
+        "Cannot convert images for reference manual, skipping this part"
         VERBATIM
         )
 endif()
