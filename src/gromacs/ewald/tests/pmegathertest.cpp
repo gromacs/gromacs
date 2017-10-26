@@ -403,7 +403,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                     continue;
                 }
 
-                const auto contextsToTest = pmeEnv->getHardwareContexts(mode.first);
+                const auto contextsToTest = getPmeTestEnv()->getHardwareContexts(mode.first);
                 for (const auto &context : contextsToTest)
                 {
                     /* Describing the test uniquely */

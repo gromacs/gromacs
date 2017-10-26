@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ endfunction ()
 
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options MPI)
+        set(_options MPI HARDWARE_DETECTION)
         cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
         set(_source_files ${ARG_UNPARSED_ARGUMENTS})
 
@@ -65,6 +65,10 @@ function (gmx_add_gtest_executable EXENAME)
         if (ARG_MPI)
             list(APPEND EXTRA_COMPILE_DEFINITIONS
                  TEST_USES_MPI=true)
+        endif()
+        if (ARG_HARDWARE_DETECTION)
+            list(APPEND EXTRA_COMPILE_DEFINITIONS
+                 TEST_USES_HARDWARE_DETECTION=true)
         endif()
 
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
