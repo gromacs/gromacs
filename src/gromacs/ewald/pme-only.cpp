@@ -67,6 +67,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <list>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
@@ -162,20 +164,15 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
     walltime_accounting_start(walltime_accounting);
 }
 
-
-static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
-                               ivec grid_size,
-                               real ewaldcoeff_q, real ewaldcoeff_lj,
-                               t_commrec *cr, t_inputrec *ir,
-                               struct gmx_pme_t **pme_ret)
+static gmx_pme_t *gmx_pmeonly_switch(std::list<gmx_pme_t *> *pmedata,
+                                     const ivec grid_size,
+                                     real ewaldcoeff_q, real ewaldcoeff_lj,
+                                     t_commrec *cr, const t_inputrec *ir)
 {
-    int               ind;
-    struct gmx_pme_t *pme = nullptr;
-
-    ind = 0;
-    while (ind < *npmedata)
+    GMX_ASSERT(pmedata, "Bad PME tuning list pointer");
+    for (auto &pme : *pmedata)
     {
-        pme = (*pmedata)[ind];
+        GMX_ASSERT(pme, "Bad PME tuning list element pointer");
         if (pme->nkx == grid_size[XX] &&
             pme->nky == grid_size[YY] &&
             pme->nkz == grid_size[ZZ])
@@ -184,22 +181,19 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
              * However, in the GPU case, we have to reinitialize it - there's only one GPU structure.
              * This should not cause actual GPU reallocations, at least (the allocated buffers are never shrunk).
              * So, just some grid size updates in the GPU kernel parameters.
+             * TODO: this should be something like gmx_pme_update_split_params()
              */
-            gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
-            *pme_ret = pme;
-            return;
+            gmx_pme_reinit(&pme, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+            return pme;
         }
-
-        ind++;
     }
 
-    (*npmedata)++;
-    srenew(*pmedata, *npmedata);
-
-    /* Generate a new PME data structure, copying part of the old pointers */
-    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
-
-    *pme_ret = (*pmedata)[ind];
+    const auto &pme          = pmedata->back();
+    gmx_pme_t  *newStructure = nullptr;
+    // Copy last structure with new grid params
+    gmx_pme_reinit(&newStructure, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+    pmedata->push_back(newStructure);
+    return newStructure;
 }
 
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
@@ -233,7 +227,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                                       real              *lambda_lj,
                                       gmx_bool          *bEnerVir,
                                       gmx_int64_t       *step,
-                                      ivec               grid_size,
+                                      ivec              *grid_size,
                                       real              *ewaldcoeff_q,
                                       real              *ewaldcoeff_lj,
                                       bool              *atomSetChanged)
@@ -278,7 +272,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
         if (cnb.flags & PP_PME_SWITCHGRID)
         {
             /* Special case, receive the new parameters and return */
-            copy_ivec(cnb.grid_size, grid_size);
+            copy_ivec(cnb.grid_size, *grid_size);
             *ewaldcoeff_q  = cnb.ewaldcoeff_q;
             *ewaldcoeff_lj = cnb.ewaldcoeff_lj;
 
@@ -529,8 +523,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 gmx_walltime_accounting_t walltime_accounting,
                 t_inputrec *ir, PmeRunMode runMode)
 {
-    int                npmedata;
-    struct gmx_pme_t **pmedata;
     gmx_pme_pp        *pme_pp;
     int                ret;
     int                natoms = 0;
@@ -544,12 +536,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                count;
     gmx_bool           bEnerVir = FALSE;
     gmx_int64_t        step;
-    ivec               grid_switch;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
-    npmedata = 1;
-    snew(pmedata, npmedata);
-    pmedata[0] = pme;
+    std::list<gmx_pme_t *> pmedata;
+    pmedata.push_back(pme);
 
     pme_pp = gmx_pme_pp_init(cr);
 
@@ -562,6 +552,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         do
         {
             /* Domain decomposition */
+            ivec newGridSize;
             bool atomSetChanged = false;
             real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
             ret = gmx_pme_recv_coeffs_coords(pme_pp,
@@ -571,15 +562,15 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &lambda_q, &lambda_lj,
                                              &bEnerVir,
                                              &step,
-                                             grid_switch,
+                                             &newGridSize,
                                              &ewaldcoeff_q,
                                              &ewaldcoeff_lj,
                                              &atomSetChanged);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
-                /* Switch the PME grid to grid_switch */
-                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, ewaldcoeff_q, ewaldcoeff_lj, cr, ir, &pme);
+                /* Switch the PME grid to newGridSize */
+                pme = gmx_pmeonly_switch(&pmedata, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, cr, ir);
             }
 
             if (atomSetChanged)
