@@ -37,5 +37,5 @@ if (GMX_USE_CUDA)
     file(GLOB EWALD_CUDA_SOURCES ../*.cu)
 endif()
 
-gmx_add_unit_test(EwaldUnitTests ewald-test
+gmx_add_unit_test(EwaldUnitTests ewald-test HARDWARE_DETECTION
                   ${EWALD_TEST_SOURCES} ${EWALD_CUDA_SOURCES})
