@@ -82,7 +82,6 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
 endif()
 
 add_subdirectory(doxygen)
-add_subdirectory(manual)
 
 if (SPHINX_FOUND)
     # We need to have all the Sphinx input files in a single directory, and
@@ -136,6 +135,89 @@ if (SPHINX_FOUND)
         user-guide/terminology.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif
+        web-manual/index.rst
+        web-manual/preface.rst
+        web-manual/introduction.rst
+        web-manual/definitions.rst
+        web-manual/algorithms.rst
+        web-manual/plots/angle.eps
+        web-manual/plots/bstretch.eps
+        web-manual/plots/chain.eps
+        web-manual/plots/dd-cells.eps
+        web-manual/plots/dd-tric.eps
+        web-manual/plots/decomp.eps
+        web-manual/plots/dih-def.eps
+        web-manual/plots/dih.eps
+        web-manual/plots/distm.eps
+        web-manual/plots/drift-all.eps
+        web-manual/plots/dssp.eps
+        web-manual/plots/dumaro.eps
+        web-manual/plots/dummies.eps
+        web-manual/plots/dumtypes.eps
+        web-manual/plots/f-angle.eps
+        web-manual/plots/f-bham.eps
+        web-manual/plots/f-bond.eps
+        web-manual/plots/fbposres.eps
+        web-manual/plots/f-dih.eps
+        web-manual/plots/f-dr.eps
+        web-manual/plots/field.eps
+        web-manual/plots/fig-02.eps
+        web-manual/plots/fig-04.eps
+        web-manual/plots/f-lj.eps
+        web-manual/plots/flowchart.eps
+        web-manual/plots/f-morse.eps
+        web-manual/plots/fp-highres.eps
+        web-manual/plots/f-pr.eps
+        web-manual/plots/f-rbs.eps
+        web-manual/plots/free1.eps
+        web-manual/plots/free2.eps
+        web-manual/plots/hbond.eps
+        web-manual/plots/hbond-insert.eps
+        web-manual/plots/hpr-wheel.eps
+        web-manual/plots/int-mat.eps
+        web-manual/plots/leapfrog.eps
+        web-manual/plots/lincs.eps
+        web-manual/plots/maxwell.eps
+        web-manual/plots/mdpar.eps
+        web-manual/plots/mpmd-pme.eps
+        web-manual/plots/msdwater.eps
+        web-manual/plots/ngmxdump.eps
+        web-manual/plots/nstric.eps
+        web-manual/plots/par-lincs2.eps
+        web-manual/plots/parsort.eps
+        web-manual/plots/pbctric.eps
+        web-manual/plots/phipsi.eps
+        web-manual/plots/pulldirrel.eps
+        web-manual/plots/pull.eps
+        web-manual/plots/pullref.eps
+        web-manual/plots/rama.eps
+        web-manual/plots/rdf.eps
+        web-manual/plots/rdfO-O.eps
+        web-manual/plots/rhododec.eps
+        web-manual/plots/ring.eps
+        web-manual/plots/ring-imp.eps
+        web-manual/plots/shiftf.eps
+        web-manual/plots/softcore.eps
+        web-manual/plots/subst-im.eps
+        web-manual/plots/tetra-im.eps
+        web-manual/plots/truncoct.eps
+        web-manual/plots/vcrf.eps
+        web-manual/plots/verlet-drift.eps
+        web-manual/plots/vsite-4fdn.eps
+        web-manual/plots/f-imps.pdf
+        web-manual/plots/rotation.pdf
+        web-manual/plots/equipotential.pdf
+        web-manual/plots/gaussians.pdf
+        web-manual/plots/compelsetup.pdf
+        web-manual/plots/sgangle.pdf
+        web-manual/functions.rst
+        web-manual/topologies.rst
+        web-manual/special.rst
+        web-manual/run-parameters.rst
+        web-manual/analysis.rst
+        web-manual/details.rst
+        web-manual/averages.rst
+        web-manual/references.rst
         conf.py
         links.dat
         )
@@ -297,10 +379,6 @@ elseif (NOT SPHINX_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is required")
 endif()
-if (NOT MANUAL_BUILD_IS_POSSIBLE)
-    list(APPEND HTML_BUILD_WARNINGS
-         "Reference PDF manual was not built, so links to it do not work")
-endif()
 if (NOT DOXYGEN_EXECUTABLE)
     list(APPEND HTML_BUILD_WARNINGS
         "Doxygen was not available, so links to Doxygen do not work")
@@ -320,24 +398,6 @@ if (HTML_BUILD_IS_POSSIBLE)
         list(APPEND _webpage_target_properties
              COMMAND ${CMAKE_COMMAND} -E echo " - ${_warning}")
         endforeach()
-    endif()
-
-    if (MANUAL_BUILD_IS_POSSIBLE)
-        # Make the PDF reference guide
-        # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
-        # TODO Make this depend on the output of the manual build, so that the
-        # file actually gets copied multiple times.
-        set(_manual_target_location ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf)
-        add_custom_command(
-            OUTPUT ${_manual_target_location}
-            COMMAND ${CMAKE_COMMAND}
-                -E remove -f ${_manual_target_location}
-            COMMAND ${CMAKE_COMMAND}
-                -E copy ${CMAKE_CURRENT_BINARY_DIR}/manual/gromacs.pdf ${_manual_target_location}
-            DEPENDS manual
-            VERBATIM)
-        list(APPEND _webpage_target_properties
-             DEPENDS ${_manual_target_location})
     endif()
 
     # The Doxygen configuration in doxygen/Doxyfile-common.cmakein

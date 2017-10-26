@@ -1,0 +1,71 @@
+sed -i s/"\\\\beq"/"\\\\begin{equation}"/g
+sed -i s/"\\\\eeq"/"\\\\end{equation}"/g
+
+sed -i s/"\\\\bea"/"\\\\begin{eqnarray}"/g
+sed -i s/"\\\\eea"/"\\\\end{eqnarray}"/g
+
+#make list of substitutions for labelled equations
+
+grep "\\fs{.*}" algorithms.tex | sed s/".*{"// | sed s/"}.*"// | awk '{text=$1 ; printf("%s", "s/\"\\\\\\fs{" text "}\"/\"\\\\\\\\begin{equation} \\\\\\\\label{eqn:" text "}\"/\n")}'
+
+sed -i s/"\\\\fe"/"\\\\end{equation}"/g
+
+#generated example list
+#sed -i s/"\\\fs{c1}"/"\\\\begin{equation} \\\\label{eqn:c1}"/
+#sed -i s/"\\\fs{c2}"/"\\\\begin{equation} \\\\label{eqn:c2}"/
+#sed -i s/"\\\fs{c3}"/"\\\\begin{equation} \\\\label{eqn:c3}"/
+#sed -i s/"\\\fs{m0}"/"\\\\begin{equation} \\\\label{eqn:m0}"/
+#sed -i s/"\\\fs{m1a}"/"\\\\begin{equation} \\\\label{eqn:m1a}"/
+#sed -i s/"\\\fs{m1b}"/"\\\\begin{equation} \\\\label{eqn:m1b}"/
+#sed -i s/"\\\fs{m2}"/"\\\\begin{equation} \\\\label{eqn:m2}"/
+#sed -i s/"\\\fs{m3}"/"\\\\begin{equation} \\\\label{eqn:m3}"/
+#sed -i s/"\\\fs{m3_ang}"/"\\\\begin{equation} \\\\label{eqn:m3_ang}"/
+
+
+
+
+
+sed -i s/"\\\\vvis"/"\\\\ve{r}\\_s"/ *tex
+sed -i s/"\\\\Fi"/"\\\\ve{F}\\_i"/ *tex
+sed -i s/"\\\\Fj"/"\\\\ve{F}\\_j"/ *tex
+sed -i s/"\\\\Fk"/"\\\\ve{F}\\_k"/ *tex
+sed -i s/"\\\\Fl"/"\\\\ve{F}\\_l"/ *tex
+
+sed -i s/"\\\\Fvis"/"\\\\ve{F}\\_{s}"/ *tex
+sed -i s/"\\\\rvik"/"\\\\ve{r}\\_{ik}"/ *tex
+sed -i s/"\\\\rvis"/"\\\\ve{r}\\_{is}"/ *tex
+sed -i s/"\\\\rvjk"/"\\\\ve{r}\\_{jk}"/ *tex
+sed -i s/"\\\\rvjl"/"\\\\ve{r}\\_{jl}"/ *tex
+
+sed -i s/"\\\\rvi"/"\\\\ve{r}\\_i"/ *tex
+sed -i s/"\\\\rvj"/"\\\\ve{r}\\_j"/ *tex
+sed -i s/"\\\\rvk"/"\\\\ve{r}\\_k"/ *tex
+sed -i s/"\\\\rvij"/"\\\\ve{r}\\_{ij}"/ *tex
+
+sed -i s/"\\\\Fvi"/"\\\\ve{F}\\_i"/ *tex
+sed -i s/"\\\\Fvj"/"\\\\ve{F}\\_j"/ *tex
+sed -i s/"\\\\Fvk"/"\\\\ve{F}\\_k"/ *tex
+sed -i s/"\\\\Fvij"/"\\\\ve{F}\\_{ij}"/ *tex
+sed -i s/"\\\\Fvji"/"\\\\ve{F}\\_{ji}"/ *tex
+
+sed -i s/"\\\\Vvi"/"\\\\ve{v}\\_i"/ *tex
+sed -i s/"\\\\rnij"/"\\\\ve{r}\\_{ij}\\^n"/ *tex
+sed -i s/"\\\\rni"/"\\\\ve{r}\\_i\\^n"/ *tex
+
+
+sed -i s/"\\\\Bm"/"\\\\ve{B}"/ *tex
+sed -i s/"\\\\M"/"\\\\ve{M}"/ *tex
+sed -i s/"\\\\Tm"/"\\\\ve{T}"/ *tex
+sed -i s/"\\\\Sm"/"\\\\ve{S}"/ *tex
+sed -i s/"\\\\fo"/"\\\\ve{f}"/ *tex
+sed -i s/"\\\\con"/"\\\\ve{g}"/ *tex
+sed -i s/"\\\\lenc"/"\\\\ve{d}"/ *tex
+
+
+
+grep "\\ve{.}" defunits.tex | sed s/".*{"// | sed s/"}.*"// | awk '{text=$1 ; printf("%s", "s/\"\\\\\\ve{" text "}\"/\"\\\\\\\\mbox{\\\\\\\\boldmath \\${" text "}\\$}}\"/\n")}'
+
+
+
+
+
