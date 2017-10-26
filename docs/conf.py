@@ -94,7 +94,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'GROMACS'
 copyright = str(datetime.datetime.now().year) + u', GROMACS development team'
-
+thisyear_string = str(datetime.datetime.now().year)
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
@@ -177,8 +177,11 @@ rst_epilog += """
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
 .. _tutorials: http://www.gromacs.org/Documentation/Tutorials
+.. _redmine: http://redmine.gromacs.org
+.. _gerrit: http://gerrit.gromacs.org
 .. _download: ../download.html
-""".format(gmx_version_string=gmx_version_string, regressiontest_version=regressiontest_version)
+.. |thisyear| replace:: {thisyear_string}
+""".format(gmx_version_string=gmx_version_string, regressiontest_version=regressiontest_version, thisyear_string=thisyear_string)
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -340,3 +343,6 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+# Make it possible to use numbered labels for figures and tables
+numfig = True
