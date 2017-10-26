@@ -4,8 +4,7 @@ Averages and fluctuations
 Formulae for averaging
 ----------------------
 
-**Note:** this section was taken from ref Gunsteren and Berendsen
-(1994).
+**Note:** this section was taken from ref \ :ref:`179 <refGunsteren94a>`.
 
 When analyzing a MD trajectory averages :math:`\left<x\right>` and
 fluctuations
@@ -32,13 +31,13 @@ accurate
 .. math:: \left<x\right> ~=~ \frac{1}{N_x} \sum_{i=1}^{N_x} x_i
           :label: eqnvar2
 
-Using :eq:`eqns. (%s) <eqnvar1>` and
-:eq:`(%s) <eqnvar2>` one has to go through the series of
+Using :eq:`eqns. %s <eqnvar1>` and
+:eq:`%s <eqnvar2>` one has to go through the series of
 :math:`x_i` values twice, once to determine :math:`\left<x\right>` and
 again to compute :math:`\sigma_x`, whereas
-:eq:`eqn. (%s) <eqnvar0>` requires only one sequential scan of
+:eq:`eqn. %s <eqnvar0>` requires only one sequential scan of
 the series {x:math:`_i`}. However, one may cast
-:eq:`eqn. (%s) <eqnvar1>` in another form, containing partial
+:eq:`eqn. %s <eqnvar1>` in another form, containing partial
 sums, which allows for a sequential update algorithm. Define the partial
 sum
 
@@ -69,7 +68,7 @@ For :math:`n=1` one finds
           :label: eqnsig1
 
 and for :math:`n=1` and :math:`k=1`
-(:eq:`eqn. (%s) <eqnvarpartial>`) becomes
+(:eq:`eqn. %s <eqnvarpartial>`) becomes
 
 .. math:: \begin{aligned}
           \sigma_{1,m+1}  &=& \sigma_{1,m} + 
@@ -84,8 +83,8 @@ where we have used the relation
 .. math:: X_{1,m+1} ~=~  X_{1,m} + x_{m+1}                       
           :label: eqnsimplevar1
 
-Using formulae (:eq:`eqn. (%s) <eqnsimplevar0>`) and
-(:eq:`eqn. (%s) <eqnsimplevar1>`) the average
+Using formulae (:eq:`eqn. %s <eqnsimplevar0>`) and
+(:eq:`eqn. %s <eqnsimplevar1>`) the average
 
 .. math:: \left<x\right> ~=~ \frac{X_{1,N_x}}{N_x}
 
@@ -117,8 +116,8 @@ may in such a case invalidate the averages and fluctuations, because
 these numbers are now dominated by the initial drift towards
 equilibrium.
 
-Using :eq:`eqns. (%s) <eqnXpartial>` and
-:eq:`(%s) <eqnvarpartial>` the average and standard deviation
+Using :eq:`eqns. %s <eqnXpartial>` and
+:eq:`%s <eqnvarpartial>` the average and standard deviation
 over part of the trajectory can be computed as:
 
 .. math::
@@ -139,8 +138,8 @@ or, more generally (with :math:`p \geq 1` and :math:`q \geq p`):
 energies are not stored every time step of the simulation. We therefore
 have to construct :math:`X_{1,p-1}` and :math:`\sigma_{1,p-1}` from the
 information at time :math:`p` using
-:eq:`eqns. (%s) <eqnsimplevar0>` and
-:eq:`(%s) <eqnsimplevar1>`:
+:eq:`eqns. %s <eqnsimplevar0>` and
+:eq:`%s <eqnsimplevar1>`:
 
 .. math::
 
@@ -162,7 +161,7 @@ from run A:
 .. math::  X_{1,n+m}^{AB} ~=~ X_{1,n}^A + X_{1,m}^B
            :label: eqnpscomb
 
- When we want to compute the partial variance from the two components we
+When we want to compute the partial variance from the two components we
 have to make a correction :math:`\Delta\sigma`:
 
 .. math:: \sigma_{1,n+m}^{AB} ~=~ \sigma_{1,n}^A + \sigma_{1,m}^B +\Delta\sigma
@@ -203,12 +202,12 @@ summation counter :math:`i` can be simplified:
    2\,\frac{X^{B}_{1,m}}{m}\sum_{i=1}^{m}x_i^{B} &=& \Delta\sigma\end{aligned}
 
 we recognize the three partial sums on the second line and use
-:eq:`eqn. (%s) <eqnpscomb>` to obtain:
+:eq:`eqn. %s <eqnpscomb>` to obtain:
 
 .. math:: \Delta\sigma ~=~ \frac{\left(mX^A_{1,n} - nX^B_{1,m}\right)^2}{nm(n+m)}
 
 if we check this by inserting :math:`m=1` we get back
-:eq:`eqn. (%s) <eqnsimplevar0>`
+:eq:`eqn. %s <eqnsimplevar0>`
 
 Summing energy terms
 ~~~~~~~~~~~~~~~~~~~~
@@ -227,7 +226,7 @@ Nevertheless we can try the same approach as before by writing:
 
 .. math:: \sigma_{m,n}^S ~=~ \sum_{s=1}^S \sigma_{m,n}^s + \Delta\sigma
 
-if we fill in :eq:`eqn. (%s) <eqnsigma>`:
+if we fill in :eq:`eqn. %s <eqnsigma>`:
 
 .. math:: \sum_{i=m}^n \left[\left(\sum_{s=1}^S x_i^s\right) - \frac{X_{m,n}^S}{m-n+1}\right]^2 ~=~
           \sum_{s=1}^S \sum_{i=m}^n \left[\left(x_i^s\right) - \frac{X_{m,n}^s}{m-n+1}\right]^2 + \Delta\sigma
@@ -254,7 +253,7 @@ or
 .. math:: -\frac{\left(X_{m,n}^S\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +  \sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma
 
 If we now expand the first term using
-:eq:`eqn. (%s) <eqnsumterms>` we obtain:
+:eq:`eqn. %s <eqnsumterms>` we obtain:
 
 .. math:: -\frac{\left(\sum_{s=1}^SX_{m,n}^s\right)^2}{m-n+1}  -2\sum_{i=m}^n\sum_{s=1}^S \sum_{s'=s+1}^S x_i^s x_i^{s'}\, +      \sum_{s=1}^S \frac{\left(X_{m,n}^s\right)^2}{m-n+1}  ~=~\Delta\sigma
 
@@ -273,7 +272,7 @@ which gives
 Since we need all data points :math:`i` to evaluate this, in general
 this is not possible. We can then make an estimate of
 :math:`\sigma_{m,n}^S` using only the data points that are available
-using the left hand side of :eq:`eqn. (%s) <eqnsigmaterms>`.
+using the left hand side of :eq:`eqn. %s <eqnsigmaterms>`.
 While the average can be computed using all time steps in the
 simulation, the accuracy of the fluctuations is thus limited by the
 frequency with which energies are saved. Since this can be easily done
