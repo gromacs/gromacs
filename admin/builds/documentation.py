@@ -65,7 +65,7 @@ def do_build(context):
 
     context.build_target(target='manual', parallel=False,
             target_descr='PDF manual', continue_on_failure=True)
-    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
+    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/Gromacs.log')
     if os.path.isfile(logfile):
         with open(logfile, 'r') as f:
             manual_log = f.read()
