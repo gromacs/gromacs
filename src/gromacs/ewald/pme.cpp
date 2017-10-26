@@ -1178,11 +1178,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             /* TODO If the OpenMP and single-threaded implementations
                converge, then spread_on_grid() and
                copy_pmegrid_to_fftgrid() will perhaps live in the same
-               source file and the following debugging function can live
-               there too. */
-            /*
-               dump_local_fftgrid(pme,fftgrid);
-               exit(0);
+               source file.
              */
         }
 
