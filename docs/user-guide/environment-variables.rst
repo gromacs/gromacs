@@ -113,6 +113,12 @@ Debugging
         over-ride the number of DD pulses used
         (default 0, meaning no over-ride). Normally 1 or 2.
 
+``GMX_DISABLE_ALTERNATING_GPU_WAIT``
+        disables the specialized polling wait path used to wait for the PME and nonbonded
+        GPU tasks completion to overlap to do the reduction of the resulting forces that
+        arrive first. Setting this variable switches to the generic path with fixed waiting
+        order.
+
 There are a number of extra environment variables like these
 that are used in debugging - check the code!
 
