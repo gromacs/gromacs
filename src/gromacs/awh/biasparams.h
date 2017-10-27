@@ -53,6 +53,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "dimparams.h"
@@ -125,15 +126,15 @@ class BiasParams
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          * \param[in] biasIndex              Index of the bias.
          */
-        BiasParams(const AwhParams              &awhParams,
-                   const AwhBiasParams          &awhBiasParams,
-                   const std::vector<DimParams> &dimParams,
-                   double                        beta,
-                   double                        mdTimeStep,
-                   DisableUpdateSkips            disableUpdateSkips,
-                   const t_commrec              *cr,
-                   const std::vector<GridAxis>  &gridAxis,
-                   int                           biasIndex);
+        BiasParams(const AwhParams               &awhParams,
+                   const AwhBiasParams           &awhBiasParams,
+                   const std::vector<DimParams>  &dimParams,
+                   double                         beta,
+                   double                         mdTimeStep,
+                   DisableUpdateSkips             disableUpdateSkips,
+                   const t_commrec               *cr,
+                   gmx::ArrayRef<const GridAxis>  gridAxis,
+                   int                            biasIndex);
 
         /* Data members */
         const double  invBeta;                    /**< 1/beta = kT */

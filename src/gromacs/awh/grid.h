@@ -57,6 +57,8 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "dimparams.h" /* This is needed for awh_dvec */
 
 namespace gmx
@@ -212,7 +214,8 @@ class Grid
          * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
          * \param[in] awhDimParams  Dimension params from inputrec.
          */
-        Grid(const std::vector<DimParams> &dimParams, const AwhDimParams *awhDimParams);
+        Grid(gmx::ArrayRef<const DimParams>  dimParams,
+             const AwhDimParams             *awhDimParams);
 
         /*! \brief Returns the number of points in the grid.
          *

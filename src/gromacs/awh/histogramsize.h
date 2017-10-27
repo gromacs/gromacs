@@ -116,12 +116,12 @@ class HistogramSize
          * \param[in,out] fplog              Log file.
          * \returns the new histogram size.
          */
-        double newHistSize(const BiasParams              &params,
-                           double                         t,
-                           bool                           covered,
-                           const std::vector<PointState> &pointStates,
-                           ArrayRef<double>               weightsumCovering,
-                           FILE                          *fplog);
+        double newHistSize(const BiasParams                &params,
+                           double                           t,
+                           bool                             covered,
+                           gmx::ArrayRef<const PointState>  pointStates,
+                           ArrayRef<double>                 weightsumCovering,
+                           FILE                            *fplog);
 
         /*! \brief Restores the histogram size from history.
          *

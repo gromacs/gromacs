@@ -54,6 +54,8 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "dimparams.h"
 
 namespace gmx
@@ -74,9 +76,9 @@ class CoordinateState
          * \param[in] dimParams      The dimension Parameters.
          * \param[in] grid           The grid.
          */
-        CoordinateState(const AwhBiasParams          &awhBiasParams,
-                        const std::vector<DimParams> &dimParams,
-                        const Grid                   &grid);
+        CoordinateState(const AwhBiasParams            &awhBiasParams,
+                        gmx::ArrayRef<const DimParams>  dimParams,
+                        const Grid                     &grid);
 
         /*! \brief
          * Sample a new umbrella reference point given the current coordinate value.
@@ -91,12 +93,12 @@ class CoordinateState
          * \param[in] indexSeed           Second random seed, should be the bias Index.
          * \returns the index of the sampled point.
          */
-        void sampleUmbrellaGridpoint(const Grid                &grid,
-                                     int                        gridpointIndex,
-                                     const std::vector<double> &probWeightNeighbor,
-                                     gmx_int64_t                step,
-                                     gmx_int64_t                seed,
-                                     int                        indexSeed);
+        void sampleUmbrellaGridpoint(const Grid                  &grid,
+                                     int                          gridpointIndex,
+                                     gmx::ArrayRef<const double>  probWeightNeighbor,
+                                     gmx_int64_t                  step,
+                                     gmx_int64_t                  seed,
+                                     int                          indexSeed);
 
         /*! \brief Update the coordinate value with coordValue.
          *

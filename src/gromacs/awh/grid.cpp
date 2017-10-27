@@ -231,8 +231,8 @@ int multidimArrayIndexToLinear(const awh_ivec indexMulti, int ndim, const awh_iv
  * \param[in] indexMulti Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-static int multidimGridindexToLinear(const std::vector<GridAxis> &axis,
-                                     const awh_ivec               indexMulti)
+static int multidimGridindexToLinear(gmx::ArrayRef<const GridAxis> axis,
+                                     const awh_ivec                indexMulti)
 {
     awh_ivec numPointsDim;
 
@@ -479,8 +479,8 @@ static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
  * \param[in] axis    The grid axes.
  * \returns true if the value is in the grid.
  */
-static bool valueIsInGrid(const awh_dvec               value,
-                          const std::vector<GridAxis> &axis)
+static bool valueIsInGrid(const awh_dvec                value,
+                          gmx::ArrayRef<const GridAxis> axis)
 {
     /* For each dimension get the one-dimensional index and check if it is in range. */
     for (size_t d = 0; d < axis.size(); d++)
@@ -534,8 +534,8 @@ int GridAxis::nearestIndex(double value) const
  * \param[in] axis   The grid axes.
  * \returns the point index nearest to the value.
  */
-static int getNearestIndexInGrid(const awh_dvec               value,
-                                 const std::vector<GridAxis> &axis)
+static int getNearestIndexInGrid(const awh_dvec                value,
+                                 gmx::ArrayRef<const GridAxis> axis)
 {
     awh_ivec indexMulti;
 
@@ -691,8 +691,8 @@ GridAxis::GridAxis(double origin, double end,
 }
 
 /* Allocate, initialize and return a grid. */
-Grid::Grid(const std::vector<DimParams> &dimParams,
-           const AwhDimParams           *awhDimParams)
+Grid::Grid(gmx::ArrayRef<const DimParams>  dimParams,
+           const AwhDimParams             *awhDimParams)
 {
     /* Define the discretization along each dimension */
     awh_dvec period;

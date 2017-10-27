@@ -57,12 +57,14 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "coordinatestate.h"
 #include "dimparams.h"
 #include "histogramsize.h"
+#include "pointstate.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -101,10 +103,10 @@ class BiasState
          * \param[in] dimParams        The dimension Parameters.
          * \param[in] grid             The grid.
          */
-        BiasState(const AwhBiasParams          &awhBiasParams,
-                  double                        histSizeInitial,
-                  const std::vector<DimParams> &dimParams,
-                  const Grid                   &grid);
+        BiasState(const AwhBiasParams            &awhBiasParams,
+                  double                          histSizeInitial,
+                  gmx::ArrayRef<const DimParams>  dimParams,
+                  const Grid                     &grid);
 
         /*! \brief
          * Restore the bias state from history.
@@ -151,10 +153,10 @@ class BiasState
          * \param[in] params     The bias parameters.
          * \param[in] ms         Struct for multi-simulation communication.
          */
-        void setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                         const Grid                    &grid,
-                                         const BiasParams              &params,
-                                         const gmx_multisim_t          *ms);
+        void setFreeEnergyToConvolvedPmf(gmx::ArrayRef<const DimParams> dimParams,
+                                         const Grid                     &grid,
+                                         const BiasParams               &params,
+                                         const gmx_multisim_t           *ms);
 
         /*! \brief
          * Normalize the PMF histogram.
@@ -174,12 +176,12 @@ class BiasState
          * \param[in] numBias         The number of biases.
          * \param[in] ms              Struct for multi-simulation communication.
          */
-        void initGridPointState(const AwhBiasParams           &awhBiasParams,
-                                const std::vector<DimParams>  &dimParams,
-                                const Grid                    &grid,
-                                const BiasParams              &params,
-                                int                            numBias,
-                                const gmx_multisim_t          *ms);
+        void initGridPointState(const AwhBiasParams            &awhBiasParams,
+                                gmx::ArrayRef<const DimParams>  dimParams,
+                                const Grid                     &grid,
+                                const BiasParams               &params,
+                                int                             numBias,
+                                const gmx_multisim_t           *ms);
 
         /*! \brief
          * Makes checks for the collected histograms and warns if issues are detected.
@@ -208,10 +210,10 @@ class BiasState
          * \param[in,out] force    Force vector to set.
          * Returns the umbrella potential.
          */
-        double calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
-                                             const Grid                   &grid,
-                                             int                           point,
-                                             awh_dvec                      force) const;
+        double calcUmbrellaForceAndPotential(gmx::ArrayRef<const DimParams>  dimParams,
+                                             const Grid                     &grid,
+                                             int                             point,
+                                             awh_dvec                        force) const;
 
         /*! \brief
          * Calculates and sets the convolved force acting on the coordinate.
@@ -224,10 +226,10 @@ class BiasState
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
          * \param[in,out] force           Bias force vector to set.
          */
-        void calcConvolvedForce(const std::vector<DimParams> &dimParams,
-                                const Grid                   &grid,
-                                const std::vector<double>    &probWeightNeighbor,
-                                awh_dvec                      force) const;
+        void calcConvolvedForce(gmx::ArrayRef<const DimParams>  dimParams,
+                                const Grid                     &grid,
+                                gmx::ArrayRef<const double>     probWeightNeighbor,
+                                awh_dvec                        force) const;
 
         /*! \brief
          * Move the center point of the umbrella potential.
@@ -247,13 +249,13 @@ class BiasState
          * \param[in] indexSeed           Second random seed, should be the bias Index.
          * \returns the new potential value.
          */
-        double moveUmbrella(const std::vector<DimParams> &dimParams,
-                            const Grid                   &grid,
-                            const std::vector<double>    &probWeightNeighbor,
-                            awh_dvec                      biasForce,
-                            gmx_int64_t                   step,
-                            gmx_int64_t                   seed,
-                            int                           indexSeed);
+        double moveUmbrella(gmx::ArrayRef<const DimParams>  dimParams,
+                            const Grid                     &grid,
+                            gmx::ArrayRef<const double>     probWeightNeighbor,
+                            awh_dvec                        biasForce,
+                            gmx_int64_t                     step,
+                            gmx_int64_t                     seed,
+                            int                             indexSeed);
 
     private:
         /*! \brief
@@ -328,10 +330,10 @@ class BiasState
          * \param[in] ms         Struct for multi-simulation communication.
          * \returns true if covered.
          */
-        bool isCovered(const BiasParams             &params,
-                       const std::vector<DimParams> &dimParams,
-                       const Grid                   &grid,
-                       const gmx_multisim_t         *ms) const;
+        bool isCovered(const BiasParams               &params,
+                       gmx::ArrayRef<const DimParams>  dimParams,
+                       const Grid                     &grid,
+                       const gmx_multisim_t           *ms) const;
 
         /*! \brief
          * Return the new reference weight histogram size for the current update.
@@ -387,14 +389,14 @@ class BiasState
          * \param[in,out] fplog       Log file.
          * \param[in,out] updateList  Work space to store a temporary list.
          */
-        void updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams> &dimParams,
-                                                      const Grid                   &grid,
-                                                      const BiasParams             &params,
-                                                      const gmx_multisim_t         *ms,
-                                                      double                        t,
-                                                      gmx_int64_t                   step,
-                                                      FILE                         *fplog,
-                                                      std::vector<int>             *updateList);
+        void updateFreeEnergyAndAddSamplesToHistogram(gmx::ArrayRef<const DimParams>  dimParams,
+                                                      const Grid                     &grid,
+                                                      const BiasParams               &params,
+                                                      const gmx_multisim_t           *ms,
+                                                      double                          t,
+                                                      gmx_int64_t                     step,
+                                                      FILE                           *fplog,
+                                                      std::vector<int>               *updateList);
 
         /*! \brief
          * Update the probability weights and the convolved bias.
@@ -413,9 +415,9 @@ class BiasState
          * \returns the convolved bias.
          */
 
-        double updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams> &dimParams,
-                                                        const Grid                   &grid,
-                                                        std::vector<double>          *weight) const;
+        double updateProbabilityWeightsAndConvolvedBias(gmx::ArrayRef<const DimParams>  dimParams,
+                                                        const Grid                     &grid,
+                                                        std::vector<double>            *weight) const;
 
         /*! \brief
          * Save the current probability weights for future updates and analysis.
@@ -427,8 +429,8 @@ class BiasState
          * \param[in] grid                The grid.
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
          */
-        void sampleProbabilityWeights(const Grid                &grid,
-                                      const std::vector<double> &probWeightNeighbor);
+        void sampleProbabilityWeights(const Grid                  &grid,
+                                      gmx::ArrayRef<const double>  probWeightNeighbor);
 
         /*! \brief
          * Sample observables for future updates or analysis.
@@ -437,9 +439,9 @@ class BiasState
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
          * \param[in] convolvedBias       The convolved bias.
          */
-        void sampleCoordAndPmf(const Grid                &grid,
-                               const std::vector<double> &probWeightNeighbor,
-                               double                     convolvedBias);
+        void sampleCoordAndPmf(const Grid                  &grid,
+                               gmx::ArrayRef<const double>  probWeightNeighbor,
+                               double                       convolvedBias);
 
     public:
         /*! \brief Returns the current coordinate state.
@@ -498,10 +500,10 @@ class BiasState
  * \param[in] coordValue  Coordinate value.
  * \returns the convolved bias >= -GMX_DOUBLE_MAX.
  */
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue);
+double calcConvolvedBias(gmx::ArrayRef<const DimParams>   dimParams,
+                         const Grid                      &grid,
+                         gmx::ArrayRef<const PointState>  points,
+                         const awh_dvec                  &coordValue);
 
 /*! \brief
  * Sets the given array with PMF values.
@@ -516,10 +518,10 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
  * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
  */
-void calculatePmf(const BiasParams              &params,
-                  const std::vector<PointState> &points,
-                  const gmx_multisim_t          *ms,
-                  std::vector<float>            *pmf);
+void calculatePmf(const BiasParams                &params,
+                  gmx::ArrayRef<const PointState>  points,
+                  const gmx_multisim_t            *ms,
+                  std::vector<float>              *pmf);
 
 /*! \brief
  * Query if something should be done at this step.
@@ -547,9 +549,9 @@ static inline bool doAtStep(int         stepInterval,
  * \param[in] step        Time step.
  * \returns true at steps where checks should be performed.
  */
-bool isCheckStep(const BiasParams              &params,
-                 const std::vector<PointState> &pointState,
-                 gmx_int64_t                    step);
+bool isCheckStep(const BiasParams                &params,
+                 gmx::ArrayRef<const PointState>  pointState,
+                 gmx_int64_t                      step);
 
 //! Linewidth used for warning output
 static const int c_linewidth = 78;

@@ -149,7 +149,7 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
  * \param[in] pointStates  The state of the bias points.
  * \returns true if the histogram is equilibrated.
  */
-static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
+static bool histogramIsEquilibrated(gmx::ArrayRef<const PointState> pointStates)
 {
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
@@ -205,12 +205,12 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
 }
 
 /* Return the new reference weight histogram size for the current update. */
-double HistogramSize::newHistSize(const BiasParams              &params,
-                                  double                         t,
-                                  bool                           covered,
-                                  const std::vector<PointState> &pointStates,
-                                  ArrayRef<double>               weightsumCovering,
-                                  FILE                          *fplog)
+double HistogramSize::newHistSize(const BiasParams                &params,
+                                  double                           t,
+                                  bool                             covered,
+                                  gmx::ArrayRef<const PointState>  pointStates,
+                                  ArrayRef<double>                 weightsumCovering,
+                                  FILE                            *fplog)
 {
     double histSizeNew;
     if (inInitialStage_)

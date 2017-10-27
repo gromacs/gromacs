@@ -69,16 +69,15 @@
 
 #include "grid.h"
 #include "math.h"
-#include "pointstate.h"
 
 namespace gmx
 {
 
 /* Sets the given array with PMF values. */
-void calculatePmf(const BiasParams              &params,
-                  const std::vector<PointState> &points,
-                  const gmx_multisim_t          *ms,
-                  std::vector<float>            *pmf)
+void calculatePmf(const BiasParams                &params,
+                  gmx::ArrayRef<const PointState>  points,
+                  const gmx_multisim_t            *ms,
+                  std::vector<float>              *pmf)
 {
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
@@ -147,12 +146,12 @@ static double freeEnergyMinimumValue(const std::vector<PointState> &pointState)
  * \param[in] value         Coordinate value.
  * \returns the biased probability weight.
  */
-static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
-                                    const std::vector<PointState> &points,
-                                    const Grid                    &grid,
-                                    int                            pointIndex,
-                                    double                         pointBias,
-                                    const awh_dvec                 value)
+static double biasedWeightFromPoint(gmx::ArrayRef<const DimParams>   dimParams,
+                                    gmx::ArrayRef<const PointState>  points,
+                                    const Grid                      &grid,
+                                    int                              pointIndex,
+                                    double                           pointBias,
+                                    const awh_dvec                   value)
 {
     double weight = 0;
 
@@ -183,12 +182,12 @@ static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
  * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
  */
-static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                  const Grid                    &grid,
-                                  const BiasParams              &params,
-                                  const std::vector<PointState> &points,
-                                  const gmx_multisim_t          *ms,
-                                  std::vector<float>            *convolvedPmf)
+static void calculateConvolvedPmf(gmx::ArrayRef<const DimParams>   dimParams,
+                                  const Grid                      &grid,
+                                  const BiasParams                &params,
+                                  gmx::ArrayRef<const PointState>  points,
+                                  const gmx_multisim_t            *ms,
+                                  std::vector<float>              *convolvedPmf)
 {
     size_t             numPoints = grid.numPoints();
 
@@ -358,7 +357,7 @@ int BiasState::checkHistograms(const Grid  &grid,
 
 /* Calculates and sets the force the coordinate experiences from an umbrella centered at the given point.
  */
-double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
+double BiasState::calcUmbrellaForceAndPotential(gmx::ArrayRef<const DimParams> dimParams,
                                                 const Grid                   &grid,
                                                 int                           point,
                                                 awh_dvec                      force) const
@@ -379,10 +378,10 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
 }
 
 /* Calculates and sets the convolved force acting on the coordinate. */
-void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
-                                   const Grid                   &grid,
-                                   const std::vector<double>    &probWeightNeighbor,
-                                   awh_dvec                      force) const
+void BiasState::calcConvolvedForce(gmx::ArrayRef<const DimParams>  dimParams,
+                                   const Grid                     &grid,
+                                   gmx::ArrayRef<const double>     probWeightNeighbor,
+                                   awh_dvec                        force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -410,13 +409,13 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
 }
 
 /* Move the center point of the umbrella potential. */
-double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
-                               const Grid                   &grid,
-                               const std::vector<double>    &probWeightNeighbor,
-                               awh_dvec                      biasForce,
-                               gmx_int64_t                   step,
-                               gmx_int64_t                   seed,
-                               int                           indexSeed)
+double BiasState::moveUmbrella(gmx::ArrayRef<const DimParams>  dimParams,
+                               const Grid                     &grid,
+                               gmx::ArrayRef<const double>     probWeightNeighbor,
+                               awh_dvec                        biasForce,
+                               gmx_int64_t                     step,
+                               gmx_int64_t                     seed,
+                               int                             indexSeed)
 {
     /* Generate and set a new coordinate reference value */
     coordinateState_.sampleUmbrellaGridpoint(grid, coordinateState_.gridpointIndex(), probWeightNeighbor, step, seed, indexSeed);
@@ -701,19 +700,25 @@ static void sumHistograms(std::vector<PointState> *pointState,
  *
  * \param[in] visited           Visited? For each point.
  * \param[in] checkCovering     Check for covering? For each point.
- * \param[in] npoints           Number of points.
+ * \param[in] numPoints         Number of points.
  * \param[in] period            Period in number of points.
  * \param[in] coverRadius       Cover radius, in points, needed for defining a point as covered.
  * \param[in,out] covered       Covered? For each point.
  */
-static void labelCoveredPoints(const std::vector<bool> &visited, const std::vector<bool> &checkCovering, int npoints, int period,
-                               int coverRadius, std::vector<int> *covered)
+static void labelCoveredPoints(const std::vector<bool> &visited,
+                               const std::vector<bool> &checkCovering,
+                               int                      numPoints,
+                               int                      period,
+                               int                      coverRadius,
+                               gmx::ArrayRef<int>       covered)
 {
 
     bool haveFirstNotVisited = false;
-    int  firstNotVisited     = -1, notVisitedLow = -1, notVisitedHigh = -1;
+    int  firstNotVisited     = -1;
+    int  notVisitedLow       = -1;
+    int  notVisitedHigh      = -1;
 
-    for (int n = 0; n < npoints; n++)
+    for (int n = 0; n < numPoints; n++)
     {
         if (checkCovering[n] && !visited[n])
         {
@@ -725,7 +730,7 @@ static void labelCoveredPoints(const std::vector<bool> &visited, const std::vect
             }
             else
             {
-                notVisitedHigh = n;
+                notVisitedHigh      = n;
 
                 /* Have now an interval I = [notVisitedLow,notVisitedHigh] of visited points bounded
                    by unvisited points. The unvisted end points affect the coveredness of the visited
@@ -734,7 +739,7 @@ static void labelCoveredPoints(const std::vector<bool> &visited, const std::vect
                 int notCoveredHigh = notVisitedHigh - coverRadius;
                 for (int i = notVisitedLow; i <= notVisitedHigh; i++)
                 {
-                    (*covered)[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+                    covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
                 }
 
                 /* Find a new interval to set covering for. Make the notVisitedHigh of this interval the
@@ -749,9 +754,9 @@ static void labelCoveredPoints(const std::vector<bool> &visited, const std::vect
     {
         /* No non-visited points <=> all points visited => all points covered. */
 
-        for (int n = 0; n < npoints; n++)
+        for (int n = 0; n < numPoints; n++)
         {
-            (*covered)[n] = TRUE;
+            covered[n] = TRUE;
         }
     }
     else
@@ -772,27 +777,27 @@ static void labelCoveredPoints(const std::vector<bool> &visited, const std::vect
         for (int i = 0; i <= notVisitedHigh; i++)
         {
             /* For non-periodic boundaries notCoveredLow = -1 will impose no restriction. */
-            (*covered)[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+            covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
         }
 
         /* Upper end. Same as for lower end but in the other direction. */
-        notVisitedHigh = period > 0 ? (firstNotVisited + period) : (npoints + coverRadius);
+        notVisitedHigh = period > 0 ? (firstNotVisited + period) : (numPoints + coverRadius);
         notVisitedLow  = lastNotVisited;
 
         notCoveredLow  = notVisitedLow + coverRadius;
         notCoveredHigh = notVisitedHigh - coverRadius;
 
-        for (int i = notVisitedLow; i <= npoints - 1; i++)
+        for (int i = notVisitedLow; i <= numPoints - 1; i++)
         {
             /* For non-periodic boundaries notCoveredHigh = npoints will impose no restriction. */
-            (*covered)[i] = (i > notCoveredLow) && (i < notCoveredHigh);
+            covered[i] = (i > notCoveredLow) && (i < notCoveredHigh);
         }
     }
 }
 
 /* Check if the sampling region has been covered "enough" or not. */
 bool BiasState::isCovered(const BiasParams             &params,
-                          const std::vector<DimParams> &dimParams,
+                          gmx::ArrayRef<const DimParams> dimParams,
                           const Grid                   &grid,
                           const gmx_multisim_t         *ms) const
 {
@@ -858,7 +863,7 @@ bool BiasState::isCovered(const BiasParams             &params,
     for (int d = 0; d < grid.ndim(); d++)
     {
         labelCoveredPoints(checkDim[d].visited, checkDim[d].checkCovering, grid.axis(d).numPoints(), grid.axis(d).numPointsInPeriod(),
-                           params.coverRadius()[d], &checkDim[d].covered);
+                           params.coverRadius()[d], checkDim[d].covered);
     }
 
     /* Now check for global covering. Each dimension needs to be covered separately.
@@ -913,7 +918,7 @@ static void normalizeFreeEnergyAndPmfSum(std::vector<PointState> *pointState)
 }
 
 /* Performs an update of the bias. */
-void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams> &dimParams,
+void BiasState::updateFreeEnergyAndAddSamplesToHistogram(gmx::ArrayRef<const DimParams> dimParams,
                                                          const Grid                   &grid,
                                                          const BiasParams             &params,
                                                          const gmx_multisim_t         *ms,
@@ -1053,12 +1058,12 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 }
 
 /* Update the probability weights and the convolved bias. */
-double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams> &dimParams,
+double BiasState::updateProbabilityWeightsAndConvolvedBias(gmx::ArrayRef<const DimParams> dimParams,
                                                            const Grid                   &grid,
                                                            std::vector<double>          *weight) const
 {
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
-    const std::vector<int> &neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
+    gmx::ArrayRef<const int> neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
     weight->resize(neighbors.size());
 
@@ -1085,10 +1090,10 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
 }
 
 /* Calculates the convolved bias for the given coordinate value. */
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue)
+double calcConvolvedBias(gmx::ArrayRef<const DimParams>   dimParams,
+                         const Grid                      &grid,
+                         gmx::ArrayRef<const PointState>  points,
+                         const awh_dvec                  &coordValue)
 {
     int              point      = grid.nearestIndex(coordValue);
     const GridPoint &gridPoint  = grid.point(point);
@@ -1107,10 +1112,10 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
 }
 
 /* Save the current probability weights for future updates and analysis. */
-void BiasState::sampleProbabilityWeights(const Grid                &grid,
-                                         const std::vector<double> &probWeightNeighbor)
+void BiasState::sampleProbabilityWeights(const Grid                  &grid,
+                                         gmx::ArrayRef<const double>  probWeightNeighbor)
 {
-    const std::vector<int> &neighbor = grid.point(coordinateState_.gridpointIndex()).neighbor;
+    gmx::ArrayRef<const int> neighbor = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
     /* Save weights for next update */
     for (size_t n = 0; n < neighbor.size(); n++)
@@ -1155,9 +1160,9 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
 }
 
 /* Sample observables for future updates or analysis. */
-void BiasState::sampleCoordAndPmf(const Grid                &grid,
-                                  const std::vector<double> &probWeightNeighbor,
-                                  double                     convolvedBias)
+void BiasState::sampleCoordAndPmf(const Grid                  &grid,
+                                  gmx::ArrayRef<const double>  probWeightNeighbor,
+                                  double                       convolvedBias)
 {
     /* Sampling-based deconvolution extracting the PMF.
      * Update the PMF histogram with the current coordinate value.
@@ -1256,10 +1261,10 @@ void BiasState::broadcast(const t_commrec *cr)
 }
 
 /* Convolves the PMF and sets the initial free energy to its convolution. */
-void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                            const Grid                    &grid,
-                                            const BiasParams              &params,
-                                            const gmx_multisim_t          *ms)
+void BiasState::setFreeEnergyToConvolvedPmf(gmx::ArrayRef<const DimParams>  dimParams,
+                                            const Grid                      &grid,
+                                            const BiasParams                &params,
+                                            const gmx_multisim_t            *ms)
 {
     std::vector<float> convolvedPmf;
 
@@ -1318,7 +1323,7 @@ static int findTrailingZeroRows(const double* const *data, int nrows, int ncols)
  * \param[in] biasIndex       The index of the bias.
  * \param[in,out] pointState  The state of the points in this bias.
  */
-static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimParams,
+static void readUserPmfAndTargetDistribution(gmx::ArrayRef<const DimParams> dimParams,
                                              const Grid                   &grid,
                                              int                           numBias,
                                              int                           biasIndex,
@@ -1503,12 +1508,12 @@ void BiasState::normalizePmf(int numSharingSims)
  * \param[in] numBias         The number of biases.
  * \param[in] ms              Struct for multi-simulation communication.
  */
-void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
-                                   const std::vector<DimParams>  &dimParams,
-                                   const Grid                    &grid,
-                                   const BiasParams              &params,
-                                   int                            numBias,
-                                   const gmx_multisim_t          *ms)
+void BiasState::initGridPointState(const AwhBiasParams            &awhBiasParams,
+                                   gmx::ArrayRef<const DimParams>  dimParams,
+                                   const Grid                     &grid,
+                                   const BiasParams               &params,
+                                   int                             numBias,
+                                   const gmx_multisim_t           *ms)
 {
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
@@ -1553,7 +1558,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
 
 BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
                      double                        histSizeInitial,
-                     const std::vector<DimParams> &dimParams,
+                     gmx::ArrayRef<const DimParams> dimParams,
                      const Grid                   &grid) :
     coordinateState_(awhBiasParams, dimParams, grid),
     histogramSize_(awhBiasParams, histSizeInitial)
@@ -1574,7 +1579,9 @@ BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
 }
 
 /* Returns if to do checks, only returns true at free-energy update steps. */
-bool isCheckStep(const BiasParams &params, const std::vector<PointState> &pointState, gmx_int64_t step)
+bool isCheckStep(const BiasParams                &params,
+                 gmx::ArrayRef<const PointState>  pointState,
+                 gmx_int64_t                      step)
 {
     int numStepsUpdateFreeEnergy = params.numSamplesUpdateFreeEnergy*params.numStepsSampleCoord;
     int numStepsCheck            = (1 + pointState.size()/params.numSamplesUpdateFreeEnergy)*numStepsUpdateFreeEnergy;

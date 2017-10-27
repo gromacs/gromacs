@@ -141,8 +141,9 @@ static double getTargetParameter(const AwhBiasParams &awhBiasParams)
  * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
  */
-static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams, const AwhBiasParams &awhBiasParams,
-                                         const std::vector<GridAxis> &gridAxis, double samplingTimestep)
+static double getInitialHistSizeEstimate(gmx::ArrayRef<const DimParams>  dimParams,
+                                         const AwhBiasParams            &awhBiasParams,
+                                         gmx::ArrayRef<const GridAxis>   gridAxis, double samplingTimestep)
 {
     /* Get diffusion factor */
     double              L2invD = 0.;
@@ -192,15 +193,15 @@ static int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
  * However, localWeightScaling < 1  is in general expected to give lower efficiency and, except for local Boltzmann,
  * idealWeightHistUpdate = false gives (in my experience) unstable, non-converging results.
  */
-BiasParams::BiasParams(const AwhParams              &awhParams,
-                       const AwhBiasParams          &awhBiasParams,
-                       const std::vector<DimParams> &dimParams,
-                       double                        beta,
-                       double                        mdTimeStep,
-                       DisableUpdateSkips            disableUpdateSkips,
-                       const t_commrec              *cr,
-                       const std::vector<GridAxis>  &gridAxis,
-                       int                           biasIndex) :
+BiasParams::BiasParams(const AwhParams               &awhParams,
+                       const AwhBiasParams           &awhBiasParams,
+                       const std::vector<DimParams>  &dimParams,
+                       double                         beta,
+                       double                         mdTimeStep,
+                       DisableUpdateSkips             disableUpdateSkips,
+                       const t_commrec               *cr,
+                       gmx::ArrayRef<const GridAxis>  gridAxis,
+                       int                            biasIndex) :
     invBeta(beta > 0 ? 1/beta : 0),
     numStepsSampleCoord(awhParams.nstSampleCoord),
     numSamplesUpdateFreeEnergy(awhParams.numSamplesUpdateFreeEnergy),

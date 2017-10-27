@@ -57,9 +57,9 @@
 namespace gmx
 {
 
-CoordinateState::CoordinateState(const AwhBiasParams          &awhBiasParams,
-                                 const std::vector<DimParams> &dimParams,
-                                 const Grid                   &grid)
+CoordinateState::CoordinateState(const AwhBiasParams            &awhBiasParams,
+                                 gmx::ArrayRef<const DimParams>  dimParams,
+                                 const Grid                     &grid)
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -77,17 +77,17 @@ CoordinateState::CoordinateState(const AwhBiasParams          &awhBiasParams,
 
 /* Sample a new umbrella reference point given the current coordinate value. */
 void
-CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
-                                         int                        gridpointIndex,
-                                         const std::vector<double> &probWeightNeighbor,
-                                         gmx_int64_t                step,
-                                         gmx_int64_t                seed,
-                                         int                        indexSeed)
+CoordinateState::sampleUmbrellaGridpoint(const Grid                  &grid,
+                                         int                          gridpointIndex,
+                                         gmx::ArrayRef<const double>  probWeightNeighbor,
+                                         gmx_int64_t                  step,
+                                         gmx_int64_t                  seed,
+                                         int                          indexSeed)
 {
     /* Sample new umbrella reference value from the probability distribution
      * which is defined for the neighboring points of the current coordinate.
      */
-    const std::vector<int> &neighbor = grid.point(gridpointIndex).neighbor;
+    gmx::ArrayRef<const int> neighbor = grid.point(gridpointIndex).neighbor;
 
     /* In order to use the same seed for all AWH biases and get independent
        samples we use the index of the bias. */
