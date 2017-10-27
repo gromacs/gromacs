@@ -81,7 +81,7 @@ template<
     bool computeEnergyAndVirial
     >
 __launch_bounds__(c_solveMaxThreadsPerBlock)
-__global__ void pme_solve_kernel(const struct pme_gpu_cuda_kernel_params_t kernelParams)
+__global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParams)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
     int majorDim, middleDim, minorDim;
@@ -417,7 +417,7 @@ __global__ void pme_solve_kernel(const struct pme_gpu_cuda_kernel_params_t kerne
     }
 }
 
-void pme_gpu_solve(const pme_gpu_t *pmeGpu, t_complex *h_grid,
+void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
                    GridOrdering gridOrdering, bool computeEnergyAndVirial)
 {
     const bool   copyInputAndOutputGrid = pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu);

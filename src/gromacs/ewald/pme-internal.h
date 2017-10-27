@@ -66,7 +66,7 @@ typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;
 
 struct t_commrec;
 struct t_inputrec;
-struct pme_gpu_t;
+struct PmeGpu;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -263,7 +263,7 @@ struct gmx_pme_t {
                               * and ideally not be duplicated here.
                               */
 
-    pme_gpu_t      *gpu;     /* A pointer to the GPU data.
+    PmeGpu      *gpu;        /* A pointer to the GPU data.
                               * TODO: this should be unique or a shared pointer.
                               * Currently in practice there is a single gmx_pme_t instance while a code
                               * is partially set up for many of them. The PME tuning calls gmx_pme_reinit()
