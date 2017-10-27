@@ -164,14 +164,6 @@ void pme_gpu_copy_output_forces(const PmeGpu *pmeGPU, float *h_forces)
     const size_t forcesSize   = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
     cu_copy_D2H_async(h_forces, pmeGPU->kernelParams->atoms.d_forces, forcesSize, pmeGPU->archSpecific->pmeStream);
-    cudaError_t stat = cudaEventRecord(pmeGPU->archSpecific->syncForcesD2H, pmeGPU->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "PME gather forces synchronization failure");
-}
-
-void pme_gpu_sync_output_forces(const PmeGpu *pmeGPU)
-{
-    cudaError_t  stat = cudaEventSynchronize(pmeGPU->archSpecific->syncForcesD2H);
-    CU_RET_ERR(stat, "Error while waiting for the PME GPU forces");
 }
 
 void pme_gpu_realloc_coordinates(const PmeGpu *pmeGPU)
@@ -381,17 +373,6 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGPU)
                             pmeGPU->deviceInfo);
 }
 
-void pme_gpu_sync_output_energy_virial(const PmeGpu *pmeGPU)
-{
-    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncEnerVirD2H);
-    CU_RET_ERR(stat, "Error while waiting for PME solve output");
-
-    for (int j = 0; j < c_virialAndEnergyCount; j++)
-    {
-        GMX_ASSERT(std::isfinite(pmeGPU->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
-    }
-}
-
 void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
@@ -416,8 +397,6 @@ void pme_gpu_copy_output_spread_atom_data(const PmeGpu *pmeGpu)
     cu_copy_D2H_async(pmeGpu->staging.h_theta, kernelParamsPtr->atoms.d_theta, splinesSize, pmeGpu->archSpecific->pmeStream);
     cu_copy_D2H_async(pmeGpu->staging.h_gridlineIndices, kernelParamsPtr->atoms.d_gridlineIndices,
                       kernelParamsPtr->atoms.nAtoms * DIM * sizeof(int), pmeGpu->archSpecific->pmeStream);
-    cudaError_t stat = cudaEventRecord(pmeGpu->archSpecific->syncSplineAtomDataD2H, pmeGpu->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "PME spread atom data sync event record failure");
 }
 
 void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu)
@@ -448,19 +427,6 @@ void pme_gpu_sync_spread_grid(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSpreadGridD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU spread grid to be copied to the host");
-}
-
-void pme_gpu_sync_spline_atom_data(const PmeGpu *pmeGPU)
-{
-    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSplineAtomDataD2H);
-    CU_RET_ERR(stat, "Error while waiting for the PME GPU atom data to be copied to the host");
-}
-
-void pme_gpu_sync_solve_grid(const PmeGpu *pmeGPU)
-{
-    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSolveGridD2H);
-    CU_RET_ERR(stat, "Error while waiting for the PME GPU solve grid to be copied to the host");
-    //should check for pme_gpu_performs_solve(pmeGPU)
 }
 
 void pme_gpu_init_internal(PmeGpu *pmeGPU)
@@ -501,33 +467,13 @@ void pme_gpu_destroy_specific(const PmeGpu *pmeGPU)
 
 void pme_gpu_init_sync_events(const PmeGpu *pmeGPU)
 {
-    cudaError_t stat;
     const auto  eventFlags = cudaEventDisableTiming;
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncEnerVirD2H, eventFlags);
-    CU_RET_ERR(stat, "cudaEventCreate on syncEnerVirD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncForcesD2H, eventFlags);
-    CU_RET_ERR(stat, "cudaEventCreate on syncForcesD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, eventFlags);
-    CU_RET_ERR(stat, "cudaEventCreate on syncSpreadGridD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSplineAtomDataD2H, eventFlags);
-    CU_RET_ERR(stat, "cudaEventCreate on syncSplineAtomDataD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSolveGridD2H, eventFlags);
-    CU_RET_ERR(stat, "cudaEventCreate on syncSolveGridD2H failed");
+    CU_RET_ERR(cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, eventFlags), "cudaEventCreate on syncSpreadGridD2H failed");
 }
 
 void pme_gpu_destroy_sync_events(const PmeGpu *pmeGPU)
 {
-    cudaError_t stat;
-    stat = cudaEventDestroy(pmeGPU->archSpecific->syncEnerVirD2H);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on syncEnerVirD2H");
-    stat = cudaEventDestroy(pmeGPU->archSpecific->syncForcesD2H);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on syncForcesD2H");
-    stat = cudaEventDestroy(pmeGPU->archSpecific->syncSpreadGridD2H);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on syncSpreadGridD2H");
-    stat = cudaEventDestroy(pmeGPU->archSpecific->syncSplineAtomDataD2H);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on syncSplineAtomDataD2H");
-    stat = cudaEventDestroy(pmeGPU->archSpecific->syncSolveGridD2H);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on syncSolveGridD2H");
+    CU_RET_ERR(cudaEventDestroy(pmeGPU->archSpecific->syncSpreadGridD2H), "cudaEventDestroy failed on syncSpreadGridD2H");
 }
 
 void pme_gpu_reinit_3dfft(const PmeGpu *pmeGPU)

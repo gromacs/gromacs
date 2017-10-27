@@ -491,14 +491,10 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     {
         cu_copy_D2H_async(pmeGpu->staging.h_virialAndEnergy, kernelParamsPtr->constants.d_virialAndEnergy,
                           c_virialAndEnergyCount * sizeof(float), stream);
-        cudaError_t stat = cudaEventRecord(pmeGpu->archSpecific->syncEnerVirD2H, stream);
-        CU_RET_ERR(stat, "PME solve energy/virial event record failure");
     }
 
     if (copyInputAndOutputGrid)
     {
         cu_copy_D2H_async(h_grid, kernelParamsPtr->grid.d_fourierGrid, pmeGpu->archSpecific->complexGridSize * sizeof(float), stream);
-        cudaError_t stat = cudaEventRecord(pmeGpu->archSpecific->syncSolveGridD2H, stream);
-        CU_RET_ERR(stat, "PME solve grid sync event record failure");
     }
 }
