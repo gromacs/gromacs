@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
@@ -850,6 +851,100 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
     pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
 }
 
+static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t             *nbv,
+                                        const gmx_pme_t                *pmedata,
+                                        gmx::PaddedArrayRef<gmx::RVec> *force,
+                                        ForceWithVirial                *forceWithVirial,
+                                        rvec                            fshift[],
+                                        gmx_enerdata_t                 *enerd,
+                                        int                             flags,
+                                        gmx_wallcycle_t                 wcycle)
+{
+    bool                           isPmeGpuDone        = false;
+    bool                           isNbGpuDone         = false;
+
+    gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
+
+    while (!isPmeGpuDone || !isNbGpuDone)
+    {
+        if (!isPmeGpuDone)
+        {
+            matrix vir_Q;
+            real   Vlr_q;
+
+            auto   completionType = (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
+            isPmeGpuDone = pme_gpu_wait_or_check_finished(pmedata, wcycle, &pmeGpuForces,
+                                                          vir_Q, &Vlr_q, completionType);
+
+            if (isPmeGpuDone)
+            {
+                pme_gpu_reduce_outputs(wcycle, forceWithVirial, pmeGpuForces,
+                                       enerd, vir_Q, Vlr_q);
+            }
+        }
+
+        if (!isNbGpuDone)
+        {
+            auto completionType = (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
+            wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_NL);
+            isNbGpuDone = nbnxn_gpu_wait_or_check_finished(nbv->gpu_nbv,
+                                                           flags, eatLocal,
+                                                           enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                                           fshift, completionType);
+            wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+            // To get the call count right, when the task finished we
+            // issue a start/stop.
+            if (isNbGpuDone)
+            {
+                wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
+                wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+            }
+
+            if (isNbGpuDone)
+            {
+                wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+                wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                               nbv->nbat, as_rvec_array(force->data()));
+                wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+                wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            }
+        }
+    }
+}
+
+static void launchGpuRollingPruning(const t_commrec          *cr,
+                                    const nonbonded_verlet_t *nbv,
+                                    const t_inputrec         *inputrec,
+                                    const gmx_int64_t         step)
+{
+    /* We should not launch the rolling pruning kernel at a search
+     * step or just before search steps, since that's useless.
+     * Without domain decomposition we prune at even steps.
+     * With domain decomposition we alternate local and non-local
+     * pruning at even and odd steps.
+     */
+    int  numRollingParts     = nbv->listParams->numRollingParts;
+    GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
+    int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
+    bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
+    if (stepWithCurrentList > 0 &&
+        stepWithCurrentList < inputrec->nstlist - 1 &&
+        (stepIsEven || DOMAINDECOMP(cr)))
+    {
+        nbnxn_gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
+                                          stepIsEven ? eintLocal : eintNonlocal,
+                                          numRollingParts);
+    }
+
+}
+
+// TODO: this environment variable allows us to verify before release
+// that on less common architectures the total cost of polling is not larger than
+// a blocking wait (so polling does not introduce overhead when the static
+// PME-first ordering would suffice).
+static const bool disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_WAIT") != nullptr);
+
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1414,7 +1509,15 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (useGpuPme)
+    // With both nonbonded and PME offloaded to GPUs, we use
+    // an alternating wait/reduction scheme.
+    bool alternateGpuWait   = (!disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
+    if (alternateGpuWait)
+    {
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, wcycle);
+    }
+
+    if (!alternateGpuWait && useGpuPme)
     {
         gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
         matrix vir_Q;
@@ -1423,79 +1526,71 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         pme_gpu_reduce_outputs(wcycle, &forceWithVirial, pmeGpuForces, enerd, vir_Q, Vlr_q);
     }
 
-    if (bUseOrEmulGPU)
+    /* Wait for local NB forces */
+    if (!alternateGpuWait && bUseGPU)
     {
-        /* wait for local forces (or calculate in emulation mode) */
-        if (bUseGPU)
+        /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
+         * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
+         * but even with a step of 0.1 ms the difference is less than 1%
+         * of the step time.
+         */
+        const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
+
+        wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+        nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                               flags, eatLocal,
+                               enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                               fr->fshift);
+        float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+
+        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
         {
-            /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
-             * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
-             * but even with a step of 0.1 ms the difference is less than 1%
-             * of the step time.
-             */
-            const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
-
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   flags, eatLocal,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
-            float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
-            if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
+            DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
+            if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
             {
-                DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
-                if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
-                {
-                    /* We measured few cycles, it could be that the kernel
-                     * and transfer finished earlier and there was no actual
-                     * wait time, only API call overhead.
-                     * Then the actual time could be anywhere between 0 and
-                     * cycles_wait_est. We will use half of cycles_wait_est.
-                     */
-                    waitedForGpu = DdBalanceRegionWaitedForGpu::no;
-                }
-                ddCloseBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
-            }
-
-            /* now clear the GPU outputs while we finish the step on the CPU */
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
-
-            /* Is dynamic pair-list pruning activated? */
-            if (nbv->listParams->useDynamicPruning)
-            {
-                /* We should not launch the rolling pruning kernel at a search
-                 * step or just before search steps, since that's useless.
-                 * Without domain decomposition we prune at even steps.
-                 * With domain decomposition we alternate local and non-local
-                 * pruning at even and odd steps.
+                /* We measured few cycles, it could be that the kernel
+                 * and transfer finished earlier and there was no actual
+                 * wait time, only API call overhead.
+                 * Then the actual time could be anywhere between 0 and
+                 * cycles_wait_est. We will use half of cycles_wait_est.
                  */
-                int  numRollingParts     = nbv->listParams->numRollingParts;
-                GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-                int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
-                bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
-                if (stepWithCurrentList > 0 &&
-                    stepWithCurrentList < inputrec->nstlist - 1 &&
-                    (stepIsEven || DOMAINDECOMP(cr)))
-                {
-                    nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
-                                                      stepIsEven ? eintLocal : eintNonlocal,
-                                                      numRollingParts);
-                }
+                waitedForGpu = DdBalanceRegionWaitedForGpu::no;
             }
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+            ddCloseBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
         }
-        else
+    }
+
+    if (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes)
+    {
+        // NOTE: emulation kernel is not included in the balancing region, it seems
+        wallcycle_start_nocount(wcycle, ewcFORCE);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal,
+                     DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
+                     step, nrnb, wcycle);
+        wallcycle_stop(wcycle, ewcFORCE);
+    }
+
+    if (bUseGPU)
+    {
+        /* now clear the GPU outputs while we finish the step on the CPU */
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
+
+        /* Is dynamic pair-list pruning activated? */
+        if (nbv->listParams->useDynamicPruning)
         {
-            wallcycle_start_nocount(wcycle, ewcFORCE);
-            do_nb_verlet(fr, ic, enerd, flags, eintLocal,
-                         DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         step, nrnb, wcycle);
-            wallcycle_stop(wcycle, ewcFORCE);
+            launchGpuRollingPruning(cr, nbv, inputrec, step);
         }
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+
+        // TODO: move here the PME buffer clearing call pme_gpu_reinit_computation()
+    }
+
+    /* Do the nonbonded GPU buffer reduction if we have not done it yet. */
+    if (bUseOrEmulGPU && !alternateGpuWait)
+    {
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
