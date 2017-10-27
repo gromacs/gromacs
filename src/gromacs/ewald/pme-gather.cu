@@ -235,7 +235,7 @@ template <
     const bool wrapY
     >
 __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP)
-__global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelParams)
+__global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
 {
     /* Global memory pointers */
     const float * __restrict__  gm_coefficients     = kernelParams.atoms.d_coefficients;
@@ -410,7 +410,7 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
     }
 }
 
-void pme_gpu_gather(const pme_gpu_t       *pmeGpu,
+void pme_gpu_gather(const PmeGpu          *pmeGpu,
                     float                 *h_forces,
                     PmeForceOutputHandling forceTreatment,
                     const float           *h_grid

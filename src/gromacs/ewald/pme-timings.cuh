@@ -45,7 +45,7 @@
 #include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #include "gromacs/timing/gpu_timing.h"       // TODO: move include to the source files
 
-struct pme_gpu_t;
+struct PmeGpu;
 
 /*! \libinternal \brief
  * Starts timing the certain PME GPU stage during a single step (if timings are enabled).
@@ -53,7 +53,7 @@ struct pme_gpu_t;
  * \param[in] pmeGPU         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_start_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId);
+void pme_gpu_start_timing(const PmeGpu *pmeGPU, size_t PMEStageId);
 
 /*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single step (if timings are enabled).
@@ -61,6 +61,6 @@ void pme_gpu_start_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId);
  * \param[in] pmeGPU         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_stop_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId);
+void pme_gpu_stop_timing(const PmeGpu *pmeGPU, size_t PMEStageId);
 
 #endif

@@ -56,27 +56,27 @@
 #include "pme-3dfft.cuh"
 #include "pme-grid.h"
 
-int pme_gpu_get_atom_data_alignment(const pme_gpu_t *pmeGPU)
+int pme_gpu_get_atom_data_alignment(const PmeGpu *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_ATOM_DATA_ALIGNMENT;
 }
 
-int pme_gpu_get_atoms_per_warp(const pme_gpu_t *pmeGPU)
+int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_SPREADGATHER_ATOMS_PER_WARP;
 }
 
-void pme_gpu_synchronize(const pme_gpu_t *pmeGPU)
+void pme_gpu_synchronize(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaStreamSynchronize(pmeGPU->archSpecific->pmeStream);
     CU_RET_ERR(stat, "Failed to synchronize the PME GPU stream!");
 }
 
-void pme_gpu_alloc_energy_virial(const pme_gpu_t *pmeGPU)
+void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGPU)
 {
     const size_t energyAndVirialSize = c_virialAndEnergyCount * sizeof(float);
     cudaError_t  stat                = cudaMalloc((void **)&pmeGPU->kernelParams->constants.d_virialAndEnergy, energyAndVirialSize);
@@ -84,7 +84,7 @@ void pme_gpu_alloc_energy_virial(const pme_gpu_t *pmeGPU)
     pmalloc((void **)&pmeGPU->staging.h_virialAndEnergy, energyAndVirialSize);
 }
 
-void pme_gpu_free_energy_virial(pme_gpu_t *pmeGPU)
+void pme_gpu_free_energy_virial(PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaFree(pmeGPU->kernelParams->constants.d_virialAndEnergy);
     CU_RET_ERR(stat, "cudaFree failed on PME energy and virial");
@@ -93,14 +93,14 @@ void pme_gpu_free_energy_virial(pme_gpu_t *pmeGPU)
     pmeGPU->staging.h_virialAndEnergy = nullptr;
 }
 
-void pme_gpu_clear_energy_virial(const pme_gpu_t *pmeGPU)
+void pme_gpu_clear_energy_virial(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaMemsetAsync(pmeGPU->kernelParams->constants.d_virialAndEnergy, 0,
                                        c_virialAndEnergyCount * sizeof(float), pmeGPU->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME energy/virial cudaMemsetAsync error");
 }
 
-void pme_gpu_realloc_and_copy_bspline_values(const pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGPU)
 {
     const int splineValuesOffset[DIM] = {
         0,
@@ -130,14 +130,14 @@ void pme_gpu_realloc_and_copy_bspline_values(const pme_gpu_t *pmeGPU)
                       newSplineValuesSize * sizeof(float), pmeGPU->archSpecific->pmeStream);
 }
 
-void pme_gpu_free_bspline_values(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_bspline_values(const PmeGpu *pmeGPU)
 {
     pfree(pmeGPU->staging.h_splineModuli);
     cu_free_buffered(pmeGPU->kernelParams->grid.d_splineModuli, &pmeGPU->archSpecific->splineValuesSize,
                      &pmeGPU->archSpecific->splineValuesSizeAlloc);
 }
 
-void pme_gpu_realloc_forces(const pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_forces(const PmeGpu *pmeGPU)
 {
     const size_t newForcesSize = pmeGPU->nAtomsAlloc * DIM;
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
@@ -145,12 +145,12 @@ void pme_gpu_realloc_forces(const pme_gpu_t *pmeGPU)
                         &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc, newForcesSize, pmeGPU->archSpecific->pmeStream, true);
 }
 
-void pme_gpu_free_forces(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_forces(const PmeGpu *pmeGPU)
 {
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_forces, &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc);
 }
 
-void pme_gpu_copy_input_forces(const pme_gpu_t *pmeGPU, const float *h_forces)
+void pme_gpu_copy_input_forces(const PmeGpu *pmeGPU, const float *h_forces)
 {
     GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
@@ -158,7 +158,7 @@ void pme_gpu_copy_input_forces(const pme_gpu_t *pmeGPU, const float *h_forces)
     cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_forces, const_cast<float *>(h_forces), forcesSize, pmeGPU->archSpecific->pmeStream);
 }
 
-void pme_gpu_copy_output_forces(const pme_gpu_t *pmeGPU, float *h_forces)
+void pme_gpu_copy_output_forces(const PmeGpu *pmeGPU, float *h_forces)
 {
     GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize   = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
@@ -168,13 +168,13 @@ void pme_gpu_copy_output_forces(const pme_gpu_t *pmeGPU, float *h_forces)
     CU_RET_ERR(stat, "PME gather forces synchronization failure");
 }
 
-void pme_gpu_sync_output_forces(const pme_gpu_t *pmeGPU)
+void pme_gpu_sync_output_forces(const PmeGpu *pmeGPU)
 {
     cudaError_t  stat = cudaEventSynchronize(pmeGPU->archSpecific->syncForcesD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU forces");
 }
 
-void pme_gpu_realloc_coordinates(const pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_coordinates(const PmeGpu *pmeGPU)
 {
     const size_t newCoordinatesSize = pmeGPU->nAtomsAlloc * DIM;
     GMX_ASSERT(newCoordinatesSize > 0, "Bad number of atoms in PME GPU");
@@ -192,7 +192,7 @@ void pme_gpu_realloc_coordinates(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_copy_input_coordinates(const pme_gpu_t *pmeGPU, const rvec *h_coordinates)
+void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGPU, const rvec *h_coordinates)
 {
     GMX_ASSERT(h_coordinates, "Bad host-side coordinate buffer in PME GPU");
 #if GMX_DOUBLE
@@ -204,12 +204,12 @@ void pme_gpu_copy_input_coordinates(const pme_gpu_t *pmeGPU, const rvec *h_coord
 #endif
 }
 
-void pme_gpu_free_coordinates(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_coordinates(const PmeGpu *pmeGPU)
 {
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_coordinates, &pmeGPU->archSpecific->coordinatesSize, &pmeGPU->archSpecific->coordinatesSizeAlloc);
 }
 
-void pme_gpu_realloc_and_copy_input_coefficients(const pme_gpu_t *pmeGPU, const float *h_coefficients)
+void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGPU, const float *h_coefficients)
 {
     GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
     const size_t newCoefficientsSize = pmeGPU->nAtomsAlloc;
@@ -231,12 +231,12 @@ void pme_gpu_realloc_and_copy_input_coefficients(const pme_gpu_t *pmeGPU, const 
     }
 }
 
-void pme_gpu_free_coefficients(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_coefficients(const PmeGpu *pmeGPU)
 {
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_coefficients, &pmeGPU->archSpecific->coefficientsSize, &pmeGPU->archSpecific->coefficientsSizeAlloc);
 }
 
-void pme_gpu_realloc_spline_data(const pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_spline_data(const PmeGpu *pmeGPU)
 {
     const int    order             = pmeGPU->common->pme_order;
     const int    alignment         = pme_gpu_get_atoms_per_warp(pmeGPU);
@@ -261,7 +261,7 @@ void pme_gpu_realloc_spline_data(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_free_spline_data(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_spline_data(const PmeGpu *pmeGPU)
 {
     /* Two arrays of the same size */
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_theta);
@@ -270,7 +270,7 @@ void pme_gpu_free_spline_data(const pme_gpu_t *pmeGPU)
     pfree(pmeGPU->staging.h_dtheta);
 }
 
-void pme_gpu_realloc_grid_indices(const pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGPU)
 {
     const size_t newIndicesSize = DIM * pmeGPU->nAtomsAlloc;
     GMX_ASSERT(newIndicesSize > 0, "Bad number of atoms in PME GPU");
@@ -280,13 +280,13 @@ void pme_gpu_realloc_grid_indices(const pme_gpu_t *pmeGPU)
     pmalloc((void **)&pmeGPU->staging.h_gridlineIndices, newIndicesSize * sizeof(int));
 }
 
-void pme_gpu_free_grid_indices(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_grid_indices(const PmeGpu *pmeGPU)
 {
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_gridlineIndices, &pmeGPU->archSpecific->gridlineIndicesSize, &pmeGPU->archSpecific->gridlineIndicesSizeAlloc);
     pfree(pmeGPU->staging.h_gridlineIndices);
 }
 
-void pme_gpu_realloc_grids(pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_grids(PmeGpu *pmeGPU)
 {
     auto     *kernelParamsPtr = pmeGPU->kernelParams.get();
     const int newRealGridSize = kernelParamsPtr->grid.realGridSizePadded[XX] *
@@ -319,7 +319,7 @@ void pme_gpu_realloc_grids(pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_free_grids(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_grids(const PmeGpu *pmeGPU)
 {
     if (pmeGPU->archSpecific->performOutOfPlaceFFT)
     {
@@ -329,7 +329,7 @@ void pme_gpu_free_grids(const pme_gpu_t *pmeGPU)
                      &pmeGPU->archSpecific->realGridSize, &pmeGPU->archSpecific->realGridSizeAlloc);
 }
 
-void pme_gpu_clear_grids(const pme_gpu_t *pmeGPU)
+void pme_gpu_clear_grids(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaMemsetAsync(pmeGPU->kernelParams->grid.d_realGrid, 0,
                                        pmeGPU->archSpecific->realGridSize * sizeof(float), pmeGPU->archSpecific->pmeStream);
@@ -337,7 +337,7 @@ void pme_gpu_clear_grids(const pme_gpu_t *pmeGPU)
     CU_RET_ERR(stat, "cudaMemsetAsync on the PME grid error");
 }
 
-void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGPU)
 {
     pme_gpu_free_fract_shifts(pmeGPU);
 
@@ -368,7 +368,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *pmeGPU)
                          pmeGPU->deviceInfo);
 }
 
-void pme_gpu_free_fract_shifts(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_fract_shifts(const PmeGpu *pmeGPU)
 {
     auto *kernelParamsPtr = pmeGPU->kernelParams.get();
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
@@ -381,7 +381,7 @@ void pme_gpu_free_fract_shifts(const pme_gpu_t *pmeGPU)
                             pmeGPU->deviceInfo);
 }
 
-void pme_gpu_sync_output_energy_virial(const pme_gpu_t *pmeGPU)
+void pme_gpu_sync_output_energy_virial(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncEnerVirD2H);
     CU_RET_ERR(stat, "Error while waiting for PME solve output");
@@ -392,13 +392,13 @@ void pme_gpu_sync_output_energy_virial(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_copy_input_gather_grid(const pme_gpu_t *pmeGpu, float *h_grid)
+void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
     cu_copy_H2D_async(pmeGpu->kernelParams->grid.d_realGrid, h_grid, gridSize, pmeGpu->archSpecific->pmeStream);
 }
 
-void pme_gpu_copy_output_spread_grid(const pme_gpu_t *pmeGpu, float *h_grid)
+void pme_gpu_copy_output_spread_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
     cu_copy_D2H_async(h_grid, pmeGpu->kernelParams->grid.d_realGrid, gridSize, pmeGpu->archSpecific->pmeStream);
@@ -406,7 +406,7 @@ void pme_gpu_copy_output_spread_grid(const pme_gpu_t *pmeGpu, float *h_grid)
     CU_RET_ERR(stat, "PME spread grid sync event record failure");
 }
 
-void pme_gpu_copy_output_spread_atom_data(const pme_gpu_t *pmeGpu)
+void pme_gpu_copy_output_spread_atom_data(const PmeGpu *pmeGpu)
 {
     const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
     const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
@@ -420,7 +420,7 @@ void pme_gpu_copy_output_spread_atom_data(const pme_gpu_t *pmeGpu)
     CU_RET_ERR(stat, "PME spread atom data sync event record failure");
 }
 
-void pme_gpu_copy_input_gather_atom_data(const pme_gpu_t *pmeGpu)
+void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu)
 {
     const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
     const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
@@ -444,30 +444,30 @@ void pme_gpu_copy_input_gather_atom_data(const pme_gpu_t *pmeGpu)
                       kernelParamsPtr->atoms.nAtoms * DIM * sizeof(int), pmeGpu->archSpecific->pmeStream);
 }
 
-void pme_gpu_sync_spread_grid(const pme_gpu_t *pmeGPU)
+void pme_gpu_sync_spread_grid(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSpreadGridD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU spread grid to be copied to the host");
 }
 
-void pme_gpu_sync_spline_atom_data(const pme_gpu_t *pmeGPU)
+void pme_gpu_sync_spline_atom_data(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSplineAtomDataD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU atom data to be copied to the host");
 }
 
-void pme_gpu_sync_solve_grid(const pme_gpu_t *pmeGPU)
+void pme_gpu_sync_solve_grid(const PmeGpu *pmeGPU)
 {
     cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSolveGridD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU solve grid to be copied to the host");
     //should check for pme_gpu_performs_solve(pmeGPU)
 }
 
-void pme_gpu_init_internal(pme_gpu_t *pmeGPU)
+void pme_gpu_init_internal(PmeGpu *pmeGPU)
 {
     /* Allocate the target-specific structures */
-    pmeGPU->archSpecific.reset(new pme_gpu_specific_t());
-    pmeGPU->kernelParams.reset(new pme_gpu_kernel_params_t());
+    pmeGPU->archSpecific.reset(new PmeGpuSpecific());
+    pmeGPU->kernelParams.reset(new PmeGpuKernelParams());
 
     pmeGPU->archSpecific->performOutOfPlaceFFT = true;
     /* This should give better performance, according to the cuFFT documentation.
@@ -492,14 +492,14 @@ void pme_gpu_init_internal(pme_gpu_t *pmeGPU)
     CU_RET_ERR(stat, "cudaStreamCreateWithPriority on the PME stream failed");
 }
 
-void pme_gpu_destroy_specific(const pme_gpu_t *pmeGPU)
+void pme_gpu_destroy_specific(const PmeGpu *pmeGPU)
 {
     /* Destroy the CUDA stream */
     cudaError_t stat = cudaStreamDestroy(pmeGPU->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME cudaStreamDestroy error");
 }
 
-void pme_gpu_init_sync_events(const pme_gpu_t *pmeGPU)
+void pme_gpu_init_sync_events(const PmeGpu *pmeGPU)
 {
     cudaError_t stat;
     const auto  eventFlags = cudaEventDisableTiming;
@@ -515,7 +515,7 @@ void pme_gpu_init_sync_events(const pme_gpu_t *pmeGPU)
     CU_RET_ERR(stat, "cudaEventCreate on syncSolveGridD2H failed");
 }
 
-void pme_gpu_destroy_sync_events(const pme_gpu_t *pmeGPU)
+void pme_gpu_destroy_sync_events(const PmeGpu *pmeGPU)
 {
     cudaError_t stat;
     stat = cudaEventDestroy(pmeGPU->archSpecific->syncEnerVirD2H);
@@ -530,7 +530,7 @@ void pme_gpu_destroy_sync_events(const pme_gpu_t *pmeGPU)
     CU_RET_ERR(stat, "cudaEventDestroy failed on syncSolveGridD2H");
 }
 
-void pme_gpu_reinit_3dfft(const pme_gpu_t *pmeGPU)
+void pme_gpu_reinit_3dfft(const PmeGpu *pmeGPU)
 {
     if (pme_gpu_performs_FFT(pmeGPU))
     {
@@ -542,7 +542,7 @@ void pme_gpu_reinit_3dfft(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_destroy_3dfft(const pme_gpu_t *pmeGPU)
+void pme_gpu_destroy_3dfft(const PmeGpu *pmeGPU)
 {
     pmeGPU->archSpecific->fftSetup.resize(0);
 }

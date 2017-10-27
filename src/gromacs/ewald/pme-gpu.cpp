@@ -176,7 +176,7 @@ void pme_gpu_prepare_step(gmx_pme_t            *pme,
     GMX_ASSERT(pme->nnodes > 0, "");
     GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
 
-    pme_gpu_t *pmeGpu = pme->gpu;
+    PmeGpu *pmeGpu = pme->gpu;
     pmeGpu->settings.stepFlags = flags;
     // TODO these flags are only here to honor the CPU PME code, and probably should be removed
 
@@ -216,7 +216,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    pme_gpu_t *pmeGpu = pme->gpu;
+    PmeGpu *pmeGpu = pme->gpu;
 
     // The only spot of PME GPU where LAUNCH_GPU (sub)counter increases call-count
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
@@ -243,7 +243,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
 void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
                                        gmx_wallcycle_t wcycle)
 {
-    pme_gpu_t         *pmeGpu                 = pme->gpu;
+    PmeGpu            *pmeGpu                 = pme->gpu;
     const bool         computeEnergyAndVirial = pmeGpu->settings.stepFlags & GMX_PME_CALC_ENER_VIR;
     const bool         performBackFFT         = pmeGpu->settings.stepFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
     const unsigned int gridIndex              = 0;
