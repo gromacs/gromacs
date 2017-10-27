@@ -171,6 +171,7 @@ class BiasState
          * \param[in] dimParams       The dimension parameters.
          * \param[in] grid            The grid.
          * \param[in] params          The bias parameters.
+         * \param[in] filename        Name of file to read PMF and target from.
          * \param[in] numBias         The number of biases.
          * \param[in] ms              Struct for multi-simulation communication.
          */
@@ -178,6 +179,7 @@ class BiasState
                                 const std::vector<DimParams>  &dimParams,
                                 const Grid                    &grid,
                                 const BiasParams              &params,
+                                const std::string             &filename,
                                 int                            numBias,
                                 const gmx_multisim_t          *ms);
 
