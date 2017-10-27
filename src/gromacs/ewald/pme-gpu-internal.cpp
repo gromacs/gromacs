@@ -132,19 +132,10 @@ void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
-static void pme_gpu_reinit_computation(const PmeGpu *pmeGPU)
+void pme_gpu_reinit_computation(const PmeGpu *pmeGPU)
 {
     pme_gpu_clear_grids(pmeGPU);
     pme_gpu_clear_energy_virial(pmeGPU);
-}
-
-void pme_gpu_finish_computation(const PmeGpu *pmeGPU)
-{
-    // Synchronize the whole PME stream at once, including D2H result transfers.
-    pme_gpu_synchronize(pmeGPU);
-
-    pme_gpu_update_timings(pmeGPU);
-    pme_gpu_reinit_computation(pmeGPU);
 }
 
 /*! \brief \libinternal
