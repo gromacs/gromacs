@@ -65,6 +65,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -152,15 +153,17 @@ class Awh
          * these coordinate in \ref Awh::applyBiasForcesAndUpdateBias.
          *
          * \param[in,out] fplog           General output file, normally md.log, can be nullptr.
-         * \param[in]     ir              General input parameters.
-         * \param[in]     cr              Struct for communication, can be nullptr.
-         * \param[in]     awhParams       AWH input parameters.
-         * \param[in,out] pull_work       Pull struct which AWH will register the bias into, has to be initialized.
+         * \param[in]     ir                General input parameters.
+         * \param[in]     cr                Struct for communication, can be nullptr.
+         * \param[in]     awhParams         AWH input parameters.
+         * \param[in]     biasInitFilename  Name of file to read PMF and target from.
+         * \param[in,out] pull_work         Pull struct which AWH will register the bias into, has to be initialized.
          */
         Awh(FILE              *fplog,
             const t_inputrec  &ir,
             const t_commrec   *cr,
             const AwhParams   &awhParams,
+            const std::string &biasInitFilename,
             pull_t            *pull_work);
 
         /*! \brief Destructor. */
