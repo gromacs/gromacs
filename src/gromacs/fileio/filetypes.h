@@ -57,6 +57,9 @@ enum GromacsFileType {
     efEDI,
     efCUB,
     efXPM,
+#ifdef BUILD_WITH_FDA
+    efPFI, efPFA, efPFR, efPSA, efPSR, efVSA, efVMA, efSTR, efPFX, efGRX, efDIM, efPSX, efVST, efPML,
+#endif
     efRND,
     efNR
 };

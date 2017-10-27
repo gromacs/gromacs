@@ -42,6 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
+#include "gromacs/fda/FDA.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -84,6 +85,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
     real             *ewtab;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -259,6 +264,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+0, jnr+0, felec, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
+
             }
 
             /**************************
@@ -313,6 +323,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+0, felec, dx10, dy10, dz10);
+            fda_virial_bond(fda, inr+1, jnr+0, fscal, dx10, dy10, dz10);
+#endif
+
             }
 
             /**************************
@@ -366,6 +381,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+0, felec, dx20, dy20, dz20);
+            fda_virial_bond(fda, inr+2, jnr+0, fscal, dx20, dy20, dz20);
+#endif
 
             }
 
@@ -453,6 +473,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
     real             *ewtab;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -621,6 +645,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+0, jnr+0, felec, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
+
             }
 
             /**************************
@@ -671,6 +700,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+0, felec, dx10, dy10, dz10);
+            fda_virial_bond(fda, inr+1, jnr+0, fscal, dx10, dy10, dz10);
+#endif
+
             }
 
             /**************************
@@ -720,6 +754,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+0, felec, dx20, dy20, dz20);
+            fda_virial_bond(fda, inr+2, jnr+0, fscal, dx20, dy20, dz20);
+#endif
 
             }
 
