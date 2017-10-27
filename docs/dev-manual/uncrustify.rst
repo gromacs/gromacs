@@ -1,3 +1,5 @@
+.. _gmx-uncrustify:
+
 Automatic source code formatting
 ================================
 
