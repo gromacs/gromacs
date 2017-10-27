@@ -198,6 +198,15 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pm
 CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * Checks whether work in the PME GPU stream has completed.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ *
+ * \returns                     True if work in the PME stream has completed.
+ */
+CUDA_FUNC_QUALIFIER bool queryPmeGpuStreamFinished(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(0)
+
+/*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
  *
  * \param[in] pmeGPU            The PME GPU structure.
@@ -589,18 +598,6 @@ void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial
  */
 void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box);
 
-/*! \libinternal \brief
- * Finishes the PME GPU computation, waiting for the output forces and/or energy/virial to be copied to the host.
- * If forces were computed, they will have arrived at the external host buffer provided to gather.
- * If virial/energy were computed, they will have arrived into the internal staging buffer
- * (even though that should have already happened before even launching the gather).
- * Finally, cudaEvent_t based GPU timers get updated if enabled. They also need stream synchronization for correctness.
- * Additionally, device-side buffers are cleared asynchronously for the next computation.
- *
- * \param[in] pmeGPU         The PME GPU structure.
- */
-void pme_gpu_finish_computation(const PmeGpu *pmeGPU);
-
 //! A binary enum for spline data layout transformation
 enum class PmeLayoutTransform
 {
@@ -659,5 +656,13 @@ void pme_gpu_destroy(PmeGpu *pmeGPU);
 void pme_gpu_reinit_atoms(PmeGpu           *pmeGPU,
                           const int         nAtoms,
                           const real       *charges);
+
+/*! \brief \libinternal
+ * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ */
+void pme_gpu_reinit_computation(const PmeGpu *pmeGPU);
+
 
 #endif
