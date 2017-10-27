@@ -53,12 +53,12 @@
  * \param[in] pme            The PME data structure.
  * \returns                  True if timings are enabled, false otherwise.
  */
-gmx_inline bool pme_gpu_timings_enabled(const pme_gpu_t *pmeGPU)
+gmx_inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGPU)
 {
     return pmeGPU->archSpecific->useTiming;
 }
 
-void pme_gpu_start_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId)
+void pme_gpu_start_timing(const PmeGpu *pmeGPU, size_t PMEStageId)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
@@ -67,7 +67,7 @@ void pme_gpu_start_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId)
     }
 }
 
-void pme_gpu_stop_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId)
+void pme_gpu_stop_timing(const PmeGpu *pmeGPU, size_t PMEStageId)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
@@ -76,7 +76,7 @@ void pme_gpu_stop_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId)
     }
 }
 
-void pme_gpu_get_timings(const pme_gpu_t *pmeGPU, gmx_wallclock_gpu_pme_t *timings)
+void pme_gpu_get_timings(const PmeGpu *pmeGPU, gmx_wallclock_gpu_pme_t *timings)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
@@ -89,7 +89,7 @@ void pme_gpu_get_timings(const pme_gpu_t *pmeGPU, gmx_wallclock_gpu_pme_t *timin
     }
 }
 
-void pme_gpu_update_timings(const pme_gpu_t *pmeGPU)
+void pme_gpu_update_timings(const PmeGpu *pmeGPU)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
@@ -102,7 +102,7 @@ void pme_gpu_update_timings(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_reinit_timings(const pme_gpu_t *pmeGPU)
+void pme_gpu_reinit_timings(const PmeGpu *pmeGPU)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
@@ -125,7 +125,7 @@ void pme_gpu_reinit_timings(const pme_gpu_t *pmeGPU)
     }
 }
 
-void pme_gpu_reset_timings(const pme_gpu_t *pmeGPU)
+void pme_gpu_reset_timings(const PmeGpu *pmeGPU)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {

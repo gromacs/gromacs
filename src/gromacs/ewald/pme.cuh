@@ -140,7 +140,7 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
 /*! \brief \internal
  * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
  */
-struct pme_gpu_cuda_t
+struct PmeGpuCuda
 {
     /*! \brief The CUDA stream where everything related to the PME happens. */
     cudaStream_t pmeStream;
@@ -220,10 +220,10 @@ struct pme_gpu_cuda_t
 
 /*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.
- * This inherits from pme_gpu_kernel_params_base_t and adds a couple cudaTextureObject_t handles,
+ * This inherits from PmeGpuKernelParamsBase and adds a couple cudaTextureObject_t handles,
  * which we would like to avoid in plain C++.
  */
-struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
+struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
 {
     /* These are CUDA texture objects, related to the grid size. */
     /*! \brief CUDA texture object for accessing grid.d_fractShiftsTable */

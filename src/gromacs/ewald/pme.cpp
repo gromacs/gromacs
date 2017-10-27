@@ -518,7 +518,7 @@ void gmx_pme_init(struct gmx_pme_t   **pmedata,
                   real                 ewaldcoeff_lj,
                   int                  nthread,
                   PmeRunMode           runMode,
-                  pme_gpu_t           *pmeGPU,
+                  PmeGpu              *pmeGPU,
                   gmx_device_info_t   *gpuInfo,
                   const gmx::MDLogger &mdlog)
 {

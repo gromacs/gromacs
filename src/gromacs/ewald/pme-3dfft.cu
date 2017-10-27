@@ -57,9 +57,9 @@ static void handleCufftError(cufftResult_t status, const char *msg)
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(const pme_gpu_t *pmeGPU)
+GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGPU)
 {
-    const pme_gpu_cuda_kernel_params_t *kernelParamsPtr = pmeGPU->kernelParams.get();
+    const PmeGpuCudaKernelParams *kernelParamsPtr = pmeGPU->kernelParams.get();
     ivec realGridSize, realGridSizePadded, complexGridSizePadded;
     for (int i = 0; i < DIM; i++)
     {
@@ -137,7 +137,7 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir)
     }
 }
 
-void pme_gpu_3dfft(const pme_gpu_t *pmeGPU, gmx_fft_direction dir, int grid_index)
+void pme_gpu_3dfft(const PmeGpu *pmeGPU, gmx_fft_direction dir, int grid_index)
 {
     int timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
     pme_gpu_start_timing(pmeGPU, timerId);
