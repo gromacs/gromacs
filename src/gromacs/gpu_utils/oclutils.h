@@ -139,4 +139,16 @@ static inline void gpuStreamSynchronize(cl_command_queue s)
                        ("Error caught during clFinish:" + ocl_get_error_string(cl_error)).c_str());
 }
 
+/*! \brief Dummy implementation.
+ *
+ * \param[in] s stream to synchronize with
+ *
+ *  \returns     True if all tasks enqueued in the stream \p s (at the time of this call) have completed.
+ */
+static inline bool gpuStreamQuery(cl_command_queue gmx_unused s)
+{
+    GMX_RELEASE_ASSERT(false, "gpuStreamQuery is not implemented for OpenCL");
+    return false;
+}
+
 #endif
