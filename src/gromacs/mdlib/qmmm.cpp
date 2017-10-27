@@ -70,6 +70,12 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/mdlib/nbnxn_util.h"
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
@@ -212,26 +218,35 @@ static void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_M
     }
 } /* init_QMroutine */
 
-static void update_QMMM_coord(const rvec *x, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+void update_QMMM_coord(const rvec *x, t_forcerec *fr)
 {
-    /* shifts the QM and MM particles into the central box and stores
-     * these shifted coordinates in the coordinate arrays of the
-     * QMMMrec. These coordinates are passed on the QM subroutines.
+    /* Shifts the QM and MM atoms into the central box and
+     * stores the shifted coordinates in the coordinate arrays of QMMMrec.
+     * These coordinates are passed on to the QM subroutines.
      */
-    int
-        i;
 
-    /* shift the QM atoms into the central box
+    t_QMMMrec *qr = fr->qr;
+    t_MMrec   *mm = qr->mm;
+
+    /* Do it for every QM region/layer (typically, ONIOM).
      */
-    for (i = 0; i < qm->nrQMatoms; i++)
+    for (int k = 0; k < qr->nrQMlayers; k++)
     {
-        rvec_sub(x[qm->indexQM[i]], fr->shift_vec[qm->shiftQM[i]], qm->xQM[i]);
-    }
-    /* also shift the MM atoms into the central box, if any
-     */
-    for (i = 0; i < mm->nrMMatoms; i++)
-    {
-        rvec_sub(x[mm->indexMM[i]], fr->shift_vec[mm->shiftMM[i]], mm->xMM[i]);
+        t_QMrec *qm = qr->qm[k];
+
+        /* Shift the QM atoms into the central box.
+         */
+        for (int i = 0; i < qm->nrQMatoms; i++)
+        {
+            rvec_sub(x[qm->indexQM[i]], fr->shift_vec[qm->shiftQM[i]], qm->xQM[i]);
+        }
+
+        /* Also shift the MM atoms (if any) into the central box.
+         */
+        for (int i = 0; i < mm->nrMMatoms; i++)
+        {
+            rvec_sub(x[mm->indexMM[i]], fr->shift_vec[mm->shiftMM[i]], mm->xMM[i]);
+        }
     }
 } /* update_QMMM_coord */
 
@@ -383,13 +398,20 @@ void init_QMMMrec(t_commrec  *cr,
     int                      a_offset;
     t_ilist                 *ilist_mol;
 
-    if (ir->cutoff_scheme != ecutsGROUP)
+    /* Make a local copy of the QMMMrec */
+    qr = fr->qr;
+
+    if (ir->cutoff_scheme == ecutsVERLET)
     {
-        gmx_fatal(FARGS, "QMMM is currently only supported with cutoff-scheme=group");
+        fprintf(stderr, "Warning: QM/MM with cutoff-scheme=Verlet is potentially unreliable.\n");
+        if (qr->QMMMscheme == eQMMMschemeoniom)
+        {
+            gmx_fatal(FARGS, "ONIOM in QM/MM not supported with cutoff-scheme=Verlet!\n");
+        }
     }
     if (!EI_DYNAMICS(ir->eI))
     {
-        gmx_fatal(FARGS, "QMMM is only supported with dynamics");
+        gmx_fatal(FARGS, "QM/MM is only supported with dynamics");
     }
 
     /* issue a fatal if the user wants to run with more than one node */
@@ -397,9 +419,6 @@ void init_QMMMrec(t_commrec  *cr,
     {
         gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single rank instead\n");
     }
-
-    /* Make a local copy of the QMMMrec */
-    qr = fr->qr;
 
     /* bQMMM[..] is an array containing TRUE/FALSE for atoms that are
      * QM/not QM. We first set all elemenst at false. Afterwards we use
@@ -583,11 +602,11 @@ void init_QMMMrec(t_commrec  *cr,
     }
 } /* init_QMMMrec */
 
-void update_QMMMrec(t_commrec       *cr,
-                    t_forcerec      *fr,
-                    const rvec      *x,
-                    const t_mdatoms *md,
-                    const matrix     box)
+void update_QMMMrec_group_ns(t_commrec       *cr,
+                             t_forcerec      *fr,
+                             const rvec       x[],
+                             const t_mdatoms *md,
+                             const matrix     box)
 {
     /* updates the coordinates of both QM atoms and MM atoms and stores
      * them in the QMMMrec.
@@ -596,7 +615,7 @@ void update_QMMMrec(t_commrec       *cr,
      * ns needs to be fixed!
      */
     int
-        mm_max = 0, mm_nr = 0, mm_nr_new, i, j, is, k, shift;
+        mm_max = 0, mm_nr = 0, mm_nr_new, is, shift;
     t_j_particle
        *mm_j_particles = nullptr, *qm_i_particles = nullptr;
     t_QMMMrec
@@ -652,8 +671,10 @@ void update_QMMMrec(t_commrec       *cr,
         snew(qm_i_particles, QMMMlist->nri);
         if (QMMMlist->nri)
         {
+            int j, k;
+
             qm_i_particles[0].shift = XYZ2IS(0, 0, 0);
-            for (i = 0; i < QMMMlist->nri; i++)
+            for (int i = 0; i < QMMMlist->nri; i++)
             {
                 qm_i_particles[i].j     = QMMMlist->iinr[i];
 
@@ -676,7 +697,7 @@ void update_QMMMrec(t_commrec       *cr,
                 crd[1] = IS2Y(QMMMlist->shift[i]) + IS2Y(qm_i_particles[i].shift);
                 crd[2] = IS2Z(QMMMlist->shift[i]) + IS2Z(qm_i_particles[i].shift);
                 is     = static_cast<int>(XYZ2IS(crd[0], crd[1], crd[2]));
-                for (j = QMMMlist->jindex[i];
+                for (int j = QMMMlist->jindex[i];
                      j < QMMMlist->jindex[i+1];
                      j++)
                 {
@@ -694,8 +715,6 @@ void update_QMMMrec(t_commrec       *cr,
 
             /* quicksort QM and MM shift arrays and throw away multiple entries */
 
-
-
             qsort(qm_i_particles, QMMMlist->nri,
                   (size_t)sizeof(qm_i_particles[0]),
                   struct_comp);
@@ -711,7 +730,7 @@ void update_QMMMrec(t_commrec       *cr,
              * here matches the one of QMindex already.
              */
             j = 0;
-            for (i = 0; i < QMMMlist->nri; i++)
+            for (int i = 0; i < QMMMlist->nri; i++)
             {
                 if (i == 0 || qm_i_particles[i].j != qm_i_particles[i-1].j)
                 {
@@ -723,7 +742,7 @@ void update_QMMMrec(t_commrec       *cr,
              * Also remove mm atoms that have no charges!
              * actually this is already done in the ns.c
              */
-            for (i = 0; i < mm_nr; i++)
+            for (int i = 0; i < mm_nr; i++)
             {
                 if ((i == 0 || mm_j_particles[i].j != mm_j_particles[i-1].j)
                     && !md->bQM[mm_j_particles[i].j]
@@ -741,7 +760,7 @@ void update_QMMMrec(t_commrec       *cr,
              * shift will always be set in the loop for i=0
              */
             shift = 0;
-            for (i = 0; i < qm->nrQMatoms; i++)
+            for (int i = 0; i < qm->nrQMatoms; i++)
             {
                 /* not all qm particles might have appeared as i
                  * particles. They might have been part of the same charge
@@ -767,12 +786,12 @@ void update_QMMMrec(t_commrec       *cr,
              * p[i]=1/0 depending on wether atomnumber i is a MM particle in the QM
              * step or not. p[i+md->nr] is the shift of atomnumber i.
              */
-            for (i = 0; i < 2*(md->nr); i++)
+            for (int i = 0; i < 2*(md->nr); i++)
             {
                 parallelMMarray[i] = 0;
             }
 
-            for (i = 0; i < mm_nr; i++)
+            for (int i = 0; i < mm_nr; i++)
             {
                 parallelMMarray[mm_j_particles[i].j]          = 1;
                 parallelMMarray[mm_j_particles[i].j+(md->nr)] = mm_j_particles[i].shift;
@@ -781,7 +800,7 @@ void update_QMMMrec(t_commrec       *cr,
             mm_nr = 0;
 
             mm_max = 0;
-            for (i = 0; i < md->nr; i++)
+            for (int i = 0; i < md->nr; i++)
             {
                 if (parallelMMarray[i])
                 {
@@ -804,53 +823,278 @@ void update_QMMMrec(t_commrec       *cr,
             mm->nrMMatoms = mm_nr;
             srenew(mm->shiftMM, mm_nr);
             srenew(mm->indexMM, mm_nr);
-            for (i = 0; i < mm_nr; i++)
+            for (int i = 0; i < mm_nr; i++)
             {
                 mm->indexMM[i] = mm_j_particles[i].j;
                 mm->shiftMM[i] = mm_j_particles[i].shift;
             }
 
         }
-        /* (re) allocate memory for the MM coordiate array. The QM
-         * coordinate array was already allocated in init_QMMM, and is
-         * only (re)filled in the update_QMMM_coordinates routine
-         */
-        srenew(mm->xMM, mm->nrMMatoms);
-        /* now we (re) fill the array that contains the MM charges with
-         * the forcefield charges. If requested, these charges will be
-         * scaled by a factor
-         */
-        srenew(mm->MMcharges, mm->nrMMatoms);
-        for (i = 0; i < mm->nrMMatoms; i++) /* no free energy yet */
-        {
-            mm->MMcharges[i] = md->chargeA[mm->indexMM[i]]*mm->scalefactor;
-        }
-        /* the next routine fills the coordinate fields in the QMMM rec of
-         * both the qunatum atoms and the MM atoms, using the shifts
-         * calculated above.
-         */
-
-        update_QMMM_coord(x, fr, qr->qm[0], qr->mm);
         free(qm_i_particles);
         free(mm_j_particles);
+
+        /* Reallocate memory for the MM coordinate array.
+         * (The QM coordinate array was already allocated in init_QMMM.)
+         */
+        srenew(mm->xMM, mm->nrMMatoms);
+        /* Fill the array of MM charges with force-field charges.
+         * These charges may be scaled (down) by a given factor.
+         */
+        srenew(mm->MMcharges, mm->nrMMatoms);
+        for (int i = 0; i < mm->nrMMatoms; i++) /* no free energy yet */
+        {
+            mm->MMcharges[i] = md->chargeA[mm->indexMM[i]] * mm->scalefactor;
+        }
+        /* Fill the coordinate fields in QMMMrec of both QM and MM atoms
+         * using the shifts calculated above:
+         * update_QMMM_coord(x, fr, qr->qm[0], qr->mm)
+         * This routine will be called separately, in every MD step!
+         */
     }
     else /* ONIOM */ /* ????? */
     {
         mm->nrMMatoms = 0;
         /* do for each layer */
-        for (j = 0; j < qr->nrQMlayers; j++)
+        for (int j = 0; j < qr->nrQMlayers; j++)
         {
             qm             = qr->qm[j];
             qm->shiftQM[0] = XYZ2IS(0, 0, 0);
-            for (i = 1; i < qm->nrQMatoms; i++)
+            for (int i = 1; i < qm->nrQMatoms; i++)
             {
                 qm->shiftQM[i] = pbc_dx_aiuc(&pbc, x[qm->indexQM[0]], x[qm->indexQM[i]],
                                              dx);
             }
-            update_QMMM_coord(x, fr, qm, mm);
+            /* update_QMMM_coord(x, fr, qm, mm)
+             * This routine will be called separately, in every MD step!
+             */
         }
     }
-} /* update_QMMM_rec */
+} /* update_QMMMrec_group_ns */
+
+
+/* Add the non-QM atoms in the Verlet cluster "ck" to the list of MM atoms.
+ */
+static void put_cluster_in_MMlist_verlet(const int            ck,    // cluster number
+                                         const int            na_ck, // # of atoms in cluster
+                                         const t_QMrec       *qm,
+                                         const nbnxn_search_t nbs,
+                                         int                 *shiftMMatom,
+                                         // bool is_j_cluster,
+                                         // int  shift,
+                                         // int  qm_atom,
+                                         const t_pbc         *pbc,
+                                         const rvec          *x)
+{
+    /* This calculation of shift would be desirable,
+     * but it does not seem to work properly, yet!
+     *
+       ivec crd;
+       crd[XX] = (is_j_cluster ? 1 : -1) * IS2X(shift) + IS2X(qm->shiftQM[qm_atom]);
+       crd[YY] = (is_j_cluster ? 1 : -1) * IS2Y(shift) + IS2Y(qm->shiftQM[qm_atom]);
+       crd[ZZ] = (is_j_cluster ? 1 : -1) * IS2Z(shift) + IS2Z(qm->shiftQM[qm_atom]);
+       int is = IVEC2IS(crd);
+     */
+
+    /* Loop over the atoms in the cluster ck.
+     */
+    for (int k = 0; k < na_ck; k++)  // na_ck is usually 4 (SIMD related)
+    {
+        int ck_atom = nbs->a[na_ck * ck + k];
+        if (ck_atom == -1)
+        {
+            /* The value of -1 in the Verlet list is for padding purpose only.
+             * It does not correspond to any atom, therefore, ignore!
+             */
+            continue;
+        }
+        /* In the following loop, determine 2 things:
+         * 1: the shift to put the k-th atom (a putative MM atom)
+         *    shortest-distance with respect to the nearest QM atom
+         * 2: whether the k-th atom is a QM atom
+         */
+        real dist      = 1000.;
+        int  sh        = -1;
+        bool is_qmatom = false;
+        for (int q = 0; q < qm->nrQMatoms; q++)
+        {
+            /* 1: the shift -- this calculation looks OK! */
+            rvec bond;
+            int  sh_t = pbc_dx_aiuc(pbc, x[qm->indexQM[q]], x[ck_atom], bond);
+            if (norm(bond) < dist)
+            {
+                dist = norm(bond);
+                sh   = sh_t;
+            }
+            /* 2: a QM atom? */
+            if (ck_atom == qm->indexQM[q])
+            {
+                is_qmatom = true;
+            }
+        }
+        /* If it is not a QM atom, then put it in the list and store the shift.
+         */
+        if (!is_qmatom)
+        {
+            shiftMMatom[ck_atom] = sh; // true;
+        }
+    }
+
+    return;
+}
+
+/* Create the SR MM list using the Verlet neighborlist */
+void update_QMMMrec_verlet_ns(t_commrec       *cr,
+                              t_forcerec      *fr,
+                              const rvec       x[],
+                              const t_mdatoms *md,
+                              const matrix     box)
+{
+    /* If atom i shall be considered as MM,
+     *   shiftMMatom[i] = the value of shift (non-negative number)
+     * Otherwise,
+     *   shiftMMatom[i] = -1
+     */
+    int shiftMMatom[md->nr]; /* All atoms in simulation - is that necessary??? */
+    for (int atom = 0; atom < md->nr; atom++)
+    {
+        shiftMMatom[atom] = -1;
+    }
+
+    /* init PBC */
+    ivec  null_ivec;
+    clear_ivec(null_ivec);
+    t_pbc pbc;
+    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec, false, box);
+
+    /* copy pointers */
+    t_QMrec           *qm   = fr->qr->qm[0];
+    t_MMrec           *mm   = fr->qr->mm;
+    nbnxn_pairlist_t **nbl  = fr->nbv->grp[0].nbl_lists.nbl;
+    int                nnbl = fr->nbv->grp[0].nbl_lists.nnbl;
+    nbnxn_search_t     nbs  = fr->nbv->nbs;
+
+    /* QM shift array -- looks good but still desirable to be checked once more!
+     */
+    rvec dx;
+    qm->shiftQM[0] = XYZ2IS(0, 0, 0);
+    for (int i = 1; i < qm->nrQMatoms; i++)
+    {
+        qm->shiftQM[i] = pbc_dx_aiuc(&pbc, x[qm->indexQM[0]], x[qm->indexQM[i]], dx);
+    }
+
+    /* Loop over the nnbl neighborlists!
+     * This is necessary with multithreading.
+     */
+    // int qm_atom_index_i, qm_atom_index_j, shift; // alternative implementation - to be tested yet
+    for (int inbl = 0; inbl < nnbl; inbl++)
+    {
+        /* loop over CI clusters */
+        for (int ci = 0; ci < nbl[inbl]->nci; ci++)
+        {
+            /* is there a QM atom in this CI cluster? */
+            bool qm_atom_in_ci = false;
+            /* break the loop if a QM atom has already been found */
+            for (int ii = 0; ii < nbl[inbl]->na_ci && !qm_atom_in_ci; ii++)
+            {
+                /* compare to indices of QM atoms */
+                for (int iq = 0; iq < qm->nrQMatoms && !qm_atom_in_ci; iq++)
+                {
+                    if (qm->indexQM[iq] == nbs->a[nbl[inbl]->na_ci * nbl[inbl]->ci[ci].ci + ii])
+                    {
+                        qm_atom_in_ci = true;
+                        // qm_atom_index_i = iq;
+                    }
+                }
+            }
+            /* get the shift of this CI cluster */
+            // shift = nbl[inbl]->ci[ci].shift & NBNXN_CI_SHIFT;
+
+            /* loop over the corresponding CJ clusters */
+            for (int cj = nbl[inbl]->ci[ci].cj_ind_start; cj < nbl[inbl]->ci[ci].cj_ind_end; cj++)
+            {
+                /* is there a QM atoms in this CJ cluster? */
+                bool qm_atom_in_cj = false;
+                /* break the loop if a QM atom has already been found */
+                for (int jj = 0; jj < nbl[inbl]->na_cj && !qm_atom_in_cj; jj++)
+                {
+                    /* compare to indices of QM atoms */
+                    for (int jq = 0; jq < qm->nrQMatoms && !qm_atom_in_cj; jq++)
+                    {
+                        if (qm->indexQM[jq] == nbs->a[nbl[inbl]->na_cj * nbl[inbl]->cj[cj].cj + jj])
+                        {
+                            qm_atom_in_cj = true;
+                            // qm_atom_index_j = jq;
+                        }
+                    }
+                }
+
+                /* If there is a QM atom in cluster ci,
+                 * then put the non-QM atoms in cluster cj into the MM list.
+                 */
+                if (qm_atom_in_ci)
+                {
+                    put_cluster_in_MMlist_verlet(nbl[inbl]->cj[cj].cj, nbl[inbl]->na_cj,
+                                                 qm, nbs, shiftMMatom,
+                                                 // true, shift, qm_atom_index_i,
+                                                 &pbc, x);
+                }
+
+                /* If there is a QM atom in cluster cj,
+                 * then put the non-QM atoms in cluster ci into the MM list.
+                 */
+                if (qm_atom_in_cj)
+                {
+                    put_cluster_in_MMlist_verlet(nbl[inbl]->ci[ci].ci, nbl[inbl]->na_ci,
+                                                 qm, nbs, shiftMMatom,
+                                                 // false, shift, qm_atom_index_j,
+                                                 &pbc, x);
+                }
+            }
+        }
+    }
+
+    /* count the MM atoms found in the above search */
+    int nrMMatoms = 0;
+    for (int i = 0; i < md->nr; i++)
+    {
+        if (shiftMMatom[i] != -1)
+        {
+            nrMMatoms++;
+        }
+    }
+
+    /* Allocate space and fill the array with atom numbers. */
+    mm->nrMMatoms = nrMMatoms;
+    srenew(mm->indexMM, nrMMatoms);
+    srenew(mm->shiftMM, nrMMatoms);
+    /* Index i runs along shiftMMatom,
+     *       j runs along the new indexMM array.
+     */
+    int count = 0;
+    for (int atom = 0; atom < md->nr; atom++)
+    {
+        if (shiftMMatom[atom] != -1)
+        {
+            mm->indexMM[count] = atom;
+            mm->shiftMM[count] = shiftMMatom[atom];
+            count++;
+        }
+    }
+    srenew(mm->xMM, nrMMatoms);
+    srenew(mm->MMcharges, nrMMatoms);
+    for (int i = 0; i < nrMMatoms; i++) /* no free energy yet */
+    {
+        mm->MMcharges[i] = md->chargeA[mm->indexMM[i]] * mm->scalefactor;
+    }
+    /* Check. */
+    if (count != mm->nrMMatoms)
+    {
+        printf("ERROR IN MM ATOM SEARCH -- VERLET BASED SCHEME\n");
+        exit(-1);
+    }
+
+    return;
+} /* update_QMMMrec_verlet_ns */
 
 
 real calculate_QMMM(t_commrec  *cr,

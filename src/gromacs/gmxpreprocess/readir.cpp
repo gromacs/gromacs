@@ -1381,10 +1381,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->bQMMM)
     {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
-        }
         if (!EI_DYNAMICS(ir->eI))
         {
             char buf[STRLEN];
