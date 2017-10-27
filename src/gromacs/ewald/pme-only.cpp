@@ -637,7 +637,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
             pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
-            pme_gpu_wait_for_gpu(pme, wcycle, &forces, vir_q, &energy_q);
+            pme_gpu_wait_finish_task(pme, wcycle, &forces, vir_q, &energy_q);
         }
         else
         {
