@@ -140,16 +140,18 @@ class Bias
          * \param[in] dimParams              Bias dimension parameters.
          * \param[in] beta                   1/(k_B T).
          * \param[in] mdTimeStep             The MD time step.
-         * \param[in] disableUpdateSkips     If to disable update skips, useful for testing
+         * \param[in] biasInitFilename       Name of file to read PMF and target from.
+         * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          */
-        Bias(const t_commrec               *cr,
-             int                            biasIndexInCollection,
-             const AwhParams               &awhParams,
-             const AwhBiasParams           &awhBiasParams,
-             const std::vector<DimParams>  &dimParams,
-             double                         beta,
-             double                         mdTimeStep,
-             BiasParams::DisableUpdateSkips disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
+        Bias(const t_commrec                *cr,
+             int                             biasIndexInCollection,
+             const AwhParams                &awhParams,
+             const AwhBiasParams            &awhBiasParams,
+             const std::vector<DimParams>   &dimParams,
+             double                          beta,
+             double                          mdTimeStep,
+             const std::string              &biasInitFilename,
+             BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
         /*! \brief Destructor */
         ~Bias();
