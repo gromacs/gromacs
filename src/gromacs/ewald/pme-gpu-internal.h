@@ -199,6 +199,15 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pm
 CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * Checks whether work in the PME GPU stream has completed.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ *
+ * \returns                     True if work in the PME stream has completed.
+ */
+CUDA_FUNC_QUALIFIER bool queryPmeGpuStreamFinished(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(0)
+
+/*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
  *
  * \param[in] pmeGPU            The PME GPU structure.
@@ -601,6 +610,18 @@ void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box);
  * \param[in] pmeGPU         The PME GPU structure.
  */
 void pme_gpu_finish_computation(const PmeGpu *pmeGPU);
+
+/*! \libinternal \brief
+ * If the PME GPU computation has completed finalizes the computation by updating timings.
+ *
+ * Note: it does essentially the same as pme_gpu_finish_computation() except that, instead of
+ * waiting until the GPU tasks complete, if the PME stream still has non-completed tasks,
+ * it immediately returns so the caller can do other work.
+ *
+ * \param[in] pmeGPU         The PME GPU structure.
+ * \return                   True if the PME GPU computation is complete at the time of the call.
+ */
+bool pme_gpu_has_computation_finished(const PmeGpu *pmeGPU);
 
 //! A binary enum for spline data layout transformation
 enum class PmeLayoutTransform

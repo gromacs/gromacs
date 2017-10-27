@@ -316,32 +316,73 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
 
-void
-pme_gpu_wait_for_gpu(const gmx_pme_t                *pme,
-                     gmx_wallcycle_t                 wcycle,
-                     gmx::ArrayRef<const gmx::RVec> *forces,
-                     matrix                          virial,
-                     real                           *energy)
+/*! \brief Reduce staged virial and energy outputs. */
+static inline void reduceStagingBuffers(const gmx_pme_t                *pme,
+                                        gmx::ArrayRef<const gmx::RVec> *forces,
+                                        matrix                          virial,
+                                        real                           *energy)
+{
+    *forces = pme_gpu_get_forces(pme->gpu);
+
+    if (pme_gpu_performs_solve(pme->gpu))
+    {
+        pme_gpu_get_energy_virial(pme->gpu, energy, virial);
+    }
+    else
+    {
+        get_pme_ener_vir_q(pme->solve_work, pme->nthread, energy, virial);
+    }
+}
+
+/*! \brief Check whether or waits for PME GPU work to finish.
+ */
+static bool pme_gpu_wait_or_check_if_finished(const gmx_pme_t                *pme,
+                                              gmx::ArrayRef<const gmx::RVec> *forces,
+                                              matrix                          virial,
+                                              real                           *energy,
+                                              bool                            checkOnly)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
     const bool haveComputedEnergyAndVirial = pme->gpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
 
-    wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-    pme_gpu_finish_computation(pme->gpu);
-    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
-
-    *forces = pme_gpu_get_forces(pme->gpu);
+    if (checkOnly)
+    {
+        if (!pme_gpu_has_computation_finished(pme->gpu))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        pme_gpu_finish_computation(pme->gpu);
+    }
 
     if (haveComputedEnergyAndVirial)
     {
-        if (pme_gpu_performs_solve(pme->gpu))
-        {
-            pme_gpu_get_energy_virial(pme->gpu, energy, virial);
-        }
-        else
-        {
-            get_pme_ener_vir_q(pme->solve_work, pme->nthread, energy, virial);
-        }
+        reduceStagingBuffers(pme, forces, virial, energy);
     }
+
+    return true;
+}
+
+
+bool pme_gpu_check_if_tasks_finished(const gmx_pme_t                *pme,
+                                     gmx_unused gmx_wallcycle_t      wcycle,
+                                     gmx::ArrayRef<const gmx::RVec> *forces,
+                                     matrix                          virial,
+                                     real                           *energy)
+{
+    return pme_gpu_wait_or_check_if_finished(pme, forces, virial, energy, true);
+}
+
+void pme_gpu_wait_for_gpu(const gmx_pme_t                *pme,
+                          gmx_wallcycle_t                 wcycle,
+                          gmx::ArrayRef<const gmx::RVec> *forces,
+                          matrix                          virial,
+                          real                           *energy)
+{
+    wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
+    pme_gpu_wait_or_check_if_finished(pme, forces, virial, energy, false);
+    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 }

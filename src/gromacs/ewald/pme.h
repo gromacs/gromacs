@@ -330,6 +330,23 @@ void pme_gpu_launch_gather(const gmx_pme_t        *pme,
                            PmeForceOutputHandling  forceTreatment);
 
 /*! \brief
+ * Checks if PME GPU tasks are completed, and if they did gets the output forces and virial/energy
+ * (if they were to be computed).
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  wcycle         The wallclock counter.
+ * \param[out] forces         The output forces.
+ * \param[out] virial         The output virial matrix.
+ * \param[out] energy         The output energy.
+ * \returns                   True if the PME GPU tasks have completed (and all results have been reveived/reduced if needed).
+ */
+bool pme_gpu_check_if_tasks_finished(const gmx_pme_t                *pme,
+                                     gmx_wallcycle_t                 wcycle,
+                                     gmx::ArrayRef<const gmx::RVec> *forces,
+                                     matrix                          virial,
+                                     real                           *energy);
+
+/*! \brief
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
  * (if they were to be computed).
  *
