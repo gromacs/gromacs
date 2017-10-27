@@ -198,6 +198,15 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pm
 CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * Checks whether work in the PME GPU stream has completed.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ *
+ * \returns                     True if work in the PME stream has completed.
+ */
+CUDA_FUNC_QUALIFIER bool pme_gpu_stream_query(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(0)
+
+/*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
  *
  * \param[in] pmeGpu            The PME GPU structure.
@@ -573,7 +582,6 @@ gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.
- * Should be called after pme_gpu_finish_computation.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  * \param[out] energy            The output energy.
@@ -659,5 +667,15 @@ void pme_gpu_destroy(PmeGpu *pmeGpu);
 void pme_gpu_reinit_atoms(PmeGpu           *pmeGpu,
                           const int         nAtoms,
                           const real       *charges);
+
+/*! \brief \libinternal
+ * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
+ *
+ * This clears the device-side working buffers in preparation for new computation.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ */
+void pme_gpu_reinit_computation(const PmeGpu *pmeGPU);
+
 
 #endif

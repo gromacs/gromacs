@@ -54,6 +54,7 @@ extern "C" {
 #endif
 
 struct nbnxn_atomdata_t;
+enum class GpuTaskCompletion;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -120,6 +121,43 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               const struct nbnxn_atomdata_t gmx_unused *nbatom,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
+
+/*! \brief Check or wait for nonbonded GPU tasks completion.
+ *
+ *  This function allows checking or waiting for the nonbonded GPU task's completion.
+ *  Success, i.e. that the tasks completed and results are ready to consume, is signaled
+ *  by the return value (always true if blocking wait mode requested).
+ *
+ *  The \p completionKind parameter controls whether the behavior is non-blocking
+ *  (achieved by passing GpuTaskCompletion::Check) or blocking wait until the results
+ *  are ready (when GpuTaskCompletion::Wait is passed).
+ *  As in "Check" mode the function returns immediately if the GPU stream
+ *  still contain tasks that have not completed it allows
+ *  implementing an efficient polling wait and overlapping work on the CPU.
+ *
+ *  Note that it is only safe to use the results, and to continue to the next MD
+ *  step when this function has returned true which indicates successful completion
+ *  of all nonbonded tasks, both compute, transfer, and auxiliary like the update
+ *  of the internal module state (timing accumulation, list pruning states) and
+ *  that of the results which may require internal staging reduction (\p fshift, \p e_el, \p e_lj).
+ *
+ * \param[in]  nb     The nonbonded data GPU structure
+ * \param[in]  flags  Force flags
+ * \param[in]  aloc   Atom locality identifier
+ * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
+ * \returns              True if the nonbonded tasks associated with \p aloc locality have completed
+ */
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_wait_or_check_finished(gmx_nbnxn_gpu_t gmx_unused  *nb,
+                                      int             gmx_unused   flags,
+                                      int             gmx_unused   aloc,
+                                      real            gmx_unused  *e_lj,
+                                      real            gmx_unused  *e_el,
+                                      rvec            gmx_unused  *fshift,
+                                      GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false)
 
 /*! \brief
  * Wait for the asynchronously launched nonbonded tasks and data

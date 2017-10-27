@@ -133,7 +133,7 @@ void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-static void pme_gpu_reinit_computation(const PmeGpu *pmeGpu)
+void pme_gpu_reinit_computation(const PmeGpu *pmeGpu)
 {
     pme_gpu_clear_grids(pmeGpu);
     pme_gpu_clear_energy_virial(pmeGpu);

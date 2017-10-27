@@ -373,6 +373,11 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
                             pmeGpu->deviceInfo);
 }
 
+bool pme_gpu_stream_query(const PmeGpu *pmeGPU)
+{
+    return gpuStreamQuery(pmeGPU->archSpecific->pmeStream);
+}
+
 void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
