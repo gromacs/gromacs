@@ -121,16 +121,29 @@ void init_QMMMrec(t_commrec  *cr,
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
 
-void update_QMMMrec(t_commrec       *cr,
-                    t_forcerec      *fr,
-                    const rvec      *x,
-                    const t_mdatoms *md,
-                    const matrix     box);
+void update_QMMMrec_group_ns(t_commrec       *cr,
+                             t_forcerec      *fr,
+                             const rvec       x[],
+                             const t_mdatoms *md,
+                             const matrix     box);
 
-/* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
- * taken froom the neighbourlists of the QM atoms. In a QMMM run this
- * routine should be called at every step, since it updates the MM
- * elements of the t_QMMMrec struct.
+void update_QMMMrec_verlet_ns(t_commrec       *cr,
+                              t_forcerec      *fr,
+                              const rvec       x[],
+                              const t_mdatoms *md,
+                              const matrix     box);
+
+/* update_QMMMrec_* fills the MM stuff in QMMMrec.
+ * The MM atoms are taken froom the neighbourlists of the QM atoms.
+ * This routine is called at every neighborsearching step,
+ * since it updates the MM elements of the t_QMMMrec struct.
+ */
+
+void update_QMMM_coord(const rvec *x,
+                       t_forcerec *fr);
+
+/* Update the coordinate entries in the QMMMrec structure.
+ * Unlike update_QMMMrec_*, this routine is called in every MD step.
  */
 
 real calculate_QMMM(t_commrec  *cr,

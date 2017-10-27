@@ -1317,10 +1317,17 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    /* update QMMMrec, if necessary */
+    /* Update QMMMrec, if necessary, as well as QM/MM coordinates. */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, x, mdatoms, box);
+        /* In case the neighborlist has been updated,
+         * perform a new search for MM neighbors of QM atoms.
+         */
+        if (bNS)
+        {
+            update_QMMMrec_verlet_ns(cr, fr, x, mdatoms, box);
+        }
+        update_QMMM_coord(x, fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
@@ -1770,10 +1777,17 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         clear_pull_forces(inputrec->pull_work);
     }
 
-    /* update QMMMrec, if necessary */
+    /* Update QMMMrec, if necessary, as well as QM/MM coordinates. */
     if (fr->bQMMM)
     {
-        update_QMMMrec(cr, fr, x, mdatoms, box);
+        /* In case the neighborlist has been updated,
+         * perform a new search for MM neighbors of QM atoms.
+         */
+        if (bNS)
+        {
+            update_QMMMrec_group_ns(cr, fr, x, mdatoms, box);
+        }
+        update_QMMM_coord(x, fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
