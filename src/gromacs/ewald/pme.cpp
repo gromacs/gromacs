@@ -529,8 +529,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
         fprintf(debug, "Creating PME data structures.\n");
     }
 
-    gmx_pme_t *pmeRaw = nullptr;
-    snew(pmeRaw, 1);
+    gmx_pme_t *pmeRaw = new gmx_pme_t();
     unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(pmeRaw);
 
     pme->sum_qgrid_tmp       = nullptr;
@@ -1756,7 +1755,7 @@ void gmx_pme_destroy(gmx_pme_t *pme)
         pme_gpu_destroy(pme->gpu);
     }
 
-    sfree(pme);
+    delete pme;
 }
 
 void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *charges)
