@@ -601,7 +601,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     /* Initialize AWH and restore state from history in checkpoint if needed. */
     if (ir->bDoAwh)
     {
-        ir->awh = new gmx::Awh(fplog, *ir, cr, *ir->awhParams, ir->pull_work);
+        ir->awh = new gmx::Awh(fplog, *ir, cr, *ir->awhParams, opt2fn("-awh", nfile, fnm), ir->pull_work);
 
         if (startingFromCheckpoint)
         {
