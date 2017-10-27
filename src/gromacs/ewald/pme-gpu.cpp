@@ -325,10 +325,9 @@ void pme_gpu_wait_for_gpu(const gmx_pme_t *pme,
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
     const bool haveComputedEnergyAndVirial = pme->gpu->settings.stepFlags & GMX_PME_CALC_ENER_VIR;
-    const bool haveComputedForces          = pme->gpu->settings.stepFlags & GMX_PME_CALC_F;
 
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-    pme_gpu_finish_step(pme->gpu, haveComputedForces, haveComputedEnergyAndVirial);
+    pme_gpu_finish_step(pme->gpu);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
     if (haveComputedEnergyAndVirial)

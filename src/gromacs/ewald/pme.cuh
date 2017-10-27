@@ -146,16 +146,8 @@ struct pme_gpu_cuda_t
     cudaStream_t pmeStream;
 
     /* Synchronization events */
-    /*! \brief Triggered after the energy/virial have been copied to the host (after the solving stage). */
-    cudaEvent_t syncEnerVirD2H;
-    /*! \brief Triggered after the output forces have been copied to the host (after the gathering stage). */
-    cudaEvent_t syncForcesD2H;
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     cudaEvent_t syncSpreadGridD2H;
-    /*! \brief Triggered after the atom spline data has been copied to the host (after the spline computation). */
-    cudaEvent_t syncSplineAtomDataD2H;
-    /*! \brief Triggered after the grid hes been copied to the host (after the solving stage) */
-    cudaEvent_t syncSolveGridD2H;
 
     // TODO: consider moving some things below into the non-CUDA struct.
 

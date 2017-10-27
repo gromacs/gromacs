@@ -93,8 +93,6 @@ void pme_gpu_update_timings(const pme_gpu_t *pmeGPU)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
-        pme_gpu_synchronize(pmeGPU);
-
         for (const size_t &activeTimer : pmeGPU->archSpecific->activeTimers)
         {
             pmeGPU->archSpecific->timingEvents[activeTimer].getLastRangeTime();

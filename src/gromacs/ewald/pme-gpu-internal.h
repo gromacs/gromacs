@@ -202,13 +202,6 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(const pme_gpu_t *CUDA_FUNC_A
                                                     float           *CUDA_FUNC_ARGUMENT(h_forces)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Waits for the PME GPU output forces copying to the CPU buffer to finish.
- *
- * \param[in] pmeGPU            The PME GPU structure.
- */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_output_forces(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
-
-/*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
  *
  * \param[in] pmeGPU            The PME GPU structure.
@@ -319,12 +312,6 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *CUDA_F
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_free_fract_shifts(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
-/*! \libinternal \brief
- * Waits for the output virial/energy copying to the intermediate CPU buffer to finish.
- *
- * \param[in] pmeGPU  The PME GPU structure.
- */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_output_energy_virial(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Copies the input real-space grid from the host to the GPU.
@@ -617,11 +604,8 @@ void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box);
  * Finishes the PME GPU step, waiting for the output forces and/or energy/virial to be copied to the host.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \param[in] bCalcForces    The left-over flag from the CPU code which tells the function to copy the forces to the CPU side. Should be passed to the launch call instead. FIXME
- * \param[in] bCalcEnerVir   The left-over flag from the CPU code which tells the function to copy the energy/virial to the CPU side. Should be passed to the launch call instead.
  */
-void pme_gpu_finish_step(const pme_gpu_t *pmeGPU,  const bool       bCalcForces,
-                         const bool       bCalcEnerVir);
+void pme_gpu_finish_step(const pme_gpu_t *pmeGPU);
 
 //! A binary enum for spline data layout transformation
 enum class PmeLayoutTransform
