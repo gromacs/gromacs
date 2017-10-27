@@ -2684,6 +2684,10 @@ void init_forcerec(FILE                *fp,
             break;
     }
 
+    /* These start out identical to ir, but might be altered if we e.g. tabulate the interaction in the kernel */
+    fr->nbkernel_elec_modifier    = ic->coulomb_modifier;
+    fr->nbkernel_vdw_modifier     = ic->vdw_modifier;
+
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         fr->bvdwtab    = ((ic->vdwtype != evdwCUT || !gmx_within_tol(ic->reppow, 12.0, 10*GMX_DOUBLE_EPS))

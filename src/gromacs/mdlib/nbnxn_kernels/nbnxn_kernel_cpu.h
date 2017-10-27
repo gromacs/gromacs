@@ -44,6 +44,7 @@
 #ifndef _nbnxn_kernel_cpu_h
 #define _nbnxn_kernel_cpu_h
 
+#include "gromacs/fda/FDA.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
@@ -76,6 +77,12 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
                  int                        clearF,
                  real                      *fshift,
                  real                      *vCoulomb,
-                 real                      *vVdw);
+                 real                      *vVdw
+#ifdef BUILD_WITH_FDA
+                 ,
+                 FDA                       *fda,
+                 int                       *cellInv
+#endif
+                );
 
 #endif

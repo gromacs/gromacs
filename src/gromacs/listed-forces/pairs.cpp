@@ -47,6 +47,7 @@
 
 #include <cmath>
 
+#include "gromacs/fda/FDA.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/group.h"
@@ -362,6 +363,10 @@ do_pairs_general(int ftype, int nbonds,
     real             LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
     real             qqB, c6B, c12B, sigma2_def, sigma2_min;
 
+#ifdef BUILD_WITH_FDA
+    FDA *            fda = fr->fda;
+#endif
+
     switch (ftype)
     {
         case F_LJ14:
@@ -514,6 +519,10 @@ do_pairs_general(int ftype, int nbonds,
         /* Add the forces */
         rvec_inc(f[ai], dx);
         rvec_dec(f[aj], dx);
+
+#ifdef BUILD_WITH_FDA
+       	fda->add_bonded(ai, aj, fda::InteractionType_NB14, dx);
+#endif
 
         if (g)
         {

@@ -133,6 +133,13 @@ void upstring (char *str)
     }
 }
 
+void lowstring (char *str)
+{
+    int i;
+    for (i = 0; (i < (int)strlen(str)); i++)
+        str[i] = tolower(str[i]);
+}
+
 void ltrim (char *str)
 {
     int   i, c;
@@ -300,6 +307,35 @@ gmx_strndup(const char *src, int n)
     strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
+}
+
+int str_nelem(const char *str,int maxptr,char *ptr[])
+{
+    int  np=0;
+    char *copy0,*copy;
+
+    copy0=strdup(str);
+    copy=copy0;
+    ltrim(copy);
+    while (*copy != '\0') {
+      if (np >= maxptr)
+        gmx_fatal(FARGS,"Too many groups on line: '%s' (max is %d)",
+		  str,maxptr);
+      if (ptr)
+        ptr[np]=copy;
+      np++;
+      while ((*copy != '\0') && !isspace(*copy))
+        copy++;
+      if (*copy != '\0') {
+        *copy='\0';
+        copy++;
+      }
+      ltrim(copy);
+    }
+    if (ptr == NULL)
+      sfree(copy0);
+
+    return np;
 }
 
 /* Magic hash init number for Dan J. Bernsteins algorithm.

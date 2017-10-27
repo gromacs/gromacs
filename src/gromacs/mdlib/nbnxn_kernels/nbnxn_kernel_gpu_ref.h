@@ -53,10 +53,16 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      rvec                       *shift_vec,
                      int                         force_flags,
                      int                         clearF,
-                     real  *                     f,
-                     real  *                     fshift,
-                     real  *                     Vc,
-                     real  *                     Vvdw);
+                     real                       *f,
+                     real                       *fshift,
+                     real                       *Vc,
+                     real                       *Vvdw
+#ifdef BUILD_WITH_FDA
+                     ,
+                     FDA                        *fda,
+                     int                        *cellInv
+#endif
+                    );
 
 #ifdef __cplusplus
 }

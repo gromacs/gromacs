@@ -306,7 +306,11 @@ calc_one_bond(int thread,
                           idef->iparams, &idef->cmap_grid,
                           x, f, fshift,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                          md, fcd, global_atom_index);
+                          md, fcd, global_atom_index
+#ifdef BUILD_WITH_FDA
+                          , fr->fda
+#endif
+                         );
         }
 #if GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES && bUseSIMD &&
@@ -364,7 +368,11 @@ calc_one_bond(int thread,
                                                   idef->iparams,
                                                   x, f, fshift,
                                                   pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                                                  md, fcd, global_atom_index);
+                                                  md, fcd, global_atom_index
+#ifdef BUILD_WITH_FDA
+                                                  , fr->fda
+#endif
+                                                 );
         }
     }
     else

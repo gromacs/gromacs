@@ -155,9 +155,6 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
  * after all modules have registered their external potentials, if present.
  */
 
-int str_nelem(const char *str, int maxptr, char *ptr[]);
-/* helper function from readir.c to convert strings */
-
 char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 

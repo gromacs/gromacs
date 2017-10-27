@@ -77,6 +77,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -466,7 +467,13 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egCOULSR],
                              fr->bBHAM ?
                              enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+                             enerd->grpp.ener[egLJSR]
+#ifdef BUILD_WITH_FDA
+                             ,
+                             fr->fda,
+                             fr->nbv->nbs->a
+#endif
+                            );
             break;
 
         case nbnxnk8x8x8_GPU:
@@ -484,7 +491,13 @@ static void do_nb_verlet(t_forcerec *fr,
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
                                  enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
+                                 enerd->grpp.ener[egLJSR]
+#ifdef BUILD_WITH_FDA
+                                 ,
+                                 fr->fda,
+                                 fr->nbv->nbs->a
+#endif
+                                );
             break;
 
         default:

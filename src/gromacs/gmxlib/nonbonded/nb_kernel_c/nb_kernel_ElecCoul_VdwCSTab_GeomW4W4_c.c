@@ -42,6 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
+#include "gromacs/fda/FDA.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -102,6 +103,10 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -338,6 +343,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_lj(fda, inr+0, jnr+0, fvdw, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -363,6 +373,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+1, felec, dx11, dy11, dz11);
+            fda_virial_bond(fda, inr+1, jnr+1, fscal, dx11, dy11, dz11);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -390,6 +405,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+2, felec, dx12, dy12, dz12);
+            fda_virial_bond(fda, inr+1, jnr+2, fscal, dx12, dy12, dz12);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -415,6 +435,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+3, felec, dx13, dy13, dz13);
+            fda_virial_bond(fda, inr+1, jnr+3, fscal, dx13, dy13, dz13);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -442,6 +467,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+1, felec, dx21, dy21, dz21);
+            fda_virial_bond(fda, inr+2, jnr+1, fscal, dx21, dy21, dz21);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -467,6 +497,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+2, felec, dx22, dy22, dz22);
+            fda_virial_bond(fda, inr+2, jnr+2, fscal, dx22, dy22, dz22);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -494,6 +529,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+3, felec, dx23, dy23, dz23);
+            fda_virial_bond(fda, inr+2, jnr+3, fscal, dx23, dy23, dz23);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -519,6 +559,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+1, felec, dx31, dy31, dz31);
+            fda_virial_bond(fda, inr+3, jnr+1, fscal, dx31, dy31, dz31);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -546,6 +591,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+2, felec, dx32, dy32, dz32);
+            fda_virial_bond(fda, inr+3, jnr+2, fscal, dx32, dy32, dz32);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -571,6 +621,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_c
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+3, felec, dx33, dy33, dz33);
+            fda_virial_bond(fda, inr+3, jnr+3, fscal, dx33, dy33, dz33);
+#endif
 
             /* Inner loop uses 298 flops */
         }
@@ -681,6 +736,10 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -903,6 +962,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_lj(fda, inr+0, jnr+0, fvdw, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -925,6 +989,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+1, felec, dx11, dy11, dz11);
+            fda_virial_bond(fda, inr+1, jnr+1, fscal, dx11, dy11, dz11);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -949,6 +1018,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+2, felec, dx12, dy12, dz12);
+            fda_virial_bond(fda, inr+1, jnr+2, fscal, dx12, dy12, dz12);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -971,6 +1045,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+1, jnr+3, felec, dx13, dy13, dz13);
+            fda_virial_bond(fda, inr+1, jnr+3, fscal, dx13, dy13, dz13);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -995,6 +1074,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+1, felec, dx21, dy21, dz21);
+            fda_virial_bond(fda, inr+2, jnr+1, fscal, dx21, dy21, dz21);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1017,6 +1101,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*2+XX] -= tx;
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+2, felec, dx22, dy22, dz22);
+            fda_virial_bond(fda, inr+2, jnr+2, fscal, dx22, dy22, dz22);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1041,6 +1130,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+2, jnr+3, felec, dx23, dy23, dz23);
+            fda_virial_bond(fda, inr+2, jnr+3, fscal, dx23, dy23, dz23);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1063,6 +1157,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*1+XX] -= tx;
             f[j_coord_offset+DIM*1+YY] -= ty;
             f[j_coord_offset+DIM*1+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+1, felec, dx31, dy31, dz31);
+            fda_virial_bond(fda, inr+3, jnr+1, fscal, dx31, dy31, dz31);
+#endif
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1087,6 +1186,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*2+YY] -= ty;
             f[j_coord_offset+DIM*2+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+2, felec, dx32, dy32, dz32);
+            fda_virial_bond(fda, inr+3, jnr+2, fscal, dx32, dy32, dz32);
+#endif
+
             /**************************
              * CALCULATE INTERACTIONS *
              **************************/
@@ -1109,6 +1213,11 @@ nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_c
             f[j_coord_offset+DIM*3+XX] -= tx;
             f[j_coord_offset+DIM*3+YY] -= ty;
             f[j_coord_offset+DIM*3+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded_coulomb(fda, inr+3, jnr+3, felec, dx33, dy33, dz33);
+            fda_virial_bond(fda, inr+3, jnr+3, fscal, dx33, dy33, dz33);
+#endif
 
             /* Inner loop uses 281 flops */
         }

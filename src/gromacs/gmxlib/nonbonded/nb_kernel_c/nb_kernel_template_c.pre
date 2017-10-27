@@ -43,6 +43,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
+#include "gromacs/fda/FDA.h"
 #include "gromacs/gmxlib/nrnb.h"
 /* #endif */
 
@@ -174,6 +175,10 @@ void
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
     /* #endif */
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -828,6 +833,20 @@ void
             f[j_coord_offset+DIM*{J}+XX] -= tx;
             f[j_coord_offset+DIM*{J}+YY] -= ty;
             f[j_coord_offset+DIM*{J}+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] and 'vdw' in INTERACTION_FLAGS[I][J] */
+            fda_add_nonbonded(fda, inr+{I}, jnr+{J}, felec, fvdw, dx{I}{J}, dy{I}{J}, dz{I}{J});
+                /* ## fprintf(stdout, "add coulomb and vdw %i %i %15.8f %15.8f\n", inr+{I}, jnr+{J}, felec, fvdw); */
+            /*         #elif 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            fda_add_nonbonded_coulomb(fda, inr+{I}, jnr+{J}, felec, dx{I}{J}, dy{I}{J}, dz{I}{J});
+                /* ## fprintf(stdout, "add coulomb %i %i %15.8f\n", inr+{I}, jnr+{J}, felec); */
+            /*         #elif 'vdw' in INTERACTION_FLAGS[I][J] */
+            fda_add_nonbonded_lj(fda, inr+{I}, jnr+{J}, fvdw, dx{I}{J}, dy{I}{J}, dz{I}{J});
+                /* ## fprintf(stdout, "add vdw %i %i %15.8f\n", inr+{I}, jnr+{J}, fvdw); */
+            /*        #endif */
+            fda_virial_bond(fda, inr+{I}, jnr+{J}, fscal, dx{I}{J}, dy{I}{J}, dz{I}{J});
+#endif
 
             /*         #define INNERFLOPS INNERFLOPS+9 */
             /*     #endif */
