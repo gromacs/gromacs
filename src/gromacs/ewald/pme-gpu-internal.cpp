@@ -79,6 +79,11 @@ static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *
 
 void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial)
 {
+    for (int j = 0; j < c_virialAndEnergyCount; j++)
+    {
+        GMX_ASSERT(std::isfinite(pmeGPU->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
+    }
+
     GMX_ASSERT(energy, "Invalid energy output pointer in PME GPU");
     unsigned int j = 0;
     virial[XX][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
@@ -128,16 +133,11 @@ static void pme_gpu_reinit_step(const PmeGpu *pmeGPU)
     pme_gpu_clear_energy_virial(pmeGPU);
 }
 
-void pme_gpu_finish_step(const PmeGpu *pmeGPU, const bool bCalcF, const bool bCalcEnerVir)
+void pme_gpu_finish_step(const PmeGpu *pmeGPU)
 {
-    if (bCalcF && pme_gpu_performs_gather(pmeGPU))
-    {
-        pme_gpu_sync_output_forces(pmeGPU);
-    }
-    if (bCalcEnerVir && pme_gpu_performs_solve(pmeGPU))
-    {
-        pme_gpu_sync_output_energy_virial(pmeGPU);
-    }
+    // Synchronize on force and possibly earlier energy/virial and possibly timers
+    pme_gpu_synchronize(pmeGPU);
+
     pme_gpu_update_timings(pmeGPU);
     pme_gpu_reinit_step(pmeGPU);
 }
