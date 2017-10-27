@@ -24,6 +24,7 @@ The guide is currently split into a few main parts:
 .. toctree::
    :maxdepth: 2
 
+   contribute
    overview
    build-system
    relocatable-binaries
