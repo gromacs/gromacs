@@ -42,6 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
+#include "gromacs/fda/FDA.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -84,6 +85,10 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_c
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -269,6 +274,11 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_c
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
 
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded(fda, inr+0, jnr+0, felec, fvdw, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
+
             /* Inner loop uses 91 flops */
         }
         /* End of innermost loop */
@@ -344,6 +354,10 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_c
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda = fr->fda;
+#endif
 
     x                = xx[0];
     f                = ff[0];
@@ -512,6 +526,11 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_c
             f[j_coord_offset+DIM*0+XX] -= tx;
             f[j_coord_offset+DIM*0+YY] -= ty;
             f[j_coord_offset+DIM*0+ZZ] -= tz;
+
+#ifdef BUILD_WITH_FDA
+            fda_add_nonbonded(fda, inr+0, jnr+0, felec, fvdw, dx00, dy00, dz00);
+            fda_virial_bond(fda, inr+0, jnr+0, fscal, dx00, dy00, dz00);
+#endif
 
             /* Inner loop uses 81 flops */
         }

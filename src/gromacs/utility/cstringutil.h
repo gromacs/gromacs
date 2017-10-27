@@ -81,6 +81,9 @@ void strip_comment(char *line);
 /** Make a string uppercase. */
 void upstring(char *str);
 
+/** Make a string lowercase. */
+void lowstring(char *str);
+
 /** Remove leading whitespace from a string. */
 void ltrim(char *str);
 
@@ -104,6 +107,9 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n);
 char *gmx_strdup(const char *src);
 /** Duplicates first \p n characters of \p src. */
 char *gmx_strndup(const char *src, int n);
+
+/** Splits str into items and stores them in ptr which has size maxptr */
+int str_nelem(const char *str, int maxptr, char *ptr[]);
 
 /*! \brief
  * Pattern matching with wildcards.

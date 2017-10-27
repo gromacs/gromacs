@@ -33,6 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifdef BUILD_WITH_FDA
+#ifndef GMX_DOUBLE
+#define PF_TINY_REAL_NUMBER 1.0e-7f
+#else
+#define PF_TINY_REAL_NUMBER 1.0e-14
+#endif
+#endif
+
 /* When calculating RF or Ewald interactions we calculate the electrostatic
  * forces and energies on excluded atom pairs here in the non-bonded loops.
  */
@@ -88,6 +96,11 @@
 #endif
 #endif
             real fscal;
+#ifdef BUILD_WITH_FDA
+#ifdef CALC_COULOMB
+            real fvdw;
+#endif
+#endif
             real fx, fy, fz;
 
             /* A multiply mask used to zero an interaction
@@ -347,17 +360,50 @@
             if (i < UNROLLI/2)
 #endif
             {
+#ifdef BUILD_WITH_FDA
+            	fvdw = frLJ*rinvsq;
+                fscal = fvdw + fcoul;
+#else
                 fscal = frLJ*rinvsq + fcoul;
+#endif
                 /* 2 flops for scalar LJ+Coulomb force */
+
+#ifdef CALC_ENERGIES
+#ifdef BUILD_WITH_FDA
+				if (fabs(fcoul) > PF_TINY_REAL_NUMBER && fabs(fvdw) > PF_TINY_REAL_NUMBER) {
+					fda->add_nonbonded(cellInv[ai], cellInv[aj], fcoul, fvdw, dx, dy, dz);
+				} else if (fabs(fcoul) > PF_TINY_REAL_NUMBER) {
+					fda->add_nonbonded_single(cellInv[ai], cellInv[aj], fda::InteractionType_COULOMB, fcoul, dx, dy, dz);
+				} else if (fabs(fvdw) > PF_TINY_REAL_NUMBER) {
+					fda->add_nonbonded_single(cellInv[ai], cellInv[aj], fda::InteractionType_LJ, fscal, dx, dy, dz);
+				}
+#endif
+#endif
             }
 #ifdef HALF_LJ
             else
             {
                 fscal = fcoul;
+
+#ifdef CALC_ENERGIES
+#ifdef BUILD_WITH_FDA
+				if (fabs(fcoul) > PF_TINY_REAL_NUMBER) {
+					fda->add_nonbonded_single(cellInv[ai], cellInv[aj], fda::InteractionType_COULOMB, fcoul, dx, dy, dz);
+				}
+#endif
+#endif
             }
 #endif
 #else
             fscal = frLJ*rinvsq;
+
+#ifdef CALC_ENERGIES
+#ifdef BUILD_WITH_FDA
+            if (fabs(fscal) > PF_TINY_REAL_NUMBER) {
+            	fda->add_nonbonded_single(cellInv[ai], cellInv[aj], fda::InteractionType_LJ, fscal, dx, dy, dz);
+            }
+#endif
+#endif
 #endif
             fx = fscal*dx;
             fy = fscal*dy;

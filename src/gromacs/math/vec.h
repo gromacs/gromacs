@@ -40,7 +40,12 @@
 /*
    collection of in-line ready operations:
 
+   swap:
+   void real_swap(real *a, real *b)
+   void int_swap(int *a, int *b)
+
    vector operations:
+   void rvec_opp(rvec a)                            a = -a
    void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
    void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
    void ivec_add(const ivec a,const ivec b,ivec c)  c = a + b
@@ -58,6 +63,7 @@
    void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
    void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
    void dsvmul(double a,dvec v1,dvec v2)            v2 = a * v1
+   void svdiv(real a, rvec v)                       v /= a
    void clear_rvec(rvec a)                          a = 0
    void clear_dvec(dvec a)                          a = 0
    void clear_ivec(rvec a)                          a = 0
@@ -104,6 +110,37 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+
+static inline void real_swap(real *a, real *b)
+{
+  real tmp;
+
+  tmp = *a;
+  *a = *b;
+  *b = tmp;
+}
+
+static inline void int_swap(int *a, int *b)
+{
+  int tmp;
+
+  tmp = *a;
+  *a = *b;
+  *b = tmp;
+}
+
+static inline void rvec_opp(rvec a)
+{
+  real x,y,z;
+
+  x = -a[XX];
+  y = -a[YY];
+  z = -a[ZZ];
+
+  a[XX] = x;
+  a[YY] = y;
+  a[ZZ] = z;
+}
 
 static inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
@@ -287,6 +324,13 @@ static inline void dsvmul(double a, const dvec v1, dvec v2)
     v2[XX] = a*v1[XX];
     v2[YY] = a*v1[YY];
     v2[ZZ] = a*v1[ZZ];
+}
+
+static inline void svdiv(real a, rvec v)
+{
+    v[XX] /= a;
+    v[YY] /= a;
+    v[ZZ] /= a;
 }
 
 static inline real distance2(const rvec v1, const rvec v2)
