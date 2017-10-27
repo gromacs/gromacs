@@ -129,6 +129,7 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    "TEST",
 };
 
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */

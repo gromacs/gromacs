@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
@@ -219,6 +220,20 @@ static inline void gpuStreamSynchronize(cudaStream_t s)
 {
     cudaError_t stat = cudaStreamSynchronize(s);
     CU_RET_ERR(stat, "cudaStreamSynchronize failed");
+}
+
+/*! \brief Calls cudaStreamQuery() in the stream \p s and returns true if all tasks have completed.
+ *
+ * \param[in] s stream to synchronize with
+ *
+ *  \returns     True if all tasks enqueued in the stream \p s (at the time of this call) have completed.
+ */
+static inline bool gpuStreamQuery(cudaStream_t s)
+{
+    cudaError_t stat = cudaStreamQuery(s);
+    GMX_ASSERT(stat == cudaSuccess || stat ==  cudaErrorNotReady, "cudaStreamQuery failed");
+
+    return (stat == cudaSuccess);
 }
 
 #endif
