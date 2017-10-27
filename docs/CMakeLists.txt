@@ -104,6 +104,7 @@ if (SPHINX_FOUND)
         download.rst
         dev-manual/index.rst
         dev-manual/build-system.rst
+        dev-manual/contribute.rst
         dev-manual/doxygen.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
