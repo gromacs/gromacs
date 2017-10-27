@@ -585,7 +585,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
             break;
 
         case CodePath::CPU:
-            gridLineIndices = GridLineIndicesVector::fromArray(reinterpret_cast<IVec *>(atc->idx), atomCount);
+            gridLineIndices = GridLineIndicesVector::fromVector(atc->idx.begin(), atc->idx.end());
             break;
 
         default:

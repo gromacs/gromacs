@@ -186,25 +186,23 @@ static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *a
 static void make_thread_local_ind(const pme_atomcomm_t *atc,
                                   int thread, splinedata_t *spline)
 {
-    int             n, t, i, start, end;
-    thread_plist_t *tpl;
+    int             n, i, start, end;
 
     /* Combine the indices made by each thread into one index */
 
     n     = 0;
     start = 0;
-    for (t = 0; t < atc->nthread; t++)
+    for (const auto &tpl : atc->thread_plist)
     {
-        tpl = &atc->thread_plist[t];
         /* Copy our part (start - end) from the list of thread t */
         if (thread > 0)
         {
-            start = tpl->n[thread-1];
+            start = tpl.n[thread-1];
         }
-        end = tpl->n[thread];
+        end = tpl.n[thread];
         for (i = start; i < end; i++)
         {
-            spline->ind[n++] = tpl->i[i];
+            spline->ind[n++] = tpl.i[i];
         }
     }
 

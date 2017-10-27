@@ -38,6 +38,8 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -99,8 +101,8 @@ pmegrids_destroy(pmegrids_t *grids);
 
 void
 make_gridindex_to_localindex(int n, int local_start, int local_range,
-                             int **global_to_local,
-                             real **fraction_shift);
+                             std::vector<int> *global_to_local,
+                             std::vector<real> *fraction_shift);
 
 void
 set_grid_alignment(int *pmegrid_nz, int pme_order);

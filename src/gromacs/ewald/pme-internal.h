@@ -59,14 +59,14 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#include "pme-gpu-types.h"
+#include <vector>
 
-//! A repeat of typedef from parallel_3dfft.h
-typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;
+#include "pme-gpu-types.h"
 
 struct t_commrec;
 struct t_inputrec;
 struct pme_gpu_t;
+struct gmx_parallel_3dfft;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -168,34 +168,34 @@ struct pme_atomcomm_t{
     MPI_Comm mpi_comm;
 #endif
 
-    int     *node_dest;     /* The nodes to send x and q to with DD */
-    int     *node_src;      /* The nodes to receive x and q from with DD */
-    int     *buf_index;     /* Index for commnode into the buffers */
+    std::vector<int>          node_dest; /* The nodes to send x and q to with DD */
+    std::vector<int>          node_src;  /* The nodes to receive x and q from with DD */
+    std::vector<unsigned int> buf_index; /* Index for commnode into the buffers */
 
-    int      maxshift;
+    int                       maxshift;
 
-    int      npd;
-    int      pd_nalloc;
-    int     *pd;
-    int     *count;         /* The number of atoms to send to each node */
-    int    **count_thread;
-    int     *rcount;        /* The number of atoms to receive */
+    int                       npd;
+    int                       pd_nalloc;
+    std::vector<int>          pd;
+    int                      *count;  /* The number of atoms to send to each node */
+    std::vector < std::vector < int>> count_thread;
+    std::vector<int>          rcount; /* The number of atoms to receive */
 
-    int      n;
-    int      nalloc;
-    rvec    *x;
-    real    *coefficient;
-    rvec    *f;
-    gmx_bool bSpread;       /* These coordinates are used for spreading */
-    int      pme_order;
-    ivec    *idx;
-    rvec    *fractx;            /* Fractional coordinate relative to
-                                 * the lower cell boundary
-                                 */
-    int             nthread;
-    int            *thread_idx; /* Which thread should spread which coefficient */
-    thread_plist_t *thread_plist;
-    splinedata_t   *spline;
+    int                       n;
+    int                       nalloc;
+    rvec                     *x;
+    real                     *coefficient;
+    rvec                     *f;
+    gmx_bool                  bSpread; /* These coordinates are used for spreading */
+    int                       pme_order;
+    std::vector<gmx::IVec>    idx;
+    rvec                     *fractx;       /* Fractional coordinate relative to
+                                             * the lower cell boundary
+                                             */
+    int                         nthread;
+    int                        *thread_idx; /* Which thread should spread which coefficient */
+    std::vector<thread_plist_t> thread_plist;
+    splinedata_t               *spline;
 };
 
 /*! \brief Data structure for a single PME grid */
@@ -302,32 +302,31 @@ struct gmx_pme_t {
     int     pmegrid_start_ix, pmegrid_start_iy, pmegrid_start_iz;
 
     /* Work data for spreading and gathering */
-    pme_spline_work          *spline_work;
+    pme_spline_work                  *spline_work;
 
-    real                    **fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
+    std::vector<real *>               fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     /* inside the interpolation grid, but separate for 2D PME decomp. */
-    int                       fftgrid_nx, fftgrid_ny, fftgrid_nz;
+    int                               fftgrid_nx, fftgrid_ny, fftgrid_nz;
 
-    t_complex               **cfftgrid; /* Grids for complex FFT data */
+    std::vector<t_complex *>          cfftgrid; /* Grids for complex FFT data */
 
-    int                       cfftgrid_nx, cfftgrid_ny, cfftgrid_nz;
+    int                               cfftgrid_nx, cfftgrid_ny, cfftgrid_nz;
 
-    gmx_parallel_3dfft_t     *pfft_setup;
+    std::vector<gmx_parallel_3dfft *> pfft_setup;
 
-    int                      *nnx, *nny, *nnz;
-    real                     *fshx, *fshy, *fshz;
+    std::vector<int>                  nnx, nny, nnz;
+    std::vector<real>                 fshx, fshy, fshz;
 
-    pme_atomcomm_t            atc[2]; /* Indexed on decomposition index */
-    matrix                    recipbox;
-    real                      boxVolume;
-    splinevec                 bsp_mod;
+    pme_atomcomm_t                    atc[2]; /* Indexed on decomposition index */
+    matrix                            recipbox;
+    real                              boxVolume;
+    splinevec                         bsp_mod;
     /* Buffers to store data for local atoms for L-B combination rule
      * calculations in LJ-PME. lb_buf1 stores either the coefficients
      * for spreading/gathering (in serial), or the C6 coefficient for
      * local atoms (in parallel).  lb_buf2 is only used in parallel,
      * and stores the sigma values for local atoms. */
-    real                 *lb_buf1, *lb_buf2;
-    int                   lb_buf_nalloc; /* Allocation size for the above buffers. */
+    std::vector<real>     lb_buf1, lb_buf2;
 
     pme_overlap_t         overlap[2];    /* Indexed on dimension, 0=x, 1=y */
 

@@ -212,15 +212,14 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     {
         pmeGPU->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGPU->common->nk[i]);
     }
-    const int cellCount = c_pmeNeighborUnitcellCount;
     pmeGPU->common->fsh.resize(0);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshx, pme->fshx + cellCount * pme->nkx);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshy, pme->fshy + cellCount * pme->nky);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshz, pme->fshz + cellCount * pme->nkz);
+    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshx.begin(), pme->fshx.end());
+    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshy.begin(), pme->fshy.end());
+    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshz.begin(), pme->fshz.end());
     pmeGPU->common->nn.resize(0);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
+    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnx.begin(), pme->nnx.end());
+    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nny.begin(), pme->nny.end());
+    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnz.begin(), pme->nnz.end());
     pmeGPU->common->runMode   = pme->runMode;
     pmeGPU->common->boxScaler = pme->boxScaler;
 }

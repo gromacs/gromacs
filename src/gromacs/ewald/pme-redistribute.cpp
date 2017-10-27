@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,6 @@ static void pme_calc_pidx(int start, int end,
      */
 
     nslab = atc->nslab;
-    pd    = atc->pd;
 
     /* Reset the count */
     for (i = 0; i < nslab; i++)
@@ -86,9 +85,9 @@ static void pme_calc_pidx(int start, int end,
         {
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
-            s     = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
-            si    = (int)(s + 2*nslab) % nslab;
-            pd[i] = si;
+            s          = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
+            si         = (int)(s + 2*nslab) % nslab;
+            atc->pd[i] = si;
             count[si]++;
         }
     }
@@ -101,9 +100,9 @@ static void pme_calc_pidx(int start, int end,
         {
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
-            s     = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
-            si    = (int)(s + 2*nslab) % nslab;
-            pd[i] = si;
+            s          = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
+            si         = (int)(s + 2*nslab) % nslab;
+            atc->pd[i] = si;
             count[si]++;
         }
     }
@@ -123,7 +122,7 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
         {
             pme_calc_pidx(natoms* thread   /nthread,
                           natoms*(thread+1)/nthread,
-                          recipbox, x, atc, atc->count_thread[thread]);
+                          recipbox, x, atc, atc->count_thread[thread].data());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -161,7 +160,7 @@ static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
 {
     int i;
 
-    srenew(spline->ind, atc->nalloc);
+    srenew(spline->ind, atc->nalloc); //FIX killme
     /* Initialize the index to identity so it works without threads */
     for (i = 0; i < atc->nalloc; i++)
     {
@@ -199,7 +198,7 @@ void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
         if (atc->bSpread)
         {
             srenew(atc->fractx, atc->nalloc);
-            srenew(atc->idx, atc->nalloc);
+            atc->idx.resize(atc->nalloc);
 
             if (atc->nthread > 1)
             {
@@ -261,19 +260,18 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
                                     int n, gmx_bool bX, rvec *x, real *data,
                                     pme_atomcomm_t *atc)
 {
-    int *commnode, *buf_index;
+
     int  nnodes_comm, i, nsend, local_pos, buf_pos, node, scount, rcount;
 
-    commnode  = atc->node_dest;
-    buf_index = atc->buf_index;
+    int *commnode  = atc->node_dest.data();
 
     nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
     nsend = 0;
     for (i = 0; i < nnodes_comm; i++)
     {
-        buf_index[commnode[i]] = nsend;
-        nsend                 += atc->count[commnode[i]];
+        atc->buf_index[commnode[i]] = nsend;
+        nsend                      += atc->count[commnode[i]];
     }
     if (bX)
     {
@@ -330,10 +328,10 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             /* Copy to the send buffer */
             if (bX)
             {
-                copy_rvec(x[i], pme->bufv[buf_index[node]]);
+                copy_rvec(x[i], pme->bufv[atc->buf_index[node]]);
             }
-            pme->bufr[buf_index[node]] = data[i];
-            buf_index[node]++;
+            pme->bufr[atc->buf_index[node]] = data[i];
+            atc->buf_index[node]++;
         }
     }
 
@@ -365,11 +363,9 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                     int n, rvec *f,
                     gmx_bool bAddF)
 {
-    int *commnode, *buf_index;
     int  nnodes_comm, local_pos, buf_pos, i, scount, rcount, node;
 
-    commnode  = atc->node_dest;
-    buf_index = atc->buf_index;
+    int *commnode = atc->node_dest.data();
 
     nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
 
@@ -387,8 +383,8 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                             pme->bufv[buf_pos], rcount*sizeof(rvec));
             local_pos += scount;
         }
-        buf_index[commnode[i]] = buf_pos;
-        buf_pos               += rcount;
+        atc->buf_index[commnode[i]] = buf_pos;
+        buf_pos                    += rcount;
     }
 
     local_pos = 0;
@@ -406,8 +402,8 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             else
             {
                 /* Add from the receive buffer */
-                rvec_inc(f[i], pme->bufv[buf_index[node]]);
-                buf_index[node]++;
+                rvec_inc(f[i], pme->bufv[atc->buf_index[node]]);
+                atc->buf_index[node]++;
             }
         }
     }
@@ -425,8 +421,8 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             else
             {
                 /* Copy from the receive buffer */
-                copy_rvec(pme->bufv[buf_index[node]], f[i]);
-                buf_index[node]++;
+                copy_rvec(pme->bufv[atc->buf_index[node]], f[i]);
+                atc->buf_index[node]++;
             }
         }
     }
@@ -463,7 +459,7 @@ do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr
         if (atc->npd > atc->pd_nalloc)
         {
             atc->pd_nalloc = over_alloc_dd(atc->npd);
-            srenew(atc->pd, atc->pd_nalloc);
+            atc->pd.resize(atc->pd_nalloc, 0);
         }
         pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
         where();

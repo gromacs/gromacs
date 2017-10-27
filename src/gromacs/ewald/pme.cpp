@@ -69,6 +69,8 @@
 
 #include "gmxpre.h"
 
+#define excusemewtf
+
 #include "pme.h"
 
 #include "config.h"
@@ -106,9 +108,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
@@ -207,24 +207,23 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
 
     if (atc->nslab > 1)
     {
-        snew(atc->node_dest, atc->nslab);
-        snew(atc->node_src, atc->nslab);
+        atc->node_dest.resize(atc->nslab, 0);
+        atc->node_src.resize(atc->nslab, 0);
         setup_coordinate_communication(atc);
 
-        snew(atc->count_thread, pme->nthread);
         for (thread = 0; thread < pme->nthread; thread++)
         {
-            snew(atc->count_thread[thread], atc->nslab);
+            atc->count_thread.push_back(std::vector<int>(atc->nslab, 0));
         }
-        atc->count = atc->count_thread[0];
-        snew(atc->rcount, atc->nslab);
-        snew(atc->buf_index, atc->nslab);
+        atc->count = atc->count_thread[0].data();
+        atc->rcount.resize(atc->nslab, 0);
+        atc->buf_index.resize(atc->nslab, 0);
     }
 
     atc->nthread = pme->nthread;
     if (atc->nthread > 1)
     {
-        snew(atc->thread_plist, atc->nthread);
+        atc->thread_plist.resize(atc->nthread, 0); //TODO push_back
     }
     snew(atc->spline, atc->nthread);
     for (thread = 0; thread < atc->nthread; thread++)
@@ -240,24 +239,12 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
 /*! \brief Destroy an atom communication data structure and its child structs */
 static void destroy_atomcomm(pme_atomcomm_t *atc)
 {
-    sfree(atc->pd);
     if (atc->nslab > 1)
     {
-        sfree(atc->node_dest);
-        sfree(atc->node_src);
-        for (int i = 0; i < atc->nthread; i++)
-        {
-            sfree(atc->count_thread[i]);
-        }
-        sfree(atc->count_thread);
-        sfree(atc->rcount);
-        sfree(atc->buf_index);
-
         sfree(atc->x);
         sfree(atc->coefficient);
         sfree(atc->f);
     }
-    sfree(atc->idx);
     sfree(atc->fractx);
 
     sfree(atc->thread_idx);
@@ -277,10 +264,6 @@ static void destroy_atomcomm(pme_atomcomm_t *atc)
         }
         sfree_aligned(atc->spline[i].ptr_dtheta_z);
         sfree_aligned(atc->spline[i].ptr_theta_z);
-    }
-    if (atc->nthread > 1)
-    {
-        sfree(atc->thread_plist);
     }
     sfree(atc->spline);
 }
@@ -794,9 +777,9 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     {
         pme->ngrids = DO_Q;
     }
-    snew(pme->fftgrid, pme->ngrids);
-    snew(pme->cfftgrid, pme->ngrids);
-    snew(pme->pfft_setup, pme->ngrids);
+    pme->fftgrid.resize(pme->ngrids, nullptr);
+    pme->cfftgrid.resize(pme->ngrids, nullptr);
+    pme->pfft_setup.resize(pme->ngrids, nullptr);
 
     for (i = 0; i < pme->ngrids; ++i)
     {
@@ -846,10 +829,6 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
         pme->atc[0].n = homenr;
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
-
-    pme->lb_buf1       = nullptr;
-    pme->lb_buf2       = nullptr;
-    pme->lb_buf_nalloc = 0;
 
     pme_gpu_reinit(pme.get(), gpuInfo, mdlog, cr);
 
@@ -1025,7 +1004,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         if (atc->npd > atc->pd_nalloc)
         {
             atc->pd_nalloc = over_alloc_dd(atc->npd);
-            srenew(atc->pd, atc->pd_nalloc);
+            atc->pd.resize(atc->pd_nalloc, 0);
         }
         for (d = pme->ndecompdim-1; d >= 0; d--)
         {
@@ -1380,11 +1359,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 wallcycle_start(wcycle, ewcPME_REDISTXF);
 
                 do_redist_pos_coeffs(pme, cr, start, homenr, bFirst, x, RedistC6);
-                if (pme->lb_buf_nalloc < atc->n)
+                if (pme->lb_buf1.size() < atc->n)
                 {
-                    pme->lb_buf_nalloc = atc->nalloc;
-                    srenew(pme->lb_buf1, pme->lb_buf_nalloc);
-                    srenew(pme->lb_buf2, pme->lb_buf_nalloc);
+                    pme->lb_buf1.resize(atc->nalloc);
+                    pme->lb_buf2.resize(atc->nalloc);
                 }
                 local_c6 = pme->lb_buf1;
                 for (i = 0; i < atc->n; ++i)
@@ -1700,27 +1678,14 @@ void gmx_pme_destroy(gmx_pme_t *pme)
 
     delete pme->boxScaler;
 
-    sfree(pme->nnx);
-    sfree(pme->nny);
-    sfree(pme->nnz);
-    sfree(pme->fshx);
-    sfree(pme->fshy);
-    sfree(pme->fshz);
-
     for (int i = 0; i < pme->ngrids; ++i)
     {
         pmegrids_destroy(&pme->pmegrid[i]);
     }
-    if (pme->pfft_setup)
+    for (int i = 0; i < pme->ngrids; ++i)
     {
-        for (int i = 0; i < pme->ngrids; ++i)
-        {
-            gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
-        }
+        gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
     }
-    sfree(pme->fftgrid);
-    sfree(pme->cfftgrid);
-    sfree(pme->pfft_setup);
 
     for (int i = 0; i < std::max(1, pme->ndecompdim); i++) //pme->atc[0] is always allocated
     {
@@ -1734,9 +1699,6 @@ void gmx_pme_destroy(gmx_pme_t *pme)
 
     destroy_overlap_comm(&pme->overlap[0]);
     destroy_overlap_comm(&pme->overlap[1]);
-
-    sfree(pme->lb_buf1);
-    sfree(pme->lb_buf2);
 
     sfree(pme->bufv);
     sfree(pme->bufr);
