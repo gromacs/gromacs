@@ -138,13 +138,30 @@ static void pme_gpu_reinit_computation(const PmeGpu *pmeGPU)
     pme_gpu_clear_energy_virial(pmeGPU);
 }
 
+bool pme_gpu_has_computation_finished(const PmeGpu *pmeGPU)
+{
+    bool isPmeDone = queryPmeGpuStreamFinished(pmeGPU);
+
+    if (isPmeDone)
+    {
+        pme_gpu_update_timings(pmeGPU);
+        pme_gpu_reinit_computation(pmeGPU);
+    }
+
+    return isPmeDone;
+}
+
 void pme_gpu_finish_computation(const PmeGpu *pmeGPU)
 {
     // Synchronize the whole PME stream at once, including D2H result transfers.
     pme_gpu_synchronize(pmeGPU);
 
     pme_gpu_update_timings(pmeGPU);
+
+    // TODO: move this later and launch it together with the other
+    // non-bonded tasks at the end of the step
     pme_gpu_reinit_computation(pmeGPU);
+
 }
 
 /*! \brief \libinternal
@@ -291,7 +308,6 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     {
         GMX_THROW(gmx::NotImplementedError(errorString));
     }
-
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGPU = pme->gpu;
     changePinningPolicy(&pmeGPU->staging.h_forces, gmx::PinningPolicy::CanBePinned);

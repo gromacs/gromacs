@@ -54,6 +54,7 @@ extern "C" {
 #endif
 
 struct nbnxn_atomdata_t;
+enum class GpuTaskCompletion;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -121,6 +122,32 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
 
+/*! \brief Check or wait for PME GPU work to finish.
+ *
+ *  If GpuTaskCompletion::Check is passed in 'p completionKind, a streamQuery is issued and if work in the stream is
+ *  not done, it returns immediately without doing the timing accumulation and staging
+ *  reduction that is carried out when GPU work in the stream is done.
+ *  As this is called at the end of the step, it also resets the pair list and
+ *  pruning flags.
+ *
+ * \param[in]  nb     The nonbonded data GPU structure
+ * \param[in]  flags  Force flags
+ * \param[in]  aloc   Atom locality identifier
+ * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
+ * \returns              True if the nonbonded tasks completed
+ */
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_wait_or_check_if_finished(gmx_nbnxn_gpu_t  *nb,
+                                         int               flags,
+                                         int               aloc,
+                                         real             *e_lj,
+                                         real             *e_el,
+                                         rvec             *fshift,
+                                         GpuTaskCompletion completionKind) GPU_FUNC_TERM_WITH_RETURN(0)
+
 /*! \brief
  * Wait for the asynchronously launched nonbonded tasks and data
  * transfers to finish.
@@ -136,13 +163,12 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
  * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
-GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
-                            int             gmx_unused  flags,
-                            int             gmx_unused  aloc,
-                            real            gmx_unused *e_lj,
-                            real            gmx_unused *e_el,
-                            rvec            gmx_unused *fshift) GPU_FUNC_TERM
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
+                            int              flags,
+                            int              aloc,
+                            real            *e_lj,
+                            real            *e_el,
+                            rvec            *fshift);
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER

@@ -55,6 +55,7 @@
 #include "nbnxn_ocl/nbnxn_ocl_types.h"
 #endif
 
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -294,13 +295,13 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
     }
 }
 
-// Documented in nbnxn_gpu.h
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
-                            int              flags,
-                            int              aloc,
-                            real            *e_lj,
-                            real            *e_el,
-                            rvec            *fshift)
+bool nbnxn_gpu_wait_or_check_if_finished(gmx_nbnxn_gpu_t  *nb,
+                                         int               flags,
+                                         int               aloc,
+                                         real             *e_lj,
+                                         real             *e_el,
+                                         rvec             *fshift,
+                                         GpuTaskCompletion completionKind)
 {
     /* determine interaction locality from atom locality */
     int iLocality = gpuAtomToInteractionLocality(aloc);
@@ -314,7 +315,19 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
        on some of the nodes! */
     if (!canSkipWork(nb, iLocality))
     {
-        gpuStreamSynchronize(nb->stream[iLocality]);
+        if (completionKind == GpuTaskCompletion::Check)
+        {
+            if (!gpuStreamQuery(nb->stream[iLocality]))
+            {
+                // Early return to skip the steps below that we have to do only
+                // after the NB task completed
+                return false;
+            }
+        }
+        else
+        {
+            gpuStreamSynchronize(nb->stream[iLocality]);
+        }
 
         bool calcEner   = flags & GMX_FORCE_ENERGY;
         bool calcFshift = flags & GMX_FORCE_VIRIAL;
@@ -329,6 +342,61 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
 
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
     nb->plist[iLocality]->haveFreshList = false;
+
+    return true;
+}
+
+/*! \brief
+ * Check if the asynchronously launched nonbonded tasks and data
+ * transfers are finished.
+ *
+ * If the nonbonded tasks are finished,
+ * also does timing accounting and reduction of the internal staging buffers.
+ * As this is called at the end of the step, it also resets the pair list and
+ * pruning flags.
+ *
+ * \param[in] nb The nonbonded data GPU structure
+ * \param[in] flags Force flags
+ * \param[in] aloc Atom locality identifier
+ * \param[out] e_lj Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ */
+static bool nbnxn_gpu_check_if_tasks_finished(gmx_nbnxn_gpu_t *nb,
+                                              int              flags,
+                                              int              aloc,
+                                              real            *e_lj,
+                                              real            *e_el,
+                                              rvec            *fshift)
+{
+    return nbnxn_gpu_wait_or_check_if_finished(nb, flags, aloc, e_lj, e_el, fshift,
+                                               GpuTaskCompletion::Check);
+}
+
+/*! \brief
+ * Wait for the asynchronously launched nonbonded tasks and data
+ * transfers to finish.
+ *
+ * Also does timing accounting and reduction of the internal staging buffers.
+ * As this is called at the end of the step, it also resets the pair list and
+ * pruning flags.
+ *
+ * \param[in] nb The nonbonded data GPU structure
+ * \param[in] flags Force flags
+ * \param[in] aloc Atom locality identifier
+ * \param[out] e_lj Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ */
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
+                            int              flags,
+                            int              aloc,
+                            real            *e_lj,
+                            real            *e_el,
+                            rvec            *fshift)
+{
+    nbnxn_gpu_wait_or_check_if_finished(nb, flags, aloc, e_lj, e_el, fshift,
+                                        GpuTaskCompletion::Wait);
 }
 
 #endif
