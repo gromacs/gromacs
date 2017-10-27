@@ -66,6 +66,8 @@ struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
 struct gmx_pme_t;
 
+enum class GpuTaskCompletion;
+
 namespace gmx
 {
 class ForceWithVirial;
@@ -345,5 +347,30 @@ void pme_gpu_wait_for_gpu(const gmx_pme_t                *pme,
                           gmx::ArrayRef<const gmx::RVec> *forces,
                           matrix                          virial,
                           real                           *energy);
+/*! \brief
+ * Attempts to complete PME GPU tasks.
+ *
+ * The \p completionKind argument controls whether the function blocks until all
+ * PME GPU tasks enqueued completed (as pme_gpu_wait_for_gpu() does) or only
+ * checks and returns immediately if they did not.
+ * When blocking or the tasks have completed it also gets the output forces
+ * by assigning the ArrayRef to the \p forces pointer passed in.
+ * Virial/energy are also outputs if they were to be computed.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  wcycle         The wallclock counter.
+ * \param[out] forces         The output forces.
+ * \param[out] virial         The output virial matrix.
+ * \param[out] energy         The output energy.
+ * \param[in]  completionKind  Indicates whether PME task completion should only be checked rather than waited for
+ * \returns                   True if the PME GPU tasks have completed
+ */
+bool pme_gpu_wait_or_check_finished(const gmx_pme_t                *pme,
+                                    gmx_wallcycle_t                 wcycle,
+                                    gmx::ArrayRef<const gmx::RVec> *forces,
+                                    matrix                          virial,
+                                    real                           *energy,
+                                    GpuTaskCompletion               completionKind);
+
 
 #endif
