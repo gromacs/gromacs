@@ -41,8 +41,8 @@
  * most of the initial PME CUDA implementation is merged
  * into the master branch (likely, after release 2017).
  * This should include:
- * -- bringing the structure/function names up to guidelines
- * ---- pme_gpu_settings_t -> PmeGpuTasks
+ * -- bringing the function names up to guidelines
+ * -- PmeGpuSettings -> PmeGpuTasks
  * -- refining GPU notation application (#2053)
  * -- renaming coefficients to charges (?)
  *
@@ -84,20 +84,20 @@ enum class PmeForceOutputHandling
 
 #if GMX_GPU == GMX_GPU_CUDA
 
-struct pme_gpu_cuda_t;
+struct PmeGpuCuda;
 /*! \brief A typedef for including the GPU host data by pointer */
-typedef pme_gpu_cuda_t pme_gpu_specific_t;
+typedef PmeGpuCuda PmeGpuSpecific;
 
-struct pme_gpu_cuda_kernel_params_t;
+struct PmeGpuCudaKernelParams;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef pme_gpu_cuda_kernel_params_t pme_gpu_kernel_params_t;
+typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
 
 #else
 
 /*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
-typedef int pme_gpu_specific_t;
+typedef int PmeGpuSpecific;
 /*! \brief A dummy typedef for the GPU kernel arguments data placeholder on non-GPU builds */
-typedef int pme_gpu_kernel_params_t;
+typedef int PmeGpuKernelParams;
 
 #endif
 
@@ -105,14 +105,14 @@ typedef int pme_gpu_kernel_params_t;
  * sorted into several device-side structures depending on the update rate.
  * This is GPU agnostic (float3 replaced by float[3], etc.).
  * The GPU-framework specifics (e.g. cudaTextureObject_t handles) are described
- * in the larger structure pme_gpu_cuda_kernel_params_t in the pme.cuh.
+ * in the larger structure PmeGpuCudaKernelParams in the pme.cuh.
  */
 
 /*! \internal \brief
  * A GPU data structure for storing the constant PME data.
  * This only has to be initialized once.
  */
-struct pme_gpu_const_params_t
+struct PmeGpuConstParams
 {
     /*! \brief Electrostatics coefficient = ONE_4PI_EPS0 / pme->epsilon_r */
     float elFactor;
@@ -125,7 +125,7 @@ struct pme_gpu_const_params_t
  * A GPU data structure for storing the PME data related to the grid sizes and cut-off.
  * This only has to be updated at every DD step.
  */
-struct pme_gpu_grid_params_t
+struct PmeGpuGridParams
 {
     /* Grid sizes */
     /*! \brief Real-space grid data dimensions. */
@@ -168,7 +168,7 @@ struct pme_gpu_grid_params_t
  * A GPU data structure for storing the PME data of the atoms, local to this process' domain partition.
  * This only has to be updated every DD step.
  */
-struct pme_gpu_atom_params_t
+struct PmeGpuAtomParams
 {
     /*! \brief Number of local atoms */
     int    nAtoms;
@@ -203,7 +203,7 @@ struct pme_gpu_atom_params_t
 /*! \internal \brief
  * A GPU data structure for storing the PME data which might change every MD step.
  */
-struct pme_gpu_step_params_t
+struct PmeGpuStepParams
 {
     /* The box parameters. The box only changes size each step with pressure coupling enabled. */
     /*! \brief
@@ -221,20 +221,20 @@ struct pme_gpu_step_params_t
 /*! \internal \brief
  * A single structure encompassing almost all the PME data used in GPU kernels on device.
  * This is inherited by the GPU framework-specific structure
- * (pme_gpu_cuda_kernel_params_t in pme.cuh).
+ * (PmeGpuCudaKernelParams in pme.cuh).
  * This way, most code preparing the kernel parameters can be GPU-agnostic by casting
- * the kernel parameter data pointer to pme_gpu_kernel_params_base_t.
+ * the kernel parameter data pointer to PmeGpuKernelParamsBase.
  */
-struct pme_gpu_kernel_params_base_t
+struct PmeGpuKernelParamsBase
 {
     /*! \brief Constant data that is set once. */
-    pme_gpu_const_params_t constants;
+    PmeGpuConstParams constants;
     /*! \brief Data dependent on the grid size/cutoff. */
-    pme_gpu_grid_params_t  grid;
+    PmeGpuGridParams  grid;
     /*! \brief Data dependent on the DD and local atoms. */
-    pme_gpu_atom_params_t  atoms;
+    PmeGpuAtomParams  atoms;
     /*! \brief Data that possibly changes on every MD step. */
-    pme_gpu_step_params_t  step;
+    PmeGpuStepParams  step;
 };
 
 /* Here are the host-side structures */
@@ -242,7 +242,7 @@ struct pme_gpu_kernel_params_base_t
 /*! \internal \brief
  * The PME GPU settings structure, included in the main PME GPU structure by value.
  */
-struct pme_gpu_settings_t
+struct PmeGpuSettings
 {
     /* Permanent settings set on initialization */
     /*! \brief A boolean which tells if the solving is performed on GPU. Currently always true */
@@ -265,7 +265,7 @@ struct pme_gpu_settings_t
  * The PME GPU intermediate buffers structure, included in the main PME GPU structure by value.
  * Buffers are managed by the PME GPU module.
  */
-struct pme_gpu_staging_t
+struct PmeGpuStaging
 {
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
     float  *h_virialAndEnergy;
@@ -289,7 +289,7 @@ struct pme_gpu_staging_t
  * TODO: use the shared data with the PME CPU.
  * Included in the main PME GPU structure by value.
  */
-struct pme_shared_t
+struct PmeShared
 {
     /*! \brief Grid count - currently always 1 on GPU */
     int ngrids;
@@ -325,18 +325,18 @@ struct pme_shared_t
 /*! \internal \brief
  * The main PME GPU host structure, included in the PME CPU structure by pointer.
  */
-struct pme_gpu_t
+struct PmeGpu
 {
     /*! \brief The information copied once per reinit from the CPU structure. */
-    std::shared_ptr<pme_shared_t> common; // TODO: make the CPU structure use the same type
+    std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 
     /*! \brief The settings. */
-    pme_gpu_settings_t settings;
+    PmeGpuSettings settings;
 
     /*! \brief The host-side buffers.
      * The device-side buffers are buried in kernelParams, but that will have to change.
      */
-    pme_gpu_staging_t staging;
+    PmeGpuStaging staging;
 
     /*! \brief Number of local atoms, padded to be divisible by PME_ATOM_DATA_ALIGNMENT.
      * Used for kernel scheduling.
@@ -362,10 +362,10 @@ struct pme_gpu_t
      * \todo Test whether this should be copied to the constant GPU memory once per MD step
      * (or even less often with no box updates) instead of being an argument.
      */
-    std::shared_ptr<pme_gpu_kernel_params_t> kernelParams;
+    std::shared_ptr<PmeGpuKernelParams> kernelParams;
 
     /*! \brief The pointer to GPU-framework specific host-side data, such as CUDA streams and events. */
-    std::shared_ptr<pme_gpu_specific_t> archSpecific; /* FIXME: make it an unique_ptr */
+    std::shared_ptr<PmeGpuSpecific> archSpecific; /* FIXME: make it an unique_ptr */
 };
 
 #endif
