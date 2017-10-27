@@ -54,6 +54,7 @@ extern "C" {
 #endif
 
 struct nbnxn_atomdata_t;
+enum class GpuTaskCompletion;
 
 /*! \brief
  * Launch asynchronously the nonbonded force calculations.
@@ -121,8 +122,48 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               int                    gmx_unused         flags,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
 
-/*! \brief
- * Wait for the asynchronously launched nonbonded tasks and data
+/*! \brief Attempts to complete nonbonded GPU task.
+ *
+ *  This function attempts to complete the nonbonded task (both GPU and CPU auxiliary work).
+ *  Success, i.e. that the tasks completed and results are ready to be consumed, is signaled
+ *  by the return value (always true if blocking wait mode requested).
+ *
+ *  The \p completionKind parameter controls whether the behavior is non-blocking
+ *  (achieved by passing GpuTaskCompletion::Check) or blocking wait until the results
+ *  are ready (when GpuTaskCompletion::Wait is passed).
+ *  As the "Check" mode the function will return immediately if the GPU stream
+ *  still contain tasks that have not completed, it allows more flexible overlapping
+ *  of work on the CPU with GPU execution.
+ *
+ *  Note that it is only safe to use the results, and to continue to the next MD
+ *  step when this function has returned true which indicates successful completion of
+ *  - All nonbonded GPU tasks: both compute and device transfer(s)
+ *  - auxiliary tasks: updating the internal module state (timing accumulation, list pruning states) and
+ *  - internal staging reduction of (\p fshift, \p e_el, \p e_lj).
+ *
+ *  TODO: improve the handling of outputs e.g. by ensuring that this function explcitly returns the
+ *  force buffer (instead of that being passed only to nbnxn_gpu_launch_cpyback()) and by returning
+ *  the energy and Fshift contributions for some external/centralized reduction.
+ *
+ * \param[in]  nb     The nonbonded data GPU structure
+ * \param[in]  flags  Force flags
+ * \param[in]  aloc   Atom locality identifier
+ * \param[out] e_lj   Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el   Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
+ * \returns              True if the nonbonded tasks associated with \p aloc locality have completed
+ */
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_try_finish_task(gmx_nbnxn_gpu_t gmx_unused  *nb,
+                               int             gmx_unused   flags,
+                               int             gmx_unused   aloc,
+                               real            gmx_unused  *e_lj,
+                               real            gmx_unused  *e_el,
+                               rvec            gmx_unused  *fshift,
+                               GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false)
+
+/*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
  * transfers to finish.
  *
  * Also does timing accounting and reduction of the internal staging buffers.
@@ -137,12 +178,12 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
  * \param[out] fshift Pointer to the shift force buffer to accumulate into
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
-                            int             gmx_unused  flags,
-                            int             gmx_unused  aloc,
-                            real            gmx_unused *e_lj,
-                            real            gmx_unused *e_el,
-                            rvec            gmx_unused *fshift) GPU_FUNC_TERM
+void nbnxn_gpu_wait_finish_task(gmx_nbnxn_gpu_t gmx_unused *nb,
+                                int             gmx_unused  flags,
+                                int             gmx_unused  aloc,
+                                real            gmx_unused *e_lj,
+                                real            gmx_unused *e_el,
+                                rvec            gmx_unused *fshift) GPU_FUNC_TERM
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER

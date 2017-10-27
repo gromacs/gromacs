@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
@@ -114,6 +115,13 @@
 #include "nbnxn_gpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
+
+// TODO: this environment variable allows us to verify before release
+// that on less common architectures the total cost of polling is not larger than
+// a blocking wait (so polling does not introduce overhead when the static
+// PME-first ordering would suffice).
+static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
+
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -851,6 +859,86 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
 }
 
 /*! \brief
+ *  Polling wait for either of the PME or nonbonded GPU tasks.
+ *
+ * Instead of a static order in waiting for GPU tasks, this function
+ * polls checking which of the two tasks completes first, and does the
+ * associated force buffer reduction overlapped with the other task.
+ * By doing that, unlike static scheduling order, it can always overlap
+ * one of the reductions, regardless of the GPU task completion order.
+ *
+ * \param[in]     nbv              Nonbonded verlet structure
+ * \param[in]     pmedata          PME module data
+ * \param[in,out] force            Force array to reduce task outputs into.
+ * \param[in,out] forceWithVirial  Force and virial buffers
+ * \param[in,out] fshift           Shift force output vector results are reduced into
+ * \param[in,out] enerd            Energy data structure results are reduced into
+ * \param[in]     flags            Force flags
+ * \param[in]     wcycle           The wallcycle structure
+ */
+static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t             *nbv,
+                                        const gmx_pme_t                *pmedata,
+                                        gmx::PaddedArrayRef<gmx::RVec> *force,
+                                        ForceWithVirial                *forceWithVirial,
+                                        rvec                            fshift[],
+                                        gmx_enerdata_t                 *enerd,
+                                        int                             flags,
+                                        gmx_wallcycle_t                 wcycle)
+{
+    bool isPmeGpuDone = false;
+    bool isNbGpuDone  = false;
+
+
+    gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
+
+    while (!isPmeGpuDone || !isNbGpuDone)
+    {
+        if (!isPmeGpuDone)
+        {
+            matrix            vir_Q;
+            real              Vlr_q;
+
+            GpuTaskCompletion completionType = (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, wcycle, &pmeGpuForces,
+                                                   vir_Q, &Vlr_q, completionType);
+
+            if (isPmeGpuDone)
+            {
+                pme_gpu_reduce_outputs(wcycle, forceWithVirial, pmeGpuForces,
+                                       enerd, vir_Q, Vlr_q);
+            }
+        }
+
+        if (!isNbGpuDone)
+        {
+            GpuTaskCompletion completionType = (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
+            wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
+            isNbGpuDone = nbnxn_gpu_try_finish_task(nbv->gpu_nbv,
+                                                    flags, eatLocal,
+                                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                                    fshift, completionType);
+            wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            // To get the call count right, when the task finished we
+            // issue a start/stop.
+            // TODO: move the ewcWAIT_GPU_NB_L cycle counting into nbnxn_gpu_try_finish_task()
+            // and ewcNB_XF_BUF_OPS counting into nbnxn_atomdata_add_nbat_f_to_f().
+            if (isNbGpuDone)
+            {
+                wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+                wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+
+                wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+                wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                               nbv->nbat, as_rvec_array(force->data()));
+                wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+                wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            }
+        }
+    }
+}
+
+/*! \brief
  *  Launch the dynamic rolling pruning GPU task.
  *
  *  We currently alternate local/non-local list pruning in odd-even steps
@@ -1405,10 +1493,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (bUseGPU)
             {
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                       flags, eatNonlocal,
-                                       enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                       fr->fshift);
+                nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
+                                           flags, eatNonlocal,
+                                           enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                           fr->fshift);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
@@ -1450,17 +1538,25 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (useGpuPme)
+    // With both nonbonded and PME offloaded a GPU on the same rank, we use
+    // an alternating wait/reduction scheme.
+    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
+    if (alternateGpuWait)
+    {
+        alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, wcycle);
+    }
+
+    if (!alternateGpuWait && useGpuPme)
     {
         gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
         matrix vir_Q;
         real   Vlr_q;
-        pme_gpu_wait_for_gpu(fr->pmedata, wcycle, &pmeGpuForces, vir_Q, &Vlr_q);
+        pme_gpu_wait_finish_task(fr->pmedata, wcycle, &pmeGpuForces, vir_Q, &Vlr_q);
         pme_gpu_reduce_outputs(wcycle, &forceWithVirial, pmeGpuForces, enerd, vir_Q, Vlr_q);
     }
 
-    /* Wait for local NB forces */
-    if (bUseGPU)
+    /* Wait for local GPU NB outputs on the non-alternating wait path */
+    if (!alternateGpuWait && bUseGPU)
     {
         /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
          * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
@@ -1470,10 +1566,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
 
         wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-        nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                               flags, eatLocal,
-                               enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                               fr->fshift);
+        nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
         float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
         if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
@@ -1522,8 +1618,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         // TODO: move here the PME buffer clearing call pme_gpu_reinit_computation()
     }
 
-    /* Do the nonbonded GPU (or emulation) force buffer reduction. */
-    if (bUseOrEmulGPU)
+    /* Do the nonbonded GPU (or emulation) force buffer reduction
+     * on the non-alternating path. */
+    if (bUseOrEmulGPU && !alternateGpuWait)
     {
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
