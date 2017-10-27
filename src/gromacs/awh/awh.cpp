@@ -197,6 +197,7 @@ Awh::Awh(FILE              *fplog,
          const t_inputrec  &ir,
          const t_commrec   *cr,
          const AwhParams   &awhParams,
+         const std::string &biasInitFilename,
          struct pull_t     *pull_work) :
     seed_(awhParams.seed),
     potentialOffset_(0)
@@ -230,7 +231,7 @@ Awh::Awh(FILE              *fplog,
 
         /* Construct the bias, will be moved into biasCoupledToSystem */
         std::unique_ptr<Bias> biasPtr =
-            std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t));
+            std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename));
 
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
     }

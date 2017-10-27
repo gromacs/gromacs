@@ -1314,12 +1314,14 @@ static int findTrailingZeroRows(const double* const *data, int nrows, int ncols)
  *
  * \param[in] dimParams       The dimension parameters.
  * \param[in] grid            The grid.
+ * \param[in] filename        The filename to read PMF and target from.
  * \param[in] numBias         Number of biases.
  * \param[in] biasIndex       The index of the bias.
  * \param[in,out] pointState  The state of the points in this bias.
  */
 static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimParams,
                                              const Grid                   &grid,
+                                             const std::string            &filename,
                                              int                           numBias,
                                              int                           biasIndex,
                                              std::vector<PointState>      *pointState)
@@ -1328,14 +1330,12 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
        From the PMF, the convolved PMF, or the reference value free energy, can be calculated
        base on the force constant. The free energy and target together determine the bias.
      */
-    std::string filename;
-    if (numBias == 1)
+    std::string filenameModified = filename;
+    if (numBias > 1)
     {
-        filename = "awh-init.xvg";
-    }
-    else
-    {
-        filename = formatString("awh%d-init.xvg", biasIndex + 1);
+        auto n = filenameModified.rfind(".");
+        GMX_RELEASE_ASSERT(n != std::string::npos, "The filename should contain an extension starting with .");
+        filenameModified.insert(n, formatString("%d", biasIndex));
     }
 
     std::string correctFormatMessage =
@@ -1356,7 +1356,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     double  **data;
     int       numColumns;
-    int       numRows = read_xvg(filename.c_str(), &data, &numColumns);
+    int       numRows = read_xvg(filenameModified.c_str(), &data, &numColumns);
 
     /* Check basic data properties here. Grid takes care of more complicated things. */
 
@@ -1493,20 +1493,11 @@ void BiasState::normalizePmf(int numSharingSims)
     }
 }
 
-/*! \brief
- * Initialize the state of grid coordinate points.
- *
- * \param[in] awhBiasParams   Bias parameters from inputrec.
- * \param[in] dimParams       The dimension parameters.
- * \param[in] grid            The grid.
- * \param[in] params          The bias parameters.
- * \param[in] numBias         The number of biases.
- * \param[in] ms              Struct for multi-simulation communication.
- */
 void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
                                    const std::vector<DimParams>  &dimParams,
                                    const Grid                    &grid,
                                    const BiasParams              &params,
+                                   const std::string             &filename,
                                    int                            numBias,
                                    const gmx_multisim_t          *ms)
 {
@@ -1515,7 +1506,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
      */
     if (awhBiasParams.bUserData)
     {
-        readUserPmfAndTargetDistribution(dimParams, grid, numBias, params.biasIndex, &points_);
+        readUserPmfAndTargetDistribution(dimParams, grid, filename, numBias, params.biasIndex, &points_);
         setFreeEnergyToConvolvedPmf(dimParams, grid, params, ms);
     }
 
