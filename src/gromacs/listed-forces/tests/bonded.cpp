@@ -151,7 +151,11 @@ class BondedTest : public ::testing::Test
                                                                  lambda, &dvdlambda,
                                                                  /* const struct t_mdatoms *md */ nullptr,
                                                                  /* struct t_fcdata *fcd */ nullptr,
-                                                                 &ddgatindex);
+                                                                 &ddgatindex
+#ifdef BUILD_WITH_FDA
+                                                                 , nullptr
+#endif
+                                                                );
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
 

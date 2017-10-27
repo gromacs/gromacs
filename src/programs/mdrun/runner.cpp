@@ -509,6 +509,11 @@ int Mdrunner::mdrunner()
 
     std::unique_ptr<t_state> globalState;
 
+#ifdef BUILD_WITH_FDA
+    std::shared_ptr<fda::FDASettings> ptr_fda_settings;
+    std::shared_ptr<FDA> ptr_fda;
+#endif
+
     if (SIMMASTER(cr))
     {
         /* Only the master rank has the global state */
@@ -516,6 +521,12 @@ int Mdrunner::mdrunner()
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), mtop);
+
+#ifdef BUILD_WITH_FDA
+        ptr_fda_settings = std::make_shared<fda::FDASettings>(nfile, fnm, mtop, PAR(cr));
+        ptr_fda = std::make_shared<FDA>(*ptr_fda_settings);
+        ptr_fda->modify_energy_group_exclusions(mtop, inputrec);
+#endif
 
         exitIfCannotForceGpuRun(forceUsePhysicalGpu,
                                 emulateGpuNonbonded,
@@ -969,6 +980,10 @@ int Mdrunner::mdrunner()
                       shortRangedDeviceInfo,
                       FALSE,
                       pforce);
+
+#ifdef BUILD_WITH_FDA
+        fr->fda = ptr_fda.get();
+#endif
 
         /* Initialize QM-MM */
         if (fr->bQMMM)

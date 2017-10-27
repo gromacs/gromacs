@@ -53,7 +53,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
+int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
 {
     int            maxresnr, mt, r;
     const t_atoms *atoms;
@@ -761,6 +761,76 @@ static void ilistcat(int ftype, t_ilist *dest, t_ilist *src, int copies,
     }
 }
 
+static void pf_ilistcat(int ftype, t_ilist *dest, t_ilist *src, int copies,
+                        int dnum, int snum, fda::FDASettings const& fda_settings)
+{
+    // Return if no bonded interaction is needed.
+    if (!(fda_settings.type & (fda::InteractionType_BONDED + fda::InteractionType_NB14))) return;
+
+    int nral, c, i, a, atomIdx;
+    char needed;
+
+    nral = NRAL(ftype);
+
+    t_iatom *tmp;
+    snew(tmp,copies*src->nr);
+    int len = 0;
+
+    int *g1atomsBeg = fda_settings.groups->a + fda_settings.groups->index[fda_settings.index_group1];
+    int *g1atomsEnd = fda_settings.groups->a + fda_settings.groups->index[fda_settings.index_group1 + 1];
+    int *g1atomsCur = NULL;
+    int *g2atomsBeg = fda_settings.groups->a + fda_settings.groups->index[fda_settings.index_group2];
+    int *g2atomsEnd = fda_settings.groups->a + fda_settings.groups->index[fda_settings.index_group2 + 1];
+    int *g2atomsCur = NULL;
+
+    for (c = 0; c < copies; c++)
+    {
+        for (i = 0; i < src->nr; )
+        {
+            needed = 0;
+            for (a = 0; a < nral; a++)
+            {
+            	atomIdx = dnum + src->iatoms[i+a+1];
+        		for (g1atomsCur = g1atomsBeg; g1atomsCur < g1atomsEnd; ++g1atomsCur) {
+        			if (atomIdx == *g1atomsCur) needed = 1;
+        		}
+        		for (g2atomsCur = g2atomsBeg; g2atomsCur < g2atomsEnd; ++g2atomsCur) {
+        			if (atomIdx == *g2atomsCur) needed = 1;
+        		}
+            }
+            if (needed) {
+                tmp[len++] = src->iatoms[i];
+                for (a = 0; a < nral; a++) tmp[len++] = dnum + src->iatoms[i+a+1];
+
+                #ifdef FDA_BONDEXCL_PRINT_DEBUG_ON
+					fprintf(stderr, "=== DEBUG === bonded interaction %i", ftype);
+					fprintf(stderr, " %i", src->iatoms[i]);
+					for (a = 0; a < nral; a++) fprintf(stderr, " %i", dnum + src->iatoms[i + a + 1]);
+					fprintf(stderr, " needed\n");
+					fflush(stderr);
+                #endif
+            } else {
+                #ifdef FDA_BONDEXCL_PRINT_DEBUG_ON
+					fprintf(stderr, "=== DEBUG === bonded interaction %i", ftype);
+					fprintf(stderr, " %i", src->iatoms[i]);
+					for (a = 0; a < nral; a++) fprintf(stderr, " %i", dnum + src->iatoms[i + a + 1]);
+					fprintf(stderr, " not needed\n");
+					fflush(stderr);
+                #endif
+            }
+            i += a + 1;
+        }
+        dnum += snum;
+    }
+
+    dest->nalloc = dest->nr + len;
+    srenew(dest->iatoms, dest->nalloc);
+
+    for (i = 0; i < len; i++) dest->iatoms[dest->nr++] = tmp[i];
+
+    sfree(tmp);
+}
+
 static void set_posres_params(t_idef *idef, gmx_molblock_t *molb,
                               int i0, int a_offset)
 {
@@ -837,7 +907,11 @@ static void set_fbposres_params(t_idef *idef, gmx_molblock_t *molb,
 static void gen_local_top(const gmx_mtop_t *mtop,
                           bool              freeEnergyInteractionsAtEnd,
                           bool              bMergeConstr,
-                          gmx_localtop_t   *top)
+                          gmx_localtop_t   *top
+#ifdef BUILD_WITH_FDA
+                          , fda::FDASettings *ptr_fda_settings
+#endif
+                         )
 {
     int                     mb, srcnr, destnr, ftype, natoms, mol, nposre_old, nfbposre_old;
     gmx_molblock_t         *molb;
@@ -907,8 +981,14 @@ static void gen_local_top(const gmx_mtop_t *mtop,
             }
             else if (!(bMergeConstr && ftype == F_CONSTRNC))
             {
-                ilistcat(ftype, &idef->il[ftype], &molt->ilist[ftype],
-                         molb->nmol, destnr, srcnr);
+#ifdef BUILD_WITH_FDA
+            	if (ptr_fda_settings and ptr_fda_settings->bonded_exclusion_on)
+                    pf_ilistcat(ftype, &idef->il[ftype], &molt->ilist[ftype],
+                             molb->nmol, destnr, srcnr, *ptr_fda_settings);
+            	else
+#endif
+                    ilistcat(ftype, &idef->il[ftype], &molt->ilist[ftype],
+                             molb->nmol, destnr, srcnr);
             }
         }
         if (idef->il[F_POSRES].nr > nposre_old)
@@ -957,13 +1037,21 @@ static void gen_local_top(const gmx_mtop_t *mtop,
 
 gmx_localtop_t *
 gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
-                            bool              freeEnergyInteractionsAtEnd)
+                            bool              freeEnergyInteractionsAtEnd
+#ifdef BUILD_WITH_FDA
+                            , fda::FDASettings *ptr_fda_settings
+#endif
+                           )
 {
     gmx_localtop_t *top;
 
     snew(top, 1);
 
-    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
+    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top
+#ifdef BUILD_WITH_FDA
+                  , ptr_fda_settings
+#endif
+                 );
 
     return top;
 }
@@ -974,7 +1062,12 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
     gmx_localtop_t ltop;
     t_topology     top;
 
-    gen_local_top(mtop, false, FALSE, &ltop);
+    gen_local_top(mtop, false, FALSE, &ltop
+
+#ifdef BUILD_WITH_FDA
+                  , nullptr
+#endif
+                 );
     ltop.idef.ilsort = ilsortUNKNOWN;
 
     top.name                        = mtop->name;

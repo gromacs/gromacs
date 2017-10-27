@@ -41,6 +41,7 @@
 
 #include <vector>
 
+#include "gromacs/fda/FDASettings.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -51,6 +52,8 @@ struct t_atoms;
 struct t_block;
 struct t_ilist;
 struct t_symtab;
+
+int gmx_mtop_maxresnr(const struct gmx_mtop_t *mtop, int maxres_renum);
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
@@ -207,7 +210,12 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * be sorted to the end.
  */
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
+                            bool freeEnergyInteractionsAtEnd
+#ifdef BUILD_WITH_FDA
+                            , fda::FDASettings *ptr_fda_settings = nullptr
+#endif
+                           );
 
 
 /* Converts a gmx_mtop_t struct to t_topology.

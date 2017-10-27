@@ -1399,50 +1399,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 }
 
-/* count the number of text elemets separated by whitespace in a string.
-    str = the input string
-    maxptr = the maximum number of allowed elements
-    ptr = the output array of pointers to the first character of each element
-    returns: the number of elements. */
-int str_nelem(const char *str, int maxptr, char *ptr[])
-{
-    int   np = 0;
-    char *copy0, *copy;
-
-    copy0 = gmx_strdup(str);
-    copy  = copy0;
-    ltrim(copy);
-    while (*copy != '\0')
-    {
-        if (np >= maxptr)
-        {
-            gmx_fatal(FARGS, "Too many groups on line: '%s' (max is %d)",
-                      str, maxptr);
-        }
-        if (ptr)
-        {
-            ptr[np] = copy;
-        }
-        np++;
-        while ((*copy != '\0') && !isspace(*copy))
-        {
-            copy++;
-        }
-        if (*copy != '\0')
-        {
-            *copy = '\0';
-            copy++;
-        }
-        ltrim(copy);
-    }
-    if (ptr == nullptr)
-    {
-        sfree(copy0);
-    }
-
-    return np;
-}
-
 /* interpret a number of doubles from a string and put them in an array,
    after allocating space for them.
    str = the input string
