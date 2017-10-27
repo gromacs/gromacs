@@ -266,7 +266,7 @@ static inline void rvec_inc(rvec a, const float3 b)
     rvec_inc(a, tmp);
 }
 
-/*! \brief Calls cudaStreamSynchronize() in the stream \p s.
+/*! \brief Wait for all taks in stream \p s to complete.
  *
  * \param[in] s stream to synchronize with
  */
@@ -274,6 +274,30 @@ static inline void gpuStreamSynchronize(cudaStream_t s)
 {
     cudaError_t stat = cudaStreamSynchronize(s);
     CU_RET_ERR(stat, "cudaStreamSynchronize failed");
+}
+
+/*! \brief  Returns true if all tasks in \p s have completed.
+ *
+ * \param[in] s stream to check
+ *
+ *  \returns     True if all tasks enqueued in the stream \p s (at the time of this call) have completed.
+ */
+static inline bool haveStreamTasksCompleted(cudaStream_t s)
+{
+    cudaError_t stat = cudaStreamQuery(s);
+
+    if (stat == cudaErrorNotReady)
+    {
+        // work is still in progress in the stream
+        return false;
+    }
+
+    GMX_ASSERT(stat !=  cudaErrorInvalidResourceHandle, "Stream idnetifier not valid");
+
+    // cudaSuccess and cudaErrorNotReady are the expected return values
+    CU_RET_ERR(stat, "Unexpected cudaStreamQuery failure");
+
+    return true;
 }
 
 #endif
