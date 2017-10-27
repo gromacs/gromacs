@@ -217,6 +217,13 @@ set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 # OpenCL required version: 1.1 or newer
 set(REQUIRED_OPENCL_MIN_VERSION 1.1)
 
+option(GMX_BUILD_FDA "Switch on force distribution analysis (FDA)" OFF)
+mark_as_advanced(GMX_BUILD_FDA)
+if(GMX_BUILD_FDA)
+    add_definitions(-DBUILD_WITH_FDA)
+    set(GMX_GPU OFF)
+endif()
+
 if(NOT GMX_USE_OPENCL)
     # CUDA detection is done only if GMX_USE_OPENCL is OFF.
     include(gmxManageGPU)
@@ -468,6 +475,20 @@ include(gmxManageSharedLibraries)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+
+if(GMX_BUILD_FDA)
+    # Boost template libraries
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+    find_package(Boost COMPONENTS graph REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})
+
+    # TNG wants zlib if it is available. And static libxml2 might have a dependency
+    find_package(ZLIB QUIET)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+endif()
 
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because

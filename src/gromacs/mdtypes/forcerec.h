@@ -37,6 +37,7 @@
 #ifndef GMX_MDTYPES_TYPES_FORCEREC_H
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
+#include "gromacs/fda/FDA.h"
 #include "gromacs/math/vectypes.h"
 #ifdef __cplusplus
 #include "gromacs/math/paddedvector.h"
@@ -379,6 +380,10 @@ struct t_forcerec {
 
     /* Limit for printing large forces, negative is don't print */
     real print_force;
+
+#ifdef BUILD_WITH_FDA
+    struct FDA *fda;
+#endif
 
     /* coarse load balancing time measurement */
     double t_fnbf;

@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gromacs/fda/FDA.h"
+
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
 
@@ -101,6 +103,11 @@ NBK_FUNC_NAME(_VgrpF)
  ,
  real                       *Vvdw,
  real                       *Vc
+#ifdef BUILD_WITH_FDA
+ ,
+ FDA                        *fda,
+ int                        *cellInv
+#endif
 #endif
 )
 {
