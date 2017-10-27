@@ -294,13 +294,19 @@ static inline void nbnxn_gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t *timin
     }
 }
 
-// Documented in nbnxn_gpu.h
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
-                            int              flags,
-                            int              aloc,
-                            real            *e_lj,
-                            real            *e_el,
-                            rvec            *fshift)
+/*! \brief Check or wait for PME GPU work to finish.
+ *
+ *  If true is passed in \p checkOnly, a streamQuery is issued and if work in the stream is
+ *  not done, it returns immediately without doing the timing accumulation and staging
+ *  reduction that is carried out when GPU work in the stream is done.
+ */
+static bool nbnxn_gpu_wait_or_check_if_finished(gmx_nbnxn_gpu_t *nb,
+                                                int              flags,
+                                                int              aloc,
+                                                real            *e_lj,
+                                                real            *e_el,
+                                                rvec            *fshift,
+                                                bool             checkOnly)
 {
     /* determine interaction locality from atom locality */
     int iLocality = gpuAtomToInteractionLocality(aloc);
@@ -314,7 +320,18 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
        on some of the nodes! */
     if (!canSkipWork(nb, iLocality))
     {
-        gpuStreamSynchronize(nb->stream[iLocality]);
+        if (checkOnly)
+        {
+            if (!gpuStreamQuery(nb->stream[iLocality]))
+            {
+                // ealry return to skip the steps below that we have to do after we're done
+                return false;
+            }
+        }
+        else
+        {
+            gpuStreamSynchronize(nb->stream[iLocality]);
+        }
 
         bool calcEner   = flags & GMX_FORCE_ENERGY;
         bool calcFshift = flags & GMX_FORCE_VIRIAL;
@@ -329,6 +346,30 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
 
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
     nb->plist[iLocality]->haveFreshList = false;
+
+    return true;
+}
+
+
+bool nbnxn_gpu_check_if_tasks_finished(gmx_nbnxn_gpu_t *nb,
+                                       int              flags,
+                                       int              aloc,
+                                       real            *e_lj,
+                                       real            *e_el,
+                                       rvec            *fshift)
+{
+    return nbnxn_gpu_wait_or_check_if_finished(nb, flags, aloc, e_lj, e_el, fshift, true);
+}
+
+// Documented in nbnxn_gpu.h
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
+                            int              flags,
+                            int              aloc,
+                            real            *e_lj,
+                            real            *e_el,
+                            rvec            *fshift)
+{
+    nbnxn_gpu_wait_or_check_if_finished(nb, flags, aloc, e_lj, e_el, fshift, false);
 }
 
 #endif

@@ -144,6 +144,31 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
                             real            gmx_unused *e_el,
                             rvec            gmx_unused *fshift) GPU_FUNC_TERM
 
+/*! \brief
+ * Check if the asynchronously launched nonbonded tasks and data
+ * transfers are finished.
+ *
+ * If the nonbonded tasks are finished,
+ * also does timing accounting and reduction of the internal staging buffers.
+ * As this is called at the end of the step, it also resets the pair list and
+ * pruning flags.
+ *
+ * \param[in] nb The nonbonded data GPU structure
+ * \param[in] flags Force flags
+ * \param[in] aloc Atom locality identifier
+ * \param[out] e_lj Pointer to the LJ energy output to accumulate into
+ * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[out] fshift Pointer to the shift force buffer to accumulate into
+ */
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_check_if_tasks_finished(gmx_nbnxn_gpu_t gmx_unused *nb,
+                                       int             gmx_unused  flags,
+                                       int             gmx_unused  aloc,
+                                       real            gmx_unused *e_lj,
+                                       real            gmx_unused *e_el,
+                                       rvec            gmx_unused *fshift) GPU_FUNC_TERM
+
+
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
 int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
