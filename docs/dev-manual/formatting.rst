@@ -1,3 +1,5 @@
+.. _gmx-style-guidelines:
+
 Guidelines for code formatting
 ==============================
 
