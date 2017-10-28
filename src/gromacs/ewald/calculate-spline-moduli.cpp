@@ -40,19 +40,18 @@
 
 #include <math.h>
 
-#include <algorithm>
+#include <vector>
 
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
 
 static void make_dft_mod(real *mod,
-                         const double *data, int splineOrder, int ndata)
+                         const std::vector<double> &splineData, int ndata)
 {
+    const int splineOrder = splineData.size();
     for (int i = 0; i < ndata; i++)
     {
         /* We use double precision, since this is only called once per grid.
@@ -64,8 +63,8 @@ static void make_dft_mod(real *mod,
         for (int j = 0; j < splineOrder; j++)
         {
             double arg  = (2.0*M_PI*i*(j + 1))/ndata;
-            sc         += data[j]*cos(arg);
-            ss         += data[j]*sin(arg);
+            sc         += splineData[j]*cos(arg);
+            ss         += splineData[j]*sin(arg);
         }
         mod[i] = sc*sc + ss*ss;
     }
@@ -87,12 +86,6 @@ static void make_dft_mod(real *mod,
 void make_bspline_moduli(splinevec bsp_mod,
                          int nx, int ny, int nz, int pme_order)
 {
-    /* We use double precision, since this is only called once per grid.
-     * But for single precision bsp_mod, single precision also seems
-     * to give full accuracy.
-     */
-    double *data;
-
     /* In GROMACS we, confusingly, defined pme-order as the order
      * of the cardinal B-spline + 1. This probably happened because
      * the smooth PME paper only talks about "n" which is the number
@@ -100,13 +93,12 @@ void make_bspline_moduli(splinevec bsp_mod,
      */
     const int splineOrder = pme_order - 1;
 
-    snew(data, splineOrder);
-
-    data[0]     = 1;
-    for (int k = 1; k < splineOrder; k++)
-    {
-        data[k] = 0;
-    }
+    /* We use double precision, since this is only called once per grid.
+     * But for single precision bsp_mod, single precision also seems
+     * to give full accuracy.
+     */
+    std::vector<double> data(splineOrder, 0.0);
+    data[0] = 1.0;
 
     for (int k = 2; k <= splineOrder; k++)
     {
@@ -118,11 +110,9 @@ void make_bspline_moduli(splinevec bsp_mod,
         data[0]     = div*data[0];
     }
 
-    make_dft_mod(bsp_mod[XX], data, splineOrder, nx);
-    make_dft_mod(bsp_mod[YY], data, splineOrder, ny);
-    make_dft_mod(bsp_mod[ZZ], data, splineOrder, nz);
-
-    sfree(data);
+    make_dft_mod(bsp_mod[XX], data, nx);
+    make_dft_mod(bsp_mod[YY], data, ny);
+    make_dft_mod(bsp_mod[ZZ], data, nz);
 }
 
 /* Return the P3M optimal influence function */
