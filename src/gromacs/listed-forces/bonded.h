@@ -73,7 +73,6 @@ real bond_angle(const rvec xi, const rvec xj, const rvec xk,
 real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
                const struct t_pbc *pbc,
                rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n, /* out */
-               real *sign,
                int *t1, int *t2, int *t3);
 
 /*! \brief Do an update of the forces for dihedral potentials */
