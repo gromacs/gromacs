@@ -74,7 +74,6 @@ static void calc_dihs(t_xrama *xr)
 {
     int          i, t1, t2, t3;
     rvec         r_ij, r_kj, r_kl, m, n;
-    real         sign;
     t_dih       *dd;
     gmx_rmpbc_t  gpbc = nullptr;
 
@@ -88,7 +87,7 @@ static void calc_dihs(t_xrama *xr)
         dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]],
                             xr->x[dd->ai[2]], xr->x[dd->ai[3]],
                             nullptr,
-                            r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+                            r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
     }
 }
 
