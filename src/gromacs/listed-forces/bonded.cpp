@@ -1389,20 +1389,18 @@ real quartic_angles(int nbonds,
 real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
                const t_pbc *pbc,
                rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n,
-               real *sign, int *t1, int *t2, int *t3)
+               int *t1, int *t2, int *t3)
 {
-    real ipr, phi;
-
     *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3        */
     *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
     *t3 = pbc_rvec_sub(pbc, xk, xl, r_kl); /*  3		*/
 
     cprod(r_ij, r_kj, m);                  /*  9        */
     cprod(r_kj, r_kl, n);                  /*  9		*/
-    phi     = gmx_angle(m, n);             /* 49 (assuming 25 for atan2) */
-    ipr     = iprod(r_ij, n);              /*  5        */
-    (*sign) = (ipr < 0.0) ? -1.0 : 1.0;
-    phi     = (*sign)*phi;                 /*  1		*/
+    real phi  = gmx_angle(m, n);           /* 49 (assuming 25 for atan2) */
+    real ipr  = iprod(r_ij, n);            /*  5        */
+    real sign = (ipr < 0.0) ? -1.0 : 1.0;
+    phi       = sign*phi;                  /*  1		*/
     /* 82 TOTAL	*/
     return phi;
 }
@@ -1740,7 +1738,7 @@ real pdihs(int nbonds,
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real phi, sign, ddphi, vpd, vtot;
+    real phi, ddphi, vpd, vtot;
 
     vtot = 0.0;
 
@@ -1753,7 +1751,7 @@ real pdihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84      */
+                        &t1, &t2, &t3);  /*  84      */
         *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
                               forceparams[type].pdihs.cpB,
                               forceparams[type].pdihs.phiA,
@@ -1801,7 +1799,7 @@ pdihs_noener(int nbonds,
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real phi, sign, ddphi_tot, ddphi;
+    real phi, ddphi_tot, ddphi;
 
     for (i = 0; (i < nbonds); )
     {
@@ -1811,7 +1809,7 @@ pdihs_noener(int nbonds,
         al   = forceatoms[i+4];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);
+                        &t1, &t2, &t3);
 
         ddphi_tot = 0;
 
@@ -2099,7 +2097,7 @@ real idihs(int nbonds,
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
-    real phi, phi0, dphi0, ddphi, sign, vtot;
+    real phi, phi0, dphi0, ddphi, vtot;
     rvec r_ij, r_kj, r_kl, m, n;
     real L1, kk, dp, dp2, kA, kB, pA, pB, dvdl_term;
 
@@ -2115,7 +2113,7 @@ real idihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84		*/
+                        &t1, &t2, &t3);  /*  84		*/
 
         /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
          * force changes if we just apply a normal harmonic.
@@ -2292,7 +2290,7 @@ real dihres(int nbonds,
     real vtot = 0;
     int  ai, aj, ak, al, i, k, type, t1, t2, t3;
     real phi0A, phi0B, dphiA, dphiB, kfacA, kfacB, phi0, dphi, kfac;
-    real phi, ddphi, ddp, ddp2, dp, sign, d2r, L1;
+    real phi, ddphi, ddp, ddp2, dp, d2r, L1;
     rvec r_ij, r_kj, r_kl, m, n;
 
     L1 = 1.0-lambda;
@@ -2321,7 +2319,7 @@ real dihres(int nbonds,
         kfac  = L1*kfacA + lambda*kfacB;
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);
+                        &t1, &t2, &t3);
         /* 84 flops */
 
         if (debug)
@@ -2724,7 +2722,7 @@ real rbdihs(int nbonds,
     real       parmB[NR_RBDIHS];
     real       parm[NR_RBDIHS];
     real       cos_phi, phi, rbp, rbpBA;
-    real       v, sign, ddphi, sin_phi;
+    real       v, ddphi, sin_phi;
     real       cosfac, vtot;
     real       L1        = 1.0-lambda;
     real       dvdl_term = 0;
@@ -2739,7 +2737,7 @@ real rbdihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84		*/
+                        &t1, &t2, &t3);  /*  84		*/
 
         /* Change to polymer convention */
         if (phi < c0)
@@ -2876,8 +2874,8 @@ cmap_dihs(int nbonds,
     int         pos1, pos2, pos3, pos4;
 
     real        ty[4], ty1[4], ty2[4], ty12[4], tc[16], tx[16];
-    real        phi1, cos_phi1, sin_phi1, sign1, xphi1;
-    real        phi2, cos_phi2, sin_phi2, sign2, xphi2;
+    real        phi1, cos_phi1, sin_phi1, xphi1;
+    real        phi2, cos_phi2, sin_phi2, xphi2;
     real        dx, xx, tt, tu, e, df1, df2, vtot;
     real        ra21, rb21, rg21, rg1, rgr1, ra2r1, rb2r1, rabr1;
     real        ra22, rb22, rg22, rg2, rgr2, ra2r2, rb2r2, rabr2;
@@ -2928,7 +2926,7 @@ cmap_dihs(int nbonds,
         a1l   = al;
 
         phi1  = dih_angle(x[a1i], x[a1j], x[a1k], x[a1l], pbc, r1_ij, r1_kj, r1_kl, m1, n1,
-                          &sign1, &t11, &t21, &t31);  /* 84 */
+                          &t11, &t21, &t31);  /* 84 */
 
         cos_phi1 = std::cos(phi1);
 
@@ -2989,7 +2987,7 @@ cmap_dihs(int nbonds,
         a2l   = am;
 
         phi2  = dih_angle(x[a2i], x[a2j], x[a2k], x[a2l], pbc, r2_ij, r2_kj, r2_kl, m2, n2,
-                          &sign2, &t12, &t22, &t32); /* 84 */
+                          &t12, &t22, &t32); /* 84 */
 
         cos_phi2 = std::cos(phi2);
 
@@ -3784,7 +3782,7 @@ real tab_dihs(int nbonds,
     int  i, type, ai, aj, ak, al, table;
     int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
-    real phi, sign, ddphi, vpd, vtot;
+    real phi, ddphi, vpd, vtot;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds); )
@@ -3796,7 +3794,7 @@ real tab_dihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84  */
+                        &t1, &t2, &t3);  /*  84  */
 
         table = forceparams[type].tab.table;
 

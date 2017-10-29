@@ -238,7 +238,6 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                 {
                     rvec xi, xj, xk, xl;
                     rvec r_ij, r_kj, r_kl, mm, nn;
-                    real sign;
                     int  t1, t2, t3;
 
                     copy_rvec(xcm[grp0][i], xj);
@@ -247,7 +246,7 @@ static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                     rvec_add(xk, mu[gj], xl);
                     phi = dih_angle(xi, xj, xk, xl, &pbc,
                                     r_ij, r_kj, r_kl, mm, nn, /* out */
-                                    &sign, &t1, &t2, &t3);
+                                    &t1, &t2, &t3);
                     cosa = std::cos(phi);
                 }
                 else
