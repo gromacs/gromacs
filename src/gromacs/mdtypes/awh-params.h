@@ -119,7 +119,7 @@ struct AwhBiasParams
     int           eGrowth;               /**< How the biasing histogram grows. */
     int           bUserData;             /**< Is there a user-defined initial PMF estimate and target estimate? */
     double        errorInitial;          /**< Estimated initial free energy error. */
-    gmx_bool      bShare;                /**< Share the bias across multiple simulations? */
+    int           shareGroup;            /**< When >0, the bias is shared with biases of the same group and across multiple simulations when shareBiasMultisim=true */
     gmx_bool      equilibrateHistogram;  /**< True if the simulation starts out by equilibrating the histogram.  */
 };
 
@@ -133,6 +133,7 @@ struct AwhParams
     int            nstSampleCoord;             /**< Number of samples per coordinate sample (also used for PMF) */
     int            numSamplesUpdateFreeEnergy; /**< Number of samples per free energy update. */
     int            ePotential;                 /**< Type of potential. */
+    gmx_bool       shareBiasMultisim;          /**< When true, share biases with shareGroup>0 between multi-simulations */
 };
 
 /*! \endcond */

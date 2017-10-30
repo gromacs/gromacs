@@ -609,7 +609,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Restore the AWH history read from checkpoint */
             ir->awh->restoreStateFromHistory(state_global->awhHistory.get(), cr);
         }
-        else
+        else if (MASTER(cr))
         {
             /* Initialize the AWH history here */
             state_global->awhHistory = std::shared_ptr<AwhHistory>(new AwhHistory());

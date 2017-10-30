@@ -74,10 +74,8 @@
 namespace gmx
 {
 
-void calculatePmf(const BiasParams              &params,
-                  const std::vector<PointState> &points,
-                  const gmx_multisim_t          *multiSimComm,
-                  std::vector<float>            *pmf)
+void getPmf(const std::vector<PointState> &points,
+            std::vector<float>            *pmf)
 {
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
@@ -85,27 +83,47 @@ void calculatePmf(const BiasParams              &params,
 
     pmf->resize(points.size());
 
-    if (params.numSharedUpdate > 1)
+    for (size_t i = 0; i < points.size(); i++)
     {
-        /* Need to temporarily exponentiate the log weights to sum over simulations */
-        for (size_t i = 0; i < points.size(); i++)
-        {
-            (*pmf)[i] = points[i].inTargetRegion() ? std::exp(static_cast<float>(points[i].logPmfsum())) : 0;
-        }
-
-        gmx_sumf_sim(points.size(), pmf->data(), multiSimComm);
-
-        /* Take log again to get (non-normalized) PMF */
-        for (size_t i = 0; i < points.size(); i++)
-        {
-            (*pmf)[i] = points[i].inTargetRegion() ? -std::log((*pmf)[i]) : GMX_FLOAT_MAX;
-        }
+        (*pmf)[i] = points[i].inTargetRegion() ? -points[i].logPmfsum() : GMX_FLOAT_MAX;
     }
-    else
+}
+
+/*! \brief
+ * Sum PMF over multiple simulations, when requested.
+ *
+ * \param[in,out] pointState         The state of the points in the bias.
+ * \param[in]     numSharedUpdate    The number of biases sharing the histrogram.
+ * \param[in]     multiSimComm       Struct for multi-simulation communication.
+ */
+static void sumPmf(gmx::ArrayRef<PointState>  points,
+                   int                        numSharedUpdate,
+                   const gmx_multisim_t      *multiSimComm)
+{
+    if (numSharedUpdate == 1)
     {
-        for (size_t i = 0; i < points.size(); i++)
+        return;
+    }
+    GMX_ASSERT(multiSimComm != nullptr && numSharedUpdate % multiSimComm->nsim == 0, "numSharedUpdate should be a multiple of multiSimComm->nsim");
+    GMX_ASSERT(numSharedUpdate == multiSimComm->nsim, "Sharing within a simulation is not implemented (yet)");
+
+    std::vector<double> buffer(points.size());
+
+    /* Need to temporarily exponentiate the log weights to sum over simulations */
+    for (size_t i = 0; i < buffer.size(); i++)
+    {
+        buffer[i] = points[i].inTargetRegion() ? std::exp(static_cast<float>(points[i].logPmfsum())) : 0;
+    }
+
+    gmx_sumd_sim(buffer.size(), buffer.data(), multiSimComm);
+
+    /* Take log again to get (non-normalized) PMF */
+    double normFac = 1.0/numSharedUpdate;
+    for (size_t i = 0; i < points.size(); i++)
+    {
+        if (points[i].inTargetRegion())
         {
-            (*pmf)[i] = points[i].inTargetRegion() ? -points[i].logPmfsum() : GMX_FLOAT_MAX;
+            points[i].setLogPmfsum(-std::log(buffer[i]*normFac));
         }
     }
 }
@@ -177,16 +195,12 @@ static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
  *
  * \param[in] dimParams     The bias dimensions parameters
  * \param[in] grid          The grid.
- * \param[in] params        The bias parameters.
  * \param[in] points        The point state.
- * \param[in] multiSimComm  Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
  */
 static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                   const Grid                    &grid,
-                                  const BiasParams              &params,
                                   const std::vector<PointState> &points,
-                                  const gmx_multisim_t          *multiSimComm,
                                   std::vector<float>            *convolvedPmf)
 {
     size_t             numPoints = grid.numPoints();
@@ -196,7 +210,7 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
     convolvedPmf->resize(numPoints);
 
     /* Get the PMF to convolve. */
-    calculatePmf(params, points, multiSimComm, &pmf);
+    getPmf(points, &pmf);
 
     for (size_t m = 0; m < numPoints; m++)
     {
@@ -651,6 +665,8 @@ static void sumHistograms(std::vector<PointState> *pointState,
     /* Sum histograms over multiple simulations if needed. */
     if (numSharedUpdate > 1)
     {
+        GMX_ASSERT(numSharedUpdate == multiSimComm->nsim, "Sharing within a simulation is not implemented (yet)");
+
         /* Collect the weights and counts in linear arrays to be able to use gmx_sumd_sim. */
         std::vector<double> weightDistr, coordVisits;
 
@@ -936,6 +952,8 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     /* Add samples to histograms for all local points and sync simulations if needed */
     sumHistograms(&points_, &weightsumCovering_,
                   params.numSharedUpdate, multiSimComm, *updateList);
+
+    sumPmf(points_, params.numSharedUpdate, multiSimComm);
 
     /* Renormalize the free energy if values are too large. */
     bool needToNormalizeFreeEnergy = false;
@@ -1249,13 +1267,11 @@ void BiasState::broadcast(const t_commrec *cr)
 }
 
 void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                            const Grid                    &grid,
-                                            const BiasParams              &params,
-                                            const gmx_multisim_t          *multiSimComm)
+                                            const Grid                    &grid)
 {
     std::vector<float> convolvedPmf;
 
-    calculateConvolvedPmf(dimParams, grid, params, points_, multiSimComm, &convolvedPmf);
+    calculateConvolvedPmf(dimParams, grid, points_, &convolvedPmf);
 
     for (size_t m = 0; m < points_.size(); m++)
     {
@@ -1491,8 +1507,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
                                    const Grid                    &grid,
                                    const BiasParams              &params,
                                    const std::string             &filename,
-                                   int                            numBias,
-                                   const gmx_multisim_t          *multiSimComm)
+                                   int                            numBias)
 {
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
@@ -1500,7 +1515,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
     if (awhBiasParams.bUserData)
     {
         readUserPmfAndTargetDistribution(dimParams, grid, filename, numBias, params.biasIndex, &points_);
-        setFreeEnergyToConvolvedPmf(dimParams, grid, params, multiSimComm);
+        setFreeEnergyToConvolvedPmf(dimParams, grid);
     }
 
     /* The local Boltzmann distribution is special because the target distribution is updated as a function of the reference weighthistogram. */
