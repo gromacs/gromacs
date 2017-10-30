@@ -167,16 +167,28 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
 
 /*! \brief Returns the number of simulations sharing bias updates.
  *
- * \param[in] awhBiasParams  Bias parameters.
- * \param[in] cr             Struct for communication, can be nullptr.
+ * \param[in] awhBiasParams      Bias parameters.
+ * \param[in] shareBiasMultiSim  When true, share the bias over multiple simulations
+ * \param[in] cr                 Struct for communication, can be nullptr.
  * \returns the number of shared updates.
  */
 static int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
+                              bool                 shareBiasMultisim,
                               const t_commrec     *cr)
 {
-    int numMultiSims = ((cr != nullptr) && MULTISIM(cr)) ? cr->ms->nsim : 1;
+    int numShared = 1;
 
-    return (awhBiasParams.bShare ? numMultiSims : 1);
+    if (awhBiasParams.shareGroup > 0)
+    {
+        /* We do not yet support sharing within a simulation */
+        int numSharedWithinSim = 1;
+        int numMultiSims       = ((cr != nullptr) && MULTISIM(cr)) ? cr->ms->nsim : 1;
+
+        numShared              =
+            numSharedWithinSim*(shareBiasMultisim ? numMultiSims : 1);
+    }
+
+    return numShared;
 }
 
 /* Constructor.
@@ -208,7 +220,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     eTarget(awhBiasParams.eTarget),
     targetParam(getTargetParameter(awhBiasParams)),
     idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
-    numSharedUpdate(getNumSharedUpdate(awhBiasParams, cr)),
+    numSharedUpdate(getNumSharedUpdate(awhBiasParams, awhParams.shareBiasMultisim, cr)),
     updateWeight(numSamplesUpdateFreeEnergy*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
     // Estimate and initialize histSizeInitial, depends on the grid.

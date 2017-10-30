@@ -100,7 +100,7 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth,
     awhBiasParams.eGrowth              = eawhgrowth;
     awhBiasParams.bUserData            = FALSE;
     awhBiasParams.errorInitial         = 0.5;
-    awhBiasParams.bShare               = FALSE;
+    awhBiasParams.shareGroup           = 0;
     awhBiasParams.equilibrateHistogram = FALSE;
 
     double                 convFactor  = 1;
@@ -118,6 +118,7 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth,
     awhParams.nstSampleCoord             = 1;
     awhParams.numSamplesUpdateFreeEnergy = 10;
     awhParams.ePotential                 = eawhpotential;
+    awhParams.shareBiasMultisim          = FALSE;
 
     return params;
 }
