@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -136,13 +136,11 @@ a number of \swapindex{default}{groups} are generated to choose from:
         C-terminus and hydrogens on the N-terminus
 \item[{\tt SideChain-H}]\mbox{}\\
         protein side chain atoms excluding all hydrogens
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \item[{\tt Prot-Masses}]\mbox{}\\
         protein atoms excluding dummy masses (as used in virtual site
         constructions of NH$_3$ groups and tryptophan side-chains),
         see also \secref{vsitetop}; this group is only included when
         it differs from the ``{\tt Protein}'' group
-%} % Brace matches ifthenelse test for gmxlite
 \item[{\tt Non-Protein}]\mbox{}\\
         all non-protein atoms
 \item[{\tt DNA}]\mbox{}\\
@@ -339,7 +337,6 @@ the average density in all angle slices from $\theta$ to $\theta + d\theta$
 up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Correlation functions 
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 
 \section{Correlation functions}
 \label{sec:corr}
@@ -478,7 +475,6 @@ time of the Pressure tensor $\ve{P}$~\cite{PSmith93c,Balasubramanian96}.
 {\tt \normindex{gmx energy}} can compute the viscosity,
 but this is not very accurate~\cite{Hess2002a}, and 
 actually the values do not converge.
-%} % Brace matches ifthenelse test for gmxlite
 
 \section{Curve fitting in \gromacs}
 \subsection{Sum of exponential functions}
@@ -621,7 +617,6 @@ An example of the mean square displacement of SPC water is given in
 \label{fig:msdwater}
 \end{figure}
 
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 % 
 %%%%%%%%%%%%%%%%%%%%% Bonds, angles and dihedral %%%%%%%%%%%%%%%%%%%
 % 
@@ -711,7 +706,6 @@ Also other combinations are supported: planes and vectors can be used
 interchangeably.}
 \label{fig:sgangle}
 \end{figure}
-%} % Brace matches ifthenelse test for gmxlite
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radius of gyration and distances
 
@@ -743,7 +737,6 @@ possibilities:
 \item[$\bullet$] 
 The {\em distance between the geometrical centers} of two groups can be 
 calculated with the program
-%\ifthenelse{\equal{\gmxlite}{1}}{
 {{\tt \normindex{gmx distance}}, as explained in \secref{bad}.}
 \item[$\bullet$]
 The {\em minimum distance} between two groups of atoms during time 
@@ -813,7 +806,6 @@ RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t
 where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$ 
 is compared with the distance between the same atoms at time $0$.
 
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Covariance analysis\index{covariance analysis}}
 \label{sec:covanal}
 Covariance analysis, also called
@@ -939,9 +931,7 @@ The covariance matrix is built and diagonalized by
 The principal components and overlap (and many more things)
 can be plotted and analyzed with {\tt \normindex{gmx anaeig}}.
 The cosine content can be calculated with {\tt \normindex{gmx analyze}}.
-%} % Brace matches ifthenelse test for gmxlite
 
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Dihedral principal component analysis}
 {\tt gmx angle, gmx covar, gmx anaeig}\\
 Principal component analysis can be performed in dihedral
@@ -963,7 +953,6 @@ You should use the {\tt -nofit} option for {\tt
 gmx covar} since the coordinates in the dummy reference file do not
 correspond in any way to the information in the {\tt .trr} file. Analysis of
 the results is done using {\tt gmx anaeig}.
-%} % Brace matches ifthenelse test for gmxlite
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
@@ -1052,7 +1041,6 @@ the analyzed groups and all solvent atoms involved in insertion.
 
 \end{itemize}
 
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Protein related items 
 
@@ -1180,7 +1168,6 @@ atoms across the interface.
 % to be more up-to-date.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%} % Brace matches ifthenelse test for gmxlite
 
 % LocalWords:  Xmgr ndx mk angndx rdf dihedrals grompp hydrogens MainChain Prot
 % LocalWords:  oxygens SideChain tryptophan vsitetop aminoacids dat ngmx dr SPC
