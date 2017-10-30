@@ -108,7 +108,7 @@ static AwhTestParameters getAwhTestParameters()
     awhBiasParams.eGrowth              = eawhgrowthLINEAR;
     awhBiasParams.bUserData            = TRUE;
     awhBiasParams.errorInitial         = 0.5;
-    awhBiasParams.bShare               = FALSE;
+    awhBiasParams.shareGroup           = 0;
     awhBiasParams.equilibrateHistogram = FALSE;
 
     awhParams.numBias                    = 1;
@@ -117,6 +117,7 @@ static AwhTestParameters getAwhTestParameters()
     awhParams.nstSampleCoord             = 1;
     awhParams.numSamplesUpdateFreeEnergy = 10;
     awhParams.ePotential                 = eawhpotentialCONVOLVED;
+    awhParams.shareBiasMultisim          = FALSE;
 
     return params;
 }
