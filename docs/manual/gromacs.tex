@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -69,10 +69,6 @@ pdfinfo={
    Keywords={GROMACS; molecular dynamics; molecular simulation; free energy; SIMD; GPU; GPGPU; MPI; OpenMP}
 }}
 
-% If you set gmxlite to 1 a very much shortened version of the manual 
-% will be generated, which may be useful for teaching.
-\newcommand{\gmxlite}{0}
-
 \begin{document}
 
 %roman pagenumbers for the preamble stuff
@@ -97,13 +93,7 @@ pdfinfo={
 \includegraphics[height=5in]{plots/peregrine}
 \vspace{4mm}
 
-\ifthenelse{\equal{\gmxlite}{1}}
-{
-\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont Reference Manual {\em ~Lite~}}}
-}
-{
 \fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont ~Reference Manual~}}
-} % Brace matches ifthenelse test for gmxlite
 \vspace{4mm}
 
 \textcolor{blue}{\fontsize{48}{56} \selectfont ~Version \gmxver~}
@@ -115,28 +105,7 @@ pdfinfo={
 \end{center}
 \vfill
 
-\ifthenelse{\equal{\gmxlite}{1}} 
-{
-\newpage
-{\bf
-This text is a shortened version of the full {\gromacs} manual, written
-by David van der Spoel, Berk Hess, Erik Lindahl and others. Please
-find further information on our website {\wwwpage}.}
-
-\vspace{2cm}
-
-\noindent \copyright\ 1991--2000: 
-Department of Biophysical Chemistry, University of Groningen. 
-Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
-\medskip
-
-\noindent \copyright\ 2001--{\gmxyear}:
-The {\gromacs} development teams at the Royal Institute of Technology and \\
-Uppsala University, Sweden.
-} 
-{ 
 \cleardoublepage
-} % Brace matches ifthenelse test for gmxlite
 %reset to normal margins
 \addtolength{\oddsidemargin}{5mm}
 
@@ -150,7 +119,6 @@ Uppsala University, Sweden.
 \rhead[\fancyplain{}{\em\leftmark}]{\fancyplain{}{\em\thepage}}
 \cfoot{}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
 \begin{center}
 \phantom{ }
 \vspace{1cm}
@@ -239,7 +207,6 @@ For details, check the COPYING file in the source code or consult
 
 The {\gromacs} source code and and selected set of binary packages are
 available on our homepage, \wwwpage. Have fun.
-} % Brace matches ifthenelse test for gmxlite
 
 \newpage
 %       C O N T E N T S
@@ -259,13 +226,10 @@ available on our homepage, \wwwpage. Have fun.
 \include{algorithms}
 \include{forcefield}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
 \include{topology}
 \include{special}
 \include{programs}
-} % Brace matches ifthenelse test for gmxlite
 \include{analyse}
-\ifthenelse{\equal{\gmxlite}{1}}{}{
 %
 %       A P P E N D I C E S
 %
@@ -273,7 +237,6 @@ available on our homepage, \wwwpage. Have fun.
 \include{technical}
 \include{implement}
 \include{averages}
-} % Brace matches ifthenelse test for gmxlite
 %
 % The pdfdummy counter is a workaround to get correct
 % bookmarks for the index & bibliography in pdf files
@@ -297,12 +260,10 @@ available on our homepage, \wwwpage. Have fun.
 \cleardoublepage
 \refstepcounter{pdfdummy}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
 \addcontentsline{toc}{chapter}{Index}
 
 \renewcommand{\see}[2]{\mbox{} \mbox{\textit{see} #1}}
 \printindex
-} % Brace matches ifthenelse test for gmxlite
 
 \end{document}
 
