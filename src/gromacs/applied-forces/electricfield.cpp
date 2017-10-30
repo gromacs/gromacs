@@ -101,8 +101,18 @@ class ElectricFieldData
          */
         void buildMdpOutput(KeyValueTreeObjectBuilder *builder, const std::string &name) const
         {
-            builder->addUniformArray<real>("E-" + name, {1, a_, -1});
-            builder->addUniformArray<real>("E-" + name + "t", {omega_, t0_, sigma_});
+            if (a_ > 0)
+            {
+                builder->addUniformArray<real>("E-" + name, {1, a_, 0});
+                if (sigma_ > 0)
+                {
+                    builder->addUniformArray<real>("E-" + name + "t", {3, omega_, 0, t0_, 0, sigma_, 0});
+                }
+                else
+                {
+                    builder->addUniformArray<real>("E-" + name + "t", {1, omega_, 0});
+                }
+            }
         }
 
         /*! \brief Evaluates this field component at given time.
