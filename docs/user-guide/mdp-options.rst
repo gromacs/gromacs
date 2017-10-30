@@ -1862,6 +1862,22 @@ AWH adaptive biasing
       can be useful for cases when calculating the convolved force for each step becomes
       computationally expensive.
 
+.. mdp:: awh-share-bias-multisim
+
+   .. mdp-value:: no
+
+      Do not share biases across multiple simulations. The :ref:`gmx mdrun` option ``-multidir``
+      will be ignored by AWH.
+
+   .. mdp-value:: yes
+
+      With :ref:`gmx mdrun` and option ``-multidir`` the bias and PMF estimates
+      for biases with ``share-group``>0 will be shared across simulations.
+      The simulations should have the same AWH settings for sharing to make sense.
+      :ref:`gmx mdrun` will check whether the simulations are technically
+      compatible for sharing, but the user should check that bias sharing
+      physically makes sense.
+
 .. mdp:: awh-seed
 
    (-1) Random seed for Monte-Carlo sampling the umbrella position,
@@ -1943,7 +1959,7 @@ AWH adaptive biasing
       histogram of sampled weights is following the target distribution closely enough (specifically,
       at least 80% of the target region needs to have a local relative error of less than 20%). This
       option would typically only be used when sharing the bias across several simulations
-      (:mdp:`awh1-share=yes`) and the initial configurations poorly represent the target
+      (:mdp:`awh1-share-group` > 0) and the initial configurations poorly represent the target
       distribution.
 
 .. mdp:: awh1-target
@@ -2006,19 +2022,21 @@ AWH adaptive biasing
       The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
       be in the same column as written by ``gmx awh``.
 
-.. mdp:: awh1-share
+.. mdp:: awh1-share-group
 
-   .. mdp-value:: no
+   .. mdp-value:: 0
 
-      Do not share the bias across multiple simulations. The :ref:`gmx mdrun` option ``-multidir``
-      will be ignored by AWH.
+      Do not share the bias.
 
-   .. mdp-value:: yes
+   .. mdp-value:: positive
 
-      With :ref:`gmx mdrun` and option ``-multidir`` the bias and PMF estimates will be shared across
-      simulations. The simulations should have the same AWH settings for sharing to make sense.
-      Sharing may increase convergence initially, although the starting configurations of the replica
-      can be critical, especially for many replicas.
+      Share the bias and PMF estimates within and/or between simulations.
+      Within a simulation, the bias will be shared between biases that have the
+      same sharing group index (note that the current code does not support this).
+      With :mdp:`awh-bias-share-multisim` = :mdp-value:`yes` and
+      :ref:`gmx mdrun` option ``-multidir`` the bias will also be shared across simulations.
+      Sharing may increase convergence initially, although the starting configurations
+      can be critical, especially when sharing between many biases.
 
 .. mdp:: awh1-ndim
 
