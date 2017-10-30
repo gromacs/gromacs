@@ -668,7 +668,7 @@ static void do_awhBias(t_fileio *fio, gmx::AwhBiasParams *awhBiasParams, gmx_boo
     gmx_fio_do_int(fio, awhBiasParams->bUserData);
     gmx_fio_do_double(fio, awhBiasParams->errorInitial);
     gmx_fio_do_int(fio, awhBiasParams->ndim);
-    gmx_fio_do_gmx_bool(fio, awhBiasParams->bShare);
+    gmx_fio_do_int(fio, awhBiasParams->shareGroup);
     gmx_fio_do_gmx_bool(fio, awhBiasParams->equilibrateHistogram);
 
     if (bRead)
@@ -701,6 +701,7 @@ static void do_awh(t_fileio *fio, gmx::AwhParams *awhParams, gmx_bool bRead,
     gmx_fio_do_int(fio, awhParams->nstSampleCoord);
     gmx_fio_do_int(fio, awhParams->numSamplesUpdateFreeEnergy);
     gmx_fio_do_int(fio, awhParams->ePotential);
+    gmx_fio_do_gmx_bool(fio, awhParams->shareBiasMultisim);
 
     if (awhParams->numBias > 0)
     {
