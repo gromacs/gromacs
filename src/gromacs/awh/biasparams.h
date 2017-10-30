@@ -57,8 +57,6 @@
 
 #include "dimparams.h"
 
-struct t_commrec;
-
 namespace gmx
 {
 
@@ -164,7 +162,7 @@ class BiasParams
          * \param[in] dimParams              Bias dimension parameters.
          * \param[in] beta                   1/(k_B T), should be > 0.
          * \param[in] mdTimeStep             The MD time step.
-         * \param[in] cr                     Struct for communication.
+         * \param[in] numSharingSimulations  The number of simulations to share the bias across.
          * \param[in] gridAxis               The grid axes.
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          * \param[in] biasIndex              Index of the bias.
@@ -175,7 +173,7 @@ class BiasParams
                    double                        beta,
                    double                        mdTimeStep,
                    DisableUpdateSkips            disableUpdateSkips,
-                   const t_commrec              *cr,
+                   int                           numSharingSimulations,
                    const std::vector<GridAxis>  &gridAxis,
                    int                           biasIndex);
 

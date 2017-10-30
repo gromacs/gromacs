@@ -67,10 +67,12 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 
 #include "bias.h"
+#include "biassharing.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -129,6 +131,17 @@ Awh::Awh(FILE              *fplog,
         please_cite(fplog, "Lindahl2014");
     }
 
+    if (haveBiasSharingWithinSimulation(awhParams))
+    {
+        gmx_fatal(FARGS, "Biases within a simulation are shared, currently sharing of biases is only supported between simulations");
+    }
+
+    int numSharingSimulations = 1;
+    if (awhParams.shareBiasMultisim && MULTISIM(cr))
+    {
+        numSharingSimulations = cr->ms->nsim;
+    }
+
     /* Initialize all the biases */
     const double beta = 1/(BOLTZ*ir.opts.ref_t[0]);
     for (int k = 0; k < awhParams.numBias; k++)
@@ -149,12 +162,22 @@ Awh::Awh(FILE              *fplog,
         }
 
         /* Construct the bias and couple it to the system. */
-        biasCoupledToSystem_.emplace_back(Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename),
+        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename),
                                           pullCoordIndex);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     registerAwhWithPull(awhParams, pull_work);
+
+    if (numSharingSimulations > 1 && MASTER(cr))
+    {
+        std::vector<size_t> pointSize;
+        for (auto const &biasCTS : biasCoupledToSystem_)
+        {
+            pointSize.push_back(biasCTS.bias.state().points().size());
+        }
+        checkBiasSharingMultiSim(awhParams, pointSize, cr->ms);
+    }
 }
 
 Awh::~Awh() = default;

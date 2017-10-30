@@ -214,18 +214,18 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     }
 }
 
-Bias::Bias(const t_commrec                *cr,
-           int                             biasIndexInCollection,
+Bias::Bias(int                             biasIndexInCollection,
            const AwhParams                &awhParams,
            const AwhBiasParams            &awhBiasParams,
            const std::vector<DimParams>   &dimParamsInit,
            double                          beta,
            double                          mdTimeStep,
+           int                             numSharingSimulations,
            const std::string              &biasInitFilename,
            BiasParams::DisableUpdateSkips  disableUpdateSkips) :
     dimParams_(dimParamsInit),
     grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
-    params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, cr, grid_->axis(), biasIndexInCollection),
+    params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_->axis(), biasIndexInCollection),
     state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid()),
     tempWorkSpace_(),
     numWarningsIssued_(0)
@@ -233,7 +233,7 @@ Bias::Bias(const t_commrec                *cr,
     /* For a global update updateList covers all points, so reserve that */
     updateList_.reserve(grid_->numPoints());
 
-    state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias, (cr != nullptr ? cr->ms : nullptr));
+    state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias);
 }
 
 } // namespace gmx

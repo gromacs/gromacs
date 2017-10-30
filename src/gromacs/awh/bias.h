@@ -131,23 +131,23 @@ class Bias
         /*! \brief
          * Constructor.
          *
-         * \param[in] cr                     Struct for communication.
          * \param[in] biasIndexInCollection  Index of the bias in collection.
          * \param[in] awhParams              AWH parameters.
          * \param[in] awhBiasParams          Bias parameters.
          * \param[in] dimParams              Bias dimension parameters.
          * \param[in] beta                   1/(k_B T).
          * \param[in] mdTimeStep             The MD time step.
+         * \param[in] numSharingSimulations  The number of simulations to share the bias across.
          * \param[in] biasInitFilename       Name of file to read PMF and target from.
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          */
-        Bias(const t_commrec                *cr,
-             int                             biasIndexInCollection,
+        Bias(int                             biasIndexInCollection,
              const AwhParams                &awhParams,
              const AwhBiasParams            &awhBiasParams,
              const std::vector<DimParams>   &dimParams,
              double                          beta,
              double                          mdTimeStep,
+             int                             numSharingSimulations,
              const std::string              &biasInitFilename,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
