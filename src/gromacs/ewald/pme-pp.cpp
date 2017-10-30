@@ -70,18 +70,20 @@
 
 /*! \brief Block to wait for communication to PME ranks to complete
  *
- * This should be faster with a real non-blocking MPI implementation */
-/* #define GMX_PME_DELAYED_WAIT */
+ * This should be faster with a real non-blocking MPI implementation
+ */
+static constexpr bool c_useDelayedWait = false;
 
-static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t gmx_unused *dd)
+/*! \brief Wait for the pending data send requests to PME ranks to complete */
+static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
 {
-#if GMX_MPI
     if (dd->nreq_pme)
     {
+#if GMX_MPI
         MPI_Waitall(dd->nreq_pme, dd->req_pme, MPI_STATUSES_IGNORE);
+#endif
         dd->nreq_pme = 0;
     }
-#endif
 }
 
 /*! \brief Send data to PME ranks */
@@ -111,10 +113,11 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
                 (flags & PP_PME_COORD)  ? " coordinates" : "");
     }
 
-#ifdef GMX_PME_DELAYED_WAIT
-    /* When can not use cnb until pending communication has finished */
-    gmx_pme_send_coeffs_coords_wait(dd);
-#endif
+    if (c_useDelayedWait)
+    {
+        /* We can not use cnb until pending communication has finished */
+        gmx_pme_send_coeffs_coords_wait(dd);
+    }
 
     if (dd->pme_receive_vir_ener)
     {
@@ -198,15 +201,15 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
                       &dd->req_pme[dd->nreq_pme++]);
         }
     }
-
-#ifndef GMX_PME_DELAYED_WAIT
-    /* Wait for the data to arrive */
-    /* We can skip this wait as we are sure x and q will not be modified
-     * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
-     */
-    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
-#endif
+    if (!c_useDelayedWait)
+    {
+        /* Wait for the data to arrive */
+        /* We can skip this wait as we are sure x and q will not be modified
+         * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
+         */
+        gmx_pme_send_coeffs_coords_wait(dd);
+    }
 }
 
 void gmx_pme_send_parameters(t_commrec *cr,
@@ -353,10 +356,11 @@ void gmx_pme_receive_f(t_commrec *cr,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles)
 {
-#ifdef GMX_PME_DELAYED_WAIT
-    /* Wait for the x request to finish */
-    gmx_pme_send_coeffs_coords_wait(cr->dd);
-#endif
+    if (c_useDelayedWait)
+    {
+        /* Wait for the x request to finish */
+        gmx_pme_send_coeffs_coords_wait(cr->dd);
+    }
 
     int natoms = cr->dd->nat_home;
 
