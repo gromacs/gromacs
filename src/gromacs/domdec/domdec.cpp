@@ -1849,6 +1849,7 @@ static int ddindex2pmeindex(const gmx_domdec_t *dd, int ddindex)
     return (ddindex*npme + npme/2)/npp;
 }
 
+#if GMX_MPI
 static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
 {
     int *pme_rank;
@@ -1873,6 +1874,7 @@ static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
 
     return pme_rank;
 }
+#endif
 
 static int gmx_ddcoord2pmeindex(t_commrec *cr, int x, int y, int z)
 {
