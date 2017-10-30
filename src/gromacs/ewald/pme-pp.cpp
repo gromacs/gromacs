@@ -73,16 +73,16 @@
  * This should be faster with a real non-blocking MPI implementation */
 /* #define GMX_PME_DELAYED_WAIT */
 
-static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t gmx_unused *dd)
-{
 #if GMX_MPI
+static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t *dd)
+{
     if (dd->nreq_pme)
     {
         MPI_Waitall(dd->nreq_pme, dd->req_pme, MPI_STATUSES_IGNORE);
         dd->nreq_pme = 0;
     }
-#endif
 }
+#endif
 
 /*! \brief Send data to PME ranks */
 static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,

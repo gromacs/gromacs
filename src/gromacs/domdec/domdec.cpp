@@ -1849,7 +1849,7 @@ static int ddindex2pmeindex(const gmx_domdec_t *dd, int ddindex)
     return (ddindex*npme + npme/2)/npp;
 }
 
-static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
+static inline int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
 {
     int *pme_rank;
     int  n, i, p0, p1;
