@@ -5845,9 +5845,9 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         }
     }
 
-#if GMX_MPI
     if (comm->bCartesianPP_PME)
     {
+#if GMX_MPI
         int  rank;
         ivec periods;
 
@@ -5897,6 +5897,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                        getThisRankDuties(cr),
                        dd_index(comm->ntot, dd->ci),
                        &cr->mpi_comm_mygroup);
+#endif
     }
     else
     {
@@ -5930,15 +5931,15 @@ static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         {
             cr->duty = DUTY_PP;
         }
-
+#if GMX_MPI
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim,
                        getThisRankDuties(cr),
                        cr->nodeid,
                        &cr->mpi_comm_mygroup);
         MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
-    }
 #endif
+    }
 
     if (fplog)
     {
