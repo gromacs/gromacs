@@ -236,20 +236,20 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
  * Check consistency of input at the AWH bias level.
  *
  * \param[in]     awhBiasParams  AWH bias parameters.
- * \param[in,out] wi             Struct for bookeeping warnings.
+ * \param[in,out] wi             Struct for bookkeeping warnings.
  */
-static void checkInputConsistencyAwhBias(const AwhBiasParams *awhBiasParams, warninp_t wi)
+static void checkInputConsistencyAwhBias(const AwhBiasParams &awhBiasParams,
+                                         warninp_t            wi)
 {
     /* Covering diameter and sharing warning. */
-    for (int d = 0; d < awhBiasParams->ndim; d++)
+    for (int d = 0; d < awhBiasParams.ndim; d++)
     {
-        double coverDiameter = awhBiasParams->dimParams[d].coverDiameter;
-        if (!awhBiasParams->bShare && coverDiameter > 0)
+        double coverDiameter = awhBiasParams.dimParams[d].coverDiameter;
+        if (awhBiasParams.shareGroup <= 0 && coverDiameter > 0)
         {
             warning(wi, "The covering diameter is only relevant to set for bias sharing simulations.");
         }
     }
-
 }
 
 /*! \brief
@@ -386,10 +386,14 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Share the bias across multiple simulations: no or yes");
+        CTYPE("Group index to share the bias with, 0 means not shared");
     }
-    sprintf(opt, "%s-share", prefix);
-    EETYPE(opt, awhBiasParams->bShare, yesno_names);
+    sprintf(opt, "%s-share-group", prefix);
+    ITYPE(opt, awhBiasParams->shareGroup, 0);
+    if (awhBiasParams->shareGroup < 0)
+    {
+        warning_error(wi, "AWH bias share-group should be >= 0");
+    }
 
     if (bComment)
     {
@@ -417,7 +421,7 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
     }
 
     /* Check consistencies here that cannot be checked at read time at a lower level. */
-    checkInputConsistencyAwhBias(awhBiasParams, wi);
+    checkInputConsistencyAwhBias(*awhBiasParams, wi);
 
     *ninp_p   = ninp;
     *inp_p    = inp;
@@ -426,37 +430,52 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 /*! \brief
  * Check consistency of input at the AWH level.
  *
- * \param[in] awhParams  AWH parameters.
+ * \param[in]     awhParams  AWH parameters.
+ * \param[in,out] wi         Struct for bookkeeping warnings.
  */
-static void checkInputConsistencyAwh(const AwhParams *awhParams)
+static void checkInputConsistencyAwh(const AwhParams &awhParams,
+                                     warninp_t        wi)
 {
-    /* Each pull coord can map to at most 1 AWH coord */
-    for (int k1 = 0; k1 < awhParams->numBias; k1++)
+    /* Each pull coord can map to at most 1 AWH coord.
+     * Check that we have a shared bias when requesting multisim sharing.
+     */
+    bool haveSharedBias = false;
+    for (int k1 = 0; k1 < awhParams.numBias; k1++)
     {
-        AwhBiasParams *awhBiasParams1 = &awhParams->awhBiasParams[k1];
+        const AwhBiasParams &awhBiasParams1 = awhParams.awhBiasParams[k1];
+
+        if (awhBiasParams1.shareGroup > 0)
+        {
+            haveSharedBias = true;
+        }
 
         /* k1 is the reference AWH, k2 is the AWH we compare with (can be equal to k1) */
-        for (int k2 = k1; k2 < awhParams->numBias; k2++)
+        for (int k2 = k1; k2 < awhParams.numBias; k2++)
         {
-            for (int d1 = 0; d1 < awhBiasParams1->ndim; d1++)
+            for (int d1 = 0; d1 < awhBiasParams1.ndim; d1++)
             {
-                AwhBiasParams *awhBiasParams2 = &awhParams->awhBiasParams[k2];
+                const AwhBiasParams &awhBiasParams2 = awhParams.awhBiasParams[k2];
 
                 /* d1 is the reference dimension of the reference AWH. d2 is the dim index of the AWH to compare with. */
-                for (int d2 = 0; d2 < awhBiasParams2->ndim; d2++)
+                for (int d2 = 0; d2 < awhBiasParams2.ndim; d2++)
                 {
                     /* Give an error if (d1, k1) is different from (d2, k2) but the pull coordinate is the same */
-                    if ( (d1 != d2 || k1 != k2) && (awhBiasParams1->dimParams[d1].coordIndex == awhBiasParams2->dimParams[d2].coordIndex) )
+                    if ( (d1 != d2 || k1 != k2) && (awhBiasParams1.dimParams[d1].coordIndex == awhBiasParams2.dimParams[d2].coordIndex) )
                     {
                         char errormsg[STRLEN];
                         sprintf(errormsg, "One pull coordinate (%d) cannot be mapped to two separate AWH dimensions (awh%d-dim%d and awh%d-dim%d). "
                                 "If this is really what you want to do you will have to duplicate this pull coordinate.",
-                                awhBiasParams1->dimParams[d1].coordIndex + 1, k1 + 1, d1 + 1, k2 + 1, d2 + 1);
+                                awhBiasParams1.dimParams[d1].coordIndex + 1, k1 + 1, d1 + 1, k2 + 1, d2 + 1);
                         gmx_fatal(FARGS, errormsg);
                     }
                 }
             }
         }
+    }
+
+    if (awhParams.shareBiasMultisim && !haveSharedBias)
+    {
+        warning(wi, "Sharing of biases over multiple simulations is requested, but no bias is marked as shared (share-group > 0)");
     }
 }
 
@@ -506,6 +525,10 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
     sprintf(opt, "%s-nsamples-update", prefix);
     ITYPE(opt, awhParams->numSamplesUpdateFreeEnergy, 10);
 
+    CTYPE("When true, biases with share-group>0 are shared between multiple simulations");
+    sprintf(opt, "%s-share-bias-multisim", prefix);
+    EETYPE(opt, awhParams->shareBiasMultisim, yesno_names);
+
     CTYPE("The number of independent AWH biases");
     sprintf(opt, "%s-nbias", prefix);
     ITYPE(opt, awhParams->numBias, 1);
@@ -525,7 +548,7 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
     }
 
     /* Do a final consistency check before returning */
-    checkInputConsistencyAwh(awhParams);
+    checkInputConsistencyAwh(*awhParams, wi);
 
     if (ir->init_step != 0)
     {

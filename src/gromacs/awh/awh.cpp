@@ -67,6 +67,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 
@@ -129,6 +130,12 @@ Awh::Awh(FILE              *fplog,
         please_cite(fplog, "Lindahl2014");
     }
 
+    int numSharingSimulations = 1;
+    if (awhParams.shareBiasMultisim && MULTISIM(cr))
+    {
+        numSharingSimulations = cr->ms->nsim;
+    }
+
     /* Initialize all the biases */
     const double beta = 1/(BOLTZ*ir.opts.ref_t[0]);
     for (int k = 0; k < awhParams.numBias; k++)
@@ -149,8 +156,28 @@ Awh::Awh(FILE              *fplog,
         }
 
         /* Construct the bias and couple it to the system. */
-        biasCoupledToSystem_.emplace_back(Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename),
+        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename),
                                           pullCoordIndex);
+
+        /* Check for the current limitation that we do not (yet) support
+         * sharing of biases within a simulation.
+         */
+        int shareGroup = awhParams.awhBiasParams[k].shareGroup;
+        if (awhParams.awhBiasParams[k].shareGroup > 0)
+        {
+            int numShared = 0;
+            for (int i = 0; i < awhParams.numBias; i++)
+            {
+                if (awhParams.awhBiasParams[i].shareGroup == shareGroup)
+                {
+                    numShared++;
+                }
+            }
+            if (numShared > 1)
+            {
+                gmx_fatal(FARGS, "Biases within a simulation are shared, currently sharing of biases is only supported between simulations");
+            }
+        }
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */

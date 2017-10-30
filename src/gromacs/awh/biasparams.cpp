@@ -51,7 +51,6 @@
 #include <algorithm>
 
 #include "gromacs/mdtypes/awh-params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -187,16 +186,25 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
 
 /*! \brief Returns the number of simulations sharing bias updates.
  *
- * \param[in] awhBiasParams  Bias parameters.
- * \param[in] cr             Struct for communication, can be nullptr.
+ * \param[in] awhBiasParams          Bias parameters.
+ * \param[in] numSharingSimulations  The number of simulations to share the bias across.
  * \returns the number of shared updates.
  */
 static int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
-                              const t_commrec     *cr)
+                              bool                 numSharingSimulations)
 {
-    int numMultiSims = ((cr != nullptr) && MULTISIM(cr)) ? cr->ms->nsim : 1;
+    GMX_RELEASE_ASSERT(numSharingSimulations >= 1, "We should ''share'' at least with ourselves");
 
-    return (awhBiasParams.bShare ? numMultiSims : 1);
+    int numShared = 1;
+
+    if (awhBiasParams.shareGroup > 0)
+    {
+        /* We do not yet support sharing within a simulation */
+        int numSharedWithinSim = 1;
+        numShared              = numSharingSimulations*numSharedWithinSim;
+    }
+
+    return numShared;
 }
 
 /* Constructor.
@@ -218,7 +226,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
                        double                        beta,
                        double                        mdTimeStep,
                        DisableUpdateSkips            disableUpdateSkips,
-                       const t_commrec              *cr,
+                       int                           numSharingSimulations,
                        const std::vector<GridAxis>  &gridAxis,
                        int                           biasIndex) :
     invBeta(beta > 0 ? 1/beta : 0),
@@ -228,7 +236,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     eTarget(awhBiasParams.eTarget),
     targetParam(getTargetParameter(awhBiasParams)),
     idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
-    numSharedUpdate(getNumSharedUpdate(awhBiasParams, cr)),
+    numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
     // Estimate and initialize histSizeInitial, depends on the grid.

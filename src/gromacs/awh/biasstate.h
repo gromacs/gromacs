@@ -146,15 +146,11 @@ class BiasState
         /*! \brief
          * Convolves the PMF and sets the initial free energy to its convolution.
          *
-         * \param[in] dimParams     The bias dimensions parameters
-         * \param[in] grid          The grid.
-         * \param[in] params        The bias parameters.
-         * \param[in] multiSimComm  Struct for multi-simulation communication.
+         * \param[in] dimParams  The bias dimensions parameters
+         * \param[in] grid       The grid.
          */
         void setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                         const Grid                    &grid,
-                                         const BiasParams              &params,
-                                         const gmx_multisim_t          *multiSimComm);
+                                         const Grid                    &grid);
 
         /*! \brief
          * Normalize the PMF histogram.
@@ -173,15 +169,13 @@ class BiasState
          * \param[in] params          The bias parameters.
          * \param[in] filename        Name of file to read PMF and target from.
          * \param[in] numBias         The number of biases.
-         * \param[in] multiSimComm    Struct for multi-simulation communication.
          */
         void initGridPointState(const AwhBiasParams           &awhBiasParams,
                                 const std::vector<DimParams>  &dimParams,
                                 const Grid                    &grid,
                                 const BiasParams              &params,
                                 const std::string             &filename,
-                                int                            numBias,
-                                const gmx_multisim_t          *multiSimComm);
+                                int                            numBias);
 
         /*! \brief
          * Makes checks for the collected histograms and warns if issues are detected.
@@ -504,22 +498,15 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
                          const awh_dvec                &coordValue);
 
 /*! \brief
- * Sets the given array with PMF values.
+ * Fills the given array with PMF values, resizes if necessary.
  *
- * Points outside of the biasing target region will get PMF = GMX_DOUBLE_MAX.
- * In the simplest case the PMF is simply the negative of the PMF histogram.
- * If there are sharing replicas however, histograms need to be summed
- * across multiple simulations. The output PMF is not normalized.
+ * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
  *
- * \param[in]     params        The bias parameters.
- * \param[in]     points        The point state.
- * \param[in]     multiSimComm  Struct for multi-simulation communication, needed for bias sharing replicas.
- * \param[in,out] pmf           Array returned will be of the same length as the AWH grid to store the PMF in.
+ * \param[in]     points  The point state.
+ * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
  */
-void calculatePmf(const BiasParams              &params,
-                  const std::vector<PointState> &points,
-                  const gmx_multisim_t          *multiSimComm,
-                  std::vector<float>            *pmf);
+void getPmf(const std::vector<PointState> &points,
+            std::vector<float>            *pmf);
 
 //! Linewidth used for warning output
 static const int c_linewidth = 78;

@@ -509,7 +509,7 @@ class PointState
         double      weightsumTot_;          /**< Accumulated weights, never reset */
         double      weightsumRef_;          /**< The reference weight histogram determining the free energy updates */
         gmx_int64_t lastUpdateIndex_;       /**< The last update that was performed at this point, in units of number of updates. */
-        double      logPmfsum_;             /**< Logarithm of the PMF histogram (for 1 replica) */
+        double      logPmfsum_;             /**< Logarithm of the PMF histogram */
         double      numVisitsIteration_;    /**< Visits to this bin this iteration. */
         double      numVisitsTot_;          /**< Accumulated visits to this bin */
 };
