@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -348,7 +348,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const t_commrec     *cr,
                      FILE                *fplog,
                      gmx_bool             bUseGpu,
-                     bool                 doMembed)
+                     bool                 doMembed,
+                     bool                 useOrientationRestraints)
 {
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int                          min_atoms_per_mpi_rank;
@@ -365,6 +366,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         checker.applyConstraint(inputrec->eI == eiLBFGS, "L-BFGS minimization");
         checker.applyConstraint(inputrec->coulombtype == eelEWALD, "Plain Ewald electrostatics");
         checker.applyConstraint(doMembed, "Membrane embedding");
+        checker.applyConstraint(useOrientationRestraints, "Orientation restraints");
         if (checker.mustUseOneRank())
         {
             std::string message = checker.getMessage();

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -822,6 +822,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
+        bool useOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
 
         /* Since the master knows the cut-off scheme, update hw_opt for this.
          * This is done later for normal MPI and also once more with tMPI
@@ -834,7 +835,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                                  hw_opt,
                                                  inputrec, mtop,
                                                  cr, fplog, bUseGPU,
-                                                 doMembed);
+                                                 doMembed,
+                                                 useOrientationRestraints);
 
         if (hw_opt->nthreads_tmpi > 1)
         {
