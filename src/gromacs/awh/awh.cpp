@@ -67,6 +67,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 
@@ -234,6 +235,23 @@ Awh::Awh(FILE              *fplog,
             std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename));
 
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
+
+        int shareGroup = awhParams.awhBiasParams[k].shareGroup;
+        if (awhParams.awhBiasParams[k].shareGroup > 0)
+        {
+            int numShared = 0;
+            for (int i = 0; i < awhParams.numBias; i++)
+            {
+                if (awhParams.awhBiasParams[i].shareGroup == shareGroup)
+                {
+                    numShared++;
+                }
+            }
+            if (numShared > 1)
+            {
+                gmx_fatal(FARGS, "Biases within a simulation are shared, currently sharing of biases is only supported between simulations");
+            }
+        }
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */

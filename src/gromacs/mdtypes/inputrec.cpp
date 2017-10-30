@@ -683,8 +683,8 @@ static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams,
     PR(opt, awhBiasParams->targetCutoff);
     sprintf(opt, "%s-user-data", prefix);
     PS(opt, EBOOL(awhBiasParams->bUserData));
-    sprintf(opt, "%s-share", prefix);
-    PS(opt, EBOOL(awhBiasParams->bShare));
+    sprintf(opt, "%s-share-group", prefix);
+    PI(opt, awhBiasParams->shareGroup);
     sprintf(opt, "%s-equilibrate-histogram", prefix);
     PS(opt, EBOOL(awhBiasParams->equilibrateHistogram));
     sprintf(opt, "%s-ndim", prefix);
@@ -715,6 +715,8 @@ static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
     PI(opt, awhParams->nstSampleCoord);
     sprintf(opt, "%s-nsamples-update", prefix);
     PI(opt, awhParams->numSamplesUpdateFreeEnergy);
+    sprintf(opt, "%s-share-bias-multisim", prefix);
+    PS(opt, EBOOL(awhParams->shareBiasMultisim));
     sprintf(opt, "%s-nbias", prefix);
     PI(opt, awhParams->numBias);
 
@@ -1164,7 +1166,7 @@ static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const g
     cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
     cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData, bias2->bUserData);
     cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial, bias2->errorInitial, ftol, abstol);
-    cmp_bool(fp, "inputrec->awhParams->biasbShare", biasIndex, bias1->bShare, bias2->bShare);
+    cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
 
     for (int dim = 0; dim < DIM; dim++)
     {
@@ -1180,6 +1182,7 @@ static void cmp_awhParams(FILE *fp, const gmx::AwhParams *awh1, const gmx::AwhPa
     cmp_int(fp, "inputrec->awhParams->nstsample_coord", -1, awh1->nstSampleCoord, awh2->nstSampleCoord);
     cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1, awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
     cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
+    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
 
     if (awh1->numBias == awh2->numBias)
     {
