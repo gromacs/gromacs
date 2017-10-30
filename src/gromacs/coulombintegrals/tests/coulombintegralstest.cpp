@@ -42,22 +42,45 @@
 
 
 #include <math.h>
-
 #include <gtest/gtest.h>
 
-#include "programs/alexandria/poldata.h"
-#include "programs/alexandria/coulombintegrals/coulombintegrals.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-namespace alexandria
-{
-
 namespace
 {
+
+enum ChargeDistribution  {
+    ecdSlater,
+    ecdGaussian, 
+    ecdNR
+};
+
+typedef struct {
+    ChargeDistribution cd;
+    const char        *name;
+} t_chargedistribution;
+
+t_chargedistribution chargedistributions[ecdNR] = {
+    { ecdSlater,   "Slater"},
+    { ecdGaussian, "Gaussian"}
+};
+
+static const char *getChargeDistributionName(ChargeDistribution cd)
+{
+    for (auto i = 0; i < ecdNR; i++)
+    {
+        if (cd == chargedistributions[i].cd)
+        {
+            return chargedistributions[i].name;
+        }
+    }
+    return nullptr;
+}
 
 class CoulombTest : public gmx::test::CommandLineTestBase
 {
@@ -67,6 +90,10 @@ class CoulombTest : public gmx::test::CommandLineTestBase
         //init set tolecrance
         CoulombTest () : checker_(this->rootChecker())
         {
+            #if !HAVE_LIBCLN
+            gmx::test::FloatingPointTolerance tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-13);
+            checker_.setDefaultTolerance(tolerance);
+            #endif
         }
 
         // Static initiation, only run once every test.
@@ -74,7 +101,7 @@ class CoulombTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testCoulomb(ChargeDistributionModel model, int ri, int rj, double xi, double xj)
+    void testCoulomb(ChargeDistribution cd, int irow, int jrow, double izeta, double jzeta)
         {
             std::vector<double> coulomb;
             std::vector<double> force;
@@ -84,25 +111,25 @@ class CoulombTest : public gmx::test::CommandLineTestBase
             {
                 double r = 0.1*i;
                 
-                switch (model)
+                switch (cd)
                 {
-                case eqdAXg:
-                    coulomb.push_back(Coulomb_GG(r, xi, xj));
-                    force.push_back(-DCoulomb_GG(r, xi, xj));
-                    ncoulomb.push_back(Nuclear_GG(r, xi));
-                    nforce.push_back(-DNuclear_GG(r, xi));
+                case ecdGaussian:
+                    coulomb.push_back(Coulomb_GG(r,  izeta, jzeta));
+                    force.push_back(-DCoulomb_GG(r,  izeta, jzeta));
+                    ncoulomb.push_back(Nuclear_GG(r, izeta));
+                    nforce.push_back(-DNuclear_GG(r, izeta));
                     break;
-                case eqdAXs:
-                    coulomb.push_back(Coulomb_SS(r, ri, rj, xi, xj));
-                    force.push_back(-DCoulomb_SS(r, ri, rj, xi, xj));
-                    ncoulomb.push_back(Nuclear_SS(r, ri, xi));
-                    nforce.push_back(-DNuclear_SS(r, ri, xi));
+                case ecdSlater:
+                    coulomb.push_back(Coulomb_SS(r,  irow, jrow, izeta, jzeta));
+                    force.push_back(-DCoulomb_SS(r,  irow, jrow, izeta, jzeta));
+                    ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
+                    nforce.push_back(-DNuclear_SS(r, irow, izeta));
                     break;
                 default:
                     break;
                 }
             }
-            const char *name = alexandria::getEemtypeName(model);
+            const char *name = getChargeDistributionName(cd);
             char buf[256];
             snprintf(buf, sizeof(buf), "Potential-%s", name);
             checker_.checkSequence(coulomb.begin(), coulomb.end(), buf);
@@ -120,16 +147,15 @@ class CoulombTest : public gmx::test::CommandLineTestBase
 
 };
 
-TEST_F (CoulombTest, AXg)
+TEST_F (CoulombTest, Gaussian)
 {
-    testCoulomb(eqdAXg, 1, 1, 5.0, 8.0);
+    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0);
 }
 
-TEST_F (CoulombTest, AXs)
+TEST_F (CoulombTest, Slater)
 {
-    testCoulomb(eqdAXs, 1, 2, 12.0, 16.0);
+    testCoulomb(ecdSlater, 1, 2, 12.0, 16.0);
 }
 
 }
 
-}

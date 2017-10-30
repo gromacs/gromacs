@@ -133,7 +133,7 @@ double Nuclear_SS(double r,int i,double xi);
  * \param[in] xj gaussian width in 1/nm 
  * \return    Integral value
  */    
-double DCoulomb_SS(double r,int i,int j,double xi,double xj);
+double DCoulomb_SS(double r,int i, int j, double xi, double xj);
 
 /*! \brief 
  * Compute the derivative of the Slater overlap integral between a Slater 
@@ -146,7 +146,7 @@ double DCoulomb_SS(double r,int i,int j,double xi,double xj);
  * \param[in] xi gaussian width in 1/nm 
  * \return    Integral value
  */    
-double DNuclear_SS(double r,int i,double xi);
+double DNuclear_SS(double r,int i, double xi);
 
 #ifdef __cplusplus
 }

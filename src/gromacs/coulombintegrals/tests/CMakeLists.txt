@@ -1,10 +1,10 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Copyright (c) 2014,2016, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,10 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
-                  moduletest.cpp
-                  angle.cpp
-                  select.cpp)
-
-add_executable(test_selection test_selection.cpp)
-target_link_libraries(test_selection libgromacs ${GMX_EXE_LINKER_FLAGS})
+gmx_add_unit_test(CoulombIntegralsTest coulombIntegrals-test
+                  coulombintegralstest.cpp)
