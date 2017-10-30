@@ -107,9 +107,9 @@ class CoulombTest : public gmx::test::CommandLineTestBase
             std::vector<double> force;
             std::vector<double> ncoulomb;
             std::vector<double> nforce;
-            for(int i = 1; i < 10; i++)
+            for(int i = 0; i < 9; i++)
             {
-                double r = 0.1*i;
+                double r = 0.1*(i+1);
                 
                 switch (cd)
                 {
