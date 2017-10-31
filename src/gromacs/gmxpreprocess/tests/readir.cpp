@@ -166,19 +166,19 @@ TEST_F(GetIrTest, EmptyInputWorks)
 // are currently the only ones using the new Options-style handling.
 TEST_F(GetIrTest, ProducesOutputFromElectricField)
 {
-    const char *inputMdpFile = "E-x = 1 1.2 -1";
+    const char *inputMdpFile = "electric-field-x = 1.2 0 0 0";
     runTest(inputMdpFile);
 }
 
 TEST_F(GetIrTest, ProducesOutputFromElectricFieldPulsed)
 {
-    const char *inputMdpFile = "E-y = 1 3.7 -1\nE-yt = 3 2.0 0 6.5 0 1.0 0";
+    const char *inputMdpFile = "electric-field-y = 3.7 2.0 6.5 1.0";
     runTest(inputMdpFile);
 }
 
 TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
 {
-    const char *inputMdpFile = "E-z = 1 3.7 -1\nE-zt = 1 7.5 0";
+    const char *inputMdpFile = "electric-field-z = 3.7 7.5 0 0";
     runTest(inputMdpFile);
 }
 

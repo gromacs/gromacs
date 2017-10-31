@@ -331,17 +331,12 @@ userreal2                = 0
 userreal3                = 0
 userreal4                = 0
 ; Electric fields
-; Format for E-x, etc. is: number of cosines (int; only 1 is supported),
-; amplitude (real; V/nm), and phase (real; value is meaningless
-; for a cosine of frequency 0.
-; Format for E-xt, etc. is: omega (1/ps), time for the pulse peak (ps),
-; and sigma (ps) width of the pulse. Sigma = 0 removes the pulse,
-; leaving the field to be a cosine function.
-E-x                      = 1 0 -1
-E-xt                     = 0 0 0
-E-y                      = 1 3.7 -1
-E-yt                     = 3 2 0 6.5 0 1 0
-E-z                      = 1 0 -1
-E-zt                     = 0 0 0
+; Format for electric-field-x, etc. is: four real variables:
+; amplitude (V/nm), frequency omega (1/ps), time for the pulse peak (ps),
+; and sigma (ps) width of the pulse. Omega = 0 means static field,
+; sigma = 0 means no pulse, leaving the field to be a cosine function.
+electric-field-x         = 0 0 0 0
+electric-field-y         = 3.7 2 6.5 1
+electric-field-z         = 0 0 0 0
 </String>
 </ReferenceData>
