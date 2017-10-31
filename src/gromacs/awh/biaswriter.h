@@ -64,28 +64,43 @@ class Bias;
  * in a differen format (i.e. TNG) than the current energy file.
  */
 
-//! Enum with the AWH variables to write
-enum {
-    evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+//! Enum with the AWH variables to write.
+enum class AwhVar
+{
+    MetaData,   //!< Meta data.
+    CoordValue, //!< Coordinate value.
+    Pmf,        //!< The pmf.
+    Bias,       //!< The bias.
+    Visits,     //!< The number of visits.
+    Weights,    //!< The weights.
+    Target,     //!< The target distribition.
+    Count       //!< The number of enum value, not including Count.
 };
 
-//! Enum with the types of metadata to write
-enum {
-    emetadataNBLOCK, emetadataTARGETERROR, emetadataSCALEDSAMPLEWEIGHT, emetadataNR
+//! Enum with the types of metadata to write.
+enum class MetaData
+{
+    NumBlock,           //!< The number of blocks.
+    TargetError,        //!< The target error.
+    ScaledSampleWeight, //!< The logarithm of the sample weight relative to a sample weight of 1 at the initial time.
+    Count               //!< The number of enum value, not including Count.
 };
 
-//! Enum with different ways of normalizing the output
-enum {
-    enormtypeNONE, enormtypeCOORD, enormtypeFREE_ENERGY, enormtypeDISTRIBUTION
+//! Enum with different ways of normalizing the output.
+enum class Normalization
+{
+    None,         //!< No normalization.
+    Coordinate,   //!< Scale using the internal/user input coordinate scaling factor.
+    FreeEnergy,   //!< Normalize free energy values by subtracting the minimum value.
+    Distribution  //!< Normalize the distribution to 1.
 };
 
 /*! \internal \brief Output data block.
  */
 struct Block
 {
-    int                normtype;          /**< How to normalize the output data */
-    float              normvalue;         /**< The normalization value */
+    Normalization      normType;          /**< How to normalize the output data */
+    float              normValue;         /**< The normalization value */
     std::vector<float> data;              /**< The data, always float which is enough since this is statistical data */
 };
 
@@ -98,9 +113,9 @@ class BiasWriter
          *
          * \param[in] evar     Value for variable type enum.
          */
-        bool hasVarBlock(int evar) const
+        bool hasVarBlock(AwhVar evar) const
         {
-            return varToBlock_[evar] >= 0;
+            return varToBlock_[static_cast<int>(evar)] >= 0;
         }
 
         /*! \brief* Find the first block containing the given variable.
@@ -108,9 +123,9 @@ class BiasWriter
          * \param[in] evar     Value for variable type enum.
          * \returns the first block index for the variable, or -1 there is no block.
          */
-        int getVarStartBlock(int evar) const
+        int getVarStartBlock(AwhVar evar) const
         {
-            return varToBlock_[evar];
+            return varToBlock_[static_cast<int>(evar)];
         }
 
         /*! \brief Transfer AWH point data to writer data blocks.
@@ -120,8 +135,9 @@ class BiasWriter
          * \param[in] bias        The AWH Bias.
          * \param[in] pmf         PMF values.
          */
-        void transferVariablePointDataToWriter(int evar, int m,
-                                               const Bias &bias,
+        void transferVariablePointDataToWriter(AwhVar                    evar,
+                                               int                       m,
+                                               const Bias               &bias,
                                                const std::vector<float> &pmf);
 
     public:
@@ -165,9 +181,9 @@ class BiasWriter
         int writeToEnergySubblocks(t_enxsubblock *subblock);
 
     private:
-        std::vector<Block> block_;              /**< The data blocks */
-        int                varToBlock_[evarNR]; /**< Start block index for each variable */
-        bool               haveDataToWrite_;    /**< Tells if we have data to write to file */
+        std::vector<Block> block_;                                       /**< The data blocks */
+        int                varToBlock_[static_cast<int>(AwhVar::Count)]; /**< Start block index for each variable */
+        bool               haveDataToWrite_;                             /**< Tells if we have data to write to file */
 };
 
 }       // namespace gmx

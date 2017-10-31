@@ -62,26 +62,30 @@ namespace gmx
  * \param[in] evar     Value for variable type enum.
  * \returns enum value for normalization type.
  */
-static int getNormtype(int evar)
+static Normalization getNormType(AwhVar evar)
 {
-    int normtype;
+    Normalization normType;
 
     switch (evar)
     {
-        case evarCOORDVALUE:
-            normtype = enormtypeCOORD; break;
-        case evarPMF:
-        case evarBIAS:
-            normtype = enormtypeFREE_ENERGY; break;
-        case evarVISITS:
-        case evarWEIGHTS:
-        case evarTARGET:
-            normtype = enormtypeDISTRIBUTION; break;
+        case AwhVar::CoordValue:
+            normType = Normalization::Coordinate;
+            break;
+        case AwhVar::Pmf:
+        case AwhVar::Bias:
+            normType = Normalization::FreeEnergy;
+            break;
+        case AwhVar::Visits:
+        case AwhVar::Weights:
+        case AwhVar::Target:
+            normType = Normalization::Distribution;
+            break;
         default:
-            normtype = enormtypeNONE; break;
+            normType = Normalization::None;
+            break;
     }
 
-    return normtype;
+    return normType;
 }
 
 /*! \brief
@@ -105,86 +109,91 @@ static double getCoordNormvalue(const Bias &bias, int dimIndex)
  * \param[in] count  Index of the variable.
  * \returns the normalization value.
  */
-static double getNormvalue(int evar, const Bias &bias, int count)
+static double getNormvalue(AwhVar evar, const Bias &bias, int count)
 {
-    double normvalue = 0;
+    double normValue = 0;
 
     switch (evar)
     {
-        case evarCOORDVALUE:
-            normvalue = getCoordNormvalue(bias, count);
+        case AwhVar::CoordValue:
+            normValue = getCoordNormvalue(bias, count);
             break;
-        case evarVISITS:
-        case evarWEIGHTS:
-        case evarTARGET:
-            normvalue = static_cast<double>(bias.state().points().size());
+        case AwhVar::Visits:
+        case AwhVar::Weights:
+        case AwhVar::Target:
+            normValue = static_cast<double>(bias.state().points().size());
             break;
         default:
             break;
     }
 
-    return normvalue;
+    return normValue;
 }
 
 /*! \brief
  * Initializes a data block.
  *
  * \param[in,out] block    Data block.
- * \param[in] npoints      Number of points in block.
- * \param[in] normtype     Value for normalization type enum.
- * \param[in] normvalue    Normalization value.
+ * \param[in] numPoints    Number of points in block.
+ * \param[in] normType     Value for normalization type enum.
+ * \param[in] normValue    Normalization value.
  */
-static void initBlock(Block *block, int npoints, int normtype, double normvalue)
+static void initBlock(Block         *block,
+                      int            numPoints,
+                      Normalization  normType,
+                      double         normValue)
 {
-    block->data.resize(npoints);
-    block->normtype  = normtype;
-    block->normvalue = static_cast<float>(normvalue);
+    block->data.resize(numPoints);
+    block->normType  = normType;
+    block->normValue = static_cast<float>(normValue);
 }
 
 BiasWriter::BiasWriter(const Bias &bias)
 {
-    int var_nblock[evarNR];                /* Number of blocks per variable   */
+    constexpr int awhVarCount = static_cast<int>(AwhVar::Count);
+    int           varNumBlock[awhVarCount]; /* Number of blocks per variable */
 
     /* Different variables need different number of blocks. We keep track of the starting block for
        each variable. */
     int blockCount = 0;
-    for (int evar = 0; evar < evarNR; evar++)
+    for (int evarIndex = 0; evarIndex < awhVarCount; evarIndex++)
     {
-        switch (evar)
+        switch (static_cast<AwhVar>(evarIndex))
         {
-            case evarCOORDVALUE:
-                varToBlock_[evar] = blockCount;
-                var_nblock[evar]  = bias.ndim();
+            case AwhVar::CoordValue:
+                varToBlock_[evarIndex] = blockCount;
+                varNumBlock[evarIndex] = bias.ndim();
                 break;
             default:
                 /* Most variables need one block */
-                varToBlock_[evar] = blockCount;
-                var_nblock[evar]  = 1;
+                varToBlock_[evarIndex] = blockCount;
+                varNumBlock[evarIndex] = 1;
                 break;
         }
-        blockCount += var_nblock[evar];
+        blockCount += varNumBlock[evarIndex];
     }
 
     /* Initialize the data blocks for each variable */
     block_.resize(blockCount);
 
-    for (int evar = 0; evar < evarNR; evar++)
+    for (int evarIndex = 0; evarIndex < awhVarCount; evarIndex++)
     {
-        int npoints;
-        if (evar == evarMETA)
+        const AwhVar evar = static_cast<AwhVar>(evar);
+        int          numPoints;
+        if (evar == AwhVar::MetaData)
         {
-            npoints       = emetadataNR;
+            numPoints     = static_cast<int>(MetaData::Count);
         }
         else
         {
-            npoints       = bias.state().points().size();
+            numPoints     = bias.state().points().size();
         }
-        int bstart        = varToBlock_[evar];
+        int blockStart    = varToBlock_[evarIndex];
         int varBlockcount = 0;
-        for (int b = bstart; b < bstart + var_nblock[evar]; b++)
+        for (int b = blockStart; b < blockStart + varNumBlock[evarIndex]; b++)
         {
-            initBlock(&block_[b], npoints,
-                      getNormtype(evar),
+            initBlock(&block_[b], numPoints,
+                      getNormType(evar),
                       getNormvalue(evar, bias, varBlockcount));
             blockCount++;
         }
@@ -206,40 +215,40 @@ static void normalizeBlock(Block *block, const Bias &bias)
      * is statistical data that will never reach full float precision).
      * But since we can have very many data points, we sum into a double.
      */
-    double sum      = 0;
-    float  minval   = GMX_FLOAT_MAX;
-    float  inv_norm = 0;
+    double sum       = 0;
+    float  minValue  = GMX_FLOAT_MAX;
+    float  recipNorm = 0;
 
-    switch (block->normtype)
+    switch (block->normType)
     {
-        case enormtypeNONE:
+        case Normalization::None:
             break;
-        case enormtypeCOORD:
+        case Normalization::Coordinate:
             /* Normalize coordinate values by a scale factor */
             for (auto &point : block->data)
             {
-                point *= block->normvalue;
+                point *= block->normValue;
             }
             break;
-        case enormtypeFREE_ENERGY:
+        case Normalization::FreeEnergy:
             /* Normalize free energy values by subtracting the minimum value */
             for (size_t m = 0; m < block->data.size(); m++)
             {
-                if (bias.state().points()[m].inTargetRegion() && block->data[m] < minval)
+                if (bias.state().points()[m].inTargetRegion() && block->data[m] < minValue)
                 {
-                    minval = block->data[m];
+                    minValue = block->data[m];
                 }
             }
             for (size_t m = 0; m < block->data.size(); m++)
             {
                 if (bias.state().points()[m].inTargetRegion())
                 {
-                    block->data[m] -= minval;
+                    block->data[m] -= minValue;
                 }
             }
 
             break;
-        case enormtypeDISTRIBUTION:
+        case Normalization::Distribution:
             /* Normalize distribution values by normalizing their sum */
             for (auto &point : block->data)
             {
@@ -247,20 +256,19 @@ static void normalizeBlock(Block *block, const Bias &bias)
             }
             if (sum > 0)
             {
-                inv_norm = block->normvalue/static_cast<float>(sum);
+                recipNorm = block->normValue/static_cast<float>(sum);
             }
             for (auto &point : block->data)
             {
-                point *= inv_norm;
+                point *= recipNorm;
             }
             break;
         default:
-            gmx_incons("Unknown enormtype");
+            gmx_incons("Unknown normType");
     }
 }
 
-/* Transfer AWH point data to writer data blocks. */
-void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
+void BiasWriter::transferVariablePointDataToWriter(AwhVar evar, int m,
                                                    const Bias &bias, const std::vector<float> &pmf)
 {
     /* All variables are generally not written */
@@ -270,52 +278,54 @@ void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
     }
 
     /* The starting block index of this variable. Note that some variables need several (contiguous) blocks. */
-    int bstart = getVarStartBlock(evar);
-    GMX_ASSERT(m < static_cast<int>(block_[bstart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
+    int blockStart = getVarStartBlock(evar);
+    GMX_ASSERT(m < static_cast<int>(block_[blockStart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
 
     /* Transfer the point data of this variable to the right block(s) */
-    int b = bstart;
+    int b = blockStart;
     switch (evar)
     {
-        case evarMETA:
-            switch (m)
+        case AwhVar::MetaData:
+            switch (static_cast<MetaData>(m))
             {
-                case emetadataNBLOCK:
+                case MetaData::NumBlock:
                     /* The number of subblocks per awh (needed by gmx_energy) */
                     block_[b].data[m] = static_cast<double>(block_.size());
                     /* Note: a single subblock takes only a single type and we need doubles. */
                     break;
-                case emetadataTARGETERROR:
+                case MetaData::TargetError:
                     /* The theoretical target error */
                     block_[b].data[m] = bias.params().errorInitial*std::sqrt(bias.params().histSizeInitial/bias.state().histogramSize().histSize());
                     break;
-                case emetadataSCALEDSAMPLEWEIGHT:
+                case MetaData::ScaledSampleWeight:
                     /* The logarithm of the sample weight relative to a sample weight of 1 at the initial time.
                        In the normal case: this will increase in the initial stage and then stay at a constant value. */
                     block_[b].data[m] = bias.state().histogramSize().scaledSampleWeight();
                     break;
+                case MetaData::Count:
+                    break;
             }
             break;
-        case evarCOORDVALUE:
+        case AwhVar::CoordValue:
             for (int d = 0; d < bias.ndim(); d++)
             {
                 block_[b].data[m] = bias.grid().point(m).coordValue[d];
                 b++;
             }
             break;
-        case evarPMF:
+        case AwhVar::Pmf:
             block_[b].data[m] = bias.state().points()[m].inTargetRegion() ? pmf[m] : 0;
             break;
-        case evarBIAS:
+        case AwhVar::Bias:
             block_[b].data[m] = bias.state().points()[m].inTargetRegion() ? calcConvolvedBias(bias.dimParams(), bias.grid(), bias.state().points(), bias.grid().point(m).coordValue) : 0;
             break;
-        case evarVISITS:
+        case AwhVar::Visits:
             block_[b].data[m] = bias.state().points()[m].numVisitsTot();
             break;
-        case evarWEIGHTS:
+        case AwhVar::Weights:
             block_[b].data[m] = bias.state().points()[m].weightsumTot();
             break;
-        case evarTARGET:
+        case AwhVar::Target:
             block_[b].data[m] = bias.state().points()[m].target();
             break;
         default:
@@ -330,7 +340,7 @@ void BiasWriter::prepareBiasOutput(const Bias &bias, const gmx_multisim_t *ms)
     /* Pack the AWH data into the writer data. */
 
     /* Evaluate the PMF for all points */
-    std::vector<float> *pmf = &block_[varToBlock_[evarPMF]].data;
+    std::vector<float> *pmf = &block_[getVarStartBlock(AwhVar::Pmf)].data;
     calculatePmf(bias.params(), bias.state().points(), ms, pmf);
 
     /* Pack the the data point by point. */
@@ -338,15 +348,16 @@ void BiasWriter::prepareBiasOutput(const Bias &bias, const gmx_multisim_t *ms)
     /* The metadata has a fixed number of points so we do this variable separately.
        We could also switch the loop order below (to variables outer, points inner).
        I'm thinking this loop order performs better but it would need testing. */
-    for (int i = 0; i < emetadataNR; i++)
+    for (int i = 0; i < static_cast<int>(MetaData::Count); i++)
     {
-        transferVariablePointDataToWriter(evarMETA, i, bias, *pmf);
+        transferVariablePointDataToWriter(AwhVar::MetaData, i, bias, *pmf);
     }
     for (size_t m = 0; m < bias.state().points().size(); m++)
     {
-        for (int evar = 0; evar < evarNR; evar++)
+        for (int evarIndex = 0; evarIndex < static_cast<int>(AwhVar::Count); evarIndex++)
         {
-            if (evar == evarMETA)
+            const AwhVar evar = static_cast<AwhVar>(evarIndex);
+            if (evar == AwhVar::MetaData)
             {
                 continue;
             }
