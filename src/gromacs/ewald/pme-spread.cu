@@ -221,19 +221,19 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                 case XX:
                     tableIndex  = kernelParams.grid.tablesOffsets[XX];
                     n           = kernelParams.grid.realGridSizeFP[XX];
-                    t           = x.x * kernelParams.step.recipBox[dimIndex][XX] + x.y * kernelParams.step.recipBox[dimIndex][YY] + x.z * kernelParams.step.recipBox[dimIndex][ZZ];
+                    t           = x.x * kernelParams.current.recipBox[dimIndex][XX] + x.y * kernelParams.current.recipBox[dimIndex][YY] + x.z * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;
 
                 case YY:
                     tableIndex  = kernelParams.grid.tablesOffsets[YY];
                     n           = kernelParams.grid.realGridSizeFP[YY];
-                    t           = /*x.x * kernelParams.step.recipbox[dimIndex][XX] + */ x.y * kernelParams.step.recipBox[dimIndex][YY] + x.z * kernelParams.step.recipBox[dimIndex][ZZ];
+                    t           = /*x.x * kernelParams.current.recipbox[dimIndex][XX] + */ x.y * kernelParams.current.recipBox[dimIndex][YY] + x.z * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;
 
                 case ZZ:
                     tableIndex  = kernelParams.grid.tablesOffsets[ZZ];
                     n           = kernelParams.grid.realGridSizeFP[ZZ];
-                    t           = /*x.x * kernelParams.step.recipbox[dimIndex][XX] + x.y * kernelParams.step.recipbox[dimIndex][YY] + */ x.z * kernelParams.step.recipBox[dimIndex][ZZ];
+                    t           = /*x.x * kernelParams.current.recipbox[dimIndex][XX] + x.y * kernelParams.current.recipbox[dimIndex][YY] + */ x.z * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;
             }
             const float shift = c_pmeMaxUnitcellShift;

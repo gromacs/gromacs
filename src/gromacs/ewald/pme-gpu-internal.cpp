@@ -98,8 +98,8 @@ void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial
 void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
 {
     auto        *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
-    kernelParamsPtr->step.boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-    GMX_ASSERT(kernelParamsPtr->step.boxVolume != 0.0f, "Zero volume of the unit cell");
+    kernelParamsPtr->current.boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+    GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0f, "Zero volume of the unit cell");
 
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
@@ -118,22 +118,22 @@ void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
         {             0.0, recipBox[YY][YY], recipBox[ZZ][YY]},
         {             0.0,              0.0, recipBox[ZZ][ZZ]}
     };
-    memcpy(kernelParamsPtr->step.recipBox, newRecipBox, sizeof(matrix));
+    memcpy(kernelParamsPtr->current.recipBox, newRecipBox, sizeof(matrix));
 #endif
 }
 
 /*! \brief \libinternal
- * The PME GPU reinitialization function that is called both at the end of any MD step and on any load balancing step.
+ * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
-static void pme_gpu_reinit_step(const PmeGpu *pmeGPU)
+static void pme_gpu_reinit_computation(const PmeGpu *pmeGPU)
 {
     pme_gpu_clear_grids(pmeGPU);
     pme_gpu_clear_energy_virial(pmeGPU);
 }
 
-void pme_gpu_finish_step(const PmeGpu *pmeGPU)
+void pme_gpu_finish_computation(const PmeGpu *pmeGPU)
 {
     // Synchronize the whole PME stream at once, including D2H result transfers.
     // If forces were computed, they will have arrived at the external host buffer provided to gather.
@@ -143,7 +143,7 @@ void pme_gpu_finish_step(const PmeGpu *pmeGPU)
     pme_gpu_synchronize(pmeGPU);
 
     pme_gpu_update_timings(pmeGPU);
-    pme_gpu_reinit_step(pmeGPU);
+    pme_gpu_reinit_computation(pmeGPU);
 }
 
 /*! \brief \libinternal
@@ -418,7 +418,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     pme_gpu_reinit_timings(pme->gpu);
 
     pme_gpu_reinit_grids(pme->gpu);
-    pme_gpu_reinit_step(pme->gpu);
+    pme_gpu_reinit_computation(pme->gpu);
 }
 
 void pme_gpu_destroy(PmeGpu *pmeGPU)

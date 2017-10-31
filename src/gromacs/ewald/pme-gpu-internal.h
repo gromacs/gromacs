@@ -126,7 +126,7 @@ CUDA_FUNC_QUALIFIER int pme_gpu_get_atom_data_alignment(const PmeGpu *CUDA_FUNC_
 CUDA_FUNC_QUALIFIER int pme_gpu_get_atoms_per_warp(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(1)
 
 /*! \libinternal \brief
- * Synchronizes the current step, waiting for the GPU kernels/transfers to finish.
+ * Synchronizes the current computation, waiting for the GPU kernels/transfers to finish.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
@@ -148,7 +148,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_energy_virial(PmeGpu *CUDA_FUNC_ARGUMENT(p
 
 /*! \libinternal \brief
  * Clears the energy and virial memory on GPU with 0.
- * Should be called at the end of the energy/virial calculation step.
+ * Should be called at the end of PME computation which returned energy/virial.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
@@ -216,7 +216,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_coordinates(const PmeGpu *CUDA_FUNC_ARG
  * \param[in] pmeGPU            The PME GPU structure.
  * \param[in] h_coordinates     Input coordinates (XYZ rvec array).
  *
- * Needs to be called every MD step. The coordinates are then used in the spline calculation.
+ * Needs to be called for every PME computation. The coordinates are then used in the spline calculation.
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU),
                                                         const rvec      *CUDA_FUNC_ARGUMENT(h_coordinates)) CUDA_FUNC_TERM
@@ -235,7 +235,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_coordinates(const PmeGpu *CUDA_FUNC_ARGUME
  * \param[in] pmeGPU            The PME GPU structure.
  * \param[in] h_coefficients    The input atom charges/coefficients.
  *
- * Does not need to be done every MD step, only whenever the local charges change.
+ * Does not need to be done for every PME computation, only whenever the local charges change.
  * (So, in the beginning of the run, or on DD step).
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU),
@@ -292,7 +292,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_grids(const PmeGpu *CUDA_FUNC_ARGUMENT(pme
 
 /*! \libinternal \brief
  * Clears the real space grid on the GPU.
- * Should be called at the end of each MD step.
+ * Should be called at the end of each computation.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
@@ -412,7 +412,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_destroy_3dfft(const PmeGpu *CUDA_FUNC_ARGUMENT(
 /* Several CUDA event-based timing functions that live in pme-timings.cu */
 
 /*! \libinternal \brief
- * Finalizes all the active PME GPU stage timings for the current step. Should be called at the end of every step.
+ * Finalizes all the active PME GPU stage timings for the current computation. Should be called at the end of every computation.
  *
  * \param[in] pmeGPU         The PME GPU structure.
  */
@@ -426,7 +426,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_update_timings(const PmeGpu *CUDA_FUNC_ARGUMENT
 CUDA_FUNC_QUALIFIER void pme_gpu_reinit_timings(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \brief
- * Resets the PME GPU timings. To be called at the reset step.
+ * Resets the PME GPU timings. To be called at the reset MD step.
  *
  * \param[in] pmeGPU         The PME GPU structure.
  */
@@ -583,7 +583,7 @@ gmx_inline bool pme_gpu_is_testing(const PmeGpu *pmeGPU)
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.
- * Should be called after pme_gpu_finish_step.
+ * Should be called after pme_gpu_finish_computation.
  *
  * \param[in] pmeGPU             The PME GPU structure.
  * \param[out] energy            The output energy.
@@ -592,7 +592,7 @@ gmx_inline bool pme_gpu_is_testing(const PmeGpu *pmeGPU)
 void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial);
 
 /*! \libinternal \brief
- * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_step().
+ * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
  *
  * \param[in] pmeGPU         The PME GPU structure.
  * \param[in] box            The unit cell box.
@@ -600,11 +600,11 @@ void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial
 void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box);
 
 /*! \libinternal \brief
- * Finishes the PME GPU step, waiting for the output forces and/or energy/virial to be copied to the host.
+ * Finishes the PME GPU computation, waiting for the output forces and/or energy/virial to be copied to the host.
  *
  * \param[in] pmeGPU         The PME GPU structure.
  */
-void pme_gpu_finish_step(const PmeGpu *pmeGPU);
+void pme_gpu_finish_computation(const PmeGpu *pmeGPU);
 
 //! A binary enum for spline data layout transformation
 enum class PmeLayoutTransform
