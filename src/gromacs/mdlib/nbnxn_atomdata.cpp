@@ -61,7 +61,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -479,7 +481,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 #endif
 
 /* Initializes an nbnxn_atomdata_t data structure */
-void nbnxn_atomdata_init(FILE *fp,
+void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
                          int enbnxninitcombrule,
@@ -626,17 +628,18 @@ void nbnxn_atomdata_init(FILE *fp,
                 nbat->free(nbat->nbfp_comb);
             }
 
-            if (fp)
             {
+                std::string mesg;
                 if (nbat->comb_rule == ljcrNONE)
                 {
-                    fprintf(fp, "Using full Lennard-Jones parameter combination matrix\n\n");
+                    mesg = "Using full Lennard-Jones parameter combination matrix";
                 }
                 else
                 {
-                    fprintf(fp, "Using %s Lennard-Jones combination rule\n\n",
-                            nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                    mesg = gmx::formatString("Using %s Lennard-Jones combination rule",
+                                             nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
                 }
+                GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
             }
             break;
         case enbnxninitcombruleGEOM:
@@ -699,9 +702,9 @@ void nbnxn_atomdata_init(FILE *fp,
     if (!simple)
     {
         /* Energy groups not supported yet for super-sub lists */
-        if (n_energygroups > 1 && fp != nullptr)
+        if (n_energygroups > 1)
         {
-            fprintf(fp, "\nNOTE: With GPUs, reporting energy group contributions is not supported\n\n");
+            GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: With GPUs, reporting energy group contributions is not supported");
         }
         nbat->nenergrp = 1;
     }
@@ -761,10 +764,8 @@ void nbnxn_atomdata_init(FILE *fp,
     }
     if (nbat->bUseTreeReduce)
     {
-        if (fp)
-        {
-            fprintf(fp, "Using tree force reduction\n\n");
-        }
+        GMX_LOG(mdlog.info).asParagraph().appendText("Using tree force reduction");
+
         snew(nbat->syncStep, nth);
     }
 }
