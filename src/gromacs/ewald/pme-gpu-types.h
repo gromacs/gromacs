@@ -69,8 +69,8 @@ struct gmx_device_info_t;
  */
 enum PmeRunMode
 {
-    CPU,     //!< Whole PME step is done on CPU
-    GPU,     //!< Whole PME step is done on GPU
+    CPU,     //!< Whole PME computation is done on CPU
+    GPU,     //!< Whole PME computation is done on GPU
     Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
 };
 
@@ -173,7 +173,7 @@ struct PmeGpuAtomParams
     /*! \brief Number of local atoms */
     int    nAtoms;
     /*! \brief Pointer to the global GPU memory with input rvec atom coordinates.
-     * The coordinates themselves change and need to be copied to the GPU every MD step,
+     * The coordinates themselves change and need to be copied to the GPU for every PME computation,
      * but reallocation happens only at DD.
      */
     float *d_coordinates;
@@ -182,7 +182,7 @@ struct PmeGpuAtomParams
      */
     float  *d_coefficients;
     /*! \brief Pointer to the global GPU memory with input/output rvec atom forces.
-     * The forces change and need to be copied from (and possibly to) the GPU every MD step,
+     * The forces change and need to be copied from (and possibly to) the GPU for every PME computation,
      * but reallocation happens only at DD.
      */
     float  *d_forces;
@@ -191,7 +191,7 @@ struct PmeGpuAtomParams
      */
     int *d_gridlineIndices;
 
-    /* B-spline parameters are computed entirely on GPU every MD step, not copied.
+    /* B-spline parameters are computed entirely on GPU for every PME computation, not copied.
      * Unless we want to try something like GPU spread + CPU gather?
      */
     /*! \brief Pointer to the global GPU memory with B-spline values */
@@ -201,11 +201,11 @@ struct PmeGpuAtomParams
 };
 
 /*! \internal \brief
- * A GPU data structure for storing the PME data which might change every MD step.
+ * A GPU data structure for storing the PME data which might change for each new PME computation.
  */
-struct PmeGpuStepParams
+struct PmeGpuDynamicParams
 {
-    /* The box parameters. The box only changes size each step with pressure coupling enabled. */
+    /* The box parameters. The box only changes size with pressure coupling enabled. */
     /*! \brief
      * Reciprocal (inverted unit cell) box.
      *
@@ -228,13 +228,13 @@ struct PmeGpuStepParams
 struct PmeGpuKernelParamsBase
 {
     /*! \brief Constant data that is set once. */
-    PmeGpuConstParams constants;
+    PmeGpuConstParams   constants;
     /*! \brief Data dependent on the grid size/cutoff. */
-    PmeGpuGridParams  grid;
+    PmeGpuGridParams    grid;
     /*! \brief Data dependent on the DD and local atoms. */
-    PmeGpuAtomParams  atoms;
-    /*! \brief Data that possibly changes on every MD step. */
-    PmeGpuStepParams  step;
+    PmeGpuAtomParams    atoms;
+    /*! \brief Data that possibly changes for every new PME computation. */
+    PmeGpuDynamicParams current;
 };
 
 /* Here are the host-side structures */
@@ -257,8 +257,8 @@ struct PmeGpuSettings
      * Only intended to be used by the test framework.
      */
     bool copyAllOutputs;
-    /*! \brief Various computation flags for the current step, corresponding to the GMX_PME_ flags in pme.h. */
-    int  stepFlags;
+    /*! \brief Various flags for the current PME computation, corresponding to the GMX_PME_ flags in pme.h. */
+    int  currentFlags;
 };
 
 /*! \internal \brief
@@ -315,7 +315,7 @@ struct PmeShared
     PmeRunMode             runMode;
     /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
     class EwaldBoxZScaler *boxScaler;
-    /*! \brief The previous step box to know if we even need to update the current step box params.
+    /*! \brief The previous computation box to know if we even need to update the current box params.
      * \todo Manage this on higher level.
      * \todo Alternatively, when this structure is used by CPU PME code, make use of this field there as well.
      */
@@ -359,7 +359,7 @@ struct PmeGpu
 
     /*! \brief A single structure encompassing all the PME data used on GPU.
      * Its value is the only argument to all the PME GPU kernels.
-     * \todo Test whether this should be copied to the constant GPU memory once per MD step
+     * \todo Test whether this should be copied to the constant GPU memory once for each computation
      * (or even less often with no box updates) instead of being an argument.
      */
     std::shared_ptr<PmeGpuKernelParams> kernelParams;

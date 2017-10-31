@@ -218,14 +218,14 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
 
         if (notZeroPoint)
         {
-            const float mhxk = mX * kernelParams.step.recipBox[XX][XX];
-            const float mhyk = mX * kernelParams.step.recipBox[XX][YY] + mY * kernelParams.step.recipBox[YY][YY];
-            const float mhzk = mX * kernelParams.step.recipBox[XX][ZZ] + mY * kernelParams.step.recipBox[YY][ZZ] + mZ * kernelParams.step.recipBox[ZZ][ZZ];
+            const float mhxk = mX * kernelParams.current.recipBox[XX][XX];
+            const float mhyk = mX * kernelParams.current.recipBox[XX][YY] + mY * kernelParams.current.recipBox[YY][YY];
+            const float mhzk = mX * kernelParams.current.recipBox[XX][ZZ] + mY * kernelParams.current.recipBox[YY][ZZ] + mZ * kernelParams.current.recipBox[ZZ][ZZ];
 
             const float m2k        = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
             assert(m2k != 0.0f);
             //TODO: use LDG/textures for gm_splineValue
-            float       denom = m2k * float(M_PI) * kernelParams.step.boxVolume * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle] * gm_splineValueMinor[kMinor];
+            float       denom = m2k * float(M_PI) * kernelParams.current.boxVolume * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle] * gm_splineValueMinor[kMinor];
             assert(isfinite(denom));
             assert(denom != 0.0f);
             const float   tmp1   = expf(-kernelParams.grid.ewaldFactor * m2k);
