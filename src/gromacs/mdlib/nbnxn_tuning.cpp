@@ -129,7 +129,6 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
 {
     float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
-    verletbuf_list_setup_t ls;
     real                   rlistWithReferenceNstlist, rlist_inc, rlist_ok, rlist_max;
     real                   rlist_new, rlist_prev;
     size_t                 nstlist_ind = 0;
@@ -225,7 +224,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
         ir->nstlist = nstlist_cmdline;
     }
 
-    verletbuf_get_list_setup(TRUE, useOrEmulateGpuForNonbondeds, &ls);
+    VerletbufListSetup ls = verletbufGetListSetup(true, useOrEmulateGpuForNonbondeds);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with the reference value for nstlist (10).
@@ -367,7 +366,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
                                     const gmx_mtop_t             *mtop,
                                     matrix                        box,
                                     gmx_bool                      useGpu,
-                                    const verletbuf_list_setup_t &listSetup,
+                                    const VerletbufListSetup     &listSetup,
                                     bool                          userSetNstlistPrune,
                                     const interaction_const_t    *ic,
                                     NbnxnListParameters          *listParams)
@@ -434,11 +433,20 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
     }
 }
 
+/* Print the setup of one list */
+static void printListSetup(FILE *fplog, const char *listName,
+                           int nstList, real rList, real interactionCutoff)
+{
+    fprintf(fplog, "  %s%slist: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n",
+            listName, strlen(listName) == 0 ? "" : " ",
+            nstList, rList - interactionCutoff, rList);
+}
+
 void setupDynamicPairlistPruning(FILE                      *fplog,
                                  const t_inputrec          *ir,
                                  const gmx_mtop_t          *mtop,
                                  matrix                     box,
-                                 bool                       useGpu,
+                                 int                        nbnxnKernelType,
                                  const interaction_const_t *ic,
                                  NbnxnListParameters       *listParams)
 {
@@ -447,12 +455,14 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
     /* Initialize the parameters to no dynamic list pruning */
     listParams->useDynamicPruning = false;
 
+    const VerletbufListSetup ls   = verletbufGetListSetup(nbnxnKernelType);
+
+    /* Currently emulation mode does not support dual pair-lists */
+    const bool useGpu             = (nbnxnKernelType == nbnxnk8x8x8_GPU);
+
     if (supportsDynamicPairlistGenerationInterval(*ir) &&
         getenv("GMX_DISABLE_DYNAMICPRUNING") == NULL)
     {
-        verletbuf_list_setup_t ls;
-        verletbuf_get_list_setup(TRUE, TRUE, &ls);
-
         /* Note that nstlistPrune can have any value independently of nstlist.
          * Actually applying rolling pruning is only useful when
          * nstlistPrune < nstlist -1
@@ -499,17 +509,50 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
         {
             listParams->numRollingParts = 1;
         }
+    }
 
-        if (fplog && listParams->useDynamicPruning)
+    if (fplog)
+    {
+        const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
+        if (listParams->useDynamicPruning)
         {
-            const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
-            fprintf(fplog,
-                    "Using a dual pair-list setup updated with dynamic%s pruning:\n"
-                    "  outer list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n"
-                    "  inner list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n",
-                    listParams->numRollingParts > 1 ? ", rolling" : "",
-                    ir->nstlist, listParams->rlistOuter - interactionCutoff, listParams->rlistOuter,
-                    listParams->nstlistPrune, listParams->rlistInner - interactionCutoff, listParams->rlistInner);
+            fprintf(fplog, "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
+                    ls.cluster_size_i, ls.cluster_size_j,
+                    listParams->numRollingParts > 1 ? ", rolling" : "");
+            printListSetup(fplog, "outer", ir->nstlist, listParams->rlistOuter, interactionCutoff);
+            printListSetup(fplog, "inner", listParams->nstlistPrune, listParams->rlistInner, interactionCutoff);
+        }
+        else
+        {
+            fprintf(fplog, "Using a single %dx%d pair-list setup:\n",
+                    ls.cluster_size_i, ls.cluster_size_j);
+            printListSetup(fplog, "", ir->nstlist, listParams->rlistOuter, interactionCutoff);
+        }
+        if (supportsDynamicPairlistGenerationInterval(*ir))
+        {
+            VerletbufListSetup setup1x1 = { 1, 1 };
+            real               rlistOuter;
+            real               rlistInner;
+            calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
+                                    -1, &setup1x1, nullptr, &rlistOuter);
+            if (listParams->useDynamicPruning)
+            {
+                int listLifeTime = listParams->nstlistPrune - (useGpu ? 0 : 1);
+                calc_verlet_buffer_size(mtop, det(box), ir, listParams->nstlistPrune, listLifeTime,
+                                        -1, &setup1x1, nullptr, &rlistInner);
+            }
+
+            fprintf(fplog, "At a tolerance of %g kJ/mol/ps per atom, the equivalent classical 1x1 pair-list setup is:\n",
+                    ir->verletbuf_tol);
+            if (listParams->useDynamicPruning)
+            {
+                printListSetup(fplog, "outer", ir->nstlist, rlistOuter, interactionCutoff);
+                printListSetup(fplog, "inner", listParams->nstlistPrune, rlistInner, interactionCutoff);
+            }
+            else
+            {
+                printListSetup(fplog, "", ir->nstlist, rlistOuter, interactionCutoff);
+            }
         }
     }
 }

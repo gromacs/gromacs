@@ -42,15 +42,11 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct
+struct VerletbufListSetup
 {
     int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
     int  cluster_size_j;  /* Cluster pair-list j-cluster size atom count */
-} verletbuf_list_setup_t;
+};
 
 
 /* Add a 5% and 10% rlist buffer for simulations without dynamics (EM, NM, ...)
@@ -64,16 +60,18 @@ static const real verlet_buffer_ratio_nodynamics = 0.05;
 static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 
-/* Sets the pair-list setup assumed for the current Gromacs configuration.
- * The setup with smallest cluster sizes is return, such that the Verlet
+/* Returns the pair-list setup for the given nbnxn kernel type.
+ */
+VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType);
+
+/* Returns the pair-list setup assumed for the current Gromacs configuration.
+ * The setup with smallest cluster sizes is returned, such that the Verlet
  * buffer size estimated with this setup will be conservative.
  * makeSimdPairList tells if to take into account SIMD, when supported.
  * makeGpuPairList tells to estimate for GPU kernels (makeSimdPairList is ignored with makeGpuPairList==true)
  */
-void verletbuf_get_list_setup(bool                    makeSimdPairList,
-                              bool                    makeGpuPairList,
-                              verletbuf_list_setup_t *list_setup);
-
+VerletbufListSetup verletbufGetListSetup(bool makeSimdPairList,
+                                         bool makeGpuPairList);
 
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
@@ -92,7 +90,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int               nstlist,
                              int               list_lifetime,
                              real reference_temperature,
-                             const verletbuf_list_setup_t *list_setup,
+                             const VerletbufListSetup *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);
 
@@ -123,9 +121,5 @@ void constrained_atom_sigma2(real                                 kT_fac,
                              const atom_nonbonded_kinetic_prop_t *prop,
                              real                                *sigma2_2d,
                              real                                *sigma2_3d);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
