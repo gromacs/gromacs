@@ -2687,33 +2687,23 @@ Non-equilibrium MD
 
 
 Electric fields
-^^^^^^^^^^^^^^^
+.. mdp:: electric-field-x ; electric-field-y ; electric-field-z
 
-.. mdp:: E-x; E-y; E-z
-
-   If you want to use an electric field in a direction, enter 3
-   numbers after the appropriate E-direction, the first number: the
-   number of cosines, only 1 is implemented (with frequency 0) so
-   enter 1, the second number: the strength of the electric field in V
-   nm^-1, the third number: the phase of the cosine, you can enter any
-   number here since a cosine of frequency zero has no phase.
-
-.. mdp:: E-xt; E-yt; E-zt
-
-   Here you can specify a pulsed alternating electric field. The field
+   Here you can specify an electric field that optionally can be
+   alternating and pulsed. The general expression for the field
    has the form of a gaussian laser pulse:
 
    E(t) = E0 exp ( -(t-t0)^2/(2 sigma^2) ) cos(omega (t-t0))
 
    For example, the four parameters for direction x are set in the
-   three fields of :mdp:`E-x; E-y; E-z` and :mdp:`E-xt; E-yt; E-zt` like
+   three fields of :mdp:`electric-field-x` (and similar for y and z) 
+   like
 
-   E-x  = 1 E0 0
-
-   E-xt = omega t0 sigma
+   electric-field-x  = E0 omega t0 sigma
 
    In the special case that sigma = 0, the exponential term is omitted
-   and only the cosine term is used.
+   and only the cosine term is used. If also omega = 0 a static
+   electric field is applied.
 
    More details in Carl Caleman and David van der Spoel: Picosecond
    Melting of Ice by an Infrared Laser Pulse - A Simulation Study
