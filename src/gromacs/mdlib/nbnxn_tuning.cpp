@@ -310,7 +310,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
         gmx_warning(!bBox ? box_err : dd_err);
         if (fp != nullptr)
         {
-            fprintf(fp, "\n%s\n", bBox ? box_err : dd_err);
+            fprintf(fp, "\n%s\n", !bBox ? box_err : dd_err);
         }
         ir->nstlist = nstlist_orig;
     }
