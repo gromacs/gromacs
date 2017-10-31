@@ -1377,7 +1377,7 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
 
 int inputrec2nboundeddim(const t_inputrec *ir)
 {
-    if (ir->nwall == 2 && ir->ePBC == epbcXY)
+    if (inputrecPbcXY2Walls(ir))
     {
         return 3;
     }
