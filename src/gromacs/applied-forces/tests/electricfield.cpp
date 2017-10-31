@@ -92,10 +92,8 @@ class ElectricFieldTest : public ::testing::Test
             GMX_RELEASE_ASSERT(dim >= 0 && dim < DIM, "Dimension should be 0, 1 or 2");
 
             gmx::KeyValueTreeBuilder     mdpValues;
-            mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
-                                            gmx::formatString("1 %g 0", E0));
-            mdpValues.rootObject().addValue(gmx::formatString("E%s-t", dimXYZ[dim]),
-                                            gmx::formatString("3 %g 0 %g 0 %g 0", omega, t0, sigma));
+            mdpValues.rootObject().addValue(gmx::formatString("electric-field-%s", dimXYZ[dim]),
+                                            gmx::formatString("%g %g %g %g", E0, omega, t0, sigma));
 
             gmx::KeyValueTreeTransformer transform;
             transform.rules()->addRule()
