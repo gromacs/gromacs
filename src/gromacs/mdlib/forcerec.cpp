@@ -2199,7 +2199,7 @@ static void init_nb_verlet(FILE                *fp,
     }
 
     nbv->listParams = std::unique_ptr<NbnxnListParameters>(new NbnxnListParameters(ir->rlist));
-    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic,
+    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
                                 nbv->listParams.get());
 
     nbnxn_init_search(&nbv->nbs,
