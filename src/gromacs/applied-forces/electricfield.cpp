@@ -101,19 +101,7 @@ class ElectricFieldData
          */
         void buildMdpOutput(KeyValueTreeObjectBuilder *builder, const std::string &name) const
         {
-            builder->addUniformArray<real>("E-" + name, {1, a_, -1});
-            if (sigma_ > 0)
-            {
-                builder->addUniformArray<real>("E-" + name + "t", {3, omega_, 0, t0_, 0, sigma_, 0});
-            }
-            else if (omega_ > 0)
-            {
-                builder->addUniformArray<real>("E-" + name + "t", {1, omega_, 0});
-            }
-            else
-            {
-                builder->addUniformArray<real>("E-" + name + "t", {0, 0, 0});
-            }
+            builder->addUniformArray<real>("electric-field-" + name, {a_, omega_, t0_, sigma_});
         }
 
         /*! \brief Evaluates this field component at given time.
@@ -322,6 +310,25 @@ void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
     }
 }
 
+//! Converts dynamic parameters from new mdp format to (E0, omega, t0, sigma).
+void convertParameters(gmx::KeyValueTreeObjectBuilder *builder,
+                       const std::string              &value)
+{
+    const std::vector<std::string> sxt = splitString(value);
+    if (sxt.empty())
+    {
+        return;
+    }
+    if (sxt.size() != 4)
+    {
+        GMX_THROW(InvalidInputError("Please specify E0 omega t0 sigma for electric fields"));
+    }
+    builder->addValue<real>("E0", fromString<real>(sxt[0]));
+    builder->addValue<real>("omega", fromString<real>(sxt[1]));
+    builder->addValue<real>("t0", fromString<real>(sxt[2]));
+    builder->addValue<real>("sigma", fromString<real>(sxt[3]));
+}
+
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
     rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0")
@@ -336,6 +343,13 @@ void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
         .transformWith(&convertStaticParameters);
     rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z")
         .transformWith(&convertDynamicParameters);
+    // New style
+    rules->addRule().from<std::string>("/electric-field-x").toObject("/electric-field/x")
+        .transformWith(&convertParameters);
+    rules->addRule().from<std::string>("/electric-field-y").toObject("/electric-field/y")
+        .transformWith(&convertParameters);
+    rules->addRule().from<std::string>("/electric-field-z").toObject("/electric-field/z")
+        .transformWith(&convertParameters);
 }
 
 void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
@@ -350,12 +364,10 @@ void ElectricField::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
 {
     const char *const comment[] = {
         "; Electric fields",
-        "; Format for E-x, etc. is: number of cosines (int; only 1 is supported),",
-        "; amplitude (real; V/nm), and phase (real; value is meaningless",
-        "; for a cosine of frequency 0.",
-        "; Format for E-xt, etc. is: omega (1/ps), time for the pulse peak (ps),",
-        "; and sigma (ps) width of the pulse. Sigma = 0 removes the pulse,",
-        "; leaving the field to be a cosine function."
+        "; Format for electric-field-x, etc. is: four real variables:",
+        "; amplitude (V/nm), frequency omega (1/ps), time for the pulse peak (ps),",
+        "; and sigma (ps) width of the pulse. Omega = 0 means static field,",
+        "; sigma = 0 means no pulse, leaving the field to be a cosine function."
     };
     builder->addValue<std::string>("comment-electric-field", joinStrings(comment, "\n"));
     efield_[XX].buildMdpOutput(builder, "x");
