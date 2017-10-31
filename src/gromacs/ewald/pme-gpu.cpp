@@ -164,20 +164,20 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t              *pme,
     }
 }
 
-/* The PME step code split into a few separate functions. */
+/* The PME computation code split into a few separate functions. */
 
-void pme_gpu_prepare_step(gmx_pme_t            *pme,
-                          bool                  needToUpdateBox,
-                          const matrix          box,
-                          gmx_wallcycle_t       wcycle,
-                          int                   flags)
+void pme_gpu_prepare_computation(gmx_pme_t            *pme,
+                                 bool                  needToUpdateBox,
+                                 const matrix          box,
+                                 gmx_wallcycle_t       wcycle,
+                                 int                   flags)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
     GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
 
     PmeGpu *pmeGpu = pme->gpu;
-    pmeGpu->settings.stepFlags = flags;
+    pmeGpu->settings.currentFlags = flags;
     // TODO these flags are only here to honor the CPU PME code, and probably should be removed
 
     bool shouldUpdateBox = false;
@@ -190,7 +190,7 @@ void pme_gpu_prepare_step(gmx_pme_t            *pme,
         }
     }
 
-    if (needToUpdateBox || shouldUpdateBox) // || is to make the first step always update
+    if (needToUpdateBox || shouldUpdateBox) // || is to make the first computation always update
     {
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
@@ -227,7 +227,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
 
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
-    if (pmeGpu->settings.stepFlags & GMX_PME_SPREAD)
+    if (pmeGpu->settings.currentFlags & GMX_PME_SPREAD)
     {
         /* Spread the coefficients on a grid */
         const bool computeSplines = true;
@@ -244,12 +244,12 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
                                        gmx_wallcycle_t wcycle)
 {
     PmeGpu            *pmeGpu                 = pme->gpu;
-    const bool         computeEnergyAndVirial = pmeGpu->settings.stepFlags & GMX_PME_CALC_ENER_VIR;
-    const bool         performBackFFT         = pmeGpu->settings.stepFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
+    const bool         computeEnergyAndVirial = pmeGpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
+    const bool         performBackFFT         = pmeGpu->settings.currentFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
     const unsigned int gridIndex              = 0;
     t_complex         *cfftgrid               = pme->cfftgrid[gridIndex];
 
-    if (pmeGpu->settings.stepFlags & GMX_PME_SPREAD)
+    if (pmeGpu->settings.currentFlags & GMX_PME_SPREAD)
     {
         if (!pme_gpu_performs_FFT(pmeGpu))
         {
@@ -261,7 +261,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 
     try
     {
-        if (pmeGpu->settings.stepFlags & GMX_PME_SOLVE)
+        if (pmeGpu->settings.currentFlags & GMX_PME_SOLVE)
         {
             /* do R2C 3D-FFT */
             parallel_3dfft_execute_gpu_wrapper(pme, gridIndex, GMX_FFT_REAL_TO_COMPLEX, wcycle);
@@ -324,10 +324,10 @@ void pme_gpu_wait_for_gpu(const gmx_pme_t *pme,
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    const bool haveComputedEnergyAndVirial = pme->gpu->settings.stepFlags & GMX_PME_CALC_ENER_VIR;
+    const bool haveComputedEnergyAndVirial = pme->gpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
 
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-    pme_gpu_finish_step(pme->gpu);
+    pme_gpu_finish_computation(pme->gpu);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
     if (haveComputedEnergyAndVirial)
