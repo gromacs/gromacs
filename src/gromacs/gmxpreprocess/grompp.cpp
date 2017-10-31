@@ -1628,7 +1628,6 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               matrix            box,
                               warninp_t         wi)
 {
-    verletbuf_list_setup_t ls;
     real                   rlist_1x1;
     int                    n_nonlin_vsite;
     char                   warn_buf[STRLEN];
@@ -1636,13 +1635,14 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, buffer_temp);
 
     /* Calculate the buffer size for simple atom vs atoms list */
-    ls.cluster_size_i = 1;
-    ls.cluster_size_j = 1;
+    VerletbufListSetup ls1x1;
+    ls1x1.cluster_size_i = 1;
+    ls1x1.cluster_size_j = 1;
     calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
-                            buffer_temp, &ls, &n_nonlin_vsite, &rlist_1x1);
+                            buffer_temp, &ls1x1, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
-    verletbuf_get_list_setup(FALSE, FALSE, &ls);
+    VerletbufListSetup ls = verletbufGetSafeListSetup(false, false);
     calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
                             buffer_temp, &ls, &n_nonlin_vsite, &ir->rlist);
 

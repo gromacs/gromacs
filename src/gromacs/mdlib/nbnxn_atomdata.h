@@ -43,6 +43,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+class MDLogger;
+}
+
 struct t_mdatoms;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
@@ -79,7 +84,7 @@ enum {
  * to the atom data structure.
  * enbnxninitcombrule sets what combination rule data gets stored in nbat.
  */
-void nbnxn_atomdata_init(FILE *fp,
+void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
                          int enbnxninitcombrule,
