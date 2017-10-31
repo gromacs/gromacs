@@ -36,9 +36,11 @@
 #include "gmxpre.h"
 
 #include <errno.h>
-#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "external/fftpack/fftpack.h"
 
@@ -69,10 +71,6 @@ struct gmx_fft
     struct gmx_fft *next;     /**< Pointer to next dimension, or NULL.       */
     real  *         work;     /**< 1st 4n reserved for cfft, 1st 2n for rfft */
 };
-
-#include <math.h>
-#include <stdio.h>
-
 
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,

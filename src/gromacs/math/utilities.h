@@ -38,7 +38,8 @@
 #define GMX_MATH_UTILITIES_H
 
 #include <limits.h>
-#include <math.h>
+
+#include <cmath>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

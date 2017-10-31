@@ -35,7 +35,6 @@
 #include "gtest/gtest-spi.h"
 
 #include <ctype.h>
-#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +43,7 @@
 #include <wctype.h>
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <limits>
 #include <ostream>  // NOLINT
