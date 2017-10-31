@@ -42,15 +42,11 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct
+struct VerletbufListSetup
 {
     int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
     int  cluster_size_j;  /* Cluster pair-list j-cluster size atom count */
-} verletbuf_list_setup_t;
+};
 
 
 /* Add a 5% and 10% rlist buffer for simulations without dynamics (EM, NM, ...)
@@ -64,16 +60,23 @@ static const real verlet_buffer_ratio_nodynamics = 0.05;
 static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 
-/* Sets the pair-list setup assumed for the current Gromacs configuration.
- * The setup with smallest cluster sizes is return, such that the Verlet
- * buffer size estimated with this setup will be conservative.
- * makeSimdPairList tells if to take into account SIMD, when supported.
- * makeGpuPairList tells to estimate for GPU kernels (makeSimdPairList is ignored with makeGpuPairList==true)
+/* Returns the pair-list setup for the given nbnxn kernel type.
  */
-void verletbuf_get_list_setup(bool                    makeSimdPairList,
-                              bool                    makeGpuPairList,
-                              verletbuf_list_setup_t *list_setup);
+VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType);
 
+/* Enum for choosing the list type for verletbufGetSafeListSetup() */
+enum class ListSetupType
+{
+    CpuNoSimd,            /* CPU Plain-C 4x4 list */
+    CpuSimdWhenSupported, /* CPU 4xN list, where N=4 when the binary doesn't support SIMD or the smallest N supported by SIMD in this binary */
+    Gpu                   /* GPU (8x2x)8x4 list */
+};
+
+/* Returns the pair-list setup assumed for the current Gromacs configuration.
+ * The setup with smallest cluster sizes is returned, such that the Verlet
+ * buffer size estimated with this setup will be conservative.
+ */
+VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
 
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
@@ -82,7 +85,8 @@ void verletbuf_get_list_setup(bool                    makeSimdPairList,
  * for normal pair-list buffering, are passed separately, as in some cases
  * we want an estimate for different values than the ones set in the inputrec.
  * If reference_temperature < 0, the maximum coupling temperature will be used.
- * The target is a maximum energy drift of ir->verletbuf_tol.
+ * The target is a maximum average energy jump per atom of
+ * ir->verletbuf_tol*nstlist*ir->delta_t over the lifetime of the list.
  * Returns the number of non-linear virtual sites. For these it's difficult
  * to determine their contribution to the drift exaclty, so we approximate.
  * Returns the pair-list cut-off.
@@ -92,7 +96,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int               nstlist,
                              int               list_lifetime,
                              real reference_temperature,
-                             const verletbuf_list_setup_t *list_setup,
+                             const VerletbufListSetup *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);
 
@@ -123,9 +127,5 @@ void constrained_atom_sigma2(real                                 kT_fac,
                              const atom_nonbonded_kinetic_prop_t *prop,
                              real                                *sigma2_2d,
                              real                                *sigma2_3d);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

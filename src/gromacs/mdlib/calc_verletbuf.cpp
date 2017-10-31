@@ -84,7 +84,7 @@
  * apart from the first two approximations.
  *
  * Note that apart from the effect of the above approximations, the actual
- * drift of the total energy of a system can be order of magnitude smaller
+ * drift of the total energy of a system can be orders of magnitude smaller
  * due to cancellation of positive and negative drift for different pairs.
  */
 
@@ -107,43 +107,54 @@ typedef struct
     real  md3; // -V''' at the cutoff
 } pot_derivatives_t;
 
-void verletbuf_get_list_setup(bool                    makeSimdPairList,
-                              bool                    makeGpuPairList,
-                              verletbuf_list_setup_t *list_setup)
+VerletbufListSetup verletbufGetListSetup(int nbnxnKernelType)
 {
-    /* When calling this function we often don't know which kernel type we
-     * are going to use. W choose the kernel type with the smallest possible
-     * i- and j-cluster sizes, so we potentially overestimate, but never
-     * underestimate, the buffer drift.
-     * Note that the current buffer estimation code only handles clusters
+    /* Note that the current buffer estimation code only handles clusters
      * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
      */
+    VerletbufListSetup listSetup;
 
-    if (makeGpuPairList)
+    listSetup.cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnKernelType);
+    listSetup.cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnKernelType);
+
+    if (nbnxnKernelType == nbnxnk8x8x8_GPU ||
+        nbnxnKernelType == nbnxnk8x8x8_PlainC)
     {
-        /* The GPU kernels split the j-clusters in two halves */
-        list_setup->cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnk8x8x8_GPU);
-        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnk8x8x8_GPU)/2;
+        /* The GPU kernels (except for OpenCL) split the j-clusters in two halves */
+        listSetup.cluster_size_j /= 2;
+    }
+
+    return listSetup;
+}
+
+VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
+{
+    /* When calling this function we often don't know which kernel type we
+     * are going to use. We choose the kernel type with the smallest possible
+     * i- and j-cluster sizes, so we potentially overestimate, but never
+     * underestimate, the buffer drift.
+     */
+    int nbnxnKernelType;
+
+    if (listType == ListSetupType::Gpu)
+    {
+        nbnxnKernelType = nbnxnk8x8x8_GPU;
+    }
+    else if (GMX_SIMD && listType == ListSetupType::CpuSimdWhenSupported)
+    {
+#ifdef GMX_NBNXN_SIMD_2XNN
+        /* We use the smallest cluster size to be on the safe side */
+        nbnxnKernelType = nbnxnk4xN_SIMD_2xNN;
+#else
+        nbnxnKernelType = nbnxnk4xN_SIMD_4xN;
+#endif
     }
     else
     {
-        int kernel_type;
-
-        kernel_type = nbnxnk4x4_PlainC;
-
-        if (GMX_SIMD && makeSimdPairList)
-        {
-#ifdef GMX_NBNXN_SIMD_2XNN
-            /* We use the smallest cluster size to be on the safe side */
-            kernel_type = nbnxnk4xN_SIMD_2xNN;
-#else
-            kernel_type = nbnxnk4xN_SIMD_4xN;
-#endif
-        }
-
-        list_setup->cluster_size_i = nbnxn_kernel_to_cluster_i_size(kernel_type);
-        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(kernel_type);
+        nbnxnKernelType = nbnxnk4x4_PlainC;
     }
+
+    return verletbufGetListSetup(nbnxnKernelType);
 }
 
 static gmx_bool
@@ -799,7 +810,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int               nstlist,
                              int               list_lifetime,
                              real reference_temperature,
-                             const verletbuf_list_setup_t *list_setup,
+                             const VerletbufListSetup *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
