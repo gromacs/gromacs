@@ -38,7 +38,7 @@
 
 #include "mdatoms.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"

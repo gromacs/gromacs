@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include <cmath>
 #include <cstdint>
 
 #include <array>

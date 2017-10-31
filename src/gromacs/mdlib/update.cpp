@@ -38,8 +38,9 @@
 
 #include "update.h"
 
-#include <math.h>
 #include <stdio.h>
+
+#include <cmath>
 
 #include <algorithm>
 

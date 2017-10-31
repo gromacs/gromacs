@@ -30,6 +30,10 @@ interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
 gtest/include/gtest/internal/gtest-port.h to allow the default
 behaviour to be applied only if the user hasn't gotten involved.
 
+To side-step a potential gcc/glibc issue with conflicting isinf/isnan declarations
+(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=48891), includes of <math.h> are
+replaced by <cmath> in gtest/src/gtest.cc and include/gmock/gmock-matchers.h.
+
 We also apply the patch found at
 https://github.com/google/googletest/issues/705#issuecomment-235067917
 to fix a segfault with gcc6 arising from gmock's erroneous use of

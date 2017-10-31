@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
