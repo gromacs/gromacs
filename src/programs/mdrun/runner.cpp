@@ -240,15 +240,14 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
-        verletbuf_list_setup_t ls;
-        real                   rlist_new;
 
         /* Here we assume SIMD-enabled kernels are being used. But as currently
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a larger buffer than 4x4, this is ok.
          */
-        verletbuf_get_list_setup(true, makeGpuPairList, &ls);
+        VerletbufListSetup ls = verletbufGetSafeListSetup(true, makeGpuPairList);
 
+        real               rlist_new;
         calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &ls, nullptr, &rlist_new);
 
         if (rlist_new != ir->rlist)

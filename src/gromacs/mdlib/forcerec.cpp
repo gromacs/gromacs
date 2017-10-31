@@ -1713,8 +1713,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     return returnvalue;
 };
 
-static void pick_nbnxn_kernel(FILE                *fp,
-                              const gmx::MDLogger &mdlog,
+static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
                               EmulateGpuNonbonded  emulateGpu,
@@ -1755,12 +1754,13 @@ static void pick_nbnxn_kernel(FILE                *fp,
         }
     }
 
-    if (bDoNonbonded && fp != nullptr)
+    if (bDoNonbonded)
     {
-        fprintf(fp, "\nUsing %s %dx%d non-bonded kernels\n\n",
+        GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
+                "Using %s %dx%d non-bonded kernels",
                 lookup_nbnxn_kernel_name(*kernel_type),
                 nbnxn_kernel_to_cluster_i_size(*kernel_type),
-                nbnxn_kernel_to_cluster_j_size(*kernel_type));
+                 nbnxn_kernel_to_cluster_j_size(*kernel_type));
 
         if (nbnxnk4x4_PlainC == *kernel_type ||
             nbnxnk8x8x8_PlainC == *kernel_type)
@@ -2143,8 +2143,7 @@ init_interaction_const(FILE                       *fp,
  * init_gpu modifies it to set up NVML support. This could
  * happen during the detection phase, and deviceInfo could
  * the become const. */
-static void init_nb_verlet(FILE                *fp,
-                           const gmx::MDLogger &mdlog,
+static void init_nb_verlet(const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
                            gmx_bool             bFEP_NonBonded,
                            const t_inputrec    *ir,
@@ -2184,7 +2183,7 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
+            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels,
                               nbv->bUseGPU, nbv->emulateGpu, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -2199,7 +2198,7 @@ static void init_nb_verlet(FILE                *fp,
     }
 
     nbv->listParams = std::unique_ptr<NbnxnListParameters>(new NbnxnListParameters(ir->rlist));
-    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic,
+    setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
                                 nbv->listParams.get());
 
     nbnxn_init_search(&nbv->nbs,
@@ -2249,7 +2248,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv->nbat, 1);
     bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
-    nbnxn_atomdata_init(fp,
+    nbnxn_atomdata_init(mdlog,
                         nbv->nbat,
                         nbv->grp[0].kernel_type,
                         enbnxninitcombrule,
@@ -2857,7 +2856,7 @@ void init_forcerec(FILE                *fp,
         gmx_fatal(FARGS, "Verlet cutoff-scheme is not supported with Buckingham");
     }
 
-    if (fp)
+    if (fp && fr->cutoff_scheme == ecutsGROUP)
     {
         fprintf(fp, "Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
                 fr->rlist, ic->rcoulomb, fr->bBHAM ? "BHAM" : "LJ", ic->rvdw);
@@ -3144,9 +3143,18 @@ void init_forcerec(FILE                *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
+        init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
                        cr, deviceInfo,
                        mtop, box);
+    }
+
+    if (fp != nullptr)
+    {
+        /* Here we switch from using mdlog, which prints the newline before
+         * the paragraph, to our old fprintf logging, which prints the newline
+         * after the paragraph, so we should add a newline here.
+         */
+        fprintf(fp, "\n");
     }
 
     if (ir->eDispCorr != edispcNO)
