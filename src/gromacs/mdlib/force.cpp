@@ -41,8 +41,9 @@
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"

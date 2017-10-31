@@ -38,8 +38,9 @@
 
 #include "do_fit.h"
 
-#include <math.h>
 #include <stdio.h>
+
+#include <cmath>
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"

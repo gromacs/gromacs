@@ -39,8 +39,9 @@
 
 #include "ebin.h"
 
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"

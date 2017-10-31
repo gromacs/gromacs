@@ -16,9 +16,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
+#include <cmath>
 #include <float.h>
 #include "lmmin.h"
+
+using namespace std;
 
 static double lm_enorm(int n, const double* x);
 
