@@ -198,7 +198,7 @@ void gmx_pme_receive_f(struct t_commrec *cr,
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).
  * TODO: it should update the PME CPU atom data as well.
- * (currently PME CPU call gmx_pme_do() gets passed the input pointers each step).
+ * (currently PME CPU call gmx_pme_do() gets passed the input pointers for each computation).
  *
  * \param[in] pme            The PME structure.
  * \param[in] nAtoms         The number of particles.
@@ -261,19 +261,19 @@ void pme_gpu_get_timings(const gmx_pme_t         *pme,
 /* The main PME GPU functions */
 
 /*! \brief
- * Prepares PME on GPU step (updating the box if needed)
+ * Prepares PME on GPU computation (updating the box if needed)
  * \param[in] pme               The PME data structure.
  * \param[in] needToUpdateBox   Tells if the stored unit cell parameters should be updated from \p box.
  * \param[in] box               The unit cell box.
  * \param[in] wcycle            The wallclock counter.
- * \param[in] flags             The combination of flags to affect the PME computation on this step.
+ * \param[in] flags             The combination of flags to affect this PME computation.
  *                              The flags are the GMX_PME_ flags from pme.h.
  */
-void pme_gpu_prepare_step(gmx_pme_t      *pme,
-                          bool            needToUpdateBox,
-                          const matrix    box,
-                          gmx_wallcycle_t wcycle,
-                          int             flags);
+void pme_gpu_prepare_computation(gmx_pme_t      *pme,
+                                 bool            needToUpdateBox,
+                                 const matrix    box,
+                                 gmx_wallcycle_t wcycle,
+                                 int             flags);
 
 /*! \brief
  * Launches first stage of PME on GPU - H2D input transfers, spreading kernel, and D2H grid transfer if needed.

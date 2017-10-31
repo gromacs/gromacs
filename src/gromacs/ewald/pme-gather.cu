@@ -373,9 +373,9 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
         const float3  atomForces               = sm_forces[forceIndexLocal];
         const float   negCoefficient           = -gm_coefficients[forceIndexGlobal];
         float3        result;
-        result.x                   = negCoefficient * kernelParams.step.recipBox[XX][XX] * atomForces.x;
-        result.y                   = negCoefficient * (kernelParams.step.recipBox[XX][YY] * atomForces.x + kernelParams.step.recipBox[YY][YY] * atomForces.y);
-        result.z                   = negCoefficient * (kernelParams.step.recipBox[XX][ZZ] * atomForces.x + kernelParams.step.recipBox[YY][ZZ] * atomForces.y + kernelParams.step.recipBox[ZZ][ZZ] * atomForces.z);
+        result.x                   = negCoefficient * kernelParams.current.recipBox[XX][XX] * atomForces.x;
+        result.y                   = negCoefficient * (kernelParams.current.recipBox[XX][YY] * atomForces.x + kernelParams.current.recipBox[YY][YY] * atomForces.y);
+        result.z                   = negCoefficient * (kernelParams.current.recipBox[XX][ZZ] * atomForces.x + kernelParams.current.recipBox[YY][ZZ] * atomForces.y + kernelParams.current.recipBox[ZZ][ZZ] * atomForces.z);
         sm_forces[forceIndexLocal] = result;
     }
 

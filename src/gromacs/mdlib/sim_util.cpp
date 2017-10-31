@@ -817,7 +817,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
     pmeFlags |= (flags & GMX_FORCE_FORCES) ? GMX_PME_CALC_F : 0;
     pmeFlags |= (flags & GMX_FORCE_VIRIAL) ? GMX_PME_CALC_ENER_VIR : 0;
 
-    pme_gpu_prepare_step(pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pmeFlags);
+    pme_gpu_prepare_computation(pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pmeFlags);
     pme_gpu_launch_spread(pmedata, x, wcycle);
 }
 
