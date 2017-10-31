@@ -1473,16 +1473,29 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                  * pruning at even and odd steps.
                  */
                 int  numRollingParts     = nbv->listParams->numRollingParts;
-                GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
+                //GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
                 int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
-                bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
+                //bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
                 if (stepWithCurrentList > 0 &&
                     stepWithCurrentList < inputrec->nstlist - 1 &&
-                    (stepIsEven || DOMAINDECOMP(cr)))
+                    /*(stepIsEven || DOMAINDECOMP(cr))*/
+                    (stepWithCurrentList % nbv->listParams->nstlistPrune < numRollingParts))
                 {
+                    /*
                     nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
                                                       stepIsEven ? eintLocal : eintNonlocal,
                                                       numRollingParts);
+                    */
+                    nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
+                                                      eintLocal,
+                                                      numRollingParts);
+
+                    if (DOMAINDECOMP(cr))
+                    {
+                        nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
+                                                          eintNonlocal,
+                                                          numRollingParts);
+                    }
                 }
             }
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);

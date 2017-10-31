@@ -596,6 +596,13 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
                 c_numClPerSupercl, plist->na_c,
                 shmem);
     }
+#if 0
+    fprintf(stderr, "numParts=%d  currPart=%d  #sci in part=%d #sci tot=%d\n",
+            plist->rollingPruningNumParts,
+            plist->rollingPruningPart,
+            numSciInPart*c_numClPerSupercl, plist->nsci*c_numClPerSupercl);
+    fflush(stderr);
+#endif
 
     if (bUseCudaLaunchKernel)
     {

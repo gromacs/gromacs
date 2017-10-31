@@ -68,6 +68,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
  *
@@ -342,7 +343,7 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
  * to be 2, which is indirectly asserted when the GPU pruning is dispatched
  * during the force evaluation.
  */
-static const int c_nbnxnGpuRollingListPruningInterval = 2;
+static const int c_nbnxnGpuRollingListPruningInterval = 1;
 
 /*! \brief The minimum nstlist for dynamic pair list pruning.
  *
@@ -493,7 +494,21 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
                                ( "With dynamic list pruning on GPUs pruning frequency must be at least as large as the rolling pruning interval (" +
                                  std::to_string(c_nbnxnGpuRollingListPruningInterval) +
                                  ").").c_str() );
-            listParams->numRollingParts = listParams->nstlistPrune/c_nbnxnGpuRollingListPruningInterval;
+            env = getenv("GMX_NSTLIST_DYNAMICPRUNING_NUMPARTS");
+            if (env != NULL)
+            {
+                char *end;
+                listParams->numRollingParts =strtol(env, &end, 10);
+                if (!end || (*end != 0) ||
+                    !(listParams->numRollingParts > 0 && listParams->numRollingParts <= listParams->nstlistPrune))
+                {
+                    gmx_fatal(FARGS, "Invalid value passed in GMX_NSTLIST_DYNAMICPRUNING_NUMPARTS=%s, should be > 0 and <= inner nstlist", env);
+                }
+            }
+            else
+            {
+                listParams->numRollingParts = listParams->nstlistPrune/c_nbnxnGpuRollingListPruningInterval;
+            }
         }
         else
         {
@@ -503,11 +518,13 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
         if (fplog && listParams->useDynamicPruning)
         {
             const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
+            std::string npartsStr = gmx::formatString("(%d parts)", listParams->numRollingParts);
             fprintf(fplog,
-                    "Using a dual pair-list setup updated with dynamic%s pruning:\n"
+                    "Using a dual pair-list setup updated with dynamic%s pruning %s:\n"
                     "  outer list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n"
                     "  inner list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n",
                     listParams->numRollingParts > 1 ? ", rolling" : "",
+                    listParams->numRollingParts > 1 ? npartsStr.c_str() : "",
                     ir->nstlist, listParams->rlistOuter - interactionCutoff, listParams->rlistOuter,
                     listParams->nstlistPrune, listParams->rlistInner - interactionCutoff, listParams->rlistInner);
         }
