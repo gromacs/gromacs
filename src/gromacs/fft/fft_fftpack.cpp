@@ -36,9 +36,10 @@
 #include "gmxpre.h"
 
 #include <errno.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "external/fftpack/fftpack.h"
 
@@ -70,8 +71,9 @@ struct gmx_fft
     real  *         work;     /**< 1st 4n reserved for cfft, 1st 2n for rfft */
 };
 
-#include <math.h>
 #include <stdio.h>
+
+#include <cmath>
 
 
 int

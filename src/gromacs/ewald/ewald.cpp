@@ -49,9 +49,9 @@
 
 #include "ewald.h"
 
-#include <math.h>
 #include <stdio.h>
 
+#include <cmath>
 #include <cstdlib>
 
 #include <algorithm>

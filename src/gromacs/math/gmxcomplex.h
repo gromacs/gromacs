@@ -37,7 +37,7 @@
 #ifndef GMX_MATH_GMXCOMPLEX_H
 #define GMX_MATH_GMXCOMPLEX_H
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
