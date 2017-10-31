@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -520,7 +520,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         gmx_warning(!bBox ? box_err : dd_err);
         if (fp != NULL)
         {
-            fprintf(fp, "\n%s\n", bBox ? box_err : dd_err);
+            fprintf(fp, "\n%s\n", !bBox ? box_err : dd_err);
         }
         ir->nstlist = nstlist_orig;
     }
