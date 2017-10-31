@@ -1082,16 +1082,16 @@ Electric fields are applied when the following options are specified
 in the {\tt grompp.mdp} file. You specify, in order, $E_0$, $\omega$,
 $t_0$ and $\sigma$:
 \begin{verbatim}
-ElectricField-x = 0.04 0       0     0
+electric-field-x = 0.04 0       0     0
 \end{verbatim}
 yields a static field with $E_0$ = 0.04 V/nm in the X-direction. In contrast,
 \begin{verbatim}
-ElectricField-x = 2.0  150     5     0
+electric-field-x = 2.0  150     5     0
 \end{verbatim}
 yields an oscillating electric field with $E_0$ = 2 V/nm, $\omega$ = 150/ps and
 $t_0$ = 5 ps. Finally 
 \begin{verbatim}
-ElectricField-x = 2.0  150     5     1
+electric-field-x = 2.0  150     5     1
 \end{verbatim}
 yields an pulsed-oscillating electric field with $E_0$ = 2 V/nm, $\omega$ = 150/ps and
 $t_0$ = 5 ps and $\sigma$ = 1 ps. Read more in ref.~\cite{Caleman2008a}.
