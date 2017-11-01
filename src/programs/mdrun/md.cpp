@@ -678,17 +678,29 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | (bStopCM ? CGLO_STOPCM : 0)
                   | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                   | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
                   | (continuationOptions.haveReadEkin ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
-    compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                    nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                    constr, &nullSignaller, state->box,
-                    &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags
-                    | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+    /* To minimize communication, compute_globals computes the COM velocity
+     * and the kinetic energy for the velocities without COM motion removed.
+     * Thus to get the kinetic energy without the COM contribution, we need
+     * to calls compute_globals twice.
+     */
+    for (int cgloIteration = 0; cgloIteration < (bStopCM ? 2 : 1); cgloIteration++)
+    {
+	int cglo_flags_iteration = cglo_flags;
+	if (bStopCM && cgloIteration == 0)
+	{
+	    cglo_flags_iteration |= CGLO_STOPCM;
+	}
+	compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
+			nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+			constr, &nullSignaller, state->box,
+			&totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags_iteration
+			| (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+    }
     checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
                                     top_global, top, state,
                                     &shouldCheckNumberOfBondedInteractions);
@@ -704,7 +716,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, &nullSignaller, state->box,
                         nullptr, &bSumEkinhOld,
-                        cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
+                        cglo_flags & ~CGLO_PRESSURE);
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
