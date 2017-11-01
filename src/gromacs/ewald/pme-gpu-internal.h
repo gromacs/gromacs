@@ -352,20 +352,6 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_gather_atom_data(const PmeGpu *CUDA_
 CUDA_FUNC_QUALIFIER void pme_gpu_sync_spread_grid(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Waits for the atom data copying to the intermediate host-side buffer after spline computation to finish.
- *
- * \param[in] pmeGPU  The PME GPU structure.
- */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_spline_atom_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
-
-/*! \libinternal \brief
- * Waits for the grid copying to the host-side buffer after solving to finish.
- *
- * \param[in] pmeGPU  The PME GPU structure.
- */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_solve_grid(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
-
-/*! \libinternal \brief
  * Does the one-time GPU-framework specific PME initialization.
  * For CUDA, the PME stream is created with the highest priority.
  *
