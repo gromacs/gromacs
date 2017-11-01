@@ -363,7 +363,7 @@ Performance and Run Control
 ``GMX_NSTLIST_DYNAMICPRUNING``
         overrides the dynamic pair-list pruning interval chosen heuristically
         by mdrun. Values should be between the pruning frequency value
-        (1 for CPU and 2 for GPU) and :mdp:`nstlist - 1`.
+        (1 for CPU and 2 for GPU) and :mdp:`nstlist` ``- 1``.
 
 ``GMX_USE_TREEREDUCE``
         use tree reduction for nbnxn force reduction. Potentially faster for large number of

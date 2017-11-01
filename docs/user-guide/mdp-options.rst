@@ -422,14 +422,14 @@ Neighbor searching
       case :mdp:`rcoulomb` > :mdp:`rvdw` is allowed. Currently only
       cut-off, reaction-field, PME or Ewald electrostatics and plain
       LJ are supported. Some :ref:`gmx mdrun` functionality is not yet
-      supported with the :mdp:`Verlet` scheme, but :ref:`gmx grompp`
+      supported with the :mdp-value:`cutoff-scheme=Verlet` scheme, but :ref:`gmx grompp`
       checks for this. Native GPU acceleration is only supported with
-      :mdp:`Verlet`. With GPU-accelerated PME or with separate PME
+      :mdp-value:`cutoff-scheme=Verlet`. With GPU-accelerated PME or with separate PME
       ranks, :ref:`gmx mdrun` will automatically tune the CPU/GPU load
       balance by scaling :mdp:`rcoulomb` and the grid spacing. This
-      can be turned off with ``mdrun -notunepme``. :mdp:`Verlet` is
-      faster than :mdp:`group` when there is no water, or if
-      :mdp:`group` would use a pair-list buffer to conserve energy.
+      can be turned off with ``mdrun -notunepme``. :mdp-value:`cutoff-scheme=Verlet` is
+      faster than :mdp-value:`cutoff-scheme=group` when there is no water, or if
+      :mdp-value:`cutoff-scheme=group` would use a pair-list buffer to conserve energy.
 
    .. mdp-value:: group
 
@@ -450,12 +450,12 @@ Neighbor searching
       Frequency to update the neighbor list. When this is 0, the
       neighbor list is made only once. With energy minimization the
       neighborlist will be updated for every energy evaluation when
-      :mdp:`nstlist` is greater than 0. With :mdp:`Verlet` and
+      :mdp:`nstlist` is greater than 0. With :mdp-value:`cutoff-scheme=Verlet` and
       :mdp:`verlet-buffer-tolerance` set, :mdp:`nstlist` is actually
       a minimum value and :ref:`gmx mdrun` might increase it, unless
       it is set to 1. With parallel simulations and/or non-bonded
       force calculation on the GPU, a value of 20 or 40 often gives
-      the best performance. With :mdp:`group` and non-exact
+      the best performance. With :mdp-value:`cutoff-scheme=group` and non-exact
       cut-off's, :mdp:`nstlist` will affect the accuracy of your
       simulation and it can not be chosen freely.
 
@@ -481,7 +481,7 @@ Neighbor searching
    .. mdp-value:: simple
 
       Check every atom in the box when constructing a new neighbor
-      list every :mdp:`nstlist` steps (only with :mdp:`group`
+      list every :mdp:`nstlist` steps (only with :mdp-value:`cutoff-scheme=group`
       cut-off scheme).
 
 .. mdp:: pbc
@@ -522,7 +522,7 @@ Neighbor searching
 
    (0.005) \[kJ/mol/ps\]
 
-   Useful only with the :mdp:`Verlet` :mdp:`cutoff-scheme`. This sets
+   Useful only with the :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`. This sets
    the maximum allowed error for pair interactions per particle caused
    by the Verlet buffer, which indirectly sets :mdp:`rlist`. As both
    :mdp:`nstlist` and the Verlet buffer size are fixed (for
@@ -553,7 +553,7 @@ Neighbor searching
 
    (1) \[nm\]
    Cut-off distance for the short-range neighbor list. With the
-   :mdp:`Verlet` :mdp:`cutoff-scheme`, this is by default set by the
+   :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`, this is by default set by the
    :mdp:`verlet-buffer-tolerance` option and the value of
    :mdp:`rlist` is ignored.
 
@@ -624,8 +624,8 @@ Electrostatics
    .. mdp-value:: Reaction-Field-zero
 
       In |Gromacs|, normal reaction-field electrostatics with
-      :mdp:`cutoff-scheme` = :mdp:`group` leads to bad energy
-      conservation. :mdp:`Reaction-Field-zero` solves this by making
+      :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=group` leads to bad energy
+      conservation. :mdp-value:`coulombtype=Reaction-Field-zero` solves this by making
       the potential zero beyond the cut-off. It can only be used with
       an infinite dielectric constant (:mdp:`epsilon-rf` =0), because
       only for that value the force vanishes at the
@@ -633,13 +633,13 @@ Electrostatics
       :mdp:`rcoulomb` to accommodate for the size of charge groups
       and diffusion between neighbor list updates. This, and the fact
       that table lookups are used instead of analytical functions make
-      :mdp:`Reaction-Field-zero` computationally more expensive than
+      :mdp-value:`coulombtype=Reaction-Field-zero` computationally more expensive than
       normal reaction-field.
 
    .. mdp-value:: Shift
 
       Analogous to :mdp-value:`vdwtype=Shift` for :mdp:`vdwtype`. You
-      might want to use :mdp:`Reaction-Field-zero` instead, which has
+      might want to use :mdp-value:`coulombtype=Reaction-Field-zero` instead, which has
       a similar potential shape, but has a physical interpretation and
       has better energies due to the exclusion correction terms.
 
@@ -652,7 +652,7 @@ Electrostatics
 
       Analogous to :mdp-value:`vdwtype=Switch` for
       :mdp:`vdwtype`. Switching the Coulomb potential can lead to
-      serious artifacts, advice: use :mdp:`Reaction-Field-zero`
+      serious artifacts, advice: use :mdp-value:`coulombtype=Reaction-Field-zero`
       instead.
 
    .. mdp-value:: User
@@ -683,7 +683,7 @@ Electrostatics
       A combination of PME and a switch function for the direct-space
       part (see above). :mdp:`rcoulomb` is allowed to be smaller than
       :mdp:`rlist`. This is mainly useful constant energy simulations
-      (note that using PME with :mdp:`cutoff-scheme` = :mdp:`Verlet`
+      (note that using PME with :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=Verlet`
       will be more efficient).
 
    .. mdp-value:: PME-User
@@ -1115,7 +1115,7 @@ Pressure coupling
    .. mdp-value:: MTTK
 
       Martyna-Tuckerman-Tobias-Klein implementation, only useable with
-      :mdp-value:`md-vv` or :mdp-value:`md-vv-avek`, very similar to
+      :mdp-value:`integrator=md-vv` or :mdp-value:`integrator=md-vv-avek`, very similar to
       Parrinello-Rahman. As for Nose-Hoover temperature coupling the
       time constant :mdp:`tau-p` is the period of pressure
       fluctuations at equilibrium. This is probably a better method
@@ -1546,7 +1546,7 @@ applicable pulling coordinate.
 
    (1.5) \[nm\]
    the radius of the cylinder for
-   :mdp:`pull-coord1-geometry` = :mdp-value:`cylinder`
+   :mdp:`pull-coord1-geometry` = :mdp-value:`pull-coord1-geometry=cylinder`
 
 .. mdp:: pull-constr-tol
 
@@ -1693,14 +1693,14 @@ applicable pulling coordinate.
 
    .. mdp-value:: direction-periodic
 
-      As :mdp-value:`direction`, but allows the distance to be larger
+      As :mdp-value:`pull-coord1-geometry=direction`, but allows the distance to be larger
       than half the box size. With this geometry the box should not be
       dynamic (*e.g.* no pressure scaling) in the pull dimensions and
       the pull force is not added to virial.
 
    .. mdp-value:: direction-relative
 
-      As :mdp-value:`direction`, but the pull vector is the vector
+      As :mdp-value:`pull-coord1-geometry=direction`, but the pull vector is the vector
       that points from the COM of a third to the COM of a fourth pull
       group. This means that 4 groups need to be supplied in
       :mdp:`pull-coord1-groups`. Note that the pull force will give
@@ -1739,7 +1739,7 @@ applicable pulling coordinate.
 
    .. mdp-value:: angle-axis
 
-      As :mdp-value:`angle` but the second vector is given by :mdp:`pull-coord1-vec`.
+      As :mdp-value:`pull-coord1-geometry=angle` but the second vector is given by :mdp:`pull-coord1-vec`.
       Thus, only the two groups that define the first vector need to be given.
 
    .. mdp-value:: dihedral
@@ -1767,8 +1767,8 @@ applicable pulling coordinate.
    (Y Y Y)
    Selects the dimensions that this pull coordinate acts on and that
    are printed to the output files when
-   :mdp:`pull-print-components` = :mdp-value:`yes`. With
-   :mdp:`pull-coord1-geometry` = :mdp-value:`distance`, only Cartesian
+   :mdp:`pull-print-components` = :mdp-value:`pull-coord1-start=yes`. With
+   :mdp:`pull-coord1-geometry` = :mdp-value:`pull-coord1-geometry=distance`, only Cartesian
    components set to Y contribute to the distance. Thus setting this
    to Y Y N results in a distance in the x/y plane. With other
    geometries all dimensions with non-zero entries in
@@ -1841,8 +1841,8 @@ that can be used to achieve such a rotation.
 
    .. mdp-value:: yes
 
-      Apply the rotation potential specified by :mdp:`rot-type` to the group of atoms given
-      under the :mdp:`rot-group` option.
+      Apply the rotation potential specified by :mdp:`rot-type0` to the group of atoms given
+      under the :mdp:`rot-group0` option.
 
 .. mdp:: rot-ngroups
 
@@ -2689,7 +2689,7 @@ Non-equilibrium MD
 Electric fields
 ^^^^^^^^^^^^^^^
 
-.. mdp:: E-x ; E-y ; E-z
+.. mdp:: E-x; E-y; E-z
 
    If you want to use an electric field in a direction, enter 3
    numbers after the appropriate E-direction, the first number: the
@@ -2706,7 +2706,7 @@ Electric fields
    E(t) = E0 exp ( -(t-t0)^2/(2 sigma^2) ) cos(omega (t-t0))
 
    For example, the four parameters for direction x are set in the
-   three fields of :mdp:`E-x` and :mdp:`E-xt` like
+   three fields of :mdp:`E-x; E-y; E-z` and :mdp:`E-xt; E-yt; E-zt` like
 
    E-x  = 1 E0 0
 
