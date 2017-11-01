@@ -83,7 +83,7 @@ class BiasParams
         /*! \brief
          * Check if the parameters permit skipping updates.
          *
-         * Generally, we can skip  updates of points that are non-local
+         * Generally, we can skip updates of points that are non-local
          * at the time of the update if we for later times, when the points
          * with skipped updates have become local, know exactly how to apply
          * the previous updates. The free energy updates only depend

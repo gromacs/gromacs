@@ -110,15 +110,15 @@ class BiasCoupledToSystem
 
         /*! \brief Set the coordinate value(s) and evolves the bias, should be called at every MD step.
          *
-         * \param[in] coordValue      The current coordinate value(s) for the bias.
-         * \param[in] ms              Struct for multi-simulation communication.
-         * \param[in] t               Time.
-         * \param[in] step            Time step.
-         * \param[in] awhSeed         Random seed.
-         * \param[in,out] fplog       Log file.
-         * \param[out] biasForce      The bias force.
-         * \param[out] biasPotential  Bias potential.
-         * \param[out] potentialJump  Change in bias potential for this bias.
+         * \param[in]     coordValue     The current coordinate value(s) for the bias.
+         * \param[in]     ms             Struct for multi-simulation communication.
+         * \param[in]     t              Time.
+         * \param[in]     step           Time step.
+         * \param[in]     awhSeed        Random seed.
+         * \param[in,out] fplog          Log file.
+         * \param[out]    biasForce      The bias force.
+         * \param[out]    biasPotential  Bias potential.
+         * \param[out]    potentialJump  Change in bias potential for this bias.
          */
         void calcForceAndUpdateBias(const awh_dvec          coordValue,
                                     const gmx_multisim_t   *ms,
@@ -153,7 +153,6 @@ class BiasCoupledToSystem
         /* Here AWH can be extended to work on other coordinates than pull. */
 };
 
-/* Construct a bias with coupling to a pull coordinate. */
 BiasCoupledToSystem::BiasCoupledToSystem(std::unique_ptr<Bias>   biasPtr,
                                          const std::vector<int> &pullCoordIndex) :
     bias_(std::move(biasPtr)),
@@ -165,7 +164,6 @@ BiasCoupledToSystem::BiasCoupledToSystem(std::unique_ptr<Bias>   biasPtr,
     GMX_RELEASE_ASSERT(static_cast<size_t>(bias_->ndim()) == pullCoordIndex.size(), "The bias dimensionality should match the number of pull coordinates.");
 }
 
-/* Perform an AWH update. */
 void BiasCoupledToSystem::calcForceAndUpdateBias(const awh_dvec          coordValue,
                                                  const gmx_multisim_t   *ms,
                                                  double                  t,
@@ -192,7 +190,6 @@ void BiasCoupledToSystem::calcForceAndUpdateBias(const awh_dvec          coordVa
                                   ms, t, step, awhSeed, fplog);
 }
 
-/* Construct an AWH at the start of a simulation. */
 Awh::Awh(FILE              *fplog,
          const t_inputrec  &ir,
          const t_commrec   *cr,
@@ -242,7 +239,6 @@ Awh::Awh(FILE              *fplog,
 
 Awh::~Awh() = default;
 
-/* Peform an AWH update every MD step. */
 real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                        int                     ePBC,
                                        const t_mdatoms        &mdatoms,
@@ -309,7 +305,6 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
     return static_cast<real>(awhPotential);
 }
 
-/* Allocate and initialize an AWH history with the given AWH state. */
 void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 {
     GMX_RELEASE_ASSERT(awhHistory != nullptr, "Should be called with a valid history struct (and only on the master rank)");
@@ -323,7 +318,6 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
     }
 }
 
-/* Restore the AWH state from the given history. */
 void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
                                   const t_commrec  *cr)
 {
@@ -349,7 +343,6 @@ void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
     }
 }
 
-/* Update the AWH history for checkpointing. */
 void Awh::updateHistory(AwhHistory *awhHistory) const
 {
     /* This assert will also catch a non-master rank calling this function. */
@@ -369,7 +362,6 @@ const char * Awh::externalPotentialString()
     return "AWH";
 }
 
-/* Register the AWH biased coordinates with pull. */
 void Awh::registerAwhWithPull(const AwhParams &awhParams,
                               struct pull_t   *pull_work)
 {

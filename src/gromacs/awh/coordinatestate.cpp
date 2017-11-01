@@ -75,7 +75,6 @@ CoordinateState::CoordinateState(const AwhBiasParams          &awhBiasParams,
     umbrellaGridpoint_ = gridpointIndex_;
 }
 
-/* Sample a new umbrella reference point given the current coordinate value. */
 void
 CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
                                          int                        gridpointIndex,
@@ -97,7 +96,6 @@ CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
     umbrellaGridpoint_ = neighbor[n_sampled];
 }
 
-/* Update the coordinate value with coordValue. */
 void CoordinateState::setCoordValue(const Grid &grid,
                                     int         dim,
                                     double      coordValue)

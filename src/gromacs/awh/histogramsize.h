@@ -89,9 +89,9 @@ class HistogramSize
          * This function also takes care resetting the histogram used for covering checks
          * and for exiting the initial stage.
          *
-         * \param[in] params                 The bias parameters.
-         * \param[in] t                      Time.
-         * \param[in] detectedCovering       True if we detected that the sampling interval has been sufficiently covered.
+         * \param[in]     params             The bias parameters.
+         * \param[in]     t                  Time.
+         * \param[in]     detectedCovering   True if we detected that the sampling interval has been sufficiently covered.
          * \param[in,out] weightsumCovering  The weight sum for checking covering.
          * \param[in,out] fplog              Log file.
          * \returns the new histogram size.
@@ -108,10 +108,10 @@ class HistogramSize
          *
          * This function also takes care of checking for covering in the initial stage.
          *
-         * \param[in] params                 The bias parameters.
-         * \param[in] t                      Time.
-         * \param[in] covered                True if the sampling interval has been covered enough.
-         * \param[in] pointStates            The state of the grid points.
+         * \param[in]     params             The bias parameters.
+         * \param[in]     t                  Time.
+         * \param[in]     covered            True if the sampling interval has been covered enough.
+         * \param[in]     pointStates        The state of the grid points.
          * \param[in,out] weightsumCovering  The weight sum for checking covering.
          * \param[in,out] fplog              Log file.
          * \returns the new histogram size.

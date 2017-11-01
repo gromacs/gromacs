@@ -76,7 +76,6 @@ HistogramSize::HistogramSize(const AwhBiasParams &awhBiasParams,
 {
 }
 
-/* Returns the new size of the reference weight histogram in the initial stage. */
 double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
                                               double            t,
                                               bool              detectedCovering,
@@ -204,7 +203,6 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
     return equilibratedWeight/(equilibratedWeight + notEquilibratedWeight) > minFraction;;
 }
 
-/* Return the new reference weight histogram size for the current update. */
 double HistogramSize::newHistSize(const BiasParams              &params,
                                   double                         t,
                                   bool                           covered,
@@ -245,7 +243,6 @@ double HistogramSize::newHistSize(const BiasParams              &params,
     return histSizeNew;
 }
 
-/* Sets the histogram size. */
 void HistogramSize::setHistSize(double histSize,
                                 double weighthistScalingFactor)
 {
