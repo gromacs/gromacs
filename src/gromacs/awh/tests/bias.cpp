@@ -167,30 +167,31 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
         BiasTest() :
             coordinates_(std::begin(g_coords), std::end(g_coords))
         {
-            // We test all combinations of:
-            //   eawhgrowth:
-            //     eawhgrowthLINEAR:     final, normal update phase
-            //     ewahgrowthEXP_LINEAR: intial phase, updated size is constant
-            //   eawhpotential (should only affect the force output):
-            //     eawhpotentialUMBRELLA:  MC on lambda (umbrella potential location)
-            //     eawhpotentialCONVOLVED: MD on a convolved potential landscape
-            //   disableUpdateSkips (should not affect the results):
-            //     BiasParams::DisableUpdateSkips::yes: update the point state for every sample
-            //     BiasParams::DisableUpdateSkips::no:  update the point state at an interval > 1 sample
-            //
-            // Note: It would be nice to explicitly check that eawhpotential
-            //       and disableUpdateSkips do not affect the point state.
-            //       But the reference data will also ensure this.
-            //
+            /* We test all combinations of:
+             *   eawhgrowth:
+             *     eawhgrowthLINEAR:     final, normal update phase
+             *     ewahgrowthEXP_LINEAR: intial phase, updated size is constant
+             *   eawhpotential (should only affect the force output):
+             *     eawhpotentialUMBRELLA:  MC on lambda (umbrella potential location)
+             *     eawhpotentialCONVOLVED: MD on a convolved potential landscape
+             *   disableUpdateSkips (should not affect the results):
+             *     BiasParams::DisableUpdateSkips::yes: update the point state for every sample
+             *     BiasParams::DisableUpdateSkips::no:  update the point state at an interval > 1 sample
+             *
+             * Note: It would be nice to explicitly check that eawhpotential
+             *       and disableUpdateSkips do not affect the point state.
+             *       But the reference data will also ensure this.
+             */
             int eawhgrowth;
             int eawhpotential;
             BiasParams::DisableUpdateSkips disableUpdateSkips;
             std::tie(eawhgrowth, eawhpotential, disableUpdateSkips) = GetParam();
 
-            // Set up a basic AWH setup with a single, 1D bias with parameters
-            // such that we can measure the effects of different parameters.
-            // The idea is to, among other things, have part of the interval
-            // not covered by samples.
+            /* Set up a basic AWH setup with a single, 1D bias with parameters
+	     * such that we can measure the effects of different parameters.
+	     * The idea is to, among other things, have part of the interval
+	     * not covered by samples.
+	     */
             const AwhTestParameters params = getAwhTestParameters(eawhgrowth, eawhpotential);
 
             seed_ = params.awhParams.seed;
@@ -239,8 +240,9 @@ TEST_P(BiasTest, ForcesBiasPmf)
         step++;
     }
 
-    // When skipping updates, ensure all skipped updates are performed here.
-    // This should result in the same bias state as at output in a normal run.
+    /* When skipping updates, ensure all skipped updates are performed here.
+     * This should result in the same bias state as at output in a normal run.
+     */
     if (bias.params().skipUpdates())
     {
         bias.doSkippedUpdatesForAllPoints();
@@ -254,7 +256,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
     }
 
     /* The umbrella force is computed from the coordinate deviation.
-     * In taking this deviation we loose a lot of precision, so we should
+     * In taking this deviation we lose a lot of precision, so we should
      * compare against k*max(coord) instead of the instantaneous force.
      */
     double kMaxCoord = 0;
@@ -275,10 +277,11 @@ TEST_P(BiasTest, ForcesBiasPmf)
     checker.checkSequence(logPmfsum.begin(), logPmfsum.end(), "PointLogPmfsum");
 }
 
-// Scan initial/final phase, MC/convolved force and update skip (not) allowed
-// Both the convolving and skipping should not affect the bias and PMF.
-// It would be nice if the test would explicitly check for this.
-// Currently this is tested through identical reference data.
+/* Scan initial/final phase, MC/convolved force and update skip (not) allowed
+ * Both the convolving and skipping should not affect the bias and PMF.
+ * It would be nice if the test would explicitly check for this.
+ * Currently this is tested through identical reference data.
+ */
 INSTANTIATE_TEST_CASE_P(WithParameters, BiasTest,
                             ::testing::Combine(
                                     ::testing::Values(eawhgrowthLINEAR, eawhgrowthEXP_LINEAR),
@@ -310,7 +313,6 @@ TEST(BiasTest, DetectsCovering)
     {
         double t     = step*mdTimeStep;
         double coord = midPoint + halfWidth*(0.5*std::sin(t) + 0.55*std::sin(1.5*t));
-        //double coord = midPoint + halfWidth*(0.5*std::sin(0.5*t) + 0.55*std::sin(0.75*t));
         bias.setCoordValue(0, coord);
 
         awh_dvec biasForce;

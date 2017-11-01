@@ -188,11 +188,11 @@ class Awh
          * since AWH needs the current coordinate values.
          *
          * \param[in,out] pull_work        Pull working struct.
-         * \param[in]   mdatoms            Atom properties.
-         * \param[in] ePBC                 Type of periodic boundary conditions.
-         * \param[in] box                  Box vectors.
+         * \param[in]     mdatoms          Atom properties.
+         * \param[in]     ePBC             Type of periodic boundary conditions.
+         * \param[in]     box              Box vectors.
          * \param[in,out] forceWithVirial  Force and virial buffers.
-         * \param[in] ms                   Struct for multi-simulation communication.
+         * \param[in]     ms               Struct for multi-simulation communication.
          * \param[in]     t                Time.
          * \param[in]     step             Time step.
          * \param[in,out] wallcycle        Wallcycle counter.

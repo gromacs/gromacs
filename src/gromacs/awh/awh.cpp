@@ -110,15 +110,15 @@ class BiasCoupledToSystem
 
         /*! \brief Set the coordinate value(s) and evolves the bias, should be called at every MD step.
          *
-         * \param[in] coordValue      The current coordinate value(s) for the bias.
-         * \param[in] ms              Struct for multi-simulation communication.
-         * \param[in] t               Time.
-         * \param[in] step            Time step.
-         * \param[in] awhSeed         Random seed.
-         * \param[in,out] fplog       Log file.
-         * \param[out] biasForce      The bias force.
-         * \param[out] biasPotential  Bias potential.
-         * \param[out] potentialJump  Change in bias potential for this bias.
+         * \param[in]     coordValue     The current coordinate value(s) for the bias.
+         * \param[in]     ms             Struct for multi-simulation communication.
+         * \param[in]     t              Time.
+         * \param[in]     step           Time step.
+         * \param[in]     awhSeed        Random seed.
+         * \param[in,out] fplog          Log file.
+         * \param[out]    biasForce      The bias force.
+         * \param[out]    biasPotential  Bias potential.
+         * \param[out]    potentialJump  Change in bias potential for this bias.
          */
         void calcForceAndUpdateBias(const awh_dvec          coordValue,
                                     const gmx_multisim_t   *ms,

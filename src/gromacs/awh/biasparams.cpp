@@ -75,8 +75,10 @@ static int calcTargetUpdateInterval(const AwhParams     &awhParams,
                                     const AwhBiasParams &awhBiasParams)
 {
     int nstUpdateTarget = 0;
-    /* Set the target update frequency based on the target distrbution type (this could be made a user-option but
-       there is most likely no big need for tweaking this for most users. */
+    /* Set the target update frequency based on the target distrbution type
+     * (this could be made a user-option but there is most likely no big need
+     * for tweaking this for most users).
+     */
     switch (awhBiasParams.eTarget)
     {
         case eawhtargetCONSTANT:

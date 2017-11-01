@@ -302,18 +302,18 @@ int multidimArrayIndexToLinear(const awh_ivec indexMulti,  int ndim, const awh_i
 
 /*! \brief Convert a linear grid point index to a multidimensional one.
  *
- * \param[in] grid                The grid.
- * \param[in] indexLinear         Linear grid point index to convert to a multidimensional one.
- * \param[out] indexMulti         The multidimensional index.
+ * \param[in]  grid         The grid.
+ * \param[in]  indexLinear  Linear grid point index to convert to a multidimensional one.
+ * \param[out] indexMulti   The multidimensional index.
  */
 void linearGridindexToMultidim(const Grid &grid, int indexLinear, awh_ivec indexMulti);
 
 /*! \brief Convert a linear array index to a multidimensional one.
  *
- * \param[in] indexLinear         Linear array index
- * \param[in] ndim                Number of dimensions of the array.
- * \param[in] numPointsDim        Number of points for each dimension.
- * \param[out] indexMulti         The multidimensional index.
+ * \param[in]  indexLinear   Linear array index
+ * \param[in]  ndim          Number of dimensions of the array.
+ * \param[in]  numPointsDim  Number of points for each dimension.
+ * \param[out] indexMulti    The multidimensional index.
  */
 void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPointsDim, awh_ivec indexMulti);
 
@@ -330,15 +330,16 @@ void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPoi
  * the subgrid origin, i.e. in this case the "next" grid point index is
  * defined to be the first common grid/subgrid point.
  *
- * \param[in] grid                The grid.
- * \param[in] subgridOrigin       Vector locating the subgrid origin relative to the grid origin.
- * \param[in] subgridNpoints      Number of points along each subgrid dimension.
+ * \param[in]     grid            The grid.
+ * \param[in]     subgridOrigin   Vector locating the subgrid origin relative to the grid origin.
+ * \param[in]     subgridNpoints  Number of points along each subgrid dimension.
  * \param[in,out] gridPointIndex  Pointer to the starting/next grid point index.
  * \returns true if the grid point was updated.
  */
-bool getNextPointInSubgrid(const Grid &grid,
-                           const awh_ivec subgridOrigin, const awh_ivec subgridNpoints,
-                           int *gridPointIndex);
+bool getNextPointInSubgrid(const Grid     &grid,
+                           const awh_ivec  subgridOrigin,
+                           const awh_ivec  subgridNpoints,
+                           int            *gridPointIndex);
 
 /*! \brief Maps each point in the grid to a point in the data grid.
  *
@@ -348,11 +349,11 @@ bool getNextPointInSubgrid(const Grid &grid,
  * A fatal error is thrown if extracting the data fails or the data does not cover the whole grid.
  *
  * \param[out] gridpointToDatapoint  Array mapping each grid point to a data point index.
- * \param[in] data                   2D array in format ndim x ndatapoints with data grid point values.
- * \param[in] numDatapoints          Number of data points.
- * \param[in] datafilename           The data filename.
- * \param[in] grid                   The grid.
- * \param[in] correctFormatMessage   String to include in error message if extracting the data fails.
+ * \param[in]  data                  2D array in format ndim x ndatapoints with data grid point values.
+ * \param[in]  numDatapoints         Number of data points.
+ * \param[in]  datafilename          The data filename.
+ * \param[in]  grid                  The grid.
+ * \param[in]  correctFormatMessage  String to include in error message if extracting the data fails.
  */
 void mapGridToDatagrid(std::vector<int>    *gridpointToDatapoint,
                        const double* const *data,

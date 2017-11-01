@@ -74,10 +74,9 @@
 namespace gmx
 {
 
-/* Sets the given array with PMF values. */
 void calculatePmf(const BiasParams              &params,
                   const std::vector<PointState> &points,
-                  const gmx_multisim_t          *ms,
+                  const gmx_multisim_t          *multiSimComm,
                   std::vector<float>            *pmf)
 {
     /* The PMF is just the negative of the log of the sampled PMF histogram.
@@ -94,7 +93,7 @@ void calculatePmf(const BiasParams              &params,
             (*pmf)[i] = points[i].inTargetRegion() ? std::exp(static_cast<float>(points[i].logPmfsum())) : 0;
         }
 
-        gmx_sumf_sim(points.size(), pmf->data(), ms);
+        gmx_sumf_sim(points.size(), pmf->data(), multiSimComm);
 
         /* Take log again to get (non-normalized) PMF */
         for (size_t i = 0; i < points.size(); i++)
@@ -137,7 +136,7 @@ static double freeEnergyMinimumValue(const std::vector<PointState> &pointState)
  *
  * The unnormalized weight is given by
  * w(point|value) = exp(bias(point) - U(value,point)),
- * where U is an harmonic umbrella potential.
+ * where U is a harmonic umbrella potential.
  *
  * \param[in] dimParams     The bias dimensions parameters
  * \param[in] points        The point state.
@@ -176,18 +175,18 @@ static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
 
 /*! \brief Convolves the given PMF using the given AWH bias.
  *
- * \param[in] dimParams   The bias dimensions parameters
- * \param[in] grid        The grid.
- * \param[in] params      The bias parameters.
- * \param[in] points      The point state.
- * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
+ * \param[in] dimParams     The bias dimensions parameters
+ * \param[in] grid          The grid.
+ * \param[in] params        The bias parameters.
+ * \param[in] points        The point state.
+ * \param[in] multiSimComm  Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
  */
 static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                   const Grid                    &grid,
                                   const BiasParams              &params,
                                   const std::vector<PointState> &points,
-                                  const gmx_multisim_t          *ms,
+                                  const gmx_multisim_t          *multiSimComm,
                                   std::vector<float>            *convolvedPmf)
 {
     size_t             numPoints = grid.numPoints();
@@ -197,7 +196,7 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
     convolvedPmf->resize(numPoints);
 
     /* Get the PMF to convolve. */
-    calculatePmf(params, points, ms, &pmf);
+    calculatePmf(params, points, multiSimComm, &pmf);
 
     for (size_t m = 0; m < numPoints; m++)
     {
@@ -228,7 +227,7 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
  * at the same time.
  *
  * \param[in,out] pointState  The state of all points.
- * \param[in] params          The bias parameters.
+ * \param[in]     params      The bias parameters.
  */
 static void updateTarget(std::vector<PointState> *pointState,
                          const BiasParams        &params)
@@ -283,7 +282,6 @@ static std::string gridPointValueString(const Grid &grid, int point)
     return pointString;
 }
 
-/* Makes checks for the collected histograms and warns if issues are detected. */
 int BiasState::checkHistograms(const Grid  &grid,
                                int          biasIndex,
                                double       t,
@@ -356,8 +354,6 @@ int BiasState::checkHistograms(const Grid  &grid,
     return numWarnings;
 }
 
-/* Calculates and sets the force the coordinate experiences from an umbrella centered at the given point.
- */
 double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
                                                 const Grid                   &grid,
                                                 int                           point,
@@ -378,7 +374,6 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
     return potential;
 }
 
-/* Calculates and sets the convolved force acting on the coordinate. */
 void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                    const Grid                   &grid,
                                    const std::vector<double>    &probWeightNeighbor,
@@ -409,7 +404,6 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
     }
 }
 
-/* Move the center point of the umbrella potential. */
 double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
                                const std::vector<double>    &probWeightNeighbor,
@@ -481,7 +475,6 @@ static void setHistogramUpdateScaleFactors(const BiasParams &params, double hist
     *logPmfsumScaling  = std::log(histSizeNew/(histSizeOld + params.updateWeight));
 }
 
-/* Sets the histogram rescaling factors needed for skipped updates. */
 void BiasState::setSkippedUpdateHistogramScaleFactors(const BiasParams &params,
                                                       double           *weighthistScaling,
                                                       double           *logPmfsumScaling) const
@@ -504,7 +497,6 @@ void BiasState::setSkippedUpdateHistogramScaleFactors(const BiasParams &params,
     }
 }
 
-/* Do all previously skipped updates. */
 void BiasState::doSkippedUpdatesForAllPoints(const BiasParams &params)
 {
     double weighthistScaling, logPmfsumScaling;
@@ -523,7 +515,6 @@ void BiasState::doSkippedUpdatesForAllPoints(const BiasParams &params)
     }
 }
 
-/* Do previously skipped updates in this neighborhood. */
 void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
                                                const Grid       &grid)
 {
@@ -547,11 +538,13 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
 /*! \brief
  * Merge update lists from multiple sharing simulations.
  *
- * \param[in,out] updateList  Update list for this simulation (assumed >= npoints long).
- * \param[in] numPoints       Total number of points.
- * \param[in] ms              Struct for multi-simulation communication.
+ * \param[in,out] updateList    Update list for this simulation (assumed >= npoints long).
+ * \param[in]     numPoints     Total number of points.
+ * \param[in]     multiSimComm  Struct for multi-simulation communication.
  */
-static void mergeSharedUpdateLists(std::vector<int> *updateList, int numPoints, const gmx_multisim_t *ms)
+static void mergeSharedUpdateLists(std::vector<int>     *updateList,
+				   int                   numPoints,
+				   const gmx_multisim_t *multiSimComm)
 {
     std::vector<int> numUpdatesOfPoint;
 
@@ -564,7 +557,7 @@ static void mergeSharedUpdateLists(std::vector<int> *updateList, int numPoints, 
     }
 
     /* Sum over the sims to get all the flagged points */
-    gmx_sumi_sim(numPoints, numUpdatesOfPoint.data(), ms);
+    gmx_sumi_sim(numPoints, numUpdatesOfPoint.data(), multiSimComm);
 
     /* Collect the indices of the flagged points in place. The resulting array will be the merged update list.*/
     updateList->resize(0);
@@ -621,7 +614,6 @@ static void makeLocalUpdateList(const Grid                    &grid,
     }
 }
 
-/* Reset the range used to make the local update list. */
 void BiasState::resetLocalUpdateRange(const Grid &grid)
 {
     const int gridpointIndex = coordinateState_.gridpointIndex();
@@ -639,13 +631,14 @@ void BiasState::resetLocalUpdateRange(const Grid &grid)
  * \param[in,out] pointState         The state of the points in the bias.
  * \param[in,out] weightsumCovering  The weights for checking covering.
  * \param[in]     numSharedUpdate    The number of biases sharing the histrogram.
- * \param[in]     ms                 Struct for multi-simulation communication.
+ * \param[in]     multiSimComm       Struct for multi-simulation communication.
  * \param[in]     localUpdateList    List of points with data.
  */
 static void sumHistograms(std::vector<PointState> *pointState,
                           std::vector<double>     *weightsumCovering,
-                          int numSharedUpdate, const gmx_multisim_t *ms,
-                          const std::vector<int> &localUpdateList)
+                          int                      numSharedUpdate,
+			  const gmx_multisim_t    *multiSimComm,
+                          const std::vector<int>  &localUpdateList)
 {
     /* The covering checking histograms are added before summing over simulations, so that the weights from different
        simulations are kept distinguishable. */
@@ -672,8 +665,8 @@ static void sumHistograms(std::vector<PointState> *pointState,
             coordVisits[ilocal]  = ps.numVisitsIteration();
         }
 
-        gmx_sumd_sim(weightDistr.size(), weightDistr.data(), ms);
-        gmx_sumd_sim(coordVisits.size(), coordVisits.data(), ms);
+        gmx_sumd_sim(weightDistr.size(), weightDistr.data(), multiSimComm);
+        gmx_sumd_sim(coordVisits.size(), coordVisits.data(), multiSimComm);
 
         /* Transfer back the result */
         for (size_t ilocal = 0; ilocal < localUpdateList.size(); ilocal++)
@@ -699,12 +692,12 @@ static void sumHistograms(std::vector<PointState> *pointState,
  *
  * A point is covered if it is surrounded by visited points up to a radius = coverRadius.
  *
- * \param[in] visited           Visited? For each point.
- * \param[in] checkCovering     Check for covering? For each point.
- * \param[in] npoints           Number of points.
- * \param[in] period            Period in number of points.
- * \param[in] coverRadius       Cover radius, in points, needed for defining a point as covered.
- * \param[in,out] covered       Covered? For each point.
+ * \param[in]     visited        Visited? For each point.
+ * \param[in]     checkCovering  Check for covering? For each point.
+ * \param[in]     npoints        Number of points.
+ * \param[in]     period         Period in number of points.
+ * \param[in]     coverRadius    Cover radius, in points, needed for defining a point as covered.
+ * \param[in,out] covered        Covered? For each point.
  */
 static void labelCoveredPoints(const std::vector<bool> &visited, const std::vector<bool> &checkCovering, int npoints, int period,
                                int coverRadius, std::vector<int> *covered)
@@ -790,11 +783,10 @@ static void labelCoveredPoints(const std::vector<bool> &visited, const std::vect
     }
 }
 
-/* Check if the sampling region has been covered "enough" or not. */
 bool BiasState::isCovered(const BiasParams             &params,
                           const std::vector<DimParams> &dimParams,
                           const Grid                   &grid,
-                          const gmx_multisim_t         *ms) const
+                          const gmx_multisim_t         *multiSimComm) const
 {
     /* Allocate and initialize arrays: one for checking visits along each dimension,
        one for keeping track of which points to check and one for the covered points.
@@ -880,7 +872,7 @@ bool BiasState::isCovered(const BiasParams             &params,
         /* For multiple dimensions this may not be the best way to do it. */
         for (int d = 0; d < grid.ndim(); d++)
         {
-            gmx_sumi_sim(grid.axis(d).numPoints(), checkDim[d].covered.data(), ms);
+            gmx_sumi_sim(grid.axis(d).numPoints(), checkDim[d].covered.data(), multiSimComm);
         }
     }
 
@@ -912,11 +904,10 @@ static void normalizeFreeEnergyAndPmfSum(std::vector<PointState> *pointState)
     }
 }
 
-/* Performs an update of the bias. */
 void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams> &dimParams,
                                                          const Grid                   &grid,
                                                          const BiasParams             &params,
-                                                         const gmx_multisim_t         *ms,
+                                                         const gmx_multisim_t         *multiSimComm,
                                                          double                        t,
                                                          gmx_int64_t                   step,
                                                          FILE                         *fplog,
@@ -936,7 +927,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
                         updateList);
     if (params.numSharedUpdate > 1)
     {
-        mergeSharedUpdateLists(updateList, points_.size(), ms);
+        mergeSharedUpdateLists(updateList, points_.size(), multiSimComm);
     }
 
     /* Reset the range for the next update */
@@ -944,7 +935,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* Add samples to histograms for all local points and sync simulations if needed */
     sumHistograms(&points_, &weightsumCovering_,
-                  params.numSharedUpdate, ms, *updateList);
+                  params.numSharedUpdate, multiSimComm, *updateList);
 
     /* Renormalize the free energy if values are too large. */
     bool needToNormalizeFreeEnergy = false;
@@ -971,7 +962,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     if (inInitialStage())
     {
         detectedCovering = (isCheckStep(params, points_, step) &&
-                            isCovered(params, dimParams, grid, ms));
+                            isCovered(params, dimParams, grid, multiSimComm));
     }
 
     /* The weighthistogram size after this update. */
@@ -1052,7 +1043,6 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     histogramSize_.incrementNumUpdates();
 }
 
-/* Update the probability weights and the convolved bias. */
 double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams> &dimParams,
                                                            const Grid                   &grid,
                                                            std::vector<double>          *weight) const
@@ -1084,7 +1074,6 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
     return std::log(weightSum);
 }
 
-/* Calculates the convolved bias for the given coordinate value. */
 double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
                          const Grid                    &grid,
                          const std::vector<PointState> &points,
@@ -1102,11 +1091,10 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
                                             coordValue);
     }
 
-    /* Returns -GMX_DOUBLE_MAX if no neighboring points where in the target region. */
+    /* Returns -GMX_DOUBLE_MAX if no neighboring points were in the target region. */
     return (weight_sum > 0) ? std::log(weight_sum) : -GMX_DOUBLE_MAX;
 }
 
-/* Save the current probability weights for future updates and analysis. */
 void BiasState::sampleProbabilityWeights(const Grid                &grid,
                                          const std::vector<double> &probWeightNeighbor)
 {
@@ -1118,10 +1106,12 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
         points_[neighbor[n]].increaseWeightsumIteration(probWeightNeighbor[n]);
     }
 
-    /* Update the local update range. Two corner points define this rectangular domain. We need to
-       choose two new corner points such that the new domain contains both the old update range and
-       the current neighborhood. In the simplest case when an update is performed every sample, the
-        update range would simply equal the current neighborhood. */
+    /* Update the local update range. Two corner points define this rectangular
+     * domain. We need to choose two new corner points such that the new domain
+     * contains both the old update range and the current neighborhood.
+     * In the simplest case when an update is performed every sample,
+     * the update range would simply equal the current neighborhood.
+     */
     int m_neighbor_origin = neighbor[0];
     int m_neighbor_end    = neighbor[neighbor.size() - 1];
     for (int d = 0; d < grid.ndim(); d++)
@@ -1133,18 +1123,26 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
 
         if (origin_d > end_d)
         {
-            /* Unwrap if wrapped around the boundary (only happens for periodic boundaries).
-               This has been already for the stored index interval. */
-
-            /* TODO: what we want to do is to find the smallest the update interval that contains all points that need to be updated.
-               This amounts to combining two intervals, the current [origin, end] update interval and the new touched neighborhood
-               into a new interval that contains all points from both the old intervals.
-
-               For periodic boundaries it becomes slightly more complicated than for closed boundaries because the it needs not be
-               true that origin < end (so one can't simply relate the origin/end in the min()/max() below). The strategy here is to choose the
-               origin closest to a reference point (index 0) and then unwrap the end index if needed and choose the largest end index.
-               This ensures that both intervals are in the new interval but it's not necessarily the smallest.
-               I can't think of a better way of solving this than going through each possibility and checking them.
+            /* Unwrap if wrapped around the boundary (only happens for periodic
+	     * boundaries). This has been already for the stored index interval.
+	     */
+            /* TODO: what we want to do is to find the smallest the update
+	     * interval that contains all points that need to be updated.
+             * This amounts to combining two intervals, the current
+	     * [origin, end] update interval and the new touched neighborhood
+             * into a new interval that contains all points from both the old
+	     * intervals.
+	     *
+             * For periodic boundaries it becomes slightly more complicated
+	     * than for closed boundaries because then it needs not be
+             * true that origin < end (so one can't simply relate the origin/end
+	     * in the min()/max() below). The strategy here is to choose the
+             * origin closest to a reference point (index 0) and then unwrap
+	     * the end index if needed and choose the largest end index.
+             * This ensures that both intervals are in the new interval
+	     * but it's not necessarily the smallest.
+             * Currently we solve this by going through each possibility
+	     * and checking them.
              */
             end_d += grid.axis(d).numPointsInPeriod();
         }
@@ -1154,7 +1152,6 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
     }
 }
 
-/* Sample observables for future updates or analysis. */
 void BiasState::sampleCoordAndPmf(const Grid                &grid,
                                   const std::vector<double> &probWeightNeighbor,
                                   double                     convolvedBias)
@@ -1185,13 +1182,11 @@ void BiasState::sampleCoordAndPmf(const Grid                &grid,
     sampleProbabilityWeights(grid, probWeightNeighbor);
 }
 
-/* Allocate and initialize an AWH history with the given AWH state. */
 void BiasState::initHistoryFromState(AwhBiasHistory *biasHistory) const
 {
     biasHistory->pointState.resize(points_.size());
 }
 
-/* Update the bias history with a new state. */
 void BiasState::updateHistory(AwhBiasHistory *biasHistory,
                               const Grid     &grid) const
 {
@@ -1217,7 +1212,6 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
                                                                       endUpdatelist_);
 }
 
-/* Restore the bias state from history. */
 void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
                                    const Grid           &grid)
 {
@@ -1241,7 +1235,6 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
     linearGridindexToMultidim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
 }
 
-/* Broadcast the bias state over the MPI ranks in this simulation. */
 void BiasState::broadcast(const t_commrec *cr)
 {
     std::vector<PointState> pointsTmp = move(points_);
@@ -1255,15 +1248,14 @@ void BiasState::broadcast(const t_commrec *cr)
     gmx_bcast(points_.size()*sizeof(PointState), points_.data(), cr);
 }
 
-/* Convolves the PMF and sets the initial free energy to its convolution. */
 void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                             const Grid                    &grid,
                                             const BiasParams              &params,
-                                            const gmx_multisim_t          *ms)
+                                            const gmx_multisim_t          *multiSimComm)
 {
     std::vector<float> convolvedPmf;
 
-    calculateConvolvedPmf(dimParams, grid, params, points_, ms, &convolvedPmf);
+    calculateConvolvedPmf(dimParams, grid, params, points_, multiSimComm, &convolvedPmf);
 
     for (size_t m = 0; m < points_.size(); m++)
     {
@@ -1272,20 +1264,22 @@ void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimPa
 }
 
 /*! \brief
- * Find trailing data rows containing only zeros.
+ * Count trailing data rows containing only zeros.
  *
- * \param[in] data    2D data array.
- * \param[in] nrows   Number of rows in array.
- * \param[in] ncols   Number of cols in array.
+ * \param[in] data        2D data array.
+ * \param[in] numRows     Number of rows in array.
+ * \param[in] numColumns  Number of cols in array.
  * \returns the number of trailing zero rows.
  */
-static int findTrailingZeroRows(const double* const *data, int nrows, int ncols)
+static int countTrailingZeroRows(const double* const *data,
+				 int                  numRows,
+				 int                  numColumns)
 {
-    int nZeroRows = 0;
-    for (int m = nrows - 1; m >= 0; m--)
+    int numZeroRows = 0;
+    for (int m = numRows - 1; m >= 0; m--)
     {
         bool rowIsZero = true;
-        for (int d = 0; d < ncols; d++)
+        for (int d = 0; d < numColumns; d++)
         {
             if (data[d][m] != 0)
             {
@@ -1302,21 +1296,21 @@ static int findTrailingZeroRows(const double* const *data, int nrows, int ncols)
         else
         {
             /* Still at a zero data row, keep checking rows higher up. */
-            nZeroRows++;
+            numZeroRows++;
         }
     }
 
-    return nZeroRows;
+    return numZeroRows;
 }
 
 /*! \brief
  * Initializes the PMF and target with data read from an input table.
  *
- * \param[in] dimParams       The dimension parameters.
- * \param[in] grid            The grid.
- * \param[in] filename        The filename to read PMF and target from.
- * \param[in] numBias         Number of biases.
- * \param[in] biasIndex       The index of the bias.
+ * \param[in]     dimParams   The dimension parameters.
+ * \param[in]     grid        The grid.
+ * \param[in]     filename    The filename to read PMF and target from.
+ * \param[in]     numBias     Number of biases.
+ * \param[in]     biasIndex   The index of the bias.
  * \param[in,out] pointState  The state of the points in this bias.
  */
 static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimParams,
@@ -1341,14 +1335,14 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     std::string correctFormatMessage =
         formatString("%s is expected in the following format. "
                      "The first ndim column(s) should contain the coordinate values for each point, "
-                     " each column containing values of one dimension (in ascending order). "
+                     "each column containing values of one dimension (in ascending order). "
                      "For a multidimensional coordinate, points should be listed "
                      "in the order obtained by traversing lower dimensions first. "
                      "E.g. for two-dimensional grid of size nxn: "
                      "(1, 1), (1, 2),..., (1, n), (2, 1), (2, 2), ..., , (n, n - 1), (n, n). "
                      "Column ndim +  1 should contain the PMF value for each coordinate value. "
                      "The target distribution values should be in column ndim + 2  or column ndim + 5. "
-                     "Make sure there input file ends with a new line but has no trailing new lines.",
+                     "Make sure the input file ends with a new line but has no trailing new lines.",
                      filename.c_str());
     gmx::TextLineWrapper wrapper;
     wrapper.settings().setLineLength(c_linewidth);
@@ -1401,7 +1395,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     /* read_xvg can give trailing zero data rows for trailing new lines in the input. We allow 1 zero row,
        since this could be real data. But multiple trailing zero rows cannot correspond to valid data. */
-    int numZeroRows = findTrailingZeroRows(data, numRows, numColumns);
+    int numZeroRows = countTrailingZeroRows(data, numRows, numColumns);
     if (numZeroRows > 1)
     {
         gmx_fatal(FARGS, "Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
@@ -1461,7 +1455,6 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     sfree(data);
 }
 
-/* Normalize the PMF histogram. */
 void BiasState::normalizePmf(int numSharingSims)
 {
     /* The normalization of the PMF estimate matters because it determines how big effect the next sample has.
@@ -1499,7 +1492,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
                                    const BiasParams              &params,
                                    const std::string             &filename,
                                    int                            numBias,
-                                   const gmx_multisim_t          *ms)
+                                   const gmx_multisim_t          *multiSimComm)
 {
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
@@ -1507,7 +1500,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
     if (awhBiasParams.bUserData)
     {
         readUserPmfAndTargetDistribution(dimParams, grid, filename, numBias, params.biasIndex, &points_);
-        setFreeEnergyToConvolvedPmf(dimParams, grid, params, ms);
+        setFreeEnergyToConvolvedPmf(dimParams, grid, params, multiSimComm);
     }
 
     /* The local Boltzmann distribution is special because the target distribution is updated as a function of the reference weighthistogram. */

@@ -72,8 +72,8 @@ namespace gmx
  * needed. Thus, it is assumed that x is at most one period
  * away from this interval. For period = 0, x is not modified.
  *
- * \param[in,out] x    Pointer to the value to modify.
- * \param[in] period   The period, or 0 if not periodic.
+ * \param[in,out] x       Pointer to the value to modify.
+ * \param[in]     period  The period, or 0 if not periodic.
  */
 static void makeValuePeriodic(double *x, double period)
 {
@@ -98,8 +98,8 @@ static void makeValuePeriodic(double *x, double period)
  * this is equivalent to x = x % period. For period = 0,
  * x is not modified.
  *
- * \param[in,out] x    Pointer to the value to modify.
- * \param[in] period   The period, or 0 if not periodic.
+ * \param[in,out] x       Pointer to the value to modify.
+ * \param[in]     period  The period, or 0 if not periodic.
  */
 static void makeIndexPeriodic(int *x, int period)
 {
@@ -306,15 +306,17 @@ static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec ind
  * Thus, for periodic dimensions the number of subgrid points need to be less than
  * the number of points in a period to prevent problems of wrapping around.
  *
- * \param[in] grid                  The grid.
- * \param[in] subgridOrigin         Vector locating the subgrid origin relative to the grid origin.
- * \param[in] subgridNpoints        The number of subgrid points in each dimension.
- * \param[in] point                 Grid point to get subgrid index for.
- * \param[in,out] subgridIndex      Subgrid multidimensional index.
+ * \param[in]     grid            The grid.
+ * \param[in]     subgridOrigin   Vector locating the subgrid origin relative to the grid origin.
+ * \param[in]     subgridNpoints  The number of subgrid points in each dimension.
+ * \param[in]     point           Grid point to get subgrid index for.
+ * \param[in,out] subgridIndex    Subgrid multidimensional index.
  */
-static void gridToSubgridIndex(const Grid &grid,
-                               const awh_ivec subgridOrigin, const awh_ivec subgridNpoints,
-                               int point, awh_ivec subgridIndex)
+static void gridToSubgridIndex(const Grid     &grid,
+                               const awh_ivec  subgridOrigin,
+			       const awh_ivec  subgridNpoints,
+                               int             point,
+			       awh_ivec        subgridIndex)
 {
     /* Get the subgrid index of the given grid point, for each dimension. */
     for (int d = 0; d < grid.ndim(); d++)
@@ -338,10 +340,10 @@ static void gridToSubgridIndex(const Grid &grid,
  * and the grid point index will not be set. Periodic boundaries are taken care of by
  * wrapping the subgrid around the grid.
  *
- * \param[in] grid                  The grid.
- * \param[in] subgridOrigin         Vector locating the subgrid origin relative to the grid origin.
- * \param[in] subgridIndex          Subgrid multidimensional index to get grid point index for.
- * \param[in,out] gridIndex         Grid point index.
+ * \param[in]     grid           The grid.
+ * \param[in]     subgridOrigin  Vector locating the subgrid origin relative to the grid origin.
+ * \param[in]     subgridIndex   Subgrid multidimensional index to get grid point index for.
+ * \param[in,out] gridIndex      Grid point index.
  * \returns true if the transformation was successful.
  */
 static bool subgridToGridIndex(const Grid     &grid,
@@ -402,10 +404,10 @@ static bool subgridToGridIndex(const Grid     &grid,
     return true;
 }
 
-/* Find the next grid point in the subgrid given a starting point. */
-bool getNextPointInSubgrid(const Grid &grid,
-                           const awh_ivec subgridOrigin, const awh_ivec subgridNpoints,
-                           int *gridPointIndex)
+bool getNextPointInSubgrid(const Grid     &grid,
+                           const awh_ivec  subgridOrigin,
+			   const awh_ivec  subgridNpoints,
+                           int            *gridPointIndex)
 {
     /* Initialize the subgrid index to the subgrid origin. */
     awh_ivec  subgridIndex = {0};

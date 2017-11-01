@@ -73,8 +73,6 @@ struct AwhBiasParams;
 struct AwhHistory;
 struct AwhParams;
 struct AwhPointStateHistory;
-class BiasParams;
-class BiasState;
 class Grid;
 class GridAxis;
 class PointState;
@@ -90,11 +88,11 @@ class PointState;
  * along the coordinate. The bias potential is basically a function of the
  * free energy estimate and so also changes by the update.
  * The free energy update is based on information from coordinate samples
- * collected at a contant bias potential, beween updates.
+ * collected at a constant bias potential, between updates.
  *
  * The bias keeps a grid with coordinate points that organizes spatial
  * information about the coordinate. The grid has the the same geometry
- * as the coordinate, i.e. they has the same dimensionality and periodicity
+ * as the coordinate, i.e. they have the same dimensionality and periodicity
  * (if any). The number of points in the grid sets the resolution of
  * the collected data and its extent defines the sampling region of interest.
  *
@@ -125,7 +123,7 @@ class PointState;
  * local (or when a global update is issued). For this to work, the bias keeps a global "clock"
  * of the number of issued updates. Each point state also has its own local "clock" with the
  * counting the number of updates it has pulled through. When a point updates its state it
- * asserts that its local clock is synched with the global clock.
+ * asserts that its local clock is synchronized with the global clock.
  */
 class Bias
 {
@@ -179,14 +177,14 @@ class Bias
          * - update the free energy and bias if needed;
          * - reweight samples to extract the PMF.
          *
-         * \param[out]    biasForce   The bias force.
-         * \param[out] awhPotential   Bias potential.
-         * \param[out] potentialJump  Change in bias potential for this bias.
-         * \param[in] ms              Struct for multi-simulation communication.
-         * \param[in] t               Time.
-         * \param[in] step            Time step.
-         * \param[in] seed            Random seed.
-         * \param[in,out] fplog       Log file.
+         * \param[out]    biasForce      The bias force.
+         * \param[out]    awhPotential   Bias potential.
+         * \param[out]    potentialJump  Change in bias potential for this bias.
+         * \param[in]     ms             Struct for multi-simulation communication.
+         * \param[in]     t              Time.
+         * \param[in]     step           Time step.
+         * \param[in]     seed           Random seed.
+         * \param[in,out] fplog          Log file.
          */
         void calcForceAndUpdateBias(awh_dvec              biasForce,
                                     double               *awhPotential,
@@ -253,8 +251,8 @@ class Bias
         /*! \brief
          * Makes checks for the collected histograms and warns if issues are detected.
          *
-         * \param[in] t            Time.
-         * \param[in] step         Time step.
+         * \param[in]     t        Time.
+         * \param[in]     step     Time step.
          * \param[in,out] fplog    Output file for warnings.
          */
         void checkHistograms(double t, gmx_int64_t step, FILE *fplog);

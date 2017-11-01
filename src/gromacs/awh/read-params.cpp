@@ -537,7 +537,7 @@ static double get_pull_coord_period(const pull_params_t *pull_params,
     if (pcrd_params->eGeom == epullgDIRPBC)
     {
         /* For direction periodic, we need the pull vector to be one of the box vectors
-           (or more generally I guess it could be a integer combination of boxvectors).
+           (or more generally I guess it could be an integer combination of boxvectors).
            This boxvector should to be orthogonal to the (periodic) plane spanned by the other two box vectors.
            Here we assume that the pull vector is either x, y or z.
          * E.g. for pull vec = (1, 0, 0) the box vector tensor should look like:
@@ -611,13 +611,13 @@ static bool intervalIsInPeriodicInterval(double origin, double end, double perio
 }
 
 /*! \brief
- * Checks if a value is inside of an interval.
+ * Checks if a value is within an interval.
  *
  * \param[in] origin      Start value of interval.
  * \param[in] end         End value of interval.
  * \param[in] period      Period (or 0 if not periodic).
  * \param[in] value       Value to check.
- * \returns true if the value is inside of the interval.
+ * \returns true if the value is within the interval.
  */
 static bool valueIsInInterval(double origin, double end, double period, double value)
 {
@@ -707,8 +707,10 @@ void setStateDependentAwhParams(AwhParams *awhParams,
                                 const matrix box,  int ePBC,
                                 const t_grpopts *inputrecGroupOptions, warninp_t wi)
 {
-    /* The temperature is not really state depenendent but is not know when read_awhParams is called (in get ir).
-       It is known first after do_index has been called in grompp.cpp. */
+    /* The temperature is not really state depenendent but is not known
+     * when read_awhParams is called (in get ir).
+     * It is known first after do_index has been called in grompp.cpp.
+     */
     if (inputrecGroupOptions->ref_t == NULL ||
         inputrecGroupOptions->ref_t[0] <= 0)
     {

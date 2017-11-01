@@ -38,7 +38,7 @@
  * \brief
  * Declares the DimParams struct and AWH vector types.
  *
- * This class holds the physical information for the different dimension
+ * This class holds the physical information for a dimension
  * of the bias reaction-coordinate grid.
  *
  * \author Viveca Lindahl

@@ -98,7 +98,7 @@ class BiasState
          *
          * \param[in] awhBiasParams    The Bias parameters from inputrec.
          * \param[in] histSizeInitial  The initial histogram size.
-         * \param[in] dimParams        The dimension Parameters.
+         * \param[in] dimParams        The dimension parameters.
          * \param[in] grid             The grid.
          */
         BiasState(const AwhBiasParams          &awhBiasParams,
@@ -146,15 +146,15 @@ class BiasState
         /*! \brief
          * Convolves the PMF and sets the initial free energy to its convolution.
          *
-         * \param[in] dimParams  The bias dimensions parameters
-         * \param[in] grid       The grid.
-         * \param[in] params     The bias parameters.
-         * \param[in] ms         Struct for multi-simulation communication.
+         * \param[in] dimParams     The bias dimensions parameters
+         * \param[in] grid          The grid.
+         * \param[in] params        The bias parameters.
+         * \param[in] multiSimComm  Struct for multi-simulation communication.
          */
         void setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                          const Grid                    &grid,
                                          const BiasParams              &params,
-                                         const gmx_multisim_t          *ms);
+                                         const gmx_multisim_t          *multiSimComm);
 
         /*! \brief
          * Normalize the PMF histogram.
@@ -173,7 +173,7 @@ class BiasState
          * \param[in] params          The bias parameters.
          * \param[in] filename        Name of file to read PMF and target from.
          * \param[in] numBias         The number of biases.
-         * \param[in] ms              Struct for multi-simulation communication.
+         * \param[in] multiSimComm    Struct for multi-simulation communication.
          */
         void initGridPointState(const AwhBiasParams           &awhBiasParams,
                                 const std::vector<DimParams>  &dimParams,
@@ -181,7 +181,7 @@ class BiasState
                                 const BiasParams              &params,
                                 const std::string             &filename,
                                 int                            numBias,
-                                const gmx_multisim_t          *ms);
+                                const gmx_multisim_t          *multiSimComm);
 
         /*! \brief
          * Makes checks for the collected histograms and warns if issues are detected.
@@ -204,10 +204,10 @@ class BiasState
          * The umbrella potential is an harmonic potential given by 0.5k(coord value - point value)^2. This
          * value is also returned.
          *
-         * \param[in] dimParams    The bias dimensions parameters.
-         * \param[in] grid         The grid.
-         * \param[in] point        Point for umbrella center.
-         * \param[in,out] force    Force vector to set.
+         * \param[in]     dimParams  The bias dimensions parameters.
+         * \param[in]     grid       The grid.
+         * \param[in]     point      Point for umbrella center.
+         * \param[in,out] force      Force vector to set.
          * Returns the umbrella potential.
          */
         double calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
@@ -221,10 +221,10 @@ class BiasState
          * The convolved force is the weighted sum of forces from umbrellas
          * located at each point in the grid.
          *
-         * \param[in] dimParams           The bias dimensions parameters.
-         * \param[in] grid                The grid.
-         * \param[in] probWeightNeighbor  Probability weights of the neighbors.
-         * \param[in,out] force           Bias force vector to set.
+         * \param[in]     dimParams           The bias dimensions parameters.
+         * \param[in]     grid                The grid.
+         * \param[in]     probWeightNeighbor  Probability weights of the neighbors.
+         * \param[in,out] force               Bias force vector to set.
          */
         void calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                 const Grid                   &grid,
@@ -301,10 +301,10 @@ class BiasState
          * This function also takes care resetting the histogram used for covering checks
          * and for exiting the initial stage.
          *
-         * \param[in] params            The bias parameters.
-         * \param[in] t                 Time.
-         * \param[in] detectedCovering  True if we detected that the sampling interval has been sufficiently covered.
-         * \param[in,out] fplog         Log file.
+         * \param[in]     params            The bias parameters.
+         * \param[in]     t                 Time.
+         * \param[in]     detectedCovering  True if we detected that the sampling interval has been sufficiently covered.
+         * \param[in,out] fplog             Log file.
          * \returns the new histogram size.
          */
         double newHistSizeInitialStage(const BiasParams &params,
@@ -324,26 +324,26 @@ class BiasState
          * \note The covering criterion for multiple dimensions could improved, e.g.
          * by using a path finding algorithm.
          *
-         * \param[in] params     The bias parameters.
-         * \param[in] dimParams  Bias dimension parameters.
-         * \param[in] grid       The grid.
-         * \param[in] ms         Struct for multi-simulation communication.
+         * \param[in] params        The bias parameters.
+         * \param[in] dimParams     Bias dimension parameters.
+         * \param[in] grid          The grid.
+         * \param[in] multiSimComm  Struct for multi-simulation communication.
          * \returns true if covered.
          */
         bool isCovered(const BiasParams             &params,
                        const std::vector<DimParams> &dimParams,
                        const Grid                   &grid,
-                       const gmx_multisim_t         *ms) const;
+                       const gmx_multisim_t         *multiSimComm) const;
 
         /*! \brief
          * Return the new reference weight histogram size for the current update.
          *
          * This function also takes care of checking for covering in the initial stage.
          *
-         * \param[in] params     The bias parameters.
-         * \param[in] t          Time.
-         * \param[in] covered    True if the sampling interval has been covered enough.
-         * \param[in,out] fplog  Log file.
+         * \param[in]     params   The bias parameters.
+         * \param[in]     t        Time.
+         * \param[in]     covered  True if the sampling interval has been covered enough.
+         * \param[in,out] fplog    Log file.
          * \returns the new histogram size.
          */
         double newHistSize(const BiasParams &params,
@@ -361,7 +361,9 @@ class BiasState
          * \param[in] dim         The dimension.
          * \param[in] coordValue  The coordinate value.
          */
-        inline void setCoordValue(const Grid &grid, int dim, double coordValue)
+        inline void setCoordValue(const Grid &grid,
+                                  int         dim,
+                                  double      coordValue)
         {
             coordinateState_.setCoordValue(grid, dim, coordValue);
         };
@@ -371,7 +373,7 @@ class BiasState
          *
          * The objective of the update is to use collected samples (probability weights)
          * to improve the free energy estimate. For sake of efficiency, the update is
-         * local whenever possible meaning that only points that have actually been sampled
+         * local whenever possible, meaning that only points that have actually been sampled
          * are accessed and updated here. For certain AWH settings or at certain steps
          * however, global need to be performed. Besides the actual free energy update, this
          * function takes care of ensuring future convergence of the free energy. Convergence
@@ -475,11 +477,11 @@ class BiasState
         /* Covering values for each point on the grid */
         std::vector<double> weightsumCovering_; /**< Accumulated weights for covering checks */
 
-        HistogramSize       histogramSize_;     /**< GLobal histogram size related values. */
+        HistogramSize       histogramSize_;     /**< Global histogram size related values. */
 
         /* Track the part of the grid sampled since the last update. */
         awh_ivec  originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
-        awh_ivec  endUpdatelist_;     /**< The end of the rectangular that has been sampled since last update. */
+        awh_ivec  endUpdatelist_;     /**< The end of the rectangular region that has been sampled since last update. */
 };
 
 /* Here follow some utility functions used by multiple files in AWH */
@@ -513,14 +515,14 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
  * If there are sharing replicas however, histograms need to be summed
  * across multiple simulations. The output PMF is not normalized.
  *
- * \param[in] params      The bias parameters.
- * \param[in] points      The point state.
- * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
- * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
+ * \param[in]     params        The bias parameters.
+ * \param[in]     points        The point state.
+ * \param[in]     multiSimComm  Struct for multi-simulation communication, needed for bias sharing replicas.
+ * \param[in,out] pmf           Array returned will be of the same length as the AWH grid to store the PMF in.
  */
 void calculatePmf(const BiasParams              &params,
                   const std::vector<PointState> &points,
-                  const gmx_multisim_t          *ms,
+                  const gmx_multisim_t          *multiSimComm,
                   std::vector<float>            *pmf);
 
 /*! \brief

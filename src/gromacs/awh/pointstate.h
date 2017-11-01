@@ -36,7 +36,7 @@
 /*! \internal \file
  *
  * \brief
- * Declares and defined the PointState class.
+ * Declares and defines the PointState class.
  *
  * Since nearly all operations on PointState objects occur in loops over
  * (parts of) the grid of an AWH bias, all methods should be inlined.
@@ -282,7 +282,7 @@ class PointState
          * \param[in] params             The AWH bias parameters.
          * \param[in] numUpdates         The global number of updates.
          * \param[in] weighthistScaling  Scale factor for the reference weight histogram.
-         * \param[in] logPmfsumScaling      Scale factor for the reference PMF histogram.
+         * \param[in] logPmfsumScaling   Scale factor for the reference PMF histogram.
          * \returns true if at least one update was applied.
          */
         inline bool updateSkipped(const BiasParams &params,
