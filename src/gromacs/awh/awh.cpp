@@ -218,12 +218,12 @@ Awh::Awh(FILE              *fplog,
         std::vector<DimParams>  dimParams;
         for (int d = 0; d < awhBiasParams.ndim; d++)
         {
-            int                 pullCoordIndexDim = awhBiasParams.dimParams[d].pullCoordIndex;
-            const t_pull_coord &pullCoord         = ir.pull->coord[pullCoordIndexDim];
+            const AwhDimParams &awhDimParams      = awhBiasParams.dimParams[d];
+            const t_pull_coord &pullCoord         = ir.pull->coord[awhDimParams.pullCoordIndex];
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
-            dimParams.emplace_back(DimParams(conversionFactor, pullCoord.k, beta));
+            dimParams.emplace_back(DimParams(conversionFactor, awhDimParams.forceConstant, beta));
 
-            pullCoordIndex.push_back(pullCoordIndexDim);
+            pullCoordIndex.push_back(awhDimParams.pullCoordIndex);
         }
 
         /* Construct the bias, will be moved into biasCoupledToSystem */

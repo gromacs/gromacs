@@ -660,7 +660,12 @@ static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParam
     pr_indent(fp, indent);
     indent++;
     fprintf(fp,  "%s:\n", prefix);
+    PS("coord-type", EAWHCOORDTYPE(awhDimParams->eCoordType));
     PI("pull-coord", awhDimParams->pullCoordIndex + 1);
+    PR("start", awhDimParams->origin);
+    PR("end", awhDimParams->end);
+    PR("period", awhDimParams->period);
+    PR("force-constant", awhDimParams->forceConstant);
     PR("diffusion", awhDimParams->diffusion);
     PR("start", awhDimParams->origin);
     PR("end", awhDimParams->end);

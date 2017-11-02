@@ -680,10 +680,12 @@ static void do_awhBias(t_fileio *fio, gmx::AwhBiasParams *awhBiasParams, gmx_boo
     {
         gmx::AwhDimParams *dimParams = &awhBiasParams->dimParams[d];
 
+        gmx_fio_do_int(fio, dimParams->eCoordType);
+        gmx_fio_do_int(fio, dimParams->pullCoordIndex);
         gmx_fio_do_double(fio, dimParams->origin);
         gmx_fio_do_double(fio, dimParams->end);
-        gmx_fio_do_int(fio, dimParams->pullCoordIndex);
         gmx_fio_do_double(fio, dimParams->period);
+        gmx_fio_do_double(fio, dimParams->forceConstant);
         gmx_fio_do_double(fio, dimParams->diffusion);
         gmx_fio_do_double(fio, dimParams->coordValueInit);
         gmx_fio_do_double(fio, dimParams->coverDiameter);

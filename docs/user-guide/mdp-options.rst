@@ -2028,21 +2028,23 @@ AWH adaptive biasing
    the options for dimension number 1 is shown. Options for other dimension indices are
    obtained by replacing '1' by the dimension index.
 
+.. mdp:: awh1-dim1-coord-type
+
+   .. mdp-value:: pull
+
+      The type of coordinate for this dimension.
+      Currently AWH can only act on pull coordinates.
+
 .. mdp:: awh1-dim1-pull-coord
 
    (0)
-   Index of the pull coordinate defining this coordinate dimension. Note that the force
-   constant used for the AWH biasing is inherited from the this pull coordinate. *E.g.* if
-   :mdp:`awh1-dim1-pull-coord` = 1 then :mdp:`pull-coord1-k`  will be used.
+   Index of the pull coordinate defining this coordinate dimension.
 
-.. mdp:: awh1-dim1-diffusion
+.. mdp:: awh1-dim1-force-constant
 
-   (1e-5) \[nm^2/ps\]/\[rad^2/ps\]
-   Estimated diffusion constant for this coordinate dimension determining the initial
-   biasing rate. This needs only be a rough estimate and should not critically
-   affect the results unless it is set to something very low, leading to slow convergence,
-   or very high, forcing the system far from equilibrium. Not setting this value
-   explicitly generates a warning.
+   (0) \[kJ/mol/nm^2\]/\[kJ/mol/rad^2\]
+   Force constant for the (convolved) umbrella potential(s) along this
+   coordinate dimension.
 
 .. mdp:: awh1-dim1-start
 
@@ -2056,6 +2058,20 @@ AWH adaptive biasing
 
    (0.0) \[nm\]/\[rad\]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
+
+.. mdp:: awh1-dim1-period
+
+   (0.0) \[nm\]/\[rad\]
+   The period of this reaction coordinate, use 0 when the coordinate is not periodic.
+
+.. mdp:: awh1-dim1-diffusion
+
+   (1e-5) \[nm^2/ps\]/\[rad^2/ps\]
+   Estimated diffusion constant for this coordinate dimension determining the initial
+   biasing rate. This needs only be a rough estimate and should not critically
+   affect the results unless it is set to something very low, leading to slow convergence,
+   or very high, forcing the system far from equilibrium. Not setting this value
+   explicitly generates a warning.
 
 .. mdp:: awh1-dim1-cover-diameter
 

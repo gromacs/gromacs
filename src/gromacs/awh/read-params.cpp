@@ -73,6 +73,10 @@ const char *eawhpotential_names[eawhpotentialNR+1] = {
     "convolved", "umbrella", nullptr
 };
 
+const char *eawhcoordtype_names[eawhcoordtypeNR+1] = {
+    "pull", nullptr
+};
+
 /*! \brief
  * Read parameters of an AWH bias dimension.
  *
@@ -98,7 +102,14 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 
     if (bComment)
     {
-        CTYPE("The pull coordinate for each AWH coordinate dimension");
+        CTYPE("The type of coordinate to act on, currently only pull is supported");
+    }
+    sprintf(opt, "%s-coord-type", prefix);
+    EETYPE(opt, dimParams->eCoordType, eawhcoordtype_names);
+
+    if (bComment)
+    {
+        CTYPE("The pull coordinate for this dimension");
     }
     sprintf(opt, "%s-pull-coord", prefix);
     ITYPE(opt, icoord_ext, 0);
@@ -126,25 +137,8 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
     }
     if (pull_params->coord[icoord].rate != 0)
     {
-        gmx_fatal(FARGS, "Setting pull-coord%d-rate (%g) is incompatible with AWH biasing this coordinate",
-                  icoord_ext, pull_params->coord[icoord].rate);
-    }
-
-    if (bComment)
-    {
-        CTYPE("Estimated diffusion constant (nm^2/ps or rad^2/ps)");
-    }
-    sprintf(opt, "%s-diffusion", prefix);
-    RTYPE(opt, dimParams->diffusion, 0);
-
-    if (dimParams->diffusion <= 0)
-    {
-        const double diffusion_default = 1e-5;
-        sprintf(warningmsg, "%s not explicitly set by user."
-                " You can choose to use a default value (%g nm^2/ps or rad^2/ps) but this may very well be non-optimal for your system!",
-                opt, diffusion_default);
-        warning(wi, warningmsg);
-        dimParams->diffusion = diffusion_default;
+        sprintf(warningmsg, "Setting pull-coord%d-rate (%g) is incompatible with AWH biasing this coordinate", icoord_ext, pull_params->coord[icoord].rate);
+        warning_error(wi, warningmsg);
     }
 
     /* Grid params for each axis */
@@ -193,6 +187,34 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
             gmx_fatal(FARGS, "%s-start (%g) and %s-end (%g) are outside of the allowed range -180 to 180 deg for pull geometry %s. ",
                       prefix, dimParams->origin, prefix, dimParams->end, EPULLGEOM(epullgDIHEDRAL));
         }
+    }
+
+    if (bComment)
+    {
+        CTYPE("The force constant for this coordinate (kJ/mol/nm^2 or kJ/mol/rad^2)");
+    }
+    sprintf(opt, "%s-force-constant", prefix);
+    RTYPE(opt, dimParams->forceConstant, 0);
+    if (dimParams->forceConstant <= 0)
+    {
+        warning_error(wi, "The force AWH bias force constant should be > 0");
+    }
+
+    if (bComment)
+    {
+        CTYPE("Estimated diffusion constant (nm^2/ps or rad^2/ps)");
+    }
+    sprintf(opt, "%s-diffusion", prefix);
+    RTYPE(opt, dimParams->diffusion, 0);
+
+    if (dimParams->diffusion <= 0)
+    {
+        const double diffusion_default = 1e-5;
+        sprintf(warningmsg, "%s not explicitly set by user."
+                " You can choose to use a default value (%g nm^2/ps or rad^2/ps) but this may very well be non-optimal for your system!",
+                opt, diffusion_default);
+        warning(wi, warningmsg);
+        dimParams->diffusion = diffusion_default;
     }
 
     if (bComment)

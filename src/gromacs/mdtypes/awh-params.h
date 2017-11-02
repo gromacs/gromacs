@@ -83,16 +83,27 @@ extern const char *eawhpotential_names[eawhpotentialNR+1];
 //! Macro for AWH potential type string.
 #define EAWHPOTENTIAL(e)    enum_name(e, gmx::eawhpotentialNR, gmx::eawhpotential_names)
 
+//! AWH bias reaction coordinate type
+enum {
+    eawhcoordtypePULL, eawhcoordtypeNR
+};
+//! String for AWH bias reaction coordinate type.
+extern const char *eawhcoordtype_names[eawhcoordtypeNR+1];
+//! Macro for AWH bias reaction coordinate type.
+#define EAWHCOORDTYPE(e)    enum_name(e, gmx::eawhcoordtypeNR, gmx::eawhcoordtype_names)
+
 /*! \cond INTERNAL */
 
 //! Parameters for an AWH coordinate dimension.
 struct AwhDimParams
 {
+    int    eCoordType;       /**< The reaction coordinate type */
     int    pullCoordIndex;   /**< Index of the pull coordinate to bias. */
-    double period;           /**< The period of this dimension (= 0 if not periodic). */
-    double diffusion;        /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
     double origin;           /**< Start value of the interval. */
     double end;              /**< End value of the interval. */
+    double period;           /**< The period of this dimension (= 0 if not periodic). */
+    double forceConstant;    /**< The force constant */
+    double diffusion;        /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
     double coordValueInit;   /**< The initial coordinate value. */
     double coverDiameter;    /**< The diameter that needs to be sampled around a point before it is considered covered. */
 };
