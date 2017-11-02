@@ -60,6 +60,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/taskassignment/hardwareassign.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
@@ -382,6 +383,8 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
         checker.applyConstraint(inputrec->eI == eiLBFGS, "L-BFGS minimization");
         checker.applyConstraint(inputrec->coulombtype == eelEWALD, "Plain Ewald electrostatics");
         checker.applyConstraint(doMembed, "Membrane embedding");
+        bool useOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
+        checker.applyConstraint(useOrientationRestraints, "Orientation restraints");
         if (checker.mustUseOneRank())
         {
             std::string message = checker.getMessage();
