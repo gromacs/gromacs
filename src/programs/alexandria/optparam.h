@@ -245,14 +245,14 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0, nParam = 0, ncycle = 0;
+    int                              iter, j, nsum = 0, nParam = 0; // ncycle = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
     double                           deltaEval;
     double                           randProbability;
     double                           mcProbability;
-    double                           T1, T2;
+    //double                           T1, T2;
 
     FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
@@ -276,8 +276,8 @@ void Bayes<T>::simulate()
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-    T1        = (temperature_/3.5);
-    ncycle    = 10;
+    //T1        = (temperature_/3.5);
+    //ncycle    = 10;
     setBeta(temperature_);  
     for (iter = 0; iter < maxiter_; iter++)
     {
