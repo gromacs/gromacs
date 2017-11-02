@@ -106,6 +106,7 @@ void OptParam::setTemperature(real temperature)
 
 void OptParam::setBeta(real temp)
 {
-    beta_ = 1/(BOLTZ*temp);
+    //beta_ = 1/(BOLTZ*temp);
+    beta_ = 1/(temp);
 }
 }

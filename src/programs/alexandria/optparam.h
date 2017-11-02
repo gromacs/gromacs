@@ -245,14 +245,14 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0, nParam = 0;// ncycle = 0;
+    int                              iter, j, nsum = 0, nParam = 0, ncycle = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
     double                           deltaEval;
     double                           randProbability;
     double                           mcProbability;
-    //double                           T_half, Tnew;
+    double                           T1, T2;
 
     FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
@@ -276,8 +276,8 @@ void Bayes<T>::simulate()
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-    //T_half    = (0.5*temperature_);
-    //ncycle    = (maxiter_/2000);
+    T1        = (temperature_/3.5);
+    ncycle    = 10;
     setBeta(temperature_);  
     for (iter = 0; iter < maxiter_; iter++)
     {
@@ -303,7 +303,9 @@ void Bayes<T>::simulate()
             randProbability = uniform(gen);
             mcProbability   = exp(-beta_*deltaEval);
             if ((deltaEval < 0) || (mcProbability > randProbability))
-            {
+            {   
+                printf("Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
+                       j, storeParam, param_[j], beta_*deltaEval);
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
@@ -330,8 +332,8 @@ void Bayes<T>::simulate()
             }
             nsum++;
         }
-        //Tnew = T_half * ((exp(-iter/(0.2*(maxiter_+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter_+1))));
-        //setBeta(Tnew);
+        //T2 = T1 * ((exp(-iter/(0.3*(maxiter_+1)))) * (2.5 + cos((ncycle*M_PI*iter)/(maxiter_+1))));
+        //setBeta(T2);
     }
     if (nsum > 0)
     {

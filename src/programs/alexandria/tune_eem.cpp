@@ -641,7 +641,7 @@ void OptEEM::optRun(FILE                   *fp,
         chi2 = chi2_min = GMX_REAL_MAX;
         Bayes <double> TuneEEM(func, param_, lower_, upper_, &chi2);
         TuneEEM.Init(xvgconv, xvgepot, oenv, seed, stepsize, 
-                     maxiter, nprint,temperature, bBound);
+                     maxiter, nprint, temperature, bBound);
                      
         for (auto n = 0; n < nrun; n++)
         {
