@@ -139,7 +139,7 @@ int tMPI_Gather(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     }
     else
     {
-        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
+        if (!sendbuf && sendcount > 0) /* don't do pointer arithmetic on a NULL ptr */
         {
             return tMPI_Error(comm, TMPI_ERR_BUF);
         }
@@ -245,7 +245,7 @@ int tMPI_Gatherv(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     }
     else
     {
-        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
+        if (!sendbuf && sendcount > 0) /* don't do pointer arithmetic on a NULL ptr */
         {
             return tMPI_Error(comm, TMPI_ERR_BUF);
         }

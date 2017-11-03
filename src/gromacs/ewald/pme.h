@@ -76,11 +76,12 @@ enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
-/*! \brief Possible PME codepaths
+/*! \brief Possible PME codepaths on a rank.
  * \todo: make this enum class with gmx_pme_t C++ refactoring
  */
 enum PmeRunMode
 {
+    None,    //!< No PME task is done
     CPU,     //!< Whole PME computation is done on CPU
     GPU,     //!< Whole PME computation is done on GPU
     Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.

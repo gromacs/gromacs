@@ -140,6 +140,10 @@ class Mdrunner
         DomdecOptions                    domdecOptions;
         //! Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
         const char                      *nbpu_opt = nullptr;
+        //! Target long-range interactions for "cpu", "gpu", or "auto". Default is "auto".
+        const char                      *pme_opt = nullptr;
+        //! Target long-range interactions FFT/solve stages for "cpu", "gpu", or "auto". Default is "auto".
+        const char                      *pme_fft_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                              nstlist_cmdline = 0;
         //! Number of simulations in multi-simulation set.
