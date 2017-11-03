@@ -63,6 +63,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gpu_utils/devicecontext.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -84,6 +85,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -415,6 +417,21 @@ static TaskTarget findTaskTarget(const char *optionString)
 
     return returnValue;
 }
+
+/*! \brief Contains handles to all the GPU contexts on a rank.
+ *
+ * The use of shared_ptr ensures that we will clean up any context
+ * that we create, but not before every task and/or rank sharing
+ * it has finished with it.
+ *
+ * As the number of contexts permitted on a rank grows, or becomes
+ * thread-specific, this data structure will change.
+ */
+struct DeviceContexts
+{
+    //! Context for nonbonded work.
+    DeviceContextPtr nonbonded = std::make_shared<DeviceContext>();
+};
 
 int Mdrunner::mdrunner()
 {
@@ -1007,23 +1024,26 @@ int Mdrunner::mdrunner()
     check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
                                        cr, mdlog);
 
-    gmx_device_info_t *nonbondedDeviceInfo = nullptr;
-    int                nonbondedDeviceId   = -1;
+    DeviceContexts deviceContexts;
+
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        if (!gpuTaskAssignment.empty())
+        // This works because only one task of each type is currently permitted.
+        auto nbGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(),
+                                             hasTaskType<GpuTask::Nonbonded>);
+        if (nbGpuTaskMapping != gpuTaskAssignment.end())
         {
-            GMX_RELEASE_ASSERT(gpuTaskAssignment.size() == 1, "A valid GPU assignment can only have one task per rank");
-            GMX_RELEASE_ASSERT(gpuTaskAssignment[0].task_ == gmx::GpuTask::Nonbonded, "A valid GPU assignment can only include short-ranged tasks");
-            nonbondedDeviceId   = gpuTaskAssignment[0].deviceId_;
-            nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
-        }
-    }
+            auto nonbondedDeviceId   = nbGpuTaskMapping->deviceId_;
+            auto nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
+            deviceContexts.nonbonded = std::make_shared<DeviceContext>(mdlog, nonbondedDeviceInfo);
 
-    if (DOMAINDECOMP(cr))
-    {
-        /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
+            if (DOMAINDECOMP(cr))
+            {
+                /* When we share GPUs over ranks, we need to know this for the DLB */
+                dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
+            }
+
+        }
     }
 
     /* getting number of PP/PME threads
@@ -1067,7 +1087,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
-                      nonbondedDeviceInfo,
+                      deviceContexts.nonbonded->getDeviceInfo(),
                       FALSE,
                       pforce);
 
@@ -1294,7 +1314,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, nonbondedDeviceInfo);
+    free_gpu_resources(fr, cr, deviceContexts.nonbonded->getDeviceInfo());
 
     if (doMembed)
     {
