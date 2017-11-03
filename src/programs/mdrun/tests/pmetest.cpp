@@ -119,14 +119,12 @@ TEST_F(PmeTest, ReproducesEnergies)
 
     //TODO test all proper/combinations in more thorough way?
     std::map < std::string, std::vector < const char *>> runModes;
-    runModes["PmeOnCpu"] = {};
-    // TODO uncomment these and replace the above as functionality
-    // gets implemented.
-    //runModes["PmeOnCpu"] = {"-pme", "cpu"};
-    //runModes["PmeAuto"]  = {"-pme", "auto"};
+    runModes["PmeOnCpu"] = {"-pme", "cpu"};
+    runModes["PmeAuto"]  = {"-pme", "auto"};
+    // TODO uncomment this when functionality gets activated.
     //runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    //runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
-    //runModes["PmeOnGpuFftAuto"] = {"-pme", "gpu", "-pmefft", "auto"};
+    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
+    runModes["PmeOnGpuFftAuto"] = {"-pme", "gpu", "-pmefft", "auto"};
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
 
