@@ -78,6 +78,54 @@ class GridAxis;
 class PointState;
 
 /*! \internal
+ * \brief Helper class for Bias to track the state within one MD step.
+ *
+ * This object is used to ensure the correct calling order to methods in Bias.
+ * It is also used to keep track of potential energy quantities with a step.
+ */
+class BiasStepState
+{
+    public:
+        /*! \brief Constructor.
+         */
+        BiasStepState();
+
+        /*! \brief Starts a Bias update step.
+         *
+         * \param[in] step  The MD step number.
+         */
+        void startStep(gmx_int64_t step);
+
+        /*! \brief Returns the step number.
+         */
+        gmx_int64_t step() const;
+
+        /*! \brief Set the (new) potential energy.
+         *
+         * \param[in] potential  The new potential value.
+         */
+        void setPotential(double potential);
+
+        /*! \brief Add the bias potential and jump to the passed values.
+         *
+         * \param[in,out] potential       Pointer to potential to add to.
+         * \param[in,out] potential jump  Pointer to potential jump to add to.
+         */
+        void addPotential(double *potential,
+                          double *potentialJump) const;
+
+        /*! \brief Finishes a Bias update step.
+         */
+        void finishStep();
+
+    private:
+        gmx_int64_t step_;              /**< The current step, if active, -1 when not active. */
+        double      potential_;         /**< The computed potential energy. */
+        double      potentialJump_;     /**< The jump in potential energy. */
+        int         setPotentialCount_; /**< The number of time we set the potential during this step */
+};
+
+/*! \internal
  * \brief A bias acting on a multidimensional coordinate.
  *
  * At each step AWH should provide its biases with updated
@@ -151,49 +199,50 @@ class Bias
              const std::string              &biasInitFilename,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
-        /*! \brief Destructor */
-        ~Bias();
-
         /*! \brief
-         * Update the coordinate value of dimension \p dim.
+         * Optionally samples the coordinate and computes the force and potential.
          *
-         * Currently public because AWH calls it.
+         * This needs to be called at every MD step.
          *
-         * \param[in] dim         The dimension.
-         * \param[in] coordValue  The coordinate value.
+         * \param[in]     coordValue  The value of the current reaction coordinate(s).
+         * \param[in]     step        Time step.
+         * \param[in]     seed        Random seed.
+         * \param[out]    biasForce   The bias force.
          */
-        inline void setCoordValue(int dim, double coordValue)
-        {
-            GMX_RELEASE_ASSERT(dim >= 0 && dim < ndim(), "The dimension should be in range");
-
-            state_.setCoordValue(grid(), dim, coordValue);
-        };
+        void sampleCoordAndCalcForce(const awh_dvec  coordValue,
+                                     gmx_int64_t     step,
+                                     gmx_int64_t     seed,
+                                     awh_dvec        biasForce);
 
         /*! \brief
-         * Evolves the bias at every step.
+         * Updates the bias with the data collected over a number of samples.
          *
-         * At each step the bias step needs to:
-         * - set the bias force and potential;
-         * - update the free energy and bias if needed;
+         * This function will:
+         * - update the free energy and bias;
          * - reweight samples to extract the PMF.
          *
-         * \param[out]    biasForce      The bias force.
-         * \param[out]    awhPotential   Bias potential.
-         * \param[out]    potentialJump  Change in bias potential for this bias.
-         * \param[in]     ms             Struct for multi-simulation communication.
+         * \param[in]     multiSimComm   Struct for multi-simulation communication.
          * \param[in]     t              Time.
          * \param[in]     step           Time step.
          * \param[in]     seed           Random seed.
          * \param[in,out] fplog          Log file.
          */
-        void calcForceAndUpdateBias(awh_dvec              biasForce,
-                                    double               *awhPotential,
-                                    double               *potentialJump,
-                                    const gmx_multisim_t *ms,
-                                    double                t,
-                                    gmx_int64_t           step,
-                                    gmx_int64_t           seed,
-                                    FILE                 *fplog);
+        void updateBias(const gmx_multisim_t *multiSimComm,
+                        double                t,
+                        gmx_int64_t           step,
+                        FILE                 *fplog);
+
+        /*! \brief
+         * Add the computed potential and potential jump of this Bias.
+         *
+         * This should be called as last method on Bias during an MD step,
+         * but does not have to be called.
+         *
+         * \param[in,out] potential      Potential to add to.
+         * \param[in,out] potentialJump  Potential jump to add to.
+         */
+        void addPotential(double *potential,
+                          double *potentialJump);
 
         /*! \brief
          * Restore the bias state from history on the master rank and broadcast it.
@@ -273,6 +322,9 @@ class Bias
         std::vector<double>          tempWorkSpace_;     /**< Working vector of doubles. */
 
         int                          numWarningsIssued_; /**< The number of warning issued in the current run. */
+
+        /* Object to keep track of the Bias state within a single MD step. */
+        BiasStepState                stepState_;         /**< The state variables of the bias within a single MD step */
 };
 
 }      // namespace gmx
