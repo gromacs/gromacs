@@ -114,7 +114,6 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * the patterns here are the same as elsewhere in this header.
  *
  *  param[in]    mdlog        log file to write to
- *  param[in]    rank         MPI rank of this process (for error output)
  * \param[inout] deviceInfo   device info of the GPU to initialize
  *
  * Issues a fatal error for any critical errors that occur during
@@ -122,7 +121,6 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  */
 GPU_FUNC_QUALIFIER
 void init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
-              int GPU_FUNC_ARGUMENT(rank),
               gmx_device_info_t *GPU_FUNC_ARGUMENT(deviceInfo)) GPU_FUNC_TERM
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
@@ -130,15 +128,14 @@ void init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
  * The context is explicitly destroyed and therefore all data uploaded to the GPU
  * is lost. This should only be called when none of this data is required anymore.
  *
+ * Calls gmx_warning upon errors.
+ *
  * \param[in]  deviceInfo   device info of the GPU to clean up for
- * \param[out] result_str   the message related to the error that occurred
- *                          during the initialization (if there was any).
  *
  * \returns                 true if no error occurs during the freeing.
  */
 CUDA_FUNC_QUALIFIER
-gmx_bool free_cuda_gpu(const gmx_device_info_t *CUDA_FUNC_ARGUMENT(deviceInfo),
-                       char *CUDA_FUNC_ARGUMENT(result_str)) CUDA_FUNC_TERM_WITH_RETURN(TRUE)
+void free_gpu(const gmx_device_info_t *CUDA_FUNC_ARGUMENT(deviceInfo)) CUDA_FUNC_TERM
 
 /*! \brief Return a pointer to the device info for \c deviceId
  *

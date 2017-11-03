@@ -216,7 +216,6 @@ void do_force_lowlevel(t_forcerec   *fr,
 /* Call all the force routines */
 
 void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr,
-                        const gmx_device_info_t     *deviceInfo);
+                        const t_commrec             *cr);
 
 #endif
