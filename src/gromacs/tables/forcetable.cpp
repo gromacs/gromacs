@@ -1394,9 +1394,10 @@ t_forcetable *make_tables(FILE *out,
 
     for (int k = 0; (k < etiNR); k++)
     {
-        /* Now fill data for tables that should not be read (perhaps
-           overwriting data that was read but should not be used) */
-        if (!ETAB_USER(tabsel[k]))
+        /* Now fill data for tables that have not been read
+         * or add the Ewald long-range correction for Ewald user tables.
+         */
+        if (tabsel[k] != etabUSER)
         {
             real scale = table->scale;
             if (ic->useBuckingham &&

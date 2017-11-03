@@ -371,7 +371,7 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
     if (a2)
     {
         cmp_int(fp, "atoms->nr", -1, a1->nr, a2->nr);
-        for (i = 0; (i < a1->nr); i++)
+        for (i = 0; i < std::min(a1->nr, a2->nr); i++)
         {
             cmp_atom(fp, i, &(a1->atom[i]), &(a2->atom[i]), ftol, abstol);
         }

@@ -118,7 +118,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
 {
     int             nwall;
     int             ntw[2], at, ntype, ngid, ggid, *egp_flags, *type;
-    real           *nbfp, lamfac, fac_d[2], fac_r[2], Cd, Cr, Vtot;
+    real           *nbfp, lamfac, fac_d[2], fac_r[2], Cd, Cr;
     real            wall_z[2], r, mr, r1, r2, r4, Vd, Vr, V = 0, Fd, Fr, F = 0, dvdlambda;
     dvec            xf_z;
     int             n0, nnn;
@@ -152,7 +152,6 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
     wall_z[0] = 0;
     wall_z[1] = box[ZZ][ZZ];
 
-    Vtot      = 0;
     dvdlambda = 0;
     clear_dvec(xf_z);
     for (int lam = 0; lam < (md->nPerturbed ? 2 : 1); lam++)
@@ -175,6 +174,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
             lamfac = 1;
             type   = md->typeA;
         }
+
+        real Vlambda = 0;
         for (int i = 0; i < md->homenr; i++)
         {
             for (int w = 0; w < std::min(nwall, 2); w++)
@@ -304,7 +305,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                         F = -F;
                     }
                     Vlj[ggid] += lamfac*V;
-                    Vtot      += V;
+                    Vlambda   += V;
                     f[i][ZZ]  += F;
                     /* Because of the single sum virial calculation we need
                      * to add  the full virial contribution of the walls.
@@ -323,7 +324,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
         }
         if (md->nPerturbed)
         {
-            dvdlambda += (lam == 0 ? -1 : 1)*Vtot;
+            dvdlambda += (lam == 0 ? -1 : 1)*Vlambda;
         }
 
         inc_nrnb(nrnb, eNR_WALLS, md->homenr);
