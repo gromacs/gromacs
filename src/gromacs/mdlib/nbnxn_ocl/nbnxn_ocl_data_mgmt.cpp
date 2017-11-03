@@ -1141,10 +1141,13 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
 //! This function is documented in the header file
 void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 {
-    int    kernel_count;
+    if (nb == NULL)
+    {
+        return;
+    }
 
     /* Free kernels */
-    kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
+    int kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
     free_kernels((cl_kernel*)nb->kernel_ener_noprune_ptr, kernel_count);
 
     kernel_count = sizeof(nb->kernel_ener_prune_ptr) / sizeof(nb->kernel_ener_prune_ptr[0][0]);

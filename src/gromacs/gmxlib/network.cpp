@@ -69,6 +69,13 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 
     cr->nnodes           = gmx_node_num();
     cr->nodeid           = gmx_node_rank();
+    // TODO This communicator should be always available. Currently we
+    // make it multiple times, and keep it only when relevant. But the
+    // cost of an extra communicator is negligible in single-node
+    // cases (both thread-MPI and real MPI) case, and we need it in
+    // all multi-node MPI cases with more than one PP rank per node,
+    // with and without GPUs. By always having it available, we also
+    // don't need to protect calls to mpi_comm_physicalnode, etc.
     if (PAR(cr) || MULTISIM(cr))
     {
         MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid, &cr->mpi_comm_physicalnode);

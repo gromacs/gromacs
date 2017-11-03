@@ -431,6 +431,8 @@ struct DeviceContexts
 {
     //! Context for nonbonded work.
     DeviceContextPtr nonbonded = std::make_shared<DeviceContext>();
+    //! Context for PME work.
+    DeviceContextPtr pme = std::make_shared<DeviceContext>();
 };
 
 int Mdrunner::mdrunner()
@@ -498,17 +500,11 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto             nonbondedTarget = findTaskTarget(nbpu_opt);
-    // TODO Connect these to actual mdrun arguments and some functionality
-    const char      *pme_opt     = "cpu";
-    auto             pmeTarget   = findTaskTarget(pme_opt);
-
+    auto             pmeTarget       = findTaskTarget(pme_opt);
     // TODO find a sensible home and behaviour for this
-    //const char      *pme_fft_opt = "auto";
+    GMX_UNUSED_VALUE(pme_fft_opt);
     //auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
-
-    const PmeRunMode pmeRunMode = PmeRunMode::CPU;
-    //TODO this is a placeholder as PME on GPU is not permitted yet
-    //TODO should there exist a PmeRunMode::None value for consistency?
+    PmeRunMode pmeRunMode = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -676,6 +672,8 @@ int Mdrunner::mdrunner()
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes);
+        // FIXME decide how to implement -pmefft support
+        pmeRunMode = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -757,6 +755,17 @@ int Mdrunner::mdrunner()
          * scaling is bad, but it's difficult to automate the setup.
          */
         domdecOptions.numPmeRanks = 0;
+    }
+    if (useGpuForPme)
+    {
+        if (domdecOptions.numPmeRanks < 0)
+        {
+            domdecOptions.numPmeRanks = 0; // separate GPU ranks not supported
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
+        }
     }
 
 #ifdef GMX_FAHCORE
@@ -1045,6 +1054,16 @@ int Mdrunner::mdrunner()
 
         }
     }
+    if ((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) && thisRankHasDuty(cr, DUTY_PME))
+    {
+        // This works because only one task of each type is currently permitted.
+        auto pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
+        if (pmeGpuTaskMapping != gpuTaskAssignment.end())
+        {
+            auto pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
+            deviceContexts.pme = std::make_shared<DeviceContext>(mdlog, pmeDeviceInfo);
+        }
+    }
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
@@ -1197,15 +1216,21 @@ int Mdrunner::mdrunner()
 
         if (thisRankHasDuty(cr, DUTY_PME))
         {
+            auto pmeDeviceInfo = deviceContexts.pme->getDeviceInfo();
             try
             {
-                gmx_device_info_t *pmeGpuInfo = nullptr;
+                if (pmeDeviceInfo != nullptr && pmeDeviceInfo != deviceContexts.pme->getDeviceInfo())
+                {
+                    GMX_THROW(NotImplementedError
+                                  ("PME on a GPU can run only on the same GPU as nonbonded, because "
+                                   "context switching is not yet supported."));
+                }
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
                                        mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
-                                       pmeRunMode, nullptr, pmeGpuInfo, mdlog);
+                                       pmeRunMode, nullptr, pmeDeviceInfo, mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
