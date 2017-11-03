@@ -156,22 +156,21 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 
     if (rank_local == 0 || isOpenclPpRank)
     {
-        char detection_error[STRLEN] = "", sbuf[STRLEN];
-
-        if (detect_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
+        auto detectionResult = detect_gpus(&hwinfo_g->gpu_info);
+        if (!detectionResult.succeeded)
         {
-            if (detection_error[0] != '\0')
+            std::string errorMessageWrap;
+            if (!detectionResult.errorMessage.empty())
             {
-                sprintf(sbuf, ":\n      %s\n", detection_error);
+                errorMessageWrap = ":\n      " + detectionResult.errorMessage + "\n";
             }
             else
             {
-                sprintf(sbuf, ".");
+                errorMessageWrap = " (no message was provided).\n";
             }
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "NOTE: Error occurred during GPU detection%s"
-                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
-                    sbuf);
+            GMX_LOG(mdlog.warning).asParagraph().appendText(
+                    "NOTE: Error occurred during GPU detection" + errorMessageWrap +
+                    "      Can not use GPU acceleration, will fall back to CPU kernels.");
         }
     }
 
