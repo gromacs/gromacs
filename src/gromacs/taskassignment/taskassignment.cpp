@@ -177,6 +177,23 @@ size_t countGpuTasksOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode)
     return numGpuTasksOnThisNode;
 }
 
+//! Finds whether there is any task of \c queryTask in the tasks on the ranks of this node.
+bool hasAnyTaskOfTypeOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode,
+                                const GpuTask          queryTask)
+{
+    for (const auto &gpuTasksOnRank : gpuTasksOnRanksOfThisNode)
+    {
+        for (const auto &gpuTask : gpuTasksOnRank)
+        {
+            if (queryTask == gpuTask)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 }   // namespace
 
 GpuTaskAssignments::value_type
@@ -217,7 +234,18 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         std::vector<int>    generatedGpuIds;
         if (userGpuTaskAssignment.empty())
         {
-            generatedGpuIds         = makeGpuIds(gpuIdsToUse, numGpuTasksOnThisNode);
+            ArrayRef<const int> compatibleGpusToUse = gpuIdsToUse;
+            if (hasAnyTaskOfTypeOnThisNode(gpuTasksOnRanksOfThisNode, GpuTask::Pme))
+            {
+                // PP and PME tasks must run on the same device, so
+                // restrict the assignment to the first device. If
+                // there aren't any, then that error is handled later.
+                if (!compatibleGpusToUse.empty())
+                {
+                    compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
+                }
+            }
+            generatedGpuIds = makeGpuIds(compatibleGpusToUse, numGpuTasksOnThisNode);
             gpuIdsForTaskAssignment = generatedGpuIds;
         }
         else
