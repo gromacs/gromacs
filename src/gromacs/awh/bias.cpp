@@ -72,6 +72,54 @@
 namespace gmx
 {
 
+BiasStepState::BiasStepState() :
+    step_(-1),
+    potential_(0),
+    potentialJump_(0),
+    setPotentialCount_(0)
+{
+}
+
+void BiasStepState::startStep(gmx_int64_t step)
+{
+    step_              = step;
+    potential_         = 0;
+    potentialJump_     = 0;
+    setPotentialCount_ = 0;
+};
+
+gmx_int64_t BiasStepState::step() const
+{
+    return step_;
+};
+
+void BiasStepState::setPotential(double potential)
+{
+    GMX_ASSERT(step_ >= 0, "setPotential should only be called during a Bias update");
+
+    if (setPotentialCount_ > 0)
+    {
+        potentialJump_ += potential - potential_;
+    }
+    potential_          = potential;
+    setPotentialCount_ += 1;
+}
+
+void BiasStepState::addPotential(double *potential,
+                                 double *potentialJump) const
+{
+    GMX_ASSERT(step_ >= 0, "addPotential should only be called during a Bias update");
+    GMX_ASSERT(setPotentialCount_ > 0, "Can only add the potential after we have calculated it");
+
+    *potential     += potential_;
+    *potentialJump += potentialJump_;
+}
+
+void BiasStepState::finishStep()
+{
+    step_ = -1;
+}
+
 void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
 {
     const int    maxNumWarningsInCheck = 1;   /* The maximum number of warnings to print per check */
@@ -98,15 +146,17 @@ void Bias::doSkippedUpdatesForAllPoints()
     state_.doSkippedUpdatesForAllPoints(params_);
 }
 
-void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
-                                  double *awhPotential, double *potentialJump,
-                                  const gmx_multisim_t *ms,
-                                  double t, gmx_int64_t step, gmx_int64_t seed,
-                                  FILE *fplog)
+void Bias::sampleCoordAndCalcForce(const awh_dvec coordValue,
+                                   gmx_int64_t    step,
+                                   gmx_int64_t    seed,
+                                   awh_dvec       biasForce)
 {
-    if (step < 0)
+    stepState_.startStep(step);
+
+    /* Set the new coordinate value(s) */
+    for (int dim = 0; dim < ndim(); dim++)
     {
-        gmx_fatal(FARGS, "The step number is negative which is not supported by the AWH code.");
+        state_.setCoordValue(grid(), dim, coordValue[dim]);
     }
 
     std::vector<double> *probWeightNeighbor = &tempWorkSpace_;
@@ -115,7 +165,7 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
      * the bias in the current neighborhood needs to be up-to-date
      * and the probablity weights need to be calculated.
      */
-    const bool sampleCoord   = doAtStep(params_.numStepsSampleCoord, step);
+    const bool sampleCoord = doAtStep(params_.numStepsSampleCoord, step);
     double     convolvedBias = 0;
     if (params_.convolveForce || sampleCoord)
     {
@@ -140,22 +190,22 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
      * For the convolved force it happens when the bias is updated,
      * for the umbrella when the umbrella is moved.
      */
-    double potential, newPotential;
     if (params_.convolveForce)
     {
         state_.calcConvolvedForce(dimParams_, grid(), *probWeightNeighbor,
                                   biasForce);
 
-        potential    = -convolvedBias*params_.invBeta;
-        newPotential = potential; /* Assume no jump */
+        /* No potential jump here, will come during free-energy update */
+        stepState_.setPotential(-convolvedBias*params_.invBeta);
     }
     else
     {
         /* Umbrella force */
         GMX_RELEASE_ASSERT(state_.points()[coordinateState.umbrellaGridpoint()].inTargetRegion(),
                            "AWH bias grid point for the umbrella reference value is outside of the target region.");
-        potential =
+        double potential =
             state_.calcUmbrellaForceAndPotential(dimParams_, grid(), coordinateState.umbrellaGridpoint(), biasForce);
+        stepState_.setPotential(potential);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -164,37 +214,52 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
          */
         if (sampleCoord)
         {
-            newPotential = state_.moveUmbrella(dimParams_, grid(), *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
-        }
-        else
-        {
-            newPotential = potential;
+            double newPotential =
+                state_.moveUmbrella(dimParams_, grid(), *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
+            stepState_.setPotential(newPotential);
         }
     }
+}
 
-    /* Update the free energy estimates and bias and other history dependent method parameters */
+void Bias::updateBias(const gmx_multisim_t *multiSimComm,
+                      double t, gmx_int64_t step,
+                      FILE *fplog)
+{
+    GMX_ASSERT(stepState_.step() == step, "updateBias should be called after sampleCoordAndCalcForce and before adding the potential"); 
+
     const int stepIntervalUpdateFreeEnergy = params_.numSamplesUpdateFreeEnergy*params_.numStepsSampleCoord;
-    if (step > 0 && doAtStep(stepIntervalUpdateFreeEnergy, step))
+    if (step == 0 || !doAtStep(stepIntervalUpdateFreeEnergy, step))
     {
-        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid(),
-                                                        params_,
-                                                        ms, t, step, fplog,
-                                                        &updateList_);
-
-        if (params_.convolveForce)
-        {
-            /* The update results in a potential jump, so we need the new convolved potential. */
-            newPotential = -calcConvolvedBias(dimParams_, grid(), state_.points(), coordinateState.coordValue())*params_.invBeta;
-        }
+        /* This is not a bias update step */
+        return;
     }
 
-    /* Return the new potential. */
-    *awhPotential  = potential;
-    /* Return the potential jump of this bias. */
-    *potentialJump = (newPotential - potential);
+    state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid(),
+                                                    params_,
+                                                    multiSimComm,
+                                                    t, step, fplog,
+                                                    &updateList_);
+
+    if (params_.convolveForce)
+    {
+        /* The update results in a potential jump, so we need the new convolved potential. */
+        double newPotential = -calcConvolvedBias(dimParams_, grid(), state_.points(), state_.coordinateState().coordValue())*params_.invBeta;
+        stepState_.setPotential(newPotential);
+    }
 
     /* Check the sampled histograms and potentially warn user if something is suspicious */
     checkHistograms(t, step, fplog);
+}
+
+void Bias::addPotential(double *potential,
+                        double *potentialJump)
+{
+    stepState_.addPotential(potential, potentialJump);
+
+    /* This should be the last method called during an MD step,
+     * so invalidate the step state.
+     */
+    stepState_.finishStep();
 }
 
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
@@ -233,7 +298,5 @@ Bias::Bias(const t_commrec                *cr,
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias, (cr != nullptr ? cr->ms : nullptr));
 }
-
-Bias::~Bias() = default;
 
 } // namespace gmx
