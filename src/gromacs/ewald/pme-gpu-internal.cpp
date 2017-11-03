@@ -282,11 +282,8 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
- * \param[in]     mdlog     The logger.
- * \param[in]     cr        The communication structure.
  */
-static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog,
-                         const t_commrec *cr)
+static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 {
     std::string errorString;
     bool        canRunOnGpu = pme_gpu_check_restrictions(pme, &errorString);
@@ -308,8 +305,6 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::
 
     pme_gpu_set_testing(pmeGPU, false);
 
-    // GPU initialization
-    init_gpu(mdlog, cr->nodeid, gpuInfo);
     pmeGPU->deviceInfo = gpuInfo;
 
     pme_gpu_init_internal(pmeGPU);
@@ -395,7 +390,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGPU, gmx::IVec *gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, const t_commrec *cr)
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 {
     if (!pme_gpu_active(pme))
     {
@@ -405,7 +400,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo, mdlog, cr);
+        pme_gpu_init(pme, gpuInfo);
     }
     else
     {
