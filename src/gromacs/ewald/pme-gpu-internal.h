@@ -54,7 +54,6 @@
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
-struct t_commrec;
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
 struct t_complex;
@@ -631,11 +630,9 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGPU, gmx::IVec *gridSize, gmx:
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
- * \param[in]     mdlog     The logger.
- * \param[in]     cr        The communication structure.
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, const t_commrec *cr);
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo);
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

@@ -55,6 +55,7 @@
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
@@ -482,8 +483,8 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 }
 
-void init_gpu(const gmx::MDLogger &mdlog, int rank,
-              gmx_device_info_t *deviceInfo)
+void init_gpu(const gmx::MDLogger &mdlog,
+              gmx_device_info_t   *deviceInfo)
 {
     cudaError_t stat;
     char        sbuf[STRLEN];
@@ -493,8 +494,7 @@ void init_gpu(const gmx::MDLogger &mdlog, int rank,
     stat = cudaSetDevice(deviceInfo->id);
     if (stat != cudaSuccess)
     {
-        snprintf(sbuf, STRLEN, "On rank %d failed to initialize GPU #%d",
-                 rank, deviceInfo->id);
+        snprintf(sbuf, STRLEN, "Failed to initialize GPU #%d", deviceInfo->id);
         CU_RET_ERR(stat, sbuf);
     }
 
@@ -509,13 +509,10 @@ void init_gpu(const gmx::MDLogger &mdlog, int rank,
     init_gpu_application_clocks(mdlog, deviceInfo);
 }
 
-gmx_bool free_cuda_gpu(const gmx_device_info_t *deviceInfo,
-                       char                    *result_str)
+void free_gpu(const gmx_device_info_t *deviceInfo)
 {
     cudaError_t  stat;
     gmx_bool     reset_gpu_application_clocks_status = true;
-
-    assert(result_str);
 
     if (debug)
     {
@@ -527,12 +524,17 @@ gmx_bool free_cuda_gpu(const gmx_device_info_t *deviceInfo,
 
     if (deviceInfo != nullptr)
     {
-        reset_gpu_application_clocks_status = reset_gpu_application_clocks(deviceInfo);
+        if (!reset_gpu_application_clocks(deviceInfo))
+        {
+            gmx_warning("Failed to reset GPU application clocks on GPU #%d", deviceInfo->id);
+        }
     }
 
     stat = cudaDeviceReset();
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
-    return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
+    if (stat != cudaSuccess)
+    {
+        gmx_warning("Failed to free GPU #%d: %s", deviceInfo->id, cudaGetErrorString(stat));
+    }
 }
 
 gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
