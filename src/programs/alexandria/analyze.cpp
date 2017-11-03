@@ -318,9 +318,9 @@ static void write_corr_xvg(FILE                             *fplog,
             }
         }
         fprintf(fp, "&\n");
-        if (debug)
+        if (nout)
         {
-            fprintf(debug, "There were %3d outliers for %s.\n", nout, q->lot().c_str());
+            printf("There are %3d outliers for %s. Check the analyze log file for details.\n", nout, q->lot().c_str());
         }
     }
     
