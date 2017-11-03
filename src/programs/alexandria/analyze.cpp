@@ -304,9 +304,9 @@ static void write_corr_xvg(FILE                             *fplog,
                     gmx_stats_add_point(lsq[i], exp_val, qm_val, 0, 0);
                     fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                     diff = fabs(qm_val-exp_val);                  
-                    if (debug && (((atoler > 0) && (diff >= atoler)) || ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
+                    if (((atoler > 0) && (diff >= atoler)) || (atoler == 0 && exp_val != 0 && (fabs(diff/exp_val) > rtoler)))
                     {
-                        fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
+                        fprintf(fplog, "OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
                                 mpi.getIupac().c_str(), exp_val, qm_val, qm_error, q->method().c_str());
                         nout++;
                     }
