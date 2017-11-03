@@ -232,11 +232,11 @@ TEST_P(BiasTest, ForcesBiasPmf)
         awh_dvec coordValue = { coord, 0, 0, 0 };
         awh_dvec biasForce;
         double   potential = 0;
-        bias.calcForceAndUpdateBias(coordValue,
-                                    biasForce, &potential, &potentialJump,
-                                    nullptr, step, step, seed_, nullptr);
+        bias.sampleCoordAndCalcForce(coordValue, step, seed_, biasForce);
 
         force.push_back(biasForce[0]);
+
+        bias.updateBias(nullptr, step, step, nullptr);
 
         step++;
     }
@@ -312,16 +312,13 @@ TEST(BiasTest, DetectsCovering)
     gmx_int64_t       step;
     for (step = 0; step <= 2*exitStepRef; step++)
     {
-        double   t     = step*mdTimeStep;
-        double   coord = midPoint + halfWidth*(0.5*std::sin(t) + 0.55*std::sin(1.5*t));
-
-        awh_dvec coordValue    = { coord, 0, 0, 0 };
+        double t     = step*mdTimeStep;
+        double coord = midPoint + halfWidth*(0.5*std::sin(t) + 0.55*std::sin(1.5*t));
+        awh_dvec coords = { coord, 0, 0, 0 };
         awh_dvec biasForce;
-        double   potential     = 0;
-        double   potentialJump = 0;
-        bias.calcForceAndUpdateBias(coordValue,
-                                    biasForce, &potential, &potentialJump,
-                                    nullptr, step, step, params.awhParams.seed, nullptr);
+        bias.sampleCoordAndCalcForce(coords, step, params.awhParams.seed, biasForce);
+
+        bias.updateBias(nullptr, t, step, nullptr);
 
         inInitialStage = bias.state().inInitialStage();
         if (!inInitialStage)
