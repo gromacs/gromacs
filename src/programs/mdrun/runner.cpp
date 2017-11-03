@@ -84,6 +84,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -1009,22 +1010,25 @@ int Mdrunner::mdrunner()
                                        cr, mdlog);
 
     gmx_device_info_t *nonbondedDeviceInfo = nullptr;
-    int                nonbondedDeviceId   = -1;
+
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        if (!gpuTaskAssignment.empty())
+        // This works because only one task of each type is currently permitted.
+        auto nbGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(),
+                                             hasTaskType<GpuTask::Nonbonded>);
+        if (nbGpuTaskMapping != gpuTaskAssignment.end())
         {
-            GMX_RELEASE_ASSERT(gpuTaskAssignment.size() == 1, "A valid GPU assignment can only have one task per rank");
-            GMX_RELEASE_ASSERT(gpuTaskAssignment[0].task_ == gmx::GpuTask::Nonbonded, "A valid GPU assignment can only include short-ranged tasks");
-            nonbondedDeviceId   = gpuTaskAssignment[0].deviceId_;
+            int nonbondedDeviceId = nbGpuTaskMapping->deviceId_;
             nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
-        }
-    }
+            init_gpu(mdlog, nonbondedDeviceInfo);
 
-    if (DOMAINDECOMP(cr))
-    {
-        /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
+            if (DOMAINDECOMP(cr))
+            {
+                /* When we share GPUs over ranks, we need to know this for the DLB */
+                dd_setup_dlb_resource_sharing(cr, nonbondedDeviceId);
+            }
+
+        }
     }
 
     /* getting number of PP/PME threads
@@ -1306,8 +1310,16 @@ int Mdrunner::mdrunner()
         pmedata = nullptr;
     }
 
-    /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, nonbondedDeviceInfo);
+    // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
+    // before we destroy the GPU context(s) in free_gpu_resources().
+    // Pinned buffers are associated with contexts in CUDA.
+    // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
+    mdAtoms.reset(nullptr);
+    globalState.reset(nullptr);
+  
+    /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
+    free_gpu_resources(fr, cr);
+    free_gpu(nonbondedDeviceInfo);
 
     if (doMembed)
     {
