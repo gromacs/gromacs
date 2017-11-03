@@ -52,7 +52,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -82,16 +81,17 @@ bool PmeTest::s_hasCompatibleCudaGpus = false;
 void PmeTest::SetUpTestCase()
 {
     gmx_gpu_info_t gpuInfo;
-    char           detection_error[STRLEN];
-    GMX_UNUSED_VALUE(detection_error); //TODO
     // It would be nicer to do this detection once and have mdrun
     // re-use it, but this is OK. Note that this also caters for when
     // there is no GPU support in the build.
-    if (GMX_GPU == GMX_GPU_CUDA &&
-        (detect_gpus(&gpuInfo, detection_error) >= 0) &&
-        gpuInfo.n_dev_compatible > 0)
+    if (GMX_GPU == GMX_GPU_CUDA)
     {
-        s_hasCompatibleCudaGpus = true;
+        auto detection_error = detect_gpus(&gpuInfo);
+        if (!detection_error && (gpuInfo.n_dev_compatible > 0))
+        {
+            s_hasCompatibleCudaGpus = true;
+        }
+        delete detection_error;
     }
     free_gpu_info(&gpuInfo);
 }
