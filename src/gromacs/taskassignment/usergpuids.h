@@ -52,6 +52,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
+
 struct gmx_gpu_info_t;
 
 namespace gmx
@@ -82,8 +84,8 @@ parseUserGpuIds(const std::string &gpuIdString);
  * length matches that of the number of GPU tasks required.
  */
 std::vector<int>
-makeGpuIds(const std::vector<int> &compatibleGpus,
-           size_t                  numGpuTasks);
+makeGpuIds(ArrayRef<const int> compatibleGpus,
+           size_t              numGpuTasks);
 
 /*! \brief Convert a container of GPU deviced IDs to a string that
  * can be used by gmx tune_pme as input to mdrun -gputasks.
