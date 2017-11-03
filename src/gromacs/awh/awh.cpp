@@ -141,7 +141,6 @@ Awh::Awh(FILE              *fplog,
         for (int d = 0; d < awhBiasParams.ndim; d++)
         {
             const AwhDimParams &awhDimParams      = awhBiasParams.dimParams[d];
-            GMX_RELEASE_ASSERT(awhDimParams.eCoordProvider == eawhcoordproviderPULL, "Currently only the pull code is supported as coordinate provider");
             const t_pull_coord &pullCoord         = ir.pull->coord[awhDimParams.coordIndex];
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
             dimParams.emplace_back(DimParams(conversionFactor, awhDimParams.forceConstant, beta));
@@ -196,13 +195,19 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
 
     wallcycle_start(wallcycle, ewcAWH);
 
+    if (step < 0)
+    {
+        gmx_fatal(FARGS, "The step number is negative which is not supported by the AWH code.");
+    }
+
     t_pbc  pbc;
     set_pbc(&pbc, ePBC, box);
 
     /* During the AWH update the potential can instantaneously jump due to either
        an bias update or moving the umbrella. The jumps are kept track of and
        subtracted from the potential in order to get a useful conserved energy quantity. */
-    double awhPotential = potentialOffset_;
+    double awhPotential     = potentialOffset_;
+    double awhPotentialJump = 0;
 
     for (auto &biasCTS : biasCoupledToSystem_)
     {
@@ -220,15 +225,15 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
          * setting the bias force and/or updating the AWH bias state.
          */
         awh_dvec biasForce;
-        double   biasPotential, biasPotentialJump;
-        biasCTS.bias.calcForceAndUpdateBias(coordValue, biasForce,
-                                            &biasPotential, &biasPotentialJump,
-                                            ms, t, step, seed_, fplog);
+        biasCTS.bias.sampleCoordAndCalcForce(coordValue, step, seed_, biasForce);
 
-        awhPotential += biasPotential;
+        const int stepIntervalUpdateFreeEnergy = biasCTS.bias.params().numSamplesUpdateFreeEnergy*biasCTS.bias.params().numStepsSampleCoord;
+        if (step > 0 && doAtStep(stepIntervalUpdateFreeEnergy, step))
+        {
+            biasCTS.bias.updateBias(ms, t, step, fplog);
+        }
 
-        /* Keep track of the total potential shift needed to remove the potential jumps. */
-        potentialOffset_ -= biasPotentialJump;
+        biasCTS.bias.addPotential(&awhPotential, &awhPotentialJump);
 
         /* Communicate the bias force to the pull struct.
          * The bias potential is returned at the end of this function,
@@ -241,6 +246,9 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                             forceWithVirial);
         }
     }
+
+    /* Keep track of the total potential shift needed to remove the potential jumps. */
+    potentialOffset_ -= awhPotentialJump;
 
     wallcycle_stop(wallcycle, ewcAWH);
 
