@@ -631,16 +631,15 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     }
 }
 
-
-int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+DetectionResult detect_gpus(gmx_gpu_info_t *gpu_info)
 {
-    int                i, ndev, checkres, retval;
+    int                i, ndev, checkres;
     cudaError_t        stat;
     cudaDeviceProp     prop;
     gmx_device_info_t *devs;
 
     assert(gpu_info);
-    assert(err_str);
+    DetectionResult result;
 
     gpu_info->n_dev_compatible = 0;
 
@@ -650,18 +649,18 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     stat = cudaGetDeviceCount(&ndev);
     if (stat != cudaSuccess)
     {
-        const char *s;
-
         /* cudaGetDeviceCount failed which means that there is something
          * wrong with the machine: driver-runtime mismatch, all GPUs being
          * busy in exclusive mode, or some other condition which should
          * result in us issuing a warning a falling back to CPUs. */
-        retval = -1;
-        s      = cudaGetErrorString(stat);
-        strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
+        const char  *s = cudaGetErrorString(stat);
+        GMX_RELEASE_ASSERT(s, "CUDA runtime should have returned the error description");
+        result.errorMessage = std::string(s);
+        result.succeeded    = false;
     }
     else
     {
+        result.numDevices = ndev;
         snew(devs, ndev);
         for (i = 0; i < ndev; i++)
         {
@@ -676,13 +675,12 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
                 gpu_info->n_dev_compatible++;
             }
         }
-        retval = 0;
     }
 
     gpu_info->n_dev   = ndev;
     gpu_info->gpu_dev = devs;
 
-    return retval;
+    return result;
 }
 
 std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)

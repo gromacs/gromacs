@@ -60,17 +60,16 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Helper macro for error handling */
-#define CALLOCLFUNC_LOGERROR(func, err_str, retval) { \
+#define CALLOCLFUNC_LOGERROR(func, detectionResult) { \
         cl_int opencl_ret = func; \
         if (CL_SUCCESS != opencl_ret) \
         { \
-            sprintf(err_str, "OpenCL error %d", opencl_ret); \
-            retval = -1; \
+            detectionResult.succeeded    = false; \
+            detectionResult.errorMessage = gmx::formatString("OpenCL error %d", opencl_ret); \
         } \
-        else{ \
-            retval = 0; } \
 }
 
 
@@ -162,14 +161,12 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 
 
 //! This function is documented in the header file
-int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+DetectionResult detect_gpus(gmx_gpu_info_t *gpu_info)
 {
-    int             retval;
     cl_uint         ocl_platform_count;
     cl_platform_id *ocl_platform_ids;
     cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
 
-    retval           = 0;
     ocl_platform_ids = NULL;
 
     if (getenv("GMX_OCL_FORCE_CPU") != NULL)
@@ -177,10 +174,12 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
 
+    DetectionResult result;
+
     while (1)
     {
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(0, NULL, &ocl_platform_count), err_str, retval)
-        if (0 != retval)
+        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(0, NULL, &ocl_platform_count), result)
+        if (!result.succeeded)
         {
             break;
         }
@@ -192,8 +191,8 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
         snew(ocl_platform_ids, ocl_platform_count);
 
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL), err_str, retval)
-        if (0 != retval)
+        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL), result)
+        if (!result.succeeded)
         {
             break;
         }
@@ -219,6 +218,7 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
             break;
         }
 
+        result.numDevices = gpu_info->n_dev;
         snew(gpu_info->gpu_dev, gpu_info->n_dev);
 
         {
@@ -328,7 +328,7 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
     sfree(ocl_platform_ids);
 
-    return retval;
+    return result;
 }
 
 //! This function is documented in the header file

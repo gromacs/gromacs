@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
@@ -67,21 +68,33 @@ enum class GpuApiCallBehavior
     Async
 };
 
+/*! \libinternal \brief
+ * Describing result of a device detection.
+ */
+struct DetectionResult
+{
+    //! Did the detection succeed, or not. Default value is true since it's overwritten on failures.
+    bool         succeeded = true;
+    //! Number of devices detected
+    unsigned int numDevices = 0;
+    //! Error message in case of failed detection
+    std::string  errorMessage;
+};
+
 /*! \brief Detect all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use. Also
  *  check for the compatibility of each and fill the gpu_info->gpu_dev array
  *  with the required information on each the device: ID, device properties,
  *  status.
+ *  \todo Consider moving compatible GPU enumeration into a separate function,
+ *  making \p gpu_info a const parameter.
  *
- *  \param[in] gpu_info    pointer to structure holding GPU information.
- *  \param[out] err_str    The error message of any GPU API error that caused
- *                         the detection to fail (if there was any). The memory
- *                         the pointer points to should be managed externally.
- *  \returns               non-zero if the detection encountered a failure, zero otherwise.
+ *  \param[in,out] gpu_info    Pointer to structure holding GPU information.
+ *  \returns                   The detection result described in an appropriate structure.
  */
 GPU_FUNC_QUALIFIER
-int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
+DetectionResult detect_gpus(gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM_WITH_RETURN(DetectionResult {})
 
 /*! \brief Return a container of the detected GPUs that are compatible.
  *
