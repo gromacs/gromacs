@@ -550,7 +550,7 @@ static int decompose_frag(FILE                             *fplog,
                 mp_copy.push_back(mp[uu]);
             }
         }
-        while(!ptypes_still_have_support(pd, mp_copy, ptypes, alexandria, (mindata*5)));
+        while(!ptypes_still_have_support(pd, mp_copy, ptypes, alexandria, (mindata*3)));
                
         matrix_multiply(debug, nusemol, ptypes.size(), a_copy, at_copy, ata);        
         if (check_matrix(ata, x_copy.data(), ptypes.size(), ptypes) &&
