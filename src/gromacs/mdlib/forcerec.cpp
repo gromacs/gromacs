@@ -2139,20 +2139,16 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
-/* TODO deviceInfo should be logically const, but currently
- * init_gpu modifies it to set up NVML support. This could
- * happen during the detection phase, and deviceInfo could
- * the become const. */
-static void init_nb_verlet(FILE                *fp,
-                           const gmx::MDLogger &mdlog,
-                           nonbonded_verlet_t **nb_verlet,
-                           gmx_bool             bFEP_NonBonded,
-                           const t_inputrec    *ir,
-                           const t_forcerec    *fr,
-                           const t_commrec     *cr,
-                           gmx_device_info_t   *deviceInfo,
-                           const gmx_mtop_t    *mtop,
-                           matrix               box)
+static void init_nb_verlet(FILE                    *fp,
+                           const gmx::MDLogger     &mdlog,
+                           nonbonded_verlet_t     **nb_verlet,
+                           gmx_bool                 bFEP_NonBonded,
+                           const t_inputrec        *ir,
+                           const t_forcerec        *fr,
+                           const t_commrec         *cr,
+                           const gmx_device_info_t *deviceInfo,
+                           const gmx_mtop_t        *mtop,
+                           matrix                   box)
 {
     nonbonded_verlet_t *nbv;
     char               *env;
@@ -2166,12 +2162,6 @@ static void init_nb_verlet(FILE                *fp,
     nbv->bUseGPU    = deviceInfo != nullptr;
 
     GMX_RELEASE_ASSERT(!(nbv->emulateGpu == EmulateGpuNonbonded::Yes && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
-
-    if (nbv->bUseGPU)
-    {
-        /* Use the assigned GPU. */
-        init_gpu(mdlog, cr->nodeid, deviceInfo);
-    }
 
     nbv->nbs             = nullptr;
     nbv->min_ci_balanced = 0;
@@ -2325,20 +2315,20 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE                *fp,
-                   const gmx::MDLogger &mdlog,
-                   t_forcerec          *fr,
-                   t_fcdata            *fcd,
-                   const t_inputrec    *ir,
-                   const gmx_mtop_t    *mtop,
-                   const t_commrec     *cr,
-                   matrix               box,
-                   const char          *tabfn,
-                   const char          *tabpfn,
-                   const t_filenm      *tabbfnm,
-                   gmx_device_info_t   *deviceInfo,
-                   gmx_bool             bNoSolvOpt,
-                   real                 print_force)
+void init_forcerec(FILE                    *fp,
+                   const gmx::MDLogger     &mdlog,
+                   t_forcerec              *fr,
+                   t_fcdata                *fcd,
+                   const t_inputrec        *ir,
+                   const gmx_mtop_t        *mtop,
+                   const t_commrec         *cr,
+                   matrix                   box,
+                   const char              *tabfn,
+                   const char              *tabpfn,
+                   const t_filenm          *tabbfnm,
+                   const gmx_device_info_t *deviceInfo,
+                   gmx_bool                 bNoSolvOpt,
+                   real                     print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
@@ -3152,56 +3142,5 @@ void init_forcerec(FILE                *fp,
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
-    }
-}
-
-/* Frees GPU memory and destroys the GPU context.
- *
- * Note that this function needs to be called even if GPUs are not used
- * in this run because the PME ranks have no knowledge of whether GPUs
- * are used or not, but all ranks need to enter the barrier below.
- */
-void free_gpu_resources(const t_forcerec        *fr,
-                        const t_commrec         *cr,
-                        const gmx_device_info_t *deviceInfo)
-{
-    gmx_bool bIsPPrankUsingGPU;
-    char     gpu_err_str[STRLEN];
-
-    bIsPPrankUsingGPU = thisRankHasDuty(cr, DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
-
-    if (bIsPPrankUsingGPU)
-    {
-        /* free nbnxn data in GPU memory */
-        nbnxn_gpu_free(fr->nbv->gpu_nbv);
-        /* stop the GPU profiler (only CUDA) */
-        stopGpuProfiler();
-    }
-
-    /* With tMPI we need to wait for all ranks to finish deallocation before
-     * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
-     * GPU and context.
-     *
-     * This is not a concern in OpenCL where we use one context per rank which
-     * is freed in nbnxn_gpu_free().
-     *
-     * Note: it is safe to not call the barrier on the ranks which do not use GPU,
-     * but it is easier and more futureproof to call it on the whole node.
-     */
-#if GMX_THREAD_MPI
-    if (PAR(cr) || MULTISIM(cr))
-    {
-        gmx_barrier_physical_node(cr);
-    }
-#endif  /* GMX_THREAD_MPI */
-
-    if (bIsPPrankUsingGPU)
-    {
-        /* uninitialize GPU (by destroying the context) */
-        if (!free_cuda_gpu(deviceInfo, gpu_err_str))
-        {
-            gmx_warning("On rank %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
-        }
     }
 }
