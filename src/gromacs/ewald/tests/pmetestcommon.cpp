@@ -52,6 +52,7 @@
 #include "gromacs/ewald/pme-solve.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -103,6 +104,10 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       )
 {
     const MDLogger dummyLogger;
+    if (gpuInfo)
+    {
+        init_gpu(dummyLogger, gpuInfo);
+    }
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
     t_commrec      dummyCommrec  = {0};
     gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
