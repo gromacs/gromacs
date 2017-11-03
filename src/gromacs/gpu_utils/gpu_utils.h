@@ -67,14 +67,12 @@ class MDLogger;
  *  with the required information on each the device: ID, device properties,
  *  status.
  *
- *  \param[in] gpu_info    pointer to structure holding GPU information.
- *  \param[out] err_str    The error message of any GPU API error that caused
- *                         the detection to fail (if there was any). The memory
- *                         the pointer points to should be managed externally.
- *  \returns               non-zero if the detection encountered a failure, zero otherwise.
+ *  \param[in] gpu_info    Pointer to structure holding GPU information.
+ *  \returns               The error message of any GPU API error if the detection encountered a failure, nullptr otherwise.
+ *                         The memory the pointer points to should be delete'd.
  */
 GPU_FUNC_QUALIFIER
-int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
+char *detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /*! \brief Return a container of the detected GPUs that are compatible.
  *

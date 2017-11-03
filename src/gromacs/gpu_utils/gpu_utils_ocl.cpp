@@ -62,15 +62,13 @@
 #include "gromacs/utility/smalloc.h"
 
 /*! \brief Helper macro for error handling */
-#define CALLOCLFUNC_LOGERROR(func, err_str, retval) { \
+#define CALLOCLFUNC_LOGERROR(func, err_str) { \
         cl_int opencl_ret = func; \
         if (CL_SUCCESS != opencl_ret) \
         { \
+            err_str = new char[30]; \
             sprintf(err_str, "OpenCL error %d", opencl_ret); \
-            retval = -1; \
         } \
-        else{ \
-            retval = 0; } \
 }
 
 
@@ -162,14 +160,12 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 
 
 //! This function is documented in the header file
-int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+char *detect_gpus(gmx_gpu_info_t *gpu_info)
 {
-    int             retval;
     cl_uint         ocl_platform_count;
     cl_platform_id *ocl_platform_ids;
     cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
 
-    retval           = 0;
     ocl_platform_ids = NULL;
 
     if (getenv("GMX_OCL_FORCE_CPU") != NULL)
@@ -177,10 +173,11 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
 
+    char *err_str = nullptr;
     while (1)
     {
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(0, NULL, &ocl_platform_count), err_str, retval)
-        if (0 != retval)
+        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(0, NULL, &ocl_platform_count), err_str)
+        if (err_str)
         {
             break;
         }
@@ -192,8 +189,8 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
         snew(ocl_platform_ids, ocl_platform_count);
 
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL), err_str, retval)
-        if (0 != retval)
+        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL), err_str)
+        if (err_str)
         {
             break;
         }
@@ -328,7 +325,7 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
     sfree(ocl_platform_ids);
 
-    return retval;
+    return err_str;
 }
 
 //! This function is documented in the header file
