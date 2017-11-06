@@ -521,36 +521,6 @@ void calculatePmf(const BiasParams              &params,
                   const gmx_multisim_t          *multiSimComm,
                   std::vector<float>            *pmf);
 
-/*! \brief
- * Query if something should be done at this step.
- *
- * \param[in] stepInterval   Step interval for doing something.
- * \param[in] step           Current step.
- * \returns true if something should be done at this step.
- */
-static inline bool doAtStep(int         stepInterval,
-                            gmx_int64_t step)
-{
-    GMX_ASSERT(stepInterval > 0, "All step intervals in AWH should be > 0");
-
-    return (step % stepInterval == 0);
-};
-
-/*! \brief
- * Returns if to do checks, only returns true at free-energy update steps.
- *
- * To avoid overhead due to expensive checks, we only do checks when we
- * have taken at least as many samples as we have points.
- *
- * \param[in] params      The AWH bias parameters.
- * \param[in] pointState  The state of the points.
- * \param[in] step        Time step.
- * \returns true at steps where checks should be performed.
- */
-bool isCheckStep(const BiasParams              &params,
-                 const std::vector<PointState> &pointState,
-                 gmx_int64_t                    step);
-
 //! Linewidth used for warning output
 static const int c_linewidth = 78;
 
