@@ -100,7 +100,7 @@ class BiasParams
          *
          * \returns true when we can skip updates.
          */
-        bool skipUpdates() const
+        inline bool skipUpdates() const
         {
             return (!disableUpdateSkips_ && localWeightScaling == 1);
         }
@@ -108,10 +108,54 @@ class BiasParams
         /*! \brief
          * Returns the the radius that needs to be sampled around a point before it is considered covered.
          */
-        const awh_ivec &coverRadius() const
+        inline const awh_ivec &coverRadius() const
         {
             return coverRadius_;
         }
+
+        /* \brief
+         * Return whether we should sample the coordinate.
+         *
+         * \param[in] step  The MD step number.
+         */
+        inline bool isSampleCoordStep(gmx_int64_t step) const
+        {
+            return step % numStepsSampleCoord_ == 0;
+        }
+
+        /* \brief
+         * Return whether we should update the free energy.
+         *
+         * \param[in] step  The MD step number.
+         */
+        inline bool isUpdateFreeEnergyStep(gmx_int64_t step) const
+        {
+            int stepIntervalUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
+            return (step > 0 && step % stepIntervalUpdateFreeEnergy == 0);
+        }
+
+        /* \brief
+         * Return whether we should update the target distribution.
+         *
+         * \param[in] step  The MD step number.
+         */
+        inline bool isUpdateTargetStep(gmx_int64_t step) const
+        {
+            return step % numStepsUpdateTarget_ == 0;
+        }
+
+        /*! \brief
+         * Returns if to do checks, only returns true at free-energy update steps.
+         *
+         * To avoid overhead due to expensive checks, we only do checks when we
+         * have taken at least as many samples as we have points.
+         *
+         * \param[in] numPointsInHistogram  The total number of points in the bias histogram.
+         * \param[in] step                  Time step.
+         * \returns true at steps where checks should be performed.
+         */
+        bool isCheckStep(std::size_t numPointsInHistogram,
+                         gmx_int64_t step) const;
 
         /*! \brief Constructor.
          *
@@ -136,24 +180,26 @@ class BiasParams
                    int                           biasIndex);
 
         /* Data members */
-        const double  invBeta;                    /**< 1/beta = kT */
-        const int     numStepsSampleCoord;        /**< Number of steps per coordinate value sample. */
-        const int     numSamplesUpdateFreeEnergy; /**< Number of samples per free energy update. */
-        const int     nstUpdateTarget;            /**< Number of steps per updating the target distribution. */
-        const int     eTarget;                    /**< Type of target distribution. */
-        const double  targetParam;                /**< Target distribution parameter (meaning depends on eTarget). */
-        const bool    idealWeighthistUpdate;      /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
-        const int     numSharedUpdate;            /**< The number of (multi-)simulations sharing the bias update */
-        const double  updateWeight;               /**< The probability weight accumulated for each update. */
-        const double  localWeightScaling;         /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
-        const double  histSizeInitial;            /**< Initial reference weight histogram size. */
+        const double  invBeta;                     /**< 1/beta = kT */
     private:
-        awh_ivec      coverRadius_;               /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
+        const int     numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+        const int     numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
+        const int     numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
     public:
-        const bool    convolveForce;              /**< True if we convolve the force, false means use MC between umbrellas. */
-        const int     biasIndex;                  /**< Index of the bias, used as a second random seed and for priting. */
+        const int     eTarget;                     /**< Type of target distribution. */
+        const double  targetParam;                 /**< Target distribution parameter (meaning depends on eTarget). */
+        const bool    idealWeighthistUpdate;       /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
+        const int     numSharedUpdate;             /**< The number of (multi-)simulations sharing the bias update */
+        const double  updateWeight;                /**< The probability weight accumulated for each update. */
+        const double  localWeightScaling;          /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
+        const double  histSizeInitial;             /**< Initial reference weight histogram size. */
     private:
-        const bool    disableUpdateSkips_;        /**< If true, we disallow update skips, even when the method supports it. */
+        awh_ivec      coverRadius_;                /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
+    public:
+        const bool    convolveForce;               /**< True if we convolve the force, false means use MC between umbrellas. */
+        const int     biasIndex;                   /**< Index of the bias, used as a second random seed and for priting. */
+    private:
+        const bool    disableUpdateSkips_;         /**< If true, we disallow update skips, even when the method supports it. */
 };
 
 }      // namespace gmx

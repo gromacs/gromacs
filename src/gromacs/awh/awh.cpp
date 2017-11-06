@@ -227,8 +227,7 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
         awh_dvec biasForce;
         biasCTS.bias.sampleCoordAndCalcForce(coordValue, step, seed_, biasForce);
 
-        const int stepIntervalUpdateFreeEnergy = biasCTS.bias.params().numSamplesUpdateFreeEnergy*biasCTS.bias.params().numStepsSampleCoord;
-        if (step > 0 && doAtStep(stepIntervalUpdateFreeEnergy, step))
+        if (biasCTS.bias.params().isUpdateFreeEnergyStep(step))
         {
             biasCTS.bias.updateBias(ms, t, step, fplog);
         }

@@ -126,7 +126,7 @@ void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
 
     if (fplog == nullptr || numWarningsIssued_ >= maxNumWarningsInRun || state_.inInitialStage() ||
-        (step == 0) || isCheckStep(params_, state_.points(), step))
+        (step == 0) || !params_.isCheckStep(state_.points().size(), step))
     {
         return;
     }
@@ -162,7 +162,7 @@ void Bias::sampleCoordAndCalcForce(const awh_dvec  coordValue,
      * the bias in the current neighborhood needs to be up-to-date
      * and the probablity weights need to be calculated.
      */
-    const bool sampleCoord = doAtStep(params_.numStepsSampleCoord, step);
+    const bool sampleCoord   = params_.isSampleCoordStep(step);
     double     convolvedBias = 0;
     if (params_.convolveForce || sampleCoord)
     {
@@ -224,8 +224,7 @@ void Bias::updateBias(const gmx_multisim_t *multiSimComm,
 {
     GMX_ASSERT(stepState_.step() == step, "updateBias should be called after sampleCoordAndCalcForce and before adding the potential"); 
 
-    const int stepIntervalUpdateFreeEnergy = params_.numSamplesUpdateFreeEnergy*params_.numStepsSampleCoord;
-    if (step == 0 || !doAtStep(stepIntervalUpdateFreeEnergy, step))
+    if (!params_.isUpdateFreeEnergyStep(step))
     {
         /* This is not a bias update step */
         return;

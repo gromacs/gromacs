@@ -955,13 +955,13 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* Update target distribution? */
     bool doUpdateTarget = (params.eTarget != eawhtargetCONSTANT &&
-                           doAtStep(params.nstUpdateTarget, step));
+                           params.isUpdateTargetStep(step));
 
     /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
     bool detectedCovering = false;
     if (inInitialStage())
     {
-        detectedCovering = (isCheckStep(params, points_, step) &&
+        detectedCovering = (params.isCheckStep(points_.size(), step) &&
                             isCovered(params, dimParams, grid, multiSimComm));
     }
 
@@ -1555,15 +1555,6 @@ BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
 
     /* Initialize the covering weights */
     weightsumCovering_.resize(grid.numPoints());
-}
-
-/* Returns if to do checks, only returns true at free-energy update steps. */
-bool isCheckStep(const BiasParams &params, const std::vector<PointState> &pointState, gmx_int64_t step)
-{
-    int numStepsUpdateFreeEnergy = params.numSamplesUpdateFreeEnergy*params.numStepsSampleCoord;
-    int numStepsCheck            = (1 + pointState.size()/params.numSamplesUpdateFreeEnergy)*numStepsUpdateFreeEnergy;
-
-    return step % numStepsCheck == 0;
 }
 
 } // namespace gmx
