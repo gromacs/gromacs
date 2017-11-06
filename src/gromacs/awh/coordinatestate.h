@@ -101,12 +101,10 @@ class CoordinateState
         /*! \brief Update the coordinate value with coordValue.
          *
          * \param[in] grid        The grid.
-         * \param[in] dim         The dimension to set.
          * \param[in] coordValue  The new coordinate value.
          */
-        void setCoordValue(const Grid &grid,
-                           int         dim,
-                           double      coordValue);
+        void setCoordValue(const Grid     &grid,
+                           const awh_dvec  coordValue);
 
         /*! \brief Restores the coordinate state from history.
          *

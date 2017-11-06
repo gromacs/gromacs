@@ -98,7 +98,8 @@ void Bias::doSkippedUpdatesForAllPoints()
     state_.doSkippedUpdatesForAllPoints(params_);
 }
 
-void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
+void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
+                                  awh_dvec biasForce,
                                   double *awhPotential, double *potentialJump,
                                   const gmx_multisim_t *ms,
                                   double t, gmx_int64_t step, gmx_int64_t seed,
@@ -108,6 +109,8 @@ void Bias::calcForceAndUpdateBias(awh_dvec biasForce,
     {
         gmx_fatal(FARGS, "The step number is negative which is not supported by the AWH code.");
     }
+
+    state_.setCoordValue(grid(), coordValue);
 
     std::vector<double> *probWeightNeighbor = &tempWorkSpace_;
 
@@ -233,7 +236,5 @@ Bias::Bias(const t_commrec                *cr,
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias, (cr != nullptr ? cr->ms : nullptr));
 }
-
-Bias::~Bias() = default;
 
 } // namespace gmx

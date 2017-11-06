@@ -96,11 +96,13 @@ CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
     umbrellaGridpoint_ = neighbor[n_sampled];
 }
 
-void CoordinateState::setCoordValue(const Grid &grid,
-                                    int         dim,
-                                    double      coordValue)
+void CoordinateState::setCoordValue(const Grid     &grid,
+                                    const awh_dvec  coordValue)
 {
-    coordValue_[dim] = coordValue;
+    for (int dim = 0; dim < grid.ndim(); dim++)
+    {
+        coordValue_[dim] = coordValue[dim];
+    }
 
     /* The grid point closest to the coordinate value defines the current
      * neighborhood of points. Besides at steps when global updates and/or

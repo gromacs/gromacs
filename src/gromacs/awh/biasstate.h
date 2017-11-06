@@ -353,19 +353,15 @@ class BiasState
 
     public:
         /*! \brief
-         * Update the coordinate value of dimension \p dim.
-         *
-         * Currently public because AWH calls it.
+         * Update the coordinate value.
          *
          * \param[in] grid        The grid.
-         * \param[in] dim         The dimension.
          * \param[in] coordValue  The coordinate value.
          */
-        inline void setCoordValue(const Grid &grid,
-                                  int         dim,
-                                  double      coordValue)
+        inline void setCoordValue(const Grid     &grid,
+                                  const awh_dvec  coordValue)
         {
-            coordinateState_.setCoordValue(grid, dim, coordValue);
+            coordinateState_.setCoordValue(grid, coordValue);
         };
 
         /*! \brief
