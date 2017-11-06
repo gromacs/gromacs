@@ -71,6 +71,8 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "bias.h"
+#include "grid.h"
+#include "pointstate.h"
 
 namespace gmx
 {
@@ -78,116 +80,35 @@ namespace gmx
 /*! \internal
  * \brief A bias and its coupling to the system.
  *
- * This class is used to separate the bias machinery in the Bias class,
+ * This struct is used to separate the bias machinery in the Bias class,
  * which should be independent from the reaction coordinate, from the
  * obtaining of the reaction coordinate values and passing the computed forces.
  * Currently the AWH method couples to the system by mapping each
  * AWH bias to a pull coordinate. This can easily be generalized here.
  */
-class BiasCoupledToSystem
+struct BiasCoupledToSystem
 {
-    public:
-        /*! \brief Couple a bias to a set of pull coordinates.
-         *
-         * This moves a constructed bias object into the returned object.
-         *
-         * \param[in] biasPtr         Unique pointer to an initialized bias.
-         * \param[in] pullCoordIndex  The pull coordinate indices.
-         */
-        BiasCoupledToSystem(std::unique_ptr<Bias>   biasPtr,
-                            const std::vector<int> &pullCoordIndex);
+    /*! \brief Constructor, couple a bias to a set of pull coordinates.
+     *
+     * \param[in] bias            The bias.
+     * \param[in] pullCoordIndex  The pull coordinate indices.
+     */
+    BiasCoupledToSystem(Bias                    bias,
+                        const std::vector<int> &pullCoordIndex);
 
-        /*! \brief Restore the bias state from the given history.
-         *
-         * \param[in] biasHistory  The history of the bias to restore, allowed to be nullptr only on non-master ranks.
-         * \param[in] cr           The communication record.
-         */
-        void restoreStateFromHistory(const AwhBiasHistory *biasHistory,
-                                     const t_commrec      *cr)
-        {
-            bias_->restoreStateFromHistory(biasHistory, cr);
-        };
+    Bias                   bias;           /**< The bias. */
+    const std::vector<int> pullCoordIndex; /**< The pull coordinates this bias acts on. */
 
-        /*! \brief Set the coordinate value(s) and evolves the bias, should be called at every MD step.
-         *
-         * \param[in]     coordValue     The current coordinate value(s) for the bias.
-         * \param[in]     ms             Struct for multi-simulation communication.
-         * \param[in]     t              Time.
-         * \param[in]     step           Time step.
-         * \param[in]     awhSeed        Random seed.
-         * \param[in,out] fplog          Log file.
-         * \param[out]    biasForce      The bias force.
-         * \param[out]    biasPotential  Bias potential.
-         * \param[out]    potentialJump  Change in bias potential for this bias.
-         */
-        void calcForceAndUpdateBias(const awh_dvec          coordValue,
-                                    const gmx_multisim_t   *ms,
-                                    double                  t,
-                                    gmx_int64_t             step,
-                                    gmx_int64_t             awhSeed,
-                                    FILE                   *fplog,
-                                    awh_dvec                biasForce,
-                                    double                 *biasPotential,
-                                    double                 *potentialJump);
-
-        /*! \brief Returns the bias.
-         */
-        const Bias &bias() const
-        {
-            return *bias_.get();
-        }
-
-        /*! \brief Returns the pull coordinate index of the bias dimension.
-         *
-         * \param[in] dim  The dimension.
-         */
-        int pullCoordIndex(int dim) const
-        {
-            return pullCoordIndex_[dim];
-        }
-
-    private:
-        std::unique_ptr<Bias>  bias_;           /**< The bias. */
-        const std::vector<int> pullCoordIndex_; /**< The pull coordinates this bias acts on. */
-
-        /* Here AWH can be extended to work on other coordinates than pull. */
+    /* Here AWH can be extended to work on other coordinates than pull. */
 };
 
-BiasCoupledToSystem::BiasCoupledToSystem(std::unique_ptr<Bias>   biasPtr,
+BiasCoupledToSystem::BiasCoupledToSystem(Bias                    bias,
                                          const std::vector<int> &pullCoordIndex) :
-    bias_(std::move(biasPtr)),
-    pullCoordIndex_(pullCoordIndex)
+    bias(std::move(bias)),
+    pullCoordIndex(pullCoordIndex)
 {
-    GMX_RELEASE_ASSERT(bias_ != nullptr, "We need a pointer to an initialized Bias");
-
     /* We already checked for this in grompp, but check again here. */
-    GMX_RELEASE_ASSERT(static_cast<size_t>(bias_->ndim()) == pullCoordIndex.size(), "The bias dimensionality should match the number of pull coordinates.");
-}
-
-void BiasCoupledToSystem::calcForceAndUpdateBias(const awh_dvec          coordValue,
-                                                 const gmx_multisim_t   *ms,
-                                                 double                  t,
-                                                 gmx_int64_t             step,
-                                                 gmx_int64_t             awhSeed,
-                                                 FILE                   *fplog,
-                                                 awh_dvec                biasForce,
-                                                 double                 *biasPotential,
-                                                 double                 *potentialJump)
-{
-    /* Update the AWH coordinate values with those of the corresponding
-     * pull coordinates.
-     */
-    for (int d = 0; d < bias_->ndim(); d++)
-    {
-        bias_->setCoordValue(d, coordValue[d]);
-    }
-
-    /* Perform an AWH biasing step: this means, at regular intervals,
-     * sampling observables based on the input pull coordinate value,
-     * setting the bias force and/or updating the AWH bias state.
-     */
-    bias_->calcForceAndUpdateBias(biasForce, biasPotential, potentialJump,
-                                  ms, t, step, awhSeed, fplog);
+    GMX_RELEASE_ASSERT(static_cast<size_t>(bias.ndim()) == pullCoordIndex.size(), "The bias dimensionality should match the number of pull coordinates.");
 }
 
 Awh::Awh(FILE              *fplog,
@@ -227,11 +148,8 @@ Awh::Awh(FILE              *fplog,
             pullCoordIndex.push_back(awhDimParams.coordIndex);
         }
 
-        /* Construct the bias, will be moved into biasCoupledToSystem */
-        std::unique_ptr<Bias> biasPtr =
-            std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename));
-
-        biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
+        biasCoupledToSystem_.emplace_back(Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, biasInitFilename),
+                                          pullCoordIndex);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
@@ -270,9 +188,9 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
          * pull coordinates.
          */
         awh_dvec coordValue = { 0, 0, 0, 0 };
-        for (int d = 0; d < biasCTS.bias().ndim(); d++)
+        for (int d = 0; d < biasCTS.bias.ndim(); d++)
         {
-            coordValue[d] = get_pull_coord_value(pull_work, biasCTS.pullCoordIndex(d), &pbc);
+            coordValue[d] = get_pull_coord_value(pull_work, biasCTS.pullCoordIndex[d], &pbc);
         }
 
         /* Perform an AWH biasing step: this means, at regular intervals,
@@ -281,8 +199,9 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
          */
         awh_dvec biasForce;
         double   biasPotential, biasPotentialJump;
-        biasCTS.calcForceAndUpdateBias(coordValue, ms, t, step, seed_, fplog,
-                                       biasForce, &biasPotential, &biasPotentialJump);
+        biasCTS.bias.calcForceAndUpdateBias(coordValue, biasForce,
+                                            &biasPotential, &biasPotentialJump,
+                                            ms, t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -293,9 +212,9 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
          * The bias potential is returned at the end of this function,
          * so that it can be added externally to the correct energy data block.
          */
-        for (int d = 0; d < biasCTS.bias().ndim(); d++)
+        for (int d = 0; d < biasCTS.bias.ndim(); d++)
         {
-            apply_external_pull_coord_force(pull_work, biasCTS.pullCoordIndex(d),
+            apply_external_pull_coord_force(pull_work, biasCTS.pullCoordIndex[d],
                                             biasForce[d], &mdatoms,
                                             forceWithVirial);
         }
@@ -315,7 +234,7 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        biasCoupledToSystem_[k].bias().state().initHistoryFromState(&awhHistory->bias[k]);
+        biasCoupledToSystem_[k].bias.state().initHistoryFromState(&awhHistory->bias[k]);
     }
 }
 
@@ -340,7 +259,7 @@ void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
 
     for (size_t k = 0; k < biasCoupledToSystem_.size(); k++)
     {
-        biasCoupledToSystem_[k].restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, cr);
+        biasCoupledToSystem_[k].bias.restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, cr);
     }
 }
 
@@ -353,7 +272,7 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        const Bias &bias = biasCoupledToSystem_[k].bias();
+        const Bias &bias = biasCoupledToSystem_[k].bias;
         bias.state().updateHistory(&awhHistory->bias[k], bias.grid());
     }
 }

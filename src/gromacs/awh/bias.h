@@ -151,9 +151,6 @@ class Bias
              const std::string              &biasInitFilename,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
-        /*! \brief Destructor */
-        ~Bias();
-
         /*! \brief
          * Update the coordinate value of dimension \p dim.
          *
@@ -177,6 +174,7 @@ class Bias
          * - update the free energy and bias if needed;
          * - reweight samples to extract the PMF.
          *
+         * \param[in]     coordValue     The current coordinate value(s).
          * \param[out]    biasForce      The bias force.
          * \param[out]    awhPotential   Bias potential.
          * \param[out]    potentialJump  Change in bias potential for this bias.
@@ -186,7 +184,8 @@ class Bias
          * \param[in]     seed           Random seed.
          * \param[in,out] fplog          Log file.
          */
-        void calcForceAndUpdateBias(awh_dvec              biasForce,
+        void calcForceAndUpdateBias(const awh_dvec        coordValue,
+                                    awh_dvec              biasForce,
                                     double               *awhPotential,
                                     double               *potentialJump,
                                     const gmx_multisim_t *ms,
