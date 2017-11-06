@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,28 +32,46 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_USE_OPENCL)
-    gmx_add_libgromacs_sources(
-        gpu_utils_ocl.cpp
-        hostallocator.cpp
-        ocl_compiler.cpp
-        ocl_caching.cpp
-        oclutils.cpp
+# Arrange to compile files with test infrastructure as normal C++, and
+# other files that sometimes have platform-specific symbols using the
+# required infrastructure to compile and link, without needing three
+# different files and strategies for the different GPU implementation
+# flavours.
+
+# Always compiled as plain C++
+file(GLOB SOURCES_FROM_CXX
+    hostallocator.cpp
+    )
+
+if(GMX_USE_CUDA)
+    # TODO Making a separate library is heavy handed, but nothing else
+    # seems to work. Also don't use a hyphen in its name, because nvcc
+    # can't cope with that.
+    cuda_add_library(libgpu_utilstest
+        devicetransfers.cu
         )
-elseif(GMX_USE_CUDA)
-    gmx_add_libgromacs_sources(
-        cudautils.cu
-        hostallocator.cu
-        gpu_utils.cu
-        pmalloc_cuda.cu
+elseif(GMX_USE_OPENCL)
+    # Do normal compilation of OpenCL files
+    list(APPEND SOURCES_FROM_CXX
+        devicetransfers_ocl.cpp
         )
 else()
-    gmx_add_libgromacs_sources(
-        gpu_utils.cpp
-        hostallocator.cpp
+    # Do normal compilation of files with null implementations
+    list(APPEND SOURCES_FROM_CXX
+        devicetransfers.cpp
         )
 endif()
 
-if (BUILD_TESTING)
-    add_subdirectory(tests)
+gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
+    # Infrastructure
+    gputest.cpp
+    # Tests of code
+    ${SOURCES_FROM_CXX}
+    )
+
+if(GMX_USE_CUDA)
+    target_link_libraries(gpu_utils-test libgpu_utilstest)
+endif()
+if(GMX_USE_OPENCL)
+    target_link_libraries(gpu_utils-test ${OPENCL_LIBRARIES})
 endif()
