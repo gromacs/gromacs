@@ -122,4 +122,11 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment)
     }
 }
 
+TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
+{
+    using value_type = typename TypeParam::value_type;
+    EXPECT_EQ(sizeof(std::vector<value_type>),
+              sizeof(std::vector<value_type, TypeParam>));
+}
+
 }
