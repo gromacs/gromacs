@@ -143,6 +143,8 @@ void pme_gpu_realloc_forces(const PmeGpu *pmeGPU)
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     cu_realloc_buffered((void **)&pmeGPU->kernelParams->atoms.d_forces, nullptr, sizeof(float),
                         &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc, newForcesSize, pmeGPU->archSpecific->pmeStream, true);
+    pmeGpu->staging->hostForces.reserve(pmeGPU->nAtomsAlloc);
+    pmeGpu->staging->hostForces.resize(pmeGPU->nAtoms);
 }
 
 void pme_gpu_free_forces(const PmeGpu *pmeGPU)
@@ -150,12 +152,12 @@ void pme_gpu_free_forces(const PmeGpu *pmeGPU)
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_forces, &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc);
 }
 
-void pme_gpu_copy_input_forces(const PmeGpu *pmeGPU, const float *h_forces)
+void pme_gpu_copy_input_forces(const PmeGpu *pmeGPU)
 {
     GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
-    cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_forces, const_cast<float *>(h_forces), forcesSize, pmeGPU->archSpecific->pmeStream);
+    cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_forces, const_cast<float *>(pmeGpu->hostForces.data()), forcesSize, pmeGPU->archSpecific->pmeStream);
 }
 
 void pme_gpu_copy_output_forces(const PmeGpu *pmeGPU, float *h_forces)
@@ -191,6 +193,7 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGPU, const rvec *h_coordina
     GMX_RELEASE_ASSERT(false, "Only single precision is supported");
     GMX_UNUSED_VALUE(h_coordinates);
 #else
+    // TODO pin me
     cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_coordinates, const_cast<rvec *>(h_coordinates),
                       pmeGPU->kernelParams->atoms.nAtoms * sizeof(rvec), pmeGPU->archSpecific->pmeStream);
 #endif

@@ -411,7 +411,6 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
 }
 
 void pme_gpu_gather(const PmeGpu          *pmeGpu,
-                    float                 *h_forces,
                     PmeForceOutputHandling forceTreatment,
                     const float           *h_grid
                     )
@@ -419,7 +418,7 @@ void pme_gpu_gather(const PmeGpu          *pmeGpu,
     /* Copying the input CPU forces for reduction */
     if (forceTreatment != PmeForceOutputHandling::Set)
     {
-        pme_gpu_copy_input_forces(pmeGpu, h_forces);
+        pme_gpu_copy_input_forces(pmeGpu);
     }
 
     cudaStream_t stream          = pmeGpu->archSpecific->pmeStream;
