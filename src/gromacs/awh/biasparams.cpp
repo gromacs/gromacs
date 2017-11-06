@@ -61,6 +61,24 @@
 namespace gmx
 {
 
+bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
+                             gmx_int64_t step) const
+{
+    int numStepsUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
+    int numStepsCheck            = (1 + numPointsInHistogram/numSamplesUpdateFreeEnergy_)*numStepsUpdateFreeEnergy;
+
+    if (step > 0 && step % numStepsCheck == 0)
+    {
+        GMX_ASSERT(isUpdateFreeEnergyStep(step), "We should only check at free-energy update steps");
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*! \brief Determines the interval for updating the target distribution.
  *
  * The interval value is based on the target distrbution type
@@ -74,7 +92,7 @@ namespace gmx
 static int calcTargetUpdateInterval(const AwhParams     &awhParams,
                                     const AwhBiasParams &awhBiasParams)
 {
-    int nstUpdateTarget = 0;
+    int numStepsUpdateTarget = 0;
     /* Set the target update frequency based on the target distrbution type
      * (this could be made a user-option but there is most likely no big need
      * for tweaking this for most users).
@@ -82,15 +100,15 @@ static int calcTargetUpdateInterval(const AwhParams     &awhParams,
     switch (awhBiasParams.eTarget)
     {
         case eawhtargetCONSTANT:
-            nstUpdateTarget = 0;
+            numStepsUpdateTarget = 0;
             break;
         case eawhtargetCUTOFF:
         case eawhtargetBOLTZMANN:
             /* Updating the target generally requires updating the whole grid so to keep the cost down
                we generally update the target less often than the free energy (unless the free energy
                update step is set to > 100 samples). */
-            nstUpdateTarget = std::max(100 % awhParams.numSamplesUpdateFreeEnergy,
-                                       awhParams.numSamplesUpdateFreeEnergy)*awhParams.nstSampleCoord;
+            numStepsUpdateTarget = std::max(100 % awhParams.numSamplesUpdateFreeEnergy,
+                                            awhParams.numSamplesUpdateFreeEnergy)*awhParams.nstSampleCoord;
             break;
         case eawhtargetLOCALBOLTZMANN:
             /* The target distribution is set equal to the reference histogram which is updated every free energy update.
@@ -99,13 +117,13 @@ static int calcTargetUpdateInterval(const AwhParams     &awhParams,
                target distribution. One could avoid the global update by making a local target update function (and
                postponing target updates for non-local points as for the free energy update). We avoid such additions
                for now and accept that this target type always does global updates. */
-            nstUpdateTarget = awhParams.numSamplesUpdateFreeEnergy*awhParams.nstSampleCoord;
+            numStepsUpdateTarget = awhParams.numSamplesUpdateFreeEnergy*awhParams.nstSampleCoord;
             break;
         default:
             gmx_incons("Unknown AWH target type");
     }
 
-    return nstUpdateTarget;
+    return numStepsUpdateTarget;
 }
 
 /*! \brief Returns the target parameter, depending on the target type.
@@ -216,17 +234,17 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
                        const std::vector<GridAxis>  &gridAxis,
                        int                           biasIndex) :
     invBeta(beta > 0 ? 1/beta : 0),
-    numStepsSampleCoord(awhParams.nstSampleCoord),
-    numSamplesUpdateFreeEnergy(awhParams.numSamplesUpdateFreeEnergy),
-    nstUpdateTarget(calcTargetUpdateInterval(awhParams, awhBiasParams)),
+    numStepsSampleCoord_(awhParams.nstSampleCoord),
+    numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),
+    numStepsUpdateTarget_(calcTargetUpdateInterval(awhParams, awhBiasParams)),
     eTarget(awhBiasParams.eTarget),
     targetParam(getTargetParameter(awhBiasParams)),
     idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, awhParams.shareBiasMultisim, cr)),
-    updateWeight(numSamplesUpdateFreeEnergy*numSharedUpdate),
+    updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
     // Estimate and initialize histSizeInitial, depends on the grid.
-    histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep)),
+    histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord_*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
