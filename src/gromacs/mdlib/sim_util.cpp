@@ -222,18 +222,6 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
-static void pme_gpu_reduce_outputs(ForceWithVirial           *forceWithVirial,
-                                   ArrayRef<const gmx::RVec>  pmeForces,
-                                   gmx_enerdata_t            *enerd,
-                                   const tensor               vir_Q,
-                                   real                       Vlr_q)
-{
-    GMX_ASSERT(forceWithVirial, "Invalid force pointer");
-    forceWithVirial->addVirialContribution(vir_Q);
-    enerd->term[F_COUL_RECIP] += Vlr_q;
-    sum_forces(as_rvec_array(forceWithVirial->force_.data()), pmeForces);
-}
-
 static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
@@ -826,15 +814,13 @@ static inline void launchPmeGpuSpread(gmx_pme_t      *pmedata,
  * This function only implements setting the output forces (no accumulation).
  *
  * \param[in]  pmedata        The PME structure
- * \param[out] pmeGpuForces   The array of where the output forces are copied
  * \param[in]  wcycle         The wallcycle structure
  */
 static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
-                                     ArrayRef<RVec>    pmeGpuForces,
                                      gmx_wallcycle_t   wcycle)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), PmeForceOutputHandling::Set);
+    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
 }
 
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
@@ -876,8 +862,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
-    // a comment for uncrustify
-    const ArrayRef<RVec> pmeGpuForces = *fr->forceBufferIntermediate;
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1072,7 +1056,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         // X copy/transform to allow overlap.
         // Note that this is advantageous for the case where NB and PME
         // tasks run on the same device, but may not be ideal otherwise.
-        launchPmeGpuFftAndGather(fr->pmedata, pmeGpuForces, wcycle);
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
     if (bUseGPU)
@@ -1097,7 +1081,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         // PME GPU - intermediate CPU work in mixed mode
         // TODO - move this below till after do_force_lowlevel() / special forces?
         //        (to allow overlap of spread/drid D2H with some CPU work)
-        launchPmeGpuFftAndGather(fr->pmedata, pmeGpuForces, wcycle);
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1414,12 +1398,13 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (useGpuPme)
     {
-        matrix vir_Q;
-        real   Vlr_q;
-        pme_gpu_wait_for_gpu(fr->pmedata, wcycle, vir_Q, &Vlr_q);
-
-        pme_gpu_reduce_outputs(&forceWithVirial, pmeGpuForces,
-                               enerd, vir_Q, Vlr_q);
+        gmx::ArrayRef<const gmx::RVec> forces;
+        matrix virial;
+        real   energy;
+        pme_gpu_wait_for_gpu(fr->pmedata, wcycle, &forces, virial, &energy);
+        forceWithVirial.addVirialContribution(virial);
+        enerd->term[F_COUL_RECIP] += energy;
+        sum_forces(as_rvec_array(forceWithVirial.force_.data()), forces);
     }
 
     if (bUseOrEmulGPU)

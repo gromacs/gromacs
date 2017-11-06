@@ -84,6 +84,7 @@ typedef struct t_mdatoms {
     real                  *invmass;
     //! Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
     rvec                  *invMassPerDim;
+    // TODO pin me
     //! Atomic charge in A state
     real                  *chargeA;
     //! Atomic charge in B state

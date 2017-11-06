@@ -128,7 +128,7 @@ static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(t_commrec *cr)
 
     pme_pp->mpi_comm_mysim = cr->mpi_comm_mysim;
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-    pme_pp->node      = get_pme_ddnodes(cr, rank);
+    pme_pp->node      = get_pme_ddranks(cr, rank);
     pme_pp->node_peer = pme_pp->node.back();
     pme_pp->nat.resize(pme_pp->node.size());
     pme_pp->req.resize(eCommType_NR*pme_pp->node.size());
@@ -610,8 +610,16 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
             pme_gpu_launch_spread(pme, as_rvec_array(pme_pp->x.data()), wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, as_rvec_array(pme_pp->f.data()), PmeForceOutputHandling::Set);
-            pme_gpu_wait_for_gpu(pme, wcycle, vir_q, &energy_q);
+            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
+            gmx::ArrayRef<const gmx::RVec> forces;
+            pme_gpu_wait_for_gpu(pme, wcycle, &forces, vir_q, &energy_q);
+            // TODO find a way to avoid this buffer copy
+            GMX_ASSERT(forces.size() == pme_pp->f.size(), "Size of force buffers did not match");
+            // TODO std::copy chokes on not finding value_type. Is there a better way?
+            for (size_t i = 0; i != forces.size(); ++i)
+            {
+                pme_pp->f[i] = forces[i];
+            }
         }
         else
         {

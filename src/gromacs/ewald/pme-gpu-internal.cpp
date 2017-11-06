@@ -77,6 +77,11 @@ static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *
     return kernelParamsPtr;
 }
 
+gmx::ArrayRef<const gmx::RVec> pme_gpu_get_forces(const PmeGpu *pmeGPU)
+{
+    return pmeGPU->staging.h_forces;
+}
+
 void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial)
 {
     for (int j = 0; j < c_virialAndEnergyCount; j++)
