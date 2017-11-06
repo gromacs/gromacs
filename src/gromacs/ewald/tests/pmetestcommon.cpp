@@ -388,7 +388,16 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             break;
 
         case CodePath::CUDA:
-            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), inputTreatment, reinterpret_cast<float *>(fftgrid));
+            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float *>(fftgrid));
+            {
+                // Variable initialization needs a non-switch scope
+                auto gatheredForces = pme_gpu_get_forces(pme->gpu);
+                GMX_ASSERT(forces.size() == gatheredForces.size(), "Size of force buffers did not match");
+                for (size_t i = 0; i != forces.size(); ++i)
+                {
+                    forces[i] = gatheredForces[i];
+                }
+            }
             break;
 
         default:

@@ -59,6 +59,7 @@
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -253,6 +254,9 @@ struct PmeGpuSettings
  */
 struct PmeGpuStaging
 {
+    //! Host-side force buffer
+    std::vector < gmx::RVec, gmx::HostAllocator < gmx::RVec>> h_forces;
+
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
     float  *h_virialAndEnergy;
     /*! \brief B-spline values intermediate host-side buffer. */
