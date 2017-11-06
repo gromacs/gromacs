@@ -48,6 +48,7 @@
 
 #include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
+#include "gromacs/utility/arrayref.h"
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing PmeGpu members
 
@@ -173,7 +174,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_bspline_values(const PmeGpu *CUDA_FUNC_ARG
  *
  * \param[in] pmeGPU             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_forces(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_realloc_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Frees the GPU buffer for the PME forces.
@@ -187,19 +188,15 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_forces(const PmeGpu *CUDA_FUNC_ARGUMENT(pm
  * To be called e.g. after the bonded calculations.
  *
  * \param[in] pmeGPU             The PME GPU structure.
- * \param[in] h_forces           The input forces rvec buffer.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU),
-                                                   const float     *CUDA_FUNC_ARGUMENT(h_forces)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Copies the forces from the GPU to the CPU buffer. To be called after the gathering stage.
  *
  * \param[in] pmeGPU             The PME GPU structure.
- * \param[out] h_forces          The output forces rvec buffer.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU),
-                                                    float           *CUDA_FUNC_ARGUMENT(h_forces)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
@@ -473,13 +470,11 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGp
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
- * \param[in,out] h_forces         The host buffer with input and output forces.
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_gather(const PmeGpu          *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                        float                 *CUDA_FUNC_ARGUMENT(h_forces),
+CUDA_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *CUDA_FUNC_ARGUMENT(pmeGpu),
                                         PmeForceOutputHandling CUDA_FUNC_ARGUMENT(forceTreatment),
                                         const float           *CUDA_FUNC_ARGUMENT(h_grid)
                                         ) CUDA_FUNC_TERM
@@ -568,6 +563,14 @@ gmx_inline bool pme_gpu_is_testing(const PmeGpu *pmeGPU)
 }
 
 /* A block of C++ functions that live in pme-gpu-internal.cpp */
+
+/*! \libinternal \brief
+ * Returns the GPU gathering staging forces buffer.
+ *
+ * \param[in] pmeGPU             The PME GPU structure.
+ * \returns                      The input/output forces.
+ */
+gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGPU);
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.
