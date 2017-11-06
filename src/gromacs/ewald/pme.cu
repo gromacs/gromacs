@@ -137,12 +137,14 @@ void pme_gpu_free_bspline_values(const PmeGpu *pmeGPU)
                      &pmeGPU->archSpecific->splineValuesSizeAlloc);
 }
 
-void pme_gpu_realloc_forces(const PmeGpu *pmeGPU)
+void pme_gpu_realloc_forces(PmeGpu *pmeGPU)
 {
     const size_t newForcesSize = pmeGPU->nAtomsAlloc * DIM;
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     cu_realloc_buffered((void **)&pmeGPU->kernelParams->atoms.d_forces, nullptr, sizeof(float),
                         &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc, newForcesSize, pmeGPU->archSpecific->pmeStream, true);
+    pmeGPU->staging.h_forces.reserve(pmeGPU->nAtomsAlloc);
+    pmeGPU->staging.h_forces.resize(pmeGPU->kernelParams->atoms.nAtoms);
 }
 
 void pme_gpu_free_forces(const PmeGpu *pmeGPU)
@@ -150,20 +152,18 @@ void pme_gpu_free_forces(const PmeGpu *pmeGPU)
     cu_free_buffered(pmeGPU->kernelParams->atoms.d_forces, &pmeGPU->archSpecific->forcesSize, &pmeGPU->archSpecific->forcesSizeAlloc);
 }
 
-void pme_gpu_copy_input_forces(const PmeGpu *pmeGPU, const float *h_forces)
+void pme_gpu_copy_input_forces(PmeGpu *pmeGPU)
 {
-    GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
-    cu_copy_H2D(pmeGPU->kernelParams->atoms.d_forces, const_cast<float *>(h_forces), forcesSize, pmeGPU->settings.transferKind, pmeGPU->archSpecific->pmeStream);
+    cu_copy_H2D(pmeGPU->kernelParams->atoms.d_forces, pmeGPU->staging.h_forces.data(), forcesSize, pmeGPU->settings.transferKind, pmeGPU->archSpecific->pmeStream);
 }
 
-void pme_gpu_copy_output_forces(const PmeGpu *pmeGPU, float *h_forces)
+void pme_gpu_copy_output_forces(PmeGpu *pmeGPU)
 {
-    GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize   = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
-    cu_copy_D2H(h_forces, pmeGPU->kernelParams->atoms.d_forces, forcesSize, pmeGPU->settings.transferKind, pmeGPU->archSpecific->pmeStream);
+    cu_copy_D2H(pmeGPU->staging.h_forces.data(), pmeGPU->kernelParams->atoms.d_forces, forcesSize, pmeGPU->settings.transferKind, pmeGPU->archSpecific->pmeStream);
 }
 
 void pme_gpu_realloc_coordinates(const PmeGpu *pmeGPU)
