@@ -48,6 +48,7 @@
 
 #include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
+#include "gromacs/utility/arrayref.h"
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing PmeGpu members
 
@@ -187,10 +188,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_forces(const PmeGpu *CUDA_FUNC_ARGUMENT(pm
  * To be called e.g. after the bonded calculations.
  *
  * \param[in] pmeGPU             The PME GPU structure.
- * \param[in] h_forces           The input forces rvec buffer.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU),
-                                                   const float     *CUDA_FUNC_ARGUMENT(h_forces)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Copies the forces from the GPU to the CPU buffer. To be called after the gathering stage.
@@ -473,13 +472,11 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGp
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
- * \param[in,out] h_forces         The host buffer with input and output forces.
  * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_gather(const PmeGpu          *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                        float                 *CUDA_FUNC_ARGUMENT(h_forces),
                                         PmeForceOutputHandling CUDA_FUNC_ARGUMENT(forceTreatment),
                                         const float           *CUDA_FUNC_ARGUMENT(h_grid)
                                         ) CUDA_FUNC_TERM
@@ -566,6 +563,15 @@ gmx_inline bool pme_gpu_is_testing(const PmeGpu *pmeGPU)
 }
 
 /* A block of C++ functions that live in pme-gpu-internal.cpp */
+
+/*! \libinternal \brief
+ * Returns the output forces after PME solving on GPUs.
+ * Should be called after pme_gpu_finish_computation.
+ *
+ * \param[in] pmeGPU             The PME GPU structure.
+ * \returns                      The output forces.
+ */
+gmx::ArrayRef<const gmx::RVec> pme_gpu_get_forces(const PmeGpu *pmeGPU);
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.

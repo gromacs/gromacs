@@ -50,6 +50,7 @@
 
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "pme-gpu-types.h"
@@ -300,14 +301,12 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t       *pme,
  *
  * \param[in]  pme               The PME data structure.
  * \param[in]  wcycle            The wallclock counter.
- * \param[in,out] forces         The array of local atoms' resulting forces.
- * \param[in]  forceTreatment    Tells how data in h_forces should be treated. The gathering kernel either stores
+ * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either stores
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
  */
 void pme_gpu_launch_gather(const gmx_pme_t        *pme,
                            gmx_wallcycle_t         wcycle,
-                           rvec                   *forces,
                            PmeForceOutputHandling  forceTreatment);
 
 /*! \brief
@@ -315,13 +314,15 @@ void pme_gpu_launch_gather(const gmx_pme_t        *pme,
  * (if they were to be computed).
  *
  * \param[in]  pme            The PME data structure.
- * \param[in]  wcycle         The wallclock counter.
- * \param[out] vir_q          The output virial matrix.
- * \param[out] energy_q       The output energy.
+ * \param[out] wcycle         The wallclock counter.
+ * \param[out] forces         The output forces.
+ * \param[out] virial         The output virial matrix.
+ * \param[out] energy         The output energy.
  */
-void pme_gpu_wait_for_gpu(const gmx_pme_t *pme,
-                          gmx_wallcycle_t  wcycle,
-                          matrix           vir_q,
-                          real            *energy_q);
+void pme_gpu_wait_for_gpu(const gmx_pme_t                *pme,
+                          gmx_wallcycle_t                 wcycle,
+                          gmx::ArrayRef<const gmx::RVec> *forces,
+                          matrix                          virial,
+                          real                           *energy);
 
 #endif

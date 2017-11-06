@@ -179,6 +179,7 @@ struct PmeGpuCuda
     int coordinatesSize;
     /*! \brief The kernelParams.atoms.coordinates float element count (reserved) */
     int coordinatesSizeAlloc;
+    // TODO get rid of these?
     /*! \brief The kernelParams.atoms.forces float element count (actual) */
     int forcesSize;
     /*! \brief The kernelParams.atoms.forces float element count (reserved) */
