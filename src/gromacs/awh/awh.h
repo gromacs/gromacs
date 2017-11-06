@@ -85,7 +85,7 @@ namespace gmx
 struct AwhHistory;
 struct AwhParams;
 class Bias;
-class BiasCoupledToSystem;
+struct BiasCoupledToSystem;
 class ForceWithVirial;
 
 /*! \libinternal \brief The accelerated weight histogram method (AWH).
