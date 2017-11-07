@@ -41,6 +41,8 @@
 #include <cstdlib>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /*** Generic CUDA data operation wrappers ***/
@@ -61,9 +63,9 @@ static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes,
 
     if (bAsync)
     {
+        GMX_ASSERT(isHostMemoryPinned(h_dest), "Destination buffer was not pinned for CUDA");
         stat = cudaMemcpyAsync(h_dest, d_src, bytes, cudaMemcpyDeviceToHost, s);
         CU_RET_ERR(stat, "DtoH cudaMemcpyAsync failed");
-
     }
     else
     {
@@ -103,6 +105,7 @@ static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
 
     if (bAsync)
     {
+        GMX_ASSERT(isHostMemoryPinned(h_src), "Source buffer was not pinned for CUDA");
         stat = cudaMemcpyAsync(d_dest, h_src, bytes, cudaMemcpyHostToDevice, s);
         CU_RET_ERR(stat, "HtoD cudaMemcpyAsync failed");
     }

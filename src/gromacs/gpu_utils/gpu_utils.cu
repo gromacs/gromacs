@@ -134,6 +134,15 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     }
 }
 
+bool isHostMemoryPinned(void *h_ptr)
+{
+    cudaPointerAttributes memoryAttributes;
+    // If the buffer was not pinned, then it will not be recognized by CUDA at all
+    cudaError_t           stat = cudaPointerGetAttributes(&memoryAttributes, h_ptr);
+    GMX_ASSERT(stat != cudaErrorInvalidDevice, "CUDA device is invalid");
+    return (stat != cudaErrorInvalidValue);
+}
+
 /*!
  * \brief Runs GPU sanity checks.
  *
