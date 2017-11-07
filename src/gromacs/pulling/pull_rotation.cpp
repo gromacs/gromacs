@@ -3890,8 +3890,11 @@ extern void do_rotation(
         rvec            x[],
         real            t,
         gmx_int64_t     step,
-        gmx_bool        bNS)
+        gmx_bool        bNS,
+        gmx_wallcycle_t wcycle)
 {
+    wallcycle_start(wcycle, ewcROT);
+
     int             g, i, ii;
     t_rot          *rot;
     t_rotgrp       *rotg;
@@ -4052,6 +4055,7 @@ extern void do_rotation(
                 break;
         }
     }
+    wallcycle_stop(wcycle, ewcROT);
 
 #ifdef TAKETIME
     if (MASTER(cr))
