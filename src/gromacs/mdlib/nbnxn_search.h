@@ -36,6 +36,7 @@
 #ifndef GMX_MDLIB_NBNXN_SEARCH_H
 #define GMX_MDLIB_NBNXN_SEARCH_H
 
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 struct gmx_domdec_zones_t;
@@ -81,7 +82,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          nbnxn_pairlist_set_t *nbl_list,
                          int                   iloc,
                          int                   nb_kernel_type,
-                         t_nrnb               *nrnb);
+                         t_nrnb               *nrnb,
+                         gmx_wallcycle_t gmx_unused wcycle);
 
 /*! \brief Prepare the list-set produced by the search for dynamic pruning
  *

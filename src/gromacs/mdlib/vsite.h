@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_VSITE_H
 #define GMX_MDLIB_VSITE_H
 
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
@@ -102,7 +103,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr);
+                    t_commrec *cr, gmx_wallcycle_t wcycle);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs

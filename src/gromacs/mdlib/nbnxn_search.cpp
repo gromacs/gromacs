@@ -4089,15 +4089,16 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
 }
 
 /* Make a local or non-local pair-list, depending on iloc */
-void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
-                         nbnxn_atomdata_t     *nbat,
-                         const t_blocka       *excl,
-                         real                  rlist,
-                         int                   min_ci_balanced,
-                         nbnxn_pairlist_set_t *nbl_list,
-                         int                   iloc,
-                         int                   nb_kernel_type,
-                         t_nrnb               *nrnb)
+void nbnxn_make_pairlist(const nbnxn_search_t             nbs,
+                         nbnxn_atomdata_t                *nbat,
+                         const t_blocka                  *excl,
+                         real                             rlist,
+                         int                              min_ci_balanced,
+                         nbnxn_pairlist_set_t            *nbl_list,
+                         int                              iloc,
+                         int                              nb_kernel_type,
+                         t_nrnb                          *nrnb,
+                         gmx_wallcycle_t       gmx_unused wcycle)
 {
     nbnxn_grid_t      *gridi, *gridj;
     int                nzi, zj0, zj1;

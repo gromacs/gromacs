@@ -60,7 +60,6 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/stringutil.h"
-
 #include "nbnxn_gpu_common_utils.h"
 
 /*! \brief Check that atom locality values are valid for the GPU module.
@@ -300,7 +299,8 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t *nb,
                             int              aloc,
                             real            *e_lj,
                             real            *e_el,
-                            rvec            *fshift)
+                            rvec            *fshift,
+                            gmx_wallcycle_t gmx_unused wcycle)
 {
     /* determine interaction locality from atom locality */
     int iLocality = gpuAtomToInteractionLocality(aloc);
