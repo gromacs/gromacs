@@ -2017,8 +2017,7 @@ void get_pme_nnodes(const gmx_domdec_t *dd,
     }
 }
 
-void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
-                     int *nmy_ddnodes, int **my_ddnodes, int *node_peer)
+std::vector<int> get_pme_ddranks(t_commrec *cr, int pmenodeid)
 {
     gmx_domdec_t *dd;
     int           x, y, z;
@@ -2026,9 +2025,9 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
 
     dd = cr->dd;
 
-    snew(*my_ddnodes, (dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
+    std::vector<int> ddranks;
+    ddranks.reserve((dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
 
-    *nmy_ddnodes = 0;
     for (x = 0; x < dd->nc[XX]; x++)
     {
         for (y = 0; y < dd->nc[YY]; y++)
@@ -2045,7 +2044,7 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
                         dd->ci[YY] == coord_pme[YY] &&
                         dd->ci[ZZ] == coord_pme[ZZ])
                     {
-                        (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr, x, y, z);
+                        ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
                     }
                 }
                 else
@@ -2053,25 +2052,13 @@ void get_pme_ddnodes(t_commrec *cr, int pmenodeid,
                     /* The slab corresponds to the nodeid in the PME group */
                     if (gmx_ddcoord2pmeindex(cr, x, y, z) == pmenodeid)
                     {
-                        (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr, x, y, z);
+                        ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
                     }
                 }
             }
         }
     }
-
-    /* The last PP-only node is the peer node */
-    *node_peer = (*my_ddnodes)[*nmy_ddnodes-1];
-
-    if (debug)
-    {
-        fprintf(debug, "Receive coordinates from PP ranks:");
-        for (x = 0; x < *nmy_ddnodes; x++)
-        {
-            fprintf(debug, " %d", (*my_ddnodes)[x]);
-        }
-        fprintf(debug, "\n");
-    }
+    return ddranks;
 }
 
 static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
