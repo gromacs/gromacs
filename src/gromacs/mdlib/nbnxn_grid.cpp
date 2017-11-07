@@ -1421,7 +1421,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        rvec *x,
                        int nmoved, int *move,
                        int nb_kernel_type,
-                       nbnxn_atomdata_t *nbat)
+                       nbnxn_atomdata_t *nbat,
+                       gmx_wallcycle_t gmx_unused wcycle)
 {
     nbnxn_grid_t *grid;
     int           n;
@@ -1533,7 +1534,8 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const int                       *atinfo,
                                 rvec                            *x,
                                 int                              nb_kernel_type,
-                                nbnxn_atomdata_t                *nbat)
+                                nbnxn_atomdata_t                *nbat,
+                                gmx_wallcycle_t                  wcycle)
 {
     rvec c0, c1;
 
@@ -1554,7 +1556,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                           x,
                           0, nullptr,
                           nb_kernel_type,
-                          nbat);
+                          nbat, wcycle);
     }
 }
 

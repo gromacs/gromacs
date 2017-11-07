@@ -50,6 +50,7 @@
 
 #include <stdio.h>
 
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -115,9 +116,10 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * \param step    The time step.
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
+ * \param wcycle  Pointer to the wallcycle timer
  */
 extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_bool bNS);
+                        gmx_int64_t step, gmx_bool bNS, gmx_wallcycle_t wcycle);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

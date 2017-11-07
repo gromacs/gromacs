@@ -65,7 +65,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        rvec *x,
                        int nmoved, int *move,
                        int nb_kernel_type,
-                       nbnxn_atomdata_t *nbat);
+                       nbnxn_atomdata_t *nbat,
+                       gmx_wallcycle_t wcycle);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
  * with domain decomposition. Should be called after calling
@@ -76,7 +77,8 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const int                       *atinfo,
                                 rvec                            *x,
                                 int                              nb_kernel_type,
-                                nbnxn_atomdata_t                *nbat);
+                                nbnxn_atomdata_t                *nbat,
+                                gmx_wallcycle_t                  wcycle);
 
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
