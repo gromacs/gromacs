@@ -44,6 +44,10 @@ file(GLOB SOURCES_FROM_CXX
     )
 
 if(GMX_USE_CUDA)
+    # CUDA-only test
+    list(APPEND SOURCES_FROM_CXX
+        pinnedmemorychecker.cpp
+        )
     # TODO Making a separate library is heavy handed, but nothing else
     # seems to work. Also don't use a hyphen in its name, because nvcc
     # can't cope with that.

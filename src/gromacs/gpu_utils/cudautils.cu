@@ -61,6 +61,7 @@ int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
+            GMX_ASSERT(isHostMemoryPinned(h_dest), "Destination buffer was not pinned for CUDA");
             stat = cudaMemcpyAsync(h_dest, d_src, bytes, cudaMemcpyDeviceToHost, s);
             CU_RET_ERR(stat, "DtoH cudaMemcpyAsync failed");
             break;
@@ -104,6 +105,7 @@ int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
+            GMX_ASSERT(isHostMemoryPinned(h_src), "Source buffer was not pinned for CUDA");
             stat = cudaMemcpyAsync(d_dest, h_src, bytes, cudaMemcpyHostToDevice, s);
             CU_RET_ERR(stat, "HtoD cudaMemcpyAsync failed");
             break;
