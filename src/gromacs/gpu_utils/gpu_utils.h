@@ -235,5 +235,8 @@ void resetGpuProfiler(void) CUDA_FUNC_TERM
 CUDA_FUNC_QUALIFIER
 void stopGpuProfiler(void) CUDA_FUNC_TERM
 
+//! Tells whether the host buffer was pinned for full-speed transfers. Only implemented for CUDA.
+CUDA_FUNC_QUALIFIER
+bool isHostMemoryPinned(void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false)
 
 #endif

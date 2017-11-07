@@ -134,6 +134,31 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     }
 }
 
+bool isHostMemoryPinned(void *h_ptr)
+{
+    cudaPointerAttributes memoryAttributes;
+    cudaError_t           stat = cudaPointerGetAttributes(&memoryAttributes, h_ptr);
+
+    bool                  result;
+    switch (stat)
+    {
+        case cudaSuccess:
+            result = true;
+            break;
+
+        case cudaErrorInvalidValue:
+            // If the buffer was not pinned, then it will not be recognized by CUDA at all
+            result = false;
+            // Reset the last error status
+            cudaGetLastError();
+            break;
+
+        default:
+            CU_RET_ERR(stat, "Unexpected CUDA error");
+    }
+    return result;
+}
+
 /*!
  * \brief Runs GPU sanity checks.
  *
