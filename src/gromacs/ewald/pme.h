@@ -48,11 +48,13 @@
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
 
+#include <string>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#include "pme-gpu-types.h"
 
 struct interaction_const_t;
 struct t_commrec;
@@ -71,6 +73,24 @@ class MDLogger;
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
+};
+
+/*! \brief Possible PME codepaths
+ * \todo: make this enum class with gmx_pme_t C++ refactoring
+ */
+enum PmeRunMode
+{
+    CPU,     //!< Whole PME computation is done on CPU
+    GPU,     //!< Whole PME computation is done on GPU
+    Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
+};
+
+//! PME gathering output forces treatment
+enum class PmeForceOutputHandling
+{
+    Set,             /**< Gather simply writes into provided force buffer */
+    ReduceWithInput, /**< Gather adds its output to the buffer.
+                        On GPU, that means additional H2D copy before the kernel launch. */
 };
 
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
