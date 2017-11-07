@@ -58,29 +58,12 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info;
 struct gmx_device_info_t;
-
-/*! \brief Possible PME codepaths
- * \todo: make this enum class with gmx_pme_t C++ refactoring
- */
-enum PmeRunMode
-{
-    CPU,     //!< Whole PME computation is done on CPU
-    GPU,     //!< Whole PME computation is done on GPU
-    Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
-};
-
-//! PME gathering output forces treatment
-enum class PmeForceOutputHandling
-{
-    Set,             /**< Gather simply writes into provided force buffer */
-    ReduceWithInput, /**< Gather adds its output to the buffer.
-                        On GPU, that means additional H2D copy before the kernel launch. */
-};
 
 #if GMX_GPU == GMX_GPU_CUDA
 
