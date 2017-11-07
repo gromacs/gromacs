@@ -658,7 +658,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               const nbnxn_atomdata_t *nbatom,
                               int                     flags,
-                              int                     aloc)
+                              int                     aloc,
+                              gmx_wallcycle_t         wcycle)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -773,7 +774,7 @@ static void countPruneKernelTime(cu_timers_t               *timers,
 
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
                             int flags, int aloc,
-                            real *e_lj, real *e_el, rvec *fshift)
+                            real *e_lj, real *e_el, rvec *fshift, gmx_wallcycle_t wcycle)
 {
     /* NOTE:  only implemented for single-precision at this time */
     cudaError_t stat;

@@ -49,6 +49,7 @@
 #define GMX_PULLING_PULL_ROTATION_H
 
 #include <stdio.h>
+#include <gromacs/timing/wallcycle.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -117,7 +118,7 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  *                local arrays have to be updated (masses, shifts)
  */
 extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_bool bNS);
+                        gmx_int64_t step, gmx_bool bNS, gmx_wallcycle_t wcycle);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

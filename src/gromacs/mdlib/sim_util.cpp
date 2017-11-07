@@ -373,14 +373,12 @@ static void post_process_forces(t_commrec *cr,
              * This is parallellized. MPI communication is performed
              * if the constructing atoms aren't local.
              */
-            wallcycle_start(wcycle, ewcVSITESPREAD);
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr,
                            (flags & GMX_FORCE_VIRIAL), virial,
                            nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
+                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
             forceWithVirial->addVirialContribution(virial);
-            wallcycle_stop(wcycle, ewcVSITESPREAD);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -993,7 +991,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                               0, mdatoms->homenr, -1, fr->cginfo, x,
                               0, nullptr,
                               nbv->grp[eintLocal].kernel_type,
-                              nbv->nbat);
+                              nbv->nbat, wcycle);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
         }
         else
@@ -1002,7 +1000,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_put_on_grid_nonlocal(nbv->nbs, domdec_zones(cr->dd),
                                        fr->cginfo, x,
                                        nbv->grp[eintNonlocal].kernel_type,
-                                       nbv->nbat);
+                                       nbv->nbat, wcycle);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
@@ -1039,7 +1037,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                             &nbv->grp[eintLocal].nbl_lists,
                             eintLocal,
                             nbv->grp[eintLocal].kernel_type,
-                            nrnb);
+                            nrnb, wcycle);
         nbv->grp[eintLocal].nbl_lists.outerListCreationStep = step;
         if (nbv->listParams->useDynamicPruning && !bUseGPU)
         {
@@ -1058,12 +1056,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
-                                        nbv->nbat);
-        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                        nbv->nbat, wcycle);
     }
 
     if (useGpuPme && pmeRunMode == PmeRunMode::GPU)
@@ -1116,7 +1110,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 &nbv->grp[eintNonlocal].nbl_lists,
                                 eintNonlocal,
                                 nbv->grp[eintNonlocal].kernel_type,
-                                nrnb);
+                                nrnb, wcycle);
             nbv->grp[eintNonlocal].nbl_lists.outerListCreationStep = step;
             if (nbv->listParams->useDynamicPruning && !bUseGPU)
             {
@@ -1135,16 +1129,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         else
         {
-            wallcycle_start(wcycle, ewcMOVEX);
-            dd_move_x(cr->dd, box, x);
-            wallcycle_stop(wcycle, ewcMOVEX);
+            dd_move_x(cr->dd, box, x, wcycle);
 
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
-                                            nbv->nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                            nbv->nbat, wcycle);
         }
 
         if (bUseGPU)
@@ -1167,10 +1155,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal);
+                                     flags, eatNonlocal, wcycle);
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal);
+                                 flags, eatLocal, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
@@ -1217,9 +1205,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, bNS);
-        wallcycle_stop(wcycle, ewcROT);
+        do_rotation(cr, inputrec, box, x, t, step, bNS, wcycle);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
@@ -1320,11 +1306,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * communication with calculation with domain decomposition.
          */
         wallcycle_stop(wcycle, ewcFORCE);
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f, wcycle);
+
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
@@ -1370,7 +1354,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                       fr->fshift);
+                                       fr->fshift, wcycle);
                 cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
@@ -1380,16 +1364,14 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                              step, nrnb, wcycle);
                 wallcycle_stop(wcycle, ewcFORCE);
             }
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
-                                               nbv->nbat, f);
+                                               nbv->nbat, f, wcycle);
             }
-            wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+
         }
     }
 
@@ -1406,9 +1388,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         if (bDoForces)
         {
-            wallcycle_start(wcycle, ewcMOVEF);
-            dd_move_f(cr->dd, f, fr->fshift);
-            wallcycle_stop(wcycle, ewcMOVEF);
+            dd_move_f(cr->dd, f, fr->fshift, wcycle);
         }
     }
 
@@ -1438,7 +1418,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
+                                   fr->fshift, wcycle);
             float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
@@ -1495,12 +1475,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          step, nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
-        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                       nbv->nbat, f);
-        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+                                       nbv->nbat, f, wcycle);
+
     }
 
     if (DOMAINDECOMP(cr))
@@ -1515,10 +1493,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            wallcycle_start(wcycle, ewcVSITESPREAD);
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, nullptr, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
-            wallcycle_stop(wcycle, ewcVSITESPREAD);
+                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -1675,9 +1651,8 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     /* Communicate coordinates and sum dipole if necessary */
     if (DOMAINDECOMP(cr))
     {
-        wallcycle_start(wcycle, ewcMOVEX);
-        dd_move_x(cr->dd, box, x);
-        wallcycle_stop(wcycle, ewcMOVEX);
+        dd_move_x(cr->dd, box, x, wcycle);
+
         /* No GPU support, no move_x overlap, so reopen the balance region here */
         if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
         {
@@ -1752,9 +1727,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, bNS);
-        wallcycle_stop(wcycle, ewcROT);
+        do_rotation(cr, inputrec, box, x, t, step, bNS, wcycle);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
@@ -1829,8 +1802,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
         {
-            wallcycle_start(wcycle, ewcMOVEF);
-            dd_move_f(cr->dd, f, fr->fshift);
+            dd_move_f(cr->dd, f, fr->fshift, wcycle);
             /* Do we need to communicate the separate force array
              * for terms that do not contribute to the single sum virial?
              * Position restraints and electric fields do not introduce
@@ -1841,9 +1813,8 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
                 (flags & GMX_FORCE_VIRIAL))
             {
-                dd_move_f(cr->dd, as_rvec_array(forceWithVirial.force_.data()), nullptr);
+                dd_move_f(cr->dd, as_rvec_array(forceWithVirial.force_.data()), nullptr, wcycle);
             }
-            wallcycle_stop(wcycle, ewcMOVEF);
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -1851,10 +1822,8 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
          */
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
-            wallcycle_start(wcycle, ewcVSITESPREAD);
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, nullptr, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
-            wallcycle_stop(wcycle, ewcVSITESPREAD);
+                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
