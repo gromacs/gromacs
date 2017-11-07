@@ -4097,7 +4097,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          nbnxn_pairlist_set_t *nbl_list,
                          int                   iloc,
                          int                   nb_kernel_type,
-                         t_nrnb               *nrnb)
+                         t_nrnb               *nrnb,
+                         gmx_wallcycle_t       gmx_unused wcycle)
 {
     nbnxn_grid_t      *gridi, *gridj;
     int                nzi, zj0, zj1;

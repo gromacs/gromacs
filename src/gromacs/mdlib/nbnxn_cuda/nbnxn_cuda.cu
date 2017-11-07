@@ -650,7 +650,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               const nbnxn_atomdata_t *nbatom,
                               int                     flags,
-                              int                     aloc)
+                              int                     aloc,
+                              gmx_wallcycle_t         wcycle)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -726,6 +727,144 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         t->nb_d2h[iloc].closeTimingRegion(stream);
     }
+}
+
+/*! \brief Count pruning kernel time if either kernel has been triggered
+ *
+ *  We do the accounting for either of the two pruning kernel flavors:
+ *   - 1st pass prune: ran during the current step (prior to the force kernel);
+ *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
+ *
+ * Note that the resetting of cu_timers_t::didPrune and cu_timers_t::didRollingPrune should happen
+ * after calling this function.
+ *
+ * \param[in] timers      structs with CUDA timer objects
+ * \param[inout] timings  GPU task timing data
+ * \param[in] iloc        interaction locality
+ */
+static void countPruneKernelTime(cu_timers_t               *timers,
+                                 gmx_wallclock_gpu_nbnxn_t *timings,
+                                 const int                  iloc)
+{
+    // We might have not done any pruning (e.g. if we skipped with empty domains).
+    if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
+    {
+        return;
+    }
+
+    if (timers->didPrune[iloc])
+    {
+        timings->pruneTime.c++;
+        timings->pruneTime.t += timers->prune_k[iloc].getLastRangeTime();
+    }
+    if (timers->didRollingPrune[iloc])
+    {
+        timings->dynamicPruneTime.c++;
+        timings->dynamicPruneTime.t += timers->rollingPrune_k[iloc].getLastRangeTime();
+    }
+}
+
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
+                            int flags, int aloc,
+                            real *e_lj, real *e_el, rvec *fshift, gmx_wallcycle_t wcycle)
+{
+    /* NOTE:  only implemented for single-precision at this time */
+    cudaError_t stat;
+
+    /* determine interaction locality from atom locality */
+    int iloc = gpuAtomToInteractionLocality(aloc);
+
+    cu_plist_t                       *plist    = nb->plist[iloc];
+    cu_timers_t                      *timers   = nb->timers;
+    struct gmx_wallclock_gpu_nbnxn_t *timings  = nb->timings;
+    nb_staging                        nbst     = nb->nbst;
+
+    bool                              bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool                              bCalcFshift = flags & GMX_FORCE_VIRIAL;
+
+    /* turn energy calculation always on/off (for debugging/testing only) */
+    bCalcEner = (bCalcEner || always_ener) && !never_ener;
+
+    /* Launch wait/update timers & counters and do reduction into staging buffers
+       BUT skip it when during the non-local phase there was actually no work to do.
+       This is consistent with nbnxn_gpu_launch_kernel.
+
+       NOTE: if timing with multiple GPUs (streams) becomes possible, the
+       counters could end up being inconsistent due to not being incremented
+       on some of the nodes! */
+    if (!canSkipWork(nb, iloc))
+    {
+        stat = cudaStreamSynchronize(nb->stream[iloc]);
+        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
+
+        /* timing data accumulation */
+        if (nb->bDoTime)
+        {
+            /* only increase counter once (at local F wait) */
+            if (LOCAL_I(iloc))
+            {
+                timings->nb_c++;
+                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
+            }
+
+            /* kernel timings */
+            timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t += timers->nb_k[iloc].getLastRangeTime();
+
+            /* X/q H2D and F D2H timings */
+            timings->nb_h2d_t += timers->nb_h2d[iloc].getLastRangeTime();
+            timings->nb_d2h_t += timers->nb_d2h[iloc].getLastRangeTime();
+
+            /* Count the pruning kernel times for both cases:1st pass (at search step)
+               and rolling pruning (if called at the previous step).
+               We do the accounting here as this is the only sync point where we
+               know (without checking or additional sync-ing) that prune tasks in
+               in the current stream have completed (having just blocking-waited
+               for the force D2H). */
+            countPruneKernelTime(timers, timings, iloc);
+
+            /* only count atdat and pair-list H2D at pair-search step */
+            if (timers->didPairlistH2D[iloc])
+            {
+                /* atdat transfer timing (add only once, at local F wait) */
+                if (LOCAL_A(aloc))
+                {
+                    timings->pl_h2d_c++;
+                    timings->pl_h2d_t += timers->atdat.getLastRangeTime();
+                }
+
+                timings->pl_h2d_t += timers->pl_h2d[iloc].getLastRangeTime();
+
+                /* Clear the timing flag for the next step */
+                timers->didPairlistH2D[iloc] = false;
+            }
+        }
+
+        /* add up energies and shift forces (only once at local F wait) */
+        if (LOCAL_I(iloc))
+        {
+            if (bCalcEner)
+            {
+                *e_lj += *nbst.e_lj;
+                *e_el += *nbst.e_el;
+            }
+
+            if (bCalcFshift)
+            {
+                for (int i = 0; i < SHIFTS; i++)
+                {
+                    fshift[i][0] += nbst.fshift[i].x;
+                    fshift[i][1] += nbst.fshift[i].y;
+                    fshift[i][2] += nbst.fshift[i].z;
+                }
+            }
+        }
+    }
+
+    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
+    timers->didPrune[iloc] = timers->didRollingPrune[iloc] = false;
+
+    /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
+    plist->haveFreshList = false;
 }
 
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
