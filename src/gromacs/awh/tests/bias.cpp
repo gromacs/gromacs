@@ -222,7 +222,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
 
     SCOPED_TRACE(gmx::formatString("%s, %s, %s", props[0].c_str(), props[1].c_str(), props[2].c_str()));
 
-    std::vector<double> force;
+    std::vector<double> force, pot, potJump;
 
     double              potentialJump = 0;
     gmx_int64_t         step          = 0;
@@ -236,6 +236,8 @@ TEST_P(BiasTest, ForcesBiasPmf)
                                     nullptr, step, step, seed_, nullptr);
 
         force.push_back(biasForce[0]);
+        pot.push_back(potential);
+        potJump.push_back(potentialJump);
 
         step++;
     }
@@ -272,6 +274,8 @@ TEST_P(BiasTest, ForcesBiasPmf)
     checker.checkSequence(props.begin(),     props.end(),     "Properties");
     checker.setDefaultTolerance(absoluteTolerance(kMaxCoord*GMX_DOUBLE_EPS*ulpTol));
     checker.checkSequence(force.begin(),     force.end(),     "Force");
+    checker.checkSequence(pot.begin(),       pot.end(),       "Potential");
+    checker.checkSequence(potJump.begin(),   potJump.end(),   "PotentialJump");
     checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTol));
     checker.checkSequence(pointBias.begin(), pointBias.end(), "PointBias");
     checker.checkSequence(logPmfsum.begin(), logPmfsum.end(), "PointLogPmfsum");

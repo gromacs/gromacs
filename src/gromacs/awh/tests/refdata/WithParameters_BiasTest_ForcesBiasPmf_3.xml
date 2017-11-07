@@ -31,6 +31,54 @@
     <Real>-1.2743003165852991</Real>
     <Real>-0.86472575028406273</Real>
   </Sequence>
+  <Sequence Name="Potential">
+    <Int Name="Length">21</Int>
+    <Real>5.3171052747656216</Real>
+    <Real>5.3139634951471235</Real>
+    <Real>5.3139852805648378</Real>
+    <Real>5.3139597783455503</Real>
+    <Real>5.313959928304433</Real>
+    <Real>5.313959928304433</Real>
+    <Real>5.3139598111771384</Real>
+    <Real>5.3139598111771384</Real>
+    <Real>5.3139597783455486</Real>
+    <Real>5.3139598111771358</Real>
+    <Real>5.3139598111771358</Real>
+    <Real>5.8523574407739236</Real>
+    <Real>5.909517708141518</Real>
+    <Real>5.5891055083437386</Real>
+    <Real>5.5179043538034485</Real>
+    <Real>5.6909400832286146</Real>
+    <Real>5.5084236091309347</Real>
+    <Real>5.4647638463620405</Real>
+    <Real>5.4221743541770948</Real>
+    <Real>5.4793615522962513</Real>
+    <Real>5.4998305387193387</Real>
+  </Sequence>
+  <Sequence Name="PotentialJump">
+    <Int Name="Length">21</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.60502446654887354</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.83485389150670564</Real>
+  </Sequence>
   <Sequence Name="PointBias">
     <Int Name="Length">21</Int>
     <Real>-2.7472944451046044</Real>
