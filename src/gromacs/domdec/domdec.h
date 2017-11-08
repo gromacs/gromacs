@@ -82,6 +82,11 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
+namespace gmx
+{
+class MDAtoms;
+} // namespace
+
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output
@@ -319,7 +324,7 @@ void dd_partition_system(FILE                *fplog,
                          const t_inputrec    *ir,
                          t_state             *state_local,
                          PaddedRVecVector    *f,
-                         t_mdatoms           *mdatoms,
+                         gmx::MDAtoms        *mdatoms,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,

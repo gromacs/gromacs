@@ -9169,7 +9169,7 @@ void dd_partition_system(FILE                *fplog,
                          const t_inputrec    *ir,
                          t_state             *state_local,
                          PaddedRVecVector    *f,
-                         t_mdatoms           *mdatoms,
+                         gmx::MDAtoms        *mdAtoms,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
@@ -9726,13 +9726,14 @@ void dd_partition_system(FILE                *fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdatoms, vsite, nullptr);
+                              nullptr, mdAtoms, vsite, nullptr);
 
     if (ir->implicit_solvent)
     {
         make_local_gb(cr, fr->born, ir->gb_algorithm);
     }
 
+    auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */

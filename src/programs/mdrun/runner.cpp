@@ -437,7 +437,6 @@ int Mdrunner::mdrunner()
     int                       npme_major, npme_minor;
     t_nrnb                   *nrnb;
     gmx_mtop_t               *mtop          = nullptr;
-    t_mdatoms                *mdatoms       = nullptr;
     t_forcerec               *fr            = nullptr;
     t_fcdata                 *fcd           = nullptr;
     real                      ewaldcoeff_q  = 0;
@@ -977,6 +976,8 @@ int Mdrunner::mdrunner()
         membed = init_membed(fplog, nfile, fnm, mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
     }
 
+    std::unique_ptr<MDAtoms> mdAtoms;
+
     snew(nrnb, 1);
     if (thisRankHasDuty(cr, DUTY_PP))
     {
@@ -998,11 +999,11 @@ int Mdrunner::mdrunner()
             init_QMMMrec(cr, mtop, inputrec, fr);
         }
 
-        /* Initialize the mdatoms structure.
-         * mdatoms is not filled with atom data,
+        /* Initialize the mdAtoms structure.
+         * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdatoms = init_mdatoms(fplog, *mtop, *inputrec);
+        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec);
 
         /* Initialize the virtual site communication */
         vsite = initVsite(*mtop, cr);
@@ -1081,12 +1082,12 @@ int Mdrunner::mdrunner()
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
-        if (mdatoms)
+        if (mdAtoms->mdatoms())
         {
-            nChargePerturbed = mdatoms->nChargePerturbed;
+            nChargePerturbed = mdAtoms->mdatoms()->nChargePerturbed;
             if (EVDW_PME(inputrec->vdwtype))
             {
-                nTypePerturbed   = mdatoms->nTypePerturbed;
+                nTypePerturbed   = mdAtoms->mdatoms()->nTypePerturbed;
             }
         }
         if (cr->npmenodes > 0)
@@ -1172,7 +1173,7 @@ int Mdrunner::mdrunner()
                                      fcd,
                                      globalState.get(),
                                      &observablesHistory,
-                                     mdatoms, nrnb, wcycle, fr,
+                                     mdAtoms.get(), nrnb, wcycle, fr,
                                      replExParams,
                                      membed,
                                      walltime_accounting);

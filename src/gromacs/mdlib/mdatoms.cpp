@@ -40,6 +40,9 @@
 
 #include <cmath>
 
+#include <memory>
+
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -54,10 +57,21 @@
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
+namespace gmx
 {
+
+MDAtoms::MDAtoms()
+    : mdatoms_(nullptr)
+{
+}
+
+std::unique_ptr<MDAtoms>
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
+{
+    auto       mdAtoms = compat::make_unique<MDAtoms>();
     t_mdatoms *md;
     snew(md, 1);
+    mdAtoms->mdatoms_.reset(md);
 
     md->nenergrp = mtop.groups.grps[egcENER].nr;
     md->bVCMgrps = (mtop.groups.grps[egcVCM].nr > 1);
@@ -116,13 +130,15 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
 
     md->bOrires = gmx_mtop_ftype_count(&mtop, F_ORIRES);
 
-    return md;
+    return mdAtoms;
 }
+
+} // namespace
 
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
               int homenr,
-              t_mdatoms *md)
+              gmx::MDAtoms *mdAtoms)
 {
     gmx_bool              bLJPME;
     const t_grpopts      *opts;
@@ -135,6 +151,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     groups = &mtop->groups;
 
+    auto md = mdAtoms->mdatoms();
     /* nindex>=0 indicates DD where we use an index */
     if (nindex >= 0)
     {

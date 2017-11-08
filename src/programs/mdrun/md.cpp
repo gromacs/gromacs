@@ -304,7 +304,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   t_fcdata *fcd,
                   t_state *state_global,
                   ObservablesHistory *observablesHistory,
-                  t_mdatoms *mdatoms,
+                  gmx::MDAtoms *mdAtoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   t_forcerec *fr,
                   const ReplicaExchangeParameters &replExParams,
@@ -525,7 +525,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
-                                  &graph, mdatoms, vsite, shellfc);
+                                  &graph, mdAtoms, vsite, shellfc);
 
         update_realloc(upd, state->natoms);
     }
@@ -539,12 +539,14 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
-                            state, &f, mdatoms, top, fr,
+                            state, &f, mdAtoms, top, fr,
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
     }
+
+    auto mdatoms = mdAtoms->mdatoms();
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
@@ -1068,7 +1070,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
-                                    state, &f, mdatoms, top, fr,
+                                    state, &f, mdAtoms, top, fr,
                                     vsite, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
@@ -1802,7 +1804,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
-                                state, &f, mdatoms, top, fr,
+                                state, &f, mdAtoms, top, fr,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
