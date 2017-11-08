@@ -205,7 +205,7 @@ int alex_merge_mp(int argc, char *argv[])
         { efDAT, "-x",  "extra",     ffOPTRD },
         { efDAT, "-c",  "charges",   ffOPTRD }
     };
-    int                              NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
+    int                              NFILE       = asize(fnm);
     static const char               *sort[]      = { nullptr, "molname", "formula", "composition", nullptr };
     static int                       compress    = 1;
     static real                      temperature = 298.15;
@@ -242,7 +242,7 @@ int alex_merge_mp(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
+    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, ap, pd, true);
 
     if (nwarn <= maxwarn)
     {

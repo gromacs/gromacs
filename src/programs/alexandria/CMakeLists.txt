@@ -47,6 +47,7 @@ set(ALEXANDRIA_SOURCES
            gentop.cpp
            getmdlogger.cpp
            merge_mp.cpp
+           merge_pd.cpp
            moldip.cpp
            molprop_check.cpp
            molprop_sqlite3.cpp
@@ -66,7 +67,6 @@ set(ALEXANDRIA_SOURCES
 	   optparam.cpp
            communication.cpp
            tuning_utility.cpp
-#          gen_ff.cpp
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	

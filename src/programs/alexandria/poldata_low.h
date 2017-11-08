@@ -63,16 +63,16 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-    eqdAXp, 
-    eqdAXg, 
-    eqdAXs, 
-    eqdAXpp, 
-    eqdAXpg, 
-    eqdAXps, 
-    eqdYang, 
-    eqdBultinck, 
-    eqdRappe, 
-    eqdNR
+    eqdAXp      = 0, 
+    eqdAXg      = 1, 
+    eqdAXs      = 2, 
+    eqdAXpp     = 3, 
+    eqdAXpg     = 4, 
+    eqdAXps     = 5, 
+    eqdYang     = 6, 
+    eqdBultinck = 7, 
+    eqdRappe    = 8, 
+    eqdNR       = 9
 };
 
 enum VsiteType

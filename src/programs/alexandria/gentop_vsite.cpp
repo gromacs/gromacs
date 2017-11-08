@@ -429,18 +429,20 @@ static void calc_vsite2parm(t_atoms                   *atoms,
 
 void GentopVsites::mergeLinear(bool bGenVsites)
 {
-    int k, l, ai, aj, ndbl;
+    //int k, l, ai, aj, ndbl;
 
-    for (unsigned int i = 0; (i < linear_.size()); i++)
+    for (size_t i = 0; i < linear_.size(); i++)
     {
         linear_[i].nline = 3;
     }
+
 
     if (!bGenVsites)
     {
         return;
     }
 
+    /*
     for (unsigned int i = 0; (i < linear_.size()); i++)
     {
         for (unsigned int j = i+1; (j < linear_.size()); j++)
@@ -514,6 +516,7 @@ void GentopVsites::mergeLinear(bool bGenVsites)
             }
         }
     }
+    */
 }
 
 static void set_linear_angle_params(const int                  atoms[],

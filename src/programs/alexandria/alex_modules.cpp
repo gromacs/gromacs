@@ -55,6 +55,7 @@ int alex_bastat(int argc, char *argv[]);
 int alex_analyze(int argc, char *argv[]);
 int alex_gen_table(int argc, char *argv[]);
 int alex_merge_mp(int argc, char *argv[]);
+int alex_merge_pd(int argc, char *argv[]);
 int alex_mp2csv(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
 int alex_molprop_check(int argc, char *argv[]);
@@ -112,6 +113,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Utility to dump a molecular property file to a spreadsheet");
     registerModule(manager, &alex_merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database");
+    registerModule(manager, &alex_merge_pd, "merge_pd",
+                   "Utility to merge a number of gentop files");
 
     {
         gmx::CommandLineModuleGroup group =
@@ -129,6 +132,11 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Generating topologies and other simulation input");
         group.addModule("gentop");
         group.addModule("gen_table");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Poldata utilities");
+        group.addModule("merge_pd");
     }
     {
         gmx::CommandLineModuleGroup group =
