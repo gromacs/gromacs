@@ -1003,7 +1003,8 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec);
+        bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme);
 
         /* Initialize the virtual site communication */
         vsite = initVsite(*mtop, cr);
