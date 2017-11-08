@@ -60,15 +60,31 @@
 namespace gmx
 {
 
-MDAtoms::MDAtoms()
-    : mdatoms_(nullptr)
+MDAtoms::MDAtoms(HostAllocationPolicy policy)
+    : mdatoms_(nullptr), chargeA_(policy)
 {
 }
 
-std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
+void MDAtoms::resize(int newSize)
 {
-    auto       mdAtoms = compat::make_unique<MDAtoms>();
+    chargeA_.resize(newSize);
+    mdatoms_->chargeA = chargeA_.data();
+}
+
+void MDAtoms::reserve(int newCapacity)
+{
+    chargeA_.reserve(newCapacity);
+    mdatoms_->chargeA = chargeA_.data();
+}
+
+std::unique_ptr<MDAtoms>
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
+            bool useGpuForPme)
+{
+    auto policy = (useGpuForPme ?
+                   makeHostAllocationPolicyForGpu() :
+                   HostAllocationPolicy());
+    auto       mdAtoms = compat::make_unique<MDAtoms>(policy);
     t_mdatoms *md;
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);
@@ -178,7 +194,12 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         gmx::AlignedAllocationPolicy::free(md->invmass);
         md->invmass = new(gmx::AlignedAllocationPolicy::malloc((md->nalloc + GMX_REAL_MAX_SIMD_WIDTH)*sizeof(*md->invmass)))real;
         srenew(md->invMassPerDim, md->nalloc);
-        srenew(md->chargeA, md->nalloc);
+        // TODO eventually we will have vectors and just resize
+        // everything, but for now the semantics of md->nalloc being
+        // the capacity are preserved by keeping vectors within
+        // mdAtoms having the same properties as the other arrays.
+        mdAtoms->reserve(md->nalloc);
+        mdAtoms->resize(md->nr);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
