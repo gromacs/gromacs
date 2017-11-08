@@ -1316,7 +1316,7 @@ int Mdrunner::mdrunner()
         pmedata = nullptr;
     }
 
-    if (fr && fr->nbv)
+    if (fr && fr->nbv && thisRankHasDuty(cr, DUTY_PP))
     {
         // Free any nbnxn data in GPU memory.
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
