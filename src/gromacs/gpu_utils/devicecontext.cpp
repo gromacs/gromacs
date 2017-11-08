@@ -67,7 +67,10 @@ DeviceContext::~DeviceContext()
     // write data to deviceInfo_, and the GPU APIs handle their
     // details themselves.
     lock_guard<Mutex> lock(s_mutex_);
-    free_gpu(deviceInfo_);
+    if (deviceInfo_)
+    {
+        free_gpu(deviceInfo_);
+    }
 }
 
 gmx_device_info_t *DeviceContext::getDeviceInfo()
