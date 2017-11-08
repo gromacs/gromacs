@@ -42,6 +42,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -54,11 +55,11 @@ namespace gmx
 {
 
 /*! \libinternal
- * \brief Contains a C-style t_mdatoms while permitting future changes
- * to manage some of its memory with C++ vectors with allocators.
+ * \brief Contains a C-style t_mdatoms while managing some of its
+ * memory with C++ vectors with allocators.
  *
  * The group-scheme kernels need to use a plain C-style t_mdatoms, so
- * this type combines that with the memory management needed e.g.for
+ * this type combines that with the memory management needed for
  * efficient PME on GPU transfers.
  *
  * \todo Refactor this class and rename MDAtoms once the group scheme
@@ -67,23 +68,37 @@ class MDAtoms
 {
     //! C-style mdatoms struct.
     unique_cptr<t_mdatoms> mdatoms_;
+    //! Memory for chargeA that can be set up for efficient GPU transfer.
+    std::vector < real, HostAllocator < real>> chargeA_;
     public:
         // TODO make this private
         //! Constructor.
-        MDAtoms();
+        MDAtoms(HostAllocationPolicy policy);
         //! Getter.
         t_mdatoms *mdatoms()
         {
             return mdatoms_.get();
         }
+        /*! \brief Resizes memory.
+         *
+         * \throws std::bad_alloc  If out of memory.
+         */
+        void resize(int newSize);
+        /*! \brief Reserves memory.
+         *
+         * \throws std::bad_alloc  If out of memory.
+         */
+        void reserve(int newCapacity);
         //! Builder function.
         friend std::unique_ptr<MDAtoms>
-        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
+        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
+                    bool useGpuForPme);
 };
 
 //! Builder function for MdAtomsWrapper.
 std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
+            bool useGpuForPme);
 
 } // namespace
 
