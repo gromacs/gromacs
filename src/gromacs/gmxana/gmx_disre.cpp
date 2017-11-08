@@ -840,7 +840,7 @@ int gmx_disre(int argc, char *argv[])
                          "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    auto mdAtoms = gmx::makeMDAtoms(fplog, mtop, *ir);
+    auto mdAtoms = gmx::makeMDAtoms(fplog, mtop, *ir, false);
     atoms2md(&mtop, ir, -1, nullptr, mtop.natoms, mdAtoms.get());
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
     init_nrnb(&nrnb);
