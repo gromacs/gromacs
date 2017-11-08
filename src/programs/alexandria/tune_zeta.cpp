@@ -785,8 +785,7 @@ int alex_tune_zeta(int argc, char *argv[])
     {
         fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymol_.size());
     }
-    if (iChargeDistributionModel != eqdAXp  &&
-        iChargeDistributionModel != eqdAXpp)
+    if (maxiter > 0)
     {
         if (MASTER(cr))
         {
