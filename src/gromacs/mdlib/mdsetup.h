@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
  * \param[in,out] top        The local topology
  * \param[in,out] fr         The force calculation parameter/data record
  * \param[out]    graph      The molecular graph, can be NULL
- * \param[out]    mdatoms    The MD atom data
+ * \param[out]    mdAtoms    The MD atom data
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
@@ -67,7 +67,7 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               t_mdatoms         *mdatoms,
+                               gmx::MDAtoms      *mdAtoms,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
 

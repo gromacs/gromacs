@@ -39,19 +39,58 @@
 
 #include <cstdio>
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/unique_cptr.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
 
-t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
+namespace gmx
+{
+
+/*! \libinternal
+ * \brief Contains a C-style t_mdatoms while permitting future changes
+ * to manage some of its memory with C++ vectors with allocators.
+ *
+ * The group-scheme kernels need to use a plain C-style t_mdatoms, so
+ * this type combines that with the memory management needed e.g.for
+ * efficient PME on GPU transfers.
+ *
+ * \todo Refactor this class and rename MDAtoms once the group scheme
+ * is removed. */
+class MDAtoms
+{
+    //! C-style mdatoms struct.
+    unique_cptr<t_mdatoms> mdatoms_;
+    public:
+        // TODO make this private
+        //! Constructor.
+        MDAtoms();
+        //! Getter.
+        t_mdatoms *mdatoms()
+        {
+            return mdatoms_.get();
+        }
+        //! Builder function.
+        friend std::unique_ptr<MDAtoms>
+        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
+};
+
+//! Builder function for MdAtomsWrapper.
+std::unique_ptr<MDAtoms>
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
+
+} // namespace
 
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
               int homenr,
-              t_mdatoms *md);
+              gmx::MDAtoms *mdAtoms);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  * For the masses the A-state (lambda=0) mass is used.

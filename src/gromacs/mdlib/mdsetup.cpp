@@ -65,7 +65,7 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
-                               t_mdatoms         *mdatoms,
+                               gmx::MDAtoms      *mdAtoms,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc)
 {
@@ -86,8 +86,9 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
         atomIndex    = nullptr;
         numHomeAtoms = top_global->natoms;
     }
-    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdatoms);
+    atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
+    auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
         dd_sort_local_top(cr->dd, mdatoms, top);

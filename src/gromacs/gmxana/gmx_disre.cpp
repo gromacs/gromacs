@@ -711,7 +711,6 @@ int gmx_disre(int argc, char *argv[])
     t_dr_result       dr, *dr_clust = nullptr;
     char            **leg;
     real             *vvindex = nullptr, *w_rls = nullptr;
-    t_mdatoms        *mdatoms;
     t_pbc             pbc, *pbc_null;
     int               my_clust;
     FILE             *fplog;
@@ -841,9 +840,9 @@ int gmx_disre(int argc, char *argv[])
                          "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    mdatoms = init_mdatoms(fplog, mtop, *ir);
-    atoms2md(&mtop, ir, -1, nullptr, mtop.natoms, mdatoms);
-    update_mdatoms(mdatoms, ir->fepvals->init_lambda);
+    auto mdAtoms = gmx::makeMDAtoms(fplog, mtop, *ir);
+    atoms2md(&mtop, ir, -1, nullptr, mtop.natoms, mdAtoms.get());
+    update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir->ePBC != epbcNONE)
     {
