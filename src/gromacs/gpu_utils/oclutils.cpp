@@ -102,9 +102,9 @@ int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
 
 /*! \brief Launches synchronous host to device memory copy.
  */
-int ocl_copy_H2D(cl_mem d_dest, void * h_src,
-                 size_t offset, size_t bytes,
-                 cl_command_queue command_queue)
+int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
+                      size_t offset, size_t bytes,
+                      cl_command_queue command_queue)
 {
     return ocl_copy_H2D_generic(d_dest, h_src, offset, bytes, false, command_queue, NULL);
 }

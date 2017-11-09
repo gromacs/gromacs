@@ -178,7 +178,7 @@ static void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
         }
         else
         {
-            ocl_copy_H2D(*d_dest, h_src,  0, *curr_size * type_size, s);
+            ocl_copy_H2D_sync(*d_dest, h_src,  0, *curr_size * type_size, s);
         }
     }
 }
