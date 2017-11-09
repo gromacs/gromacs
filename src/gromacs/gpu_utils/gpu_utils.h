@@ -60,6 +60,13 @@ namespace gmx
 class MDLogger;
 }
 
+//! Enum which is only used to describe transfer calls at the moment
+enum class GpuApiCallBehavior
+{
+    Sync,
+    Async
+};
+
 /*! \brief Detect all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use. Also

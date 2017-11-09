@@ -48,20 +48,15 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/*! \brief Launches synchronous or asynchronous host to device memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular host to device operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-static int ocl_copy_H2D_generic(cl_mem d_dest, void* h_src,
-                                size_t offset, size_t bytes,
-                                bool bAsync /* = false*/,
-                                cl_command_queue command_queue,
-                                cl_event *copy_event)
+int ocl_copy_H2D(cl_mem d_dest, void* h_src,
+                 size_t offset, size_t bytes,
+                 GpuApiCallBehavior transferKind,
+                 cl_command_queue command_queue,
+                 cl_event *copy_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -70,17 +65,22 @@ static int ocl_copy_H2D_generic(cl_mem d_dest, void* h_src,
         return -1;
     }
 
-    if (bAsync)
+    switch (transferKind)
     {
-        cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
-    }
-    else
-    {
-        cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
+        case GpuApiCallBehavior::Async:
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src, 0, NULL, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0, NULL, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        default:
+            throw;
     }
 
     return 0;
@@ -97,7 +97,7 @@ int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
                        cl_command_queue command_queue,
                        cl_event *copy_event)
 {
-    return ocl_copy_H2D_generic(d_dest, h_src, offset, bytes, true, command_queue, copy_event);
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief Launches synchronous host to device memory copy.
@@ -106,20 +106,14 @@ int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
                       size_t offset, size_t bytes,
                       cl_command_queue command_queue)
 {
-    return ocl_copy_H2D_generic(d_dest, h_src, offset, bytes, false, command_queue, NULL);
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Sync, command_queue, NULL);
 }
 
-/*! \brief Launches synchronous or asynchronous device to host memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular device to host operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-static int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
-                                size_t offset, size_t bytes,
-                                bool bAsync,
-                                cl_command_queue command_queue,
-                                cl_event *copy_event)
+int ocl_copy_D2H(void * h_dest, cl_mem d_src,
+                 size_t offset, size_t bytes,
+                 GpuApiCallBehavior transferKind,
+                 cl_command_queue command_queue,
+                 cl_event *copy_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -128,17 +122,22 @@ static int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
         return -1;
     }
 
-    if (bAsync)
+    switch (transferKind)
     {
-        cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
-    }
-    else
-    {
-        cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0, NULL, copy_event);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
+        case GpuApiCallBehavior::Async:
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0, NULL, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0, NULL, copy_event);
+            assert(cl_error == CL_SUCCESS);
+            // TODO: handle errors
+            break;
+
+        default:
+            throw;
     }
 
     return 0;
@@ -155,7 +154,7 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
                        cl_command_queue command_queue,
                        cl_event *copy_event)
 {
-    return ocl_copy_D2H_generic(h_dest, d_src, offset, bytes, true, command_queue, copy_event);
+    return ocl_copy_D2H(h_dest, d_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief \brief Allocates nbytes of host memory. Use ocl_free to free memory allocated with this function.
