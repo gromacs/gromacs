@@ -40,14 +40,11 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum {
     epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
@@ -305,10 +302,9 @@ int *compact_unitcell_edges(void);
  * Also works for triclinic cells.
  * \param[in]    ePBC   The pbc type
  * \param[in]    box    The simulation box
- * \param[in]    natoms The number of atoms
  * \param[inout] x      The coordinates of the atoms
  */
-void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[]);
+void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Put atoms inside triclinic box
  *
@@ -316,11 +312,10 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[]);
  * box center as calculated by calc_box_center.
  * \param[in]    ecenter The pbc center type
  * \param[in]    box     The simulation box
- * \param[in]    natoms  The number of atoms
  * \param[inout] x       The coordinates of the atoms
  */
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
-                                     int natoms, rvec x[]);
+                                     gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Put atoms inside the unitcell
  *
@@ -330,15 +325,10 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
  * \param[in]    ePBC    The pbc type
  * \param[in]    ecenter The pbc center type
  * \param[in]    box     The simulation box
- * \param[in]    natoms  The number of atoms
  * \param[inout] x       The coordinates of the atoms
  */
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    const matrix box,
-                                   int natoms, rvec x[]);
-
-#ifdef __cplusplus
-}
-#endif
+                                   gmx::ArrayRef<gmx::RVec> x);
 
 #endif
