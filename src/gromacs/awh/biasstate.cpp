@@ -634,18 +634,18 @@ void BiasState::resetLocalUpdateRange(const Grid &grid)
  * \param[in]     multiSimComm       Struct for multi-simulation communication.
  * \param[in]     localUpdateList    List of points with data.
  */
-static void sumHistograms(std::vector<PointState> *pointState,
-                          std::vector<double>     *weightsumCovering,
-                          int                      numSharedUpdate,
-                          const gmx_multisim_t    *multiSimComm,
-                          const std::vector<int>  &localUpdateList)
+static void sumHistograms(gmx::ArrayRef<PointState>  pointState,
+                          gmx::ArrayRef<double>      weightsumCovering,
+                          int                        numSharedUpdate,
+                          const gmx_multisim_t      *multiSimComm,
+                          const std::vector<int>    &localUpdateList)
 {
     /* The covering checking histograms are added before summing over simulations, so that the weights from different
        simulations are kept distinguishable. */
     for (auto &iglobal : localUpdateList)
     {
-        (*weightsumCovering)[iglobal] +=
-            (*pointState)[iglobal].weightsumIteration();
+        weightsumCovering[iglobal] +=
+            pointState[iglobal].weightsumIteration();
     }
 
     /* Sum histograms over multiple simulations if needed. */
@@ -659,7 +659,7 @@ static void sumHistograms(std::vector<PointState> *pointState,
 
         for (size_t ilocal = 0; ilocal < localUpdateList.size(); ilocal++)
         {
-            const PointState &ps = (*pointState)[localUpdateList[ilocal]];
+            const PointState &ps = pointState[localUpdateList[ilocal]];
 
             weightDistr[ilocal]  = ps.weightsumIteration();
             coordVisits[ilocal]  = ps.numVisitsIteration();
@@ -671,7 +671,7 @@ static void sumHistograms(std::vector<PointState> *pointState,
         /* Transfer back the result */
         for (size_t ilocal = 0; ilocal < localUpdateList.size(); ilocal++)
         {
-            PointState &ps = (*pointState)[localUpdateList[ilocal]];
+            PointState &ps = pointState[localUpdateList[ilocal]];
 
             ps.setPartialWeightAndCount(weightDistr[ilocal],
                                         coordVisits[ilocal]);
@@ -683,7 +683,7 @@ static void sumHistograms(std::vector<PointState> *pointState,
        with resetting them until the end of the update. */
     for (auto &iglobal : localUpdateList)
     {
-        (*pointState)[iglobal].addPartialWeightAndCount();
+        pointState[iglobal].addPartialWeightAndCount();
     }
 }
 
@@ -934,7 +934,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     resetLocalUpdateRange(grid);
 
     /* Add samples to histograms for all local points and sync simulations if needed */
-    sumHistograms(&points_, &weightsumCovering_,
+    sumHistograms(points_, weightsumCovering_,
                   params.numSharedUpdate, multiSimComm, *updateList);
 
     /* Renormalize the free energy if values are too large. */
@@ -1237,15 +1237,13 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
 
 void BiasState::broadcast(const t_commrec *cr)
 {
-    std::vector<PointState> pointsTmp = move(points_);
-    GMX_RELEASE_ASSERT(points_.capacity() == 0, "Can only broadcast the state when points has no memory allocated");
-
-    /* Broadcast the state memory with zero capacity std::vector */
-    gmx_bcast(sizeof(BiasState), this, cr);
-
-    points_ = move(pointsTmp);
+    gmx_bcast(sizeof(coordinateState_), &coordinateState_, cr);
 
     gmx_bcast(points_.size()*sizeof(PointState), points_.data(), cr);
+
+    gmx_bcast(sizeof(histogramSize_), &histogramSize_, cr);
+
+    gmx_bcast(weightsumCovering_.size()*sizeof(double), weightsumCovering_.data(), cr);
 }
 
 void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,

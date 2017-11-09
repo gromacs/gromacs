@@ -607,7 +607,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (startingFromCheckpoint)
         {
             /* Restore the AWH history read from checkpoint */
-            ir->awh->restoreStateFromHistory(state_global->awhHistory.get(), cr);
+            ir->awh->restoreStateFromHistory(MASTER(cr) ? state_global->awhHistory.get() : nullptr, cr);
         }
         else
         {
