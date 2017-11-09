@@ -1644,7 +1644,8 @@ applicable pulling coordinate.
    .. mdp-value:: umbrella
 
       Center of mass pulling using an umbrella potential between the
-      reference group and one or more groups.
+      reference group and one or more groups. The umbrella location
+      is moved using Monte-Carlo every :mdp:`awh-nstsample` steps.
 
    .. mdp-value:: constraint
 
