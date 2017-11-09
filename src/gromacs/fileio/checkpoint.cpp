@@ -512,15 +512,20 @@ static void convertArrayRealPrecision(const char gmx_unused *c, int gmx_unused *
  * and std::vector<real>. Using real * is deprecated and this routine
  * will simplify a lot when only std::vector needs to be supported.
  *
+ * The routine is generic to vectors with different allocators,
+ * because as part of reading a checkpoint there are vectors whose
+ * size is not known until reading has progressed far enough, so a
+ * resize method must be called.
+ *
  * When not listing, we use either v or vector, depending on which is !=NULL.
  * If nval >= 0, nval is used; on read this should match the passed value.
  * If nval n<0, *nptr (with v) or vector->size() is used. On read using v,
  * the value is stored in nptr
  */
-template<typename T>
+template<typename T, typename AllocatorType>
 static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
                        int nval, int *nptr,
-                       T **v, std::vector<T> *vector,
+                       T **v, std::vector<T, AllocatorType> *vector,
                        FILE *list, CptElementType cptElementType)
 {
     GMX_RELEASE_ASSERT(list != nullptr || (v != nullptr && vector == nullptr) || (v == nullptr && vector != nullptr), "Without list, we should have exactly one of v and vector != NULL");
@@ -669,12 +674,13 @@ static int doRealArrayRef(XDR *xd, StatePart part, int ecpt, int sflags,
                           gmx::ArrayRef<real> vector, FILE *list)
 {
     real *v_real = vector.data();
-    return doVectorLow<real>(xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
+    return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
 }
 
-//! \brief Read/Write a PaddedRVecVector.
-static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                              gmx::PaddedRVecVector *v, int numAtoms, FILE *list)
+//! \brief Read/Write a vector whose value_type is RVec and whose allocator is \c AllocatorType.
+template <typename AllocatorType>
+static int doRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
+                        std::vector<gmx::RVec, AllocatorType> *v, int numAtoms, FILE *list)
 {
     const int numReals = numAtoms*DIM;
 
@@ -693,7 +699,10 @@ static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
     }
     else
     {
-        return doVectorLow<real>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
+        // Use the rebind facility to change the value_type of the
+        // allocator from RVec to real.
+        using realAllocator = typename AllocatorType::template rebind<real>::other;
+        return doVectorLow<real, realAllocator>(xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
 }
 
@@ -704,7 +713,7 @@ static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
 static int do_cpte_reals(XDR *xd, StatePart part, int ecpt, int sflags,
                          int n, real **v, FILE *list)
 {
-    return doVectorLow<real>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
+    return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
 }
 
 /* This function does the same as do_cpte_reals,
@@ -714,19 +723,19 @@ static int do_cpte_reals(XDR *xd, StatePart part, int ecpt, int sflags,
 static int do_cpte_n_reals(XDR *xd, StatePart part, int ecpt, int sflags,
                            int *n, real **v, FILE *list)
 {
-    return doVectorLow<real>(xd, part, ecpt, sflags, -1, n, v, nullptr, list, CptElementType::real);
+    return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, -1, n, v, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_real(XDR *xd, StatePart part, int ecpt, int sflags,
                         real *r, FILE *list)
 {
-    return doVectorLow<real>(xd, part, ecpt, sflags, 1, nullptr, &r, nullptr, list, CptElementType::real);
+    return doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, 1, nullptr, &r, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_ints(XDR *xd, StatePart part, int ecpt, int sflags,
                         int n, int **v, FILE *list)
 {
-    return doVectorLow<int>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::integer);
+    return doVectorLow < int, std::allocator < int>>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::integer);
 }
 
 static int do_cpte_int(XDR *xd, StatePart part, int ecpt, int sflags,
@@ -738,7 +747,7 @@ static int do_cpte_int(XDR *xd, StatePart part, int ecpt, int sflags,
 static int do_cpte_doubles(XDR *xd, StatePart part, int ecpt, int sflags,
                            int n, double **v, FILE *list)
 {
-    return doVectorLow<double>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
+    return doVectorLow < double, std::allocator < double>>(xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_double(XDR *xd, StatePart part, int ecpt, int sflags,
@@ -754,8 +763,8 @@ static int do_cpte_matrix(XDR *xd, StatePart part, int ecpt, int sflags,
     int   ret;
 
     vr  = &(v[0][0]);
-    ret = doVectorLow<real>(xd, part, ecpt, sflags,
-                            DIM*DIM, nullptr, &vr, nullptr, nullptr, CptElementType::matrix3x3);
+    ret = doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags,
+                                                      DIM*DIM, nullptr, &vr, nullptr, nullptr, CptElementType::matrix3x3);
 
     if (list && ret == 0)
     {
@@ -780,7 +789,7 @@ static int do_cpte_nmatrix(XDR *xd, StatePart part, int ecpt, int sflags,
     }
     for (i = 0; i < n; i++)
     {
-        reti = doVectorLow<real>(xd, part, ecpt, sflags, n, nullptr, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
+        reti = doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags, n, nullptr, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
         if (list && reti == 0)
         {
             sprintf(name, "%s[%d]", entryName(part, ecpt), i);
@@ -837,9 +846,9 @@ static int do_cpte_matrices(XDR *xd, StatePart part, int ecpt, int sflags,
             }
         }
     }
-    ret = doVectorLow<real>(xd, part, ecpt, sflags,
-                            nf*DIM*DIM, nullptr, &vr, nullptr, nullptr,
-                            CptElementType::matrix3x3);
+    ret = doVectorLow < real, std::allocator < real>>(xd, part, ecpt, sflags,
+                                                      nf*DIM*DIM, nullptr, &vr, nullptr, nullptr,
+                                                      CptElementType::matrix3x3);
     for (i = 0; i < nf; i++)
     {
         for (j = 0; j < DIM; j++)
@@ -1094,8 +1103,8 @@ static int do_cpt_state(XDR *xd,
                 case estBAROS_INT:   ret  = do_cpte_double(xd, part, i, sflags, &state->baros_integral, list); break;
                 case estVETA:    ret      = do_cpte_real(xd, part, i, sflags, &state->veta, list); break;
                 case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
-                case estX:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->x, state->natoms, list); break;
-                case estV:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->v, state->natoms, list); break;
+                case estX:       ret      = doRvecVector(xd, part, i, sflags, &state->x, state->natoms, list); break;
+                case estV:       ret      = doRvecVector(xd, part, i, sflags, &state->v, state->natoms, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
@@ -2787,12 +2796,12 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->bX         = (state.flags & (1<<estX));
     if (fr->bX)
     {
-        fr->x   = getRvecArrayFromPaddedRVecVector(&state.x, state.natoms);
+        fr->x   = makeRvecArray(state.x, state.natoms);
     }
     fr->bV      = (state.flags & (1<<estV));
     if (fr->bV)
     {
-        fr->v   = getRvecArrayFromPaddedRVecVector(&state.v, state.natoms);
+        fr->v   = makeRvecArray(state.v, state.natoms);
     }
     fr->bF      = FALSE;
     fr->bBox    = (state.flags & (1<<estBOX));
