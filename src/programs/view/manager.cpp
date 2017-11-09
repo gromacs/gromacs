@@ -58,6 +58,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -359,16 +360,17 @@ static bool step_man(t_manager *man, int *nat)
     }
     bEof = read_next_x(man->oenv, man->status, &man->time, man->x, man->box);
     *nat = man->natom;
+    auto positionsRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(man->x), man->natom);
     if (ncount == man->nSkip)
     {
         switch (man->molw->boxtype)
         {
             case esbTri:
-                put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, man->natom, man->x);
+                put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, positionsRef);
                 break;
             case esbTrunc:
                 put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
-                                              man->natom, man->x);
+                                              positionsRef);
                 break;
             case esbRect:
             case esbNone:
