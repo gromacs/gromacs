@@ -74,7 +74,7 @@ static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes,
     return 0;
 }
 
-int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
+int cu_copy_D2H_sync(void * h_dest, void * d_src, size_t bytes)
 {
     return cu_copy_D2H_generic(h_dest, d_src, bytes, false);
 }
@@ -115,7 +115,7 @@ static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
     return 0;
 }
 
-int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
+int cu_copy_H2D_sync(void * d_dest, void * h_src, size_t bytes)
 {
     return cu_copy_H2D_generic(d_dest, h_src, bytes, false);
 }
@@ -204,7 +204,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
         }
         else
         {
-            cu_copy_H2D(*d_dest, h_src,  *curr_size * type_size);
+            cu_copy_H2D_sync(*d_dest, h_src,  *curr_size * type_size);
         }
     }
 }
@@ -290,7 +290,7 @@ void initParamLookupTable(T                        * &d_ptr,
     const size_t sizeInBytes = numElem * sizeof(*d_ptr);
     cudaError_t  stat        = cudaMalloc((void **)&d_ptr, sizeInBytes);
     CU_RET_ERR(stat, "cudaMalloc failed in initParamLookupTable");
-    cu_copy_H2D(d_ptr, (void *)h_ptr, sizeInBytes);
+    cu_copy_H2D_sync(d_ptr, (void *)h_ptr, sizeInBytes);
 
     if (!c_disableCudaTextures)
     {

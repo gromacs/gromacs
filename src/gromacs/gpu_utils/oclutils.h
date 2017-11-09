@@ -115,9 +115,9 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
                        cl_event *copy_event);
 
 /*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D(cl_mem d_dest, void * h_src,
-                 size_t offset, size_t bytes,
-                 cl_command_queue command_queue);
+int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
+                      size_t offset, size_t bytes,
+                      cl_command_queue command_queue);
 
 /*! \brief Allocate host memory in malloc style */
 void ocl_pmalloc(void **h_ptr, size_t nbytes);
