@@ -320,7 +320,7 @@ loadDuplicateHsimd(const double * m)
 }
 
 static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double * m)
+loadU1DualHsimd(const double * m)
 {
     return {
                _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_load_sd(m)),

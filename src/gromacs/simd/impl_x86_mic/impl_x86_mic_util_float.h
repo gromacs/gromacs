@@ -347,7 +347,7 @@ loadDuplicateHsimd(const float * m)
 }
 
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float * m)
+loadU1DualHsimd(const float * m)
 {
     return _mm512_mask_extload_ps(_mm512_extload_ps(m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE), _mm512_int2mask(0xFF00),
                                   m+1, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE);

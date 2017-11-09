@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -703,7 +703,7 @@ loadDuplicateHsimd(const double *  m)
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
 static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double *  m)
+loadU1DualHsimd(const double *  m)
 {
     SimdDouble        a;
 

@@ -724,7 +724,7 @@ TEST_F(SimdFloatingpointUtilTest, loadDuplicateHsimd)
 }
 
 
-TEST_F(SimdFloatingpointUtilTest, load1DualHsimd)
+TEST_F(SimdFloatingpointUtilTest, loadU1DualHsimd)
 {
     SimdReal        v0, v1;
     int             i;
@@ -740,7 +740,7 @@ TEST_F(SimdFloatingpointUtilTest, load1DualHsimd)
     }
 
     v0 = load<SimdReal>(val0_);
-    v1 = load1DualHsimd(data);
+    v1 = loadU1DualHsimd(data);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
 }
