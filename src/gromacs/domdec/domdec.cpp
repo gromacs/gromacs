@@ -1157,8 +1157,9 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
     dd->comm->master_cg_ddp_count = state_local->ddp_count;
 }
 
-static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,
-                                    const rvec *lv, rvec *v)
+static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
+                                    gmx::ArrayRef<const gmx::RVec> lv,
+                                    gmx::ArrayRef<gmx::RVec>       v)
 {
     gmx_domdec_master_t *ma;
     int                  n, i, c, a, nalloc = 0;
@@ -1170,7 +1171,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,
     if (!DDMASTER(dd))
     {
 #if GMX_MPI
-        MPI_Send(const_cast<void *>(static_cast<const void *>(lv)), dd->nat_home*sizeof(rvec), MPI_BYTE,
+        MPI_Send(const_cast<void *>(static_cast<const void *>(lv.data())), dd->nat_home*sizeof(rvec), MPI_BYTE,
                  DDMASTERRANK(dd), dd->rank, dd->mpi_comm_all);
 #endif
     }
@@ -1234,8 +1235,9 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     }
 }
 
-static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
-                                   const rvec *lv, rvec *v)
+static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
+                                   gmx::ArrayRef<const gmx::RVec> lv,
+                                   gmx::ArrayRef<gmx::RVec>       v)
 {
     gmx_domdec_master_t *ma;
     int                 *rcounts = nullptr, *disps = nullptr;
@@ -1252,7 +1254,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
         buf = ma->vbuf;
     }
 
-    dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv, rcounts, disps, buf);
+    dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), rcounts, disps, buf);
 
     if (DDMASTER(dd))
     {
@@ -1272,14 +1274,12 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
     }
 }
 
-void dd_collect_vec(gmx_domdec_t           *dd,
-                    const t_state          *state_local,
-                    const PaddedRVecVector *localVector,
-                    rvec                   *v)
+void dd_collect_vec(gmx_domdec_t                  *dd,
+                    const t_state                 *state_local,
+                    gmx::ArrayRef<const gmx::RVec> lv,
+                    gmx::ArrayRef<gmx::RVec>       v)
 {
     dd_collect_cg(dd, state_local);
-
-    const rvec *lv = as_rvec_array(localVector->data());
 
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
     {
@@ -1289,15 +1289,6 @@ void dd_collect_vec(gmx_domdec_t           *dd,
     {
         dd_collect_vec_gatherv(dd, lv, v);
     }
-}
-
-void dd_collect_vec(gmx_domdec_t           *dd,
-                    const t_state          *state_local,
-                    const PaddedRVecVector *localVector,
-                    PaddedRVecVector       *vector)
-{
-    dd_collect_vec(dd, state_local, localVector,
-                   DDMASTER(dd) ? as_rvec_array(vector->data()) : nullptr);
 }
 
 
@@ -1344,15 +1335,15 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
     if (state_local->flags & (1 << estX))
     {
-        dd_collect_vec(dd, state_local, &state_local->x, &state->x);
+        dd_collect_vec(dd, state_local, state_local->x, state->x);
     }
     if (state_local->flags & (1 << estV))
     {
-        dd_collect_vec(dd, state_local, &state_local->v, &state->v);
+        dd_collect_vec(dd, state_local, state_local->v, state->v);
     }
     if (state_local->flags & (1 << estCGP))
     {
-        dd_collect_vec(dd, state_local, &state_local->cg_p, &state->cg_p);
+        dd_collect_vec(dd, state_local, state_local->cg_p, state->cg_p);
     }
 }
 
