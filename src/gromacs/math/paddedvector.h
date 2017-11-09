@@ -48,6 +48,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
@@ -60,9 +61,9 @@ namespace gmx
  *       by automated padding on resize() of the vector.
  * \todo Undo the move of allocator.h and alignedallocator.h from the internal
  *       to be public API applied in Change-Id: Ifb8dacf, needed to use
- *       AlginedAllocationPolicy here, when replacing std::vector here.
+ *       AlignedAllocationPolicy here, when replacing std::vector here.
  */
-using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, AlignedAllocationPolicy > >;
+using PaddedRVecVector = std::vector < RVec, Allocator < RVec, AlignedAllocationPolicy > >;
 
 /*! \brief Returns the padded size for PaddedRVecVector given the number of atoms
  *
@@ -92,9 +93,16 @@ static inline size_t paddedRVecVectorSize(size_t numAtoms)
     return std::max(simdScatterAccessSize, simdFlatAccesSize);
 }
 
+/*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities from a view.
+ *
+ * \todo Find a more permanent solution that permits the update code to safely
+ * use a padded, aligned array-ref type. */
+template <typename T>
+using PaddedArrayRef = ArrayRef<T>;
+
 } // namespace gmx
 
-// TODO This is a hack to avoid littering gmx:: all over code that is
+// TODO These are hacks to avoid littering gmx:: all over code that is
 // almost all destined to move into the gmx namespace at some point.
 // An alternative would be about 20 files with using statements.
 using gmx::PaddedRVecVector;
