@@ -586,7 +586,7 @@ loadDuplicateHsimd(const float * m)
 }
 
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float * m)
+loadU1DualHsimd(const float * m)
 {
     __m128 t0, t1;
     t0 = _mm_broadcast_ss(m);

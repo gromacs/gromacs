@@ -475,12 +475,12 @@
         /* Load i atom data */
         int sciy             = scix + STRIDE;
         int sciz             = sciy + STRIDE;
-        ix_S0          = load1DualHsimd(x+scix);
-        ix_S2          = load1DualHsimd(x+scix+2);
-        iy_S0          = load1DualHsimd(x+sciy);
-        iy_S2          = load1DualHsimd(x+sciy+2);
-        iz_S0          = load1DualHsimd(x+sciz);
-        iz_S2          = load1DualHsimd(x+sciz+2);
+        ix_S0          = loadU1DualHsimd(x+scix);
+        ix_S2          = loadU1DualHsimd(x+scix+2);
+        iy_S0          = loadU1DualHsimd(x+sciy);
+        iy_S2          = loadU1DualHsimd(x+sciy+2);
+        iz_S0          = loadU1DualHsimd(x+sciz);
+        iz_S2          = loadU1DualHsimd(x+sciz+2);
         ix_S0          = ix_S0 + shX_S;
         ix_S2          = ix_S2 + shX_S;
         iy_S0          = iy_S0 + shY_S;
@@ -494,32 +494,32 @@
 
             facel_S    = SimdReal(facel);
 
-            iq_S0      = load1DualHsimd(q+sci);
-            iq_S2      = load1DualHsimd(q+sci+2);
+            iq_S0      = loadU1DualHsimd(q+sci);
+            iq_S2      = loadU1DualHsimd(q+sci+2);
             iq_S0      = facel_S * iq_S0;
             iq_S2      = facel_S * iq_S2;
         }
 
 #ifdef LJ_COMB_LB
-        hsig_i_S0 = load1DualHsimd(ljc+sci2);
-        hsig_i_S2 = load1DualHsimd(ljc+sci2+2);
-        seps_i_S0 = load1DualHsimd(ljc+sci2+STRIDE);
-        seps_i_S2 = load1DualHsimd(ljc+sci2+STRIDE+2);
+        hsig_i_S0 = loadU1DualHsimd(ljc+sci2);
+        hsig_i_S2 = loadU1DualHsimd(ljc+sci2+2);
+        seps_i_S0 = loadU1DualHsimd(ljc+sci2+STRIDE);
+        seps_i_S2 = loadU1DualHsimd(ljc+sci2+STRIDE+2);
 #else
 #ifdef LJ_COMB_GEOM
         SimdReal   c6s_S0, c12s_S0;
         SimdReal   c6s_S2, c12s_S2;
 
-        c6s_S0 = load1DualHsimd(ljc+sci2);
+        c6s_S0 = loadU1DualHsimd(ljc+sci2);
 
         if (!half_LJ)
         {
-            c6s_S2 = load1DualHsimd(ljc+sci2+2);
+            c6s_S2 = loadU1DualHsimd(ljc+sci2+2);
         }
-        c12s_S0 = load1DualHsimd(ljc+sci2+STRIDE);
+        c12s_S0 = loadU1DualHsimd(ljc+sci2+STRIDE);
         if (!half_LJ)
         {
-            c12s_S2 = load1DualHsimd(ljc+sci2+STRIDE+2);
+            c12s_S2 = loadU1DualHsimd(ljc+sci2+STRIDE+2);
         }
 #elif !defined LJ_COMB_LB && !defined FIX_LJ_C
         const real *nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*c_simdBestPairAlignment;
@@ -535,10 +535,10 @@
 #ifdef LJ_EWALD_GEOM
         /* We need the geometrically combined C6 for the PME grid correction */
         SimdReal c6s_S0, c6s_S2;
-        c6s_S0 = load1DualHsimd(ljc+sci2);
+        c6s_S0 = loadU1DualHsimd(ljc+sci2);
         if (!half_LJ)
         {
-            c6s_S2 = load1DualHsimd(ljc+sci2+2);
+            c6s_S2 = loadU1DualHsimd(ljc+sci2+2);
         }
 #endif
 
