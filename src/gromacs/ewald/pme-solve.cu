@@ -427,7 +427,8 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
     if (copyInputAndOutputGrid)
     {
-        cu_copy_H2D_async(kernelParamsPtr->grid.d_fourierGrid, h_grid, pmeGpu->archSpecific->complexGridSize * sizeof(float), stream);
+        cu_copy_H2D(kernelParamsPtr->grid.d_fourierGrid, h_grid, pmeGpu->archSpecific->complexGridSize * sizeof(float),
+                    pmeGpu->settings.transferKind, stream);
     }
 
     int majorDim = -1, middleDim = -1, minorDim = -1;
@@ -489,12 +490,13 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
     if (computeEnergyAndVirial)
     {
-        cu_copy_D2H_async(pmeGpu->staging.h_virialAndEnergy, kernelParamsPtr->constants.d_virialAndEnergy,
-                          c_virialAndEnergyCount * sizeof(float), stream);
+        cu_copy_D2H(pmeGpu->staging.h_virialAndEnergy, kernelParamsPtr->constants.d_virialAndEnergy,
+                    c_virialAndEnergyCount * sizeof(float), pmeGpu->settings.transferKind, stream);
     }
 
     if (copyInputAndOutputGrid)
     {
-        cu_copy_D2H_async(h_grid, kernelParamsPtr->grid.d_fourierGrid, pmeGpu->archSpecific->complexGridSize * sizeof(float), stream);
+        cu_copy_D2H(h_grid, kernelParamsPtr->grid.d_fourierGrid, pmeGpu->archSpecific->complexGridSize * sizeof(float),
+                    pmeGpu->settings.transferKind, stream);
     }
 }
