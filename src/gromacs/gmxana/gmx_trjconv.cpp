@@ -65,6 +65,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -270,7 +271,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
 {
     int     i, j;
     int     d;
-    rvec    com, new_com, shift, box_center;
+    rvec    com, shift, box_center;
     real    m;
     double  mtot;
     t_pbc   pbc;
@@ -299,20 +300,22 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         svmul(1.0/mtot, com, com);
 
         /* check if COM is outside box */
-        copy_rvec(com, new_com);
+        gmx::RVec newCom;
+        copy_rvec(com, newCom);
+        auto      newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
         switch (unitcell_enum)
         {
             case euRect:
-                put_atoms_in_box(ePBC, box, 1, &new_com);
+                put_atoms_in_box(ePBC, box, newComArrayRef);
                 break;
             case euTric:
-                put_atoms_in_triclinic_unitcell(ecenter, box, 1, &new_com);
+                put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef);
                 break;
             case euCompact:
-                put_atoms_in_compact_unitcell(ePBC, ecenter, box, 1, &new_com);
+                put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
                 break;
         }
-        rvec_sub(new_com, com, shift);
+        rvec_sub(newCom, com, shift);
         if (norm2(shift) > 0)
         {
             if (debug)
@@ -337,7 +340,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     int              d, presnr;
     real             m;
     double           mtot;
-    rvec             box_center, com, new_com, shift;
+    rvec             box_center, com, shift;
     static const int NOTSET = -12347;
     calc_box_center(ecenter, box, box_center);
 
@@ -354,20 +357,22 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             svmul(1.0/mtot, com, com);
 
             /* check if COM is outside box */
-            copy_rvec(com, new_com);
+            gmx::RVec newCom;
+            copy_rvec(com, newCom);
+            auto      newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
             switch (unitcell_enum)
             {
                 case euRect:
-                    put_atoms_in_box(ePBC, box, 1, &new_com);
+                    put_atoms_in_box(ePBC, box, newComArrayRef);
                     break;
                 case euTric:
-                    put_atoms_in_triclinic_unitcell(ecenter, box, 1, &new_com);
+                    put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef);
                     break;
                 case euCompact:
-                    put_atoms_in_compact_unitcell(ePBC, ecenter, box, 1, &new_com);
+                    put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
                     break;
             }
-            rvec_sub(new_com, com, shift);
+            rvec_sub(newCom, com, shift);
             if (norm2(shift))
             {
                 if (debug)
@@ -1651,19 +1656,20 @@ int gmx_trjconv(int argc, char *argv[])
                             }
                         }
 
+                        auto positionsArrayRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(fr.x), natoms);
                         if (bPBCcomAtom)
                         {
                             switch (unitcell_enum)
                             {
                                 case euRect:
-                                    put_atoms_in_box(ePBC, fr.box, natoms, fr.x);
+                                    put_atoms_in_box(ePBC, fr.box, positionsArrayRef);
                                     break;
                                 case euTric:
-                                    put_atoms_in_triclinic_unitcell(ecenter, fr.box, natoms, fr.x);
+                                    put_atoms_in_triclinic_unitcell(ecenter, fr.box, positionsArrayRef);
                                     break;
                                 case euCompact:
                                     put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
-                                                                  natoms, fr.x);
+                                                                  positionsArrayRef);
                                     break;
                             }
                         }

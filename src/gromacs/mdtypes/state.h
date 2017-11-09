@@ -60,6 +60,7 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -258,8 +259,8 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda);
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
-rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
-                                       unsigned int            n);
+rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
+                    unsigned int                   n);
 
 /*! \brief Determine the relative box components
  *
