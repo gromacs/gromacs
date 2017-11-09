@@ -119,8 +119,9 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
      * and the probablity weights need to be calculated.
      */
     const bool sampleCoord   = params_.isSampleCoordStep(step);
+    const bool moveUmbrella  = (sampleCoord || step == 0);
     double     convolvedBias = 0;
-    if (params_.convolveForce || sampleCoord)
+    if (params_.convolveForce || moveUmbrella || sampleCoord)
     {
         if (params_.skipUpdates())
         {
@@ -129,7 +130,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
 
         convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid(), probWeightNeighbor);
 
-        if (step > 0 && sampleCoord)
+        if (sampleCoord)
         {
             state_.sampleCoordAndPmf(grid(), *probWeightNeighbor, convolvedBias);
         }
@@ -165,7 +166,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
          * the coordinate so we know the probability weights needed
          * for moving the umbrella are up-to-date.
          */
-        if (sampleCoord)
+        if (moveUmbrella)
         {
             newPotential = state_.moveUmbrella(dimParams_, grid(), *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
         }
