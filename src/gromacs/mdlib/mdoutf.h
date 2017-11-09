@@ -41,6 +41,7 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 class energyhistory_t;
@@ -108,7 +109,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
-                                      PaddedRVecVector *f_local);
+                                      gmx::ArrayRef<gmx::RVec> f_local);
 
 #define MDOF_X            (1<<0)
 #define MDOF_V            (1<<1)
