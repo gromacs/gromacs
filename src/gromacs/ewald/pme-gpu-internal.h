@@ -544,7 +544,8 @@ gmx_inline bool pme_gpu_performs_solve(const PmeGpu *pmeGPU)
 
 /*! \libinternal \brief
  * Enables or disables the testing mode.
- * Testing mode only implies copying all the outputs, even the intermediate ones, to the host.
+ * Testing mode only implies copying all the outputs, even the intermediate ones, to the host,
+ * and also makes the copies synchronous.
  *
  * \param[in] pmeGPU             The PME GPU structure.
  * \param[in] testing            Should the testing mode be enabled, or disabled.
@@ -552,6 +553,7 @@ gmx_inline bool pme_gpu_performs_solve(const PmeGpu *pmeGPU)
 gmx_inline void pme_gpu_set_testing(PmeGpu *pmeGPU, bool testing)
 {
     pmeGPU->settings.copyAllOutputs = testing;
+    pmeGPU->settings.transferKind   = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
 }
 
 /*! \libinternal \brief
