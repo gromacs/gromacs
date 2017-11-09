@@ -120,7 +120,7 @@ class BiasParams
          */
         inline bool isSampleCoordStep(gmx_int64_t step) const
         {
-            return step % numStepsSampleCoord_ == 0;
+            return (step > 0 && step % numStepsSampleCoord_ == 0);
         }
 
         /*! \brief
