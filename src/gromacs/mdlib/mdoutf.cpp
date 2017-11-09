@@ -251,7 +251,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
-                                      PaddedRVecVector *f_local)
+                                      gmx::ArrayRef<gmx::RVec> f_local)
 {
     rvec *f_global;
 
@@ -265,19 +265,17 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                dd_collect_vec(cr->dd, state_local, &state_local->x,
-                               MASTER(cr) ? &state_global->x : nullptr);
+                dd_collect_vec(cr->dd, state_local, state_local->x, state_global->x);
             }
             if (mdof_flags & MDOF_V)
             {
-                dd_collect_vec(cr->dd, state_local, &state_local->v,
-                               MASTER(cr) ? &state_global->v : nullptr);
+                dd_collect_vec(cr->dd, state_local, state_local->v, state_global->v);
             }
         }
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            dd_collect_vec(cr->dd, state_local, f_local, f_global);
+            dd_collect_vec(cr->dd, state_local, f_local, gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(f_global), f_local.size()));
         }
     }
     else
@@ -285,7 +283,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         /* We have the whole state locally: copy the local state pointer */
         state_global = state_local;
 
-        f_global     = as_rvec_array(f_local->data());
+        f_global     = as_rvec_array(f_local.data());
     }
 
     if (MASTER(cr))

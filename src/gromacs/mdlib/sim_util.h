@@ -75,10 +75,9 @@ void do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
  * in tools.
  * \param[in]    ePBC   The pbc type
  * \param[in]    box    The simulation box
- * \param[in]    natoms The number of atoms
  * \param[inout] x      The coordinates of the atoms
  */
-void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
+void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 
 
