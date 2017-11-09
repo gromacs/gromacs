@@ -361,14 +361,15 @@ static bool step_man(t_manager *man, int *nat)
     *nat = man->natom;
     if (ncount == man->nSkip)
     {
+        auto atomsArrayRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(man->x), man->natom);
         switch (man->molw->boxtype)
         {
             case esbTri:
-                put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, man->natom, man->x);
+                put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, atomsArrayRef);
                 break;
             case esbTrunc:
                 put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
-                                              man->natom, man->x);
+                                              atomsArrayRef);
                 break;
             case esbRect:
             case esbNone:

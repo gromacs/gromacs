@@ -531,7 +531,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, (double)step,
                                      &state->s, state_global, observablesHistory,
-                                     &state->f);
+                                     state->f);
 
     if (confout != nullptr && MASTER(cr))
     {
@@ -767,8 +767,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
      */
     do_force(fplog, cr, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
-             ems->s.box, &ems->s.x, &ems->s.hist,
-             &ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
+             ems->s.box, ems->s.x, &ems->s.hist,
+             ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
@@ -1870,7 +1870,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, &ems.s, state_global, observablesHistory, &ems.f);
+                                         top_global, step, (real)step, &ems.s, state_global, observablesHistory, ems.f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 

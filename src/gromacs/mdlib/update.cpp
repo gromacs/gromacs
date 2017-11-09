@@ -1048,10 +1048,10 @@ static void do_update_bd(int start, int nrend, real dt,
 
 static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
                         int gmx_unused natoms,
-                        const gmx_unused PaddedRVecVector *x,
-                        const gmx_unused PaddedRVecVector *xp,
-                        const gmx_unused PaddedRVecVector *v,
-                        const gmx_unused PaddedRVecVector *f)
+                        PaddedArrayRef<gmx::RVec> gmx_unused x,
+                        PaddedArrayRef<gmx::RVec> gmx_unused xp,
+                        PaddedArrayRef<gmx::RVec> gmx_unused v,
+                        PaddedArrayRef<gmx::RVec> gmx_unused f)
 {
 #ifdef DEBUG
     if (fp)
@@ -1512,24 +1512,24 @@ void update_pcouple_before_coordinates(FILE             *fplog,
     }
 }
 
-void update_constraints(FILE             *fplog,
-                        gmx_int64_t       step,
-                        real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms        *md,
-                        t_state          *state,
-                        gmx_bool          bMolPBC,
-                        t_graph          *graph,
-                        PaddedRVecVector *force,     /* forces on home particles */
-                        t_idef           *idef,
-                        tensor            vir_part,
-                        t_commrec        *cr,
-                        t_nrnb           *nrnb,
-                        gmx_wallcycle_t   wcycle,
-                        gmx_update_t     *upd,
-                        gmx_constr_t      constr,
-                        gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir)
+void update_constraints(FILE                    *fplog,
+                        gmx_int64_t              step,
+                        real                    *dvdlambda, /* the contribution to be added to the bonded interactions */
+                        t_inputrec              *inputrec,  /* input record and box stuff	*/
+                        t_mdatoms               *md,
+                        t_state                 *state,
+                        gmx_bool                 bMolPBC,
+                        t_graph                 *graph,
+                        PaddedArrayRef<gmx::RVec> force,     /* forces on home particles */
+                        t_idef                  *idef,
+                        tensor                   vir_part,
+                        t_commrec               *cr,
+                        t_nrnb                  *nrnb,
+                        gmx_wallcycle_t          wcycle,
+                        gmx_update_t            *upd,
+                        gmx_constr_t             constr,
+                        gmx_bool                 bFirstHalf,
+                        gmx_bool                 bCalcVir)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     tensor               vir_con;
@@ -1602,7 +1602,7 @@ void update_constraints(FILE             *fplog,
         where();
 
         dump_it_all(fplog, "After Shake",
-                    state->natoms, &state->x, &upd->xp, &state->v, force);
+                    state->natoms, state->x, upd->xp, state->v, force);
 
         if (bCalcVir)
         {
@@ -1636,7 +1636,7 @@ void update_constraints(FILE             *fplog,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array(force->data()),
+                              as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array(force.data()),
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
@@ -1740,7 +1740,7 @@ void update_constraints(FILE             *fplog,
         wallcycle_stop(wcycle, ewcUPDATE);
 
         dump_it_all(fplog, "After unshift",
-                    state->natoms, &state->x, &upd->xp, &state->v, force);
+                    state->natoms, state->x, upd->xp, state->v, force);
     }
 /* ############# END the update of velocities and positions ######### */
 }
@@ -1843,22 +1843,22 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
     where();
     dump_it_all(fplog, "After update",
-                state->natoms, &state->x, &upd->xp, &state->v, nullptr);
+                state->natoms, state->x, upd->xp, state->v, gmx::EmptyArrayRef());
 }
 
-void update_coords(FILE             *fplog,
-                   gmx_int64_t       step,
-                   t_inputrec       *inputrec,  /* input record and box stuff	*/
-                   t_mdatoms        *md,
-                   t_state          *state,
-                   PaddedRVecVector *f,    /* forces on home particles */
-                   t_fcdata         *fcd,
-                   gmx_ekindata_t   *ekind,
-                   matrix            M,
-                   gmx_update_t     *upd,
-                   int               UpdatePart,
-                   t_commrec        *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr_t      constr)
+void update_coords(FILE                    *fplog,
+                   gmx_int64_t              step,
+                   t_inputrec              *inputrec, /* input record and box stuff	*/
+                   t_mdatoms               *md,
+                   t_state                 *state,
+                   PaddedArrayRef<gmx::RVec> f,    /* forces on home particles */
+                   t_fcdata                *fcd,
+                   gmx_ekindata_t          *ekind,
+                   matrix                   M,
+                   gmx_update_t            *upd,
+                   int                      UpdatePart,
+                   t_commrec               *cr, /* these shouldn't be here -- need to think about it */
+                   gmx_constr_t             constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 
@@ -1887,7 +1887,7 @@ void update_coords(FILE             *fplog,
     /* ############# START The update of velocities and positions ######### */
     where();
     dump_it_all(fplog, "Before update",
-                state->natoms, &state->x, &upd->xp, &state->v, f);
+                state->natoms, state->x, upd->xp, state->v, f);
 
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1908,13 +1908,13 @@ void update_coords(FILE             *fplog,
             GMX_ASSERT(state->x.size() >= homenrSimdPadded, "state->x needs to be padded for SIMD access");
             GMX_ASSERT(upd->xp.size()  >= homenrSimdPadded, "upd->xp needs to be padded for SIMD access");
             GMX_ASSERT(state->v.size() >= homenrSimdPadded, "state->v needs to be padded for SIMD access");
-            GMX_ASSERT(f->size()       >= homenrSimdPadded, "f needs to be padded for SIMD access");
+            GMX_ASSERT(f.size()        >= homenrSimdPadded, "f needs to be padded for SIMD access");
 #endif
 
             const rvec *x_rvec  = as_rvec_array(state->x.data());
             rvec       *xp_rvec = as_rvec_array(upd->xp.data());
             rvec       *v_rvec  = as_rvec_array(state->v.data());
-            const rvec *f_rvec  = as_rvec_array(f->data());
+            const rvec *f_rvec  = as_rvec_array(f.data());
 
             switch (inputrec->eI)
             {
