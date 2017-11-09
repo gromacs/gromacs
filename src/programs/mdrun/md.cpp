@@ -52,6 +52,7 @@
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -515,7 +516,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = std::unique_ptr<t_state>(new t_state);
+        stateInstance = gmx::compat::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
     }
@@ -1219,8 +1220,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
-                     state->box, &state->x, &state->hist,
-                     &f, force_vir, mdatoms, enerd, fcd,
+                     state->box, state->x, &state->hist,
+                     f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
@@ -1250,7 +1251,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
+            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
@@ -1258,7 +1259,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, &f,
+                                   state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
@@ -1405,7 +1406,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, observablesHistory,
                                  top_global, fr,
-                                 outf, mdebin, ekind, &f,
+                                 outf, mdebin, ekind, f,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
@@ -1504,7 +1505,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             if (constr && bIfRandomize)
             {
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, &f,
+                                   state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
@@ -1543,7 +1544,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             if (EI_VV(ir->eI))
             {
                 /* velocity half-step update */
-                update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
+                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, etrtVELOCITY2,
                               cr, constr);
             }
@@ -1564,12 +1565,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
+            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
-                               fr->bMolPBC, graph, &f,
+                               fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
@@ -1589,7 +1590,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
-                update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
+                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1599,7 +1600,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                  * physically? I'm thinking they are just errors, but not completely sure.
                  * For now, will call without actually constraining, constr=NULL*/
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, &f,
+                                   state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, nullptr,
                                    FALSE, bCalcVir);

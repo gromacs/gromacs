@@ -40,6 +40,7 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -113,42 +114,42 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
-void update_coords(FILE              *fplog,
-                   gmx_int64_t        step,
-                   t_inputrec        *inputrec, /* input record and box stuff	*/
-                   t_mdatoms         *md,
-                   t_state           *state,
-                   PaddedRVecVector  *f, /* forces on home particles */
-                   t_fcdata          *fcd,
-                   gmx_ekindata_t    *ekind,
-                   matrix             M,
-                   gmx_update_t      *upd,
-                   int                bUpdatePart,
-                   t_commrec         *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr        *constr);
+void update_coords(FILE                          *fplog,
+                   gmx_int64_t                    step,
+                   t_inputrec                    *inputrec, /* input record and box stuff	*/
+                   t_mdatoms                     *md,
+                   t_state                       *state,
+                   gmx::PaddedArrayRef<gmx::RVec> f, /* forces on home particles */
+                   t_fcdata                      *fcd,
+                   gmx_ekindata_t                *ekind,
+                   matrix                         M,
+                   gmx_update_t                  *upd,
+                   int                            bUpdatePart,
+                   t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
+                   gmx_constr                    *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
 
-void update_constraints(FILE              *fplog,
-                        gmx_int64_t        step,
-                        real              *dvdlambda, /* FEP stuff */
-                        t_inputrec        *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms         *md,
-                        t_state           *state,
-                        gmx_bool           bMolPBC,
-                        t_graph           *graph,
-                        PaddedRVecVector  *force, /* forces on home particles */
-                        t_idef            *idef,
-                        tensor             vir_part,
-                        t_commrec         *cr,
-                        t_nrnb            *nrnb,
-                        gmx_wallcycle_t    wcycle,
-                        gmx_update_t      *upd,
-                        gmx_constr        *constr,
-                        gmx_bool           bFirstHalf,
-                        gmx_bool           bCalcVir);
+void update_constraints(FILE                    *fplog,
+                        gmx_int64_t              step,
+                        real                    *dvdlambda, /* FEP stuff */
+                        t_inputrec              *inputrec,  /* input record and box stuff	*/
+                        t_mdatoms               *md,
+                        t_state                 *state,
+                        gmx_bool                 bMolPBC,
+                        t_graph                 *graph,
+                        gmx::ArrayRef<gmx::RVec> force, /* forces on home particles */
+                        t_idef                  *idef,
+                        tensor                   vir_part,
+                        t_commrec               *cr,
+                        t_nrnb                  *nrnb,
+                        gmx_wallcycle_t          wcycle,
+                        gmx_update_t            *upd,
+                        gmx_constr              *constr,
+                        gmx_bool                 bFirstHalf,
+                        gmx_bool                 bCalcVir);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

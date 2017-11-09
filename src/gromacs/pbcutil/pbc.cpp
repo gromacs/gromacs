@@ -1413,9 +1413,9 @@ int *compact_unitcell_edges()
     return edge;
 }
 
-void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
+void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 {
-    int npbcdim, i, m, d;
+    int npbcdim, m, d;
 
     if (ePBC == epbcSCREW)
     {
@@ -1433,7 +1433,7 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 
     if (TRICLINIC(box))
     {
-        for (i = 0; (i < natoms); i++)
+        for (size_t i = 0; (i < x.size()); ++i)
         {
             for (m = npbcdim-1; m >= 0; m--)
             {
@@ -1456,7 +1456,7 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
     }
     else
     {
-        for (i = 0; i < natoms; i++)
+        for (size_t i = 0; (i < x.size()); ++i)
         {
             for (d = 0; d < npbcdim; d++)
             {
@@ -1474,11 +1474,11 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 }
 
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
-                                     int natoms, rvec x[])
+                                     gmx::ArrayRef<gmx::RVec> x)
 {
     rvec   box_center, shift_center;
     real   shm01, shm02, shm12, shift;
-    int    i, m, d;
+    int    m, d;
 
     calc_box_center(ecenter, box, box_center);
 
@@ -1500,7 +1500,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
     shift_center[1] = shm12*shift_center[2];
     shift_center[2] = 0;
 
-    for (i = 0; (i < natoms); i++)
+    for (size_t i = 0; (i < x.size()); ++i)
     {
         for (m = DIM-1; m >= 0; m--)
         {
@@ -1532,11 +1532,10 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
 }
 
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
-                                   int natoms, rvec x[])
+                                   gmx::ArrayRef<gmx::RVec> x)
 {
     t_pbc pbc;
     rvec  box_center, dx;
-    int   i;
 
     set_pbc(&pbc, ePBC, box);
 
@@ -1546,7 +1545,7 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
     }
 
     calc_box_center(ecenter, box, box_center);
-    for (i = 0; i < natoms; i++)
+    for (size_t i = 0; (i < x.size()); ++i)
     {
         pbc_dx(&pbc, x[i], box_center, dx);
         rvec_add(box_center, dx, x[i]);

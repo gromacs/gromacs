@@ -259,7 +259,8 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
-static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, int numAtoms)
+template <typename AllocatorType>
+static void bcastPaddedRVecVector(const t_commrec *cr, std::vector<gmx::RVec, AllocatorType> *v, int numAtoms)
 {
     v->resize(gmx::paddedRVecVectorSize(numAtoms));
     nblock_bc(cr, numAtoms, as_rvec_array(v->data()));
