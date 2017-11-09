@@ -206,16 +206,16 @@ void comp_state(const t_state *st1, const t_state *st2,
     }
 }
 
-rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
-                                       unsigned int            n)
+rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
+                    unsigned int                   n)
 {
-    GMX_ASSERT(v->size() >= n, "We can't copy more elements than the vector size");
+    GMX_ASSERT(v.size() >= n, "We can't copy more elements than the vector size");
 
     rvec *dest;
 
     snew(dest, n);
 
-    const rvec *vPtr = as_rvec_array(v->data());
+    const rvec *vPtr = as_rvec_array(v.data());
     for (unsigned int i = 0; i < n; i++)
     {
         copy_rvec(vPtr[i], dest[i]);
