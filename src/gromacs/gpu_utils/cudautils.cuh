@@ -46,6 +46,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
+enum class GpuApiCallBehavior;
+
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
    - non performance-critical: these errors are unsafe to be ignored and must be
@@ -134,12 +136,23 @@ struct gmx_device_info_t
 #endif                                           /* HAVE_NVML */
 };
 
+/*! Launches synchronous or asynchronous device to host memory copy.
+ *
+ *  The copy is launched in stream s or if not specified, in stream 0.
+ */
+int cu_copy_D2H(void *h_dest, void *d_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t s /*= 0*/);
 
 /*! Launches synchronous host to device memory copy in stream 0. */
 int cu_copy_D2H_sync(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
 int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
+
+/*! Launches synchronous or asynchronous host to device memory copy.
+ *
+ *  The copy is launched in stream s or if not specified, in stream 0.
+ */
+int cu_copy_H2D(void *d_dest, void *h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = 0*/);
 
 /*! Launches synchronous host to device memory copy. */
 int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
