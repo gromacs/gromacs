@@ -57,6 +57,7 @@
 #include <array>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -168,6 +169,7 @@ typedef struct df_history_t
 
 } df_history_t;
 
+using GpuHostRVecVector = std::vector < gmx::RVec,  gmx::HostAllocator < gmx::RVec>>;
 
 /*! \brief The microstate of the system
  *
@@ -180,8 +182,12 @@ typedef struct df_history_t
 class t_state
 {
     public:
-        //! Constructor
-        t_state();
+        /*! \brief Constructor taking an allocation policy
+         *
+         * If/when we have fields that might need different polices for
+         * different simulation types or schedules then we will need to
+         * reconsider this interface. */
+        t_state(gmx::HostAllocationPolicy policy = gmx::HostAllocationPolicy());
 
         // All things public
         int                      natoms;          //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
@@ -205,7 +211,7 @@ class t_state
         double                   baros_integral;  //!< For Berendsen P-coupling conserved quantity
         real                     veta;            //!< Trotter based isotropic P-coupling
         real                     vol0;            //!< Initial volume,required for computing MTTK conserved quantity
-        PaddedRVecVector         x;               //!< The coordinates (natoms)
+        GpuHostRVecVector        x;               //!< The coordinates (natoms)
         PaddedRVecVector         v;               //!< The velocities (natoms)
         PaddedRVecVector         cg_p;            //!< p vector for conjugate gradient minimization
 
