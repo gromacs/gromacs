@@ -502,6 +502,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
+    // TODO Fix this hard-coding when activating with PME on GPU code
+    bool useGpuForPme         = false;
+    auto hostAllocationPolicy = (useGpuForPme ?
+                                 makeHostAllocationPolicyForGpu() :
+                                 HostAllocationPolicy());
+
     // Local state only becomes valid now.
     std::unique_ptr<t_state> stateInstance;
     t_state *                state;
@@ -510,7 +516,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = gmx::compat::make_unique<t_state>();
+        stateInstance = gmx::compat::make_unique<t_state>(hostAllocationPolicy);
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
     }

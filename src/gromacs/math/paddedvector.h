@@ -61,6 +61,7 @@ namespace gmx
  * \todo Undo the move of allocator.h and alignedallocator.h from the internal
  *       to be public API applied in Change-Id: Ifb8dacf, needed to use
  *       AlginedAllocationPolicy here, when replacing std::vector here.
+ *       Similarly hostallocator.h should not be in the public API.
  */
 using PaddedRVecVector = std::vector < RVec, Allocator < RVec, AlignedAllocationPolicy > >;
 
