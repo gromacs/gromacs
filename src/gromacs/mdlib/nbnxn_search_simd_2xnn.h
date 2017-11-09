@@ -53,12 +53,12 @@ icell_set_x_simd_2xnn(int ci,
 
     ia = xIndexFromCi<NbnxnLayout::Simd2xNN>(ci);
 
-    store(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0*STRIDE_S + 0) + SimdReal(shx) );
-    store(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1*STRIDE_S + 0) + SimdReal(shy) );
-    store(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2*STRIDE_S + 0) + SimdReal(shz) );
-    store(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0*STRIDE_S + 2) + SimdReal(shx) );
-    store(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1*STRIDE_S + 2) + SimdReal(shy) );
-    store(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2*STRIDE_S + 2) + SimdReal(shz) );
+    store(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 0*STRIDE_S + 0) + SimdReal(shx) );
+    store(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 1*STRIDE_S + 0) + SimdReal(shy) );
+    store(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 2*STRIDE_S + 0) + SimdReal(shz) );
+    store(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 0*STRIDE_S + 2) + SimdReal(shx) );
+    store(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 1*STRIDE_S + 2) + SimdReal(shy) );
+    store(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH, loadU1DualHsimd(x + ia + 2*STRIDE_S + 2) + SimdReal(shz) );
 }
 
 /* SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.

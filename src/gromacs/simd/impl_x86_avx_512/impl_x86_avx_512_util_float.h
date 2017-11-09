@@ -360,7 +360,7 @@ loadDuplicateHsimd(const float * m)
 }
 
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float * m)
+loadU1DualHsimd(const float * m)
 {
     return {
                _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_load_ss(m)),

@@ -98,12 +98,12 @@ nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
         /* Load i atom data */
         int      sciy    = scix + STRIDE;
         int      sciz    = sciy + STRIDE;
-        SimdReal ix_S0   = load1DualHsimd(x + scix    ) + shX_S;
-        SimdReal ix_S2   = load1DualHsimd(x + scix + 2) + shX_S;
-        SimdReal iy_S0   = load1DualHsimd(x + sciy    ) + shY_S;
-        SimdReal iy_S2   = load1DualHsimd(x + sciy + 2) + shY_S;
-        SimdReal iz_S0   = load1DualHsimd(x + sciz    ) + shZ_S;
-        SimdReal iz_S2   = load1DualHsimd(x + sciz + 2) + shZ_S;
+        SimdReal ix_S0   = loadU1DualHsimd(x + scix    ) + shX_S;
+        SimdReal ix_S2   = loadU1DualHsimd(x + scix + 2) + shX_S;
+        SimdReal iy_S0   = loadU1DualHsimd(x + sciy    ) + shY_S;
+        SimdReal iy_S2   = loadU1DualHsimd(x + sciy + 2) + shY_S;
+        SimdReal iz_S0   = loadU1DualHsimd(x + sciz    ) + shZ_S;
+        SimdReal iz_S2   = loadU1DualHsimd(x + sciz + 2) + shZ_S;
 
         for (int cjind = ciEntry->cj_ind_start; cjind < ciEntry->cj_ind_end; cjind++)
         {

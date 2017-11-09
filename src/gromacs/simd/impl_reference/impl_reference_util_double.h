@@ -703,7 +703,7 @@ loadDuplicateHsimd(const double *  m)
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
 static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double *  m)
+loadU1DualHsimd(const double *  m)
 {
     SimdDouble        a;
 

@@ -752,7 +752,7 @@ loadDuplicateHsimd(const float *  m)
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is 1.
  */
 static inline SimdFloat gmx_simdcall
-load1DualHsimd(const float *  m)
+loadU1DualHsimd(const float *  m)
 {
     SimdFloat        a;
 
