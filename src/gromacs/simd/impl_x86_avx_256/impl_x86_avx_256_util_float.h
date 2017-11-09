@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -589,10 +589,8 @@ static inline SimdFloat gmx_simdcall
 load1DualHsimd(const float * m)
 {
     __m128 t0, t1;
-    t0 = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64 *>(m));
-    t1 = _mm_permute_ps(t0, _MM_SHUFFLE(1, 1, 1, 1));
-    t0 = _mm_permute_ps(t0, _MM_SHUFFLE(0, 0, 0, 0));
-
+    t0 = _mm_broadcast_ss(m);
+    t1 = _mm_broadcast_ss(m+1);
     return {
                _mm256_insertf128_ps(_mm256_castps128_ps256(t0), t1, 0x1)
     };
