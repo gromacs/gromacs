@@ -57,9 +57,9 @@ static void handleCufftError(cufftResult_t status, const char *msg)
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGPU)
+GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGpu)
 {
-    const PmeGpuCudaKernelParams *kernelParamsPtr = pmeGPU->kernelParams.get();
+    const PmeGpuCudaKernelParams *kernelParamsPtr = pmeGpu->kernelParams.get();
     ivec realGridSize, realGridSizePadded, complexGridSizePadded;
     for (int i = 0; i < DIM; i++)
     {
@@ -68,7 +68,7 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGPU)
         complexGridSizePadded[i] = kernelParamsPtr->grid.complexGridSizePadded[i];
     }
 
-    GMX_RELEASE_ASSERT(!pme_gpu_uses_dd(pmeGPU), "FFT decomposition not implemented");
+    GMX_RELEASE_ASSERT(!pme_gpu_uses_dd(pmeGpu), "FFT decomposition not implemented");
 
     const int complexGridSizePaddedTotal = complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ];
     const int realGridSizePaddedTotal    = realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ];
@@ -103,7 +103,7 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGPU)
                            batch);
     handleCufftError(result, "cufftPlanMany C2R plan failure");
 
-    cudaStream_t stream = pmeGPU->archSpecific->pmeStream;
+    cudaStream_t stream = pmeGpu->archSpecific->pmeStream;
     GMX_RELEASE_ASSERT(stream, "Using the default CUDA stream for PME cuFFT");
 
     result = cufftSetStream(planR2C_, stream);
@@ -137,10 +137,10 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir)
     }
 }
 
-void pme_gpu_3dfft(const PmeGpu *pmeGPU, gmx_fft_direction dir, int grid_index)
+void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
 {
     int timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
-    pme_gpu_start_timing(pmeGPU, timerId);
-    pmeGPU->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
-    pme_gpu_stop_timing(pmeGPU, timerId);
+    pme_gpu_start_timing(pmeGpu, timerId);
+    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
+    pme_gpu_stop_timing(pmeGpu, timerId);
 }

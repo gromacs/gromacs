@@ -62,9 +62,9 @@ class GpuParallel3dFft
         /*! \brief
          * Constructs CUDA FFT plans for performing 3D FFT on a PME grid.
          *
-         * \param[in] pmeGPU                  The PME GPU structure.
+         * \param[in] pmeGpu                  The PME GPU structure.
          */
-        GpuParallel3dFft(const PmeGpu *pmeGPU);
+        GpuParallel3dFft(const PmeGpu *pmeGpu);
         /*! \brief Destroys CUDA FFT plans. */
         ~GpuParallel3dFft();
         /*! \brief Performs the FFT transform in given direction */

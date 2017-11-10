@@ -53,83 +53,83 @@
  * \param[in] pme            The PME data structure.
  * \returns                  True if timings are enabled, false otherwise.
  */
-gmx_inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGPU)
+gmx_inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGpu)
 {
-    return pmeGPU->archSpecific->useTiming;
+    return pmeGpu->archSpecific->useTiming;
 }
 
-void pme_gpu_start_timing(const PmeGpu *pmeGPU, size_t PMEStageId)
+void pme_gpu_start_timing(const PmeGpu *pmeGpu, size_t PMEStageId)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
-        GMX_ASSERT(PMEStageId < pmeGPU->archSpecific->timingEvents.size(), "Wrong PME GPU timing event index");
-        pmeGPU->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGPU->archSpecific->pmeStream);
+        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(), "Wrong PME GPU timing event index");
+        pmeGpu->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream);
     }
 }
 
-void pme_gpu_stop_timing(const PmeGpu *pmeGPU, size_t PMEStageId)
+void pme_gpu_stop_timing(const PmeGpu *pmeGpu, size_t PMEStageId)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
-        GMX_ASSERT(PMEStageId < pmeGPU->archSpecific->timingEvents.size(), "Wrong PME GPU timing event index");
-        pmeGPU->archSpecific->timingEvents[PMEStageId].closeTimingRegion(pmeGPU->archSpecific->pmeStream);
+        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(), "Wrong PME GPU timing event index");
+        pmeGpu->archSpecific->timingEvents[PMEStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream);
     }
 }
 
-void pme_gpu_get_timings(const PmeGpu *pmeGPU, gmx_wallclock_gpu_pme_t *timings)
+void pme_gpu_get_timings(const PmeGpu *pmeGpu, gmx_wallclock_gpu_pme_t *timings)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
         GMX_RELEASE_ASSERT(timings, "Null GPU timing pointer");
-        for (size_t i = 0; i < pmeGPU->archSpecific->timingEvents.size(); i++)
+        for (size_t i = 0; i < pmeGpu->archSpecific->timingEvents.size(); i++)
         {
-            timings->timing[i].t = pmeGPU->archSpecific->timingEvents[i].getTotalTime();
-            timings->timing[i].c = pmeGPU->archSpecific->timingEvents[i].getCallCount();
+            timings->timing[i].t = pmeGpu->archSpecific->timingEvents[i].getTotalTime();
+            timings->timing[i].c = pmeGpu->archSpecific->timingEvents[i].getCallCount();
         }
     }
 }
 
-void pme_gpu_update_timings(const PmeGpu *pmeGPU)
+void pme_gpu_update_timings(const PmeGpu *pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
-        for (const size_t &activeTimer : pmeGPU->archSpecific->activeTimers)
+        for (const size_t &activeTimer : pmeGpu->archSpecific->activeTimers)
         {
-            pmeGPU->archSpecific->timingEvents[activeTimer].getLastRangeTime();
+            pmeGpu->archSpecific->timingEvents[activeTimer].getLastRangeTime();
         }
     }
 }
 
-void pme_gpu_reinit_timings(const PmeGpu *pmeGPU)
+void pme_gpu_reinit_timings(const PmeGpu *pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
-        pmeGPU->archSpecific->activeTimers.clear();
-        pmeGPU->archSpecific->activeTimers.insert(gtPME_SPLINEANDSPREAD);
+        pmeGpu->archSpecific->activeTimers.clear();
+        pmeGpu->archSpecific->activeTimers.insert(gtPME_SPLINEANDSPREAD);
         // TODO: no separate gtPME_SPLINE and gtPME_SPREAD as they are not used currently
-        if (pme_gpu_performs_FFT(pmeGPU))
+        if (pme_gpu_performs_FFT(pmeGpu))
         {
-            pmeGPU->archSpecific->activeTimers.insert(gtPME_FFT_C2R);
-            pmeGPU->archSpecific->activeTimers.insert(gtPME_FFT_R2C);
+            pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_C2R);
+            pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_R2C);
         }
-        if (pme_gpu_performs_solve(pmeGPU))
+        if (pme_gpu_performs_solve(pmeGpu))
         {
-            pmeGPU->archSpecific->activeTimers.insert(gtPME_SOLVE);
+            pmeGpu->archSpecific->activeTimers.insert(gtPME_SOLVE);
         }
-        if (pme_gpu_performs_gather(pmeGPU))
+        if (pme_gpu_performs_gather(pmeGpu))
         {
-            pmeGPU->archSpecific->activeTimers.insert(gtPME_GATHER);
+            pmeGpu->archSpecific->activeTimers.insert(gtPME_GATHER);
         }
     }
 }
 
-void pme_gpu_reset_timings(const PmeGpu *pmeGPU)
+void pme_gpu_reset_timings(const PmeGpu *pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGPU))
+    if (pme_gpu_timings_enabled(pmeGpu))
     {
-        for (size_t i = 0; i < pmeGPU->archSpecific->timingEvents.size(); i++)
+        for (size_t i = 0; i < pmeGpu->archSpecific->timingEvents.size(); i++)
         {
-            pmeGPU->archSpecific->timingEvents[i].reset();
+            pmeGpu->archSpecific->timingEvents[i].reset();
         }
     }
 }

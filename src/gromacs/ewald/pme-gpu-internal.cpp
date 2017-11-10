@@ -67,37 +67,37 @@
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
  *
- * \param[in] pmeGPU  The PME GPU structure.
+ * \param[in] pmeGpu  The PME GPU structure.
  * \returns The pointer to the kernel parameters.
  */
-static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *pmeGPU)
+static PmeGpuKernelParamsBase *pme_gpu_get_kernel_params_base_ptr(const PmeGpu *pmeGpu)
 {
     // reinterpret_cast is needed because the derived CUDA structure is not known in this file
-    auto *kernelParamsPtr = reinterpret_cast<PmeGpuKernelParamsBase *>(pmeGPU->kernelParams.get());
+    auto *kernelParamsPtr = reinterpret_cast<PmeGpuKernelParamsBase *>(pmeGpu->kernelParams.get());
     return kernelParamsPtr;
 }
 
-void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial)
+void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial)
 {
     for (int j = 0; j < c_virialAndEnergyCount; j++)
     {
-        GMX_ASSERT(std::isfinite(pmeGPU->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
+        GMX_ASSERT(std::isfinite(pmeGpu->staging.h_virialAndEnergy[j]), "PME GPU produces incorrect energy/virial.");
     }
 
     GMX_ASSERT(energy, "Invalid energy output pointer in PME GPU");
     unsigned int j = 0;
-    virial[XX][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[YY][YY] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[ZZ][ZZ] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    *energy        = 0.5f * pmeGPU->staging.h_virialAndEnergy[j++];
+    virial[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    *energy        = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
 }
 
-void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
+void pme_gpu_update_input_box(PmeGpu *pmeGpu, const matrix box)
 {
-    auto        *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    auto        *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->current.boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
     GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0f, "Zero volume of the unit cell");
 
@@ -105,7 +105,7 @@ void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
     matrix scaledBox, recipBox;
-    pmeGPU->common->boxScaler->scaleBox(box, scaledBox);
+    pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     gmx::invertBoxMatrix(scaledBox, recipBox);
 
     /* The GPU recipBox is transposed as compared to the CPU recipBox.
@@ -125,37 +125,37 @@ void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
 /*! \brief \libinternal
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
  *
- * \param[in] pmeGPU            The PME GPU structure.
+ * \param[in] pmeGpu            The PME GPU structure.
  */
-static void pme_gpu_reinit_computation(const PmeGpu *pmeGPU)
+static void pme_gpu_reinit_computation(const PmeGpu *pmeGpu)
 {
-    pme_gpu_clear_grids(pmeGPU);
-    pme_gpu_clear_energy_virial(pmeGPU);
+    pme_gpu_clear_grids(pmeGpu);
+    pme_gpu_clear_energy_virial(pmeGpu);
 }
 
-void pme_gpu_finish_computation(const PmeGpu *pmeGPU)
+void pme_gpu_finish_computation(const PmeGpu *pmeGpu)
 {
     // Synchronize the whole PME stream at once, including D2H result transfers.
-    pme_gpu_synchronize(pmeGPU);
+    pme_gpu_synchronize(pmeGpu);
 
-    pme_gpu_update_timings(pmeGPU);
-    pme_gpu_reinit_computation(pmeGPU);
+    pme_gpu_update_timings(pmeGpu);
+    pme_gpu_reinit_computation(pmeGpu);
 }
 
 /*! \brief \libinternal
  * (Re-)initializes all the PME GPU data related to the grid size and cut-off.
  *
- * \param[in] pmeGPU            The PME GPU structure.
+ * \param[in] pmeGpu            The PME GPU structure.
  */
-static void pme_gpu_reinit_grids(PmeGpu *pmeGPU)
+static void pme_gpu_reinit_grids(PmeGpu *pmeGpu)
 {
-    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
-    kernelParamsPtr->grid.ewaldFactor = (M_PI * M_PI) / (pmeGPU->common->ewaldcoeff_q * pmeGPU->common->ewaldcoeff_q);
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    kernelParamsPtr->grid.ewaldFactor = (M_PI * M_PI) / (pmeGpu->common->ewaldcoeff_q * pmeGpu->common->ewaldcoeff_q);
 
     /* The grid size variants */
     for (int i = 0; i < DIM; i++)
     {
-        kernelParamsPtr->grid.realGridSize[i]       = pmeGPU->common->nk[i];
+        kernelParamsPtr->grid.realGridSize[i]       = pmeGpu->common->nk[i];
         kernelParamsPtr->grid.realGridSizeFP[i]     = (float)kernelParamsPtr->grid.realGridSize[i];
         kernelParamsPtr->grid.realGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
 
@@ -165,7 +165,7 @@ static void pme_gpu_reinit_grids(PmeGpu *pmeGPU)
         kernelParamsPtr->grid.complexGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
     }
     /* FFT: n real elements correspond to (n / 2 + 1) complex elements in minor dimension */
-    if (!pme_gpu_performs_FFT(pmeGPU))
+    if (!pme_gpu_performs_FFT(pmeGpu))
     {
         // This allows for GPU spreading grid and CPU fftgrid to have the same layout, so that we can copy the data directly
         kernelParamsPtr->grid.realGridSizePadded[ZZ] = (kernelParamsPtr->grid.realGridSize[ZZ] / 2 + 1) * 2;
@@ -176,10 +176,10 @@ static void pme_gpu_reinit_grids(PmeGpu *pmeGPU)
     kernelParamsPtr->grid.complexGridSize[ZZ]++;
     kernelParamsPtr->grid.complexGridSizePadded[ZZ] = kernelParamsPtr->grid.complexGridSize[ZZ];
 
-    pme_gpu_realloc_and_copy_fract_shifts(pmeGPU);
-    pme_gpu_realloc_and_copy_bspline_values(pmeGPU);
-    pme_gpu_realloc_grids(pmeGPU);
-    pme_gpu_reinit_3dfft(pmeGPU);
+    pme_gpu_realloc_and_copy_fract_shifts(pmeGpu);
+    pme_gpu_realloc_and_copy_bspline_values(pmeGpu);
+    pme_gpu_realloc_grids(pmeGpu);
+    pme_gpu_reinit_3dfft(pmeGpu);
 }
 
 /* Several GPU functions that refer to the CPU PME data live here.
@@ -197,32 +197,32 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
 {
     /* TODO: Consider refactoring the CPU PME code to use the same structure,
      * so that this function becomes 2 lines */
-    PmeGpu *pmeGPU             = pme->gpu;
-    pmeGPU->common->ngrids        = pme->ngrids;
-    pmeGPU->common->epsilon_r     = pme->epsilon_r;
-    pmeGPU->common->ewaldcoeff_q  = pme->ewaldcoeff_q;
-    pmeGPU->common->nk[XX]        = pme->nkx;
-    pmeGPU->common->nk[YY]        = pme->nky;
-    pmeGPU->common->nk[ZZ]        = pme->nkz;
-    pmeGPU->common->pmegrid_n[XX] = pme->pmegrid_nx;
-    pmeGPU->common->pmegrid_n[YY] = pme->pmegrid_ny;
-    pmeGPU->common->pmegrid_n[ZZ] = pme->pmegrid_nz;
-    pmeGPU->common->pme_order     = pme->pme_order;
+    PmeGpu *pmeGpu             = pme->gpu;
+    pmeGpu->common->ngrids        = pme->ngrids;
+    pmeGpu->common->epsilon_r     = pme->epsilon_r;
+    pmeGpu->common->ewaldcoeff_q  = pme->ewaldcoeff_q;
+    pmeGpu->common->nk[XX]        = pme->nkx;
+    pmeGpu->common->nk[YY]        = pme->nky;
+    pmeGpu->common->nk[ZZ]        = pme->nkz;
+    pmeGpu->common->pmegrid_n[XX] = pme->pmegrid_nx;
+    pmeGpu->common->pmegrid_n[YY] = pme->pmegrid_ny;
+    pmeGpu->common->pmegrid_n[ZZ] = pme->pmegrid_nz;
+    pmeGpu->common->pme_order     = pme->pme_order;
     for (int i = 0; i < DIM; i++)
     {
-        pmeGPU->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGPU->common->nk[i]);
+        pmeGpu->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGpu->common->nk[i]);
     }
     const int cellCount = c_pmeNeighborUnitcellCount;
-    pmeGPU->common->fsh.resize(0);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshx, pme->fshx + cellCount * pme->nkx);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshy, pme->fshy + cellCount * pme->nky);
-    pmeGPU->common->fsh.insert(pmeGPU->common->fsh.end(), pme->fshz, pme->fshz + cellCount * pme->nkz);
-    pmeGPU->common->nn.resize(0);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
-    pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
-    pmeGPU->common->runMode   = pme->runMode;
-    pmeGPU->common->boxScaler = pme->boxScaler;
+    pmeGpu->common->fsh.resize(0);
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshx, pme->fshx + cellCount * pme->nkx);
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshy, pme->fshy + cellCount * pme->nky);
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshz, pme->fshz + cellCount * pme->nkz);
+    pmeGpu->common->nn.resize(0);
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
+    pmeGpu->common->runMode   = pme->runMode;
+    pmeGpu->common->boxScaler = pme->boxScaler;
 }
 
 /*! \brief \libinternal
@@ -291,34 +291,34 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::
     }
 
     pme->gpu          = new PmeGpu();
-    PmeGpu *pmeGPU = pme->gpu;
-    pmeGPU->common = std::shared_ptr<PmeShared>(new PmeShared());
+    PmeGpu *pmeGpu = pme->gpu;
+    pmeGpu->common = std::shared_ptr<PmeShared>(new PmeShared());
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
     /* A convenience variable. */
-    pmeGPU->settings.useDecomposition = (pme->nnodes == 1);
+    pmeGpu->settings.useDecomposition = (pme->nnodes == 1);
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
-    pmeGPU->settings.performGPUGather = true;
+    pmeGpu->settings.performGPUGather = true;
 
-    pme_gpu_set_testing(pmeGPU, false);
+    pme_gpu_set_testing(pmeGpu, false);
 
     // GPU initialization
     init_gpu(mdlog, cr->nodeid, gpuInfo);
-    pmeGPU->deviceInfo = gpuInfo;
+    pmeGpu->deviceInfo = gpuInfo;
 
-    pme_gpu_init_internal(pmeGPU);
-    pme_gpu_init_sync_events(pmeGPU);
-    pme_gpu_alloc_energy_virial(pmeGPU);
+    pme_gpu_init_internal(pmeGpu);
+    pme_gpu_init_sync_events(pmeGpu);
+    pme_gpu_alloc_energy_virial(pmeGpu);
 
     pme_gpu_copy_common_data_from(pme);
 
-    GMX_ASSERT(pmeGPU->common->epsilon_r != 0.0f, "PME GPU: bad electrostatic coefficient");
+    GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0f, "PME GPU: bad electrostatic coefficient");
 
-    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
-    kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGpu->common->epsilon_r;
 }
 
-void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGPU, const pme_atomcomm_t *atc,
+void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm_t *atc,
                                         PmeSplineDataType type, int dimIndex, PmeLayoutTransform transform)
 {
     // The GPU atom spline data is laid out in a different way currently than the CPU one.
@@ -328,9 +328,9 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGPU, const pme_atomcomm
     // (e.g. spreading on GPU, gathering on CPU).
     GMX_RELEASE_ASSERT(atc->nthread == 1, "Only the serial PME data layout is supported");
     const uintmax_t threadIndex  = 0;
-    const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGPU)->atoms.nAtoms;
-    const auto      atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGPU);
-    const auto      pmeOrder     = pmeGPU->common->pme_order;
+    const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->atoms.nAtoms;
+    const auto      atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
+    const auto      pmeOrder     = pmeGpu->common->pme_order;
 
     real           *cpuSplineBuffer;
     float          *h_splineBuffer;
@@ -338,12 +338,12 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGPU, const pme_atomcomm
     {
         case PmeSplineDataType::Values:
             cpuSplineBuffer = atc->spline[threadIndex].theta[dimIndex];
-            h_splineBuffer  = pmeGPU->staging.h_theta;
+            h_splineBuffer  = pmeGpu->staging.h_theta;
             break;
 
         case PmeSplineDataType::Derivatives:
             cpuSplineBuffer = atc->spline[threadIndex].dtheta[dimIndex];
-            h_splineBuffer  = pmeGPU->staging.h_dtheta;
+            h_splineBuffer  = pmeGpu->staging.h_dtheta;
             break;
 
         default:
@@ -376,12 +376,12 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGPU, const pme_atomcomm
     }
 }
 
-void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGPU, gmx::IVec *gridSize, gmx::IVec *paddedGridSize)
+void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx::IVec *paddedGridSize)
 {
     GMX_ASSERT(gridSize != nullptr, "");
     GMX_ASSERT(paddedGridSize != nullptr, "");
-    GMX_ASSERT(pmeGPU != nullptr, "");
-    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    GMX_ASSERT(pmeGpu != nullptr, "");
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     for (int i = 0; i < DIM; i++)
     {
         (*gridSize)[i]       = kernelParamsPtr->grid.realGridSize[i];
@@ -417,51 +417,51 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     pme_gpu_reinit_computation(pme->gpu);
 }
 
-void pme_gpu_destroy(PmeGpu *pmeGPU)
+void pme_gpu_destroy(PmeGpu *pmeGpu)
 {
     /* Free lots of data */
-    pme_gpu_free_energy_virial(pmeGPU);
-    pme_gpu_free_bspline_values(pmeGPU);
-    pme_gpu_free_forces(pmeGPU);
-    pme_gpu_free_coordinates(pmeGPU);
-    pme_gpu_free_coefficients(pmeGPU);
-    pme_gpu_free_spline_data(pmeGPU);
-    pme_gpu_free_grid_indices(pmeGPU);
-    pme_gpu_free_fract_shifts(pmeGPU);
-    pme_gpu_free_grids(pmeGPU);
+    pme_gpu_free_energy_virial(pmeGpu);
+    pme_gpu_free_bspline_values(pmeGpu);
+    pme_gpu_free_forces(pmeGpu);
+    pme_gpu_free_coordinates(pmeGpu);
+    pme_gpu_free_coefficients(pmeGpu);
+    pme_gpu_free_spline_data(pmeGpu);
+    pme_gpu_free_grid_indices(pmeGpu);
+    pme_gpu_free_fract_shifts(pmeGpu);
+    pme_gpu_free_grids(pmeGpu);
 
-    pme_gpu_destroy_3dfft(pmeGPU);
-    pme_gpu_destroy_sync_events(pmeGPU);
+    pme_gpu_destroy_3dfft(pmeGpu);
+    pme_gpu_destroy_sync_events(pmeGpu);
 
     /* Free the GPU-framework specific data last */
-    pme_gpu_destroy_specific(pmeGPU);
+    pme_gpu_destroy_specific(pmeGpu);
 
-    delete pmeGPU;
+    delete pmeGpu;
 }
 
-void pme_gpu_reinit_atoms(PmeGpu *pmeGPU, const int nAtoms, const real *charges)
+void pme_gpu_reinit_atoms(PmeGpu *pmeGpu, const int nAtoms, const real *charges)
 {
-    auto      *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    auto      *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
-    const int  alignment = pme_gpu_get_atom_data_alignment(pmeGPU);
-    pmeGPU->nAtomsPadded = ((nAtoms + alignment - 1) / alignment) * alignment;
-    const int  nAtomsAlloc   = c_usePadding ? pmeGPU->nAtomsPadded : nAtoms;
-    const bool haveToRealloc = (pmeGPU->nAtomsAlloc < nAtomsAlloc); /* This check might be redundant, but is logical */
-    pmeGPU->nAtomsAlloc = nAtomsAlloc;
+    const int  alignment = pme_gpu_get_atom_data_alignment(pmeGpu);
+    pmeGpu->nAtomsPadded = ((nAtoms + alignment - 1) / alignment) * alignment;
+    const int  nAtomsAlloc   = c_usePadding ? pmeGpu->nAtomsPadded : nAtoms;
+    const bool haveToRealloc = (pmeGpu->nAtomsAlloc < nAtomsAlloc); /* This check might be redundant, but is logical */
+    pmeGpu->nAtomsAlloc = nAtomsAlloc;
 
 #if GMX_DOUBLE
     GMX_RELEASE_ASSERT(false, "Only single precision supported");
     GMX_UNUSED_VALUE(charges);
 #else
-    pme_gpu_realloc_and_copy_input_coefficients(pmeGPU, reinterpret_cast<const float *>(charges));
+    pme_gpu_realloc_and_copy_input_coefficients(pmeGpu, reinterpret_cast<const float *>(charges));
     /* Could also be checked for haveToRealloc, but the copy always needs to be performed */
 #endif
 
     if (haveToRealloc)
     {
-        pme_gpu_realloc_coordinates(pmeGPU);
-        pme_gpu_realloc_forces(pmeGPU);
-        pme_gpu_realloc_spline_data(pmeGPU);
-        pme_gpu_realloc_grid_indices(pmeGPU);
+        pme_gpu_realloc_coordinates(pmeGpu);
+        pme_gpu_realloc_forces(pmeGpu);
+        pme_gpu_realloc_spline_data(pmeGpu);
+        pme_gpu_realloc_grid_indices(pmeGpu);
     }
 }

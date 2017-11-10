@@ -518,7 +518,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                         real                 ewaldcoeff_lj,
                         int                  nthread,
                         PmeRunMode           runMode,
-                        PmeGpu              *pmeGPU,
+                        PmeGpu              *pmeGpu,
                         gmx_device_info_t   *gpuInfo,
                         const gmx::MDLogger &mdlog)
 {
@@ -749,7 +749,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     snew(pme->bsp_mod[YY], pme->nky);
     snew(pme->bsp_mod[ZZ], pme->nkz);
 
-    pme->gpu     = pmeGPU; /* Carrying over the single GPU structure */
+    pme->gpu     = pmeGpu; /* Carrying over the single GPU structure */
     pme->runMode = runMode;
 
     /* The required size of the interpolation grid, including overlap.

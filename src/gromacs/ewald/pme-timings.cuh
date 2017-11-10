@@ -50,17 +50,17 @@ struct PmeGpu;
 /*! \libinternal \brief
  * Starts timing the certain PME GPU stage during a single computation (if timings are enabled).
  *
- * \param[in] pmeGPU         The PME GPU data structure.
+ * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_start_timing(const PmeGpu *pmeGPU, size_t PMEStageId);
+void pme_gpu_start_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
 
 /*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single computation (if timings are enabled).
  *
- * \param[in] pmeGPU         The PME GPU data structure.
+ * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_stop_timing(const PmeGpu *pmeGPU, size_t PMEStageId);
+void pme_gpu_stop_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
 
 #endif
