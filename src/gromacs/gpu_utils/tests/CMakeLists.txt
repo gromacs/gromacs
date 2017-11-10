@@ -49,9 +49,24 @@ if(GMX_USE_CUDA)
     # can't cope with that.
     #
     # Perhaps FindCUDA's support for single compilation units will help?
-    cuda_add_library(libgpu_utilstest
-        devicetransfers.cu
-        )
+    if (NOT GMX_CLANG_CUDA)
+        # Work around FindCUDA that prevents using target_link_libraries()
+        # with keywords otherwise...
+        set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
+        cuda_add_library(libgpu_utilstest
+            devicetransfers.cu
+            )
+    else()
+        include(gmxClangCudaUtils)
+        gmx_compile_cuda_file_with_clang(devicetransfers.cu)
+        add_library(libgpu_utilstest
+            devicetransfers.cu
+            )
+    endif()
+
+    target_link_libraries(libgpu_utilstest PRIVATE ${GMX_EXTRA_LIBRARIES})
+    set_target_properties(libgpu_utilstest PROPERTIES OUTPUT_NAME "gpu_utilstest")
+
 elseif(GMX_USE_OPENCL)
     # Do normal compilation of OpenCL files
     list(APPEND SOURCES_FROM_CXX
