@@ -93,8 +93,8 @@ static double erf1(double x)
 
 static void do_hard(FILE *fp, int pts_nm, double efac, double delta)
 {
-    int    i, imax;
-    double x, vr, vr2, vc, vc2;
+    int    i = 0, imax = 0;
+    double x = 0, vr = 0, vr2 = 0, vc = 0, vc2 = 0;
 
     if (delta < 0)
     {
@@ -126,10 +126,10 @@ static void do_hard(FILE *fp, int pts_nm, double efac, double delta)
 
 static void do_AB1(FILE *fp, int pts_nm, int ndisp, int nrep)
 {
-    int    i, k, imax;
+    int    i = 0, k = 0, imax = 0;
     double myfac[3] = { 1, -1, 1 };
     double myexp[3] = { 1, 6, 0 };
-    double x, v, v2;
+    double x = 0, v = 0, v2 = 0;
 
     myexp[1] = ndisp;
     myexp[2] = nrep;
@@ -163,7 +163,7 @@ static void lo_do_ljc(double r,
                       double *vd, double *fd,
                       double *vr, double *fr)
 {
-    double r2, r_6, r_12;
+    double r2 = 0, r_6 = 0, r_12 = 0;
 
     r2    = r*r;
     r_6   = 1.0/(r2*r2*r2);
@@ -186,9 +186,9 @@ static void lo_do_ljc_pme(double r,
                           double *vd, double *fd,
                           double *vr, double *fr)
 {
-    double r2, r_6, r_12;
+    double r2 = 0, r_6 = 0, r_12 = 0;
     double isp = 0.564189583547756;
-    double ewc;
+    double ewc = 0;
 
     ewc  = calc_ewaldcoeff_q(rcoulomb, ewald_rtol);
 
@@ -216,8 +216,8 @@ static void lo_do_guillot(double r, double xi, double xir,
     double qO     = -0.888;
     double qOd    =  0.226;
     double f0     = qOd/qO;
-    double rxi1, rxi2, z;
-    double r2, r_6;
+    double rxi1 = 0, rxi2 = 0, z = 0;
+    double r2 = 0, r_6 = 0;
 
     r2   = r*r;
     r_6  = 1.0/(r2*r2*r2);
@@ -308,7 +308,7 @@ static void lo_do_DEC(double r, double xi, double xir,
     double qO     = -0.888;
     double qOd    =  0.226;
     double f0     = qOd/qO;
-    double r2, xi2;
+    double r2 = 0, xi2 = 0;
 
     r2  = r*r;
     xi2 = xi*xi;
@@ -433,7 +433,7 @@ void lo_do_DEC_q_q(double r, double xir,
                    double *vr, double *fr)
 {
     double sqpi   = sqrt(M_PI);
-    double r2;
+    double r2 = 0;
 
     r2  = r*r;
 
@@ -451,8 +451,8 @@ void lo_do_DEC_q_q(double r, double xir,
 
 static void do_guillot(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
-    int    i, imax;
-    double r, vc, fc, vd, fd, vr, fr;
+    int    i = 0, imax = 0;
+    double r = 0, vc = 0, fc = 0, vd = 0, fd = 0, vr = 0, fr = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -483,11 +483,11 @@ static void do_guillot(FILE *fp, int eel, int pts_nm, double xi, double xir)
  */
 static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
 {
-    FILE       *fp = NULL;
+    FILE       *fp = nullptr;
     char        buf[256];
-    const char *atype[]   = { "HW", "OW", "HWd", "OWd", NULL };
-    int         i, j, k, imax, atypemax = 4;
-    double      r, vc, fc, vd, fd, vr, fr;
+    const char *atype[]   = { "HW", "OW", "HWd", "OWd", nullptr };
+    int         i = 0, j = 0, k = 0, imax = 0, atypemax = 4;
+    double      r = 0, vc = 0, fc = 0, vd = 0, fd = 0, vr = 0, fr = 0;
 
     /* For Guillot2001a we have four types: HW, OW, HWd and OWd. */
 
@@ -616,11 +616,11 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
  */
 static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
 {
-    FILE       *fp = NULL;
+    FILE       *fp = nullptr;
     char        buf[256];
-    const char *atype[]   = { "OW", "HW", "OWd", "HWd", NULL };
-    int         i, j, k, imax, atypemax = 4;
-    double      r, vc, fc, vd, fd, vr, fr;
+    const char *atype[]   = { "OW", "HW", "OWd", "HWd", nullptr };
+    int         i = 0, j = 0, k = 0, imax = 0, atypemax = 4;
+    double      r = 0, vc = 0, fc = 0, vd = 0, fd = 0, vr = 0, fr = 0;
     char        fbuf[256];
 
     strncpy(fbuf, file, 255);
@@ -756,10 +756,10 @@ static void do_Slater(int pts_nm,
                       int nrow1, int nrow2,
                       double w1, double w2)
 {
-    FILE  *fp = NULL;
+    FILE  *fp = nullptr;
     char   buf[256];
-    int    i, imax;
-    double r, vc, fc, vd, fd, vr, fr;
+    int    i = 0, imax = 0;
+    double r = 0, vc = 0, fc = 0, vd = 0, fd = 0, vr = 0, fr = 0;
 
     sprintf(buf, "table_%d-%g_%d-%g.xvg", nrow1, w1, nrow2, w2);
     printf("Writing %s\n", buf);
@@ -803,8 +803,8 @@ static void do_Slater(int pts_nm,
 
 static void do_ljc(FILE *fp, int eel, int pts_nm, real rc, real rtol)
 {
-    int    i, imax;
-    double r, vc, fc, vd, fd, vr, fr;
+    int    i = 0, imax = 0;
+    double r = 0, vc = 0, fc = 0, vd = 0, fd = 0, vr = 0, fr = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -833,9 +833,9 @@ static void do_ljc(FILE *fp, int eel, int pts_nm, real rc, real rtol)
 
 static void do_guillot_maple(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
-    int    i, imax;
+    int    i = 0, imax = 0;
     /*  double xi     = 0.15;*/
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -862,8 +862,8 @@ static void do_guillot_maple(FILE *fp, int eel, int pts_nm, double xi, double xi
 
 static void do_DEC(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
-    int    i, imax;
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    int    i = 0, imax = 0;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -890,8 +890,8 @@ static void do_DEC(FILE *fp, int eel, int pts_nm, double xi, double xir)
 
 static void do_DEC_q_q(FILE *fp, int eel, int pts_nm, double xir)
 {
-    int    i, imax;
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    int    i = 0, imax = 0;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -918,9 +918,9 @@ static void do_DEC_q_q(FILE *fp, int eel, int pts_nm, double xir)
 
 static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
 {
-    int    i, imax;
+    int    i = 0, imax = 0;
     /*  double xi     = 0.15;*/
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -947,9 +947,9 @@ static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
 
 static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double xi)
 {
-    int    i, imax;
+    int    i = 0, imax = 0;
     /*  double xi     = 0.15;*/
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
@@ -976,10 +976,10 @@ static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double xi)
 
 static void do_maaren(FILE *fp, int pts_nm, int npow)
 {
-    int    i, imax;
+    int    i = 0, imax = 0;
     double xi      = 0.05;
     double xir     = 0.0615;
-    double r, vc, vc2, vd, vd2, vr, vr2;
+    double r = 0, vc = 0, vc2 = 0, vd = 0, vd2 = 0, vr = 0, vr2 = 0;
 
     imax = 3*pts_nm;
     for (i = 0; (i <= imax); i++)
