@@ -289,7 +289,7 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
          int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS
-        "-mavx2 -mfma" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+        "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 
     if(NOT SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX2" "choose AVX SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
