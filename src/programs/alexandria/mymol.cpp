@@ -1645,18 +1645,9 @@ void MyMol::PrintTopology(FILE                   *fp,
         commercials.push_back(buf);
     
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
-                                  (char *)"electronic", &value, &error,
+                                  (char *)"electronic", &isoPol_elec_, &error,
                                   &T, myref, mylot, vec, alpha_elec_))
         {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            for(int m = 0; m < DIM; m++)
-            {
-                calc_rotmatrix(alpha_elec_[m], alpha_calc_[m], rotmatrix);
-                mvmul(rotmatrix, alpha_elec_[m], tmpvec);
-                copy_rvec(tmpvec, alpha_elec_[m]);
-            }
-            isoPol_elec_ = (alpha_elec_[XX][XX] + alpha_elec_[YY][YY] + alpha_elec_[ZZ][ZZ])/3.0;
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
             snprintf(buf, sizeof(buf), "%s Polarizability components (A^3):\n"
                      "(%6.2f %6.2f %6.2f)\n"
@@ -2054,8 +2045,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     T = -1;  
     if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, 
                               lot, "", (char *)"electronic", 
-                              &value, &error, &T, myref, mylot, 
-                              vec, polar))
+                              &isoPol_elec_, &error, &T, 
+                              myref, mylot, vec, polar))
     {
         for (m = 0; m < DIM; m++)
         {

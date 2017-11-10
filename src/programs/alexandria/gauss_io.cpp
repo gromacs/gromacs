@@ -503,7 +503,7 @@ void ReadGauss(const char          *g09,
         int                  i;
         m3.GetArray(mm);
         fac = 1000*pow(convert2gmx(1, eg2cBohr), 3);
-        for (i = 0; (i < 9); i++)
+        for (i = 0; i < 9; i++)
         {
             mm[i] *= fac;
         }

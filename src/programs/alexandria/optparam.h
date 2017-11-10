@@ -304,8 +304,6 @@ void Bayes<T>::simulate()
             mcProbability   = exp(-beta_*deltaEval);
             if ((deltaEval < 0) || (mcProbability > randProbability))
             {   
-                printf("Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
-                       j, storeParam, param_[j], beta_*deltaEval);
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
