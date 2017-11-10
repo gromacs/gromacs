@@ -39,6 +39,8 @@
 #include <iostream>
 #include <cmath>
 
+#include "gromacs/utility/fatalerror.h"
+
 #include "coulombintegrals.h"
 #include "slater_low.h"
 
@@ -394,7 +396,10 @@ extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
 
     if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Slater integral %d %d not supported.\n", i, j);
+        }
         exit(1);
     }
     cxi = my_ftoa(xi);
@@ -444,7 +449,10 @@ extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
     double S = 0;
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+        }
     }    
     if (i > SLATER_MAX)
     {
@@ -562,7 +570,10 @@ extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 
     if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported.\n", i, j);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Slater integral %d %d not supported.\n", i, j);
+        }
         exit(1);
     }
     cxi = my_ftoa(xi);
@@ -610,7 +621,10 @@ extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     double S = 0;    
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
+        }
     }    
     if (i > SLATER_MAX)
     {
@@ -668,7 +682,10 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
 
     if (i > SLATER_MAX_CLN)
     {
-        fprintf(stderr, "Slater-Nuclear integral %d not supported.\n", i);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Nuclear integral %d not supported.\n", i);
+        }
         exit(1);
     }
     if (r == 0)
@@ -693,7 +710,10 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
     double S = 0;
     if (i > SLATER_MAX)
     {
-        fprintf(stderr, "Slater-Nuclear integral %d not supported without the CLN libraray. Thus, it will reduce to the SLATER_MAX\n", i);
+        if (debug)
+        {
+            fprintf(debug, "Slater-Nuclear integral %d not supported without the CLN libraray. Thus, it will reduce to the SLATER_MAX\n", i);
+        }
         i = SLATER_MAX;
     }    
     if (r == 0)
