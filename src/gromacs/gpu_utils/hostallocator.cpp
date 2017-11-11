@@ -34,12 +34,7 @@
  */
 /*! \internal \file
  * \brief Implements gmx::HostAllocationPolicy for allocating memory
- * suitable for GPU transfers on OpenCL, and when no GPU
- * implementation is used.
- *
- * \todo The same implementation can be used because we do not
- * currently attempt to optimize the allocation of host-side buffers
- * for OpenCL transfers, but this might be good to do.
+ * suitable for GPU transfers on CUDA.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
@@ -47,39 +42,149 @@
 
 #include "hostallocator.h"
 
-#include <cstdlib>
+#include "config.h"
+
+#include <cstddef>
+
+#include <memory>
 
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "pinning.h"
 
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(Impl s) : allocateForGpu_(s) {}
-
-void *
-HostAllocationPolicy::malloc(std::size_t bytes) const
+//! Private implementation class.
+class HostAllocationPolicy::Impl
 {
-    GMX_UNUSED_VALUE(allocateForGpu_);
-    // TODO if/when this is properly supported for OpenCL, we
-    // should explore whether it is needed, and if so what
-    // page size is desirable for alignment.
-    return AlignedAllocationPolicy::malloc(bytes);
+    public:
+        /*! \brief Pointer to the last unfreed allocation, or nullptr
+         * if no allocation exists.
+         *
+         * Note that during e.g. std::vector.resize() a call to its
+         * allocator's allocate() function precedes the call to its
+         * allocator's deallocate() function for freeing the old
+         * buffer after the data has been copied from it. So in
+         * general, pointer_ will not match the argument received by
+         * free(). */
+        void         *pointer_ = nullptr;
+        //! Number of bytes in the last unfreed allocation.
+        std::size_t   numBytes_ = 0;
+        //! Whether this object is in mode where new allocations will be pinned by default.
+        PinningPolicy pinningPolicy_ = PinningPolicy::CannotBePinned;
+        //! The pointer to any storage that has been pinned, or nullptr if none has been pinned.
+        void         *pinnedPointer_ = nullptr;
+};
+
+HostAllocationPolicy::HostAllocationPolicy() : impl_(std::make_shared<Impl>())
+{
 }
 
-void
-HostAllocationPolicy::free(void *buffer) const
+std::size_t HostAllocationPolicy::alignment()
 {
+    return (impl_->pinningPolicy_ == PinningPolicy::CanBePinned ?
+            PageAlignedAllocationPolicy::alignment() :
+            AlignedAllocationPolicy::alignment());
+}
+void *HostAllocationPolicy::malloc(std::size_t bytes) const
+{
+    // A container could have a pinned allocation that is being
+    // extended, in which case we must un-pin while we still know the
+    // old pinned vector, and which also ensures we don't pin two
+    // buffers at the same time. If there's no allocation, or it isn't
+    // pinned, then attempting to unpin it is OK, too.
+    unpin();
+    impl_->pointer_ = (impl_->pinningPolicy_ == PinningPolicy::CanBePinned ?
+                       PageAlignedAllocationPolicy::malloc(bytes) :
+                       AlignedAllocationPolicy::malloc(bytes));
+
+    if (impl_->pointer_ != nullptr)
+    {
+        impl_->numBytes_ = bytes;
+    }
+    pin();
+    return impl_->pointer_;
+}
+
+void HostAllocationPolicy::free(void *buffer) const
+{
+    unpin();
     if (buffer == nullptr)
+    {
+        // Nothing to do
+        return;
+    }
+    if (impl_->pinningPolicy_ == PinningPolicy::CanBePinned)
+    {
+        PageAlignedAllocationPolicy::free(buffer);
+    }
+    else
+    {
+        AlignedAllocationPolicy::free(buffer);
+    }
+    impl_->pointer_  = nullptr;
+    impl_->numBytes_ = 0;
+}
+
+PinningPolicy HostAllocationPolicy::pinningPolicy() const
+{
+    return impl_->pinningPolicy_;
+}
+
+void HostAllocationPolicy::setPinningPolicy(PinningPolicy pinningPolicy)
+{
+    if (GMX_GPU != GMX_GPU_CUDA)
+    {
+        GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
+                           "A suitable build of GROMACS (e.g. with CUDA) is required for a "
+                           "HostAllocationPolicy to be set to a mode that produces pinning.");
+    }
+    impl_->pinningPolicy_ = pinningPolicy;
+}
+
+void HostAllocationPolicy::pin() const
+{
+    if (impl_->pinningPolicy_ == PinningPolicy::CannotBePinned ||
+        impl_->pointer_ == nullptr ||
+        impl_->pinnedPointer_ != nullptr)
+    {
+        // Do nothing if we're not in pinning mode, or the allocation
+        // is empty, or it is already pinned.
+        return;
+    }
+#if GMX_GPU == GMX_GPU_CUDA
+    pinBuffer(impl_->pointer_, impl_->numBytes_);
+    impl_->pinnedPointer_ = impl_->pointer_;
+#else
+    const char *errorMessage = "Could not register the host memory for page locking for GPU transfers.";
+
+    GMX_RELEASE_ASSERT(impl_->pinningPolicy_ == PinningPolicy::CannotBePinned,
+                       formatString("%s This build configuration must only have pinning policy "
+                                    "that leads to no pinning.", errorMessage).c_str());
+#endif
+}
+
+void HostAllocationPolicy::unpin() const
+{
+    if (impl_->pinnedPointer_ == nullptr)
     {
         return;
     }
-    GMX_UNUSED_VALUE(allocateForGpu_);
-    AlignedAllocationPolicy::free(buffer);
-}
 
-HostAllocationPolicy makeHostAllocationPolicyForGpu()
-{
-    return HostAllocationPolicy(HostAllocationPolicy::Impl::AllocateForGpu);
+#if GMX_GPU == GMX_GPU_CUDA
+    // Note that if the caller deactivated pinning mode, we still want
+    // to be able to unpin if the allocation is still pinned.
+
+    unpinBuffer(impl_->pointer_);
+    impl_->pinnedPointer_ = nullptr;
+#else
+    GMX_RELEASE_ASSERT(impl_->pinnedPointer_ == nullptr,
+                       "Since the build configuration does not support pinning, then "
+                       "the pinned pointer must be nullptr.");
+#endif
 }
 
 } // namespace gmx

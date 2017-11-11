@@ -42,15 +42,20 @@
 
 #include "devicetransfers.h"
 
+#include <algorithm>
+
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
 
-void doDeviceTransfers(const gmx_gpu_info_t & /*gpuInfo*/,
-                       ArrayRef<const char>   /*input*/,
-                       ArrayRef<char>         /* output */)
+void doDeviceTransfers(const gmx_gpu_info_t   & /*gpuInfo*/,
+                       ArrayRef<const char>   input,
+                       ArrayRef<char>         output)
 {
+    GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
+    // We can't have any valid GPUs for this build configuration.
+    std::copy(input.begin(), input.end(), output.begin());
 }
 
 } // namespace gmx
