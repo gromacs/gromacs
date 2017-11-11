@@ -60,8 +60,9 @@ namespace gmx
 
 /*! \brief Helper function for GPU test code to be platform agnostic.
  *
- * Transfers \c input to device 0, which must be present, and
- * transfers it back into \c output. Both sizes must match.
+ * Transfers \c input to device 0, if present, and transfers it back
+ * into \c output. Both sizes must match. If no devices are present,
+ * do a simple host-side buffer copy instead.
  *
  * \throws InternalError  Upon any GPU API error condition. */
 void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
