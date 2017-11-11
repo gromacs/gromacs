@@ -42,12 +42,16 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 
+#include "config.h"
+
 #include <type_traits>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/pinning.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "devicetransfers.h"
@@ -59,25 +63,20 @@ namespace gmx
 namespace
 {
 
-//! The types used in testing.
-typedef ::testing::Types<int, real, RVec> TestTypes;
-
-//! Typed test fixture
+/*! \internal \brief Typed test fixture for infrastructure for
+ * host-side memory used for GPU transfers. */
 template <typename T>
-class HostAllocatorTest : public test::GpuTest
+class HostMemoryTest : public test::GpuTest
 {
     public:
         //! Convenience type
         using ValueType = T;
         //! Convenience type
-        using AllocatorType = HostAllocator<T>;
-        //! Convenience type
-        using VectorType = std::vector<ValueType, AllocatorType>;
-        //! Convenience type
         using ViewType = ArrayRef<ValueType>;
         //! Convenience type
         using ConstViewType = ArrayRef<const ValueType>;
         //! Prepare contents of a VectorType.
+        template <typename VectorType>
         void fillInput(VectorType *input) const;
         //! Compares input and output vectors.
         void compareVectors(ConstViewType input,
@@ -87,25 +86,30 @@ class HostAllocatorTest : public test::GpuTest
 };
 
 // Already documented
-template <typename T>
-void HostAllocatorTest<T>::fillInput(VectorType *input) const
+template <typename T> template <typename VectorType>
+void HostMemoryTest<T>::fillInput(VectorType *input) const
 {
-    input->push_back(1);
-    input->push_back(2);
-    input->push_back(3);
+    input->resize(3);
+    (*input)[0] = 1;
+    (*input)[1] = 2;
+    (*input)[2] = 3;
 }
 
 //! Initialization specialization for RVec
-template <>
-void HostAllocatorTest<RVec>::fillInput(VectorType *input) const
+template <> template <typename VectorType>
+void HostMemoryTest<RVec>::fillInput(VectorType *input) const
 {
-    input->push_back({1, 2, 3});
+    input->reserve(3);
+    input->resize(3);
+    (*input)[0] = {1, 2, 3};
+    (*input)[1] = {4, 5, 6};
+    (*input)[2] = {7, 8, 9};
 }
 
 // Already documented
 template <typename T>
-void HostAllocatorTest<T>::compareVectors(ConstViewType input,
-                                          ConstViewType output) const
+void HostMemoryTest<T>::compareVectors(ConstViewType input,
+                                       ConstViewType output) const
 {
     for (size_t i = 0; i != input.size(); ++i)
     {
@@ -115,8 +119,8 @@ void HostAllocatorTest<T>::compareVectors(ConstViewType input,
 
 //! Comparison specialization for RVec
 template <>
-void HostAllocatorTest<RVec>::compareVectors(ConstViewType input,
-                                             ConstViewType output) const
+void HostMemoryTest<RVec>::compareVectors(ConstViewType input,
+                                          ConstViewType output) const
 {
     for (size_t i = 0; i != input.size(); ++i)
     {
@@ -146,15 +150,8 @@ ArrayRef<char> charArrayRefFromArray(T *data, size_t size)
 }
 
 template <typename T>
-void HostAllocatorTest<T>::runTest(ConstViewType input, ViewType output) const
+void HostMemoryTest<T>::runTest(ConstViewType input, ViewType output) const
 {
-    // We can't do a test that does a transfer unless we have a
-    // compatible device.
-    if (!this->haveValidGpus())
-    {
-        return;
-    }
-
     // Convert the views of input and output to flat non-const chars,
     // so that there's no templating when we call doDeviceTransfers.
     auto inputRef  = charArrayRefFromArray(input.data(), input.size());
@@ -163,6 +160,22 @@ void HostAllocatorTest<T>::runTest(ConstViewType input, ViewType output) const
     doDeviceTransfers(*this->gpuInfo_, inputRef, outputRef);
     this->compareVectors(input, output);
 }
+
+//! The types used in testing.
+typedef ::testing::Types<int, real, RVec> TestTypes;
+
+//! Typed test fixture
+template <typename T>
+class HostAllocatorTest : public HostMemoryTest<T>
+{
+    public:
+        //! Convenience type
+        using ValueType = T;
+        //! Convenience type
+        using AllocatorType = HostAllocator<T>;
+        //! Convenience type
+        using VectorType = std::vector<ValueType, AllocatorType>;
+};
 
 TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
 
@@ -178,47 +191,114 @@ TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
     typename TestFixture::VectorType v;
 }
 
-TYPED_TEST(HostAllocatorTest, TransfersUsingDefaultHostAllocatorWork)
+TYPED_TEST(HostAllocatorTest, VectorsWithDefaultHostAllocatorAlwaysWorks)
 {
     typename TestFixture::VectorType input = {{1, 2, 3}}, output;
     output.resize(input.size());
-
-    this->runTest(input, output);
 }
 
-TYPED_TEST(HostAllocatorTest, TransfersUsingNormalCpuHostAllocatorWork)
-{
-    // Make an allocator with a 'normal CPU' allocation policy. This
-    // might be slower than another policy, but still works.
-    using AllocatorType       = typename TestFixture::AllocatorType;
-    using AllocatorPolicyType = typename AllocatorType::allocation_policy;
-    AllocatorPolicyType              policy(AllocatorPolicyType::Impl::AllocateAligned);
-    AllocatorType                    allocator(policy);
+// Several tests actually do CUDA transfers. This is not necessary
+// because the state of page alignment or pinning is not currently
+// relevant to the success of a CUDA transfer. CUDA checks happen only
+// during cudaHostRegister and cudaHostUnregister. Such tests are of
+// value only when this behaviour changes, if ever.
 
-    typename TestFixture::VectorType input(allocator);
+TYPED_TEST(HostAllocatorTest, TransfersWithoutPinningWork)
+{
+    typename TestFixture::VectorType input;
     this->fillInput(&input);
-    typename TestFixture::VectorType output(allocator);
+    typename TestFixture::VectorType output;
     output.resize(input.size());
 
     this->runTest(input, output);
 }
 
-TYPED_TEST(HostAllocatorTest, TransfersUsingGpuHostAllocatorWork)
+TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
 {
-    // Make an allocator with a 'for GPU' allocation policy. This
-    // should be more efficient, but we can't test that.
-    using AllocatorType       = typename TestFixture::AllocatorType;
-    using AllocatorPolicyType = typename AllocatorType::allocation_policy;
-    AllocatorPolicyType              policy(AllocatorPolicyType::Impl::AllocateForGpu);
-    AllocatorType                    allocator(policy);
-
-    typename TestFixture::VectorType input(allocator);
+    typename TestFixture::VectorType input;
+    input.reserve(3);
     this->fillInput(&input);
-    typename TestFixture::VectorType output(allocator);
+}
+
+#if GMX_GPU == GMX_GPU_CUDA
+
+// Policy suitable for pinning is only supported for a CUDA build
+
+TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
+{
+    typename TestFixture::VectorType input;
+    changePinningPolicy(&input, PinningPolicy::CanBePinned);
+    this->fillInput(&input);
+    typename TestFixture::VectorType output;
+    changePinningPolicy(&output, PinningPolicy::CanBePinned);
     output.resize(input.size());
 
     this->runTest(input, output);
 }
+
+//! Helper function for wrapping a call to isBufferPinned.
+template <typename VectorType>
+bool isPinned(const VectorType &v)
+{
+    std::size_t numBytes = v.size() * sizeof(typename VectorType::value_type);
+    void       *data     = const_cast<void *>(static_cast<const void *>(v.data()));
+    return isBufferPinned(data, numBytes);
+}
+
+TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
+{
+    typename TestFixture::VectorType input;
+    changePinningPolicy(&input, PinningPolicy::CanBePinned);
+    EXPECT_FALSE(isPinned(input));
+
+    // Unpin before allocation is fine, but does nothing.
+    input.get_allocator().getPolicy().unpin();
+    EXPECT_FALSE(isPinned(input));
+
+    // Pin with no contents is fine, but does nothing.
+    input.get_allocator().getPolicy().pin();
+    EXPECT_FALSE(isPinned(input));
+
+    // Fill some contents, which will be pinned because of the policy.
+    this->fillInput(&input);
+    EXPECT_TRUE(isPinned(input));
+
+    // Unpin after pin is fine.
+    input.get_allocator().getPolicy().unpin();
+    EXPECT_FALSE(isPinned(input));
+
+    // Repeated unpin should be a no-op.
+    input.get_allocator().getPolicy().unpin();
+
+    // Pin after unpin is fine.
+    input.get_allocator().getPolicy().pin();
+    EXPECT_TRUE(isPinned(input));
+
+    // Repeated pin should be a no-op, and still pinned.
+    input.get_allocator().getPolicy().pin();
+    EXPECT_TRUE(isPinned(input));
+}
+
+#else
+
+TYPED_TEST(HostAllocatorTest, ChangingPinningPolicyRequiresCuda)
+{
+    typename TestFixture::VectorType input;
+    EXPECT_DEATH(changePinningPolicy(&input, PinningPolicy::CanBePinned),
+                 ".*A suitable build of GROMACS.* is required.*");
+}
+
+TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
+{
+    typename TestFixture::VectorType input;
+
+    // Since the buffer can't be pinned and isn't pinned, and the
+    // calling code can't be unhappy about this, these are OK.
+    input.get_allocator().getPolicy().pin();
+    input.get_allocator().getPolicy().unpin();
+}
+
+#endif
 
 TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
 {
@@ -229,5 +309,16 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
               sizeof(typename TestFixture::VectorType));
 }
 
+//! Declare allocator types to test.
+using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
+                                              HostAllocator<int>,
+                                              HostAllocator<RVec>
+                                              >;
+
+TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
+
 } // namespace
 } // namespace
+
+// Includes tests common to all allocation policies.
+#include "gromacs/utility/tests/alignedallocator-impl.h"

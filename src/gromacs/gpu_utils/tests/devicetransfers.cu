@@ -79,8 +79,12 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
                        ArrayRef<char>        output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
+    if (gpuInfo.n_dev == 0)
+    {
+        std::copy(input.begin(), input.end(), output.begin());
+        return;
+    }
     cudaError_t status;
-    GMX_RELEASE_ASSERT(gpuInfo.n_dev > 0, "Must have a GPU device");
 
     const auto &device = gpuInfo.gpu_dev[0];
     int         oldDeviceId;
