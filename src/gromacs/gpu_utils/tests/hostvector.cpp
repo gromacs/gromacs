@@ -34,23 +34,20 @@
  */
 /*! \internal \file
  * \brief
- * Tests for GPU host allocator.
+ * Tests for GPU host vector.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 #include "gmxpre.h"
 
-#include "gromacs/gpu_utils/hostallocator.h"
-
-#include <type_traits>
-#include <vector>
+#include "gromacs/gpu_utils/hostvector.h"
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-#include "devicetransfers.h"
 #include "gputest.h"
 #include "hostmemorytest.h"
 
@@ -65,18 +62,9 @@ typedef ::testing::Types<int, real, RVec> TestTypes;
 
 //! Typed test fixture
 template <typename T>
-class HostAllocatorTest : public HostMemoryTest<T>
-{
-    public:
-        //! Convenience type
-        using ValueType = T;
-        //! Convenience type
-        using AllocatorType = HostAllocator<T>;
-        //! Convenience type
-        using VectorType = std::vector<ValueType, AllocatorType>;
-};
+using HostVectorTest = HostMemoryTest<T>;
 
-TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
+TYPED_TEST_CASE(HostVectorTest, TestTypes);
 
 // Note that in GoogleTest typed tests, the use of TestFixture:: and
 // this-> is sometimes required to get access to things in the fixture
@@ -85,60 +73,22 @@ TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
 // Note also that aspects of this code can be tested even when a GPU
 // device is not available.
 
-TYPED_TEST(HostAllocatorTest, EmptyMemoryAlwaysWorks)
+TYPED_TEST(HostVectorTest, EmptyVectorAlwaysWorks)
 {
-    typename TestFixture::VectorType v;
+    using VectorType = HostVector<TypeParam>;
+    VectorType v;
 }
 
-TYPED_TEST(HostAllocatorTest, TransfersUsingDefaultHostAllocatorWork)
+TYPED_TEST(HostVectorTest, TransfersUsingGpuHostVectorWork)
 {
-    typename TestFixture::VectorType input = {{1, 2, 3}}, output;
-    output.resize(input.size());
-
-    this->runTest(input, output);
-}
-
-TYPED_TEST(HostAllocatorTest, TransfersUsingNormalCpuHostAllocatorWork)
-{
-    // Make an allocator with a 'normal CPU' allocation policy. This
-    // might be slower than another policy, but still works.
-    using AllocatorType       = typename TestFixture::AllocatorType;
-    using AllocatorPolicyType = typename AllocatorType::allocation_policy;
-    AllocatorPolicyType              policy(AllocatorPolicyType::Impl::AllocateAligned);
-    AllocatorType                    allocator(policy);
-
-    typename TestFixture::VectorType input(allocator);
+    using VectorType = HostVector<TypeParam>;
+    VectorType input;
     this->fillInput(&input);
-    typename TestFixture::VectorType output(allocator);
+    VectorType output;
     output.resize(input.size());
 
-    this->runTest(input, output);
-}
-
-TYPED_TEST(HostAllocatorTest, TransfersUsingGpuHostAllocatorWork)
-{
-    // Make an allocator with a 'for GPU' allocation policy. This
-    // should be more efficient, but we can't test that.
-    using AllocatorType       = typename TestFixture::AllocatorType;
-    using AllocatorPolicyType = typename AllocatorType::allocation_policy;
-    AllocatorPolicyType              policy(AllocatorPolicyType::Impl::AllocateForGpu);
-    AllocatorType                    allocator(policy);
-
-    typename TestFixture::VectorType input(allocator);
-    this->fillInput(&input);
-    typename TestFixture::VectorType output(allocator);
-    output.resize(input.size());
-
-    this->runTest(input, output);
-}
-
-TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
-{
-    // The HostAllocator has state, so a container using it will be
-    // larger than a normal vector, whose default allocator is
-    // stateless.
-    EXPECT_LT(sizeof(std::vector<typename TestFixture::ValueType>),
-              sizeof(typename TestFixture::VectorType));
+    this->runTest(constArrayRefFromArray(input.data(), input.size()),
+                  arrayRefFromArray(output.data(), output.size()));
 }
 
 } // namespace
