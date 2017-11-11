@@ -43,6 +43,7 @@
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -51,7 +52,6 @@
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -60,8 +60,8 @@
 namespace gmx
 {
 
-MDAtoms::MDAtoms(HostAllocationPolicy policy)
-    : mdatoms_(nullptr), chargeA_(policy)
+MDAtoms::MDAtoms()
+    : mdatoms_(nullptr), chargeA_()
 {
 }
 
@@ -81,10 +81,9 @@ std::unique_ptr<MDAtoms>
 makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
             bool useGpuForPme)
 {
-    auto policy = (useGpuForPme ?
-                   makeHostAllocationPolicyForGpu() :
-                   HostAllocationPolicy());
-    auto       mdAtoms = compat::make_unique<MDAtoms>(policy);
+    auto       mdAtoms = compat::make_unique<MDAtoms>();
+    // GPU transfers want to use the pinning mode.
+    changePinningPolicy(&mdAtoms->chargeA_, useGpuForPme ? PinningPolicy::CanBePinned : PinningPolicy::CannotBePinned);
     t_mdatoms *md;
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);

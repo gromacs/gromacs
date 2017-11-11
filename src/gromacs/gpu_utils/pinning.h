@@ -33,69 +33,41 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements gmx::HostAllocationPolicy for allocating memory
- * suitable for GPU transfers on CUDA.
+ * \brief Declares functions for pinning memory to be suitable for
+ * efficient GPU transfers on CUDA.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
-#include "gmxpre.h"
 
-#include "hostallocator.h"
-
-#include <cstdlib>
-
-#include "gromacs/utility/alignedallocator.h"
+#include <cstddef>
 
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(Impl s) : allocateForGpu_(s) {}
+/*! \brief Pin the allocation to physical memory.
+ *
+ * Requires that \c pointer is not nullptr.
+ *
+ * \throws  InternalError  Upon any unexpected error from an underlying API.
+ */
+void pinBuffer(void *pointer, std::size_t numBytes);
 
-void *
-HostAllocationPolicy::malloc(std::size_t bytes) const
-{
-    void *buffer = nullptr;
-    if (allocateForGpu_ == Impl::AllocateForGpu)
-    {
-        if (bytes != 0)
-        {
-            // Alternatively, this could become a pair of
-            // e.g. PageAlignedAllocationPolicy and cudaHostRegister
-            // calls if that is useful for something.
-            cudaError_t stat = cudaMallocHost(&buffer, bytes, cudaHostAllocDefault);
-            // TODO Throw an exception upon failure, particularly
-            // for cudaErrorMemoryAllocation.
-            if (stat != cudaSuccess)
-            {
-                buffer = nullptr;
-            }
-        }
-    }
-    else
-    {
-        buffer = AlignedAllocationPolicy::malloc(bytes);
-    }
-    return buffer;
-}
+/*! \brief Unpin the allocation.
+ *
+ * Requries that \c pointer is not nullptr and was previously pinned
+ * with pinBuffer().
+ *
+ * Does not throw.
+ */
+void unpinBuffer(void *pointer);
 
-void
-HostAllocationPolicy::free(void *buffer) const
-{
-    if (buffer == nullptr)
-    {
-        return;
-    }
-    if (allocateForGpu_ == Impl::AllocateForGpu)
-    {
-        cudaFreeHost(buffer);
-        return;
-    }
-    AlignedAllocationPolicy::free(buffer);
-}
-
-HostAllocationPolicy makeHostAllocationPolicyForGpu()
-{
-    return HostAllocationPolicy(HostAllocationPolicy::Impl::AllocateForGpu);
-}
+/*! \brief Return whether \c pointer is already pinned.
+ *
+ * Preserves whether pointer is pinned upon return.  Because the CUDA
+ * API does not provide a check routine, the implementation of this
+ * function has to attempt to pin \c pointer. If that succeeds,
+ * because \c pointer is not already pinned, then it will unpin it
+ * afterwards. */
+bool isBufferPinned(void *pointer, std::size_t numBytes);
 
 } // namespace gmx
