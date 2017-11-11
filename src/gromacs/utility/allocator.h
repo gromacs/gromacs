@@ -201,6 +201,12 @@ class Allocator : public AllocationPolicy
             AllocationPolicy::free(p);
         }
 
+        //! Return the policy object for this allocator.
+        AllocationPolicy getPolicy() const
+        {
+            return *this;
+        }
+
         /*! \brief Construct an object without allocating memory
          *
          * \tparam Args  Variable-length list of types for constructor args
