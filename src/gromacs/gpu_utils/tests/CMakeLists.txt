@@ -41,6 +41,7 @@
 # Always compiled as plain C++
 file(GLOB SOURCES_FROM_CXX
     hostallocator.cpp
+    hostvector.cpp
     )
 
 if(GMX_USE_CUDA)

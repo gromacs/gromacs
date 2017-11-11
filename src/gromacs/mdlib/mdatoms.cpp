@@ -60,8 +60,8 @@
 namespace gmx
 {
 
-MDAtoms::MDAtoms(HostAllocationPolicy policy)
-    : mdatoms_(nullptr), chargeA_(policy)
+MDAtoms::MDAtoms()
+    : mdatoms_(nullptr), chargeA_()
 {
 }
 
@@ -81,10 +81,9 @@ std::unique_ptr<MDAtoms>
 makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
             bool useGpuForPme)
 {
-    auto policy = (useGpuForPme ?
-                   makeHostAllocationPolicyForGpu() :
-                   HostAllocationPolicy());
-    auto       mdAtoms = compat::make_unique<MDAtoms>(policy);
+    auto       mdAtoms = compat::make_unique<MDAtoms>();
+    // GPU transfers want to use the locking mode.
+    mdAtoms->chargeA_.useLockingMode(useGpuForPme);
     t_mdatoms *md;
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);
