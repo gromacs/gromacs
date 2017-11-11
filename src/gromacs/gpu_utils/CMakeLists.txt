@@ -32,10 +32,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+gmx_add_libgromacs_sources(
+        hostallocator.cpp
+        )
 if(GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
         gpu_utils_ocl.cpp
-        hostallocator.cpp
         ocl_compiler.cpp
         ocl_caching.cpp
         oclutils.cpp
@@ -43,14 +45,13 @@ if(GMX_USE_OPENCL)
 elseif(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         cudautils.cu
-        hostallocator.cu
         gpu_utils.cu
+        pinning.cu
         pmalloc_cuda.cu
         )
 else()
     gmx_add_libgromacs_sources(
         gpu_utils.cpp
-        hostallocator.cpp
         )
 endif()
 
