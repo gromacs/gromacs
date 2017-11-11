@@ -33,9 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Declares gmx::HostAllocationPolicy and gmx::HostAllocator,
- * which are used to make standard library containers that can
- * allocate memory suitable for GPU transfers.
+ * \brief Declares gmx::HostAllocationPolicy, gmx::HostAllocator, and
+ * gmx::HostVector, which are used to make/be standard library
+ * containers that can allocate memory suitable for GPU transfers.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
@@ -45,7 +45,11 @@
 
 #include <cstddef>
 
-#include "gromacs/utility/allocator.h"
+#include <memory>
+#include <vector>
+
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
@@ -60,6 +64,17 @@ namespace gmx
  * use it. Memory allocated will always be aligned by the GPU
  * framework, or by AlignedAllocationPolicy.
  *
+ * The intended use is to configure gmx::Allocator as its policy
+ * class, and then to use std::vector::get_allocator().getPolicy() to
+ * control whether the allocation policy should activate its pinning
+ * mode. The policy object can also be used to explicitly pin() and
+ * unpin() the buffer. The policy object is returned by value (as
+ * required by the C++ standard for get_allocator(), which copies a
+ * std::shared_ptr, so the policy object should be retrieved
+ * sparingly, e.g. upon resize of the allocation. (Normal operation of
+ * the vector incurs only the cost of the pointer indirection needed
+ * to consult the current state of the allocation policy.)
+ *
  * \todo Consider also having a stateless version of this policy,
  * which might be slightly faster or more convenient to use in the
  * cases where it is known at compile time that the allocation will be
@@ -68,34 +83,27 @@ namespace gmx
 class HostAllocationPolicy
 {
     public:
-        //! Helper construction enum
-        enum class Impl : int
-        {
-            AllocateAligned  = 0,
-            AllocateForGpu   = 1
-        };
-        //! Constructor.
-        explicit HostAllocationPolicy(Impl s = Impl::AllocateAligned);
-        /*! \brief Allocate GPU memory
+        //! Default constructor.
+        HostAllocationPolicy();
+        /*! \brief Allocate and perhaps pin page-aligned memory suitable for GPU transfers.
          *
-         *  \param bytes Amount of memory (bytes) to allocate. It is
-         *               valid to ask for 0 bytes, which will return a
-         *               non-null pointer that is properly aligned in
-         *               page-locked memory (but that you should not
-         *               use). TODO check this.
+         * Before attempting to allocate, unpin() is called. After a successful allocation,
+         * pin() is called.
          *
-         * \return Valid pointer if the allocation worked, otherwise nullptr.
+         *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
+         *               0 bytes, which will return a non-null pointer that is properly
+         *               aligned and padded (but that you should not use).
          *
-         * The memory will always be allocated according to the requirements
-         * of the acceleration platform in use (e.g. CUDA).
+         *  \return Valid pointer if the allocation worked, otherwise nullptr.
          *
          *  \note Memory allocated with this routine must be released
          *        with gmx::HostAllocationPolicy::free(), and
          *        absolutely not the system free().
+         *
+         * Does not throw.
          */
-        void *
-        malloc(std::size_t bytes) const;
-        /*! \brief Free GPU memory
+        void *malloc(std::size_t bytes) const;
+        /*! \brief Free the memory, after unpinning (if appropriate).
          *
          *  \param buffer  Memory pointer previously returned from gmx::HostAllocationPolicy::malloc()
          *
@@ -103,23 +111,50 @@ class HostAllocationPolicy
          *        obtained from gmx:HostAllocationPolicy::malloc(),
          *        and absolutely not any pointers obtained the system
          *        malloc().
+         *
+         * Does not throw.
          */
-        void
-        free(void *buffer) const;
+        void free(void *buffer) const;
+        /*! \brief Pin the allocation to physical memory, if appropriate.
+         *
+         * If the allocation policy is not in pinning mode, or the
+         * allocation is empy, ot the allocation is already pinned,
+         * then do nothing.
+         *
+         * \throws  InternalError  Upon any unexpected error from an underlying API.
+         */
+        void pin() const;
+        /*! \brief Unpin the allocation, if appropriate.
+         *
+         * Regardless of the allocation policy, unpin the memory if
+         * previously pinned, otherwise do nothing.
+         *
+         * Does not throw.
+         */
+        void unpin() const;
+        /*! \brief Activate pinning mode.
+         *
+         * Does not pin the current buffer.
+         *
+         * Does not throw.
+         */
+        void activatePinningMode();
+        /*! \brief Deactivate pinning mode.
+         *
+         * Does not unpin an already pinned buffer.
+         *
+         * Does not throw.
+         */
+        void deactivatePinningMode();
     private:
+        //! Private implementation class.
+        class Impl;
         /*! \brief State of the allocator.
          *
          * This could change through assignment of one policy to
-         * another, so isn't const. */
-        Impl allocateForGpu_;
+         * another, such as returned so isn't const. */
+        std::shared_ptr<Impl> impl_;
 };
-
-/*! \brief Convenience function
- *
- * The default construction is for non-GPU allocation, and this
- * function makes it less verbose to get allocation intended for use
- * with a GPU. */
-HostAllocationPolicy makeHostAllocationPolicyForGpu();
 
 /*! \brief Memory allocator for host-side memory for GPU transfers.
  *
@@ -133,6 +168,10 @@ HostAllocationPolicy makeHostAllocationPolicyForGpu();
  */
 template <class T>
 using HostAllocator = Allocator<T, HostAllocationPolicy>;
+
+//! Convenience alias for host-side vector suited for efficient GPU transfers.
+template <class T>
+using HostVector = std::vector<T, HostAllocator<T> >;
 
 }      // namespace gmx
 

@@ -47,39 +47,45 @@
 
 #include "hostallocator.h"
 
-#include <cstdlib>
+#include <cstddef>
 
 #include "gromacs/utility/alignedallocator.h"
 
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(Impl s) : allocateForGpu_(s) {}
+HostAllocationPolicy::HostAllocationPolicy() {}
 
-void *
-HostAllocationPolicy::malloc(std::size_t bytes) const
+void *HostAllocationPolicy::malloc(std::size_t bytes) const
 {
-    GMX_UNUSED_VALUE(allocateForGpu_);
-    // TODO if/when this is properly supported for OpenCL, we
-    // should explore whether it is needed, and if so what
-    // page size is desirable for alignment.
-    return AlignedAllocationPolicy::malloc(bytes);
+    // Allocate with PageAlignedAllocationPolicy (for consistency with
+    // the CUDA implementation).
+    return PageAlignedAllocationPolicy::malloc(bytes);
 }
 
-void
-HostAllocationPolicy::free(void *buffer) const
+void HostAllocationPolicy::free(void *buffer) const
 {
-    if (buffer == nullptr)
-    {
-        return;
-    }
-    GMX_UNUSED_VALUE(allocateForGpu_);
-    AlignedAllocationPolicy::free(buffer);
+    PageAlignedAllocationPolicy::free(buffer);
 }
 
-HostAllocationPolicy makeHostAllocationPolicyForGpu()
+void HostAllocationPolicy::activatePinningMode()
 {
-    return HostAllocationPolicy(HostAllocationPolicy::Impl::AllocateForGpu);
+    // Nothing to do
+}
+
+void HostAllocationPolicy::deactivatePinningMode()
+{
+    // Nothing to do
+}
+
+void HostAllocationPolicy::pin() const
+{
+    // Nothing to do
+}
+
+void HostAllocationPolicy::unpin() const
+{
+    // Nothing to do
 }
 
 } // namespace gmx

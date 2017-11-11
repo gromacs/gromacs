@@ -69,11 +69,11 @@ class MDAtoms
     //! C-style mdatoms struct.
     unique_cptr<t_mdatoms> mdatoms_;
     //! Memory for chargeA that can be set up for efficient GPU transfer.
-    std::vector < real, HostAllocator < real>> chargeA_;
+    HostVector<real>       chargeA_;
     public:
         // TODO make this private
         //! Constructor.
-        MDAtoms(HostAllocationPolicy policy);
+        MDAtoms();
         //! Getter.
         t_mdatoms *mdatoms()
         {
