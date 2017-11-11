@@ -42,9 +42,51 @@
 #include <nvml.h>
 #endif /* HAVE_NVML */
 
+#include <string>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+
+namespace gmx
+{
+namespace
+{
+
+/*! \brief Helper function to ensure no pending error silently
+ * disrupts error handling.
+ *
+ * Asserts in a debug build if an unhandled error is present. Issues a
+ * warning at run time otherwise.
+ *
+ * \todo This is similar to CU_CHECK_PREV_ERR, which should be
+ * consolidated.
+ */
+static inline void ensureNoPendingCudaError(const char *errorMessage)
+{
+    // Ensure there is no pending error that would otherwise affect
+    // the behaviour of future error handling.
+    cudaError_t stat = cudaGetLastError();
+    if (stat == cudaSuccess)
+    {
+        return;
+    }
+
+    // If we would find an error in a release build, we do not know
+    // what is appropriate to do about it, so assert only for debug
+    // builds.
+    auto fullMessage = formatString("%s An unhandled error from a previous CUDA operation was detected. %s: %s",
+                                    errorMessage, cudaGetErrorName(stat), cudaGetErrorString(stat));
+    GMX_ASSERT(stat == cudaSuccess, fullMessage.c_str());
+    // TODO When we evolve a better logging framework, use that
+    // for release-build error reporting.
+    gmx_warning(fullMessage.c_str());
+}
+
+}   // namespace
+}   // namespace
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
