@@ -36,6 +36,7 @@ if(GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
         gpu_utils_ocl.cpp
         hostallocator.cpp
+        hostvector.cpp
         ocl_compiler.cpp
         ocl_caching.cpp
         oclutils.cpp
@@ -44,6 +45,7 @@ elseif(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         cudautils.cu
         hostallocator.cu
+        hostvector.cu
         gpu_utils.cu
         pmalloc_cuda.cu
         )
@@ -51,6 +53,7 @@ else()
     gmx_add_libgromacs_sources(
         gpu_utils.cpp
         hostallocator.cpp
+        hostvector.cpp
         )
 endif()
 
