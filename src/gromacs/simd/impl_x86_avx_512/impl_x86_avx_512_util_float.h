@@ -478,33 +478,6 @@ reduceIncr4ReturnSumHsimd(float *     m,
     return _mm_cvtss_f32(t3);
 }
 
-static inline SimdFloat gmx_simdcall
-loadUNDuplicate4(const float* f)
-{
-    return {
-               _mm512_permute_ps(_mm512_maskz_expandloadu_ps(0x1111, f), 0)
-    };
-}
-
-static inline SimdFloat gmx_simdcall
-load4DuplicateN(const float* f)
-{
-    return {
-               _mm512_broadcast_f32x4(_mm_load_ps(f))
-    };
-}
-
-static inline SimdFloat gmx_simdcall
-loadU4NOffset(const float* f, int offset)
-{
-    const __m256i idx = _mm256_setr_epi32(0, 0, 1, 1, 2, 2, 3, 3);
-    const __m256i gdx = _mm256_add_epi32(_mm256_setr_epi32(0, 2, 0, 2, 0, 2, 0, 2),
-                                         _mm256_mullo_epi32(idx, _mm256_set1_epi32(offset)));
-    return {
-               _mm512_castpd_ps(_mm512_i32gather_pd(gdx, f, sizeof(float)))
-    };
-}
-
 }      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_UTIL_FLOAT_H
