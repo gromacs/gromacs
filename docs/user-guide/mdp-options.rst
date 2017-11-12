@@ -1858,8 +1858,8 @@ AWH adaptive biasing
       using Monte-Carlo sampling.  The force constant is set with
       :mdp:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
-      This option can be useful for cases when calculating the convolved force for each step becomes
-      computationally expensive.
+      There are no advantages to using an umbrella.
+      This option is mainly for comparison and testing purposes.
 
 .. mdp:: awh-share-multisim
 
