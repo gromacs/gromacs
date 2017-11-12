@@ -35,7 +35,6 @@
 \chapter{Special Topics}
 \label{ch:special}
 
-
 \section{Free energy implementation}
 \label{sec:dgimplement}
 For free energy calculations, there are two things that must be
@@ -126,6 +125,7 @@ In {\gromacs}, there are several different methods to calculate the mean force.
 Each method has its limitations, which are listed below.
 \begin{itemize}
 \item{\bf pull code:} between the centers of mass of molecules or groups of molecules.
+\item{\bf AWH code:} currently acts on coordinates provided by the pull code. 
 \item{\bf free-energy code with harmonic bonds or constraints:} between single atoms. 
 \item{\bf free-energy code with position restraints:} changing the conformation of a relatively immobile group of atoms.
 \item{\bf pull code in limited cases:} between groups of atoms that are
@@ -133,6 +133,7 @@ part of a larger molecule for which the bonds are constrained with
 SHAKE or LINCS. If the pull group if relatively large,
 the pull code can be used.
 \end{itemize}
+
 The pull and free-energy code a described in more detail
 in the following two sections.
 
@@ -360,6 +361,292 @@ In such cases, the constraint correction displacement of the pull group
 is small compared to the bond lengths.
 
 
+\section{Adaptive biasing with AWH}
+\index{AWH}
+\index{adaptive biasing|see{AWH}}
+\label{sec:awh}
+The accelerated weight histogram method (AWH)~\cite{} 
+calculates the PMF along a reaction coordinate by applying an adptively determined biasing potential.
+AWH  flattens free energy barriers along the reaction coordinate by applying a history-dependent potential to the system
+that ``fills up'' free energy minima. 
+This is similar in spirit to other adaptive biasing potential methods,
+e.g. the Wang-Landau~\cite{}, local elevation~\cite{} and metadynamics~\cite{} methods.
+Characteristic for AWH is the inclusion of an initial sampling stage, which makes the method robustness against the choice of input parameters.
+Furthermore, in AWH the target distribution along the reaction coordinate may be chosen freely.
+
+\subsection{Basics of the method}
+Rather than working directly on the reaction coordinate $\xi(x)$, AWH works in in $\lambda$ space, where $\lambda$ denotes the center of an 
+harmonic potential $Q(\xi,\lambda) = \frac{1}{2} k (\xi - \lambda)^2$.
+This can be achieved by sampling in the biased and $\lambda$-extended ensemble\cite{},
+\begin{equation}\label{eq:pxlambda}
+P(x,\lambda) = e^{g(\lambda) - \beta Q(\xi(x),\lambda) - \beta U(x)} / \mathcal{Z},
+\end{equation}
+where $g(\lambda)$ is a bias function (a free variable) and $U(x)$ is the  potential energy of the system.
+By tuning the bias function $g(\lambda)$, any target distribution along $\lambda$ can be obtained.
+This can be seen from
+\begin{equation}\label{eq:plambda}
+P(\lambda) = \int P(x,\lambda)  dx = 
+\frac{1}{\mathcal{Z}}e^{g(\lambda)} \int e^{- \beta Q(\xi(x),\lambda) - \beta U(x)}  dx 
+\equiv \frac{1}{\mathcal{Z}}e^{g(\lambda) - F(\lambda)},
+\end{equation}
+where  the free energy $F(\lambda)$ defined above is a convolved version of the PMF,
+$F(\lambda) = -\ln \int e^{- \beta Q(\xi(x),\lambda) - \beta U(x)}  dx $.
+In order to make $P(\lambda)$ equal to a chosen target distribution $\rho(\lambda)$ (traditionally chosen to be uniform),
+$F(\lambda)$ needs to be accurately determined.
+Thus, the goal of AWH is to adaptively calculate an estimate of $F(\lambda)$ 
+so that when this free energy estimate converges,  $P(\lambda)$ converges toward the chosen target distribution $\rho(\lambda)$.
+Note that if the force constant $k$ is large enough, the distribution along $\xi$ will be approximately equal that of $\lambda$, $P(\lambda)\approx P(\xi)$.
+
+\subsection{The free energy update}
+AWH works in an iterative fashion to improve the free energy estimate.
+Given the current best estimate of the free energy $F_n(\lambda)$ at iteration $n$
+ it is clear from Eq.~\ref{eq:plambda}
+that to obtain the target distribution $\rho(\lambda)$ the current bias function should be  equal to 
+\begin{equation}\label{eq:grhofrelation}
+g_n(\lambda) = \ln \rho_n(\lambda) +F_n(\lambda)
+\end{equation}
+Here,
+the target distribution is also allowed to change in the update (see examples in section~\ref{sec:targets}).
+Substituting this choice of $g=g_n$ into the same equation we obtain the naive correction formula
+\begin{equation}\label{eq:dfnaive}
+\Delta F_n = F - F_n = -\ln(P_n(\lambda)/\rho(\lambda)),
+\end{equation}
+which could in theory be applied to refine the free energy estimate as $F_{n+1} = F_n + \Delta F_n$.
+AWH estimates $P_n(\lambda)$ by calculating the conditional distributions 
+\begin{equation}\label{eq:omega}
+\omega_n(\lambda|x) \equiv P_n(\lambda|x) = \frac{e^{g_n(\lambda) - Q(\xi(x), \lambda)}}{\sum_{\lambda'} e^{g_n(\lambda') - Q(\xi(x),\lambda)}}.
+\end{equation}
+Accumulating them
+yields an estimate of the current distribution along $\lambda$, since
+$\sum_t P_n(\lambda|x(t)) \sim \int P_n(\lambda|x) P_n(x) dx = P_n(\lambda)$.
+The $\omega_n(\lambda|x)$ are thus  the samples of the AWH method.
+In practice, formula \ref{eq:dfnaive} would be noisy with only a limited amount of sampling.
+AWH instead applies a free energy udpate which has the same form but which can be applied repeatedly with only limited amount of localized sampling,
+\begin{equation}
+\Delta F_n = -\ln \frac{W_n(\lambda) + \sum_t \omega(\lambda|x(t))}{W_n(\lambda) + \sum_t\rho_n(\lambda)) }.
+\end{equation}
+Here $W_n(\lambda)$ is the \emph{reference weight histogram} representing prior sampling.
+Importantly, the size of the histogram $N_n=\sum_\lambda W(\lambda)$, determines the update size $|\Delta F(\lambda)$.
+When updating after a single sample $\omega(\lambda|x)$, for large $N$ and high force constant the shape of the  update is approximately Gaussian (due to the harmonic potential),
+\begin{equation}\label{eq:dfsize}
+|\Delta F_n(\lambda)| \propto \frac{1}{N_n} \exp(-\frac{1}{2}\beta k (\xi(x) - \lambda)^2).
+\end{equation}
+Thus, at convergence $F_n(\lambda) \approx F(\lambda)$, and equivalently $P_n(\lambda)\approx \rho(\lambda)$,
+ is ensured by letting $W(\lambda)$ grow by accumulating samples, thus increasing $N$ and decreasing the free energy update size.
+From Eq.~\ref{eq:grhofrelation}, we see that the update size of the bias ($\Delta g_n(\lambda)$) directly relates to the update size of the free energy.
+Initially, when updates are large the system will thus be driven by the constantly changing bias.
+The update protocol for $W(\lambda)$ is given in more detail in the following section.
+The regular update for $W(\lambda)$, disregarding the initial stage (see section~\ref{sec:initial-stage}), 
+is
+\begin{equation}\label{eq:w-update}
+W_{n+1}(\lambda) = W_n(\lambda) + \sum_t\rho_n(\lambda).
+\end{equation}
+Thus, the weight histogram equals the targeted, ``ideal'' history of samples.
+
+\subsection{The initial update size}
+The initial size of the weight histogram $N_0$
+determines the initial  free energy update size according to Eq.~\ref{eq:dfsize}.
+If the weight histogram is (artifically)  kept at a constant size, $N_n\equiv N_0$,
+the free energy estimate will only be refined down to a certain level of accuracy, set by $N_0$.
+The error saturates.
+For a simple model system of with constant diffusion $D$ along the reaction coordinate $\xi$,
+the average error of the free energy scales as $\varepsilon^2 \sim 1/(ND)$\cite{}.
+This provides a ballpark estimate for initializing $N=N_0$ in terms of more meaningful quantities\cite{}
+\begin{equation}\label{eq:n0}
+\frac{1}{N_0} = \frac{1}{N_0(\varepsilon_0, D)} \sim D\varepsilon_0^2. %\frac{1}{}.
+\end{equation}
+Essentially, this tells us that (for a constant sampling rate) a slower system (small $D$) requires more samples (larger $N^0$) 
+to attain the same level of accuracy ($\varepsilon_0$).
+Conversely, for a given system of diffusion $D$, how to choose the initial biasing rate (set by $N_0$) depends on how good the initial
+accuracy $\varepsilon_0$ is.
+Both $\varepsilon_0$ and $D$ only need to be roughly estimated or guessed.  In the typical case, one would only tweak the $D$ parameter,
+if necessary, for the system at hand -- larger $D$ giving faster initial bias updates and vice versa. 
+$\varepsilon_0$ would only be tweaked when starting an AWH simulation using  a fairly accurate guess of the PMF as input.
+
+\subsection{The initial stage}\label{sec:initial-stage}
+As samples $\omega(\lambda|x(t))$ (see Eq.~\ref{eq:omega}) are collected,
+naturally the histogram size $N$ should grow linearly with time $N\sim t$.
+However, initially before the bias potential is far from optimal
+samples will be highly correlated. This motivates introducing an \emph{initial stage}
+in which the accumulation of samples $N$ and so the decrease of the update size is slowed down.
+The AWH  initial stage has taken inspiration from the well-known Wang-Landau algorithm~\cite{}, 
+although there are differences in the details.
+In the initial stage the update size  is kept constant (constant $N$) until there has been a transition across the sampling interval,
+a ``covering''.
+For  the general case of a multidimensional reaction coordinate,
+a dimension is considered covered when for each $\lambda$ value along that dimension there is at least one
+point $\lambda$  that has accumulated probability weight  corresponding to the peak of a
+multidimensional Gaussian distribution of width $1/\sqrt{\beta k}$,
+\begin{equation}\label{eq:covering}
+\Delta W_{\mathrm{cover}}(\lambda) 
+\ge w_{\mathrm{peak}}
+ \equiv \prod_d \frac{\Delta \lambda_d \beta k_d}{\sqrt{2\pi}},
+\end{equation}
+where $d$ is the dimensional index of $\lambda$.
+After covering, the histogram size $N$ is scaled up by a constant ``growth factor'' $\gamma$, chosen heuristically as $\gamma=3$.
+This corresponds to scaling down the update size by the same factor, see Eq.~\ref{eq:dfsize}.
+This leads to a sequence of histogram sizes,  $N_n=\gamma^nN_0$,
+where the switch from $N_n$ to $N_{n+1}$ is determined dynamically by Eq.~\ref{eq:covering}.
+(It should be noted that $N$,  the number total  sample weight contained in the AWH weight histogram, 
+is not generally equal to the actual number of collected samples in the simulation, but rather quantifies the accuracy of the current free energy estimate.)
+Thus, %(in contrast to e.g.\ well-tempered metadynamics\cite{})
+in the AWH initial stage the sampling interval is sweeped back-and-forth multiple times.
+If $N_0$ is set small enough, 
+the first transition will typically be fast because of the large update size
+and will quickly give a first rough estimate of the free energy.
+The second transition, using $N_1=\gamma N_0$ refines this estimate.
+This way, the initial stage  makes AWH robust against the choice of $N_0$.
+
+\subsection{Exit from the initial stage}
+For longer times, when major free energy barriers have  largely been flattened by the converging bias potential,
+the histogram should grow at the actual sampling rate and the initial stage needs to be exited\cite{}.
+There are multiple reasonable (heuristic) ways of determining when this transition should take place.
+One options is to postulate the number of samples in the weight histogram $N_n$ should never exceed the actual number of collected samples,
+and exit the initial stage when this condition breaks~\cite{}.
+In the initial stage $N_n$ will grow close to exponentially while the collected number of samples grows linearly, so an exit will eventually occur.
+Here we instead apply an exit criterion based on the observation that artifically  keeping $N_n$ constant while sampling
+during the initial stage sweeps, subsequently followed by scaling up $N_n$ by a factor $\gamma$  corresponds to modifying the relative weight of old versus new samples.
+Briefly, the exit criterion is devised such that the relative weights of samples collected \emph{after} the initial stage  are always larger or equal to those of samples
+collected \emph{during} the initial stage. This is consistent with scaling down early, noisy data. 
+
+The exit criterion will now be described in more detail. 
+After every free energy update for which a covering has not occured, $N$ is kept constant. 
+Starting out at the beginning a constant $N$ sweep of the initial stage, $N$ has just been scaled up by $\gamma$,
+which corresponds to scaling up old data, or equivalently scaling down new data relative to old data.
+Thus the first sample of this sweep has  weight $s= 1/\gamma$ relative to a sample in the last update of the previous constant $N$ stage.
+Assume $\Delta N$ samples are collected and added to $W$ for each update .
+To keep $N$ constant, $W$ is thus scaled down by a factor $N_n/(N_n + \Delta N)$.
+Equivalently this means that  new data is scaled up relative to old data by the inverse factor.
+Thus after $K$ updates a new sample has the relative weight  $s=(1/\gamma) [(N_n + \Delta N)/N_n]^K$. 
+Assume covering occurs at this time. Then either $N$ should be scaled by $\gamma$, 
+which corresponds to multiplying $s$ by   $1/\gamma$.
+If at this point $s \ge \gamma$, then after rescaling $s \ge 1$,
+i.e. overall the relative weight of a new sample relative to old data is still growing fast.
+If  on the contrary $s < \gamma$,  and this defines the exit from the initial stage,
+then  the initial stage is over and from now $N$ simply grows at the sampling rate.
+
+\iffalse
+Keeping the histogram constant while collecting samples is equivalent to after every update scaling down the weight of old data
+relative new samples
+by a factor of $N/(N+\Delta N)$, where $\Delta N$ is the number of collected samples in between updates.
+After the covering criterion is fulfilled, $N$ is scaled up by a constant growth factor $\gamma$, 
+thus decreasing the update size and allowing for further refinement of the free energy.
+This is equivalent to scaling \emph{down} the weight of new data relative to old data by a factor of $\gamma=3$.
+At some point, this initial heuristic stage should be exited at which point
+$N$ grows linearly and data is no longer heuristically rescaled.
+The exit criterion is based on the reasonable requirement that the weight of a
+sample collected in the initial stage is scaled down relative to a sample from the final stage.
+This is ensured by keeping track of the maximum sample weight at the previous value of $N$ 
+and making sure that before attempting to exit, the current sample weight is larger than or equal to that sample weight.
+During a covering that takes $k$ free energy updates using a constant $N$ the total downscaling of old samples 
+will be $N/(N+\Delta N)^k$. The total upscaling of old samples will be $\gamma$.
+The exit criterion after a covering is thus given by $[N/(N+\Delta N)]^k < \gamma$.
+Before exiting, the final covering is extended such that $[N/(N+\Delta N)]^k+k' >= \gamma$.
+\fi
+
+\subsection{Applying the bias to the system}
+The bias potential can be applied to the system in two ways.
+Either by applying a harmonic potential centered at $\lambda(t)$,
+which is sampled using (rejection-free) Monte-Carlo samplng from the conditional distribution
+$\omega_n(\lambda|x(t)) = P_n(\lambda|x(t))$, 
+see Eq.~\ref{eq:omega}.
+This is also called Gibbs or independence sampling.
+Alternatively, and by default in the code, the following \emph{convolved bias potential} can be applied, 
+\begin{equation}
+U_n^b(\xi) = -k_BT\ln \int e^{ g_n(\lambda) -Q(\xi,\lambda)} d \lambda.
+\end{equation}
+These two approaches are equivalent in the sense that they give rise to the same biased probabilities $P_n(x)$ (cf.\ \ref{eq:pxlambda})
+while the dynamics are clearly different in the two cases.
+This choice does not affect the internals of the AWH algorithm, only what force and potential AWH returns to the MD engine.
+
+\subsection{Choice of target distribution}\label{sec:targets}
+The target distribution $\rho(\lambda)$,  the limit distribution of  $P_n(\lambda)$, is traditionally chosen to be uniform,
+\begin{equation}
+\rho_{\mathrm{const}}(\lambda) = \mathrm{const.}
+\end{equation}
+e.g. in original formulations of the the Wang-Landau method  and metadynamics\cite{}.
+In AWH, this choice exactly flattens $F(\lambda)$ in the rectangular user-defined sampling interval,
+$I=[\lambda_{\mathrm{start}}, \lambda_{\mathrm{end}}]$.
+Generally, $\rho(\lambda)=0, \lambda\notin I$.
+In certain cases other choices may be preferable.
+For instance, for a multidimensional $\lambda$, a rectangular sampling interval is likely to
+contain regions of very high free energy, e.g. where  atoms are clashing.
+To exclude such regions $\rho(\lambda)$ can specified by the following function of the free energy
+\begin{equation}\label{eq:rhocut}
+\rho_{\mathrm{cut}}(\lambda) \propto \frac{1}{1+ e^{F(\lambda) - \beta  F_{\mathrm{cut}}}}, %, \lambda \in I
+\end{equation}
+where $F_{\mathrm{cut}}$ is a  free energy cutoff  (relative to $\min_\lambda F(\lambda)$).
+Thus, regions of the sampling interval of where
+$F(\lambda) > \beta F_{\mathrm{cut}}$ will  be exponentially suppressed (in a smooth fashion).
+Alternatively, very high free energy regions could be avoided while still flattening more moderate free barriers
+by targeting a Boltzmann distribution with scaled temperature,
+\begin{equation}\label{eq:rhoboltz}
+\rho_{\mathrm{Boltz}}(\lambda) \propto e^{-s_\beta F(\lambda)}, %, \lambda \in I
+\end{equation}
+where the $\beta$-scaling factor $0<s_\beta<1$ determines to what degree the free energy landscape is flattened;
+the lower $s_\beta$ the flatter.
+Note that both $\rho_{\mathrm{cut}}(\lambda)$ and $\rho_{\mathrm{Boltz}}(\lambda)$
+depend on  $F(\lambda)$, which needs to be substituted by the current best estimate $F_n(\lambda)$.
+Thus,  also the target distribution is regularly updated (according to Eq.~\ref{eq:grhofrelation}).
+
+There is in fact an alternative approach to obtaining $\rho_{\mathrm{Boltz}}(\lambda)$ as the limiting target distribution in AWH,
+which is special in the way the  weight histogram $W(\lambda)$ and the target distribution $\rho$ are updated and coupled to each other.
+As is discussed further in \cite{} this yields an evolution of the bias potential which is very similar to that of well-tempered metadynamics~\cite{}.
+Because of the success and popularity of well-tempered metadynamics, this is therefore  a special case worth considering.
+In this case $\rho$ is a function of the reference weight histogram
+\begin{equation}
+\rho_{\mathrm{Boltz,loc}}(\lambda) = W(\lambda), % \lambda \in I
+\end{equation}
+and the update of the weight histogram is modified (cf. Eq.~\ref{eq:w-update}) 
+\begin{equation}
+ W_{n+1}(\lambda) =  W_{n}(\lambda) + s_{\beta}\sum_t \omega(\lambda|x(t)).
+\end{equation}
+Thus, here the weight histogram equals the real history of samples scaled by $s_\beta$.
+This target distribution is called \emph{local} Boltzmann since $W$ is only modified locally, where sampling has taken place.
+We see that when $s_\beta \approx 0$ the histogram  essentially does not grow
+and size of the free energy update will stay at a constant value 
+(as in the original formulation of metadynamics~\cite{}).
+The free energy estimate will not converge, but continue to fluctuate around the correct value.
+For $s_\beta \approx 1$ on the other hand $W$, is essentially a normal histogram
+as one would expect when scaling $\beta$ by a constant factor
+(one may furthermore verify that for this case $\Delta g \equiv 0$).
+This illustrates the inherent coupling 
+between convergence and choice of target distribution for this special choice of target.
+
+Finally,  the target distribution can modulated by arbitrary probability weights
+\begin{equation}
+\rho(\lambda) = \rho_0(\lambda) w_{\mathrm{user}}(\lambda).
+\end{equation}
+where  $w_{\mathrm{user}}(\lambda)$ is provided  by user data and in principle $\rho_0(\lambda)$ can
+be any of the target distributions mentioned above. 
+
+\subsection{Reweighting data post-simulation}
+Maybe?
+ 
+\subsection{Multiple biases and sharing biases across simulations}
+high friction systems -- parallelize by sharing --independent biases -- choice of parameters --limitations
+
+\subsection{Practical guidelines}
+
+As with any method, the choice of reaction coordinate(s) is critical. 
+If a single reaction coordinate does not suffice,  identifying a second reaction coordinate and sampling the two-dimensional landscape may help.
+In this case, using a target distribution with a free energy cutoff (see Eq.~\ref{eq:rhocut})
+ might be required to avoid sampling uninteresting, difficult regions.
+Obtaining accurate free energies for reaction coordinates of much higher dimensionality than 3 or possibly 4 is generally not feasible.
+
+The force constant $k$ should be larger than the curvature of the free energy landscape. 
+If this is not the case, the distributions of the reaction coordinate $\xi$ and the reference coordinate $\lambda$, 
+will differ significantly and warnings will be printed in the log file. 
+One can choose $k$ as large as the time step supports.
+
+For obtaining good convergence,  
+tune the diffusion parameter that sets the initial update size. 
+Especially have a too large diffusion parameter can slow down initial convergence.
+Monitoring the transition rate, across the sampling interval is advisable
+(the trajectory $\xi(t)$ is printed to the pull output file).
+For reliable statistics, one would generally want to observe at least a few ransitions after having exited the initial stage.
+Furthermore, if the dynamics of the reaction coordinate suddenly changes, this may be a sign of e.g.\ a reaction coordinate problem.
+In general, check for messages starting with ``awh'' in the log file, they will they you about covering and potential sampling issues.
 
 \section{\normindex{Enforced Rotation}}
 \index{rotational pulling|see{enforced rotation}}
