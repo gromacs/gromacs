@@ -112,7 +112,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
 
     state_.setCoordValue(grid(), coordValue);
 
-    std::vector<double> *probWeightNeighbor = &tempWorkSpace_;
+    std::vector < double, AlignedAllocator < double>> *probWeightNeighbor = &alignedTempWorkSpace_;
 
     /* If the convolved force is needed or this is a sampling step,
      * the bias in the current neighborhood needs to be up-to-date
@@ -224,7 +224,7 @@ Bias::Bias(int                             biasIndexInCollection,
     grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_->axis(), biasIndexInCollection),
     state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid()),
-    tempWorkSpace_(),
+    alignedTempWorkSpace_(),
     numWarningsIssued_(0)
 {
     /* For a global update updateList covers all points, so reserve that */

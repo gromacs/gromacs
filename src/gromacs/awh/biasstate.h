@@ -57,6 +57,8 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -222,7 +224,7 @@ class BiasState
          */
         void calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                 const Grid                   &grid,
-                                const std::vector<double>    &probWeightNeighbor,
+                                gmx::ArrayRef<const double>   probWeightNeighbor,
                                 awh_dvec                      force) const;
 
         /*! \brief
@@ -245,7 +247,7 @@ class BiasState
          */
         double moveUmbrella(const std::vector<DimParams> &dimParams,
                             const Grid                   &grid,
-                            const std::vector<double>    &probWeightNeighbor,
+                            gmx::ArrayRef<const double>   probWeightNeighbor,
                             awh_dvec                      biasForce,
                             gmx_int64_t                   step,
                             gmx_int64_t                   seed,
@@ -403,13 +405,13 @@ class BiasState
          *
          * \param[in]  dimParams  The bias dimensions parameters
          * \param[in]  grid       The grid.
-         * \param[out] weight     Probability weights of the neighbors.
+         * \param[out] weight     Probability weights of the neighbors, SIMD aligned.
          * \returns the convolved bias.
          */
 
-        double updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams> &dimParams,
-                                                        const Grid                   &grid,
-                                                        std::vector<double>          *weight) const;
+        double updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams>                  &dimParams,
+                                                        const Grid                                    &grid,
+                                                        std::vector < double, AlignedAllocator < double>> *weight) const;
 
         /*! \brief
          * Save the current probability weights for future updates and analysis.
@@ -421,8 +423,8 @@ class BiasState
          * \param[in] grid                The grid.
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
          */
-        void sampleProbabilityWeights(const Grid                &grid,
-                                      const std::vector<double> &probWeightNeighbor);
+        void sampleProbabilityWeights(const Grid                  &grid,
+                                      gmx::ArrayRef<const double>  probWeightNeighbor);
 
         /*! \brief
          * Sample observables for future updates or analysis.
@@ -431,9 +433,9 @@ class BiasState
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
          * \param[in] convolvedBias       The convolved bias.
          */
-        void sampleCoordAndPmf(const Grid                &grid,
-                               const std::vector<double> &probWeightNeighbor,
-                               double                     convolvedBias);
+        void sampleCoordAndPmf(const Grid                  &grid,
+                               gmx::ArrayRef<const double>  probWeightNeighbor,
+                               double                       convolvedBias);
 
     public:
         /*! \brief Returns the current coordinate state.

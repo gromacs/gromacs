@@ -55,6 +55,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -254,8 +255,9 @@ class Bias
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.
          */
-        std::vector<double>          tempWorkSpace_;     /**< Working vector of doubles. */
+        std::vector < double, AlignedAllocator < double>> alignedTempWorkSpace_; /**< Working vector of doubles. */
 
+        /* Run-local counter to avoid flooding log with warnings. */
         int                          numWarningsIssued_; /**< The number of warning issued in the current run. */
 };
 

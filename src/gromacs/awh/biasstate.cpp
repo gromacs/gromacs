@@ -62,6 +62,8 @@
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -150,7 +152,7 @@ static double freeEnergyMinimumValue(const std::vector<PointState> &pointState)
 }
 
 /*! \brief
- * Find the probability weight of a point given a coordinate value.
+ * Find and return the log of the probability weight of a point given a coordinate value.
  *
  * The unnormalized weight is given by
  * w(point|value) = exp(bias(point) - U(value,point)),
@@ -162,33 +164,31 @@ static double freeEnergyMinimumValue(const std::vector<PointState> &pointState)
  * \param[in] pointIndex    Point to evaluate probability weight for.
  * \param[in] pointBias     Bias for the point (as a log weight).
  * \param[in] value         Coordinate value.
- * \returns the biased probability weight.
+ * \returns the log of the biased probability weight.
  */
-static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
-                                    const std::vector<PointState> &points,
-                                    const Grid                    &grid,
-                                    int                            pointIndex,
-                                    double                         pointBias,
-                                    const awh_dvec                 value)
+static double biasedLogWeightFromPoint(const std::vector<DimParams>  &dimParams,
+                                       const std::vector<PointState> &points,
+                                       const Grid                    &grid,
+                                       int                            pointIndex,
+                                       double                         pointBias,
+                                       const awh_dvec                 value)
 {
-    double weight = 0;
+    double logWeight = c_largeNegativeExponent;
 
     /* Only points in the target reigon have non-zero weight */
     if (points[pointIndex].inTargetRegion())
     {
-        double log_weight = pointBias;
+        logWeight = pointBias;
 
         /* Add potential for all parameter dimensions */
         for (size_t d = 0; d < dimParams.size(); d++)
         {
             double dev = getDeviationFromPointAlongGridaxis(grid, d, pointIndex, value[d]);
-            log_weight -= 0.5*dimParams[d].betak*dev*dev;
+            logWeight -= 0.5*dimParams[d].betak*dev*dev;
         }
-
-        weight = std::exp(log_weight);
     }
 
-    return weight;
+    return logWeight;
 }
 
 /*! \brief Convolves the given PMF using the given AWH bias.
@@ -224,9 +224,10 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
             /* Add the convolved PMF weights for the neighbors of this point.
                Note that this function only adds point within the target > 0 region.
                Sum weights, take the logarithm last to get the free energy. */
-            freeEnergyWeights += biasedWeightFromPoint(dimParams, points, grid,
-                                                       neighbor, biasNeighbor,
-                                                       point.coordValue);
+            double logWeight   = biasedLogWeightFromPoint(dimParams, points, grid,
+                                                          neighbor, biasNeighbor,
+                                                          point.coordValue);
+            freeEnergyWeights += std::exp(logWeight);
         }
 
         GMX_RELEASE_ASSERT(freeEnergyWeights > 0, "Attempting to do log(<= 0) in AWH convolved PMF calculation.");
@@ -390,7 +391,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
 
 void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                    const Grid                   &grid,
-                                   const std::vector<double>    &probWeightNeighbor,
+                                   gmx::ArrayRef<const double>   probWeightNeighbor,
                                    awh_dvec                      force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
@@ -420,7 +421,7 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
 
 double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
-                               const std::vector<double>    &probWeightNeighbor,
+                               gmx::ArrayRef<const double>   probWeightNeighbor,
                                awh_dvec                      biasForce,
                                gmx_int64_t                   step,
                                gmx_int64_t                   seed,
@@ -1061,24 +1062,50 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     histogramSize_.incrementNumUpdates();
 }
 
-double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams> &dimParams,
-                                                           const Grid                   &grid,
-                                                           std::vector<double>          *weight) const
+double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams>                      &dimParams,
+                                                           const Grid                                        &grid,
+                                                           std::vector < double, AlignedAllocator < double>> *weight) const
 {
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
     const std::vector<int> &neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
-    weight->resize(neighbors.size());
+#if GMX_SIMD_HAVE_DOUBLE
+    typedef SimdDouble PackType;
+    constexpr int packSize = GMX_SIMD_DOUBLE_WIDTH;
+#else
+    typedef double PackType;
+    constexpr int packSize = 1;
+#endif
+    /* Round the size of the weight array up to packSize */
+    const int     weightSize = ((neighbors.size() + packSize - 1)/packSize)*packSize;
+    weight->resize(weightSize);
 
-    double weightSum = 0;
-    for (size_t n = 0; n < neighbors.size(); n++)
+    double * gmx_restrict weightData = weight->data();
+    PackType              weightSumPack(0.0);
+    for (size_t i = 0; i < neighbors.size(); i += packSize)
     {
-        int neighbor = neighbors[n];
-        (*weight)[n] = biasedWeightFromPoint(dimParams, points_, grid,
-                                             neighbor, points_[neighbor].bias(),
-                                             coordinateState_.coordValue());
-        weightSum   += (*weight)[n];
+        for (size_t n = i; n < i + packSize; n++)
+        {
+            if (n < neighbors.size())
+            {
+                const int neighbor = neighbors[n];
+                (*weight)[n] = biasedLogWeightFromPoint(dimParams, points_, grid,
+                                                        neighbor, points_[neighbor].bias(),
+                                                        coordinateState_.coordValue());
+            }
+            else
+            {
+                /* Pad with values that don't affect the result */
+                (*weight)[n] = c_largeNegativeExponent;
+            }
+        }
+        PackType weightPack = load<PackType>(weightData + i);
+        weightPack          = gmx::exp(weightPack);
+        weightSumPack       = weightSumPack + weightPack;
+        store(weightData + i, weightPack);
     }
+    /* Sum of probability weights */
+    double weightSum    = reduce(weightSumPack);
     GMX_RELEASE_ASSERT(weightSum > 0, "zero probability weight when updating AWH probability weights.");
 
     /* Normalize probabilities to sum to 1 */
@@ -1101,20 +1128,21 @@ double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
     const GridPoint &gridPoint  = grid.point(point);
 
     /* Sum the probability weights from the neighborhood of the given point */
-    double weight_sum = 0;
+    double weightSum = 0;
     for (auto &neighbor : gridPoint.neighbor)
     {
-        weight_sum += biasedWeightFromPoint(dimParams, points, grid,
-                                            neighbor, points[neighbor].bias(),
-                                            coordValue);
+        double logWeight = biasedLogWeightFromPoint(dimParams, points, grid,
+                                                    neighbor, points[neighbor].bias(),
+                                                    coordValue);
+        weightSum       += std::exp(logWeight);
     }
 
     /* Returns -GMX_DOUBLE_MAX if no neighboring points were in the target region. */
-    return (weight_sum > 0) ? std::log(weight_sum) : -GMX_DOUBLE_MAX;
+    return (weightSum > 0) ? std::log(weightSum) : -GMX_DOUBLE_MAX;
 }
 
-void BiasState::sampleProbabilityWeights(const Grid                &grid,
-                                         const std::vector<double> &probWeightNeighbor)
+void BiasState::sampleProbabilityWeights(const Grid                  &grid,
+                                         gmx::ArrayRef<const double>  probWeightNeighbor)
 {
     const std::vector<int> &neighbor = grid.point(coordinateState_.gridpointIndex()).neighbor;
 
@@ -1170,9 +1198,9 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
     }
 }
 
-void BiasState::sampleCoordAndPmf(const Grid                &grid,
-                                  const std::vector<double> &probWeightNeighbor,
-                                  double                     convolvedBias)
+void BiasState::sampleCoordAndPmf(const Grid                  &grid,
+                                  gmx::ArrayRef<const double>  probWeightNeighbor,
+                                  double                       convolvedBias)
 {
     /* Sampling-based deconvolution extracting the PMF.
      * Update the PMF histogram with the current coordinate value.

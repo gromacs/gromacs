@@ -76,12 +76,12 @@ CoordinateState::CoordinateState(const AwhBiasParams          &awhBiasParams,
 }
 
 void
-CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
-                                         int                        gridpointIndex,
-                                         const std::vector<double> &probWeightNeighbor,
-                                         gmx_int64_t                step,
-                                         gmx_int64_t                seed,
-                                         int                        indexSeed)
+CoordinateState::sampleUmbrellaGridpoint(const Grid                  &grid,
+                                         int                          gridpointIndex,
+                                         gmx::ArrayRef<const double>  probWeightNeighbor,
+                                         gmx_int64_t                  step,
+                                         gmx_int64_t                  seed,
+                                         int                          indexSeed)
 {
     /* Sample new umbrella reference value from the probability distribution
      * which is defined for the neighboring points of the current coordinate.
