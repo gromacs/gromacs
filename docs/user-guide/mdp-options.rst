@@ -1859,9 +1859,9 @@ AWH adaptive biasing
       mdp-value:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
       When new umbrella positions are sampled often enough,
-      the average potential and force equals that of :mdp:`awh-potential=convolved`. This option
-      can be useful for cases when calculating the convolved force for each step becomes
-      computationally expensive.
+      the average potential and force equals that of :mdp:`awh-potential=convolved`.
+      There are no advantages to using an umbrella.
+      This option is mainly for comparison and testing purposes.
 
 .. mdp:: awh-share-multisim
 

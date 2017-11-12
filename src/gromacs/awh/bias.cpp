@@ -112,7 +112,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
 
     state_.setCoordValue(grid(), coordValue);
 
-    std::vector<double> *probWeightNeighbor = &tempWorkSpace_;
+    std::vector < double, AlignedAllocator < double>> &probWeightNeighbor = alignedTempWorkSpace_;
 
     /* If the convolved force is needed or this is a sampling step,
      * the bias in the current neighborhood needs to be up-to-date
@@ -128,11 +128,11 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
             state_.doSkippedUpdatesInNeighborhood(params_, grid());
         }
 
-        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid(), probWeightNeighbor);
+        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid(), &probWeightNeighbor);
 
         if (sampleCoord)
         {
-            state_.sampleCoordAndPmf(grid(), *probWeightNeighbor, convolvedBias);
+            state_.sampleCoordAndPmf(grid(), probWeightNeighbor, convolvedBias);
         }
     }
 
@@ -148,7 +148,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     double potential;
     if (params_.convolveForce)
     {
-        state_.calcConvolvedForce(dimParams_, grid(), *probWeightNeighbor,
+        state_.calcConvolvedForce(dimParams_, grid(), probWeightNeighbor,
                                   biasForce);
 
         potential = -convolvedBias*params_.invBeta;
@@ -168,7 +168,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
          */
         if (moveUmbrella)
         {
-            double newPotential = state_.moveUmbrella(dimParams_, grid(), *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
+            double newPotential = state_.moveUmbrella(dimParams_, grid(), probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
             *potentialJump      = newPotential - potential;
         }
     }
@@ -224,7 +224,7 @@ Bias::Bias(int                             biasIndexInCollection,
     grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_->axis(), biasIndexInCollection),
     state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid()),
-    tempWorkSpace_(),
+    alignedTempWorkSpace_(),
     numWarningsIssued_(0)
 {
     /* For a global update updateList covers all points, so reserve that */
