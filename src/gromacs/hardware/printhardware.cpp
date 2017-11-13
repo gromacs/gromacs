@@ -47,6 +47,7 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/hardware/identifyavx512fmaunits.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/simd/support.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -227,19 +228,24 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         s += gmx::formatString("\n");
     }
 
-    s += gmx::formatString("    SIMD instructions most likely to fit this hardware: %s",
-                           gmx::simdString(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min)).c_str());
-
-    if (hwinfo->simd_suggest_max > hwinfo->simd_suggest_min)
+    if (cpuInfo.feature(gmx::CpuInfo::Feature::X86_Avx512F))
     {
-        s += gmx::formatString(" - %s", gmx::simdString(static_cast<gmx::SimdType>(hwinfo->simd_suggest_max)).c_str());
+        int avx512fmaunits = gmx::identifyAvx512FmaUnits();
+        s += gmx::formatString("    Number of AVX-512 FMA units:");
+        if (avx512fmaunits > 0)
+        {
+            s += gmx::formatString(" %d", avx512fmaunits);
+            if (avx512fmaunits == 1)
+            {
+                s += gmx::formatString(" (AVX2 is faster w/o 2 AVX-512 FMA units)");
+            }
+        }
+        else
+        {
+            s += gmx::formatString(" Cannot run AVX-512 detection - assuming 2");
+        }
+        s += gmx::formatString("\n");
     }
-    s += gmx::formatString("\n");
-
-    s += gmx::formatString("    SIMD instructions selected at GROMACS compile time: %s\n",
-                           gmx::simdString(gmx::simdCompiled()).c_str());
-
-    s += gmx::formatString("\n");
 
     s += gmx::formatString("  Hardware topology: ");
     switch (hwTop.supportLevel())
@@ -367,14 +373,9 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
         fprintf(fplog, "%s\n", detected.c_str());
     }
 
-    if (MULTIMASTER(cr))
-    {
-        std::string detected;
-
-        detected = detected_hardware_string(hwinfo, FALSE);
-
-        fprintf(stderr, "%s\n", detected.c_str());
-    }
+    // Do not spam stderr with all our internal information unless
+    // there was something that actually went wrong; general information
+    // belongs in the logfile.
 
     /* Check the compiled SIMD instruction set against that of the node
      * with the lowest SIMD level support (skip if SIMD detection did not work)
