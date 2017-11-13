@@ -91,13 +91,13 @@ function(gmx_find_simd_sse2_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIAB
         "-msse2" "/arch:SSE2" "-hgnu")
 
     if(${SIMD_SSE2_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_SSE2_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_SSE2_C_FLAGS}" CACHE INTERNAL "C flags required for SSE2 instructions")
     endif()
     if(${SIMD_SSE2_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_SSE2_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_SSE2_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for SSE2 instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_SSE2_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE2 C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_SSE2_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE2 CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_SSE2_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE2 C++ flags" FORCE)
 endfunction()
 
 # SSE4.1
@@ -112,13 +112,13 @@ function(gmx_find_simd_sse4_1_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARI
         "-msse4.1" "/arch:SSE4.1" "/arch:SSE2" "-hgnu")
 
     if(${SIMD_SSE4_1_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_SSE4_1_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_SSE4_1_C_FLAGS}" CACHE INTERNAL "C flags required for SSE4.1 instructions")
     endif()
     if(${SIMD_SSE4_1_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_SSE4_1_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_SSE4_1_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for SSE4.1 instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_SSE4_1_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE4.1 C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_SSE4_1_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE4.1 CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_SSE4_1_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for SSE4.1 C++ flags" FORCE)
 endfunction()
 
 # AVX, but using only 128-bit instructions and FMA (AMD XOP processors)
@@ -202,13 +202,13 @@ function(gmx_find_simd_avx_128_fma_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS
     endif()
 
     if(${SIMD_AVX_128_FMA_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_GENERIC_C_FLAGS} ${SIMD_AVX_AMD_FMA_C_FLAGS} ${SIMD_AVX_XOP_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_GENERIC_C_FLAGS} ${SIMD_AVX_AMD_FMA_C_FLAGS} ${SIMD_AVX_XOP_C_FLAGS}" CACHE INTERNAL "C flags required for 128-bit AVX with AMD FMA instructions")
     endif()
     if(${SIMD_AVX_128_FMA_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_GENERIC_CXX_FLAGS} ${SIMD_AVX_AMD_FMA_CXX_FLAGS} ${SIMD_AVX_XOP_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_GENERIC_CXX_FLAGS} ${SIMD_AVX_AMD_FMA_CXX_FLAGS} ${SIMD_AVX_XOP_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for 128-bit AVX with AMD FMA instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_AVX_128_FMA_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for 128-bit AVX with AMD FMA C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_128_FMA_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for 128-bit AVX with AMD FMA CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_128_FMA_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for 128-bit AVX with AMD FMA C++ flags" FORCE)
 endfunction()
 
 
@@ -223,13 +223,13 @@ function(gmx_find_simd_avx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABL
         "-mavx" "/arch:AVX" "-hgnu")
 
     if(${SIMD_AVX_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_C_FLAGS}" CACHE INTERNAL "C flags required for AVX instructions")
     endif()
     if(${SIMD_AVX_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for AVX instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_AVX_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX C++ flags" FORCE)
 endfunction()
 
 # AVX2
@@ -243,13 +243,13 @@ function(gmx_find_simd_avx2_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIAB
         "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 
     if(${SIMD_AVX2_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX2_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX2_C_FLAGS}" CACHE INTERNAL "C flags required for AVX2 instructions")
     endif()
     if(${SIMD_AVX2_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX2_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX2_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for AVX2 instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_AVX2_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX2 C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX2_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX2 CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_AVX2_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX2 C++ flags" FORCE)
 endfunction()
 
 
@@ -265,13 +265,13 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
         "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet. ICC should use ZMM if code anyhow uses ZMM
 
     if(${SIMD_AVX_512_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 instructions")
     endif()
     if(${SIMD_AVX_512_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_512_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_512_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for AVX-512 instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_AVX_512_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_512_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_512_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 C++ flags" FORCE)
 endfunction()
 
 
@@ -287,13 +287,13 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
         "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
 
     if(${SIMD_AVX_512_KNL_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_KNL_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_KNL_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 for KNL instructions")
     endif()
     if(${SIMD_AVX_512_KNL_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_512_KNL_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_512_KNL_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for AVX-512 for KNL instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_AVX_512_KNL_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 for KNL C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_512_KNL_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 for KNL CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_512_KNL_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 for KNL C++ flags" FORCE)
 endfunction()
 
 
@@ -308,13 +308,13 @@ function(gmx_find_simd_arm_neon_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VA
         "-mfpu=neon-vfpv4" "-mfpu=neon" "")
 
     if(${SIMD_ARM_NEON_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_NEON_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_NEON_C_FLAGS}" CACHE INTERNAL "C flags required for Arm Neon instructions")
     endif()
     if(${SIMD_ARM_NEON_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_NEON_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_NEON_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for Arm Neon instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_ARM_NEON_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon C++ flags" FORCE)
 endfunction()
 
 # Arm Neon Asimd (64-bit ARM)
@@ -328,13 +328,13 @@ function(gmx_find_simd_arm_neon_asimd_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FL
         "")
 
     if(${SIMD_ARM_NEON_ASIMD_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_NEON_ASIMD_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_NEON_ASIMD_C_FLAGS}" CACHE INTERNAL "C flags required for Arm Neon Asimd instructions")
     endif()
     if(${SIMD_ARM_NEON_ASIMD_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for Arm Neon Asimd instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_ARM_NEON_ASIMD_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon Asimd C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon Asimd CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon Asimd C++ flags" FORCE)
 endfunction()
 
 # IBM VMX (power6)
@@ -348,13 +348,13 @@ function(gmx_find_simd_ibm_vmx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
         "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
     if(${SIMD_IBM_VMX_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_IBM_VMX_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_IBM_VMX_C_FLAGS}" CACHE INTERNAL "C flags required for IBM VMX instructions")
     endif()
     if(${SIMD_IBM_VMX_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_IBM_VMX_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_IBM_VMX_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for IBM VMX instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_IBM_VMX_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VMX C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VMX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VMX CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VMX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VMX C++ flags" FORCE)
 endfunction()
 
 # IBM VSX (power7 and later)
@@ -368,11 +368,11 @@ function(gmx_find_simd_ibm_vsx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
         "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
     if(${SIMD_IBM_VSX_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_IBM_VSX_C_FLAGS}" PARENT_SCOPE)
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_IBM_VSX_C_FLAGS}" CACHE INTERNAL "C flags required for IBM VSX instructions")
     endif()
     if(${SIMD_IBM_VSX_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_IBM_VSX_CXX_FLAGS}" PARENT_SCOPE)
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_IBM_VSX_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for IBM VSX instructions")
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_IBM_VSX_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VSX C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VSX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VSX CXX flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VSX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VSX C++ flags" FORCE)
 endfunction()
