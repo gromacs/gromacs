@@ -121,6 +121,8 @@ see the Reference Manual. The most important of these are
 
 .. glossary::
 
+.. _gmx-domain-decomp:
+
     Domain Decomposition
         The domain decomposition (DD) algorithm decomposes the
         (short-ranged) component of the non-bonded interactions into
@@ -654,6 +656,126 @@ to the values found at startup, unless it detects that they were altered
 during its runtime.
 
 .. _NVIDIA blog article: https://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/
+
+.. _gmx-gpu-tasks:
+
+Types of GPU tasks
+^^^^^^^^^^^^^^^^^^
+
+To better understand the later sections on different GPU use cases for
+calculation of :ref:`short range<gmx-gpu-pp>` and :ref:`PME <gmx-gpu-pme>`,
+we first have to introduce the concept of different GPU tasks. When thinking about
+running a simulation, several different kinds of interactions between the atoms
+have to be calculated (for more information please refer to the reference manual).
+The calculation can thus be split into several distinct parts that are largely independent
+of each other, with the information from each of them combined at the end of
+time step to obtain the final forces on each atom and to propagate the system
+to the next time point. For a better understanding also please see the section
+on :ref:`domain decomposition <gmx-domain-decomp>`.
+
+Of those calculation parts, it only pays off to offload some of them to be
+calculated on accelerator devices, e.g. GPUs. Right now, |Gromacs| supports the
+calculation of two of those tasks on those external devices, the calculation 
+of the short ranged, :ref:`nonbonded interactions in real space <gmx-gpu-pp>`,
+and recently implemented the solving of the :ref:`PME part <gmx-gpu-pme>`.
+
+**Please note that this is still only the initial version supporting this behaviour,
+and comes with a set of limitations. For now, only compilation with CUDA can be used,
+and no domain decomposition is available!**
+
+.. _gmx-gpu-pp:
+
+GPU computation of short range nonbonded interactions
+.....................................................
+
+.. TODO make this more elaborate and include figures
+
+The most straight forward part of the GPU accelerated calculations is the
+off-loading of the calculation of short ranged nonbonded interactions.
+Here, the GPU acts as an accelerator that can effectively parallelize
+this problem and thus reduce the calculation time.
+
+.. _gmx-gpu-pme:
+
+GPU accelerated calculation of PME
+..................................
+
+.. TODO again, extend this and add some actual useful information concerning performance etc...
+
+Recent additions to |Gromacs| now also allow the off-loading of the PME calculation
+to the GPU, to further reduce the load on the CPU and improve usage overlap between
+CPU and GPU. Here, the solving of PME will be performed in addition to the calculation
+of the short range interactions on the same GPU as the short range interactions.
+
+**Please note again the limitations outlined above!**
+
+- Only compilation with CUDA is supported.
+
+- Only a PME order of 4 is supported in GPU.
+
+- Only a single GPU task can run the PME, no decomposition is supported.
+
+- Only single precision is supported.
+
+- Free energy calculations are not supported, because only single PME grids can be calculated.
+
+- LJ PME is not supported on GPU.
+
+Assigning tasks to GPUs
+.......................
+
+Depending on which tasks should be performed on which hardware, different kinds of
+calculations can be combined on the same or different GPUs, according to the information
+provided for running :ref:`mdrun <gmx mdrun>`.
+
+.. Someone more knowledgeable than me should check the accuracy of this part, so that
+   I don't say something that is factually wrong :)
+
+It is possible to assign the calculation of the different computational tasks to the same GPU, meaning
+that they will share the computational resources on the same device, or to different processing units
+that will each perform one task each. 
+
+One overview over the possible task assignments is given below:
+
+|Gromacs| before version 2018:
+
+  Only short range non-bonded interactions (NB) can be calculated on GPUs. 
+  Each rank of a simulation can a single GPU task on a single GPU.
+
+|Gromacs| version 2018:
+
+  Two different types of GPU accelerated tasks are available, NB
+  and PME. Each rank of a simulation can run GPU tasks on a single GPU.
+
+  Limitations are that PME on GPU does not support domain decomposition,
+  adding only single-rank simulation with a single GPU for NB and PME.  
+
+Future |Gromacs| versions past 2018:
+
+  Combinations of different number of NB and single PME ranks on different
+  GPUs are being planned to be implemented in the near future. In addition,
+  we plan to add support for using multiple GPUs for each rank (e.g. having one GPU
+  each to solve the NB and PME part for a single rank), and to
+  implement domain decomposition on GPUs to allow the separation of the PME
+  part to different GPU tasks.
+
+
+Performance considerations for GPU tasks
+........................................
+
+When deciding on which tasks should be performed on either GPU or CPU,
+the user must consider what the bottlenecks are for the calculation. If
+your calculation of the pure short range nonbonded interactions already saturates
+the GPU (meaning that the time to execute this task is the same as the time of
+the CPU executing all other tasks), there is no point in also performing the PME calculation on
+the device, as it will only slow down the calculation further.
+
+
+Some benchmarking results
+.........................
+
+.. TODO add benchmark figures here
+
 
 Reducing overheads in GPU accelerated runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
