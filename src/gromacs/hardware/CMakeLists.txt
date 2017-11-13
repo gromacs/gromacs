@@ -38,6 +38,7 @@ gmx_add_libgromacs_sources(
     gpu_hw_info.cpp
     hardwaretopology.cpp
     printhardware.cpp
+    identifyavx512fmaunits.cpp
     )
 
 if (BUILD_TESTING)
