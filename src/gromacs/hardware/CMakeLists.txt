@@ -38,7 +38,12 @@ gmx_add_libgromacs_sources(
     gpu_hw_info.cpp
     hardwaretopology.cpp
     printhardware.cpp
+    identifyavx512fmaunits.cpp
     )
+
+if(SIMD_AVX_512_CXX_SUPPORTED)
+    set_property(GLOBAL APPEND PROPERTY GMX_AVX_512_SOURCE hardware/identifyavx512fmaunits.cpp)
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
