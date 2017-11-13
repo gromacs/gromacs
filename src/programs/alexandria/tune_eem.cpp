@@ -959,7 +959,7 @@ int alex_tune_eem(int argc, char *argv[])
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+        fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
         fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
     }
     else

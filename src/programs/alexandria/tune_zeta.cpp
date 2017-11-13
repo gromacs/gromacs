@@ -69,6 +69,7 @@
 #include "moldip.h"
 #include "optparam.h"
 #include "poldata.h"
+#include "poldata_tables.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"
 
@@ -529,7 +530,8 @@ int alex_tune_zeta(int argc, char *argv[])
         { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
         { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE }
+        { efXVG, "-epot",      "param-epot",    ffWRITE },
+        { efTEX, "-latex",     "zeta",          ffWRITE }
     };
     
     const  int                  NFILE         = asize(fnm);
@@ -581,7 +583,8 @@ int alex_tune_zeta(int argc, char *argv[])
     static gmx_bool             bDipole       = false;
     static gmx_bool             bGenVSites    = false;
     static gmx_bool             bZero         = true;  
-    static gmx_bool             bGaussianBug  = true;     
+    static gmx_bool             bGaussianBug  = true;    
+    static gmx_bool             bPrintTable   = false; 
     static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     
@@ -676,6 +679,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "Compress output XML file" },
         { "-bgaussquad", FALSE, etBOOL, {&bGaussianBug},
           "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" },
+        { "-btex", FALSE, etBOOL, {&bPrintTable},
+          "[HIDDEN]Print the latex table for the Gaussian and Slater exponents" },
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-bound", FALSE, etBOOL, {&bBound},
@@ -711,7 +716,7 @@ int alex_tune_zeta(int argc, char *argv[])
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+        fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
         fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
     }
     else
@@ -831,8 +836,15 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt.cr_);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
+        gmx_ffclose(fp);        
+        if (bPrintTable)
+        {
+            FILE        *tp;
+            tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
+            alexandria_poldata_eemprops_table(tp, true, false, opt.pd_);
+            gmx_ffclose(tp);
+        }       
         done_filenms(NFILE, fnm);
-        gmx_ffclose(fp);
     }
     return 0;
 }

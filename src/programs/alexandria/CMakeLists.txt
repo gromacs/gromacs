@@ -31,8 +31,10 @@ set(ALEXANDRIA_SOURCES
            molselect.cpp
            poldata.cpp
            poldata_xml.cpp
+           poldata_tables.cpp
            poldata_low.cpp
            xml_util.c
+           latex_util.cpp
            mymol_low.cpp
            mymol.cpp
            alex_modules.cpp
@@ -50,8 +52,8 @@ set(ALEXANDRIA_SOURCES
            merge_pd.cpp
            moldip.cpp
            molprop_check.cpp
-           molprop_sqlite3.cpp
            molprop_tables.cpp
+           molprop_sqlite3.cpp
            molprop_test.cpp
            mp2csv.cpp
            nmsimplex.c
@@ -66,7 +68,7 @@ set(ALEXANDRIA_SOURCES
            tune_zeta.cpp
 	   optparam.cpp
            communication.cpp
-           tuning_utility.cpp
+           tuning_utility.cpp           
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	

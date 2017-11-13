@@ -62,8 +62,8 @@
 #include "categories.h"
 #include "composition.h"
 #include "molprop.h"
-#include "molprop_tables.h"
 #include "molprop_util.h"
+#include "molprop_tables.h"
 #include "molprop_xml.h"
 #include "molselect.h"
 #include "poldata.h"
@@ -341,7 +341,7 @@ static void write_corr_xvg(FILE                             *fplog,
     do_view(oenv, fn, nullptr);
 }
 
-static void gmx_molprop_analyze(FILE                              *fplog,
+static void alexandria_molprop_analyze(FILE                              *fplog,
                                 std::vector<alexandria::MolProp>  &mp,
                                 alexandria::Poldata               &pd,
                                 gmx_bool                           bCalcPol,
@@ -417,22 +417,22 @@ static void gmx_molprop_analyze(FILE                              *fplog,
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
-        gmx_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
+        alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
                                 outlier, cList, gms, imsTrain);
         if (0)
         {
             alexandria::CategoryList cListTest;
             makeCategoryList(cListTest, mp, gms, imsTest);
-            gmx_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
-                                    outlier, cListTest, gms, imsTest);
+            alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
+                                           outlier, cListTest, gms, imsTest);
         }
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                               bPrintMultQ, gms, imsTrain);
-        gmx_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                               bPrintMultQ, gms, imsTest);
+        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+                                      bPrintMultQ, gms, imsTrain);
+        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+                                      bPrintMultQ, gms, imsTest);
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");
@@ -455,14 +455,14 @@ static void gmx_molprop_analyze(FILE                              *fplog,
     }
     if (bCompositionTable)
     {
-        gmx_molprop_composition_table(fp, mp, gms, imsTrain);
-        gmx_molprop_composition_table(fp, mp, gms, imsTest);
+        alexandria_molprop_composition_table(fp, mp, gms, imsTrain);
+        alexandria_molprop_composition_table(fp, mp, gms, imsTest);
     }
     fclose(fp);
     if (nullptr != categoryfn)
     {
         fp = fopen(categoryfn, "w");
-        gmx_molprop_category_table(fp, catmin, cList);
+        alexandria_molprop_category_table(fp, catmin, cList);
         fclose(fp);
     }
     if (nullptr != xvgfn)
@@ -642,30 +642,30 @@ int alex_analyze(int argc, char *argv[])
         MolPropSort(mp, mpsa, ap, gms);
     }   
     fplog  = opt2FILE("-g", NFILE, fnm, "w");
-    gmx_molprop_analyze(fplog,
-                        mp, 
-                        pd, 
-                        bCalcPol,
-                        mpo, 
-                        exp_type, 
-                        lot, 
-                        rtoler, 
-                        atoler, 
-                        outlier, 
-                        fc_str, 
-                        bAll,
-                        bStatsTable,
-                        catmin,
-                        opt2fn_null("-cat", NFILE, fnm),
-                        bPropTable, 
-                        bCompositionTable,
-                        bPrintBasis, 
-                        bPrintMultQ,
-                        opt2fn("-t", NFILE, fnm), 
-                        opt2fn("-c", NFILE, fnm),
-                        oenv, 
-                        gms,
-                        opt2fn_null("-selout", NFILE, fnm));
+    alexandria_molprop_analyze(fplog,
+                               mp, 
+                               pd, 
+                               bCalcPol,
+                               mpo, 
+                               exp_type, 
+                               lot, 
+                               rtoler, 
+                               atoler, 
+                               outlier, 
+                               fc_str, 
+                               bAll,
+                               bStatsTable,
+                               catmin,
+                               opt2fn_null("-cat", NFILE, fnm),
+                               bPropTable, 
+                               bCompositionTable,
+                               bPrintBasis, 
+                               bPrintMultQ,
+                               opt2fn("-t", NFILE, fnm), 
+                               opt2fn("-c", NFILE, fnm),
+                               oenv, 
+                               gms,
+                               opt2fn_null("-selout", NFILE, fnm));
     gmx_ffclose(fplog);
 
     return 0;

@@ -37,8 +37,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molprop_tables.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,120 +51,21 @@
 
 #include "categories.h"
 #include "composition.h"
+#include "latex_util.h"
+#include "molprop_tables.h"
 
 namespace alexandria
 {
 
 typedef struct {
-    char       *ptype, *miller, *bosque;
+    char       *ptype;
+    char       *miller;
+    char       *bosque;
     gmx_stats_t lsq;
-    int         nexp, nqm;
+    int         nexp;
+    int         nqm;
 } t_sm_lsq;
 
-class ExpData
-{
-    public:
-        double      val_, err_, temp_;
-        std::string ref_, conf_, type_, unit_;
-
-        ExpData(double val, double err, double temp, std::string ref, std::string conf, std::string type, std::string unit)
-        { val_ = val; err_ = err; temp_ = temp; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
-};
-
-class CalcData
-{
-    public:
-        double val_, err_, temp_;
-        int    found_;
-        CalcData(double val, double err, double temp, int found)
-        { val_ = val; err_ = err; temp_ = temp; found_ = found; }
-};
-
-LongTable::LongTable(FILE *fp, bool bLandscape, const char *font)
-{
-    fp_         = fp;
-    bLandscape_ = bLandscape;
-    font_       = font;
-    if (nullptr == fp_)
-    {
-        GMX_THROW(gmx::FileIOError("File not open"));
-    }
-}
-
-LongTable::LongTable(const char *fn, bool bLandscape)
-{
-    fp_         = fopen(fn, "w");
-    bLandscape_ = bLandscape;
-    if (nullptr == fp_)
-    {
-        GMX_THROW(gmx::FileIOError("Could not open file"));
-    }
-}
-
-void LongTable::setColumns(int nColumns)
-{
-    columns_.assign("l");
-    for (int i = 1; (i < nColumns); i++)
-    {
-        columns_.append("c");
-    }
-}
-
-void LongTable::printHeader()
-{
-    if (bLandscape_)
-    {
-        fprintf(fp_, "\\begin{landscape}\n");
-    }
-    if (nullptr != font_)
-    {
-        fprintf(fp_, "\\begin{%s}\n", font_);
-    }
-    fprintf(fp_, "\\begin{longtable}{%s}\n", columns_.c_str());
-    printHLine();
-    fprintf(fp_, "\\caption{%s}\n", caption_.c_str());
-    fprintf(fp_, "\\label{%s}\\\\\n", label_.c_str());
-    printHLine();
-    for (unsigned int i = 0; (i < headLines_.size()); i++)
-    {
-        fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
-    }
-    printHLine();
-    fprintf(fp_, "\\endfirsthead\n");
-    printHLine();
-    for (unsigned int i = 0; (i < headLines_.size()); i++)
-    {
-        fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
-    }
-    printHLine();
-    fprintf(fp_, "\\endhead\n");
-    printHLine();
-    fprintf(fp_, "\\endfoot\n");
-}
-
-void LongTable::printFooter()
-{
-    fprintf(fp_, "\\end{longtable}\n");
-    if (nullptr != font_)
-    {
-        fprintf(fp_, "\\end{%s}\n", font_);
-    }
-    if (bLandscape_)
-    {
-        fprintf(fp_, "\\end{landscape}\n");
-    }
-    fflush(fp_);
-}
-
-void LongTable::printLine(std::string line)
-{
-    fprintf(fp_, "%s\\\\\n", line.c_str());
-}
-
-void LongTable::printHLine()
-{
-    fprintf(fp_, "\\hline\n");
-}
 
 static void stats_header(LongTable         &lt,
                          MolPropObservable  mpo,
@@ -220,15 +119,15 @@ static void stats_header(LongTable         &lt,
     lt.printHeader();
 }
 
-void gmx_molprop_stats_table(FILE                 *fp,
-                             MolPropObservable     mpo,
-                             std::vector<MolProp> &mp,
-                             const QmCount        &qmc,
-                             char                 *exp_type,
-                             double                outlier,
-                             CategoryList          cList,
-                             const MolSelect      &gms,
-                             iMolSelect            ims)
+void alexandria_molprop_stats_table(FILE                 *fp,
+                                    MolPropObservable     mpo,
+                                    std::vector<MolProp> &mp,
+                                    const QmCount        &qmc,
+                                    char                 *exp_type,
+                                    double                outlier,
+                                    CategoryList          cList,
+                                    const MolSelect      &gms,
+                                    iMolSelect            ims)
 {
     std::vector<MolProp>::iterator     mpi;
     std::vector<std::string>::iterator si;
@@ -478,8 +377,10 @@ static void composition_header(LongTable             &lt,
     lt.printHeader();
 }
 
-void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
-                                   const MolSelect &gms, iMolSelect ims)
+void alexandria_molprop_composition_table(FILE                 *fp, 
+                                          std::vector<MolProp>  mp,
+                                          const MolSelect      &gms, 
+                                          iMolSelect            ims)
 {
     std::vector<MolProp>::iterator             mpi;
     MolecularCompositionIterator               mci;
@@ -568,9 +469,9 @@ static void category_header(LongTable &lt)
     lt.printHeader();
 }
 
-void gmx_molprop_category_table(FILE                             *fp,
-                                int                               catmin,
-                                CategoryList                      cList)
+void alexandria_molprop_category_table(FILE            *fp,
+                                       int              catmin,
+                                       CategoryList     cList)
 {
     if (cList.nCategories() > 0)
     {
@@ -628,11 +529,11 @@ static void atomtype_tab_header(LongTable &lt)
     lt.printHeader();
 }
 
-static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
-                                             const Poldata        &pd,
-                                             std::vector<MolProp>  mp,
-                                             const char           *lot,
-                                             const char           *exp_type)
+static void alexandria_molprop_atomtype_polar_table(FILE                 *fp,
+                                                    const Poldata        &pd,
+                                                    std::vector<MolProp>  mp,
+                                                    const char           *lot,
+                                                    const char           *exp_type)
 {
     std::vector<MolProp>::iterator  mpi;
     double                          ahc, ahp, bos_pol;
@@ -733,8 +634,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
     fflush(fp);
 }
 
-static void gmx_molprop_atomtype_dip_table(FILE          *fp,
-                                           const Poldata &pd)
+static void alexandria_molprop_atomtype_dip_table(FILE          *fp,
+                                                  const Poldata &pd)
 {
     int         i, k, m, cur = 0;
     std::string gt_type[2] = { "", "" };
@@ -819,20 +720,20 @@ static void gmx_molprop_atomtype_dip_table(FILE          *fp,
     lt.printFooter();
 }
 
-void gmx_molprop_atomtype_table(FILE                       *fp,
-                                bool                        bPolar,
-                                const Poldata              &pd,
-                                const std::vector<MolProp> &mp,
-                                const char                 *lot,
-                                const char                 *exp_type)
+void alexandria_molprop_atomtype_table(FILE                       *fp,
+                                       bool                        bPolar,
+                                       const Poldata              &pd,
+                                       const std::vector<MolProp> &mp,
+                                       const char                 *lot,
+                                       const char                 *exp_type)
 {
     if (bPolar)
     {
-        gmx_molprop_atomtype_polar_table(fp, pd, mp, lot, exp_type);
+        alexandria_molprop_atomtype_polar_table(fp, pd, mp, lot, exp_type);
     }
     else
     {
-        gmx_molprop_atomtype_dip_table(fp, pd);
+        alexandria_molprop_atomtype_dip_table(fp, pd);
     }
 }
 
@@ -955,18 +856,18 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
     }
 }
 
-void gmx_molprop_prop_table(FILE                 *fp,
-                            MolPropObservable     mpo,
-                            real                  rel_toler,
-                            real                  abs_toler,
-                            std::vector<MolProp> &mp,
-                            const QmCount        &qmc,
-                            const char           *exp_type,
-                            bool                  bPrintAll,
-                            bool                  bPrintBasis,
-                            bool                  bPrintMultQ,
-                            const MolSelect      &gms,
-                            iMolSelect            ims)
+void alexandria_molprop_prop_table(FILE                 *fp,
+                                   MolPropObservable     mpo,
+                                   real                  rel_toler,
+                                   real                  abs_toler,
+                                   std::vector<MolProp> &mp,
+                                   const QmCount        &qmc,
+                                   const char           *exp_type,
+                                   bool                  bPrintAll,
+                                   bool                  bPrintBasis,
+                                   bool                  bPrintMultQ,
+                                   const MolSelect      &gms,
+                                   iMolSelect            ims)
 {
     MolecularQuadrupoleIterator qi;
     MolecularEnergyIterator     mei;

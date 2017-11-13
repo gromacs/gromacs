@@ -840,7 +840,7 @@ int alex_tune_pol(int argc, char *argv[])
     atype = opt2fn("-atype", NFILE, fnm);
     fprintf(fplog, "Now writing LaTeX description of force field to %s\n", atype);
     tp = fopen(atype, "w");
-    gmx_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
+    alexandria_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
     fclose(tp);
     gmx_ffclose(fplog);
 
