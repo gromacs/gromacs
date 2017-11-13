@@ -64,7 +64,7 @@ static void eemprops_zeta_header(LongTable &lt)
 
     lt.setColumns("ccccc");
 
-    snprintf(longbuf, STRLEN, "The optimized values of the screening factor for the Gaussian and the Slater charges represented by $\\beta$ and $\\xi$, rescpectively.");
+    snprintf(longbuf, STRLEN, "The optimized values of the screening factor for the Gaussian and the Slater charges represented by $\\beta$ and $\\xi$, rescpectively. The atom types are according to the General Amber Force Field (GAFF)~\\cite{Wang2004a}.");
     lt.setCaption(longbuf);
     lt.setLabel("screeningfactor");
     snprintf(longbuf, STRLEN, "Atom type  & \\multicolumn{2}{c}{Non-polarizable} & \\multicolumn{2}{c}{Polarizable}");
