@@ -40,6 +40,7 @@ endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
@@ -189,6 +190,11 @@ if (HAS_NO_UNUSED)
     set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-unused-parameter -Wno-unused-function")
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+
+if(SIMD_AVX_512_CXX_SUPPORTED)
+    get_property(_avx512_files GLOBAL PROPERTY GMX_AVX_512_SOURCE)
+    set_source_files_properties(${_avx512_files} PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS}")
+endif()
 
 gmx_setup_tng_for_libgromacs()
 
