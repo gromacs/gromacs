@@ -314,6 +314,24 @@ if (SIMD_CHANGED AND DEFINED SIMD_STATUS_MESSAGE)
     message(STATUS "${SIMD_STATUS_MESSAGE}")
 endif()
 
+# While AVX-512 is a more recent SIMD ISA than AVX2, some Intel CPUs only have
+# a single AVX-512 FMA unit, but two AVX2 FMA units, and then it is better to
+# use AVX2. The only way to test this is to execute a small timing loop.
+# To be able to recommend the user whether s/he should try AVX-512 instead of
+# AVX2, we need to compile a single file with AVX512 flags. We do this
+# automatically, but this option provides a way to turn it off in case it
+# breaks something. The actual test source file is built if
+# SIMD_AVX_512_CXX_SUPPORTED is set, so it will always be included if we have
+# GMX_SIMD=AVX_512.
+set(GMX_ENABLE_AVX512_TESTS ON CACHE INTERNAL "Compile AVX512 code to test FMA units, even when not using AVX512 SIMD")
+mark_as_advanced(GMX_ENABLE_AVX512_TESTS)
+
+if(GMX_ENABLE_AVX512_TESTS AND
+    (GMX_SIMD_ACTIVE STREQUAL "AVX_256" OR GMX_SIMD_ACTIVE STREQUAL "AVX2_256" OR GMX_SIMD_ACTIVE STREQUAL "AVX2_128"))
+    gmx_find_simd_avx_512_flags(SIMD_AVX_512_C_SUPPORTED SIMD_AVX_512_CXX_SUPPORTED
+                                SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS)
+endif()
+
 # By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
 # and even on 64-bit (all platforms) it is only used for a handful of arguments.
 # The __vectorcall (MSVC, from MSVC2013) or __regcall (ICC) calling conventions
