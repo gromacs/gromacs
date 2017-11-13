@@ -127,6 +127,7 @@ static const char *wcsn[ewcsNR] =
     "Listed buffer ops.",
     "Nonbonded pruning",
     "Nonbonded F",
+    "NB F kernel", "NB F clear buf",
     "Launch NB GPU tasks",
     "Launch Bonded GPU tasks",
     "Launch PME GPU tasks",

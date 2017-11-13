@@ -278,7 +278,8 @@ struct nonbonded_verlet_t
                                      int                         clearF,
                                      const t_forcerec           &fr,
                                      gmx_enerdata_t             *enerd,
-                                     t_nrnb                     *nrnb);
+                                     t_nrnb                     *nrnb,
+                                     gmx_wallcycle              *wcycle);
 
         //! Executes the non-bonded free-energy kernel, always runs on the CPU
         void dispatchFreeEnergyKernel(Nbnxm::InteractionLocality  iLocality,

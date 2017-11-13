@@ -73,6 +73,7 @@ enum {
     ewcsLISTED_BUF_OPS,
     ewcsNONBONDED_PRUNING,
     ewcsNONBONDED,
+    ewcsNBFKERNEL, ewcsNBFCLEARBUF,
     ewcsLAUNCH_GPU_NONBONDED,
     ewcsLAUNCH_GPU_BONDED,
     ewcsLAUNCH_GPU_PME,

@@ -350,7 +350,7 @@ static void do_nb_verlet(t_forcerec                       *fr,
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(ilocality, *ic, flags, clearF, *fr, enerd, nrnb, wcycle);
 
     if (!nbv->useGpu())
     {
