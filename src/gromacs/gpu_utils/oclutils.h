@@ -44,6 +44,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
@@ -117,10 +118,13 @@ int ocl_copy_D2H(void * h_dest, cl_mem d_src,
 
 
 /*! \brief Launches asynchronous device to host memory copy. */
-int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
-                       size_t offset, size_t bytes,
-                       cl_command_queue command_queue,
-                       cl_event *copy_event);
+inline int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
+                              size_t offset, size_t bytes,
+                              cl_command_queue command_queue,
+                              cl_event *copy_event)
+{
+    return ocl_copy_D2H(h_dest, d_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
+}
 
 /*! \brief Launches synchronous or asynchronous host to device memory copy.
  *
@@ -135,15 +139,21 @@ int ocl_copy_H2D(cl_mem d_dest, void* h_src,
                  cl_event *copy_event);
 
 /*! \brief Launches asynchronous host to device memory copy. */
-int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
-                       size_t offset, size_t bytes,
-                       cl_command_queue command_queue,
-                       cl_event *copy_event);
+inline int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
+                              size_t offset, size_t bytes,
+                              cl_command_queue command_queue,
+                              cl_event *copy_event)
+{
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
+}
 
 /*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
-                      size_t offset, size_t bytes,
-                      cl_command_queue command_queue);
+inline int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
+                             size_t offset, size_t bytes,
+                             cl_command_queue command_queue)
+{
+    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Sync, command_queue, NULL);
+}
 
 /*! \brief Allocate host memory in malloc style */
 void ocl_pmalloc(void **h_ptr, size_t nbytes);

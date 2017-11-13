@@ -48,7 +48,6 @@
 
 #include <string>
 
-#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -86,29 +85,6 @@ int ocl_copy_H2D(cl_mem d_dest, void* h_src,
     return 0;
 }
 
-/*! \brief Launches asynchronous host to device memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular host to device operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
-                       size_t offset, size_t bytes,
-                       cl_command_queue command_queue,
-                       cl_event *copy_event)
-{
-    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
-}
-
-/*! \brief Launches synchronous host to device memory copy.
- */
-int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
-                      size_t offset, size_t bytes,
-                      cl_command_queue command_queue)
-{
-    return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Sync, command_queue, NULL);
-}
-
 int ocl_copy_D2H(void * h_dest, cl_mem d_src,
                  size_t offset, size_t bytes,
                  GpuApiCallBehavior transferKind,
@@ -141,20 +117,6 @@ int ocl_copy_D2H(void * h_dest, cl_mem d_src,
     }
 
     return 0;
-}
-
-/*! \brief Launches asynchronous device to host memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular host to device operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
-                       size_t offset, size_t bytes,
-                       cl_command_queue command_queue,
-                       cl_event *copy_event)
-{
-    return ocl_copy_D2H(h_dest, d_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief \brief Allocates nbytes of host memory. Use ocl_free to free memory allocated with this function.
