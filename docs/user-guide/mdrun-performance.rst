@@ -655,6 +655,87 @@ during its runtime.
 
 .. _NVIDIA blog article: https://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/
 
+.. _gmx-gpu-tasks:
+
+Different GPU tasks
+^^^^^^^^^^^^^^^^^^^
+
+To better understand the later sections on different GPU use cases for 
+calculation of :ref:`short range<gmx-gpu-pp>` and :ref:`PME <gmx-gpu-pme>`,
+we first have to introduce the concept of different GPU tasks. When thinking about
+running a simulation, several different kinds of interactions between the atoms
+have to be calculated (for more information please refer to the reference manual).
+The calculation can thus be split into several distinct parts that are largely independent
+of each other, with the information from each of them combined at the end of 
+time step to obtain the final forces on each atom and to propagate the system 
+to the next time point.
+
+Of those calculation parts, it makes only sense to spread some of them to be
+calculated on external devices (read: GPUs). Right now, |Gromacs| supports the
+calculation of two of those tasks on those external devices, the calculation 
+of the short ranged, :ref:`nonbonded interactions in real space <gmx-gpu-pp>`,
+and recently implemented the solving of the :ref:`PME part <gmx-gpu-pme>`.
+
+.. _gmx-gpu-pp:
+
+GPU accelerated calculation of short range nonbonded interactions
+.................................................................
+
+.. TODO make this more elaborate and include figures
+
+The most straight forward part of the GPU accelerated calculations is the
+off-loading of the calculation of short ranged nonbonded interactions.
+Here, the GPU acts as an external processing load that can effectively parallelize
+this problem and thus reduce the calculation time. 
+
+.. _gmx-gpu-pme:
+
+GPU accelerated calculation of PME
+..................................
+
+.. TODO again, extend this and add some actual useful information concerning performance etc...
+
+Recent additions to |Gromacs| now also allow the off-loading of the PME calculation
+to the GPU, to further reduce the load on the CPU and improve usage overlap between
+CPU and GPU. Here, the solving of PME will be performed in addition to the calculation
+of the short range interactions on the same GPU as the short range interactions.
+
+Assigning tasks to GPUs
+.......................
+
+Depending on which tasks should be performed on which hardware, different kinds of
+calculations can be combined on the same or different GPUs, according to the information
+provided for running :ref:`mdrun <gmx mdrun>`.
+
+.. Someone more knowledgeable than me should check the accuracy of this part, so that
+   I don't say something that is factually wrong :)
+
+It is possible to assign the calculation of the different tasks to the same GPU, meaning
+that they will share the resources on the same device, or to different processing units
+that will each perform one task each. Right now it is not possible to split
+a task between different GPUs, meaning that one GPU task will perform all of the
+calculations and will not split them between different devices.
+
+Performance considerations for GPU tasks
+........................................
+
+When deciding on which tasks should be performed on either GPU or CPU,
+the user must consider what the bottlenecks are for the calculation. If
+your calculation of the pure short range nonbonded interactions already saturates
+the GPU, there is no point in also performing the PME calculation on
+the device, as it will only slow down the calculation further. Also, as the
+current implementation does not allow the splitting of the tasks further
+beyond a single rank, it might be more useful for a user to use more
+ranks on CPU to split the calculation, instead of relying on the GPU
+to improve performance.
+
+
+Some benchmarking results
+.........................
+
+.. TODO add benchmark figures here
+
+
 Reducing overheads in GPU accelerated runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
