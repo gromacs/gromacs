@@ -197,13 +197,14 @@ void OptZeta::calcDeviation()
                 mymol.CalcDipole();
                 if (bQM_)
                 {
-                    rvec dmu;                    
-                    rvec_sub(mymol.mu_calc_, mymol.mu_elec_, dmu);
-                    ener_[ermsMU]  += iprod(dmu, dmu);
+                    for (auto mm = 0; mm < DIM; mm++)
+                    {                    
+                        ener_[ermsMU] += gmx::square(mymol.mu_calc_[mm] - mymol.mu_elec_[mm]);
+                    }
                 }
                 else
                 {
-                    ener_[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                    ener_[ermsMU] += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
                 }
             }                          
             if (bQuadrupole_)
