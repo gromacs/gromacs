@@ -48,13 +48,16 @@ def do_build(context):
         }
     if context.params.get('RELEASE', Parameter.bool):
         cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
+        cmake_opts['GMX_GET_RELEASE_DOI'] = 'ON'
+        cmake_opts['GMX_BUILD_MANUAL'] = 'ON'
 
     context.run_cmake(cmake_opts)
     context.build_target(target='gmx')
     context.build_target(target='man')
     context.build_target(target='completion')
     context.build_target(target='install-guide')
-
+    if context.params.get('RELEASE', Parameter.bool):
+        context.build_target(target='webpage')
     context.build_target(target='package_source')
 
     cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
@@ -62,3 +65,6 @@ def do_build(context):
     package_name = cpack_config['CPACK_PACKAGE_FILE_NAME'] + '.tar.gz'
     version = cpack_config['CPACK_PACKAGE_VERSION']
     context.write_package_info(Project.GROMACS, package_name, version)
+    if context.params.get('RELEASE', Parameter.bool):
+        context.build_target(target='gmx-publish-source')
+        context.build_target(target='gmx-publish-manual')
