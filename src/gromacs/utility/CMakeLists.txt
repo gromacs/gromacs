@@ -58,6 +58,7 @@ gmx_install_headers(
     init.h
     programcontext.h
     real.h
+    reference-doi.h
     smalloc.h
     stringutil.h
     )

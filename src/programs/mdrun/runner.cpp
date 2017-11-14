@@ -511,6 +511,7 @@ int Mdrunner::mdrunner()
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
         please_cite(fplog, "Berendsen95a");
+        reference_doi(fplog);
     }
 
     std::unique_ptr<t_state> globalState;

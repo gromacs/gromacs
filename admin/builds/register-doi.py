@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(GMX_VERSION                   "@GMX_VERSION@")
-set(GMX_VERSION_MAJOR             "@GMX_VERSION_MAJOR@")
-set(GMX_VERSION_PATCH             "@GMX_VERSION_PATCH@")
-set(GMX_VERSION_STRING            "@GMX_VERSION_STRING@")
+import os.path
 
-set(GMX_VERSION_STRING_FULL       "@GMX_VERSION_STRING_FULL@")
-set(GMX_VERSION_FULL_HASH         "@GMX_VERSION_FULL_HASH@")
-set(GMX_VERSION_CENTRAL_BASE_HASH "@GMX_VERSION_CENTRAL_BASE_HASH@")
-set(GMX_SOURCE_DOI_STRING         "@GMX_SOURCE_DOI_STRING@")
+build_out_of_source = True
+
+def do_build(context):
+    cmake_opts = {
+            'GMX_BUILD_HELP': 'ON',
+            'CMAKE_BUILD_TYPE': 'Release',
+            'GMX_SIMD': 'None',
+            'GMX_USE_RDTSCP': 'OFF',
+            'GMX_THREAD_MPI': 'OFF',
+            'GMX_OPENMP': 'OFF',
+            'GMX_GPU': 'OFF',
+            'GMX_BUILD_TARBALL': 'ON',
+            'GMX_SUBMIT_DOI': 'ON',
+            'GMX_BUILD_MANUAL': 'ON'
+        }
+
+    context.run_cmake(cmake_opts)
+    context.build_target(target='gmx')
+    context.build_target(target='man')
+    context.build_target(target='completion')
+    context.build_target(target='install-guide')
+    context.build_target(target='webpage')
+    context.build_target(target='package_source')
+
+    cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
+    cpack_config = context.read_cmake_variable_file(cpack_config_path)
+    package_name = cpack_config['CPACK_PACKAGE_FILE_NAME'] + '.tar.gz'
+    version = cpack_config['CPACK_PACKAGE_VERSION']
+    context.write_package_info(Project.GROMACS, package_name, version)
+    context.build_target(target='gmx-publish-source')
+    context.build_target(target='gmx-publish-manual')
