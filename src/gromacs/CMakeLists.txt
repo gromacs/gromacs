@@ -171,7 +171,10 @@ gmx_install_headers(
 set(GENERATED_VERSION_FILE utility/baseversion-gen.cpp)
 gmx_configure_version_file(
     utility/baseversion-gen.cpp.cmakein ${GENERATED_VERSION_FILE}
-    REMOTE_HASH)
+    REMOTE_HASH
+    EXTRA_VARS
+        GMX_SOURCE_DOI
+    )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
      $<TARGET_OBJECTS:libgromacs_external>
      $<TARGET_OBJECTS:libgromacs_generated>)

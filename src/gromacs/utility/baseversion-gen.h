@@ -52,6 +52,15 @@ extern const char _gmx_ver_string[];
 extern const char _gmx_full_git_hash[];
 //! Full git hash of the latest commit in a central \Gromacs repository.
 extern const char _gmx_central_base_hash[];
+/*! \brief
+ *  DOI string for the \Gromacs source code populated by CMake.
+ *
+ *  The variable is populated with the generated DOI string
+ *  by CMake when the build of a release version is
+ *  requested by Jenkins. Allows identification and
+ *  referencing of different \Gromacs releases.
+ */
+extern const char gmxSourceDoiString[];
 
 //! \}
 //! \endcond
