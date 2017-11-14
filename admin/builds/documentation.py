@@ -34,6 +34,8 @@
 
 import os
 import re
+import requests
+import json
 
 build_out_of_source = True
 
@@ -55,6 +57,8 @@ def do_build(context):
     release = (context.job_type == JobType.RELEASE)
     if release:
         cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
+        if context.params.get(('PUBLISH', Parameter.bool):
+            cmake_opts['GMX_SUBMIT_MANUAL'] = 'ON'
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
@@ -139,3 +143,4 @@ def do_build(context):
         version = version_info['GMX_VERSION_STRING']
         package_name = 'website-' + version
         context.make_archive(package_name, root_dir='docs/html', prefix=package_name)
+        context.build_target(target='gmx-publish-manual', parallel=False)
