@@ -74,6 +74,13 @@
 #   REGRESSIONTEST_MD5SUM
 #       The MD5 checksum of the regressiontest tarball. Only used when building
 #       from a source package.
+#   GMX_SOURCE_DOI_ID
+#       ID collected from Zenodo connected to the doi for a released version
+#       used to identify the source when building an official released version.
+#       This ID is used for the source code tarball.
+#   GMX_MANUAL_DOI_ID
+#       Same as above, but for the reference manual.
+# Setting and retrieving of those variables is handled in gmxGenerateDOI.cmake
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
@@ -99,6 +106,8 @@
 # tree is a git, but can be disabled with
 #   GMX_GIT_VERSION_INFO           Advanced CMake variable to disable git
 #                                  version info generation.
+# If the version generation is disabled, then the source and manual doi
+# will be based on the stored values for the ID.
 # The main interface to this machinery is the gmx_configure_version_file()
 # CMake function.  The signature is
 #   gmx_configure_version_file(<input> <output>
@@ -270,6 +279,10 @@ if (GMX_GIT_VERSION_INFO)
 endif()
 
 include(gmxCustomCommandUtilities)
+
+# include doi handling here instead, so we can use it to
+# set the variables below
+include(gmxGenerateDOI)
 
 # The first two are also for use outside this file, encapsulating the details
 # of how to use the generated VersionInfo.cmake.

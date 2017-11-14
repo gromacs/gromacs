@@ -24,4 +24,5 @@ build
 _build
 CMakeLists.txt.user
 /VersionInfo*.cmake
+cmake/gmxDOIVersion.cmake
 Testing
