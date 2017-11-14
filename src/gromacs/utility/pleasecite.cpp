@@ -37,6 +37,7 @@
 #include "gmxpre.h"
 
 #include "pleasecite.h"
+#include "reference-doi.h"
 
 #include <cstring>
 
@@ -411,6 +412,26 @@ void please_cite(FILE *fp, const char *key)
     {
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
+    fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
+    fflush(fp);
+}
+const char *gmx_source_doi_string()
+{
+    return _gmx_source_doi_string;
+}
+void
+reference_doi(FILE *fp)
+{
+    const char *doi_string;
+
+    doi_string = wrap_lines(gmx_source_doi_string(), LINE_WIDTH, 0, FALSE);
+
+    if (fp == nullptr)
+    {
+        return;
+    }
+    fprintf(fp, "\n++++ Information for referencing this version of the GROMACS source code ++++\n");
+    fprintf(fp, "%s\n", doi_string);
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }

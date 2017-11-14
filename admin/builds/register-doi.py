@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB UTILITY_SOURCES *.cpp)
-if (GMX_GPU AND NOT GMX_USE_OPENCL)
-    gmx_add_libgromacs_sources(cuda_version_information.cu)
-endif()
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
+import os.path
 
-gmx_install_headers(
-    alignedallocator.h
-    allocator.h
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    baseversion.h
-    classhelpers.h
-    cstringutil.h
-    current_function.h
-    datafilefinder.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    reference-doi.h
-    smalloc.h
-    stringutil.h
-    )
+build_out_of_source = True
 
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+def do_build(context):
+    cmake_opts = {
+            'GMX_BUILD_HELP': 'ON',
+            'CMAKE_BUILD_TYPE': 'Release',
+            'GMX_SIMD': 'None',
+            'GMX_USE_RDTSCP': 'OFF',
+            'GMX_THREAD_MPI': 'OFF',
+            'GMX_OPENMP': 'OFF',
+            'GMX_GPU': 'OFF',
+            'GMX_BUILD_TARBALL': 'ON',
+            'GMX_SUBMIT_DOI': 'ON',
+            'GMX_BUILD_MANUAL': 'ON'
+        }
+
+    context.run_cmake(cmake_opts)
+    context.build_target(target='gmx')
+    context.build_target(target='man')
+    context.build_target(target='completion')
+    context.build_target(target='install-guide')
+    context.build_target(target='webpage')
+    context.build_target(target='package_source')
+
+    cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
+    cpack_config = context.read_cmake_variable_file(cpack_config_path)
+    package_name = cpack_config['CPACK_PACKAGE_FILE_NAME'] + '.tar.gz'
+    version = cpack_config['CPACK_PACKAGE_VERSION']
+    context.write_package_info(Project.GROMACS, package_name, version)
+    context.build_target(target='gmx-publish-source')
+    context.build_target(target='gmx-publish-manual')
