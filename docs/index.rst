@@ -28,6 +28,9 @@ Contents:
 Documentation for developers
 ----------------------------
 
+|GMX_MANUAL_DOI|
+|GMX_SOURCE_DOI|
+
 The developer documentation currently consists of two parts:
 
 * A developer guide that provides an overview of the |Gromacs| codebase, and
