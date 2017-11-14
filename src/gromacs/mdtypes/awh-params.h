@@ -111,6 +111,7 @@ struct AwhDimParams
 //! Parameters for an AWH bias.
 struct AwhBiasParams
 {
+    // TODO: Turn dimParams into a std::vector when moved into AWH module
     int           ndim;                  /**< Dimension of the coordinate space. */
     AwhDimParams *dimParams;             /**< AWH parameters per dimension. */
     int           eTarget;               /**< Type of target distribution. */
@@ -126,6 +127,7 @@ struct AwhBiasParams
 //! Parameters for AWH.
 struct AwhParams
 {
+    // TODO: Turn awhBiasParams into a std::vector when moved into AWH module
     int            numBias;                    /**< The number of AWH biases.*/
     AwhBiasParams *awhBiasParams;              /**< AWH bias parameters.*/
     gmx_int64_t    seed;                       /**< Random seed.*/

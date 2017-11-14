@@ -65,7 +65,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "grid.h"
 #include "math.h"
 #include "pointstate.h"
 
@@ -84,7 +83,7 @@ void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
     }
 
     numWarningsIssued_ +=
-        state_.checkHistograms(grid(), biasIndex(), t, fplog,
+        state_.checkHistograms(grid_, biasIndex(), t, fplog,
                                maxNumWarningsInCheck);
 
     if (numWarningsIssued_ >= maxNumWarningsInRun)
@@ -110,7 +109,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
         gmx_fatal(FARGS, "The step number is negative which is not supported by the AWH code.");
     }
 
-    state_.setCoordValue(grid(), coordValue);
+    state_.setCoordValue(grid_, coordValue);
 
     std::vector<double> *probWeightNeighbor = &tempWorkSpace_;
 
@@ -125,14 +124,14 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     {
         if (params_.skipUpdates())
         {
-            state_.doSkippedUpdatesInNeighborhood(params_, grid());
+            state_.doSkippedUpdatesInNeighborhood(params_, grid_);
         }
 
-        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid(), probWeightNeighbor);
+        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid_, probWeightNeighbor);
 
         if (sampleCoord)
         {
-            state_.sampleCoordAndPmf(grid(), *probWeightNeighbor, convolvedBias);
+            state_.sampleCoordAndPmf(grid_, *probWeightNeighbor, convolvedBias);
         }
     }
 
@@ -148,7 +147,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     double potential;
     if (params_.convolveForce)
     {
-        state_.calcConvolvedForce(dimParams_, grid(), *probWeightNeighbor,
+        state_.calcConvolvedForce(dimParams_, grid_, *probWeightNeighbor,
                                   biasForce);
 
         potential = -convolvedBias*params_.invBeta;
@@ -159,7 +158,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
         GMX_RELEASE_ASSERT(state_.points()[coordinateState.umbrellaGridpoint()].inTargetRegion(),
                            "AWH bias grid point for the umbrella reference value is outside of the target region.");
         potential =
-            state_.calcUmbrellaForceAndPotential(dimParams_, grid(), coordinateState.umbrellaGridpoint(), biasForce);
+            state_.calcUmbrellaForceAndPotential(dimParams_, grid_, coordinateState.umbrellaGridpoint(), biasForce);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -168,7 +167,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
          */
         if (moveUmbrella)
         {
-            double newPotential = state_.moveUmbrella(dimParams_, grid(), *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
+            double newPotential = state_.moveUmbrella(dimParams_, grid_, *probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
             *potentialJump      = newPotential - potential;
         }
     }
@@ -176,7 +175,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     /* Update the free energy estimates and bias and other history dependent method parameters */
     if (params_.isUpdateFreeEnergyStep(step))
     {
-        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid(),
+        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid_,
                                                         params_,
                                                         ms, t, step, fplog,
                                                         &updateList_);
@@ -184,7 +183,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
         if (params_.convolveForce)
         {
             /* The update results in a potential jump, so we need the new convolved potential. */
-            double newPotential = -calcConvolvedBias(dimParams_, grid(), state_.points(), coordinateState.coordValue())*params_.invBeta;
+            double newPotential = -calcConvolvedBias(dimParams_, grid_, state_.points(), coordinateState.coordValue())*params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
     }
@@ -199,16 +198,32 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
                                    const t_commrec      *cr)
 {
+    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MASTER(cr), "The master rank should do I/O, the other ranks should not");
+
     if (MASTER(cr))
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
-        state_.restoreFromHistory(*biasHistory, grid());
+        state_.restoreFromHistory(*biasHistory, grid_);
     }
 
     if (PAR(cr))
     {
         state_.broadcast(cr);
     }
+}
+
+void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
+{
+    GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
+
+    state_.initHistoryFromState(biasHistory);
+}
+
+void Bias::updateHistory(AwhBiasHistory *biasHistory) const
+{
+    GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
+
+    state_.updateHistory(biasHistory, grid_);
 }
 
 Bias::Bias(int                             biasIndexInCollection,
@@ -219,18 +234,20 @@ Bias::Bias(int                             biasIndexInCollection,
            double                          mdTimeStep,
            int                             numSharingSimulations,
            const std::string              &biasInitFilename,
+           bool                            thisRankDoesIO,
            BiasParams::DisableUpdateSkips  disableUpdateSkips) :
     dimParams_(dimParamsInit),
-    grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
-    params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_->axis(), biasIndexInCollection),
-    state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid()),
+    grid_(dimParamsInit, awhBiasParams.dimParams),
+    params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_.axis(), biasIndexInCollection),
+    state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid_),
+    thisRankDoesIO_(thisRankDoesIO),
     tempWorkSpace_(),
     numWarningsIssued_(0)
 {
     /* For a global update updateList covers all points, so reserve that */
-    updateList_.reserve(grid_->numPoints());
+    updateList_.reserve(grid_.numPoints());
 
-    state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias);
+    state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
 }
 
 } // namespace gmx

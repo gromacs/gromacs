@@ -1856,7 +1856,7 @@ AWH adaptive biasing
 
       The potential bias is applied by controlling the position of an harmonic potential
       using Monte-Carlo sampling.  The force constant is set with
-      mdp-value:`awh1-dim1-force-constant`. The umbrella location
+      :mdp-value:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
       When new umbrella positions are sampled often enough,
       the average potential and force equals that of :mdp:`awh-potential=convolved`. This option
@@ -1928,7 +1928,7 @@ AWH adaptive biasing
 
    .. mdp-value:: exp-linear
 
-   Each bias keeps a reference weight histogram for the coordinate samples.   
+   Each bias keeps a reference weight histogram for the coordinate samples.
    Its size sets the magnitude of the bias function and free energy estimate updates
    (few samples corresponds to large updates and vice versa).
    Thus, its growth rate sets the maximum convergence rate.
@@ -1938,7 +1938,7 @@ AWH adaptive biasing
    The initial stage is typically necessary for efficient convergence when starting a new simulation where
    high free energy barriers have not yet been flattened by the bias.
    In the initial stage, the histogram is repeatedly scaled down after having
-   added new samples, keeping it at a constant size. Each time the sampling interval is 
+   added new samples, keeping it at a constant size. Each time the sampling interval is
    considered covered the histogram is instead scaled up by the heuristically chosen factor 3.
    The exit to the final stage is determined dynamically by requiring that
    initial stage samples are always scaled down relative to final stage samples.
@@ -2100,7 +2100,7 @@ AWH adaptive biasing
    (0.0)) \[nm\]/\[rad\]
    Diameter that needs to be sampled by a single simulation around a coordinate value
    before the point is considered covered in the initial stage (see :mdp-value:`awh1-growth=exp-linear`).
-   A value > 0  ensures that for each covering there is a continuous transition of this diameter 
+   A value > 0  ensures that for each covering there is a continuous transition of this diameter
    across each coordinate value.
    This is trivially true for independent simulations but not for for multiple bias-sharing simulations
    (:mdp-value:`awh1-share=yes`).

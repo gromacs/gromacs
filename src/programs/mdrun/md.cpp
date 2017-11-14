@@ -614,8 +614,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         else if (MASTER(cr))
         {
             /* Initialize the AWH history here */
-            state_global->awhHistory = std::shared_ptr<AwhHistory>(new AwhHistory());
-            ir->awh->initHistoryFromState(state_global->awhHistory.get());
+            state_global->awhHistory = ir->awh->initHistoryFromState();
         }
     }
 

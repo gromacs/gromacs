@@ -73,7 +73,6 @@
 
 #include "bias.h"
 #include "biassharing.h"
-#include "grid.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -120,6 +119,7 @@ Awh::Awh(FILE              *fplog,
          const std::string &biasInitFilename,
          pull_t            *pull_work) :
     seed_(awhParams.seed),
+    thisRankDoesIO_(MASTER(cr)),
     potentialOffset_(0)
 {
     /* We already checked for this in grompp, but check again here. */
@@ -162,7 +162,7 @@ Awh::Awh(FILE              *fplog,
         }
 
         /* Construct the bias and couple it to the system. */
-        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename),
+        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename, thisRankDoesIO_),
                                           pullCoordIndex);
     }
 
@@ -249,16 +249,25 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
     return MASTER(cr) ? static_cast<real>(awhPotential) : 0;
 }
 
-void Awh::initHistoryFromState(AwhHistory *awhHistory) const
+std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 {
-    GMX_RELEASE_ASSERT(awhHistory != nullptr, "Should be called with a valid history struct (and only on the master rank)");
-
-    awhHistory->bias.clear();
-    awhHistory->bias.resize(biasCoupledToSystem_.size());
-
-    for (size_t k = 0; k < awhHistory->bias.size(); k++)
+    if (thisRankDoesIO_)
     {
-        biasCoupledToSystem_[k].bias.state().initHistoryFromState(&awhHistory->bias[k]);
+        std::shared_ptr<AwhHistory> awhHistory(new AwhHistory);
+        awhHistory->bias.clear();
+        awhHistory->bias.resize(biasCoupledToSystem_.size());
+
+        for (size_t k = 0; k < awhHistory->bias.size(); k++)
+        {
+            biasCoupledToSystem_[k].bias.initHistoryFromState(&awhHistory->bias[k]);
+        }
+
+        return awhHistory;
+    }
+    else
+    {
+        /* Return an empty pointer */
+        return std::shared_ptr<AwhHistory>();
     }
 }
 
@@ -289,6 +298,11 @@ void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
 
 void Awh::updateHistory(AwhHistory *awhHistory) const
 {
+    if (!thisRankDoesIO_)
+    {
+        return;
+    }
+
     /* This assert will also catch a non-master rank calling this function. */
     GMX_RELEASE_ASSERT(awhHistory->bias.size() == biasCoupledToSystem_.size(), "AWH state and history bias count should match");
 
@@ -296,8 +310,7 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        const Bias &bias = biasCoupledToSystem_[k].bias;
-        bias.state().updateHistory(&awhHistory->bias[k], bias.grid());
+        biasCoupledToSystem_[k].bias.updateHistory(&awhHistory->bias[k]);
     }
 }
 

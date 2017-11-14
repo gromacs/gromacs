@@ -225,9 +225,9 @@ class Awh
          * Note that only constant data will be initialized here.
          * History data is set by \ref Awh::updateHistory.
          *
-         * \param[in,out] awhHistory  AWH history to initialize.
+         * \returns a shared pointer to the AWH history on the rank that does I/O, nullptr otherwise.
          */
-        void initHistoryFromState(AwhHistory *awhHistory) const;
+        std::shared_ptr<AwhHistory> initHistoryFromState() const;
 
         /*! \brief Restore the AWH state from the given history.
          *
@@ -260,6 +260,7 @@ class Awh
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
+        const bool                       thisRankDoesIO_;      /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 

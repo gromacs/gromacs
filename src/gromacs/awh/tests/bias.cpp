@@ -45,7 +45,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/awh/grid.h"
 #include "gromacs/awh/pointstate.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/stringutil.h"
@@ -202,7 +201,7 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
             int    numSamples = coordinates_.size() - 1; // No sample taken at step 0
             GMX_RELEASE_ASSERT(numSamples % params.awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
 
-            bias_ = std::unique_ptr<Bias>(new Bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", disableUpdateSkips));
+            bias_ = std::unique_ptr<Bias>(new Bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", false, disableUpdateSkips));
         }
 };
 
@@ -225,10 +224,13 @@ TEST_P(BiasTest, ForcesBiasPmf)
 
     std::vector<double> force, pot, potJump;
 
+    double              coordMaxValue = 0;
     double              potentialJump = 0;
     gmx_int64_t         step          = 0;
     for (auto &coord : coordinates_)
     {
+        coordMaxValue = std::max(coordMaxValue, std::abs(coord));
+
         awh_dvec coordValue = { coord, 0, 0, 0 };
         awh_dvec biasForce;
         double   potential = 0;
@@ -262,18 +264,12 @@ TEST_P(BiasTest, ForcesBiasPmf)
      * In taking this deviation we lose a lot of precision, so we should
      * compare against k*max(coord) instead of the instantaneous force.
      */
-    double kMaxCoord = 0;
-    for (size_t d = 0; d < bias.dimParams().size(); d++)
-    {
-        const GridAxis &axis     = bias.grid().axis(d);
-        double          maxCoord = std::max(-axis.origin(), axis.origin() + axis.length());
-        kMaxCoord                = std::max(kMaxCoord, bias.dimParams()[d].k*maxCoord);
-    }
+    const double kCoordMax = bias.dimParams()[0].k*coordMaxValue;
 
-    const double ulpTol = 10;
+    const double ulpTol    = 10;
 
     checker.checkSequence(props.begin(),     props.end(),     "Properties");
-    checker.setDefaultTolerance(absoluteTolerance(kMaxCoord*GMX_DOUBLE_EPS*ulpTol));
+    checker.setDefaultTolerance(absoluteTolerance(kCoordMax*GMX_DOUBLE_EPS*ulpTol));
     checker.checkSequence(force.begin(),     force.end(),     "Force");
     checker.checkSequence(pot.begin(),       pot.end(),       "Potential");
     checker.checkSequence(potJump.begin(),   potJump.end(),   "PotentialJump");
@@ -301,7 +297,7 @@ TEST(BiasTest, DetectsCovering)
 
     const double            mdTimeStep   = 0.1;
 
-    Bias                    bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "");
+    Bias                    bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep, 1, "", false);
 
     /* We use a trajectory of the sum of two sines to cover the reaction
      * coordinate range in a semi-realistic way. The period is 4*pi=12.57.

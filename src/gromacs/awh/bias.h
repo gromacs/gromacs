@@ -61,6 +61,7 @@
 #include "biasparams.h"
 #include "biasstate.h"
 #include "dimparams.h"
+#include "grid.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -139,6 +140,7 @@ class Bias
          * \param[in] mdTimeStep             The MD time step.
          * \param[in] numSharingSimulations  The number of simulations to share the bias across.
          * \param[in] biasInitFilename       Name of file to read PMF and target from.
+         * \param[in] thisRankDoesIO         Tells whether this MPI rank will do I/O (checkpointing, AWH output), normally (only) the master rank does I/O.
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          */
         Bias(int                             biasIndexInCollection,
@@ -149,6 +151,7 @@ class Bias
              double                          mdTimeStep,
              int                             numSharingSimulations,
              const std::string              &biasInitFilename,
+             bool                            thisRankDoesIO,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
         /*! \brief
@@ -189,6 +192,24 @@ class Bias
                                      const t_commrec      *cr);
 
         /*! \brief
+         * Allocate and initialize a bias history with the given bias state.
+         *
+         * This function will be called at the start of a new simulation.
+         * Note that only constant data will be initialized here.
+         * History data is set by \ref updateHistory.
+         *
+         * \param[in,out] biasHistory  AWH history to initialize.
+         */
+        void initHistoryFromState(AwhBiasHistory *biasHistory) const;
+
+        /*! \brief
+         * Update the bias history with the current state.
+         *
+         * \param[out] biasHistory  Bias history struct.
+         */
+        void updateHistory(AwhBiasHistory *biasHistory) const;
+
+        /*! \brief
          * Do all previously skipped updates.
          * Public for use by tests.
          */
@@ -205,12 +226,6 @@ class Bias
         inline const std::vector<DimParams> &dimParams() const
         {
             return dimParams_;
-        }
-
-        //! Returns the grid
-        inline const Grid &grid() const
-        {
-            return *grid_.get();
         }
 
         //! Returns the bias parameters
@@ -243,13 +258,15 @@ class Bias
 
         /* Data members. */
     private:
-        const std::vector<DimParams> dimParams_;   /**< Parameters for each dimension. */
-        std::unique_ptr<Grid>        grid_;        /**< The multidimensional grid organizing the coordinate point locations. */
+        const std::vector<DimParams> dimParams_;         /**< Parameters for each dimension. */
+        const Grid                   grid_;              /**< The multidimensional grid organizing the coordinate point locations. */
 
-        BiasParams                   params_;      /**< Constant parameters for the method. */
+        const BiasParams             params_;            /**< Constant parameters for the method. */
 
-        BiasState                    state_;       /**< The state, both global and of the grid points */
-        std::vector<int>             updateList_;  /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+        BiasState                    state_;             /**< The state, both global and of the grid points */
+        std::vector<int>             updateList_;        /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+
+        const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
 
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.
