@@ -44,6 +44,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gromacs/utility/reference-doi.h"
+
 typedef struct {
     const char *key;
     const char *author;
@@ -416,6 +418,28 @@ void please_cite(FILE *fp, const char *key)
     {
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
+    fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
+    fflush(fp);
+}
+
+void
+writeSourceDoi(FILE *fp)
+{
+    /* Check if we are in release mode or not */
+    if (0 == strcmp(gmxSourceDoiString, ""))
+    {
+        /* Not a release build, return without printing anything */
+        return;
+    }
+
+    const char *doiString = wrap_lines(gmxSourceDoiString, LINE_WIDTH, 0, FALSE);
+
+    if (fp == nullptr)
+    {
+        return;
+    }
+    fprintf(fp, "\n++++ Please also cite the DOI for this version of the GROMACS source code ++++\n");
+    fprintf(fp, "%s%s\n", "https://doi.org/", doiString);
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }
