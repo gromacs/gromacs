@@ -40,3 +40,6 @@ clang-4 static double release
 
 # Test with GPU support
 gcc-5 gpu cuda-8.0 release
+
+# Build tarball and submit it and manual to get the doi for both
+
