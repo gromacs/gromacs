@@ -96,4 +96,9 @@ void gmx_is_single_precision();
 /*! \brief Return a string describing what kind of GPU suport was configured in the build. */
 const char *getGpuImplementationString();
 
+/*! \brief
+ * DOI string, or empty when not a release build.
+ */
+const char *gmxDOI();
+
 #endif

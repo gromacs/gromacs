@@ -76,6 +76,13 @@
 #   REGRESSIONTEST_MD5SUM
 #       The MD5 checksum of the regressiontest tarball. Only used when building
 #       from a source package.
+#   GMX_SOURCE_DOI_ID
+#       ID collected from Zenodo connected to the doi for a released version
+#       used to identify the source when building an official released version.
+#       This ID is used for the source code tarball.
+#   GMX_MANUAL_DOI_ID
+#       Same as above, but for the reference manual.
+# Setting and retrieving of those variables is handled in gmxCheckReleaseDOI.cmake
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
@@ -101,6 +108,8 @@
 # tree is a git, but can be disabled with
 #   GMX_GIT_VERSION_INFO           Advanced CMake variable to disable git
 #                                  version info generation.
+# If the version generation is disabled, then the source and manual doi
+# will be based on the stored values for the ID.
 # The main interface to this machinery is the gmx_configure_version_file()
 # CMake function.  The signature is
 #   gmx_configure_version_file(<input> <output>
@@ -244,6 +253,13 @@ if (CMAKE_SCRIPT_MODE_FILE)
     message("{ \"version\": \"${GMX_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
     return()
 endif()
+
+# Set those values only in release versions, after getting the identifiers
+# from Zenodo for the manual and source code
+# Has to be done by hand before every final release
+# Use force to override anything given as a cmake command line input
+set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management
