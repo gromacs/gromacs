@@ -77,7 +77,7 @@
 #define RTP_MAXCHAR 5
 typedef struct {
     char gmx[RTP_MAXCHAR+2];
-    char main[RTP_MAXCHAR+2];
+    char mainName[RTP_MAXCHAR+2];
     char nter[RTP_MAXCHAR+2];
     char cter[RTP_MAXCHAR+2];
     char bter[RTP_MAXCHAR+2];
@@ -98,7 +98,7 @@ static const char *res2bb_notermini(const char *name,
         i++;
     }
 
-    return (i < nrr ? rr[i].main : name);
+    return (i < nrr ? rr[i].mainName : name);
 }
 
 static const char *select_res(int nr, int resnr,
@@ -226,14 +226,14 @@ static void read_rtprename(const char *fname, FILE *fp,
          * Note that the buffer length has been increased to 7 to allow this,
          * so we just need to make sure the strings have zero-length initially.
          */
-        rr[n].gmx[0]  = '\0';
-        rr[n].main[0] = '\0';
-        rr[n].nter[0] = '\0';
-        rr[n].cter[0] = '\0';
-        rr[n].bter[0] = '\0';
-        nc            = sscanf(line, "%6s %6s %6s %6s %6s %s",
-                               rr[n].gmx, rr[n].main, rr[n].nter, rr[n].cter, rr[n].bter, buf);
-        if (strlen(rr[n].gmx) > RTP_MAXCHAR || strlen(rr[n].main) > RTP_MAXCHAR ||
+        rr[n].gmx[0]      = '\0';
+        rr[n].mainName[0] = '\0';
+        rr[n].nter[0]     = '\0';
+        rr[n].cter[0]     = '\0';
+        rr[n].bter[0]     = '\0';
+        nc                = sscanf(line, "%6s %6s %6s %6s %6s %s",
+                                   rr[n].gmx, rr[n].mainName, rr[n].nter, rr[n].cter, rr[n].bter, buf);
+        if (strlen(rr[n].gmx) > RTP_MAXCHAR || strlen(rr[n].mainName) > RTP_MAXCHAR ||
             strlen(rr[n].nter) > RTP_MAXCHAR || strlen(rr[n].cter) > RTP_MAXCHAR || strlen(rr[n].bter) > RTP_MAXCHAR)
         {
             gmx_fatal(FARGS, "Residue renaming database '%s' has strings longer than %d chars in first 5 columns:\n%s",
@@ -255,10 +255,10 @@ static void read_rtprename(const char *fname, FILE *fp,
 
         if (nc == 2)
         {
-            /* This file does not have special termini names, copy them from main */
-            strcpy(rr[n].nter, rr[n].main);
-            strcpy(rr[n].cter, rr[n].main);
-            strcpy(rr[n].bter, rr[n].main);
+            /* This file does not have special termini names, copy them from mainName */
+            strcpy(rr[n].nter, rr[n].mainName);
+            strcpy(rr[n].cter, rr[n].mainName);
+            strcpy(rr[n].bter, rr[n].mainName);
         }
 
         n++;
@@ -280,7 +280,7 @@ static char *search_resrename(int nrr, rtprename_t *rr,
 
     i = 0;
     while (i < nrr && ((!bCompareFFRTPname && strcmp(name, rr[i].gmx)  != 0) ||
-                       ( bCompareFFRTPname && strcmp(name, rr[i].main) != 0)))
+                       ( bCompareFFRTPname && strcmp(name, rr[i].mainName) != 0)))
     {
         i++;
     }
@@ -304,7 +304,7 @@ static char *search_resrename(int nrr, rtprename_t *rr,
         }
         else
         {
-            nn = rr[i].main;
+            nn = rr[i].mainName;
         }
 
         if (nn[0] == '-')
@@ -1497,7 +1497,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         /* Only add names if the 'standard' gromacs/iupac base name was found */
         if (rc == 0)
         {
-            gmx_residuetype_add(rt, rtprename[i].main, p_restype);
+            gmx_residuetype_add(rt, rtprename[i].mainName, p_restype);
             gmx_residuetype_add(rt, rtprename[i].nter, p_restype);
             gmx_residuetype_add(rt, rtprename[i].cter, p_restype);
             gmx_residuetype_add(rt, rtprename[i].bter, p_restype);
