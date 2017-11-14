@@ -54,7 +54,6 @@ def do_build(context):
     context.build_target(target='man')
     context.build_target(target='completion')
     context.build_target(target='install-guide')
-
     context.build_target(target='package_source')
 
     cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
