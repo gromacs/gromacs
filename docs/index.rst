@@ -7,6 +7,12 @@ Welcome to the |Gromacs| documentation!
     http://www.gromacs.org/Documentation/Acceleration_and_parallelization
     and http://www.gromacs.org/Documentation/Performance_checklist)
 
+Manual Reference:
+|GMX_MANUAL_DOI|
+
+Source code reference:
+|GMX_SOURCE_DOI|
+
 Contents:
 
 .. toctree::
