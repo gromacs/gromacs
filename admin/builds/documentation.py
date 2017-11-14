@@ -34,6 +34,8 @@
 
 import os
 import re
+import requests
+import json
 
 build_out_of_source = True
 
@@ -55,6 +57,7 @@ def do_build(context):
     release = (context.job_type == JobType.RELEASE)
     if release:
         cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
+        cmake_opts['GMX_SUBMIT_MANUAL'] = 'ON'
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
@@ -139,3 +142,61 @@ def do_build(context):
         version = version_info['GMX_VERSION_STRING']
         package_name = 'website-' + version
         context.make_archive(package_name, root_dir='docs/html', prefix=package_name)
+    # send manual to zenodo self archiving service
+    # so that the final, accepted version will be there for everyone to read and reference
+    # first, set some variables
+        upload_type = 'publication'
+        publication_type = 'softwaredocumentation'
+        title = 'GROMACS Reference Manual' + version
+        creators = [{'name' : 'Abraham, Mark', 'affiliation': 'KTH'}, {'name':'van der Spoel, David', 'affiliation':'Uppsala University, ICM'},{'name':'Hess, Berk','affiliation':'KTH'}, {'name':'Lindahl, Erik','affiliation':'KTH'}]
+        access_right = 'open'
+        license = 'GPL-2.0'
+        description = 'GROMACS reference manual, version '+version
+        # TODO add complete list of contributors
+        # contributors = [{}]
+        # TODO find a way to securely include the access token here
+        # maybe Jenkins can pass it to the script?
+        # Right now left empty because of security concerns
+        token = ''
+        filename = 'manual-'+version+'.pdf'
+        filepath = os.getcwd()
+        filepath = filepath+'/docs/manual/'+filename
+        zenodo_files = {'file':open(filepath, 'rb')}
+        zenodo_headers = {"Content-Type": "application/json"}
+        # create the actual object containing the information for the new release
+        # first, file to be uploaded
+        zenodo_data = {'filename':filename}
+        # metadata for release
+        zenodo_metadata = {
+                'metadata': {
+                    'title':title,
+                    'upload_type':upload_type,
+                    'creators':creators,
+                    'publication_type':publication_type,
+                    'access_right':access_right,
+                    'license':license,
+                    'title':title,
+                    'description':description,
+                    'version':version,
+                    'prereserve_doi':'true'
+                    }
+                }
+        # generate the new object on zenodo
+        r = requests.post('https://sandbox.zenodo.org/api/deposit/depositions',
+                params={'access_token': token}, json={},
+                headers=zenodo_headers)
+        # get the id generated for this release
+        post_id = r.json()['id']
+        # upload the manual to zenodo
+        r = requests.post('https://sandbox.zenodo.org/api/deposit/depositions/%s/files' % post_id,
+            params={'access_token': token}, files=zenodo_files,
+            data=zenodo_data)
+        # set the metadata for the release
+        r = requests.put('https://sandbox.zenodo.org/api/deposit/depositions/%s' % post_id,
+                params={'access_token': token},headers=zenodo_headers,
+                data=json.dumps(zenodo_metadata))
+        # publish the manual!
+        r = requests.post('https://sandbox.zenodo.org/api/deposit/depositions/%s/actions/publish' % post_id,
+                params={'access_token': token})
+        # get the doi from zenodo, to be used somehwere???
+        gromacs_man_doi = r.json()['doi'] 
