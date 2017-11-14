@@ -154,6 +154,12 @@ gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+set(GENERATED_VERSION_FILE utility/reference-doi.cpp)
+gmx_configure_version_file(
+    utility/reference-doi.cpp.cmakein ${GENERATED_VERSION_FILE}
+    REMOTE_HASH)
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+
 
 # set up CUDA compilation with clang
 if (GMX_CLANG_CUDA)
