@@ -16,6 +16,10 @@ For getting, building and installing |Gromacs|, see the
 For background on algorithms and implementations, see the
 `reference manual`_.
 
+|GMX_MANUAL_DOI_STRING|
+
+|GMX_SOURCE_DOI_STRING|
+
 .. _reference manual: gmx-manual-parent-dir_
 
 .. toctree::

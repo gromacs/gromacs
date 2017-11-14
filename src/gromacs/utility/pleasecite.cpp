@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,10 @@
 
 #include <cstring>
 
+#include "gromacs/utility/baseversion-gen.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-
 typedef struct {
     const char *key;
     const char *author;
@@ -416,6 +416,31 @@ void please_cite(FILE *fp, const char *key)
     {
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
+    fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
+    fflush(fp);
+}
+
+void
+writeSourceDoi(FILE *fp)
+{
+    /* Check if we are in release mode or not.
+     * TODO The check should properly target something else than
+     * the string being empty
+     */
+    if (strlen(gmxSourceDoiString) == 0)
+    {
+        /* Not a release build, return without printing anything */
+        return;
+    }
+
+    const char *doiString = wrap_lines(gmxSourceDoiString, LINE_WIDTH, 0, FALSE);
+
+    if (fp == nullptr)
+    {
+        return;
+    }
+    fprintf(fp, "\n++++ PLEASE CITE THE DOI FOR THIS VERSION OF GROMACS ++++\n");
+    fprintf(fp, "%s%s\n", "https://doi.org/", doiString);
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }
