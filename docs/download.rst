@@ -3,6 +3,10 @@
 Downloads
 =========
 
+|GMX_MANUAL_DOI_STRING|
+
+|GMX_SOURCE_DOI_STRING|
+
 Source code
 -----------
 * |gmx-source-package-ftp|
