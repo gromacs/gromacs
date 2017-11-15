@@ -172,7 +172,8 @@ macro (gmx_c_flags)
 #3280: declaration hides member ".."
 #11074: Inlining inhibited by limit max-size(/max-total-size)
 #11076: To get full report use -opt-report=3 -opt-report-phase ipo (shown for previous remark)
-                GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd411 -wd593 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd11074 -wd11076" GMXC_CFLAGS)
+#10353: option '-mavx2' ignored, suggest using '-march=core-avx2'
+                GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd411 -wd593 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd11074 -wd11076 -wd10353" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14" GMXC_CFLAGS_RELEASE)
@@ -208,7 +209,8 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
 # 383: value copied to temporary, reference to temporary used
 # 444: destructor for base class ".." is not virtual
 #2282: unrecognized GCC pragma
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
+#10353: option '-mavx2' ignored, suggest using '-march=core-avx2'
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282 -wd10353" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
