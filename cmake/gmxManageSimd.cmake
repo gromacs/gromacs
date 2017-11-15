@@ -284,12 +284,27 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
-    gmx_find_flags(
-        "#include<immintrin.h>
-         int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
-        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS
-        "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    # icc (v16-18) does not have -mavx2 -mfma, but annoyingly it does neither fails nor is it
+    # respectful and silent about actually accepting the flags. Instead it issues warnings that
+    # can't be specifically disabled. Therefor, as we can't detect when Intel prefers a flag, which
+    # ison the other hand silently accepted in gcc and clang. As the -march flag in question is
+    # undocumented and enables arch-targeting optimizations which we do not do unless specifically
+    # tested and ensured by devs, we treat Intel seaparately.
+    if (CMAKE_C_COMPILER_ID MATCHES "Intel")
+        gmx_find_flags(
+            "#include<immintrin.h>
+            int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
+            TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
+            SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS
+            "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    else()
+        gmx_find_flags(
+            "#include<immintrin.h>
+            int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
+            TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
+            SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS
+            "-mavx2 -mfma" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    endif() # Intel
 
     if(NOT SIMD_${GMX_SIMD_ACTIVE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_ACTIVE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX2" "choose AVX SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
