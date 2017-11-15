@@ -235,12 +235,28 @@ endfunction()
 # AVX2
 function(gmx_find_simd_avx2_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
     find_x86_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
-    gmx_find_flags(SIMD_AVX2_C_FLAGS_RESULT SIMD_AVX2_CXX_FLAGS_RESULT
-        "#include<immintrin.h>
-        int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
-        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_AVX2_C_FLAGS SIMD_AVX2_CXX_FLAGS
-        "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    # icc (v16-18) does not allow only enabling what we care about for our "AVX2" support, i.e. '-mavx2 -mfma',
+    # and annoyingly it does neither fail nor is it  silent about actually accepting the flags,
+    # but instead it issues warnings that can't be disabled.
+    # Unforuntely, we can't distinguish this flag with other compilers either as Intel's
+    # -march=core-avx2 flag in question is not rejected by gcc/clang, but rather it is an undocumented
+    # flag and might enable arch-targeting optimizations which we do not use unless specifically
+    # tested and knwon to be superior. For this reason, we need to treat the Intel compilers seaparately.
+    if (CMAKE_C_COMPILER_ID MATCHES "Intel")
+        gmx_find_flags(SIMD_AVX2_C_FLAGS_RESULT SIMD_AVX2_CXX_FLAGS_RESULT
+            "#include<immintrin.h>
+            int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
+            TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
+            SIMD_AVX2_C_FLAGS SIMD_AVX2_CXX_FLAGS
+            "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    else()
+        gmx_find_flags(SIMD_AVX2_C_FLAGS_RESULT SIMD_AVX2_CXX_FLAGS_RESULT
+            "#include<immintrin.h>
+            int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
+            TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
+            SIMD_AVX2_C_FLAGS SIMD_AVX2_CXX_FLAGS
+            "-mavx2 -mfma" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
+    endif()
 
     if(${SIMD_AVX2_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX2_C_FLAGS}" CACHE INTERNAL "C flags required for AVX2 instructions")
