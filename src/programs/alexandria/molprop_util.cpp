@@ -386,7 +386,7 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
             }
             else
             {
-                gmx_fatal(FARGS, "Requesting a composition sort but atomprop is NULL");
+                gmx_fatal(FARGS, "Requesting a composition sort but atomprop is nullptr");
             }
             break;
         case MPSA_SELECTION:

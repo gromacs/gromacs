@@ -60,7 +60,7 @@ namespace alexandria
 #define NN(x) (0 != (x.size()))
 
 const char *xmltypes[] = {
-    NULL,
+    nullptr,
     "XML_ELEMENT_NODE",
     "XML_ATTRIBUTE_NODE",
     "XML_TEXT_NODE",

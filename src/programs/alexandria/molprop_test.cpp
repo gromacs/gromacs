@@ -25,8 +25,8 @@ int alex_molprop_test(int argc, char*argv[])
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, NULL,
-                           1, desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, nullptr,
+                           1, desc, 0, nullptr, &oenv))
     {
         return 0;
     }

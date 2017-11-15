@@ -61,9 +61,9 @@ int alex_molprop_check(int argc, char*argv[])
     gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                           0, NULL,
+                           0, nullptr,
                            sizeof(desc)/sizeof(desc[0]), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }

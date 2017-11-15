@@ -139,7 +139,7 @@ static void gmx_molprop_csv(const char *fn,
         {
             std::string ref, mylot;
             if (mpi->getPropRef(mpo[k], iqmExp,
-                                NULL, NULL, NULL, &d, &err, &T, ref, mylot, vec,
+                                nullptr, nullptr, nullptr, &d, &err, &T, ref, mylot, vec,
                                 quadrupole))
             {
                 fprintf(fp, ",\"%.4f\",\"%s\"", d, ref.c_str());
@@ -150,8 +150,8 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, j->lot(), NULL, j->type(),
-                                 &T, &d, NULL))
+                if (mpi->getProp(mpo[k], iqmQM, j->lot(), nullptr, j->type(),
+                                 &T, &d, nullptr))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }
@@ -177,7 +177,7 @@ int alex_mp2csv(int argc, char*argv[])
         { efDAT, "-o",  "csvout",   ffWRITE }
     };
     int                              NFILE   = (sizeof(fnm)/sizeof(fnm[0]));
-    static const char               *sort[]  = { NULL, "molname", "formula", "composition", NULL };
+    static const char               *sort[]  = { nullptr, "molname", "formula", "composition", nullptr };
     static const char               *dip_str = "", *pol_str = "", *ener_str = "";
     static gmx_bool                  bMerge  = FALSE;
     t_pargs                          pa[]    =
@@ -200,7 +200,7 @@ int alex_mp2csv(int argc, char*argv[])
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -211,9 +211,9 @@ int alex_mp2csv(int argc, char*argv[])
     MolPropSort(mp, MPSA_COMPOSITION, ap, gms);
 
     gmx_molprop_csv(opt2fn("-o", NFILE, fnm), mp,
-                    strlen(dip_str) > 0  ? dip_str : NULL,
-                    strlen(pol_str) > 0  ? pol_str : NULL,
-                    strlen(ener_str) > 0 ? ener_str : NULL);
+                    strlen(dip_str) > 0  ? dip_str : nullptr,
+                    strlen(pol_str) > 0  ? pol_str : nullptr,
+                    strlen(ener_str) > 0 ? ener_str : nullptr);
 
     return 0;
 }

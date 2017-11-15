@@ -48,10 +48,10 @@
  * \param[in] g98        The gaussian log file, or in case OpenBabel is used anything
  *                       that can be read by OpenBabel
  * \param[out] mpt       The MolProp
- * \param[in] molnm      Molecule name to override the one from the filename [ maybe NULL ]
- * \param[in] iupac      IUPAC name to override the one from the filename [ maybe NULL ]
- * \param[in] conformation  Conformation the molecule is in [ maybe NULL ]
- * \param[in] basisset   Basis set used for the calculation [ maybe NULL ]
+ * \param[in] molnm      Molecule name to override the one from the filename [ maybe nullptr ]
+ * \param[in] iupac      IUPAC name to override the one from the filename [ maybe nullptr ]
+ * \param[in] conformation  Conformation the molecule is in [ maybe nullptr ]
+ * \param[in] basisset   Basis set used for the calculation [ maybe nullptr ]
  * \param[in] maxpot     Maximum number of electrostatic potential data points to store
  * \param[in] nsymm      Symmetry number for this molecule. If zero it will be detected from
  *                       the input.

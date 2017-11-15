@@ -55,9 +55,9 @@ int get_option(const char **opts)
     {
         return -1;
     }
-    if (opts[val] != NULL)
+    if (opts[val] != nullptr)
     {
-        for (val = 1; (opts[val] != NULL); val++)
+        for (val = 1; (opts[val] != nullptr); val++)
         {
             if (strcasecmp(opts[0], opts[val]) == 0)
             {
@@ -65,7 +65,7 @@ int get_option(const char **opts)
             }
         }
     }
-    if (opts[val] == NULL)
+    if (opts[val] == nullptr)
     {
         val = 0;
     }

@@ -35,7 +35,7 @@ void print_atypes_tex(FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
     fprintf(tp, "Nr. & Type & Description & Elem & $\\alpha$ & Van der Waals\\\\\n");
     fprintf(tp, "\\hline\n");
 
-    gt_old = NULL;
+    gt_old = nullptr;
     nline  = 2;
     npage  = 0;
     nr     = 1;
@@ -49,7 +49,7 @@ void print_atypes_tex(FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
     {
         if (gmx_atomprop_query(aps, epropMass, "", elem, &mass))
         {
-            if ((NULL == gt_old) || (strcmp(gt_old, gt_type) != 0))
+            if ((nullptr == gt_old) || (strcmp(gt_old, gt_type) != 0))
             {
                 fprintf(tp, "%d & %s & %s & %s & %s & %s & %s\\\\\n",
                         nr++, gt_type, desc, elem, ptype, btype, vdwparams);
@@ -272,8 +272,8 @@ int alex_gen_ff(int argc, char *argv[])
     };
     output_env_t                     oenv;
 
-    if (!parse_common_args(&argc, argv, 0, 0, NULL, 0, NULL,
-                           asize(desc), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, 0, 0, nullptr, 0, nullptr,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

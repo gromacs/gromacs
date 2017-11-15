@@ -383,7 +383,7 @@ CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
             }
             else
             {
-                gmx_fatal(FARGS, "A category was promised but I got a NULL pointer");
+                gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
             }
         }
        

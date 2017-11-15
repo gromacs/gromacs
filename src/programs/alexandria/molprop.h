@@ -1389,7 +1389,7 @@ class MolProp
         //! Iterator End over experiments
         ExperimentIterator EndExperiment() { return _exper.end(); }
 
-        //! Return pointer to the last inserted experiment or NULL if the number of experiments is zero
+        //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
         Experiment *LastExperiment()
         {
             if (NExperiment() > 0)
@@ -1406,7 +1406,7 @@ class MolProp
         ExperimentIterator getLot(const char *lot);
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
-        //! The operator should hold the requested observable of the type (can be NULL)
+        //! The operator should hold the requested observable of the type (can be nullptr)
         ExperimentIterator getLotPropType(const char       *lot,
                                           MolPropObservable mpo,
                                           const char       *type);

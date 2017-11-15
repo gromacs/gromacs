@@ -90,7 +90,7 @@ static bool NN(const std::string &s)
 }
 
 static const char *xmltypes[] = {
-    NULL,
+    nullptr,
     "XML_ELEMENT_NODE",
     "XML_ATTRIBUTE_NODE",
     "XML_TEXT_NODE",
@@ -255,7 +255,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
 
     xxx.clear();
     xbuf.resize(exmlNR, xxx);
-    while (tree != NULL)
+    while (tree != nullptr)
     {
         if (fp)
         {
@@ -481,12 +481,12 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 xbuf[exmlNAME].clear();
                                 xbuf[exmlOBTYPE].clear();
                                 xbuf[exmlATOMID].clear();
-                                for (tc = tree->children; (NULL != tc); tc = tc->next)
+                                for (tc = tree->children; (nullptr != tc); tc = tc->next)
                                 {
                                     get_attributes(fp, FALSE, indent, tc->properties, xbuf);
                                     if (((node = find_elem((char *)tc->name, exmlNR, exml_names)) != -1) &&
-                                        (NULL != tc->children) &&
-                                        (NULL != tc->children->content))
+                                        (nullptr != tc->children) &&
+                                        (nullptr != tc->children->content))
                                     {
                                         xbuf[node] = strdup((char *)tc->children->content);
                                     }
@@ -587,22 +587,22 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> &mpt)
     gmx_bool      bExperiment = FALSE;
 
     xmlDoValidityCheckingDefaultValue = 0;
-    if (NULL == fn)
+    if (nullptr == fn)
     {
         fn = gmxlibfn(db);
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Opening %s\n", fn);
     }
-    if ((doc = xmlParseFile(fn)) == NULL)
+    if ((doc = xmlParseFile(fn)) == nullptr)
     {
         fprintf(stderr, "Reading XML file %s. Run a syntax checker such as nsgmls.",
                 fn);
         exit(1);
     }
 
-    mp_process_tree(NULL, doc->children, 0,
+    mp_process_tree(nullptr, doc->children, 0,
                     mpt, &bExperiment);
 
     xmlFreeDoc(doc);
