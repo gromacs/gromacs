@@ -89,59 +89,20 @@ class Bias;
 struct BiasCoupledToSystem;
 class ForceWithVirial;
 
-/*! \libinternal \brief The accelerated weight histogram method (AWH).
+/*! \libinternal
+ * \brief Coupling of the accelerated weight histogram method (AWH) with the system.
  *
- * AWH calculates the free energy along an order parameter of the system.
+ * AWH calculates the free energy along order parameters of the system.
  * Free energy barriers are overcome by adaptively tuning a bias potential along
  * the order parameter such that the biased distribution along the parameter
  * converges toward a chosen target distribution.
- * The fundamental equation governing the tuning is: log(target) = bias - free energy, where
- * the bias and free energy are initially unknown. Typically the target distribution is simply
- * chosen uniform, such that the bias completely flattens the free energy landscape.
  *
- * This class implements AWH for the case when the order parameter corresponds to a reaction coordinate,
- * here referred to as coordinate for short, i.e. a function of the system configuration.
- * The bias is coupled to the system by a bias potential: either in the form of an harmonic ("umbrella") potential
- * Monte-Carlo (MC) "jumping" around the current coordinate value, or as a smooth average of the umbrellas.
- *
- * The AWH module is organizes as follows:
- * The Awh class is the interface between the outside and inside of the module.
- * The Awh class contains one or more BiasCoupledToSystem objects.
+ * The Awh class takes care of the coupling between the system and the AWH
+ * bias(es). The Awh class contains one or more BiasCoupledToSystem objects.
  * The BiasCoupledToSystem class takes care of the reaction coordinate input
  * and force output for the single Bias object it containts.
- * The Bias class is a container and wrapper for a object BiasState + helpers.
- * All computation takes place in the BiasState object and its sub-classes.
- * The Bias class also contains a BiasWriter object that takes care of i/o.
  *
  * \todo Update parameter reading and checkpointing, when general C++ framework is ready.
- *
- * The basic use of Awh in mdrun consists of 2 method calls:
- * Call the constructor Awh() after the pull module has been initialized.
- * Call applyBiasForcesAndUpdateBias() at every MD step after the pull
- * potential calculation function has been called.
- *
- * In grompp the pull potential provider should be registerd using
- * registerAwhWithPull() so grompp can check for unregistered potentials.
- *
- * The main tasks of AWH are:
- * - calculate and set the bias force given the current coordinate value.
- * - after accumulating a number of coordinate samples, update the free energy estimate and the bias.
- *
- * AWH currently relies on the pull code for the first task. Pull provides AWH with updated coordinate values
- * and distributes the bias force that AWH calculates to the atoms making up the coordinate. This
- * also means that there are some order dependencies where pull functions need to be called before AWH
- * functions (see below).
- *
- * The implementation is quite general. There can be multiple independent AWH biases coupled to the system
- * simultaneously. This makes sense if the system is made up of several fairly independent parts,
- * like monomers in a protein. Each bias acts on exactly one, possibly multidimensional, coordinate.
- * Each coordinate dimension maps to exactly one pull coordinate. Thus, an n-dimensional
- * biased coordinate is defined by a set of n pull coordinates. Periodicity is taken care of for coordinate
- * dimensions that require it (ddihedral angles). For increased parallelism, there is the option of
- * having multiple communicating simulations sharing all samples. All simulations would then share a single
- * bias and free energy estimate. Alternatively, one may partition the sampling domain into smaller
- * subdomains with some overlap and have multiple independent simulations sample each subdomain.
- *
  */
 class Awh
 {
@@ -153,16 +114,16 @@ class Awh
          * in the user input. This allows AWH to later apply the bias force to
          * these coordinate in \ref Awh::applyBiasForcesAndUpdateBias.
          *
-         * \param[in,out] fplog           General output file, normally md.log, can be nullptr.
-         * \param[in]     ir                General input parameters.
-         * \param[in]     cr                Struct for communication, can be nullptr.
-         * \param[in]     awhParams         AWH input parameters.
+         * \param[in,out] fplog             General output file, normally md.log, can be nullptr.
+         * \param[in]     inputRecord       General input parameters (as set up by grompp).
+         * \param[in]     commRecord        Struct for communication, can be nullptr.
+         * \param[in]     awhParams         AWH input parameters, consistent with the relevant parts of \p inputRecord (as set up by grompp).
          * \param[in]     biasInitFilename  Name of file to read PMF and target from.
-         * \param[in,out] pull_work         Pull struct which AWH will register the bias into, has to be initialized.
+         * \param[in,out] pull_work         Pointer to a pull struct which AWH will couple to, has to be initialized, is assumed not to change during the lifetime of the Awh object.
          */
         Awh(FILE              *fplog,
-            const t_inputrec  &ir,
-            const t_commrec   *cr,
+            const t_inputrec  &inputRecord,
+            const t_commrec   *commRecord,
             const AwhParams   &awhParams,
             const std::string &biasInitFilename,
             pull_t            *pull_work);
@@ -186,26 +147,23 @@ class Awh
          * updating the AWH bias state after a certain number of samples has been collected.
          *
          * \note Requires that pull_potential from pull.h has been called first
-         * since AWH needs the current coordinate values.
+         * since AWH needs the current coordinate values (the pull code checks
+         * for this).
          *
-         * \param[in,out] pull_work        Pull working struct.
          * \param[in]     mdatoms          Atom properties.
          * \param[in]     ePBC             Type of periodic boundary conditions.
          * \param[in]     box              Box vectors.
-         * \param[in,out] forceWithVirial  Force and virial buffers.
-         * \param[in]     cr               Communication record.
+         * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
          * \param[in]     t                Time.
          * \param[in]     step             Time step.
-         * \param[in,out] wallcycle        Wallcycle counter.
-         * \param[in,out] fplog            General output file, normally md.log.
+         * \param[in,out] wallcycle        Wallcycle counter, can be nullptr.
+         * \param[in,out] fplog            General output file, normally md.log, can be nullptr.
          * \returns the potential energy for the bias.
          */
-        real applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
-                                          int                     ePBC,
+        real applyBiasForcesAndUpdateBias(int                     ePBC,
                                           const t_mdatoms        &mdatoms,
                                           const matrix            box,
                                           gmx::ForceWithVirial   *forceWithVirial,
-                                          const t_commrec        *cr,
                                           double                  t,
                                           gmx_int64_t             step,
                                           gmx_wallcycle          *wallcycle,
@@ -214,6 +172,10 @@ class Awh
         /*! \brief
          * Update the AWH history in preparation for writing to checkpoint file.
          *
+         * Should be called at least on the master rank at checkpoint steps.
+         *
+         * Should be called with a valid \p awhHistory (is checked).
+         *
          * \param[in,out] awhHistory  AWH history to set.
          */
         void updateHistory(AwhHistory *awhHistory) const;
@@ -221,7 +183,8 @@ class Awh
         /*! \brief
          * Allocate and initialize an AWH history with the given AWH state.
          *
-         * This function will be called at the start of a new simulation.
+         * This function should be called at the start of a new simulation
+         * at least on the master rank.
          * Note that only constant data will be initialized here.
          * History data is set by \ref Awh::updateHistory.
          *
@@ -231,14 +194,14 @@ class Awh
 
         /*! \brief Restore the AWH state from the given history.
          *
-         * Should be called with a valid t_commrec on all ranks.
-         * Should pass a valid awhHistory on the master rank.
+         * Should be called on all ranks.
+         * Should pass a point to an AwhHistory on the master rank that
+         * is compatible with the AWH setup in this simulation. Will throw
+         * an exception if it is not compatible.
          *
          * \param[in] awhHistory  AWH history to restore from.
-         * \param[in] cr          Struct for communication.
          */
-        void restoreStateFromHistory(const AwhHistory *awhHistory,
-                                     const t_commrec  *cr);
+        void restoreStateFromHistory(const AwhHistory *awhHistory);
 
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
@@ -246,10 +209,11 @@ class Awh
 
         /*! \brief Register the AWH biased coordinates with pull.
          *
-         * This function is public because it needs to be called at
-         * the pre-processing stage.
+         * This function is public because it needs to be called by grompp
+         * (and is otherwise only called by Awh()).
          * Pull requires all external potentials to register themselves
          * before the end of pre-processing and before the first MD step.
+         * If this has not happened, pull with throw an error.
          *
          * \param[in]     awhParams  The AWH parameters.
          * \param[in,out] pull_work  Pull struct which AWH will register the bias into.
@@ -260,7 +224,8 @@ class Awh
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
-        const bool                       thisRankDoesIO_;      /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+        const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
+        pull_t                          *pull_;                /**< Pointer to the pull working data. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 

@@ -61,17 +61,16 @@
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "math.h"
 #include "pointstate.h"
 
 namespace gmx
 {
 
-void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
+void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
 {
     const int    maxNumWarningsInCheck = 1;   /* The maximum number of warnings to print per check */
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
@@ -83,8 +82,8 @@ void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
     }
 
     numWarningsIssued_ +=
-        state_.checkHistograms(grid_, biasIndex(), t, fplog,
-                               maxNumWarningsInCheck);
+        state_.warnForHistogramAnomalies(grid_, biasIndex(), t, fplog,
+                                         maxNumWarningsInCheck);
 
     if (numWarningsIssued_ >= maxNumWarningsInRun)
     {
@@ -106,7 +105,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
 {
     if (step < 0)
     {
-        gmx_fatal(FARGS, "The step number is negative which is not supported by the AWH code.");
+        GMX_THROW(InvalidInputError("The step number is negative which is not supported by the AWH code."));
     }
 
     state_.setCoordValue(grid_, coordValue);
@@ -183,7 +182,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
         if (params_.convolveForce)
         {
             /* The update results in a potential jump, so we need the new convolved potential. */
-            double newPotential = -calcConvolvedBias(dimParams_, grid_, state_.points(), coordinateState.coordValue())*params_.invBeta;
+            double newPotential = -calcConvolvedBias(coordinateState.coordValue())*params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
     }
@@ -192,7 +191,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     *awhPotential = potential;
 
     /* Check the sampled histograms and potentially warn user if something is suspicious */
-    checkHistograms(t, step, fplog);
+    warnForHistogramAnomalies(t, step, fplog);
 }
 
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,

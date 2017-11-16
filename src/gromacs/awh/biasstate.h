@@ -97,9 +97,9 @@ class BiasState
          * geometric grid passed in \p grid.
          *
          * \param[in] awhBiasParams    The Bias parameters from inputrec.
-         * \param[in] histSizeInitial  The initial histogram size.
+         * \param[in] histSizeInitial  The initial histogram size in samples.
          * \param[in] dimParams        The dimension parameters.
-         * \param[in] grid             The grid.
+         * \param[in] grid             The bias grid.
          */
         BiasState(const AwhBiasParams          &awhBiasParams,
                   double                        histSizeInitial,
@@ -110,7 +110,7 @@ class BiasState
          * Restore the bias state from history.
          *
          * \param[in] biasHistory  Bias history struct.
-         * \param[in] grid         The grid.
+         * \param[in] grid         The bias grid.
          */
         void restoreFromHistory(const AwhBiasHistory &biasHistory,
                                 const Grid           &grid);
@@ -118,15 +118,16 @@ class BiasState
         /*! \brief
          * Broadcast the bias state over the MPI ranks in this simulation.
          *
-         * \param[in] cr  Struct for communication.
+         * \param[in] commRecord  Struct for communication.
          */
-        void broadcast(const t_commrec *cr);
+        void broadcast(const t_commrec *commRecord);
 
         /*! \brief
          * Allocate and initialize a bias history with the given bias state.
          *
          * This function will be called at the start of a new simulation.
-         * Note that only constant data will be initialized here.
+         * Note that this only sets the correct size and does not produce
+         * a valid history object.
          * History data is set by \ref updateHistory.
          *
          * \param[in,out] biasHistory  AWH history to initialize.
@@ -137,17 +138,30 @@ class BiasState
          * Update the bias history with a new state.
          *
          * \param[out] biasHistory  Bias history struct.
-         * \param[in]  grid         The grid.
+         * \param[in]  grid         The bias grid.
          */
         void updateHistory(AwhBiasHistory *biasHistory,
                            const Grid     &grid) const;
 
     private:
+        /*! \brief Convolves the given PMF using the given AWH bias.
+         *
+         * \note: The PMF is in single precision, because it is a statistical
+         *        quantity and therefore never reaches full float precision.
+         *
+         * \param[in] dimParams     The bias dimensions parameters
+         * \param[in] grid          The grid.
+         * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
+         */
+        void calcConvolvedPmf(const std::vector<DimParams> &dimParams,
+                              const Grid                   &grid,
+                              std::vector<float>           *convolvedPmf) const;
+
         /*! \brief
          * Convolves the PMF and sets the initial free energy to its convolution.
          *
          * \param[in] dimParams  The bias dimensions parameters
-         * \param[in] grid       The grid.
+         * \param[in] grid       The bias grid.
          */
         void setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimParams,
                                          const Grid                    &grid);
@@ -178,7 +192,8 @@ class BiasState
                                 int                            numBias);
 
         /*! \brief
-         * Makes checks for the collected histograms and warns if issues are detected.
+         * Performs statistical checks on the collected histograms and warns if issues are detected.
+         *
          * \param[in]     grid            The grid.
          * \param[in]     biasIndex       The index of the bias we are checking for.
          * \param[in]     t               Time.
@@ -186,11 +201,11 @@ class BiasState
          * \param[in]     maxNumWarnings  Don't issue more than this number of warnings.
          * \returns the number of warnings issued.
          */
-        int checkHistograms(const Grid  &grid,
-                            int          biasIndex,
-                            double       t,
-                            FILE        *fplog,
-                            int          maxNumWarnings) const;
+        int warnForHistogramAnomalies(const Grid  &grid,
+                                      int          biasIndex,
+                                      double       t,
+                                      FILE        *fplog,
+                                      int          maxNumWarnings) const;
 
         /*! \brief
          * Calculates and sets the force the coordinate experiences from an umbrella centered at the given point.
@@ -253,13 +268,13 @@ class BiasState
 
     private:
         /*! \brief
-         * Sets the histogram rescaling factors needed for skipped updates.
+         * Gets the histogram rescaling factors needed for skipped updates.
          *
          * \param[in]  params             The bias parameters.
          * \param[out] weighthistScaling  Scaling factor for the reference weight histogram.
          * \param[out] logPmfsumScaling   Log of the scaling factor for the PMF histogram.
          */
-        void setSkippedUpdateHistogramScaleFactors(const BiasParams &params,
+        void getSkippedUpdateHistogramScaleFactors(const BiasParams &params,
                                                    double           *weighthistScaling,
                                                    double           *logPmfsumScaling) const;
 
@@ -324,10 +339,10 @@ class BiasState
          * \param[in] multiSimComm  Struct for multi-simulation communication.
          * \returns true if covered.
          */
-        bool isCovered(const BiasParams             &params,
-                       const std::vector<DimParams> &dimParams,
-                       const Grid                   &grid,
-                       const gmx_multisim_t         *multiSimComm) const;
+        bool isSamplingRegionCovered(const BiasParams             &params,
+                                     const std::vector<DimParams> &dimParams,
+                                     const Grid                   &grid,
+                                     const gmx_multisim_t         *multiSimComm) const;
 
         /*! \brief
          * Return the new reference weight histogram size for the current update.
@@ -347,13 +362,13 @@ class BiasState
 
     public:
         /*! \brief
-         * Update the coordinate value.
+         * Update the reaction coordinate value.
          *
-         * \param[in] grid        The grid.
-         * \param[in] coordValue  The coordinate value.
+         * \param[in] grid        The bias grid.
+         * \param[in] coordValue  The current reaction coordinate value (there are no limits on allowed values).
          */
-        inline void setCoordValue(const Grid     &grid,
-                                  const awh_dvec  coordValue)
+        void setCoordValue(const Grid     &grid,
+                           const awh_dvec  coordValue)
         {
             coordinateState_.setCoordValue(grid, coordValue);
         };
@@ -412,7 +427,7 @@ class BiasState
                                                         std::vector<double>          *weight) const;
 
         /*! \brief
-         * Save the current probability weights for future updates and analysis.
+         * Take samples of the current probability weights for future updates and analysis.
          *
          * Points in the current neighborhood will now have data meaning they
          * need to be included in the local update list of the next update.
@@ -425,7 +440,10 @@ class BiasState
                                       const std::vector<double> &probWeightNeighbor);
 
         /*! \brief
-         * Sample observables for future updates or analysis.
+         * Sample the reaction coordinate and PMF for future updates or analysis.
+         *
+         * These samples do not affect the (future) sampling and are thus
+         * pure observables. Statisics of these are stored in the energy file.
          *
          * \param[in] grid                The grid.
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
@@ -434,25 +452,53 @@ class BiasState
         void sampleCoordAndPmf(const Grid                &grid,
                                const std::vector<double> &probWeightNeighbor,
                                double                     convolvedBias);
+        /*! \brief
+         * Calculates the convolved bias for a given coordinate value.
+         *
+         * The convolved bias is the effective bias acting on the coordinate.
+         * Since the bias here has arbitrary normalization, this only makes
+         * sense as a relative, to other coordinate values, measure of the bias.
+         *
+         * \note If it turns out to be costly to calculate this pointwise
+         * the convolved bias for the whole grid could be returned instead.
+         *
+         * \param[in] dimParams   The bias dimensions parameters
+         * \param[in] grid        The grid.
+         * \param[in] coordValue  Coordinate value.
+         * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+         */
+        double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
+                                 const Grid                    &grid,
+                                 const awh_dvec                &coordValue) const;
 
-    public:
+        /*! \brief
+         * Fills the given array with PMF values, resizes if necessary.
+         *
+         * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
+         * \note: The PMF is in single precision, because it is a statistical
+         *        quantity and therefore never reaches full float precision.
+         *
+         * \param[in,out] pmf        Array returned will be of the same length as the AWH grid to store the PMF in.
+         */
+        void getPmf(std::vector<float> *pmf) const;
+
         /*! \brief Returns the current coordinate state.
          */
-        inline const CoordinateState &coordinateState() const
+        const CoordinateState &coordinateState() const
         {
             return coordinateState_;
         };
 
         /*! \brief Returns a const reference to the point state.
          */
-        inline const std::vector<PointState> &points() const
+        const std::vector<PointState> &points() const
         {
             return points_;
         };
 
         /*! \brief Returns true if we are in the initial stage.
          */
-        inline bool inInitialStage() const
+        bool inInitialStage() const
         {
             return histogramSize_.inInitialStage();
         };
@@ -465,7 +511,7 @@ class BiasState
         std::vector<PointState> points_; /**< Vector of state of the grid points */
 
         /* Covering values for each point on the grid */
-        std::vector<double> weightsumCovering_; /**< Accumulated weights for covering checks */
+        std::vector<double> weightSumCovering_; /**< Accumulated weights for covering checks */
 
         HistogramSize       histogramSize_;     /**< Global histogram size related values. */
 
@@ -473,40 +519,6 @@ class BiasState
         awh_ivec  originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
         awh_ivec  endUpdatelist_;     /**< The end of the rectangular region that has been sampled since last update. */
 };
-
-/* Here follow some utility functions used by multiple files in AWH */
-
-/*! \brief
- * Calculates the convolved bias for a given coordinate value.
- *
- * The convolved bias is the effective bias acting on the coordinate.
- * Since the bias here has arbitrary normalization, this only makes
- * sense as a relative, to other coordinate values, measure of the bias.
- *
- * \note If it turns out to be costly to calculate this pointwise
- * the convolved bias for the whole grid could be returned instead.
- *
- * \param[in] dimParams   The bias dimensions parameters
- * \param[in] grid        The grid.
- * \param[in] points      The point state.
- * \param[in] coordValue  Coordinate value.
- * \returns the convolved bias >= -GMX_DOUBLE_MAX.
- */
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue);
-
-/*! \brief
- * Fills the given array with PMF values, resizes if necessary.
- *
- * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
- *
- * \param[in]     points  The point state.
- * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
- */
-void getPmf(const std::vector<PointState> &points,
-            std::vector<float>            *pmf);
 
 //! Linewidth used for warning output
 static const int c_linewidth = 80 - 2;
