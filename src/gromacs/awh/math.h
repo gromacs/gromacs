@@ -58,21 +58,6 @@ namespace gmx
  */
 struct Math
 {
-    /*! \brief Generate a sample from a discrete probability distribution defined on [0, distr.size() - 1].
-     *
-     * The pair (indexSeed0,indexSeed1) should be different for every invocation.
-     *
-     * \param[in] distr       Normalized probability distribution to generate a sample from.
-     * \param[in] seed        Random seed for initializing the random number generator.
-     * \param[in] indexSeed0  Random seed needed by the random number generator.
-     * \param[in] indexSeed1  Random seed needed by the random number generator.
-     * \returns a sample index in [0, distr.size() - 1]
-     */
-    static int getSampleFromDistribution(gmx::ArrayRef<const double> distr,
-                                         gmx_int64_t                 seed,
-                                         gmx_int64_t                 indexSeed0,
-                                         gmx_int64_t                 indexSeed1);
-
     /*! \brief Returns the exponent c where exp(c) = exp(a) + exp(b).
      *
      * \param[in] a     First exponent.
@@ -81,18 +66,6 @@ struct Math
      */
     static double expSum(double a,
                          double b);
-
-    /*! \brief
-     * Returns an approximation of the geometry factor used for initializing the AWH update size.
-     *
-     * The geometry factor is defined as the following sum of Gaussians:
-     * sum_{k!=0} exp(-0.5*(k*pi*x)^2)/(pi*k)^2,
-     * where k is a xArray.size()-dimensional integer vector with k_i in {0,1,..}.
-     *
-     * \param[in] xArray  Array to evaluate.
-     * \returns the geometry factor.
-     */
-    static double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray);
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,51 +34,45 @@
  */
 
 /*! \internal \file
- *
  * \brief
- * Declares functions to check bias sharing properties.
+ * Implements the one method of the PointState class called only for one point per step.
  *
- * This actual sharing of biases is currently implemeted in BiasState.
- *
+ * \author Viveca Lindahl
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_awh
  */
 
-#ifndef GMX_AWH_BIASSHARING_H
-#define GMX_AWH_BIASSHARING_H
+#include "gmxpre.h"
 
-#include <cstddef>
-
-#include <vector>
-
-struct gmx_multisim_t;
+#include "pointstate.h"
 
 namespace gmx
 {
 
-struct AwhParams;
+namespace
+{
 
-/*! \brief Returns if any bias is sharing within a simulation.
+/*! \brief Returns the exponent c where exp(c) = exp(a) + exp(b).
  *
- * \param[in] awhParams  The AWH parameters.
+ * \param[in] a  First exponent.
+ * \param[in] b  Second exponent.
+ * \returns c.
  */
-bool haveBiasSharingWithinSimulation(const AwhParams &awhParams);
+double expSum(double a,
+              double b)
+{
+    return (a > b ? a : b) + std::log1p(std::exp(-std::fabs(a - b)));
+}
 
-/*! \brief Checks if biases are compatible for sharing between simulations, throws if not.
- *
- * Should be called simultaneously on the master rank of every simulation.
- * Note that this only checks for technical compatibility. It is up to
- * the user to check that the sharing physically makes sense.
- * Throws an exception when shared biases are not compatible.
- *
- * \param[in] awhParams     The AWH parameters.
- * \param[in] pointSize     Vector of grid-point sizes for each bias.
- * \param[in] multiSimComm  Struct for multi-simulation communication.
- */
-void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &awhParams,
-                                                     const std::vector<size_t> &pointSize,
-                                                     const gmx_multisim_t      *multiSimComm);
+}   // namespace
 
-}      // namespace gmx
+void PointState::samplePmf(double convolvedBias)
+{
+    if (inTargetRegion())
+    {
+        logPmfSum_           = expSum(logPmfSum_, -convolvedBias);
+        numVisitsIteration_ += 1;
+    }
+}
 
-#endif /* GMX_AWH_BIASSHARING_H */
+} // namespace gmx

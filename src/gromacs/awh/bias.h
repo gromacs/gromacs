@@ -248,13 +248,15 @@ class Bias
 
     private:
         /*! \brief
-         * Makes checks for the collected histograms and warns if issues are detected.
+         * Performs statistical checks on the collected histograms and warns if issues are detected.
          *
          * \param[in]     t        Time.
          * \param[in]     step     Time step.
          * \param[in,out] fplog    Output file for warnings.
          */
-        void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
+        void warnForHistogramAnomalies(double       t,
+                                       gmx_int64_t  step,
+                                       FILE        *fplog);
 
         /* Data members. */
     private:
