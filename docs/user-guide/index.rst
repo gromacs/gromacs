@@ -25,6 +25,7 @@ For background on algorithms and implementations, see the
    cutoff-schemes
    mdrun-features
    mdrun-performance
+   parallelisation
    managing-simulations
    mdp-options
    run-time-errors
