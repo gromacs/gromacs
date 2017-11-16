@@ -234,7 +234,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         std::vector<int>    generatedGpuIds;
         if (userGpuTaskAssignment.empty())
         {
-            ArrayRef<const int> compatibleGpusToUse = hardwareInfo.compatibleGpus;
+            ArrayRef<const int> compatibleGpusToUse(gpuIdsToUse);
             if (hasAnyTaskOfTypeOnThisNode(gpuTasksOnRanksOfThisNode, GpuTask::Pme))
             {
                 // PP and PME tasks must run on the same device, so

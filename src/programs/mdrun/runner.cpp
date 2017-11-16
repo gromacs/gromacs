@@ -764,7 +764,7 @@ int Mdrunner::mdrunner()
         }
         else
         {
-            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
+            ;//GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
         }
     }
 
@@ -1215,14 +1215,16 @@ int Mdrunner::mdrunner()
 
         if (thisRankHasDuty(cr, DUTY_PME))
         {
-            auto pmeDeviceInfo = deviceContexts.nonbonded->getDeviceInfo();
+            auto pmeDeviceInfo = deviceContexts.pme->getDeviceInfo();
             try
             {
+                /*
                 if (pmeDeviceInfo != nullptr && pmeDeviceInfo != deviceContexts.nonbonded->getDeviceInfo())
                 {
                     GMX_THROW(NotImplementedError
                                   ("PME on a GPU can run only on the same GPU as nonbonded"));
                 }
+                */
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
                                        mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
@@ -1345,6 +1347,13 @@ int Mdrunner::mdrunner()
         // Free any nbnxn data in GPU memory.
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
     }
+
+#if GMX_THREAD_MPI
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        gmx_barrier_physical_node(cr);
+    }
+#endif  /* GMX_THREAD_MPI */
 
     if (doMembed)
     {

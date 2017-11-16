@@ -358,6 +358,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                            "PME can't be on GPUs unless we are using PME");
 
         // A single rank is all that is supported with PME on GPUs
+        /*
         if (hw_opt->nthreads_tmpi < 1)
         {
             return 1;
@@ -366,6 +367,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
         {
             gmx_fatal(FARGS, "PME on GPUs is only supported with a single rank");
         }
+        */ //FIXME
     }
 
     {

@@ -182,11 +182,13 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
         // PME on GPUs is only supported in a single case
         if (pmeTarget == TaskTarget::Gpu)
         {
+            /*
             if (numRanksPerSimulation > 1)
             {
                 GMX_THROW(InconsistentInputError
                               ("When you run mdrun -pme gpu -gputasks, you must supply a PME .tpr file and use a single rank."));
             }
+            */
             return true;
         }
 
@@ -200,6 +202,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 
     if (pmeTarget == TaskTarget::Gpu)
     {
+        /*
         if (numRanksPerSimulation > 1)
         {
             GMX_THROW(NotImplementedError
@@ -207,6 +210,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
                           "more than one rank. Use a single rank, or permit PME tasks to be assigned "
                           "to the CPU."));
         }
+        */
         return true;
     }
 
@@ -379,6 +383,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
     if (pmeTarget == TaskTarget::Gpu)
     {
+        /* FIXME check -npme 2 terminating correctly
         if (numRanksPerSimulation > 1)
         {
             GMX_THROW(NotImplementedError
@@ -386,6 +391,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                           "more than one rank. Use a single rank, or permit PME tasks to be assigned "
                           "to the CPU."));
         }
+        */
         return true;
     }
 
