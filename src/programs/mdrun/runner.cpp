@@ -764,7 +764,7 @@ int Mdrunner::mdrunner()
         }
         else
         {
-            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
+            ;//GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
         }
     }
 
@@ -1219,12 +1219,14 @@ int Mdrunner::mdrunner()
             auto pmeDeviceInfo = deviceContexts.pme->getDeviceInfo();
             try
             {
-                if (pmeDeviceInfo != nullptr && pmeDeviceInfo != deviceContexts.pme->getDeviceInfo())
-                {
+                /*
+                   if (pmeDeviceInfo != nullptr && pmeDeviceInfo != deviceContexts.pme->getDeviceInfo())
+                   {
                     GMX_THROW(NotImplementedError
                                   ("PME on a GPU can run only on the same GPU as nonbonded, because "
                                    "context switching is not yet supported."));
-                }
+                   }
+                 */
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
                                        mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
