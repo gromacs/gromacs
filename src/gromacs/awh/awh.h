@@ -193,7 +193,6 @@ class Awh
          * \param[in]     ePBC             Type of periodic boundary conditions.
          * \param[in]     box              Box vectors.
          * \param[in,out] forceWithVirial  Force and virial buffers.
-         * \param[in]     cr               Communication record.
          * \param[in]     t                Time.
          * \param[in]     step             Time step.
          * \param[in,out] wallcycle        Wallcycle counter.
@@ -205,7 +204,6 @@ class Awh
                                           const t_mdatoms        &mdatoms,
                                           const matrix            box,
                                           gmx::ForceWithVirial   *forceWithVirial,
-                                          const t_commrec        *cr,
                                           double                  t,
                                           gmx_int64_t             step,
                                           gmx_wallcycle          *wallcycle,
@@ -214,6 +212,8 @@ class Awh
         /*! \brief
          * Update the AWH history in preparation for writing to checkpoint file.
          *
+         * Should be called at least on the master rank at checkpoint steps.
+         *
          * \param[in,out] awhHistory  AWH history to set.
          */
         void updateHistory(AwhHistory *awhHistory) const;
@@ -221,7 +221,8 @@ class Awh
         /*! \brief
          * Allocate and initialize an AWH history with the given AWH state.
          *
-         * This function will be called at the start of a new simulation.
+         * This function should be called at the start of a new simulation
+         * at least on the master rank.
          * Note that only constant data will be initialized here.
          * History data is set by \ref Awh::updateHistory.
          *
@@ -231,14 +232,12 @@ class Awh
 
         /*! \brief Restore the AWH state from the given history.
          *
-         * Should be called with a valid t_commrec on all ranks.
+         * Should be called on all ranks.
          * Should pass a valid awhHistory on the master rank.
          *
          * \param[in] awhHistory  AWH history to restore from.
-         * \param[in] cr          Struct for communication.
          */
-        void restoreStateFromHistory(const AwhHistory *awhHistory,
-                                     const t_commrec  *cr);
+        void restoreStateFromHistory(const AwhHistory *awhHistory);
 
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
@@ -260,7 +259,7 @@ class Awh
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
-        const bool                       thisRankDoesIO_;      /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+        const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 
