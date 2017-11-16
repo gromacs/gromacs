@@ -85,6 +85,8 @@ class PointState;
  * values of their coordinates. Each bias provides AWH with an updated
  * bias forces and the corresponding potential.
  *
+ * See the user manual for details on the algorithm and equations.
+ *
  * The bias is responsible for keeping and updating a free energy estimate
  * along the coordinate. The bias potential is basically a function of the
  * free energy estimate and so also changes by the update.
@@ -103,28 +105,34 @@ class PointState;
  * accumulated sampling weight, etc. For this the bias attaches to each grid
  * point a state. The grid + vector of point states are the bias coordinate points.
  *
- * The bias has a fairly complex global state keeping track of where the system
- * (coordinate) currently is, where it has sampled since the last update,
- * and controlling the free energy convergence rate.
+ * The bias has a fairly complex global state keeping track of where
+ * the system (coordinate) currently is (CoordinateState), where it has
+ * sampled since the last update (BiasState) and controlling the free energy
+ * convergence rate (HistogramSize).
  *
- * Partly, the complexity comes from the bias having two convergence stages: an
- * initial stage which in an heuristic, non-deterministic way restricts the early
- * convergence rate for sake of robustness; and a final stage where the convergence rate is constant.
- * The length of the initial stage depends on the sampling and is unknown beforehand.
+ * Partly, the complexity comes from the bias having two convergence stages:
+ * an initial stage which in an heuristic, non-deterministic way restricts
+ * the early convergence rate for sake of robustness; and a final stage
+ * where the convergence rate is constant. The length of the initial stage
+ * depends on the sampling and is unknown beforehand.
  *
- * Another complexity comes from the fact that coordinate points, for sake of efficiency
- * in the case of many grid points, are typically only accessed in recently sampled
- * regions even though the free energy update is inherently global and affects all points.
- * The bias allows points thay are non-local at the time the update was issued to postpone
- * ("skip", as it is called in the code) the update. A non-local point is defined
- * as a point which has not been sampled since the last update. Local points are points that have
- * been sampled since the last update. The (current) set of local points are kept track of by
- * the bias state and reset after every update. An update is called local if it only updates
- * local points. Non-local points will temporarily "skip" the update until next time they are
- * local (or when a global update is issued). For this to work, the bias keeps a global "clock"
- * of the number of issued updates. Each point state also has its own local "clock" with the
- * counting the number of updates it has pulled through. When a point updates its state it
- * asserts that its local clock is synchronized with the global clock.
+ * Another complexity comes from the fact that coordinate points,
+ * for sake of efficiency in the case of many grid points, are typically
+ * only accessed in recently sampled regions even though the free energy
+ * update is inherently global and affects all points.
+ * The bias allows points thay are non-local at the time the update
+ * was issued to postpone ("skip", as it is called in the code) the update.
+ * A non-local point is defined as a point which has not been sampled since
+ * the last update. Local points are points that have been sampled since
+ * the last update. The (current) set of local points are kept track of by
+ * the bias state and reset after every update. An update is called local
+ * if it only updates local points. Non-local points will temporarily "skip"
+ * the update until next time they are local (or when a global update
+ * is issued). For this to work, the bias keeps a global "clock"
+ * (in HistogramSize) of the number of issued updates. Each PointState
+ * also has its own local "clock" with the counting the number of updates
+ * it has pulled through. When a point updates its state it asserts
+ * that its local clock is synchronized with the global clock.
  */
 class Bias
 {
@@ -248,13 +256,15 @@ class Bias
 
     private:
         /*! \brief
-         * Makes checks for the collected histograms and warns if issues are detected.
+         * Performs statistical checks on the collected histograms and warns if issues are detected.
          *
          * \param[in]     t        Time.
          * \param[in]     step     Time step.
          * \param[in,out] fplog    Output file for warnings.
          */
-        void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
+        void warnForHistogramAnomalies(double       t,
+                                       gmx_int64_t  step,
+                                       FILE        *fplog);
 
         /* Data members. */
     private:

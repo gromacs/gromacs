@@ -71,7 +71,7 @@
 namespace gmx
 {
 
-void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
+void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
 {
     const int    maxNumWarningsInCheck = 1;   /* The maximum number of warnings to print per check */
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
@@ -83,8 +83,8 @@ void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
     }
 
     numWarningsIssued_ +=
-        state_.checkHistograms(grid_, biasIndex(), t, fplog,
-                               maxNumWarningsInCheck);
+        state_.warnForHistogramAnomalies(grid_, biasIndex(), t, fplog,
+                                         maxNumWarningsInCheck);
 
     if (numWarningsIssued_ >= maxNumWarningsInRun)
     {
@@ -192,7 +192,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
     *awhPotential = potential;
 
     /* Check the sampled histograms and potentially warn user if something is suspicious */
-    checkHistograms(t, step, fplog);
+    warnForHistogramAnomalies(t, step, fplog);
 }
 
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
