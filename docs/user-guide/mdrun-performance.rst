@@ -1,4 +1,4 @@
-.. _gmx-performance:
+    .. _gmx-performance:
 
 Getting good performance from mdrun
 ===================================
@@ -7,6 +7,9 @@ and configurable intelligence to detect your hardware and make pretty
 effective use of that hardware. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
 most from your hardware to maximize your scientific quality, read on!
+
+Further information for a more detailed information concerning parallelisation 
+can also be found on :ref:`this page <gmx-parallel>`.
 
 Hardware background information
 -------------------------------
@@ -249,6 +252,7 @@ behavior.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
     that a compatible GPU be available and will be used.
 
+<<<<<<< HEAD
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
     are available to be used by ranks on this node. For example,
@@ -271,6 +275,8 @@ behavior.
     number of ranks must be known to mdrun, as well as where
     tasks of different types should be run, such as by using
     ``-nb gpu``.
+=======
+.. _gmx-mdrun-single-node:
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -346,6 +352,8 @@ this will start two ranks and as many OpenMP threads
 as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
+
+.. _gmx-mdrun-multiple-nodes:
 
 Running mdrun on more than one node
 -----------------------------------
@@ -649,6 +657,8 @@ TODO In future patch: import wiki page stuff on performance checklist; maybe her
 maybe elsewhere
 
 .. _gmx-mdrun-on-gpu:
+
+=======
 
 Running mdrun with GPUs
 -----------------------
