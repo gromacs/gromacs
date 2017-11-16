@@ -34,9 +34,12 @@
 
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
+    energyreader.cpp
     mdruncomparisonfixture.cpp
     moduletest.cpp
     terminationhelper.cpp
+    # PME tests
+    pmetest.cpp
     )
 
 set(testname "MdrunTests")
@@ -46,10 +49,8 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     tabulated_bonded_interactions.cpp
-    energyreader.cpp
     grompp.cpp
     initialconstraints.cpp
-    pmetest.cpp
     rerun.cpp
     trajectory_writing.cpp
     trajectoryreader.cpp

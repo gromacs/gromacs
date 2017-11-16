@@ -152,7 +152,8 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
                                           const std::vector<int> &gpuIdsToUse,
                                           const std::vector<int> &userGpuTaskAssignment,
                                           const bool              canUseGpuForPme,
-                                          const int               numRanksPerSimulation)
+                                          const int               numRanksPerSimulation,
+                                          const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
     if ((pmeTarget == TaskTarget::Cpu) ||
@@ -182,10 +183,11 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
         // PME on GPUs is only supported in a single case
         if (pmeTarget == TaskTarget::Gpu)
         {
-            if (numRanksPerSimulation > 1)
+            if (((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation == 0)) ||
+                (numPmeRanksPerSimulation > 1))
             {
                 GMX_THROW(InconsistentInputError
-                              ("When you run mdrun -pme gpu -gputasks, you must supply a PME .tpr file and use a single rank."));
+                              ("When you run mdrun -pme gpu -gputasks, you must supply a PME-enabled .tpr file and use a single PME rank."));
             }
             return true;
         }
@@ -200,12 +202,13 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 
     if (pmeTarget == TaskTarget::Gpu)
     {
-        if (numRanksPerSimulation > 1)
+        if (((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation == 0)) ||
+            (numPmeRanksPerSimulation > 1))
         {
             GMX_THROW(NotImplementedError
                           ("PME tasks were required to run on GPUs, but that is not implemented with "
-                          "more than one rank. Use a single rank, or permit PME tasks to be assigned "
-                          "to the CPU."));
+                          "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
+                          "or permit PME tasks to be assigned to the CPU."));
         }
         return true;
     }
@@ -316,7 +319,8 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
                                   const std::vector<int> &userGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
-                                  const int               numRanksPerSimulation)
+                                  const int               numRanksPerSimulation,
+                                  const int               numPmeRanksPerSimulation)
 {
     if (pmeTarget == TaskTarget::Cpu)
     {
@@ -374,12 +378,13 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
     if (pmeTarget == TaskTarget::Gpu)
     {
-        if (numRanksPerSimulation > 1)
+        if (((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation == 0)) ||
+            (numPmeRanksPerSimulation > 1))
         {
             GMX_THROW(NotImplementedError
                           ("PME tasks were required to run on GPUs, but that is not implemented with "
-                          "more than one rank. Use a single rank, or permit PME tasks to be assigned "
-                          "to the CPU."));
+                          "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
+                          "or permit PME tasks to be assigned to the CPU."));
         }
         return true;
     }
