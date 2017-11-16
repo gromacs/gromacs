@@ -6,6 +6,9 @@ effective use of that hardware. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
 most from your hardware to maximize your scientific quality, read on!
 
+Further information for a more detailed information concerning parallelisation 
+can also be found on :ref:`this page <gmx-parallel>`.
+
 Hardware background information
 -------------------------------
 Modern computer hardware is complex and heterogeneous, so we need to
@@ -120,6 +123,8 @@ when choosing how to make good use of the hardware. For details,
 see the Reference Manual. The most important of these are
 
 .. glossary::
+
+.. _gmx-domain-decomp:
 
     Domain Decomposition
         The domain decomposition (DD) algorithm decomposes the
@@ -251,6 +256,8 @@ behavior.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
     that a compatible GPU be available and will be used.
 
+.. _gmx-mdrun-single-node:
+
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -325,6 +332,8 @@ this will start two ranks and as many OpenMP threads
 as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
+
+.. _gmx-mdrun-multiple-nodes:
 
 Running mdrun on more than one node
 -----------------------------------
@@ -630,6 +639,8 @@ TODO In future patch:
 
 TODO In future patch: import wiki page stuff on performance checklist; maybe here,
 maybe elsewhere
+
+.. _gmx-mdrun-gpu:
 
 Running mdrun with GPUs
 -----------------------
