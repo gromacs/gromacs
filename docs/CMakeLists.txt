@@ -426,6 +426,7 @@ if (SPHINX_FOUND)
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst
         user-guide/mdrun-performance.rst
+        user-guide/parallelisation.rst
         user-guide/run-time-errors.rst
         user-guide/security.rst
         user-guide/system-preparation.rst
