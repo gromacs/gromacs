@@ -192,6 +192,8 @@ For maximum performance you will need to examine how you will use
 parallelism is an advantage for |Gromacs|, but support for this is
 generally built into your compiler and detected automatically.
 
+.. _gmx-gpu-support:
+
 GPU support
 ~~~~~~~~~~~
 
@@ -493,6 +495,8 @@ location. You can even save that in a shell script to make it even
 easier next time. You can also do this kind of thing with ``ccmake``,
 but you should avoid this, because the options set with ``-D`` will not
 be able to be changed interactively in that run of ``ccmake``.
+
+.. _gmx-simd-support:
 
 SIMD support
 ~~~~~~~~~~~~
