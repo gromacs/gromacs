@@ -66,7 +66,10 @@ struct AwhParams;
  * \param[in,out] wi           Struct for bookeeping warnings.
  * \returns AWH parameters.
  */
-AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *inputrec, warninp_t wi);
+AwhParams *readAndCheckAwhParams(int               *ninp_p,
+                                 t_inpfile        **inp_p,
+                                 const t_inputrec  *inputrec,
+                                 warninp_t          wi);
 
 
 /*! \brief

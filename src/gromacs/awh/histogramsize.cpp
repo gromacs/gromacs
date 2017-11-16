@@ -159,7 +159,7 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
         {
             continue;
         }
-        totalWeight += pointState.weightsumTot();
+        totalWeight += pointState.weightSumTot();
         numTargetPoints++;
     }
     GMX_RELEASE_ASSERT(totalWeight > 0, "No samples when normalizing AWH histogram.");
@@ -178,7 +178,7 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
     for (auto &pointState : pointStates)
     {
         double targetWeight  = pointState.target();
-        double sampledWeight = pointState.weightsumTot()*inverseTotalWeight;
+        double sampledWeight = pointState.weightSumTot()*inverseTotalWeight;
 
         /* Ignore these points. */
         if (!pointState.inTargetRegion() || targetWeight < minTargetWeight)
