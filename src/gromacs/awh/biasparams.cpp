@@ -52,7 +52,8 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh-params.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "grid.h"
@@ -79,6 +80,9 @@ bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
     }
 }
 
+namespace
+{
+
 /*! \brief Determines the interval for updating the target distribution.
  *
  * The interval value is based on the target distrbution type
@@ -89,10 +93,10 @@ bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
  * \param[in] awhBiasParams  Bias parameters.
  * \returns the target update interval in steps.
  */
-static int calcTargetUpdateInterval(const AwhParams     &awhParams,
-                                    const AwhBiasParams &awhBiasParams)
+gmx_int64_t calcTargetUpdateInterval(const AwhParams     &awhParams,
+                                     const AwhBiasParams &awhBiasParams)
 {
-    int numStepsUpdateTarget = 0;
+    gmx_int64_t numStepsUpdateTarget = 0;
     /* Set the target update frequency based on the target distrbution type
      * (this could be made a user-option but there is most likely no big need
      * for tweaking this for most users).
@@ -126,32 +130,81 @@ static int calcTargetUpdateInterval(const AwhParams     &awhParams,
     return numStepsUpdateTarget;
 }
 
-/*! \brief Returns the target parameter, depending on the target type.
+/*! \brief
+ * Returns an approximation of the geometry factor used for initializing the AWH update size.
  *
- * \param[in] awhBiasParams  Bias parameters.
- * \param[in] beta           1/(k_B T).
- * \returns the target update interval in steps.
+ * The geometry factor is defined as the following sum of Gaussians:
+ * sum_{k!=0} exp(-0.5*(k*pi*x)^2)/(pi*k)^2,
+ * where k is a xArray.size()-dimensional integer vector with k_i in {0,1,..}.
+ *
+ * \param[in] xArray  Array to evaluate.
+ * \returns the geometry factor.
  */
-static double getTargetParameter(const AwhBiasParams &awhBiasParams,
-                                 const double         beta)
+double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
 {
-    double targetParam = 0;
+    /* For convenience we give the geometry factor function a name: zeta(x) */
+    constexpr size_t                    tableSize   = 5;
+    std::array<const double, tableSize> xTabulated  =
+    { {1e-5, 1e-4, 1e-3, 1e-2, 1e-1} };
+    std::array<const double, tableSize> zetaTable1d =
+    { { 0.166536811948, 0.16653116886, 0.166250075882, 0.162701098306, 0.129272430287 } };
+    std::array<const double, tableSize> zetaTable2d =
+    { { 2.31985974274, 1.86307292523, 1.38159772648, 0.897554759158, 0.405578211115 } };
 
-    switch (awhBiasParams.eTarget)
+    gmx::ArrayRef<const double> zetaTable;
+
+    if (xArray.size() == 1)
     {
-        case eawhtargetCUTOFF:
-            targetParam = beta*awhBiasParams.targetCutoff;
-            break;
-        case eawhtargetBOLTZMANN:
-        case eawhtargetLOCALBOLTZMANN:
-            targetParam = awhBiasParams.targetBetaScaling;
-            break;
-        default:
-            targetParam = 0;
-            break;
+        zetaTable = zetaTable1d;
+    }
+    else if (xArray.size() == 2)
+    {
+        zetaTable = zetaTable2d;
+    }
+    else
+    {
+        /* TODO... but this is anyway a rough estimate and > 2 dimensions is not so popular. */
+        zetaTable = zetaTable2d;
     }
 
-    return targetParam;
+    /* TODO. Really zeta is a function of an ndim-dimensional vector x and we shoudl have a ndim-dimensional lookup-table.
+       Here we take the geometric average of the components of x which is ok if the x-components are not very different. */
+    double xScalar = 1;
+    for (const double &x : xArray)
+    {
+        xScalar *= x;
+    }
+
+    GMX_ASSERT(xArray.size() > 0, "We should have a non-empty input array");
+    xScalar = std::pow(xScalar, 1.0/xArray.size());
+
+    /* Look up zeta(x) */
+    size_t xIndex = 0;
+    while ((xIndex < xTabulated.size()) && (xScalar > xTabulated[xIndex]))
+    {
+        xIndex++;
+    }
+
+    double zEstimate;
+    if (xIndex == xTabulated.size())
+    {
+        /* Take last value */
+        zEstimate = zetaTable[xTabulated.size() - 1];
+    }
+    else if (xIndex == 0)
+    {
+        zEstimate = zetaTable[xIndex];
+    }
+    else
+    {
+        /* Interpolate */
+        double x0 = xTabulated[xIndex - 1];
+        double x1 = xTabulated[xIndex];
+        double w  = (xScalar - x0)/(x1 - x0);
+        zEstimate = w*zetaTable[xIndex - 1] + (1 - w)*zetaTable[xIndex];
+    }
+
+    return zEstimate;
 }
 
 /*! \brief
@@ -164,11 +217,11 @@ static double getTargetParameter(const AwhBiasParams &awhBiasParams,
  * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
  */
-static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams,
-                                         const AwhBiasParams          &awhBiasParams,
-                                         const std::vector<GridAxis>  &gridAxis,
-                                         double                        beta,
-                                         double                        samplingTimestep)
+double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams,
+                                  const AwhBiasParams          &awhBiasParams,
+                                  const std::vector<GridAxis>  &gridAxis,
+                                  double                        beta,
+                                  double                        samplingTimestep)
 {
     /* Get diffusion factor */
     double              L2invD = 0.;
@@ -186,7 +239,7 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
     GMX_RELEASE_ASSERT(L2invD > 0, "We need at least one dimension with non-zero length");
     L2invD                  = 1./L2invD;
     double errorInitialInKT = beta*awhBiasParams.errorInitial;
-    double histSize         = L2invD*Math::gaussianGeometryFactor(x)/(gmx::square(errorInitialInKT)*samplingTimestep);
+    double histSize         = L2invD*gaussianGeometryFactor(x)/(gmx::square(errorInitialInKT)*samplingTimestep);
 
     return histSize;
 }
@@ -197,8 +250,8 @@ static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams
  * \param[in] numSharingSimulations  The number of simulations to share the bias across.
  * \returns the number of shared updates.
  */
-static int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
-                              int                  numSharingSimulations)
+int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
+                       int                  numSharingSimulations)
 {
     GMX_RELEASE_ASSERT(numSharingSimulations >= 1, "We should ''share'' at least with ourselves");
 
@@ -213,6 +266,8 @@ static int getNumSharedUpdate(const AwhBiasParams &awhBiasParams,
 
     return numShared;
 }
+
+}   // namespace
 
 /* Constructor.
  *
@@ -241,11 +296,12 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),
     numStepsUpdateTarget_(calcTargetUpdateInterval(awhParams, awhBiasParams)),
     eTarget(awhBiasParams.eTarget),
-    targetParam(getTargetParameter(awhBiasParams, beta)),
+    freeEnergyCutoff(beta*awhBiasParams.targetCutoff),
+    temperatureScaleFactor(awhBiasParams.targetBetaScaling),
     idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
-    localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
+    localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
     // Estimate and initialize histSizeInitial, depends on the grid.
     histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, beta, numStepsSampleCoord_*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
@@ -254,7 +310,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
 {
     if (beta <= 0)
     {
-        gmx_fatal(FARGS, "To use AWH, the beta=1/(k_B T) should be > 0");
+        GMX_THROW(InvalidInputError("To use AWH, the beta=1/(k_B T) should be > 0"));
     }
 
     for (int d = 0; d < awhBiasParams.ndim; d++)

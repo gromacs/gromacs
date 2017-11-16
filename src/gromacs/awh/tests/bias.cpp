@@ -257,7 +257,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
     for (auto &point : bias.state().points())
     {
         pointBias.push_back(point.bias());
-        logPmfsum.push_back(point.logPmfsum());
+        logPmfsum.push_back(point.logPmfSum());
     }
 
     /* The umbrella force is computed from the coordinate deviation.

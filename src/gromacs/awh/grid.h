@@ -212,7 +212,8 @@ class Grid
          * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
          * \param[in] awhDimParams  Dimension params from inputrec.
          */
-        Grid(const std::vector<DimParams> &dimParams, const AwhDimParams *awhDimParams);
+        Grid(const std::vector<DimParams> &dimParams,
+             const AwhDimParams           *awhDimParams);
 
         /*! \brief Returns the number of points in the grid.
          *
@@ -236,7 +237,7 @@ class Grid
          *
          * \returns the dimensionality of the grid.
          */
-        int ndim() const
+        int numDimensions() const
         {
             return axis_.size();
         }
@@ -306,7 +307,9 @@ int multidimArrayIndexToLinear(const awh_ivec indexMulti,  int ndim, const awh_i
  * \param[in]  indexLinear  Linear grid point index to convert to a multidimensional one.
  * \param[out] indexMulti   The multidimensional index.
  */
-void linearGridindexToMultidim(const Grid &grid, int indexLinear, awh_ivec indexMulti);
+void linearGridindexToMultidim(const Grid &grid,
+                               int         indexLinear,
+                               awh_ivec    indexMulti);
 
 /*! \brief Convert a linear array index to a multidimensional one.
  *
@@ -315,7 +318,10 @@ void linearGridindexToMultidim(const Grid &grid, int indexLinear, awh_ivec index
  * \param[in]  numPointsDim  Number of points for each dimension.
  * \param[out] indexMulti    The multidimensional index.
  */
-void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPointsDim, awh_ivec indexMulti);
+void linearArrayIndexToMultidim(int            indexLinear,
+                                int            ndim,
+                                const awh_ivec numPointsDim,
+                                awh_ivec       indexMulti);
 
 /*! \brief
  * Find the next grid point in the sub-part of the grid given a starting point.
@@ -336,7 +342,7 @@ void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPoi
  * \param[in,out] gridPointIndex  Pointer to the starting/next grid point index.
  * \returns true if the grid point was updated.
  */
-bool getNextPointInSubgrid(const Grid     &grid,
+bool advancePointInSubgrid(const Grid     &grid,
                            const awh_ivec  subgridOrigin,
                            const awh_ivec  subgridNpoints,
                            int            *gridPointIndex);
@@ -350,15 +356,15 @@ bool getNextPointInSubgrid(const Grid     &grid,
  *
  * \param[out] gridpointToDatapoint  Array mapping each grid point to a data point index.
  * \param[in]  data                  2D array in format ndim x ndatapoints with data grid point values.
- * \param[in]  numDatapoints         Number of data points.
- * \param[in]  datafilename          The data filename.
+ * \param[in]  numDataPoints         Number of data points.
+ * \param[in]  dataFilename          The data filename.
  * \param[in]  grid                  The grid.
  * \param[in]  correctFormatMessage  String to include in error message if extracting the data fails.
  */
-void mapGridToDatagrid(std::vector<int>    *gridpointToDatapoint,
+void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
                        const double* const *data,
-                       int                  numDatapoints,
-                       const std::string   &datafilename,
+                       int                  numDataPoints,
+                       const std::string   &dataFilename,
                        const Grid          &grid,
                        const std::string   &correctFormatMessage);
 
@@ -371,7 +377,10 @@ void mapGridToDatagrid(std::vector<int>    *gridpointToDatapoint,
  * \param[in] value       Value along the given dimension.
  * \returns the deviation of the given value to the given point.
  */
-double getDeviationFromPointAlongGridaxis(const Grid &grid, int dimindex, int pointindex, double value);
+double getDeviationFromPointAlongGridaxis(const Grid &grid,
+                                          int         dimindex,
+                                          int         pointindex,
+                                          double      value);
 
 } // namespace gmx
 
