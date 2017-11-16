@@ -105,7 +105,7 @@ struct BiasCoupledToSystem
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias                    bias,
                                          const std::vector<int> &pullCoordIndex) :
-    bias(std::move(bias)),
+    bias(bias),
     pullCoordIndex(pullCoordIndex)
 {
     /* We already checked for this in grompp, but check again here. */
@@ -119,7 +119,7 @@ Awh::Awh(FILE              *fplog,
          const std::string &biasInitFilename,
          pull_t            *pull_work) :
     seed_(awhParams.seed),
-    thisRankDoesIO_(MASTER(cr)),
+    commRecord_(cr),
     potentialOffset_(0)
 {
     /* We already checked for this in grompp, but check again here. */
@@ -156,27 +156,28 @@ Awh::Awh(FILE              *fplog,
             GMX_RELEASE_ASSERT(awhDimParams.eCoordProvider == eawhcoordproviderPULL, "Currently only the pull code is supported as coordinate provider");
             const t_pull_coord &pullCoord         = ir.pull->coord[awhDimParams.coordIndex];
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
-            dimParams.emplace_back(DimParams(conversionFactor, awhDimParams.forceConstant, beta));
+            dimParams.push_back(DimParams(conversionFactor, awhDimParams.forceConstant, beta));
 
             pullCoordIndex.push_back(awhDimParams.coordIndex);
         }
 
         /* Construct the bias and couple it to the system. */
-        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename, thisRankDoesIO_),
+        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename, MASTER(commRecord_)),
                                           pullCoordIndex);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     registerAwhWithPull(awhParams, pull_work);
 
-    if (numSharingSimulations > 1 && MASTER(cr))
+    if (numSharingSimulations > 1 && MASTER(commRecord_))
     {
         std::vector<size_t> pointSize;
         for (auto const &biasCTS : biasCoupledToSystem_)
         {
             pointSize.push_back(biasCTS.bias.state().points().size());
         }
-        checkBiasSharingMultiSim(awhParams, pointSize, cr->ms);
+        /* Ensure that the shared biased are compatible between simulations */
+        biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, commRecord_->ms);
     }
 }
 
@@ -187,7 +188,6 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
                                        const t_mdatoms        &mdatoms,
                                        const matrix            box,
                                        gmx::ForceWithVirial   *forceWithVirial,
-                                       const t_commrec        *cr,
                                        double                  t,
                                        gmx_int64_t             step,
                                        gmx_wallcycle          *wallcycle,
@@ -222,10 +222,15 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
          * setting the bias force and/or updating the AWH bias state.
          */
         awh_dvec biasForce;
-        double   biasPotential, biasPotentialJump;
+        double   biasPotential;
+        double   biasPotentialJump;
+        /* Note: In the near future this call will be split in calls
+         *       to supports bias sharing within a single simulation.
+         */
         biasCTS.bias.calcForceAndUpdateBias(coordValue, biasForce,
                                             &biasPotential, &biasPotentialJump,
-                                            cr->ms, t, step, seed_, fplog);
+                                            commRecord_->ms,
+                                            t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -246,12 +251,12 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
 
     wallcycle_stop(wallcycle, ewcAWH);
 
-    return MASTER(cr) ? static_cast<real>(awhPotential) : 0;
+    return MASTER(commRecord_) ? static_cast<real>(awhPotential) : 0;
 }
 
 std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 {
-    if (thisRankDoesIO_)
+    if (MASTER(commRecord_))
     {
         std::shared_ptr<AwhHistory> awhHistory(new AwhHistory);
         awhHistory->bias.clear();
@@ -271,13 +276,10 @@ std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
     }
 }
 
-void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
-                                  const t_commrec  *cr)
+void Awh::restoreStateFromHistory(const AwhHistory *awhHistory)
 {
-    GMX_RELEASE_ASSERT(cr != nullptr, "restoreStateFromHistory() should be called with a valid commrec");
-
     /* Restore the history to the current state */
-    if (MASTER(cr))
+    if (MASTER(commRecord_))
     {
         GMX_RELEASE_ASSERT(awhHistory != nullptr, "The master rank should have a valid awhHistory when restoring the state from history.");
 
@@ -285,20 +287,20 @@ void Awh::restoreStateFromHistory(const AwhHistory *awhHistory,
 
         potentialOffset_ = awhHistory->potentialOffset;
     }
-    if (PAR(cr))
+    if (PAR(commRecord_))
     {
-        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, cr);
+        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, commRecord_);
     }
 
     for (size_t k = 0; k < biasCoupledToSystem_.size(); k++)
     {
-        biasCoupledToSystem_[k].bias.restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, cr);
+        biasCoupledToSystem_[k].bias.restoreStateFromHistory(awhHistory ? &awhHistory->bias[k] : nullptr, commRecord_);
     }
 }
 
 void Awh::updateHistory(AwhHistory *awhHistory) const
 {
-    if (!thisRankDoesIO_)
+    if (!MASTER(commRecord_))
     {
         return;
     }

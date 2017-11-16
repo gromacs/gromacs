@@ -63,22 +63,22 @@ int Math::getSampleFromDistribution(ArrayRef<const double> distr,
     GMX_RELEASE_ASSERT(distr.size() > 0, "We need a non-zero length distribution to sample from");
 
     /* Generate the cumulative probability distribution function */
-    std::vector<double> distrCumul(distr.size());
+    std::vector<double> cumulativeDistribution(distr.size());
 
-    distrCumul[0] = distr[0];
+    cumulativeDistribution[0] = distr[0];
 
     for (size_t i = 1; i < distr.size(); i++)
     {
-        distrCumul[i] = distrCumul[i - 1] + distr[i];
+        cumulativeDistribution[i] = cumulativeDistribution[i - 1] + distr[i];
     }
 
-    GMX_RELEASE_ASSERT(gmx_within_tol(distrCumul.back(), 1.0, 0.01), "Attempt to get sample from non-normalized/zero distribution");
+    GMX_RELEASE_ASSERT(gmx_within_tol(cumulativeDistribution.back(), 1.0, 0.01), "Attempt to get sample from non-normalized/zero distribution");
 
     /* Use binary search to convert the real value to an integer in [0, ndistr - 1] distributed according to distr. */
     rng.restart(indexSeed0, indexSeed1);
 
     double value  = uniformRealDistr(rng);
-    int    sample = std::upper_bound(distrCumul.begin(), distrCumul.end() - 1, value) - distrCumul.begin();
+    int    sample = std::upper_bound(cumulativeDistribution.begin(), cumulativeDistribution.end() - 1, value) - cumulativeDistribution.begin();
 
     return sample;
 }
@@ -118,11 +118,12 @@ double Math::gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
     /* TODO. Really zeta is a function of an ndim-dimensional vector x and we shoudl have a ndim-dimensional lookup-table.
        Here we take the geometric average of the components of x which is ok if the x-components are not very different. */
     double xScalar = 1;
-    for (auto &x : xArray)
+    for (const double &x : xArray)
     {
         xScalar *= x;
     }
 
+    GMX_ASSERT(xArray.size() > 0, "We should have a non-empty input array");
     xScalar = std::pow(xScalar, 1.0/xArray.size());
 
     /* Look up zeta(x) */

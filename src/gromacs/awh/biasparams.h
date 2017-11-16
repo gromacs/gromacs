@@ -160,7 +160,7 @@ class BiasParams
          * \param[in] awhParams              AWH parameters.
          * \param[in] awhBiasParams          Bias parameters.
          * \param[in] dimParams              Bias dimension parameters.
-         * \param[in] beta                   1/(k_B T), should be > 0.
+         * \param[in] beta                   1/(k_B T) in units of 1/(kJ/mol), should be > 0.
          * \param[in] mdTimeStep             The MD time step.
          * \param[in] numSharingSimulations  The number of simulations to share the bias across.
          * \param[in] gridAxis               The grid axes.
@@ -178,26 +178,27 @@ class BiasParams
                    int                           biasIndex);
 
         /* Data members */
-        const double  invBeta;                     /**< 1/beta = kT */
+        const double      invBeta;                     /**< 1/beta = kT in kJ/mol */
     private:
-        const int     numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
-        const int     numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
-        const int     numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
+        const gmx_int64_t numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+        const int         numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
+        const gmx_int64_t numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
     public:
-        const int     eTarget;                     /**< Type of target distribution. */
-        const double  targetParam;                 /**< Target distribution parameter, cut-off (in kT) for cut-off, temperature scaling factor for temperature scaling. */
-        const bool    idealWeighthistUpdate;       /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
-        const int     numSharedUpdate;             /**< The number of (multi-)simulations sharing the bias update */
-        const double  updateWeight;                /**< The probability weight accumulated for each update. */
-        const double  localWeightScaling;          /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
-        const double  histSizeInitial;             /**< Initial reference weight histogram size. */
+        const int         eTarget;                     /**< Type of target distribution. */
+        const double      freeEnergyCutoff;            /**< Free energy cut-off in kT for cut-off target distribution. */
+        const double      temperatureScaleFactor;      /**< Temperature scaling factor for temperature scaled targed distributions. */
+        const bool        idealWeighthistUpdate;       /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
+        const int         numSharedUpdate;             /**< The number of (multi-)simulations sharing the bias update */
+        const double      updateWeight;                /**< The probability weight accumulated for each update. */
+        const double      localWeightScaling;          /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
+        const double      histSizeInitial;             /**< Initial reference weight histogram size. */
     private:
-        awh_ivec      coverRadius_;                /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
+        awh_ivec          coverRadius_;                /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
     public:
-        const bool    convolveForce;               /**< True if we convolve the force, false means use MC between umbrellas. */
-        const int     biasIndex;                   /**< Index of the bias, used as a second random seed and for priting. */
+        const bool        convolveForce;               /**< True if we convolve the force, false means use MC between umbrellas. */
+        const int         biasIndex;                   /**< Index of the bias, used as a second random seed and for priting. */
     private:
-        const bool    disableUpdateSkips_;         /**< If true, we disallow update skips, even when the method supports it. */
+        const bool        disableUpdateSkips_;         /**< If true, we disallow update skips, even when the method supports it. */
 };
 
 }      // namespace gmx
