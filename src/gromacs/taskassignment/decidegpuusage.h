@@ -102,6 +102,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          n
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  canUseGpuForPme           Whether the form of PME chosen can run on a GPU
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
+ * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  *
  * \returns    Whether the simulation will run PME tasks on GPUs.
  *
@@ -112,7 +113,8 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
                                                const std::vector<int> &gpuIdsToUse,
                                                const std::vector<int> &userGpuTaskAssignment,
                                                const bool              canUseGpuForPme,
-                                               const int               numRanksPerSimulation);
+                                               const int               numRanksPerSimulation,
+                                               const int               numPmeRanksPerSimulation);
 
 /*! \brief Decide whether the simulation will try to run nonbonded
  * tasks on GPUs.
@@ -171,6 +173,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  canUseGpuForPme           Whether the form of PME chosen can run on a GPU
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
+ * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  *
  * \returns    Whether the simulation will run nonbonded and PME tasks, respectively, on GPUs.
  *
@@ -180,7 +183,8 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
                                   const std::vector<int> &userGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
-                                  const int               numRanksPerSimulation);
+                                  const int               numRanksPerSimulation,
+                                  const int               numPmeRanksPerSimulation);
 
 }
 

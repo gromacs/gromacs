@@ -617,7 +617,7 @@ int Mdrunner::mdrunner()
             auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
-                    canUseGpuForPme, hw_opt.nthreads_tmpi);
+                    canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         /* Determine how many thread-MPI ranks to start.
@@ -671,7 +671,7 @@ int Mdrunner::mdrunner()
                                                                 cr->nnodes);
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
-        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes);
+        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks);
         // FIXME decide how to implement -pmefft support
         pmeRunMode = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
     }
@@ -750,21 +750,30 @@ int Mdrunner::mdrunner()
 
     if (useGpuForNonbonded && domdecOptions.numPmeRanks < 0)
     {
-        /* With GPUs we don't automatically use PME-only ranks. PME ranks can
+        /* With NB GPUs we don't automatically use PME-only CPU ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        domdecOptions.numPmeRanks = 0;
+        if (useGpuForPme && (hw_opt.nthreads_tmpi > 1))
+        {
+            domdecOptions.numPmeRanks = 1;
+            //TODO print appropriate notice on why asking for multiple threads and -pme gpu causes a separate PME rank to start
+        }
+        else
+        {
+            domdecOptions.numPmeRanks = 0;
+        }
     }
     if (useGpuForPme)
     {
         if (domdecOptions.numPmeRanks < 0)
         {
-            domdecOptions.numPmeRanks = 0; // separate GPU ranks not supported
+            domdecOptions.numPmeRanks = 0;
+            // TODO possibly print a note that one can opt-in for a separate PME GPU rank?
         }
         else
         {
-            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks == 0, "Separate PME GPU ranks are not yet supported");
+            GMX_RELEASE_ASSERT(domdecOptions.numPmeRanks <= 1, "PME GPU decomposition is not supported");
         }
     }
 
@@ -1219,12 +1228,6 @@ int Mdrunner::mdrunner()
             auto pmeDeviceInfo = deviceContexts.pme->getDeviceInfo();
             try
             {
-                if (pmeDeviceInfo != nullptr && pmeDeviceInfo != deviceContexts.pme->getDeviceInfo())
-                {
-                    GMX_THROW(NotImplementedError
-                                  ("PME on a GPU can run only on the same GPU as nonbonded, because "
-                                   "context switching is not yet supported."));
-                }
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
                                        mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
