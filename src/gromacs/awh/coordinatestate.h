@@ -40,7 +40,7 @@
  *
  * It sets and holds the current coordinate value and corresponding closest
  * grid point index. These are (re)set at every step.
- * With umbrella potential type, this class also holds and updated the umbrella
+ * With umbrella potential type, this class also holds and updates the umbrella
  * potential reference location, which is a state variable that presists over
  * the duration of an AWH sampling interval.
  *

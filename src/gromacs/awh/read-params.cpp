@@ -57,7 +57,6 @@
 
 #include "biasparams.h"
 #include "biassharing.h"
-#include "math.h"
 
 namespace gmx
 {
