@@ -68,8 +68,11 @@ class BiasParams;
 class PointState;
 
 /*! \internal
- * \brief Takes care of global size related properties of the bias histogram.
+ * \brief Tracks global size related properties of the bias histogram.
  *
+ * Tracks the number of updates and the histogram size.
+ * Also keep track of the stage (initial/final of the AWH method
+ * and printing warnings about covering.
  */
 class HistogramSize
 {
@@ -137,34 +140,34 @@ class HistogramSize
 
         /*! \brief Returns the number of updates since the start of the simulation.
          */
-        inline int numUpdates() const
+        int numUpdates() const
         {
             return numUpdates_;
         };
 
         /*! \brief Increments the number of updates by 1.
          */
-        inline void incrementNumUpdates()
+        void incrementNumUpdates()
         {
             numUpdates_ += 1;
         }
 
         /*! \brief Returns the histogram size.
          */
-        inline double histSize() const
+        double histSize() const
         {
             return histSize_;
         };
 
         /*! \brief Sets the histogram size.
          *
-         * \param[in] histSize                 The new histogram size.
-         * \param[in] weighthistScalingFactor  The factor to scale the weight by.
+         * \param[in] histSize                      The new histogram size.
+         * \param[in] weightHistogramScalingFactor  The factor to scale the weight by.
          */
         void setHistSize(double histSize,
-                         double weighthistScalingFactor);
+                         double weightHistogramScalingFactor);
 
-        /*! \brief Returns true if we are in the initial stage.
+        /*! \brief Returns true if we are in the initial stage of the AWH method.
          */
         inline bool inInitialStage() const
         {
@@ -178,10 +181,10 @@ class HistogramSize
         double      histSize_;   /**< Size of reference weight histogram. */
 
         /* Values that control the evolution of the histogram size. */
-        bool      inInitialStage_;        /**< True if in the intial stage. */
-        bool      equilibrateHistogram_;  /**< True if samples are kept from accumulating until the sampled distribution is close enough to the target. */
-        double    scaledSampleWeight_;    /**< The log of the current sample weight, scaled because of the histogram rescaling. */
-        double    maxScaledSampleWeight_; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
+        bool      inInitialStage_;           /**< True if in the intial stage. */
+        bool      equilibrateHistogram_;     /**< True if samples are kept from accumulating until the sampled distribution is close enough to the target. */
+        double    logScaledSampleWeight_;    /**< The log of the current sample weight, scaled because of the histogram rescaling. */
+        double    maxLogScaledSampleWeight_; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
 
         /* Bool to avoid printing multiple, not so useful, messages to log */
         bool      havePrintedAboutCovering_; /**< True if we have printed about covering to the log while equilibrateHistogram==true */

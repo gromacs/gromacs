@@ -69,9 +69,8 @@ HistogramSize::HistogramSize(const AwhBiasParams &awhBiasParams,
     histSize_(histSizeInitial),
     inInitialStage_(awhBiasParams.eGrowth == eawhgrowthEXP_LINEAR),
     equilibrateHistogram_(awhBiasParams.equilibrateHistogram),
-    /* The initial sample weight is set to 1 and we keep the logarithm. */
-    scaledSampleWeight_(0),
-    maxScaledSampleWeight_(0),
+    logScaledSampleWeight_(0),
+    maxLogScaledSampleWeight_(0),
     havePrintedAboutCovering_(false)
 {
 }
@@ -85,7 +84,7 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
     /* The histogram size is kept constant until the sampling region has been covered
        and the the current sample weight is large enough and the histogram is ready. */
     if (!detectedCovering ||
-        (scaledSampleWeight_ < maxScaledSampleWeight_) ||
+        (logScaledSampleWeight_ < maxLogScaledSampleWeight_) ||
         equilibrateHistogram_)
     {
         return histSize_;
@@ -97,8 +96,8 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
     std::fill(weightsumCovering.begin(), weightsumCovering.end(), 0);
 
     /*  The current sample weigth is now the maximum. */
-    double prevMaxScaledSampleWeight = maxScaledSampleWeight_;
-    maxScaledSampleWeight_ = scaledSampleWeight_;
+    double prevMaxLogScaledSampleWeight = maxLogScaledSampleWeight_;
+    maxLogScaledSampleWeight_ = logScaledSampleWeight_;
 
     /* Increase the histogram size by a constant scale factor if we can, i.e. if the sample weight
        resulting from such a scaling is still larger than the previous maximum sample weight
@@ -112,7 +111,7 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
     /* The scale factor is in most cases very close to the histogram growth factor. */
     double              scaleFactor = growthFactor/(1. + params.updateWeight*params.localWeightScaling/histSize_);
 
-    bool                bExit       = (scaledSampleWeight_ - std::log(scaleFactor) <= prevMaxScaledSampleWeight);
+    bool                bExit       = (logScaledSampleWeight_ - std::log(scaleFactor) <= prevMaxLogScaledSampleWeight);
     double              histSizeNew = bExit ? histSize_ : histSize_*growthFactor;
 
     /* Update the AWH bias about the exit. */
@@ -138,6 +137,9 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
     return histSizeNew;
 }
 
+namespace
+{
+
 /*! \brief
  * Checks if the histogram has equilibrated to the target distribution.
  *
@@ -148,7 +150,7 @@ double HistogramSize::newHistSizeInitialStage(const BiasParams &params,
  * \param[in] pointStates  The state of the bias points.
  * \returns true if the histogram is equilibrated.
  */
-static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
+bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
 {
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
@@ -159,7 +161,7 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
         {
             continue;
         }
-        totalWeight += pointState.weightsumTot();
+        totalWeight += pointState.weightSumTot();
         numTargetPoints++;
     }
     GMX_RELEASE_ASSERT(totalWeight > 0, "No samples when normalizing AWH histogram.");
@@ -178,7 +180,7 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
     for (auto &pointState : pointStates)
     {
         double targetWeight  = pointState.target();
-        double sampledWeight = pointState.weightsumTot()*inverseTotalWeight;
+        double sampledWeight = pointState.weightSumTot()*inverseTotalWeight;
 
         /* Ignore these points. */
         if (!pointState.inTargetRegion() || targetWeight < minTargetWeight)
@@ -202,6 +204,8 @@ static bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
 
     return equilibratedWeight/(equilibratedWeight + notEquilibratedWeight) > minFraction;;
 }
+
+} // namespace
 
 double HistogramSize::newHistSize(const BiasParams              &params,
                                   double                         t,
@@ -244,10 +248,10 @@ double HistogramSize::newHistSize(const BiasParams              &params,
 }
 
 void HistogramSize::setHistSize(double histSize,
-                                double weighthistScalingFactor)
+                                double weightHistogramScalingFactor)
 {
     GMX_ASSERT(histSize > 0, "The histogram should not be empty");
-    GMX_ASSERT(weighthistScalingFactor > 0, "The histogram scaling factor should be positive");
+    GMX_ASSERT(weightHistogramScalingFactor > 0, "The histogram scaling factor should be positive");
 
     histSize_ = histSize;
 
@@ -255,27 +259,27 @@ void HistogramSize::setHistSize(double histSize,
      * when the histogram is rescaled. We keep the log since this number
      * can become very large.
      */
-    scaledSampleWeight_ -= std::log(weighthistScalingFactor);
+    logScaledSampleWeight_ -= std::log(weightHistogramScalingFactor);
 };
 
 void HistogramSize::restoreFromHistory(const AwhBiasStateHistory &stateHistory)
 {
-    numUpdates_             = stateHistory.numUpdates;
-    histSize_               = stateHistory.histSize;
-    inInitialStage_         = stateHistory.in_initial;
-    equilibrateHistogram_   = stateHistory.equilibrateHistogram;
-    scaledSampleWeight_     = stateHistory.scaledSampleWeight;
-    maxScaledSampleWeight_  = stateHistory.maxScaledSampleWeight;
+    numUpdates_               = stateHistory.numUpdates;
+    histSize_                 = stateHistory.histSize;
+    inInitialStage_           = stateHistory.in_initial;
+    equilibrateHistogram_     = stateHistory.equilibrateHistogram;
+    logScaledSampleWeight_    = stateHistory.logScaledSampleWeight;
+    maxLogScaledSampleWeight_ = stateHistory.maxLogScaledSampleWeight;
 }
 
 void HistogramSize::storeState(AwhBiasStateHistory *stateHistory) const
 {
-    stateHistory->numUpdates            = numUpdates_;
-    stateHistory->histSize              = histSize_;
-    stateHistory->in_initial            = inInitialStage_;
-    stateHistory->equilibrateHistogram  = equilibrateHistogram_;
-    stateHistory->scaledSampleWeight    = scaledSampleWeight_;
-    stateHistory->maxScaledSampleWeight = maxScaledSampleWeight_;
+    stateHistory->numUpdates               = numUpdates_;
+    stateHistory->histSize                 = histSize_;
+    stateHistory->in_initial               = inInitialStage_;
+    stateHistory->equilibrateHistogram     = equilibrateHistogram_;
+    stateHistory->logScaledSampleWeight    = logScaledSampleWeight_;
+    stateHistory->maxLogScaledSampleWeight = maxLogScaledSampleWeight_;
 }
 
 } // namespace gmx

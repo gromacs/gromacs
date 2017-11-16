@@ -163,7 +163,7 @@ TEST_P(BiasStateTest, InitializesFromFile)
     double msdTarget = 0;
     for (size_t i = 0; i < points.size(); i++)
     {
-        msdPmf    += gmx::square(points[i].logPmfsum() - points[0].logPmfsum() + 0.5*i);
+        msdPmf    += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5*i);
         msdTarget += gmx::square(points[i].target() - (i + 1)/120.0);
     }
 

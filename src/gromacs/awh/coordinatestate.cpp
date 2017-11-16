@@ -48,8 +48,12 @@
 
 #include <algorithm>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "grid.h"
 #include "math.h"
@@ -75,6 +79,52 @@ CoordinateState::CoordinateState(const AwhBiasParams          &awhBiasParams,
     umbrellaGridpoint_ = gridpointIndex_;
 }
 
+namespace
+{
+
+/*! \brief Generate a sample from a discrete probability distribution defined on [0, distr.size() - 1].
+ *
+ * The pair (indexSeed0,indexSeed1) should be different for every invocation.
+ *
+ * \param[in] distr       Normalized probability distribution to generate a sample from.
+ * \param[in] seed        Random seed for initializing the random number generator.
+ * \param[in] indexSeed0  Random seed needed by the random number generator.
+ * \param[in] indexSeed1  Random seed needed by the random number generator.
+ * \returns a sample index in [0, distr.size() - 1]
+ */
+int getSampleFromDistribution(ArrayRef<const double> distr,
+                              gmx_int64_t            seed,
+                              gmx_int64_t            indexSeed0,
+                              gmx_int64_t            indexSeed1)
+{
+    gmx::ThreeFry2x64<0>               rng(seed, gmx::RandomDomain::AwhBiasing);
+    gmx::UniformRealDistribution<real> uniformRealDistr;
+
+    GMX_RELEASE_ASSERT(distr.size() > 0, "We need a non-zero length distribution to sample from");
+
+    /* Generate the cumulative probability distribution function */
+    std::vector<double> cumulativeDistribution(distr.size());
+
+    cumulativeDistribution[0] = distr[0];
+
+    for (size_t i = 1; i < distr.size(); i++)
+    {
+        cumulativeDistribution[i] = cumulativeDistribution[i - 1] + distr[i];
+    }
+
+    GMX_RELEASE_ASSERT(gmx_within_tol(cumulativeDistribution.back(), 1.0, 0.01), "Attempt to get sample from non-normalized/zero distribution");
+
+    /* Use binary search to convert the real value to an integer in [0, ndistr - 1] distributed according to distr. */
+    rng.restart(indexSeed0, indexSeed1);
+
+    double value  = uniformRealDistr(rng);
+    int    sample = std::upper_bound(cumulativeDistribution.begin(), cumulativeDistribution.end() - 1, value) - cumulativeDistribution.begin();
+
+    return sample;
+}
+
+} // namespace
+
 void
 CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
                                          int                        gridpointIndex,
@@ -90,8 +140,8 @@ CoordinateState::sampleUmbrellaGridpoint(const Grid                &grid,
 
     /* In order to use the same seed for all AWH biases and get independent
        samples we use the index of the bias. */
-    int n_sampled      = Math::getSampleFromDistribution(probWeightNeighbor,
-                                                         seed, step, indexSeed);
+    int n_sampled      = getSampleFromDistribution(probWeightNeighbor,
+                                                   seed, step, indexSeed);
 
     umbrellaGridpoint_ = neighbor[n_sampled];
 }

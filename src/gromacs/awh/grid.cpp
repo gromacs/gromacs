@@ -56,13 +56,17 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "math.h"
 
 namespace gmx
+{
+
+namespace
 {
 
 /*! \brief
@@ -75,15 +79,16 @@ namespace gmx
  * \param[in,out] x       Pointer to the value to modify.
  * \param[in]     period  The period, or 0 if not periodic.
  */
-static void makeValuePeriodic(double *x, double period)
+void centerPeriodicValueAroundZero(double *x,
+                                   double  period)
 {
-    const double halfperiod = period*0.5;
+    const double halfPeriod = period*0.5;
 
-    if (*x >= halfperiod)
+    if (*x >= halfPeriod)
     {
         *x -= period;
     }
-    else if (*x < -halfperiod)
+    else if (*x < -halfPeriod)
     {
         *x += period;
     }
@@ -92,7 +97,7 @@ static void makeValuePeriodic(double *x, double period)
 /*! \brief
  * Modify x so that it is periodic in [0, period).
  *
- * x is modified by shifting its value by a +/- a period if
+ * Return x is shifted its value by a +/- a period, if
  * needed. Thus, it is assumed that x is at most one period
  * away from this interval. For this domain and period > 0
  * this is equivalent to x = x % period. For period = 0,
@@ -100,16 +105,24 @@ static void makeValuePeriodic(double *x, double period)
  *
  * \param[in,out] x       Pointer to the value to modify.
  * \param[in]     period  The period, or 0 if not periodic.
+ * \returns index value witin [0, period).
  */
-static void makeIndexPeriodic(int *x, int period)
+int indexWithinPeriod(int x,
+                      int period)
 {
-    if (*x >= period)
+    GMX_ASSERT(x > -period && x < 2*period, "x should not be more shifted by more than one period");
+
+    if (x >= period)
     {
-        *x -= period;
+        return x - period;
     }
-    else if (*x < 0)
+    else if (x < 0)
     {
-        *x += period;
+        return x + period;
+    }
+    else
+    {
+        return x;
     }
 }
 
@@ -127,19 +140,21 @@ static void makeIndexPeriodic(int *x, int period)
  * \param[in] period    The period, or 0 if not periodic.
  * \returns the interval length from origin to end.
  */
-static double getIntervalLengthPeriodic(double origin, double end, double period)
+double getIntervalLengthPeriodic(double origin,
+                                 double end,
+                                 double period)
 {
-    double L = end - origin;
-    if (L < 0)
+    double length = end - origin;
+    if (length < 0)
     {
         /* The interval wraps around the +/- boundary which has a discontinuous jump of -period. */
-        L += period;
+        length += period;
     }
 
-    GMX_RELEASE_ASSERT(L >= 0, "Negative AWH grid axis length.");
-    GMX_RELEASE_ASSERT(period == 0 || L <= period, "Interval length longer than period.");
+    GMX_RELEASE_ASSERT(length >= 0, "Negative AWH grid axis length.");
+    GMX_RELEASE_ASSERT(period == 0 || length <= period, "Interval length longer than period.");
 
-    return L;
+    return length;
 }
 
 /*! \brief
@@ -154,17 +169,21 @@ static double getIntervalLengthPeriodic(double origin, double end, double period
  * \param[in] period   The period, or 0 if not periodic.
  * \returns the deviation from x to x0.
  */
-static double getDeviationPeriodic(double x, double x0, double period)
+double getDeviationPeriodic(double x, 
+                            double x0,
+                            double period)
 {
     double dev = x - x0;
 
     if (period > 0)
     {
-        makeValuePeriodic(&dev, period);
+        centerPeriodicValueAroundZero(&dev, period);
     }
 
     return dev;
 }
+
+} // namespace
 
 double getDeviationFromPointAlongGridaxis(const Grid &grid, int dimIndex, int pointindex, double value)
 {
@@ -179,13 +198,10 @@ void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPoi
     {
         int stride = 1;
 
-        /* Workaround for bug in clang */
-#ifndef __clang_analyzer__
         for (int k = d + 1; k < ndim; k++)
         {
             stride *= numPointsDim[k];
         }
-#endif
 
         indexMulti[d] = indexLinear/stride;
         indexLinear  -= indexMulti[d]*stride;
@@ -210,13 +226,11 @@ int multidimArrayIndexToLinear(const awh_ivec indexMulti, int ndim, const awh_iv
     int stride      = 1;
     int indexLinear = 0;
     /* Workaround for bug in clang */
-#ifndef __clang_analyzer__
     for (int d = ndim - 1; d >= 0; d--)
     {
         indexLinear += stride*indexMulti[d];
         stride      *= numPointsDim[d];
     }
-#endif
 
     return indexLinear;
 }
@@ -230,7 +244,7 @@ int multidimArrayIndexToLinear(const awh_ivec indexMulti, int ndim, const awh_iv
 static int multidimGridindexToLinear(const std::vector<GridAxis> &axis,
                                      const awh_ivec               indexMulti)
 {
-    awh_ivec numPointsDim;
+    awh_ivec numPointsDim = { 0 };
 
     for (size_t d = 0; d < axis.size(); d++)
     {
@@ -255,7 +269,7 @@ int multidimGridindexToLinear(const Grid &grid, const awh_ivec indexMulti)
  *
  * \param[in] ndim          Number of dimensions of the array.
  * \param[in] numPoints     Vector with the number of points along each dimension.
- * \param[in,out] indexDim  Multidimensional index, each with values in [0, npoints_dim[d] - 1].
+ * \param[in,out] indexDim  Multidimensional index, each with values in [0, numPoints[d] - 1].
  * \returns true if a step was taken, false if not.
  */
 static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec indexDim)
@@ -317,10 +331,9 @@ static void gridToSubgridIndex(const Grid     &grid,
     for (int d = 0; d < grid.ndim(); d++)
     {
         /* The multidimensional grid point index relative to the subgrid origin. */
-        subgridIndex[d] = grid.point(point).index[d] - subgridOrigin[d];
-
-        /* The subgrid wraps around periodic boundaries of the grid. */
-        makeIndexPeriodic(&subgridIndex[d], grid.axis(d).numPointsInPeriod());
+        subgridIndex[d] =
+            indexWithinPeriod(grid.point(point).index[d] - subgridOrigin[d],
+                              grid.axis(d).numPointsInPeriod());
 
         /* The given point should be in the subgrid. */
         GMX_RELEASE_ASSERT((subgridIndex[d] >= 0) && (subgridIndex[d] < subgridNpoints[d]),
@@ -366,7 +379,8 @@ static bool subgridToGridIndex(const Grid     &grid,
             /* The grid might not contain a whole period. Can only wrap around if this gap is not too large. */
             int gap = grid.axis(d).numPointsInPeriod() - grid.axis(d).numPoints();
 
-            int bridge, numWrapped;
+            int bridge;
+            int numWrapped;
             if (globalIndexDim[d] < 0)
             {
                 bridge     = -globalIndexDim[d];
@@ -463,7 +477,7 @@ static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
         distance = static_cast<int>(floor(dx/axis.spacing() + 0.5));
 
         /* If periodic, shift the point distance to be in [0, period) */
-        makeIndexPeriodic(&distance, axis.numPointsInPeriod());
+        distance = indexWithinPeriod(distance, axis.numPointsInPeriod());
     }
 
     return distance;
@@ -548,6 +562,9 @@ int Grid::nearestIndex(const awh_dvec value) const
     return getNearestIndexInGrid(value, axis());
 }
 
+namespace
+{
+
 /*! \brief
  * Find and set the neighbors of a grid point.
  *
@@ -558,71 +575,71 @@ int Grid::nearestIndex(const awh_dvec value) const
  * \param[in]     grid                 The grid.
  * \param[in,out] neighborIndexArray   Array to fill with neighbor indices.
  */
-static void setNeighborsOfGridPoint(int               pointIndex,
-                                    const Grid       &grid,
-                                    std::vector<int> *neighborIndexArray)
+void setNeighborsOfGridPoint(int               pointIndex,
+                             const Grid       &grid,
+                             std::vector<int> *neighborIndexArray)
 {
     const int c_maxNeighborsAlongAxis = 1 + 2*static_cast<int>(Grid::c_numPointsPerSigma*Grid::c_scopeCutoff);
 
-    awh_ivec  ncandidates_dim         = {0};
+    awh_ivec  numCandidates           = {0};
     awh_ivec  subgridOrigin           = {0};
     for (int d = 0; d < grid.ndim(); d++)
     {
-        int center_index_d;
-
         /* The number of candidate points along this dimension is given by the scope cutoff. */
-        ncandidates_dim[d] = std::min(c_maxNeighborsAlongAxis,
-                                      grid.axis(d).numPoints());
+        numCandidates[d] = std::min(c_maxNeighborsAlongAxis,
+                                    grid.axis(d).numPoints());
 
         /* The origin of the subgrid to search */
-        center_index_d       = grid.point(pointIndex).index[d];
-        subgridOrigin[d]     = center_index_d - ncandidates_dim[d]/2;
+        int centerIndex  = grid.point(pointIndex).index[d];
+        subgridOrigin[d] = centerIndex - numCandidates[d]/2;
     }
 
     /* Find and set the neighbors */
-    int  neighbor_index = -1;
-    bool aPointExists   = true;
+    int  neighborIndex = -1;
+    bool aPointExists  = true;
 
     /* Keep looking for grid points while traversing the subgrid. */
     while (aPointExists)
     {
         /* The point index is updated if a grid point was found. */
-        aPointExists = getNextPointInSubgrid(grid, subgridOrigin, ncandidates_dim, &neighbor_index);
+        aPointExists = getNextPointInSubgrid(grid, subgridOrigin, numCandidates, &neighborIndex);
 
         if (aPointExists)
         {
-            neighborIndexArray->push_back(neighbor_index);
+            neighborIndexArray->push_back(neighborIndex);
         }
     }
 }
 
+} // namespace
+
 void Grid::initPoints()
 {
-    awh_ivec     npoints_dim_work;
-    awh_ivec     index_work = {0};
+    awh_ivec     numPointsDimWork = { 0 };
+    awh_ivec     indexWork        = { 0 };
 
     for (size_t d = 0; d < axis_.size(); d++)
     {
         /* Temporarily gather the number of points in each dimension in one array */
-        npoints_dim_work[d] = axis_[d].numPoints();
+        numPointsDimWork[d] = axis_[d].numPoints();
     }
 
     for (auto &point : point_)
     {
         for (size_t d = 0; d < axis_.size(); d++)
         {
-            point.coordValue[d] = axis_[d].origin() + index_work[d]*axis_[d].spacing();
+            point.coordValue[d] = axis_[d].origin() + indexWork[d]*axis_[d].spacing();
 
             if (axis_[d].period() > 0)
             {
                 /* Do we always want the values to be centered around 0 ? */
-                makeValuePeriodic(&point.coordValue[d], axis_[d].period());
+                centerPeriodicValueAroundZero(&point.coordValue[d], axis_[d].period());
             }
 
-            point.index[d] = index_work[d];
+            point.index[d] = indexWork[d];
         }
 
-        stepInMultidimArray(axis_.size(), npoints_dim_work, index_work);
+        stepInMultidimArray(axis_.size(), numPointsDimWork, indexWork);
     }
 }
 
@@ -753,9 +770,10 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
 
     if (numPointsCounted != numDatapoints)
     {
-        gmx_fatal(FARGS, "Could not extract data properly from %s. Wrong data format?"
-                  "\n\n%s",
-                  datafilename.c_str(), correctFormatMessage.c_str());
+        std::string mesg = gmx::formatString("Could not extract data properly from %s. Wrong data format?"
+                                             "\n\n%s",
+                                             datafilename.c_str(), correctFormatMessage.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* The data grid has the data that was read and the properties of the AWH grid */
@@ -774,10 +792,12 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
 
         if (!valueIsInGrid(grid.point(m).coordValue, axis_))
         {
-            gmx_fatal(FARGS, "%s does not contain data for all coordinate values. "
-                      "Make sure your input data covers the whole sampling domain "
-                      "and is correctly formatted. \n\n%s",
-                      datafilename.c_str(), correctFormatMessage.c_str());
+            std::string mesg =
+                gmx::formatString("%s does not contain data for all coordinate values. "
+                                  "Make sure your input data covers the whole sampling domain "
+                                  "and is correctly formatted. \n\n%s",
+                                  datafilename.c_str(), correctFormatMessage.c_str());
+            GMX_THROW(InvalidInputError(mesg));
         }
         (*gridpointToDatapoint)[m] = getNearestIndexInGrid(grid.point(m).coordValue, axis_);
     }
