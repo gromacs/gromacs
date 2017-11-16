@@ -8,6 +8,9 @@ effective use of that hardware. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
 most from your hardware to maximize your scientific quality, read on!
 
+More detailed information on the parallelization of |Gromacs|
+can be found on :ref:`this page <gmx-parallel>`.
+
 Hardware background information
 -------------------------------
 Modern computer hardware is complex and heterogeneous, so we need to
@@ -111,8 +114,8 @@ definitions. Experienced HPC users can skip this section.
         on AMD devices (both GPUs and APUs); NVIDIA hardware is also supported.
 
     SIMD
-        A type of CPU instruction by which modern CPU cores can execute large
-        numbers of floating-point instructions in a single cycle.
+        A type of CPU instruction by which modern CPU cores can execute multiple
+        floating-point instructions in a single cycle.
 
 
 |Gromacs| background information
@@ -204,7 +207,7 @@ behavior.
 
 ``-ntomp_pme``
     When using PME with separate PME ranks,
-    the total number of OpenMP threads per separate PME ranks.
+    the total number of OpenMP threads per separate PME rank.
     The default, 0, copies the value from ``-ntomp``.
 
 ``-pin``
@@ -225,7 +228,7 @@ behavior.
     If ``-pin on``, specifies the stride in logical core
     numbers for the cores to which :ref:`mdrun <gmx mdrun>` should pin its threads. When
     running more than one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option
-    to to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
+    to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
     same core.  Use the default, 0, to minimize the number of threads
     per physical core - this lets :ref:`mdrun <gmx mdrun>` manage the hardware-, OS- and
     configuration-specific details of how to map logical cores to
@@ -259,12 +262,13 @@ behavior.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
-    are available to be used by ranks on this node. For example,
+    are available to be used by ranks on each node. For example,
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by :ref:`mdrun <gmx mdrun>`. This is useful
-    when sharing a node with other computations, or if a GPU
-    is best used to support a display.  Without specifying this
-    parameter, :ref:`mdrun <gmx mdrun>` will utilize all GPUs. When many GPUs are
+    when sharing a node with other computations, or if a GPU that
+    is dedicated to a display should not be used by |GROMACS|.
+    Without specifying this parameter, :ref:`mdrun <gmx mdrun>`
+    will utilize all GPUs. When many GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to :ref:`mdrun <gmx mdrun>`.
     It could be necessary to use different GPUs on different
@@ -283,12 +287,13 @@ behavior.
     number of ranks must be known to :ref:`mdrun <gmx mdrun>`, as well as where
     tasks of different types should be run, such as by using
     ``-nb gpu`` - only the tasks which are set to run on GPUs
-    count for parsing the mapping.
+    count for parsing the mapping. Note that ``-gpu_id`` and
+    ``-gputasks`` can not be used at the same time!
     In |Gromacs| versions preceding 2018 only a single type
     of GPU task could be run on any rank. Now that there is some
     support for running PME on GPUs, the number of GPU tasks
     (and the number of GPU IDs expected in the ``-gputasks`` string)
-    can actually be 2 for a single-rank simulation. The IDs
+    can actually be 3 for a single-rank simulation. The IDs
     still have to be the same in this case, as using multiple GPUs
     per single rank is not yet implemented.
     The order of GPU tasks per rank in the string is short-range first,
@@ -327,6 +332,8 @@ behavior.
     combined with fast CPU cores in a run, moving some work off of the GPU
     back to the CPU by computing FFTs on the CPU can improve performance.
 
+.. _gmx-mdrun-single-node:
+
 Examples for :ref:`mdrun <gmx mdrun>` on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -357,8 +364,8 @@ ranks and four OpenMP threads per rank. You should only use
 these options when seeking optimal performance, and
 must take care that the ranks you create can have
 all of their OpenMP threads run on the same socket.
-The number of ranks must be a multiple of the number of
-sockets, and the number of cores per node must be
+The number of ranks should be a multiple of the number of
+sockets, and the number of cores per node should be
 a multiple of the number of threads per rank.
 
 ::
@@ -416,6 +423,9 @@ above would work well on an Intel CPU with six physical cores and
 hyper-threading enabled. Use this kind of setup only
 if restricting :ref:`mdrun <gmx mdrun>` to a subset of cores to share a
 node with other processes.
+A word of caution: The mapping of logical CPUs/cores to physical 
+cores may differ between operating systems. On Linux,
+``cat /proc/cpuinfo`` can be examined to determine this mapping.
 
 ::
 
@@ -426,6 +436,8 @@ this will start two ranks and as many OpenMP threads
 as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
+
+.. _gmx-mdrun-multiple-nodes:
 
 Running :ref:`mdrun <gmx mdrun>` on more than one node
 ------------------------------------------------------

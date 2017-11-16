@@ -36,6 +36,7 @@ For background on algorithms and implementations, see the
    mdp-options
    mdrun-features
    mdrun-performance
+   parallelisation
    run-time-errors
    cmdline
    terminology
