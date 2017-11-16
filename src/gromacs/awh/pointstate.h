@@ -459,7 +459,7 @@ class PointState
                     break;
                 }
                 case eawhtargetBOLTZMANN:
-                    target_   = std::exp(-params.targetParam*freeEnergy_);
+                    target_   = std::exp(-params.temperatureScaleFactor*freeEnergy_);
                     break;
                 case eawhtargetLOCALBOLTZMANN:
                     target_   = weightsumRef_;

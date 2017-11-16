@@ -50,7 +50,8 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -77,9 +78,9 @@ bool haveBiasSharingWithinSimulation(const AwhParams &awhParams)
     return haveSharing;
 }
 
-void checkBiasSharingMultiSim(const AwhParams           &awhParams,
-                              const std::vector<size_t> &pointSize,
-                              const gmx_multisim_t      *multiSimComm)
+void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &awhParams,
+                                                     const std::vector<size_t> &pointSize,
+                                                     const gmx_multisim_t      *multiSimComm)
 {
     const int numSim = multiSimComm->nsim;
 
@@ -96,7 +97,7 @@ void checkBiasSharingMultiSim(const AwhParams           &awhParams,
             numShare++;
             if (group != numShare)
             {
-                gmx_fatal(FARGS, "AWH biases that are shared should use sequential share-group values starting at 1");
+                GMX_THROW(InvalidInputError("AWH biases that are shared should use consequetive share-group values starting at 1"));
             }
         }
     }
@@ -107,7 +108,7 @@ void checkBiasSharingMultiSim(const AwhParams           &awhParams,
     {
         if (numShareAll[sim] != numShareAll[0])
         {
-            gmx_fatal(FARGS, "Different simulations attempt to share different number of biases");
+            GMX_THROW(InvalidInputError("Different simulations attempt to share different number of biases"));
         }
     }
 
@@ -119,11 +120,11 @@ void checkBiasSharingMultiSim(const AwhParams           &awhParams,
     {
         if (intervals[sim] != intervals[0])
         {
-            gmx_fatal(FARGS, "All simulations should have the same AWH sample interval");
+            GMX_THROW(InvalidInputError("All simulations should have the same AWH sample interval"));
         }
         if (intervals[numSim + sim] != intervals[numSim])
         {
-            gmx_fatal(FARGS, "All simulations should have the same AWH free-energy update interval");
+            GMX_THROW(InvalidInputError("All simulations should have the same AWH free-energy update interval"));
         }
     }
 
@@ -141,7 +142,7 @@ void checkBiasSharingMultiSim(const AwhParams           &awhParams,
             {
                 if (pointSizes[sim] != pointSizes[0])
                 {
-                    gmx_fatal(FARGS, "Shared AWH bias %d has different grid sizes in different simulations\n", b + 1);
+                    GMX_THROW(InvalidInputError(gmx::formatString("Shared AWH bias %d has different grid sizes in different simulations\n", b + 1)));
                 }
             }
         }

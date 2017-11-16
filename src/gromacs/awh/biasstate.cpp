@@ -62,7 +62,7 @@
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -249,7 +249,7 @@ static void updateTarget(std::vector<PointState> *pointState,
     double freeEnergyCutoff = 0;
     if (params.eTarget == eawhtargetCUTOFF)
     {
-        freeEnergyCutoff = freeEnergyMinimumValue(*pointState) + params.targetParam;
+        freeEnergyCutoff = freeEnergyMinimumValue(*pointState) + params.freeEnergyCutoff;
     }
 
     double sumTarget = 0;
@@ -835,7 +835,7 @@ bool BiasState::isCovered(const BiasParams             &params,
 
     if (params.eTarget == eawhtargetCUTOFF)
     {
-        maxFreeEnergy = freeEnergyMinimumValue(points_) + params.targetParam;
+        maxFreeEnergy = freeEnergyMinimumValue(points_) + params.freeEnergyCutoff;
     }
 
     /* Set the cutoff weight for a point to be considered visited. */
@@ -1370,15 +1370,18 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (numRows <= 0)
     {
-        gmx_fatal(FARGS, "%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
+        std::string mesg = gmx::formatString("%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Less than 2 points is not useful for PMF or target. */
     if (numRows <  2)
     {
-        gmx_fatal(FARGS, "%s contains too few data points (%d)."
-                  "The minimum number of points is 2.",
-                  filename.c_str(), numRows);
+        std::string mesg =
+            gmx::formatString("%s contains too few data points (%d)."
+                              "The minimum number of points is 2.",
+                              filename.c_str(), numRows);
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Make sure there are enough columns of data.
@@ -1402,9 +1405,11 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (numColumns < numColumnsMin)
     {
-        gmx_fatal(FARGS, "The number of columns in %s (%d) should be at least %d."
-                  "\n\n%s",
-                  filename.c_str(), correctFormatMessage.c_str());
+        std::string mesg =
+            gmx::formatString("The number of columns in %s (%d) should be at least %d."
+                              "\n\n%s",
+                              filename.c_str(), correctFormatMessage.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* read_xvg can give trailing zero data rows for trailing new lines in the input. We allow 1 zero row,
@@ -1412,8 +1417,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     int numZeroRows = countTrailingZeroRows(data, numRows, numColumns);
     if (numZeroRows > 1)
     {
-        gmx_fatal(FARGS, "Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
-                  numZeroRows, filename.c_str());
+        std::string mesg = gmx::formatString("Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
+                                             numZeroRows, filename.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Convert from user units to internal units before sending the data of to grid. */
@@ -1445,8 +1451,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
         /* Check if the values are allowed. */
         if (target < 0)
         {
-            gmx_fatal(FARGS, "Target distribution weight at point %d (%g) in %s is negative.",
-                      m, target, filename.c_str());
+            std::string mesg = gmx::formatString("Target distribution weight at point %d (%g) in %s is negative.",
+                                                 m, target, filename.c_str());
+            GMX_THROW(InvalidInputError(mesg));
         }
         if (target > 0)
         {
@@ -1457,8 +1464,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (targetIsZero)
     {
-        gmx_fatal(FARGS, "The target weights given in column %d in %s are all 0",
-                  filename.c_str(), columnIndexTarget);
+        std::string mesg = gmx::formatString("The target weights given in column %d in %s are all 0",
+                                             filename.c_str(), columnIndexTarget);
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Free the arrays. */

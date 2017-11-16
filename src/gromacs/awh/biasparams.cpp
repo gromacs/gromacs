@@ -89,10 +89,10 @@ bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
  * \param[in] awhBiasParams  Bias parameters.
  * \returns the target update interval in steps.
  */
-static int calcTargetUpdateInterval(const AwhParams     &awhParams,
-                                    const AwhBiasParams &awhBiasParams)
+static gmx_int64_t calcTargetUpdateInterval(const AwhParams     &awhParams,
+                                            const AwhBiasParams &awhBiasParams)
 {
-    int numStepsUpdateTarget = 0;
+    gmx_int64_t numStepsUpdateTarget = 0;
     /* Set the target update frequency based on the target distrbution type
      * (this could be made a user-option but there is most likely no big need
      * for tweaking this for most users).
@@ -124,34 +124,6 @@ static int calcTargetUpdateInterval(const AwhParams     &awhParams,
     }
 
     return numStepsUpdateTarget;
-}
-
-/*! \brief Returns the target parameter, depending on the target type.
- *
- * \param[in] awhBiasParams  Bias parameters.
- * \param[in] beta           1/(k_B T).
- * \returns the target update interval in steps.
- */
-static double getTargetParameter(const AwhBiasParams &awhBiasParams,
-                                 const double         beta)
-{
-    double targetParam = 0;
-
-    switch (awhBiasParams.eTarget)
-    {
-        case eawhtargetCUTOFF:
-            targetParam = beta*awhBiasParams.targetCutoff;
-            break;
-        case eawhtargetBOLTZMANN:
-        case eawhtargetLOCALBOLTZMANN:
-            targetParam = awhBiasParams.targetBetaScaling;
-            break;
-        default:
-            targetParam = 0;
-            break;
-    }
-
-    return targetParam;
 }
 
 /*! \brief
@@ -241,11 +213,12 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),
     numStepsUpdateTarget_(calcTargetUpdateInterval(awhParams, awhBiasParams)),
     eTarget(awhBiasParams.eTarget),
-    targetParam(getTargetParameter(awhBiasParams, beta)),
+    freeEnergyCutoff(beta*awhBiasParams.targetCutoff),
+    temperatureScaleFactor(awhBiasParams.targetBetaScaling),
     idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
-    localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
+    localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
     // Estimate and initialize histSizeInitial, depends on the grid.
     histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, beta, numStepsSampleCoord_*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
