@@ -465,7 +465,7 @@ class BiasState
         std::vector<PointState> points_; /**< Vector of state of the grid points */
 
         /* Covering values for each point on the grid */
-        std::vector<double> weightsumCovering_; /**< Accumulated weights for covering checks */
+        std::vector<double> weightSumCovering_; /**< Accumulated weights for covering checks */
 
         HistogramSize       histogramSize_;     /**< Global histogram size related values. */
 

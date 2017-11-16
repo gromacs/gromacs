@@ -165,7 +165,7 @@ enum {
     eawhhNPOINTS,
     eawhhCOORDPOINT, eawhhUMBRELLAGRIDPOINT,
     eawhhUPDATELIST,
-    eawhhSCALEDSAMPLEWEIGHT,
+    eawhhLOGSCALEDSAMPLEWEIGHT,
     eawhhNUMUPDATES,
     eawhhNR
 };
@@ -178,7 +178,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_npoints",
     "awh_coordpoint", "awh_umbrellaGridpoint",
     "awh_updatelist",
-    "awh_scaledSampleWeight",
+    "awh_logScaledSampleWeight",
     "awh_numupdates"
 };
 
@@ -1555,9 +1555,9 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     do_cpt_int_err(xd, eawhh_names[i], &(state->origin_index_updatelist), list);
                     do_cpt_int_err(xd, eawhh_names[i], &(state->end_index_updatelist), list);
                     break;
-                case eawhhSCALEDSAMPLEWEIGHT:
-                    do_cpt_double_err(xd, eawhh_names[i], &(state->scaledSampleWeight), list);
-                    do_cpt_double_err(xd, eawhh_names[i], &(state->maxScaledSampleWeight), list);
+                case eawhhLOGSCALEDSAMPLEWEIGHT:
+                    do_cpt_double_err(xd, eawhh_names[i], &(state->logScaledSampleWeight), list);
+                    do_cpt_double_err(xd, eawhh_names[i], &(state->maxLogScaledSampleWeight), list);
                     break;
                 case eawhhNUMUPDATES:
                     do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
@@ -1835,14 +1835,15 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     int flags_awhh = 0;
     if (state->awhHistory != nullptr && state->awhHistory->bias.size() > 0)
     {
-        flags_awhh |= ( (1<<eawhhIN_INITIAL) |
-                        (1<<eawhhEQUILIBRATEHISTOGRAM) |
-                        (1<<eawhhHISTSIZE) |
-                        (1<<eawhhNPOINTS) |
-                        (1<<eawhhCOORDPOINT) | (1<<eawhhUMBRELLAGRIDPOINT) |
-                        (1<<eawhhUPDATELIST) |
-                        (1<<eawhhSCALEDSAMPLEWEIGHT) |
-                        (1<<eawhhNUMUPDATES));
+        flags_awhh |= ( (1 << eawhhIN_INITIAL) |
+                        (1 << eawhhEQUILIBRATEHISTOGRAM) |
+                        (1 << eawhhHISTSIZE) |
+                        (1 << eawhhNPOINTS) |
+                        (1 << eawhhCOORDPOINT) |
+                        (1 << eawhhUMBRELLAGRIDPOINT) |
+                        (1 << eawhhUPDATELIST) |
+                        (1 << eawhhLOGSCALEDSAMPLEWEIGHT) |
+                        (1 << eawhhNUMUPDATES));
     }
 
     /* We can check many more things now (CPU, acceleration, etc), but

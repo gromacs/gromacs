@@ -62,7 +62,7 @@
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -85,7 +85,7 @@ void getPmf(const std::vector<PointState> &points,
 
     for (size_t i = 0; i < points.size(); i++)
     {
-        (*pmf)[i] = points[i].inTargetRegion() ? -points[i].logPmfsum() : GMX_FLOAT_MAX;
+        (*pmf)[i] = points[i].inTargetRegion() ? -points[i].logPmfSum() : GMX_FLOAT_MAX;
     }
 }
 
@@ -112,7 +112,7 @@ static void sumPmf(gmx::ArrayRef<PointState>  pointState,
     /* Need to temporarily exponentiate the log weights to sum over simulations */
     for (size_t i = 0; i < buffer.size(); i++)
     {
-        buffer[i] = pointState[i].inTargetRegion() ? std::exp(static_cast<float>(pointState[i].logPmfsum())) : 0;
+        buffer[i] = pointState[i].inTargetRegion() ? std::exp(static_cast<float>(pointState[i].logPmfSum())) : 0;
     }
 
     gmx_sumd_sim(buffer.size(), buffer.data(), multiSimComm);
@@ -123,7 +123,7 @@ static void sumPmf(gmx::ArrayRef<PointState>  pointState,
     {
         if (pointState[i].inTargetRegion())
         {
-            pointState[i].setLogPmfsum(-std::log(buffer[i]*normFac));
+            pointState[i].setLogPmfSum(-std::log(buffer[i]*normFac));
         }
     }
 }
@@ -249,7 +249,7 @@ static void updateTarget(std::vector<PointState> *pointState,
     double freeEnergyCutoff = 0;
     if (params.eTarget == eawhtargetCUTOFF)
     {
-        freeEnergyCutoff = freeEnergyMinimumValue(*pointState) + params.targetParam;
+        freeEnergyCutoff = freeEnergyMinimumValue(*pointState) + params.freeEnergyCutoff;
     }
 
     double sumTarget = 0;
@@ -280,10 +280,10 @@ static std::string gridPointValueString(const Grid &grid, int point)
 
     pointString += "(";
 
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
         pointString += gmx::formatString("%g", grid.point(point).coordValue[d]);
-        if (d < grid.ndim() - 1)
+        if (d < grid.numDimensions() - 1)
         {
             pointString += ",";
         }
@@ -312,7 +312,7 @@ int BiasState::checkHistograms(const Grid  &grid,
         if (pointState.inTargetRegion())
         {
             sumVisits += pointState.numVisitsTot();
-            sumW      += pointState.weightsumTot();
+            sumW      += pointState.weightSumTot();
         }
     }
     GMX_RELEASE_ASSERT(sumVisits > 0, "We should have visits");
@@ -332,7 +332,7 @@ int BiasState::checkHistograms(const Grid  &grid,
         {
             int ineighbor = gridPoint.neighbor[n];
             skipPoint     = !points_[ineighbor].inTargetRegion();
-            for (int d = 0; (d < grid.ndim()) && !skipPoint; d++)
+            for (int d = 0; (d < grid.numDimensions()) && !skipPoint; d++)
             {
                 const GridPoint &neighborPoint = grid.point(ineighbor);
                 skipPoint =
@@ -343,7 +343,7 @@ int BiasState::checkHistograms(const Grid  &grid,
 
         /* Warn if the coordinate distribution less than the target distribution with a certain fraction somewhere */
         if (!skipPoint &&
-            (points_[m].weightsumTot()*invNormW*maxHistogramRatio > points_[m].numVisitsTot()*invNormVisits))
+            (points_[m].weightSumTot()*invNormW*maxHistogramRatio > points_[m].numVisitsTot()*invNormVisits))
         {
             std::string pointValueString = gridPointValueString(grid, m);
             std::string warningMessage   =
@@ -519,7 +519,7 @@ void BiasState::doSkippedUpdatesForAllPoints(const BiasParams &params)
 
     for (auto &pointState : points_)
     {
-        bool bUpdated = pointState.updateSkipped(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
+        bool bUpdated = pointState.performPreviouslySkippedUpdates(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
 
         /* Update the bias for this point only if there were skipped updates in the past to avoid calculating the log unneccessarily */
         if (bUpdated)
@@ -540,7 +540,7 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
     const std::vector<int> &neighbors = grid.point(coordinateState_.gridpointIndex()).neighbor;
     for (auto &neighbor : neighbors)
     {
-        bool didUpdate = points_[neighbor].updateSkipped(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
+        bool didUpdate = points_[neighbor].performPreviouslySkippedUpdates(params, histogramSize_.numUpdates(), weighthistScaling, logPmfsumScaling);
 
         if (didUpdate)
         {
@@ -549,6 +549,9 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
     }
 }
 
+namespace
+{
+
 /*! \brief
  * Merge update lists from multiple sharing simulations.
  *
@@ -556,9 +559,9 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams &params,
  * \param[in]     numPoints     Total number of points.
  * \param[in]     multiSimComm  Struct for multi-simulation communication.
  */
-static void mergeSharedUpdateLists(std::vector<int>     *updateList,
-                                   int                   numPoints,
-                                   const gmx_multisim_t *multiSimComm)
+void mergeSharedUpdateLists(std::vector<int>     *updateList,
+                            int                   numPoints,
+                            const gmx_multisim_t *multiSimComm)
 {
     std::vector<int> numUpdatesOfPoint;
 
@@ -593,24 +596,25 @@ static void mergeSharedUpdateLists(std::vector<int>     *updateList,
  * \param[in] endUpdatelist     The end of the rectangular that has been sampled since last update.
  * \param[in,out] updateList    Local update list to set (assumed >= npoints long).
  */
-static void makeLocalUpdateList(const Grid                    &grid,
-                                const std::vector<PointState> &points,
-                                const awh_ivec                 originUpdatelist,
-                                const awh_ivec                 endUpdatelist,
-                                std::vector<int>              *updateList)
+void makeLocalUpdateList(const Grid                    &grid,
+                         const std::vector<PointState> &points,
+                         const awh_ivec                 originUpdatelist,
+                         const awh_ivec                 endUpdatelist,
+                         std::vector<int>              *updateList)
 {
-    awh_ivec origin_dim, npoints_dim;
+    awh_ivec origin;
+    awh_ivec numPoints;
 
     /* Define the update search grid */
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
-        origin_dim[d]  = originUpdatelist[d];
-        npoints_dim[d] = endUpdatelist[d] - originUpdatelist[d] + 1;
+        origin[d]    = originUpdatelist[d];
+        numPoints[d] = endUpdatelist[d] - originUpdatelist[d] + 1;
 
-        /* Because the end_updatelist is unwrapped it can be > (npoints - 1) so that npoints_dim can be > npoints in grid.
+        /* Because the end_updatelist is unwrapped it can be > (npoints - 1) so that numPoints can be > npoints in grid.
            This helps for calculating the distance/number of points but should be removed and fixed when the way of
            updating origin/end updatelist is changed (see sampleProbabilityWeights). */
-        npoints_dim[d] = std::min(grid.axis(d).numPoints(), npoints_dim[d]);
+        numPoints[d] = std::min(grid.axis(d).numPoints(), numPoints[d]);
     }
 
     /* Make the update list */
@@ -619,7 +623,7 @@ static void makeLocalUpdateList(const Grid                    &grid,
     bool pointExists = true;
     while (pointExists)
     {
-        pointExists = getNextPointInSubgrid(grid, origin_dim, npoints_dim, &point_index);
+        pointExists = advancePointInSubgrid(grid, origin, numPoints, &point_index);
 
         if (pointExists && points[point_index].inTargetRegion())
         {
@@ -628,10 +632,12 @@ static void makeLocalUpdateList(const Grid                    &grid,
     }
 }
 
+}   // namespace
+
 void BiasState::resetLocalUpdateRange(const Grid &grid)
 {
     const int gridpointIndex = coordinateState_.gridpointIndex();
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
         /* This gives the  minimum range consisting only of the current closest point. */
         originUpdatelist_[d] = grid.point(gridpointIndex).index[d];
@@ -643,13 +649,13 @@ void BiasState::resetLocalUpdateRange(const Grid &grid)
  * Add partial histograms (accumulating between updates) to accumulating histograms.
  *
  * \param[in,out] pointState         The state of the points in the bias.
- * \param[in,out] weightsumCovering  The weights for checking covering.
+ * \param[in,out] weightSumCovering  The weights for checking covering.
  * \param[in]     numSharedUpdate    The number of biases sharing the histrogram.
  * \param[in]     multiSimComm       Struct for multi-simulation communication.
  * \param[in]     localUpdateList    List of points with data.
  */
 static void sumHistograms(gmx::ArrayRef<PointState>  pointState,
-                          gmx::ArrayRef<double>      weightsumCovering,
+                          gmx::ArrayRef<double>      weightSumCovering,
                           int                        numSharedUpdate,
                           const gmx_multisim_t      *multiSimComm,
                           const std::vector<int>    &localUpdateList)
@@ -658,8 +664,8 @@ static void sumHistograms(gmx::ArrayRef<PointState>  pointState,
        simulations are kept distinguishable. */
     for (auto &iglobal : localUpdateList)
     {
-        weightsumCovering[iglobal] +=
-            pointState[iglobal].weightsumIteration();
+        weightSumCovering[iglobal] +=
+            pointState[iglobal].weightSumIteration();
     }
 
     /* Sum histograms over multiple simulations if needed. */
@@ -677,7 +683,7 @@ static void sumHistograms(gmx::ArrayRef<PointState>  pointState,
         {
             const PointState &ps = pointState[localUpdateList[ilocal]];
 
-            weightDistr[ilocal]  = ps.weightsumIteration();
+            weightDistr[ilocal]  = ps.weightSumIteration();
             coordVisits[ilocal]  = ps.numVisitsIteration();
         }
 
@@ -816,14 +822,14 @@ bool BiasState::isCovered(const BiasParams             &params,
     };
 
     std::vector<CheckDim> checkDim;
-    checkDim.resize(grid.ndim());
+    checkDim.resize(grid.numDimensions());
 
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
-        size_t npoints = grid.axis(d).numPoints();
-        checkDim[d].visited.resize(npoints, false);
-        checkDim[d].checkCovering.resize(npoints, false);
-        checkDim[d].covered.resize(npoints, 0);
+        const size_t numPoints = grid.axis(d).numPoints();
+        checkDim[d].visited.resize(numPoints, false);
+        checkDim[d].checkCovering.resize(numPoints, false);
+        checkDim[d].covered.resize(numPoints, 0);
     }
 
     /* Set visited points along each dimension and which points should be checked for covering.
@@ -835,14 +841,14 @@ bool BiasState::isCovered(const BiasParams             &params,
 
     if (params.eTarget == eawhtargetCUTOFF)
     {
-        maxFreeEnergy = freeEnergyMinimumValue(points_) + params.targetParam;
+        maxFreeEnergy = freeEnergyMinimumValue(points_) + params.freeEnergyCutoff;
     }
 
-    /* Set the cutoff weight for a point to be considered visited. */
-    double weight_peak = 1;
-    for (int d = 0; d < grid.ndim(); d++)
+    /* Set the threshold weight for a point to be considered visited. */
+    double weightThreshold = 1;
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
-        weight_peak *= grid.axis(d).spacing()*std::sqrt(dimParams[d].betak*0.5*M_1_PI);
+        weightThreshold *= grid.axis(d).spacing()*std::sqrt(dimParams[d].betak*0.5*M_1_PI);
     }
 
     /* Project the sampling weights onto each dimension */
@@ -850,12 +856,12 @@ bool BiasState::isCovered(const BiasParams             &params,
     {
         const PointState &pointState = points_[m];
 
-        for (int d = 0; d < grid.ndim(); d++)
+        for (int d = 0; d < grid.numDimensions(); d++)
         {
             int n = grid.point(m).index[d];
 
             /* Is visited if it was already visited or if there is enough weight at the current point */
-            checkDim[d].visited[n] = checkDim[d].visited[n] || (weightsumCovering_[m] > weight_peak);
+            checkDim[d].visited[n] = checkDim[d].visited[n] || (weightSumCovering_[m] > weightThreshold);
 
             /* Check for covering if there is at least point in this slice that is in the target region and within the cutoff */
             checkDim[d].checkCovering[n] = checkDim[d].checkCovering[n] || (pointState.inTargetRegion() && pointState.freeEnergy() < maxFreeEnergy);
@@ -863,7 +869,7 @@ bool BiasState::isCovered(const BiasParams             &params,
     }
 
     /* Label each point along each dimension as covered or not. */
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
         labelCoveredPoints(checkDim[d].visited, checkDim[d].checkCovering, grid.axis(d).numPoints(), grid.axis(d).numPointsInPeriod(),
                            params.coverRadius()[d], &checkDim[d].covered);
@@ -886,7 +892,7 @@ bool BiasState::isCovered(const BiasParams             &params,
     if (params.numSharedUpdate > 1)
     {
         /* For multiple dimensions this may not be the best way to do it. */
-        for (int d = 0; d < grid.ndim(); d++)
+        for (int d = 0; d < grid.numDimensions(); d++)
         {
             gmx_sumi_sim(grid.axis(d).numPoints(), checkDim[d].covered.data(), multiSimComm);
         }
@@ -894,7 +900,7 @@ bool BiasState::isCovered(const BiasParams             &params,
 
     /* Now check if for each dimension all points are covered. Break if not true. */
     bool allPointsCovered = true;
-    for (int d = 0; d < grid.ndim() && allPointsCovered; d++)
+    for (int d = 0; d < grid.numDimensions() && allPointsCovered; d++)
     {
         for (int n = 0; n < grid.axis(d).numPoints() && allPointsCovered; n++)
         {
@@ -950,7 +956,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     resetLocalUpdateRange(grid);
 
     /* Add samples to histograms for all local points and sync simulations if needed */
-    sumHistograms(points_, weightsumCovering_,
+    sumHistograms(points_, weightSumCovering_,
                   params.numSharedUpdate, multiSimComm, *updateList);
 
     sumPmf(points_, params.numSharedUpdate, multiSimComm);
@@ -984,7 +990,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     }
 
     /* The weighthistogram size after this update. */
-    double histSizeNew = histogramSize_.newHistSize(params, t, detectedCovering, points_, weightsumCovering_, fplog);
+    double histSizeNew = histogramSize_.newHistSize(params, t, detectedCovering, points_, weightSumCovering_, fplog);
 
     /* Make the update list. Usually we try to only update local points,
      * but if the update has non-trivial or non-deterministic effects
@@ -1029,11 +1035,11 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
         /* Do updates from previous update steps that were skipped because this point was at that time non-local. */
         if (params.skipUpdates())
         {
-            pointStateToUpdate->updateSkipped(params, histogramSize_.numUpdates(), weighthistScalingSkipped, logPmfsumScalingSkipped);
+            pointStateToUpdate->performPreviouslySkippedUpdates(params, histogramSize_.numUpdates(), weighthistScalingSkipped, logPmfsumScalingSkipped);
         }
 
         /* Now do an update with new sampling data. */
-        pointStateToUpdate->updateNew(params, histogramSize_.numUpdates(), weighthistScalingNew, logPmfsumScalingNew);
+        pointStateToUpdate->updateWithNewSampling(params, histogramSize_.numUpdates(), weighthistScalingNew, logPmfsumScalingNew);
     }
 
     /* Only update the histogram size after we are done with the local point updates */
@@ -1121,7 +1127,7 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
     /* Save weights for next update */
     for (size_t n = 0; n < neighbor.size(); n++)
     {
-        points_[neighbor[n]].increaseWeightsumIteration(probWeightNeighbor[n]);
+        points_[neighbor[n]].increaseWeightSumIteration(probWeightNeighbor[n]);
     }
 
     /* Update the local update range. Two corner points define this rectangular
@@ -1132,7 +1138,7 @@ void BiasState::sampleProbabilityWeights(const Grid                &grid,
      */
     int m_neighbor_origin = neighbor[0];
     int m_neighbor_end    = neighbor[neighbor.size() - 1];
-    for (int d = 0; d < grid.ndim(); d++)
+    for (int d = 0; d < grid.numDimensions(); d++)
     {
         int origin_d, end_d;
 
@@ -1219,7 +1225,7 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
 
         points_[m].storeState(psh);
 
-        psh->weightsum_covering = weightsumCovering_[m];
+        psh->weightsum_covering = weightSumCovering_[m];
     }
 
     histogramSize_.storeState(stateHistory);
@@ -1237,14 +1243,18 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
 
     coordinateState_.restoreFromHistory(stateHistory);
 
+    if (biasHistory.pointState.size() != points_.size())
+    {
+        GMX_THROW(InvalidInputError("Bias grid size in checkpoint and simulation do not match. Likely you provided a checkpoint from a different simulation."));
+    }
     for (size_t m = 0; m < points_.size(); m++)
     {
         points_[m].setFromHistory(biasHistory.pointState[m]);
     }
 
-    for (size_t m = 0; m < weightsumCovering_.size(); m++)
+    for (size_t m = 0; m < weightSumCovering_.size(); m++)
     {
-        weightsumCovering_[m] = biasHistory.pointState[m].weightsum_covering;
+        weightSumCovering_[m] = biasHistory.pointState[m].weightsum_covering;
     }
 
     histogramSize_.restoreFromHistory(stateHistory);
@@ -1259,7 +1269,7 @@ void BiasState::broadcast(const t_commrec *cr)
 
     gmx_bcast(points_.size()*sizeof(PointState), points_.data(), cr);
 
-    gmx_bcast(weightsumCovering_.size()*sizeof(double), weightsumCovering_.data(), cr);
+    gmx_bcast(weightSumCovering_.size()*sizeof(double), weightSumCovering_.data(), cr);
 
     gmx_bcast(sizeof(histogramSize_), &histogramSize_, cr);
 }
@@ -1370,15 +1380,18 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (numRows <= 0)
     {
-        gmx_fatal(FARGS, "%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
+        std::string mesg = gmx::formatString("%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Less than 2 points is not useful for PMF or target. */
     if (numRows <  2)
     {
-        gmx_fatal(FARGS, "%s contains too few data points (%d)."
-                  "The minimum number of points is 2.",
-                  filename.c_str(), numRows);
+        std::string mesg =
+            gmx::formatString("%s contains too few data points (%d)."
+                              "The minimum number of points is 2.",
+                              filename.c_str(), numRows);
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Make sure there are enough columns of data.
@@ -1402,9 +1415,11 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (numColumns < numColumnsMin)
     {
-        gmx_fatal(FARGS, "The number of columns in %s (%d) should be at least %d."
-                  "\n\n%s",
-                  filename.c_str(), correctFormatMessage.c_str());
+        std::string mesg =
+            gmx::formatString("The number of columns in %s (%d) should be at least %d."
+                              "\n\n%s",
+                              filename.c_str(), correctFormatMessage.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* read_xvg can give trailing zero data rows for trailing new lines in the input. We allow 1 zero row,
@@ -1412,8 +1427,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     int numZeroRows = countTrailingZeroRows(data, numRows, numColumns);
     if (numZeroRows > 1)
     {
-        gmx_fatal(FARGS, "Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
-                  numZeroRows, filename.c_str());
+        std::string mesg = gmx::formatString("Found %d trailing zero data rows in %s. Please remove trailing empty lines and try again.",
+                                             numZeroRows, filename.c_str());
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Convert from user units to internal units before sending the data of to grid. */
@@ -1433,20 +1449,21 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     /* Get a data point for each AWH grid point so that they all get data. */
     std::vector<int> grid2data_index;
     grid2data_index.resize(grid.numPoints());
-    mapGridToDatagrid(&grid2data_index, data, numRows, filename, grid, correctFormatMessage);
+    mapGridToDataGrid(&grid2data_index, data, numRows, filename, grid, correctFormatMessage);
 
     /* Extract the data for each grid point */
     bool targetIsZero = true;
     for (size_t m = 0; m < pointState->size(); m++)
     {
-        (*pointState)[m].setLogPmfsum(-data[columnIndexPmf][grid2data_index[m]]);
+        (*pointState)[m].setLogPmfSum(-data[columnIndexPmf][grid2data_index[m]]);
         double target = data[columnIndexTarget][grid2data_index[m]];
 
         /* Check if the values are allowed. */
         if (target < 0)
         {
-            gmx_fatal(FARGS, "Target distribution weight at point %d (%g) in %s is negative.",
-                      m, target, filename.c_str());
+            std::string mesg = gmx::formatString("Target distribution weight at point %d (%g) in %s is negative.",
+                                                 m, target, filename.c_str());
+            GMX_THROW(InvalidInputError(mesg));
         }
         if (target > 0)
         {
@@ -1457,8 +1474,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
 
     if (targetIsZero)
     {
-        gmx_fatal(FARGS, "The target weights given in column %d in %s are all 0",
-                  filename.c_str(), columnIndexTarget);
+        std::string mesg = gmx::formatString("The target weights given in column %d in %s are all 0",
+                                             filename.c_str(), columnIndexTarget);
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     /* Free the arrays. */
@@ -1483,7 +1501,7 @@ void BiasState::normalizePmf(int numSharingSims)
     {
         if (pointState.inTargetRegion())
         {
-            expSumPmf += std::exp( pointState.logPmfsum());
+            expSumPmf += std::exp( pointState.logPmfSum());
             expSumF   += std::exp(-pointState.freeEnergy());
         }
     }
@@ -1495,7 +1513,7 @@ void BiasState::normalizePmf(int numSharingSims)
     {
         if (pointState.inTargetRegion())
         {
-            pointState.setLogPmfsum(pointState.logPmfsum() + logRenorm);
+            pointState.setLogPmfSum(pointState.logPmfSum() + logRenorm);
         }
     }
 }
@@ -1518,7 +1536,7 @@ void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
 
     /* The local Boltzmann distribution is special because the target distribution is updated as a function of the reference weighthistogram. */
     GMX_RELEASE_ASSERT(params.eTarget != eawhtargetLOCALBOLTZMANN ||
-                       points_[0].weightsumRef() != 0,
+                       points_[0].weightSumRef() != 0,
                        "AWH reference weight histogram not initialized properly with local Boltzmann target distribution.");
 
     updateTarget(&points_, params);
@@ -1554,7 +1572,7 @@ BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
                      const Grid                   &grid) :
     coordinateState_(awhBiasParams, dimParams, grid),
     points_(grid.numPoints()),
-    weightsumCovering_(grid.numPoints()),
+    weightSumCovering_(grid.numPoints()),
     histogramSize_(awhBiasParams, histSizeInitial)
 {
     /* The minimum and maximum multidimensional point indices that are affected by the next update */

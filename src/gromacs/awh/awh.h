@@ -153,16 +153,16 @@ class Awh
          * in the user input. This allows AWH to later apply the bias force to
          * these coordinate in \ref Awh::applyBiasForcesAndUpdateBias.
          *
-         * \param[in,out] fplog           General output file, normally md.log, can be nullptr.
-         * \param[in]     ir                General input parameters.
-         * \param[in]     cr                Struct for communication, can be nullptr.
-         * \param[in]     awhParams         AWH input parameters.
+         * \param[in,out] fplog             General output file, normally md.log, can be nullptr.
+         * \param[in]     inputRecord       General input parameters (as set up by grompp).
+         * \param[in]     commRecord        Struct for communication, can be nullptr.
+         * \param[in]     awhParams         AWH input parameters, consistent with the relevant parts of \p inputRecord (as set up by grompp).
          * \param[in]     biasInitFilename  Name of file to read PMF and target from.
          * \param[in,out] pull_work         Pull struct which AWH will register the bias into, has to be initialized.
          */
         Awh(FILE              *fplog,
-            const t_inputrec  &ir,
-            const t_commrec   *cr,
+            const t_inputrec  &inputRecord,
+            const t_commrec   *commRecord,
             const AwhParams   &awhParams,
             const std::string &biasInitFilename,
             pull_t            *pull_work);
@@ -186,18 +186,18 @@ class Awh
          * updating the AWH bias state after a certain number of samples has been collected.
          *
          * \note Requires that pull_potential from pull.h has been called first
-         * since AWH needs the current coordinate values.
+         * since AWH needs the current coordinate values (the pull code checks
+         * for this).
          *
          * \param[in,out] pull_work        Pull working struct.
          * \param[in]     mdatoms          Atom properties.
          * \param[in]     ePBC             Type of periodic boundary conditions.
          * \param[in]     box              Box vectors.
-         * \param[in,out] forceWithVirial  Force and virial buffers.
-         * \param[in]     cr               Communication record.
+         * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
          * \param[in]     t                Time.
          * \param[in]     step             Time step.
-         * \param[in,out] wallcycle        Wallcycle counter.
-         * \param[in,out] fplog            General output file, normally md.log.
+         * \param[in,out] wallcycle        Wallcycle counter, can be nullptr.
+         * \param[in,out] fplog            General output file, normally md.log, can be nullptr.
          * \returns the potential energy for the bias.
          */
         real applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
@@ -205,7 +205,6 @@ class Awh
                                           const t_mdatoms        &mdatoms,
                                           const matrix            box,
                                           gmx::ForceWithVirial   *forceWithVirial,
-                                          const t_commrec        *cr,
                                           double                  t,
                                           gmx_int64_t             step,
                                           gmx_wallcycle          *wallcycle,
@@ -214,6 +213,10 @@ class Awh
         /*! \brief
          * Update the AWH history in preparation for writing to checkpoint file.
          *
+         * Should be called at least on the master rank at checkpoint steps.
+         *
+         * Should be called with a valid \p awhHistory (is checked).
+         *
          * \param[in,out] awhHistory  AWH history to set.
          */
         void updateHistory(AwhHistory *awhHistory) const;
@@ -221,7 +224,8 @@ class Awh
         /*! \brief
          * Allocate and initialize an AWH history with the given AWH state.
          *
-         * This function will be called at the start of a new simulation.
+         * This function should be called at the start of a new simulation
+         * at least on the master rank.
          * Note that only constant data will be initialized here.
          * History data is set by \ref Awh::updateHistory.
          *
@@ -231,14 +235,14 @@ class Awh
 
         /*! \brief Restore the AWH state from the given history.
          *
-         * Should be called with a valid t_commrec on all ranks.
-         * Should pass a valid awhHistory on the master rank.
+         * Should be called on all ranks.
+         * Should pass a point to an AwhHistory on the master rank that
+         * is compatible with the AWH setup in this simulation. Will throw
+         * an exception if it is not compatible.
          *
          * \param[in] awhHistory  AWH history to restore from.
-         * \param[in] cr          Struct for communication.
          */
-        void restoreStateFromHistory(const AwhHistory *awhHistory,
-                                     const t_commrec  *cr);
+        void restoreStateFromHistory(const AwhHistory *awhHistory);
 
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
@@ -246,10 +250,11 @@ class Awh
 
         /*! \brief Register the AWH biased coordinates with pull.
          *
-         * This function is public because it needs to be called at
-         * the pre-processing stage.
+         * This function is public because it needs to be called by grompp
+         * (and is otherwise only called by Awh()).
          * Pull requires all external potentials to register themselves
          * before the end of pre-processing and before the first MD step.
+         * If this has not happened, pull with throw an error.
          *
          * \param[in]     awhParams  The AWH parameters.
          * \param[in,out] pull_work  Pull struct which AWH will register the bias into.
@@ -260,7 +265,7 @@ class Awh
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
-        const bool                       thisRankDoesIO_;      /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+        const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 
