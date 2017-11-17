@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,11 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \internal \file
  * \brief
- * This implements basic PME sanity test (using single-rank mdrun).
- * It runs the input system with PME for several steps (on CPU and GPU, if available),
- * and checks the reciprocal and conserved energies.
+ * This should implement basic multi-rank simulation PME sanity tests.
+ * These run the input system with PME for several steps (on CPU and GPU, if available),
+ * and check the reciprocal and conserved energies.
+ *
+ * Only a single separate PME rank tests are implemented for now.
+ * FIXME: disable test for -ntmpi 1
+ * TODO: implement PME decomposition tests (with PP and on separate ranks as well).
+ * TODO: most of the code below is currently identical to the single-rank test pmetest.cpp
+ * - move things to a common parent.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_mdrun_integration_tests
@@ -45,9 +52,9 @@
 
 #include "config.h"
 
-#include <map>
 #include <string>
-#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
@@ -66,8 +73,8 @@ namespace test
 namespace
 {
 
-//! A basic PME runner
-class PmeTest : public MdrunTestFixture
+//! Test fixture - TODO: unify setup code below with pmetest.cpp
+class PmeMpiTest : public gmx::test::MdrunTestFixture
 {
     public:
         //! Before any test is run, work out whether any compatible GPUs exist.
@@ -76,9 +83,9 @@ class PmeTest : public MdrunTestFixture
         static bool s_hasCompatibleCudaGpus;
 };
 
-bool PmeTest::s_hasCompatibleCudaGpus = false;
+bool PmeMpiTest::s_hasCompatibleCudaGpus = false;
 
-void PmeTest::SetUpTestCase()
+void PmeMpiTest::SetUpTestCase()
 {
     gmx_gpu_info_t gpuInfo {};
     char           detection_error[STRLEN];
@@ -95,7 +102,8 @@ void PmeTest::SetUpTestCase()
     free_gpu_info(&gpuInfo);
 }
 
-TEST_F(PmeTest, ReproducesEnergies)
+//! Makes sure single separate PME rank works with CPU/GPU
+TEST_F(PmeMpiTest, SingleSepRankWorks)
 {
     const int   nsteps     = 20;
     std::string theMdpFile = formatString("coulombtype     = PME\n"
@@ -109,7 +117,7 @@ TEST_F(PmeTest, ReproducesEnergies)
 
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
-
+    // FIXME which system to pick?
     EXPECT_EQ(0, runner_.callGrompp());
 
     //TODO test all proper/improper combinations in more thorough way?
@@ -119,7 +127,7 @@ TEST_F(PmeTest, ReproducesEnergies)
     // TODO uncomment this when functionality gets activated.
     //runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
     runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
-    runModes["PmeOnGpuFftAuto"] = {"-pme", "gpu", "-pmefft", "auto"};
+    runModes["PmeOnGpuFftAuto"]  = {"-pme", "gpu", "-pmefft", "auto"};
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
 
@@ -137,7 +145,9 @@ TEST_F(PmeTest, ReproducesEnergies)
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
 
         CommandLine commandLine(mode.second);
-        commandLine.append("-notunepme"); // for reciprocal energy reproducibility
+        commandLine.append("-notunepme");  // for reciprocal energy reproducibility
+        commandLine.addOption("-npme", 1); // the actual point of this test
+        //TODO also test that -npme 2 terminates properly with GPU
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
         auto energyReader      = openEnergyFileToReadFields(runner_.edrFileName_, {"Coul. recip.", "Total Energy", "Kinetic En."});

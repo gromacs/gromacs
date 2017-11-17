@@ -34,6 +34,7 @@
 
 # make an "object library" for code that we re-use for both kinds of tests
 add_library(mdrun_test_objlib OBJECT
+    energyreader.cpp
     mdruncomparisonfixture.cpp
     moduletest.cpp
     terminationhelper.cpp
@@ -46,7 +47,6 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     tabulated_bonded_interactions.cpp
-    energyreader.cpp
     grompp.cpp
     initialconstraints.cpp
     pmetest.cpp
@@ -72,6 +72,7 @@ gmx_add_gtest_executable(
     # files with code for tests
     multisim.cpp
     multisimtest.cpp
+    pmempitest.cpp
     replicaexchange.cpp
     domain_decomposition.cpp
     # pseudo-library for code for testing mdrun
