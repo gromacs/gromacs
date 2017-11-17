@@ -1365,7 +1365,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 /* AWH bias blocks. */
                 if (awh != nullptr)  // TODO: add boolean in t_mdebin. See in mdebin.h.
                 {
-                    awh->writeToEnergyframe(&fr);
+                    awh->writeToEnergyFrame(step, &fr);
                 }
 
                 /* do the actual I/O */

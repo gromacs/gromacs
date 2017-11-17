@@ -74,17 +74,16 @@
 namespace gmx
 {
 
-void BiasState::getPmf(std::vector<float> *pmf) const
+void BiasState::getPmf(gmx::ArrayRef<float> pmf) const
 {
+    GMX_ASSERT(pmf.size() == points_.size(), "pmf should have the size of the bias grid");
+
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
      */
-
-    pmf->resize(points_.size());
-
     for (size_t i = 0; i < points_.size(); i++)
     {
-        (*pmf)[i] = points_[i].inTargetRegion() ? -points_[i].logPmfSum() : GMX_FLOAT_MAX;
+        pmf[i] = points_[i].inTargetRegion() ? -points_[i].logPmfSum() : GMX_FLOAT_MAX;
     }
 }
 
@@ -204,8 +203,8 @@ void BiasState::calcConvolvedPmf(const std::vector<DimParams>  &dimParams,
     convolvedPmf->resize(numPoints);
 
     /* Get the PMF to convolve. */
-    std::vector<float> pmf;
-    getPmf(&pmf);
+    std::vector<float> pmf(numPoints);
+    getPmf(pmf);
 
     for (size_t m = 0; m < numPoints; m++)
     {

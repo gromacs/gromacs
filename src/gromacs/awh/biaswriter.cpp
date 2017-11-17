@@ -55,22 +55,25 @@
 namespace gmx
 {
 
+namespace
+{
+
 /*! \brief
- * Map the variable type to a normalization type.
+ * Map the output entry type to a normalization type.
  *
  * The data is written to energy file blocks in the order given by
  * the iterator of this map, which is based on the enum value
  * (and matches the order of the lines below).
  */
-static const std::map<AwhVar, Normalization> awhVarToNormalization =
+static const std::map<AwhOutputEntryType, Normalization> outputTypeToNormalization =
 {
-    { AwhVar::MetaData,   Normalization::None },
-    { AwhVar::CoordValue, Normalization::Coordinate },
-    { AwhVar::Pmf,        Normalization::FreeEnergy },
-    { AwhVar::Bias,       Normalization::FreeEnergy },
-    { AwhVar::Visits,     Normalization::Distribution },
-    { AwhVar::Weights,    Normalization::Distribution },
-    { AwhVar::Target,     Normalization::Distribution }
+    { AwhOutputEntryType::MetaData,   Normalization::None },
+    { AwhOutputEntryType::CoordValue, Normalization::Coordinate },
+    { AwhOutputEntryType::Pmf,        Normalization::FreeEnergy },
+    { AwhOutputEntryType::Bias,       Normalization::FreeEnergy },
+    { AwhOutputEntryType::Visits,     Normalization::Distribution },
+    { AwhOutputEntryType::Weights,    Normalization::Distribution },
+    { AwhOutputEntryType::Target,     Normalization::Distribution }
 };
 
 /*! \brief
@@ -80,110 +83,114 @@ static const std::map<AwhVar, Normalization> awhVarToNormalization =
  * \param[in] dimIndex  Dimensional index.
  * \returns the coordinate normalization value.
  */
-static double getCoordNormvalue(const Bias &bias, int dimIndex)
+float getCoordNormalizationValue(const Bias &bias,
+                                 int         dimIndex)
 {
     /* AWH may use different units internally but here we convert to user units */
     return bias.dimParams()[dimIndex].scaleInternalToUserInput(1);
 }
 
 /*! \brief
- * Gets the normalization value for the given variable.
+ * Gets the normalization value for the given output entry type.
  *
- * \param[in] var    Value for variable type enum.
- * \param[in] bias   The AWH bias.
- * \param[in] count  Index of the variable.
+ * \param[in] outputType  Output entry type.
+ * \param[in] bias        The AWH bias.
+ * \param[in] numBlocks   The number of blocks for this output type.
  * \returns the normalization value.
  */
-static double getNormvalue(AwhVar var, const Bias &bias, int count)
+float getNormalizationValue(AwhOutputEntryType  outputType,
+                            const Bias         &bias,
+                            int                 numBlocks)
 {
-    double normValue = 0;
+    float normalizationValue = 0;
 
-    switch (var)
+    switch (outputType)
     {
-        case AwhVar::CoordValue:
-            normValue = getCoordNormvalue(bias, count);
+        case AwhOutputEntryType::CoordValue:
+            normalizationValue = getCoordNormalizationValue(bias, numBlocks);
             break;
-        case AwhVar::Visits:
-        case AwhVar::Weights:
-        case AwhVar::Target:
-            normValue = static_cast<double>(bias.state().points().size());
+        case AwhOutputEntryType::Visits:
+        case AwhOutputEntryType::Weights:
+        case AwhOutputEntryType::Target:
+            normalizationValue = static_cast<float>(bias.state().points().size());
             break;
         default:
             break;
     }
 
-    return normValue;
+    return normalizationValue;
 }
 
-Block::Block(int            numPoints,
-             Normalization  normType,
-             double         normValue) :
-    normType(normType),
-    normValue(static_cast<float>(normValue)),
-    data(numPoints)
+}   // namespace
+
+AwhEnergyBlock::AwhEnergyBlock(int            numPoints,
+                               Normalization  normalizationType,
+                               float          normalizationValue) :
+    normalizationType(normalizationType),
+    normalizationValue(normalizationValue),
+    data_(numPoints)
 {
 }
 
 BiasWriter::BiasWriter(const Bias &bias)
 {
-    std::map<AwhVar, int> varNumBlock; /* Number of blocks per variable */
+    std::map<AwhOutputEntryType, int> outputTypeNumBlock; /* Number of blocks per output type */
 
-    /* Different variables need different number of blocks.
+    /* Different output variable types need different number of blocks.
      * We keep track of the starting block for each variable.
      */
     int blockCount = 0;
-    for (const auto &pair : awhVarToNormalization)
+    for (const auto &pair : outputTypeToNormalization)
     {
-        const AwhVar awhVar = pair.first;
+        const AwhOutputEntryType outputType = pair.first;
         {
-            varToBlock_[awhVar] = blockCount;
+            outputTypeToBlock_[outputType] = blockCount;
 
-            if (awhVar == AwhVar::CoordValue)
+            if (outputType == AwhOutputEntryType::CoordValue)
             {
-                varNumBlock[awhVar] = bias.ndim();
+                outputTypeNumBlock[outputType] = bias.ndim();
             }
             else
             {
-                /* Most variables need one block */
-                varNumBlock[awhVar] = 1;
+                /* Most output variable types need one block */
+                outputTypeNumBlock[outputType] = 1;
             }
         }
-        blockCount += varNumBlock[awhVar];
+        blockCount += outputTypeNumBlock[outputType];
     }
 
     /* Initialize the data blocks for each variable */
-    for (const auto &pair : awhVarToNormalization)
+    for (const auto &pair : outputTypeToNormalization)
     {
-        const AwhVar awhVar = pair.first;
-        int          numPoints;
-        if (awhVar == AwhVar::MetaData)
+        const AwhOutputEntryType outputType = pair.first;
+        int                      numPoints;
+        if (outputType == AwhOutputEntryType::MetaData)
         {
-            numPoints = static_cast<int>(MetaData::Count);
+            numPoints = static_cast<int>(AwhOutputMetaData::Count);
         }
         else
         {
             numPoints = bias.state().points().size();
         }
-        for (int b = 0; b < varNumBlock[awhVar]; b++)
+        for (int b = 0; b < outputTypeNumBlock[outputType]; b++)
         {
-            block_.push_back(Block(numPoints,
-                                   pair.second,
-                                   getNormvalue(awhVar, bias, b)));
+            block_.push_back(AwhEnergyBlock(numPoints,
+                                            pair.second,
+                                            getNormalizationValue(outputType, bias, b)));
         }
     }
-
-    /* No real data yet */
-    haveDataToWrite_ = false;
 }
 
 /*! \brief
  * Normalizes block data for output.
  *
  * \param[in,out] block  The block to normalize.
- * \param[in] bias       The AWH bias.
+ * \param[in]     bias   The AWH bias.
  */
-static void normalizeBlock(Block *block, const Bias &bias)
+static void normalizeBlock(AwhEnergyBlock *block, const Bias &bias)
 {
+    gmx::ArrayRef<float> data = block->data();
+
     /* Here we operate on float data (which is accurate enough, since it
      * is statistical data that will never reach full float precision).
      * But since we can have very many data points, we sum into a double.
@@ -192,132 +199,131 @@ static void normalizeBlock(Block *block, const Bias &bias)
     float  minValue  = GMX_FLOAT_MAX;
     float  recipNorm = 0;
 
-    switch (block->normType)
+    switch (block->normalizationType)
     {
         case Normalization::None:
             break;
         case Normalization::Coordinate:
             /* Normalize coordinate values by a scale factor */
-            for (auto &point : block->data)
+            for (float &point : data)
             {
-                point *= block->normValue;
+                point *= block->normalizationValue;
             }
             break;
         case Normalization::FreeEnergy:
             /* Normalize free energy values by subtracting the minimum value */
-            for (size_t index = 0; index < block->data.size(); index++)
+            for (size_t index = 0; index < data.size(); index++)
             {
-                if (bias.state().points()[index].inTargetRegion() && block->data[index] < minValue)
+                if (bias.state().points()[index].inTargetRegion() && data[index] < minValue)
                 {
-                    minValue = block->data[index];
+                    minValue = data[index];
                 }
             }
-            for (size_t index = 0; index < block->data.size(); index++)
+            for (size_t index = 0; index < data.size(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion())
                 {
-                    block->data[index] -= minValue;
+                    data[index] -= minValue;
                 }
             }
 
             break;
         case Normalization::Distribution:
             /* Normalize distribution values by normalizing their sum */
-            for (auto &point : block->data)
+            for (float &point : data)
             {
                 sum += point;
             }
             if (sum > 0)
             {
-                recipNorm = block->normValue/static_cast<float>(sum);
+                recipNorm = block->normalizationValue/static_cast<float>(sum);
             }
-            for (auto &point : block->data)
+            for (float &point : data)
             {
                 point *= recipNorm;
             }
             break;
         default:
-            GMX_ASSERT(false, "Unknown AWH norm type");
+            GMX_ASSERT(false, "Unknown AWH normalization type");
             break;
     }
 }
 
-inline void
-BiasWriter::transferMetaDataToWriter(int                       metaDataIndex,
-                                     const Bias               &bias)
+void BiasWriter::transferMetaDataToWriter(size_t             metaDataIndex,
+                                          AwhOutputMetaData  metaDataType,
+                                          const Bias        &bias)
 {
-    const AwhVar var = AwhVar::MetaData;
-    /* The starting block index of this variable. Note that some variables need several (contiguous) blocks. */
-    int          blockStart = getVarStartBlock(var);
-    GMX_ASSERT(metaDataIndex < static_cast<int>(block_[blockStart].data.size()), "Attempt to transfer AWH meta data to block for index out of range");
+    gmx::ArrayRef<float> data = block_[getVarStartBlock(AwhOutputEntryType::MetaData)].data();
+    GMX_ASSERT(metaDataIndex < data.size(), "Attempt to transfer AWH meta data to block for index out of range");
 
     /* Transfer the point data of this variable to the right block(s) */
-    Block &block = block_[blockStart];
-    switch (static_cast<MetaData>(metaDataIndex))
+    switch (metaDataType)
     {
-        case MetaData::NumBlock:
+        case AwhOutputMetaData::NumBlock:
             /* The number of subblocks per awh (needed by gmx_energy) */
-            block.data[metaDataIndex] = static_cast<double>(block_.size());
+            data[metaDataIndex] = static_cast<double>(block_.size());
             /* Note: a single subblock takes only a single type and we need doubles. */
             break;
-        case MetaData::TargetError:
+        case AwhOutputMetaData::TargetError:
             /* The theoretical target error */
-            block.data[metaDataIndex] = bias.params().errorInitial*std::sqrt(bias.params().histSizeInitial/bias.state().histogramSize().histSize());
+            data[metaDataIndex] = bias.params().errorInitial*std::sqrt(bias.params().histSizeInitial/bias.state().histogramSize().histSize());
             break;
-        case MetaData::ScaledSampleWeight:
+        case AwhOutputMetaData::ScaledSampleWeight:
             /* The logarithm of the sample weight relative to a sample weight of 1 at the initial time.
                In the normal case: this will increase in the initial stage and then stay at a constant value. */
-            block.data[metaDataIndex] = bias.state().histogramSize().logScaledSampleWeight();
+            data[metaDataIndex] = bias.state().histogramSize().logScaledSampleWeight();
             break;
-        case MetaData::Count:
+        case AwhOutputMetaData::Count:
             break;
     }
 }
 
 inline void
-BiasWriter::transferPointDataToWriter(AwhVar                    var,
-                                      int                       pointIndex,
-                                      const Bias               &bias,
-                                      const std::vector<float> &pmf)
+BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
+                                      int                         pointIndex,
+                                      const Bias                 &bias,
+                                      gmx::ArrayRef<const float>  pmf)
 {
-    /* The starting block index of this variable. Note that some variables need several (contiguous) blocks. */
-    int blockStart = getVarStartBlock(var);
-    GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
+    /* The starting block index of this output type.
+     * Note that some variables need several (contiguous) blocks.
+     */
+    int blockStart = getVarStartBlock(outputType);
+    GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data().size()), "Attempt to transfer AWH data to block for point index out of range");
 
     /* Transfer the point data of this variable to the right block(s) */
     int b = blockStart;
-    switch (var)
+    switch (outputType)
     {
-        case AwhVar::MetaData:
+        case AwhOutputEntryType::MetaData:
             GMX_ASSERT(false, "MetaData is handled by a different function");
             break;
-        case AwhVar::CoordValue:
+        case AwhOutputEntryType::CoordValue:
         {
             const awh_dvec &coordValue = bias.getGridCoordValue(pointIndex);
             for (int d = 0; d < bias.ndim(); d++)
             {
-                block_[b].data[pointIndex] = coordValue[d];
+                block_[b].data()[pointIndex] = coordValue[d];
                 b++;
             }
         }
         break;
-        case AwhVar::Pmf:
-            block_[b].data[pointIndex] = bias.state().points()[pointIndex].inTargetRegion() ? pmf[pointIndex] : 0;
+        case AwhOutputEntryType::Pmf:
+            block_[b].data()[pointIndex] = bias.state().points()[pointIndex].inTargetRegion() ? pmf[pointIndex] : 0;
             break;
-        case AwhVar::Bias:
+        case AwhOutputEntryType::Bias:
         {
             const awh_dvec &coordValue = bias.getGridCoordValue(pointIndex);
-            block_[b].data[pointIndex] = bias.state().points()[pointIndex].inTargetRegion() ? bias.calcConvolvedBias(coordValue) : 0;
+            block_[b].data()[pointIndex] = bias.state().points()[pointIndex].inTargetRegion() ? bias.calcConvolvedBias(coordValue) : 0;
         }
         break;
-        case AwhVar::Visits:
-            block_[b].data[pointIndex] = bias.state().points()[pointIndex].numVisitsTot();
+        case AwhOutputEntryType::Visits:
+            block_[b].data()[pointIndex] = bias.state().points()[pointIndex].numVisitsTot();
             break;
-        case AwhVar::Weights:
-            block_[b].data[pointIndex] = bias.state().points()[pointIndex].weightSumTot();
+        case AwhOutputEntryType::Weights:
+            block_[b].data()[pointIndex] = bias.state().points()[pointIndex].weightSumTot();
             break;
-        case AwhVar::Target:
-            block_[b].data[pointIndex] = bias.state().points()[pointIndex].target();
+        case AwhOutputEntryType::Target:
+            block_[b].data()[pointIndex] = bias.state().points()[pointIndex].target();
             break;
         default:
             GMX_ASSERT(false, "Unknown AWH output variable");
@@ -330,51 +336,49 @@ void BiasWriter::prepareBiasOutput(const Bias &bias)
     /* Pack the AWH data into the writer data. */
 
     /* Evaluate the PMF for all points */
-    std::vector<float> *pmf = &block_[getVarStartBlock(AwhVar::Pmf)].data;
+    gmx::ArrayRef<float> pmf = block_[getVarStartBlock(AwhOutputEntryType::Pmf)].data();
     bias.state().getPmf(pmf);
 
     /* Pack the the data point by point.
      * Unfortunately we can not loop over a class enum, so we cast to int.
      * \todo Use strings instead of enum when we port the output to TNG.
      */
-    for (int i = 0; i < static_cast<int>(MetaData::Count); i++)
+    for (int i = 0; i < static_cast<int>(AwhOutputMetaData::Count); i++)
     {
-        transferMetaDataToWriter(i, bias);
+        transferMetaDataToWriter(i, static_cast<AwhOutputMetaData>(i), bias);
     }
-    for (const auto &pair : awhVarToNormalization)
+    for (const auto &pair : outputTypeToNormalization)
     {
-        const AwhVar var = pair.first;
-        if (var == AwhVar::MetaData || !hasVarBlock(var))
+        const AwhOutputEntryType outputType = pair.first;
+        /* Skip metadata (transfered above) and unused blocks */
+        if (outputType == AwhOutputEntryType::MetaData || !hasVarBlock(outputType))
         {
             continue;
         }
         for (size_t m = 0; m < bias.state().points().size(); m++)
         {
-            transferPointDataToWriter(var, m, bias, *pmf);
+            transferPointDataToWriter(outputType, m, bias, pmf);
         }
     }
 
     /* For looks of the output, normalize it */
-    for (auto &block : block_)
+    for (AwhEnergyBlock &block : block_)
     {
         normalizeBlock(&block, bias);
     }
-
-    haveDataToWrite_ = true;
 }
 
-int BiasWriter::writeToEnergySubblocks(t_enxsubblock *sub)
+int BiasWriter::writeToEnergySubblocks(const Bias    &bias,
+                                       t_enxsubblock *sub)
 {
+    prepareBiasOutput(bias);
+
     for (size_t b = 0; b < block_.size(); b++)
     {
         sub[b].type = xdr_datatype_float;
-        sub[b].nr   = block_[b].data.size();
-        sub[b].fval = block_[b].data.data();
+        sub[b].nr   = block_[b].data().size();
+        sub[b].fval = block_[b].data().data();
     }
-
-    GMX_ASSERT(haveDataToWrite_, "All writers should have the same haveDataToWrite value");
-    /* Don't write again until a new dataset has been prepared */
-    haveDataToWrite_ = false;
 
     return block_.size();
 }

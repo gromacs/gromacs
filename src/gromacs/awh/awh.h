@@ -206,9 +206,11 @@ class Awh
 
         /*! \brief Fills the AWH data block of an energy frame with data at certain steps.
          *
-         * \param[in,out] fr  Energy data frame.
+         * \param[in]     step  The current MD step.
+         * \param[in,out] fr    Energy data frame.
          */
-        void writeToEnergyframe(t_enxframe *fr) const;
+        void writeToEnergyFrame(gmx_int64_t  step,
+                                t_enxframe  *fr) const;
 
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */

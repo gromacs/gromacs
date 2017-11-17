@@ -251,15 +251,6 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
         }
     }
 
-    if (nstout_ > 0 && step % nstout_ == 0)
-    {
-        /* Prepare AWH output data to later write to the energy file. */
-        for (auto &biasCoupledToSystem : biasCoupledToSystem_)
-        {
-            biasCoupledToSystem.bias.prepareOutput();
-        }
-    }
-
     wallcycle_stop(wallcycle, ewcAWH);
 
     return MASTER(commRecord_) ? static_cast<real>(awhPotential) : 0;
@@ -349,10 +340,15 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
 }
 
 /* Fill the AWH data block of an energy frame with data (if there is any). */
-void Awh::writeToEnergyframe(t_enxframe *frame) const
+void Awh::writeToEnergyFrame(gmx_int64_t  step,
+                             t_enxframe  *frame) const
 {
-    if (biasCoupledToSystem_[0].bias.numEnergySubblocksToWrite() == 0)
+    GMX_ASSERT(MASTER(commRecord_), "writeToEnergyFrame should only be called on the master rank");
+    GMX_ASSERT(frame != nullptr, "Need a valid energy frame");
+
+    if (nstout_ == 0 && step % nstout_ != 0)
     {
+        /* This is not an AWH output step, don't write any AWH data */
         return;
     }
 
@@ -362,22 +358,23 @@ void Awh::writeToEnergyframe(t_enxframe *frame) const
     {
         numSubblocks += biasCoupledToSystem.bias.numEnergySubblocksToWrite();
     }
+    GMX_ASSERT(numSubblocks > 0, "We should always have data to write");
 
     /* Add 1 energy block */
     add_blocks_enxframe(frame, frame->nblock + 1);
 
     /* Take the block that was just added and set the number of subblocks. */
-    t_enxblock *awhenergyblock = &(frame->block[frame->nblock - 1]);
-    add_subblocks_enxblock(awhenergyblock, numSubblocks);
+    t_enxblock *awhEnergyBlock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhEnergyBlock, numSubblocks);
 
     /* Claim it as an AWH block. */
-    awhenergyblock->id = enxAWH;
+    awhEnergyBlock->id = enxAWH;
 
     /* Transfer AWH data blocks to energy sub blocks */
     int energySubblockCount = 0;
     for (auto &biasCoupledToSystem : biasCoupledToSystem_)
     {
-        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhenergyblock->sub[energySubblockCount]));
+        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhEnergyBlock->sub[energySubblockCount]));
     }
 }
 

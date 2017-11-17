@@ -472,15 +472,15 @@ class BiasState
                                  const awh_dvec                &coordValue) const;
 
         /*! \brief
-         * Fills the given array with PMF values, resizes if necessary.
+         * Fills the given array with PMF values.
          *
          * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
          * \note: The PMF is in single precision, because it is a statistical
          *        quantity and therefore never reaches full float precision.
          *
-         * \param[in,out] pmf        Array returned will be of the same length as the AWH grid to store the PMF in.
+         * \param[out] pmf  Array(ref) to be filled with the PMF values, should have the same size as the bias grid.
          */
-        void getPmf(std::vector<float> *pmf) const;
+        void getPmf(gmx::ArrayRef<float>) const;
 
         /*! \brief Returns the current coordinate state.
          */

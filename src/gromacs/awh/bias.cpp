@@ -254,34 +254,20 @@ Bias::Bias(int                             biasIndexInCollection,
     }
 }
 
-/* Prepare data for writing to energy frame. */
-void Bias::prepareOutput()
-{
-    if (params_.skipUpdates())
-    {
-        doSkippedUpdatesForAllPoints();
-    }
-
-    if (writer_ != nullptr)
-    {
-        writer_->prepareBiasOutput(*this);
-    }
-}
-
 /* Return the number of data blocks that have been prepared for writing. */
 int Bias::numEnergySubblocksToWrite() const
 {
-    GMX_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
 
-    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+    return writer_->numBlocks();
 }
 
 /* Write bias data blocks to energy subblocks. */
 int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
 {
-    GMX_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
 
-    return writer_->writeToEnergySubblocks(subblock);
+    return writer_->writeToEnergySubblocks(*this, subblock);
 }
 
 } // namespace gmx

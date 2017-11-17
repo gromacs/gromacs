@@ -75,8 +75,25 @@
 using gmx::AwhParams;
 using gmx::AwhBiasParams;
 
+namespace
+{
+
+//! Enum for choosing AWH graph output
+enum class AwhGraphSelection
+{
+    Pmf, //!< Only the PMF
+    All  //!< All possible AWH graphs
+};
+
+//! Energy unit options
+enum class EnergyUnit
+{
+    KJPerMol, //!< kJ/mol
+    KT        //!< kT
+};
+
 /*! \brief All meta-data that is shared for one output file type for one bias */
-struct OutFile
+struct OutputFile
 {
     /*! \brief Set the output base file name and title for one output file type */
     void setNameAndTitle(const std::string  filename,
@@ -84,15 +101,18 @@ struct OutFile
                          int                numBias,
                          int                biasIndex);
 
-    /*! \brief Initializes the output file setup for the AWH output. */
-    void initSetupAwh(int                  subblockStart,
-                      int                  numSubblocks,
-                      const AwhBiasParams *awhBiasParams,
-                      bool                 moreGraphs,
-                      bool                 useKTUnit,
-                      real                 kTValue);
+    /*! \brief Initializes the output file setup for the AWH output.
+     *
+     * \note Does not set the name and title, that is done by \ref setNameAndTitle
+     */
+    void initializeAwhOutputFile(int                  subblockStart,
+                                 int                  numSubblocks,
+                                 const AwhBiasParams *awhBiasParams,
+                                 AwhGraphSelection    graphSelection,
+                                 EnergyUnit           energyUnit,
+                                 real                 kTValue);
 
-    std::string              baseFileName;       /**< Base of the output file name. */
+    std::string              baseFilename;       /**< Base of the output file name. */
     std::string              title;              /**< Title for the graph. */
     int                      numDim;             /**< Number of dimensions. */
     int                      firstGraphSubblock; /**< Index in the energy sub-blocks for the first graph. */
@@ -110,9 +130,9 @@ class BiasReader
 {
     public:
         //! Constructor.
-        BiasReader(int                      subblockStart,
-                   int                      numSubblocks,
-                   std::unique_ptr<OutFile> awh) :
+        BiasReader(int                         subblockStart,
+                   int                         numSubblocks,
+                   std::unique_ptr<OutputFile> awh) :
             subblockStart_(subblockStart),
             numSubblocks_(numSubblocks),
             awh_(std::move(awh))
@@ -120,7 +140,7 @@ class BiasReader
         }
 
         //! Return the AWH output file data.
-        const OutFile &awh() const
+        const OutputFile &awh() const
         {
             return *awh_.get();
         }
@@ -132,10 +152,10 @@ class BiasReader
         }
 
     private:
-        const int                subblockStart_;  /**< The start index of the subblocks to read. */
-        const int                numSubblocks_;   /**< Number of subblocks to read. */
-        std::unique_ptr<OutFile> awh_;            /**< The standard AWH output file data. */
-        /* NOTE: A second OutFile will be added soon, this will also make numSubblocks_ useful. */
+        const int                   subblockStart_; /**< The start index of the subblocks to read. */
+        const int                   numSubblocks_;  /**< Number of subblocks to read. */
+        std::unique_ptr<OutputFile> awh_;           /**< The standard AWH output file data. */
+        /* NOTE: A second OutputFile will be added soon, this will also make numSubblocks_ useful. */
 };
 
 /*! \brief All options and meta-data needed for the AWH output */
@@ -144,10 +164,10 @@ class AwhReader
     public:
         //! Constructor
         AwhReader(const AwhParams  *awhParams,
-                  int               nfile,
-                  const t_filenm    fnm[],
-                  bool              moreGraphs,
-                  bool              kTUnit,
+                  int               numFileOptions,
+                  const t_filenm   *filenames,
+                  AwhGraphSelection awhGraphSelection,
+                  EnergyUnit        energyUnit,
                   real              kT,
                   const t_enxblock *block);
 
@@ -174,9 +194,9 @@ enum {
 static constexpr int maxAwhGraphs = 5;
 
 /*! \brief Constructs a legend for a standard awh output file */
-static std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
-                                          int                  awhGraphType,
-                                          size_t               numLegend)
+std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
+                                   int                  awhGraphType,
+                                   size_t               numLegend)
 {
     const std::array<std::string, maxAwhGraphs> legendBase =
     {
@@ -214,31 +234,31 @@ static std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
     return legend;
 }
 
-void OutFile::setNameAndTitle(const std::string  filename,
-                              const std::string  baseTitle,
-                              int                numBias,
-                              int                biasIndex)
+void OutputFile::setNameAndTitle(const std::string  filename,
+                                 const std::string  baseTitle,
+                                 int                numBias,
+                                 int                biasIndex)
 {
-    baseFileName = filename.substr(0, filename.find('.'));
+    baseFilename = filename.substr(0, filename.find('.'));
     title        = baseTitle;
     if (numBias > 1)
     {
-        baseFileName += gmx::formatString("%d", biasIndex + 1);
+        baseFilename += gmx::formatString("%d", biasIndex + 1);
         title        += gmx::formatString(" %d", biasIndex + 1);
     }
 }
 
-void OutFile::initSetupAwh(int                  subblockStart,
-                           int                  numSubblocks,
-                           const AwhBiasParams *awhBiasParams,
-                           bool                 moreGraphs,
-                           bool                 useKTUnit,
-                           real                 kTValue)
+void OutputFile::initializeAwhOutputFile(int                  subblockStart,
+                                         int                  numSubblocks,
+                                         const AwhBiasParams *awhBiasParams,
+                                         AwhGraphSelection    graphSelection,
+                                         EnergyUnit           energyUnit,
+                                         real                 kTValue)
 {
     /* The first subblock with actual graph y-values is index 1 + ndim */
     numDim             = awhBiasParams->ndim;
     firstGraphSubblock = subblockStart + 1 + numDim;
-    if (moreGraphs)
+    if (graphSelection == AwhGraphSelection::All)
     {
         /* There are one metadata and ndim coordinate blocks */
         numGraph       = std::min(numSubblocks - 1 - numDim,
@@ -248,28 +268,29 @@ void OutFile::initSetupAwh(int                  subblockStart,
     {
         numGraph       = 1;
     }
-    useKTForEnergy     = useKTUnit;
+    useKTForEnergy     = (energyUnit == EnergyUnit::KT);
     scaleFactor.resize(numGraph, 1);
-    if (!useKTUnit)
+    if (!useKTForEnergy)
     {
         /* The first two graphs are in units of energy, multiply by kT */
         std::fill(scaleFactor.begin(), scaleFactor.begin() + std::min(2, numGraph), kTValue);
     }
     int numLegend      = numDim - 1 + numGraph;
     legend = makeLegend(awhBiasParams, awhGraphTypeAwh, numLegend);
+    /* We could have both length and angle coordinates in a single bias */
     xLabel = "(nm or deg)";
     yLabel = useKTForEnergy ? "(k\\sB\\NT)" : "(kJ/mol)";
-    if (moreGraphs)
+    if (graphSelection == AwhGraphSelection::All)
     {
         yLabel += ", (nm\\S-%d\\N or rad\\S-%d\\N), (-)";
     }
 }
 
 AwhReader::AwhReader(const AwhParams  *awhParams,
-                     int               nfile,
-                     const t_filenm    fnm[],
-                     bool              moreGraphs,
-                     bool              kTUnit,
+                     int               numFileOptions,
+                     const t_filenm   *filenames,
+                     AwhGraphSelection awhGraphSelection,
+                     EnergyUnit        energyUnit,
                      real              kT,
                      const t_enxblock *block)
 {
@@ -285,29 +306,30 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
     int subblockStart = 0;
     for (int k = 0; k < awhParams->numBias; k++)
     {
-        AwhBiasParams           *awhBiasParams = &awhParams->awhBiasParams[k];
+        AwhBiasParams              *awhBiasParams = &awhParams->awhBiasParams[k];
 
-        int                      numSubblocks  = (int)block->sub[subblockStart].fval[0];
+        int                         numSubblocks  = (int)block->sub[subblockStart].fval[0];
 
-        std::unique_ptr<OutFile> awh(new OutFile());
-        awh->setNameAndTitle(opt2fn("-o", nfile, fnm), "AWH",
-                             awhParams->numBias, k);
+        std::unique_ptr<OutputFile> outputFileAwh(new OutputFile());
+        outputFileAwh->setNameAndTitle(opt2fn("-o", numFileOptions, filenames), "AWH",
+                                       awhParams->numBias, k);
 
-        awh->initSetupAwh(subblockStart, numSubblocks,
-                          awhBiasParams, moreGraphs, kTUnit, kT);
+        outputFileAwh->initializeAwhOutputFile(subblockStart, numSubblocks,
+                                               awhBiasParams, awhGraphSelection,
+                                               energyUnit, kT);
 
-        biasReader_.emplace_back(BiasReader(subblockStart, numSubblocks, std::move(awh)));
+        biasReader_.emplace_back(BiasReader(subblockStart, numSubblocks, std::move(outputFileAwh)));
 
         subblockStart += numSubblocks;
     }
 }
 
 /*! \brief Opens a single output file for a bias, prints title and legends */
-static FILE *openBiasOutputFile(const OutFile          &outFile,
-                                double                  t,
-                                const gmx_output_env_t *oenv)
+FILE *openBiasOutputFile(const OutputFile       &outFile,
+                         double                  t,
+                         const gmx_output_env_t *oenv)
 {
-    std::string filename = outFile.baseFileName + gmx::formatString("_t%g.xvg", t);
+    std::string filename = outFile.baseFilename + gmx::formatString("_t%g.xvg", t);
 
     FILE       *fp = xvgropen(filename.c_str(), outFile.title.c_str(),
                               outFile.xLabel, outFile.yLabel, oenv);
@@ -316,25 +338,25 @@ static FILE *openBiasOutputFile(const OutFile          &outFile,
     return fp;
 }
 
-/*! \brief Prints data selected by \p outf from \p block to \p fp */
-static void printOutfileData(const t_enxblock       *block,
-                             int                     subStart,
-                             const OutFile          &outf,
-                             FILE                   *fp)
+/*! \brief Prints data selected by \p outputFile from \p block to \p fp */
+void printOutputFileData(const t_enxblock       *block,
+                         int                     subStart,
+                         const OutputFile       &outputFile,
+                         FILE                   *fp)
 {
     int numPoints = block->sub[subStart + 1].nr;
     for (int j = 0; j < numPoints; j++)
     {
         /* Print the coordinates for numDim dimensions */
-        for (int d = 0; d < outf.numDim; d++)
+        for (int d = 0; d < outputFile.numDim; d++)
         {
             fprintf(fp, "  %8.4f", block->sub[subStart + 1 + d].fval[j]);
         }
 
         /* Print numGraph observables */
-        for (int i = 0; i < outf.numGraph; i++)
+        for (int i = 0; i < outputFile.numGraph; i++)
         {
-            fprintf(fp, "  %g", block->sub[outf.firstGraphSubblock + i].fval[j]*outf.scaleFactor[i]);
+            fprintf(fp, "  %g", block->sub[outputFile.firstGraphSubblock + i].fval[j]*outputFile.scaleFactor[i]);
         }
 
         fprintf(fp, "\n");
@@ -352,26 +374,28 @@ void AwhReader::processAwhFrame(const t_enxblock       *block,
     {
         /* Each frame and AWH instance extracted generates one xvg file. */
         {
-            const OutFile &outf     = biasReader.awh();
+            const OutputFile &outFile  = biasReader.awh();
 
-            const int      subStart = biasReader.subblockStart();
+            const int         subStart = biasReader.subblockStart();
 
-            FILE          *fp       = openBiasOutputFile(outf, t, oenv);
+            FILE             *fp       = openBiasOutputFile(outFile, t, oenv);
 
             /* Now do the actual printing. Metadata in first subblock is treated separately. */
             fprintf(fp, "# AWH metadata: target error = %4.2f %s\n",
-                    block->sub[subStart].fval[1]*outf.scaleFactor[0],
-                    outf.useKTForEnergy ? "kT" : "kJ/mol");
+                    block->sub[subStart].fval[1]*outFile.scaleFactor[0],
+                    outFile.useKTForEnergy ? "kT" : "kJ/mol");
 
             fprintf(fp, "# AWH metadata: log sample weight = %4.2f\n",
                     block->sub[subStart].fval[2]);
 
-            printOutfileData(block, subStart, outf, fp);
+            printOutputFileData(block, subStart, outFile, fp);
 
             gmx_ffclose(fp);
         }
     }
 }
+
+} // namespace
 
 /*! \brief The main function for the AWH tool */
 int gmx_awh(int argc, char *argv[])
@@ -475,10 +499,13 @@ int gmx_awh(int argc, char *argv[])
              */
             if (awhReader == nullptr)
             {
+                AwhGraphSelection awhGraphSelection = (moreGraphs ? AwhGraphSelection::All : AwhGraphSelection::Pmf);
+                EnergyUnit        energyUnit        = (kTUnit ? EnergyUnit::KT : EnergyUnit::KJPerMol);
                 awhReader =
                     std::unique_ptr<AwhReader>(new AwhReader(ir.awhParams,
-                                                             nfile, fnm, moreGraphs,
-                                                             kTUnit, BOLTZ*ir.opts.ref_t[0],
+                                                             nfile, fnm,
+                                                             awhGraphSelection,
+                                                             energyUnit, BOLTZ*ir.opts.ref_t[0],
                                                              block));
             }
 

@@ -50,6 +50,7 @@
 #include <vector>
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_multisim_t;
@@ -66,7 +67,7 @@ class Bias;
  */
 
 //! Enum with the AWH variables to write.
-enum class AwhVar
+enum class AwhOutputEntryType
 {
     MetaData,           //!< Meta data.
     CoordValue,         //!< Coordinate value.
@@ -78,7 +79,7 @@ enum class AwhVar
 };
 
 //! Enum with the types of metadata to write.
-enum class MetaData
+enum class AwhOutputMetaData
 {
     NumBlock,           //!< The number of blocks.
     TargetError,        //!< The target error.
@@ -95,23 +96,30 @@ enum class Normalization
     Distribution  //!< Normalize the distribution to 1.
 };
 
-/*! \internal \brief Output data block.
+/*! \internal \brief AWH output data block that can be written to an energy file block.
  */
-struct Block
+class AwhEnergyBlock
 {
-    /*! \brief Constructor
-     *
-     * \param[in] numPoints    Number of points in block.
-     * \param[in] normType     Value for normalization type enum.
-     * \param[in] normValue    Normalization value.
-     */
-    Block(int            numPoints,
-          Normalization  normType,
-          double         normValue);
+    public:
+        /*! \brief Constructor
+         *
+         * \param[in] numPoints           Number of points in block.
+         * \param[in] normalizationType   Value for normalization type enum.
+         * \param[in] normalizationValue  Normalization value.
+         */
+        AwhEnergyBlock(int            numPoints,
+                       Normalization  normalizationType,
+                       float          normalizationValue);
 
-    const Normalization normType;  /**< How to normalize the output data */
-    const float         normValue; /**< The normalization value */
-    std::vector<float>  data;      /**< The data, always float which is enough since this is statistical data */
+        gmx::ArrayRef<float> data()
+        {
+            return data_;
+        }
+
+        const Normalization normalizationType;  /**< How to normalize the output data */
+        const float         normalizationValue; /**< The normalization value */
+    private:
+        std::vector<float>  data_;              /**< The data, always float which is enough since this is statistical data */
 };
 
 /*! \internal \brief Class organizing the output data storing and writing of an AWH bias.
@@ -121,42 +129,44 @@ class BiasWriter
     private:
         /*! \brief Query if the writer has a block for the given variable.
          *
-         * \param[in] var     Value for variable type enum.
+         * \param[in] outputType  Output entry type.
          */
-        bool hasVarBlock(AwhVar var) const
+        bool hasVarBlock(AwhOutputEntryType outputType) const
         {
-            return varToBlock_.find(var)->second >= 0;
+            return outputTypeToBlock_.find(outputType)->second >= 0;
         }
 
         /*! \brief* Find the first block containing the given variable.
          *
-         * \param[in] var     Value for variable type enum.
+         * \param[in] outputType  Output entry type.
          * \returns the first block index for the variable, or -1 there is no block.
          */
-        int getVarStartBlock(AwhVar var) const
+        int getVarStartBlock(AwhOutputEntryType outputType) const
         {
-            return varToBlock_.find(var)->second;
+            return outputTypeToBlock_.find(outputType)->second;
         }
 
         /*! \brief Transfer AWH point data to writer data blocks.
          *
-         * \param[in] metaDataIndex  Index to the type of meta data.
+         * \param[in] metaDataIndex  Meta data block index.
+         * \param[in] metaDataType   The type of meta data to write.
          * \param[in] bias           The AWH Bias.
          */
-        void transferMetaDataToWriter(int         metaDataIndex,
-                                      const Bias &bias);
+        void transferMetaDataToWriter(size_t             metaDataIndex,
+                                      AwhOutputMetaData  metaDataType,
+                                      const Bias        &bias);
 
         /*! \brief Transfer AWH point data to writer data blocks.
          *
-         * \param[in] var         Value for variable type enum.
+         * \param[in] outputType  Output entry type.
          * \param[in] pointIndex  The point index.
          * \param[in] bias        The AWH Bias.
          * \param[in] pmf         PMF values.
          */
-        void transferPointDataToWriter(AwhVar                    var,
-                                       int                       pointIndex,
-                                       const Bias               &bias,
-                                       const std::vector<float> &pmf);
+        void transferPointDataToWriter(AwhOutputEntryType          outputType,
+                                       int                         pointIndex,
+                                       const Bias                 &bias,
+                                       gmx::ArrayRef<const float>  pmf);
 
     public:
         /*! \brief Constructor.
@@ -164,15 +174,6 @@ class BiasWriter
          * \param[in] bias  The AWH bias.
          */
         BiasWriter(const Bias &bias);
-
-        /*! \brief Returns if we have data to write.
-         *
-         * \returns if we have data to write.
-         */
-        bool haveDataToWrite() const
-        {
-            return haveDataToWrite_;
-        }
 
         /*! \brief Returns the number of data blocks.
          *
@@ -183,6 +184,7 @@ class BiasWriter
             return block_.size();
         }
 
+    private:
         /*! \brief
          * Prepare the bias output data.
          *
@@ -190,17 +192,18 @@ class BiasWriter
          */
         void prepareBiasOutput(const Bias &bias);
 
-        /*! \brief Write AWH bias data blocks to energy subblocks.
+    public:
+        /*! \brief Collect AWH bias data in blocks and write to energy subblocks.
          *
+         * \param[in]     bias      The AWH Bias.
          * \param[in,out] subblock  Energy subblocks to write to.
          * \returns the number of blocks written.
          */
-        int writeToEnergySubblocks(t_enxsubblock *subblock);
+        int writeToEnergySubblocks(const Bias &bias, t_enxsubblock *subblock);
 
     private:
-        std::vector<Block>    block_;           /**< The data blocks */
-        std::map<AwhVar, int> varToBlock_;      /**< Start block index for each variable, -1 when variable should not be written */
-        bool                  haveDataToWrite_; /**< Tells if we have data to write to file */
+        std::vector<AwhEnergyBlock>       block_;             /**< The data blocks */
+        std::map<AwhOutputEntryType, int> outputTypeToBlock_; /**< Start block index for each variable, -1 when variable should not be written */
 };
 
 }       // namespace gmx

@@ -295,10 +295,6 @@ class Bias
                                        FILE        *fplog);
 
     public:
-        /*! \brief Prepare data for writing to energy frame.
-         */
-        void prepareOutput();
-
         /*! \brief Return the number of data blocks that have been prepared for writing.
          */
         int numEnergySubblocksToWrite() const;
