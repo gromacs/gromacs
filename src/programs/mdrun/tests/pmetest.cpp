@@ -34,10 +34,10 @@
  */
 /*! \internal \file
  * \brief
+ * FIXME docs
  * This implements basic PME sanity test (using single-rank mdrun).
  * It runs the input system with PME for several steps (on CPU and GPU, if available),
  * and checks the reciprocal and conserved energies.
- * TODO: implement multi-rank tests as well.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_mdrun_integration_tests
@@ -55,6 +55,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 
 #include "energyreader.h"
@@ -111,6 +112,10 @@ TEST_F(PmeTest, ReproducesEnergies)
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
 
+    // With single rank we can and will always test PP+PME as part of mdrun-test.
+    // With multiple ranks we can additionally test a single PME-only rank within mdrun-mpi-test.
+    const bool useSeparatePme = (getNumberOfTestMpiRanks() > 1);
+
     EXPECT_EQ(0, runner_.callGrompp());
 
     //TODO test all proper/improper combinations in more thorough way?
@@ -139,6 +144,10 @@ TEST_F(PmeTest, ReproducesEnergies)
 
         CommandLine commandLine(mode.second);
         commandLine.append("-notunepme"); // for reciprocal energy reproducibility
+        if (useSeparatePme)
+        {
+            commandLine.addOption("-npme", 1); //TODO a death tests for -npme 2, decomposition, etc
+        }
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
         auto energyReader      = openEnergyFileToReadFields(runner_.edrFileName_, {"Coul. recip.", "Total Energy", "Kinetic En."});
@@ -155,7 +164,7 @@ TEST_F(PmeTest, ReproducesEnergies)
                 // use first step values as references for tolerance
                 const real startingKineticEnergy = frame.at("Kinetic En.");
                 const auto conservedTolerance    = relativeToleranceAsFloatingPoint(startingKineticEnergy, 2e-5);
-                const auto reciprocalTolerance   = relativeToleranceAsFloatingPoint(reciprocalEnergy, 2e-5);
+                const auto reciprocalTolerance   = relativeToleranceAsFloatingPoint(reciprocalEnergy, 3e-5);
                 reciprocalChecker.setDefaultTolerance(reciprocalTolerance);
                 conservedChecker.setDefaultTolerance(conservedTolerance);
             }
