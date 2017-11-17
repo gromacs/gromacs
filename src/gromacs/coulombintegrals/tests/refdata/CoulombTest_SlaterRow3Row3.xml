@@ -3,50 +3,50 @@
 <ReferenceData>
   <Sequence Name="Potential-Slater">
     <Int Name="Length">9</Int>
-    <Real>2.3153814742607222</Real>
-    <Real>2.2239394071851839</Real>
-    <Real>2.0859456129887604</Real>
-    <Real>1.9166190229394544</Real>
-    <Real>1.7323175465368752</Real>
-    <Real>1.5491362541344675</Real>
-    <Real>1.3796634618770651</Real>
-    <Real>1.2307434366634737</Real>
-    <Real>1.1039211021566875</Real>
+    <Real>2.3153814747409891</Real>
+    <Real>2.2239394071985532</Real>
+    <Real>2.08594561297918</Real>
+    <Real>1.9166190229306559</Real>
+    <Real>1.7323175465367284</Real>
+    <Real>1.549136254134597</Real>
+    <Real>1.3796634618771304</Real>
+    <Real>1.2307434366634802</Real>
+    <Real>1.103921102156687</Real>
   </Sequence>
   <Sequence Name="Force-Slater">
     <Int Name="Length">9</Int>
-    <Real>-0.63540364873827571</Real>
-    <Real>-1.1714130870840904</Real>
-    <Real>-1.5630102017380381</Real>
-    <Real>-1.7960788160635843</Real>
-    <Real>-1.8624778795040129</Real>
-    <Real>-1.779752338835543</Real>
-    <Real>-1.5984110319749476</Real>
-    <Real>-1.3777914241253697</Real>
-    <Real>-1.161917487172758</Real>
+    <Real>-0.635403650927996</Real>
+    <Real>-1.1714130869000254</Real>
+    <Real>-1.5630102014426523</Real>
+    <Real>-1.7960788160106134</Real>
+    <Real>-1.8624778794980268</Real>
+    <Real>-1.7797523388387173</Real>
+    <Real>-1.5984110319748992</Real>
+    <Real>-1.3777914241256888</Real>
+    <Real>-1.1619174871728102</Real>
   </Sequence>
   <Sequence Name="NuclearPotential-Slater">
     <Int Name="Length">9</Int>
-    <Real>3.6499443705684067</Real>
+    <Real>3.6499443705684049</Real>
     <Real>3.4214496979498401</Real>
-    <Real>2.9310030895840256</Real>
+    <Real>2.9310030895840251</Real>
     <Real>2.4067251967430088</Real>
     <Real>1.9803439075207998</Real>
-    <Real>1.6628420999386138</Real>
+    <Real>1.662842099938614</Real>
     <Real>1.4278738296033966</Real>
     <Real>1.2498792587555412</Real>
     <Real>1.1110910932864944</Real>
   </Sequence>
   <Sequence Name="NuclearForce-Slater">
     <Int Name="Length">9</Int>
-    <Real>-0.74613455018973696</Real>
-    <Real>-3.908870622913927</Real>
-    <Real>-5.4351175452342897</Real>
+    <Real>-0.74613455018973207</Real>
+    <Real>-3.908870622913923</Real>
+    <Real>-5.435117545234287</Real>
     <Real>-4.8399354118766214</Real>
     <Real>-3.6855425116274669</Real>
-    <Real>-2.7138487505902233</Real>
-    <Real>-2.0287509764851692</Real>
-    <Real>-1.5603545746765495</Real>
+    <Real>-2.7138487505902242</Real>
+    <Real>-2.0287509764851697</Real>
+    <Real>-1.5603545746765497</Real>
     <Real>-1.2342043825486546</Real>
   </Sequence>
 </ReferenceData>

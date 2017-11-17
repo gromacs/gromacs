@@ -101,7 +101,12 @@ class CoulombTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testCoulomb(ChargeDistribution cd, int irow, int jrow, double izeta, double jzeta)
+        void testCoulomb(ChargeDistribution cd, 
+                         int                irow, 
+                         int                jrow, 
+                         double             izeta, 
+                         double             jzeta, 
+                         double             lambda)
         {
             std::vector<double> coulomb;
             std::vector<double> force;
@@ -109,7 +114,7 @@ class CoulombTest : public gmx::test::CommandLineTestBase
             std::vector<double> nforce;
             for(int i = 0; i < 9; i++)
             {
-                double r = 0.1*(i+1);
+                double r = lambda*(i+1);
                 
                 switch (cd)
                 {
@@ -128,6 +133,9 @@ class CoulombTest : public gmx::test::CommandLineTestBase
                 default:
                     break;
                 }
+                
+                if (lambda == 0)
+                    break;
             }
             const char *name = getChargeDistributionName(cd);
             char buf[256];
@@ -140,6 +148,7 @@ class CoulombTest : public gmx::test::CommandLineTestBase
             snprintf(buf, sizeof(buf), "NuclearForce-%s", name);
             checker_.checkSequence(nforce.begin(), nforce.end(), buf);
         }
+        
 
         static void TearDownTestCase()
         {
@@ -149,44 +158,63 @@ class CoulombTest : public gmx::test::CommandLineTestBase
 
 TEST_F (CoulombTest, Gaussian)
 {
-    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0);
+    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0, 0.1);
 }
 
 TEST_F (CoulombTest, GaussianSameXi)
 {
-    testCoulomb(ecdGaussian, 1, 1, 7.0, 7.0);
+    testCoulomb(ecdGaussian, 1, 1, 7.0, 7.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow1Row2)
 {
-    testCoulomb(ecdSlater, 1, 2, 12.0, 16.0);
+    testCoulomb(ecdSlater, 1, 2, 12.0, 16.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow1Row1)
 {
-    testCoulomb(ecdSlater, 1, 1, 3.0, 16.0);
+    testCoulomb(ecdSlater, 1, 1, 3.0, 16.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow1Row3)
 {
-    testCoulomb(ecdSlater, 1, 3, 12.0, 17.0);
+    testCoulomb(ecdSlater, 1, 3, 12.0, 17.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow2Row2)
 {
-    testCoulomb(ecdSlater, 2, 2, 5.0, 16.0);
+    testCoulomb(ecdSlater, 2, 2, 5.0, 16.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow2Row3)
 {
-    testCoulomb(ecdSlater, 2, 3, 12.0, 9.0);
+    testCoulomb(ecdSlater, 2, 3, 12.0, 9.0, 0.1);
 }
 
 TEST_F (CoulombTest, SlaterRow3Row3)
 {
-    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0);
+    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0, 0.1);
 }
 
+TEST_F (CoulombTest, GaussianLargeDistance)
+{
+    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0, 2);
+}
+
+TEST_F (CoulombTest, SlaterLargeDistance)
+{
+    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0, 2);
+}
+
+TEST_F (CoulombTest, GaussianZeroDistance)
+{
+    testCoulomb(ecdGaussian, 1, 1, 5.0, 8.0, 0);
+}
+
+TEST_F (CoulombTest, SlaterZeroDistance)
+{
+    testCoulomb(ecdSlater, 3, 3, 11.0, 8.0, 0);
+}
 
 }
 

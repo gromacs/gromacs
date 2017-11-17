@@ -54,11 +54,11 @@ cl_R Slater_2S_2S(cl_R r, cl_R xi, cl_R xj)
         }
         else
         {
-            S = (1LL/r)*((-80640LL + 80640LL*exp(2LL*rxi) - 131985LL*rxi - 102690LL*Pow(rxi, 2LL) -
+            S = (1LL/r)*((-80640LL + 80640LL*exp(2LL*rxi) - 131985LL*rxi - 102690LL*Power(rxi, 2LL) -
 
-                          49980LL*Pow(rxi, 3LL) - 16800LL*Pow(rxi, 4LL) - 4032LL*Pow(rxi, 5LL) -
+                          49980LL*Power(rxi, 3LL) - 16800LL*Power(rxi, 4LL) - 4032LL*Power(rxi, 5LL) -
 
-                          672LL*Pow(rxi, 6LL) - 64LL*Pow(rxi, 7LL))/(80640LL*exp(2LL*rxi))
+                          672LL*Power(rxi, 6LL) - 64LL*Power(rxi, 7LL))/(80640LL*exp(2LL*rxi))
 
                          );
         }
@@ -68,55 +68,55 @@ cl_R Slater_2S_2S(cl_R r, cl_R xi, cl_R xj)
     {
         if (r == 0LL)
         {
-            S = (xi*xj*(Pow(xi, 6LL) + 7LL*Pow(xi, 5LL)*xj + 21LL*Pow(xi, 4LL)*Pow(xj, 2LL) +
+            S = (xi*xj*(Power(xi, 6LL) + 7LL*Power(xi, 5LL)*xj + 21LL*Power(xi, 4LL)*Power(xj, 2LL) +
 
-                        35LL*Pow(xi, 3LL)*Pow(xj, 3LL) + 21LL*Pow(xi, 2LL)*Pow(xj, 4LL) +
+                        35LL*Power(xi, 3LL)*Power(xj, 3LL) + 21LL*Power(xi, 2LL)*Power(xj, 4LL) +
 
-                        7LL*xi*Pow(xj, 5LL) + Pow(xj, 6LL)))/(2LL*Pow(xi + xj, 7LL))
+                        7LL*xi*Power(xj, 5LL) + Power(xj, 6LL)))/(2LL*Power(xi + xj, 7LL))
 
             ;
         }
         else
         {
-            S = (1LL/r)*((6LL*exp(2LL*(rxi + rxj))*Pow(Pow(rxi, 2LL) - Pow(rxj, 2LL), 7LL) -
+            S = (1LL/r)*((6LL*exp(2LL*(rxi + rxj))*Power(Power(rxi, 2LL) - Power(rxj, 2LL), 7LL) -
 
-                          exp(2LL*rxi)*Pow(rxi, 6LL)*
+                          exp(2LL*rxi)*Power(rxi, 6LL)*
 
-                          (21LL*Pow(rxi, 4LL)*Pow(rxj, 4LL)*(6LL + 11LL*rxj + 2LL*Pow(rxj, 2LL)) -
+                          (21LL*Power(rxi, 4LL)*Power(rxj, 4LL)*(6LL + 11LL*rxj + 2LL*Power(rxj, 2LL)) -
 
-                           2LL*Pow(rxj, 8LL)*(90LL + 54LL*rxj + 12LL*Pow(rxj, 2LL) + Pow(rxj, 3LL)) +
+                           2LL*Power(rxj, 8LL)*(90LL + 54LL*rxj + 12LL*Power(rxj, 2LL) + Power(rxj, 3LL)) +
 
-                           Pow(rxi, 8LL)*(6LL + 9LL*rxj + 6LL*Pow(rxj, 2LL) + 2LL*Pow(rxj, 3LL)) +
+                           Power(rxi, 8LL)*(6LL + 9LL*rxj + 6LL*Power(rxj, 2LL) + 2LL*Power(rxj, 3LL)) +
 
-                           Pow(rxi, 2LL)*Pow(rxj, 6LL)*
+                           Power(rxi, 2LL)*Power(rxj, 6LL)*
 
-                           (-390LL - 69LL*rxj + 18LL*Pow(rxj, 2LL) + 4LL*Pow(rxj, 3LL)) -
+                           (-390LL - 69LL*rxj + 18LL*Power(rxj, 2LL) + 4LL*Power(rxj, 3LL)) -
 
-                           Pow(rxi, 6LL)*Pow(rxj, 2LL)*
+                           Power(rxi, 6LL)*Power(rxj, 2LL)*
 
-                           (42LL + 63LL*rxj + 42LL*Pow(rxj, 2LL) + 4LL*Pow(rxj, 3LL))) +
+                           (42LL + 63LL*rxj + 42LL*Power(rxj, 2LL) + 4LL*Power(rxj, 3LL))) +
 
-                          exp(2LL*rxj)*Pow(rxj, 6LL)*
+                          exp(2LL*rxj)*Power(rxj, 6LL)*
 
-                          (-24LL*Pow(rxi, 10LL) - 2LL*Pow(rxi, 11LL) - 69LL*Pow(rxi, 7LL)*Pow(rxj, 2LL) +
+                          (-24LL*Power(rxi, 10LL) - 2LL*Power(rxi, 11LL) - 69LL*Power(rxi, 7LL)*Power(rxj, 2LL) +
 
-                           6LL*Pow(rxj, 8LL) + 9LL*rxi*Pow(rxj, 8LL) +
+                           6LL*Power(rxj, 8LL) + 9LL*rxi*Power(rxj, 8LL) +
 
-                           4LL*Pow(rxi, 9LL)*(-27LL + Pow(rxj, 2LL)) +
+                           4LL*Power(rxi, 9LL)*(-27LL + Power(rxj, 2LL)) +
 
-                           18LL*Pow(rxi, 8LL)*(-10LL + Pow(rxj, 2LL)) +
+                           18LL*Power(rxi, 8LL)*(-10LL + Power(rxj, 2LL)) +
 
-                           6LL*Pow(rxi, 2LL)*Pow(rxj, 6LL)*(-7LL + Pow(rxj, 2LL)) -
+                           6LL*Power(rxi, 2LL)*Power(rxj, 6LL)*(-7LL + Power(rxj, 2LL)) -
 
-                           42LL*Pow(rxi, 4LL)*Pow(rxj, 4LL)*(-3LL + Pow(rxj, 2LL)) +
+                           42LL*Power(rxi, 4LL)*Power(rxj, 4LL)*(-3LL + Power(rxj, 2LL)) +
 
-                           Pow(rxi, 3LL)*Pow(rxj, 6LL)*(-63LL + 2LL*Pow(rxj, 2LL)) +
+                           Power(rxi, 3LL)*Power(rxj, 6LL)*(-63LL + 2LL*Power(rxj, 2LL)) +
 
-                           6LL*Pow(rxi, 6LL)*Pow(rxj, 2LL)*(-65LL + 7LL*Pow(rxj, 2LL)) +
+                           6LL*Power(rxi, 6LL)*Power(rxj, 2LL)*(-65LL + 7LL*Power(rxj, 2LL)) +
 
-                           Pow(rxi, 5LL)*(231LL*Pow(rxj, 4LL) - 4LL*Pow(rxj, 6LL))))/
+                           Power(rxi, 5LL)*(231LL*Power(rxj, 4LL) - 4LL*Power(rxj, 6LL))))/
 
-                         (6LL*exp(2LL*(rxi + rxj))*Pow(rxi - rxj, 7LL)*Pow(rxi + rxj, 7LL))
+                         (6LL*exp(2LL*(rxi + rxj))*Power(rxi - rxj, 7LL)*Power(rxi + rxj, 7LL))
 
                          );
         }

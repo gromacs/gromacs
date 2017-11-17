@@ -736,7 +736,7 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
 }
 
 #if HAVE_LIBCLN
-cl_R Pow(cl_R a, int b)
+cl_R Power(cl_R a, int b)
 {
     int  minus = 0;
     cl_R cP;
@@ -756,7 +756,7 @@ cl_R Pow(cl_R a, int b)
     }
     if ((b % 2) == 0)
     {
-        cP = Pow(a*a, b/2);
+        cP = Power(a*a, b/2);
         if (minus)
         {
             return ONE/cP;
@@ -768,7 +768,7 @@ cl_R Pow(cl_R a, int b)
     }
     else if ((b % 2) == 1)
     {
-        cP = a*Pow(a*a, b/2);
+        cP = a*Power(a*a, b/2);
         if (minus)
         {
             return ONE/cP;

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Potential-Slater">
+    <Int Name="Length">1</Int>
+    <Real>2.3476310210961322</Real>
+  </Sequence>
+  <Sequence Name="Force-Slater">
+    <Int Name="Length">1</Int>
+    <Real>-0</Real>
+  </Sequence>
+  <Sequence Name="NuclearPotential-Slater">
+    <Int Name="Length">1</Int>
+    <Real>3.6666666666666665</Real>
+  </Sequence>
+  <Sequence Name="NuclearForce-Slater">
+    <Int Name="Length">1</Int>
+    <Real>-0</Real>
+  </Sequence>
+</ReferenceData>

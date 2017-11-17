@@ -300,6 +300,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                                 }
                             }
                         }
+                        if (debug)
+                        {
+                            fprintf(debug, "velec: %0.3f r: %0.3f izeta: %0.3f jzeta: %0.3f irow: %0.3f jrow: %0.3f i: %d j: %d iq: %0.3f jq: %0.3f ix: %0.3f iy: %0.3f iz: %0.3f jx: %0.3f jy: %0.3f jz: %0.3f\n", 
+                                    velec, r, izeta, jzeta, irow, jrow, ii, jnr, charge[ii], charge[jnr], x[ii3+0], x[ii3+1], x[ii3+2], x[j3+0], x[j3+1], x[j3+2]);
+                        }
                         /* The shift for the Coulomb potential is stored in
                          * the RF parameter c_rf, which is 0 without shift
                          */

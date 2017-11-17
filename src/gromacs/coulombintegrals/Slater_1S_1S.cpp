@@ -54,7 +54,7 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
         }
         else
         {
-            S = (1LL/r)*((-24LL + 24LL*exp(2LL*rxi) - 33LL*rxi - 18LL*Pow(rxi, 2LL) - 4LL*Pow(rxi, 3LL))/
+            S = (1LL/r)*((-24LL + 24LL*exp(2LL*rxi) - 33LL*rxi - 18LL*Power(rxi, 2LL) - 4LL*Power(rxi, 3LL))/
 
                          (24LL*exp(2LL*rxi))
 
@@ -66,23 +66,23 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
     {
         if (r == 0LL)
         {
-            S = (xi*xj*(Pow(xi, 2LL) + 3LL*xi*xj + Pow(xj, 2LL)))/Pow(xi + xj, 3LL)
+            S = (xi*xj*(Power(xi, 2LL) + 3LL*xi*xj + Power(xj, 2LL)))/Power(xi + xj, 3LL)
 
             ;
         }
         else
         {
-            S = (1LL/r)*((exp(2LL*(rxi + rxj))*Pow(Pow(rxi, 2LL) - Pow(rxj, 2LL), 3LL) +
+            S = (1LL/r)*((exp(2LL*(rxi + rxj))*Power(Power(rxi, 2LL) - Power(rxj, 2LL), 3LL) +
 
-                          exp(2LL*rxj)*Pow(rxj, 4LL)*
+                          exp(2LL*rxj)*Power(rxj, 4LL)*
 
-                          (-3LL*Pow(rxi, 2LL) - Pow(rxi, 3LL) + Pow(rxj, 2LL) + rxi*Pow(rxj, 2LL)) -
+                          (-3LL*Power(rxi, 2LL) - Power(rxi, 3LL) + Power(rxj, 2LL) + rxi*Power(rxj, 2LL)) -
 
-                          exp(2LL*rxi)*Pow(rxi, 4LL)*
+                          exp(2LL*rxi)*Power(rxi, 4LL)*
 
-                          (Pow(rxi, 2LL)*(1LL + rxj) - Pow(rxj, 2LL)*(3LL + rxj)))/
+                          (Power(rxi, 2LL)*(1LL + rxj) - Power(rxj, 2LL)*(3LL + rxj)))/
 
-                         (exp(2LL*(rxi + rxj))*Pow(rxi - rxj, 3LL)*Pow(rxi + rxj, 3LL))
+                         (exp(2LL*(rxi + rxj))*Power(rxi - rxj, 3LL)*Power(rxi + rxj, 3LL))
 
                          );
         }
