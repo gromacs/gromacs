@@ -394,14 +394,21 @@ extern "C" double Coulomb_SS(double r, int i, int j, double xi, double xj)
 #if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
+    if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
         if (debug)
         {
-            fprintf(debug, "Slater-Slater integral %d %d not supported.\n", i, j);
+            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
         }
-        exit(1);
+    }    
+    if (i > SLATER_MAX)
+    {
+        i = SLATER_MAX;
     }
+    if (j > SLATER_MAX)
+    {
+        j = SLATER_MAX;
+    }   
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
@@ -568,14 +575,21 @@ extern "C" double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 #if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if ((i > SLATER_MAX_CLN) || (j > SLATER_MAX_CLN))
+    if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
         if (debug)
         {
-            fprintf(debug, "Slater-Slater integral %d %d not supported.\n", i, j);
+            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
         }
-        exit(1);
+    }    
+    if (i > SLATER_MAX)
+    {
+        i = SLATER_MAX;
     }
+    if (j > SLATER_MAX)
+    {
+        j = SLATER_MAX;
+    }   
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
@@ -680,14 +694,15 @@ extern "C" double DNuclear_SS(double r, int i, double xi)
 #if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if (i > SLATER_MAX_CLN)
+    if (i > SLATER_MAX)
     {
         if (debug)
         {
-            fprintf(debug, "Slater-Nuclear integral %d not supported.\n", i);
+            fprintf(debug, "Slater-Slater integral %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i);
         }
-        exit(1);
-    }
+        
+        i = SLATER_MAX;
+    }      
     if (r == 0)
     {
         return 0;
