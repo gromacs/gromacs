@@ -372,7 +372,7 @@ int BiasState::warnForHistogramAnomalies(const Grid  &grid,
 double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
                                                 const Grid                   &grid,
                                                 int                           point,
-                                                awh_dvec                      force) const
+                                                gmx::ArrayRef<double>         force) const
 {
     double potential = 0;
     for (size_t d = 0; d < dimParams.size(); d++)
@@ -392,7 +392,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
 void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                    const Grid                   &grid,
                                    const std::vector<double>    &probWeightNeighbor,
-                                   awh_dvec                      force) const
+                                   gmx::ArrayRef<double>         force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -401,13 +401,13 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
 
     /* Only neighboring points have non-negligible contribution. */
     const std::vector<int> &neighbor = grid.point(coordState_.gridpointIndex()).neighbor;
+    std::vector<double>     forceFromNeighbor(force.size());
     for (size_t n = 0; n < neighbor.size(); n++)
     {
         double weightNeighbor = probWeightNeighbor[n];
         int    indexNeighbor  = neighbor[n];
 
         /* Get the umbrella force from this point. The returned potential is ignored here. */
-        awh_dvec forceFromNeighbor;
         calcUmbrellaForceAndPotential(dimParams, grid, indexNeighbor,
                                       forceFromNeighbor);
 
@@ -422,7 +422,7 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
 double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
                                const std::vector<double>    &probWeightNeighbor,
-                               awh_dvec                      biasForce,
+                               gmx::ArrayRef<double>         biasForce,
                                gmx_int64_t                   step,
                                gmx_int64_t                   seed,
                                int                           indexSeed)
@@ -430,8 +430,8 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
     /* Generate and set a new coordinate reference value */
     coordState_.sampleUmbrellaGridpoint(grid, coordState_.gridpointIndex(), probWeightNeighbor, step, seed, indexSeed);
 
-    awh_dvec newForce;
-    double   newPotential =
+    std::vector<double> newForce(dimParams.size());
+    double              newPotential =
         calcUmbrellaForceAndPotential(dimParams, grid,  coordState_.umbrellaGridpoint(), newForce);
 
     /*  A modification of the reference value at time t will lead to a different
@@ -441,13 +441,10 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
         at steps when the reference value has been moved. E.g. if the ref. value
         is set every step to (coord dvalue +/- delta) would give zero force.
      */
-    for (size_t d = 0; d < dimParams.size(); d++)
+    for (size_t d = 0; d < biasForce.size(); d++)
     {
-        /* clang thinks newForce[d] can be garbage */
- #ifndef __clang_analyzer__
         /* Average of the current and new force */
         biasForce[d] = 0.5*(biasForce[d] + newForce[d]);
- #endif
     }
 
     return newPotential;

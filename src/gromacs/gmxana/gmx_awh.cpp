@@ -102,6 +102,11 @@ class OutputFile
         /*! \brief Constructor, Set the output base file name and title.
          *
          * Result is a valid object, but will produce empty output files.
+         *
+         * \param[in] filename   The name for output files, frame time, and possibly bias number, will be added per file/frame.
+         * \param[in] baseTitle  The base title of the plot, the bias number might be added.
+         * \param[in] numBias    The total number of AWH biases in the system.
+         * \param[in] biasIndex  The index of this bias.
          */
         OutputFile(const std::string  filename,
                    const std::string  baseTitle,
@@ -109,18 +114,34 @@ class OutputFile
                    int                biasIndex);
 
         /*! \brief Initializes the output file setup for the AWH output.
+         *
+         * \param[in] subBlockStart   Index of the first sub-block to write in the energy frame.
+         * \param[in] numSubBlocks    The total number of sub-blocks in the framw.
+         * \param[in] awhBiasParams   The AWH bias parameters.
+         * \param[in] graphSelection  Selects which graphs to plot.
+         * \param[in] energyUnit      Requested energy unit in output.
+         * \param[in] kTValue         kB*T in kJ/mol.
          */
-        void initializeAwhOutputFile(int                  subblockStart,
-                                     int                  numSubblocks,
+        void initializeAwhOutputFile(int                  subBlockStart,
+                                     int                  numSubBlocks,
                                      const AwhBiasParams *awhBiasParams,
                                      AwhGraphSelection    graphSelection,
                                      EnergyUnit           energyUnit,
                                      real                 kTValue);
 
-        /*! \brief Initializes the output file setup for the fricion output. */
-        void initializeFrictionOutputFile(int                  subblockStart,
-                                          int                  numSubblocks,
-                                          const AwhBiasParams *awhBiasParams);
+        /*! \brief Initializes the output file setup for the fricion output.
+         *
+         * \param[in] subBlockStart   Index of the first sub-block to write in the energy frame.
+         * \param[in] numSubBlocks    The total number of sub-blocks in the framw.
+         * \param[in] awhBiasParams   The AWH bias parameters.
+         * \param[in] energyUnit      Requested energy unit in output.
+         * \param[in] kTValue         kB*T in kJ/mol.
+         */
+        void initializeFrictionOutputFile(int                  subBlockStart,
+                                          int                  numSubBlocks,
+                                          const AwhBiasParams *awhBiasParams,
+                                          EnergyUnit           energyUnit,
+                                          real                 kTValue);
 
         /*! \brief Opens a single output file for a bias, prints title and legends.
          *
@@ -145,7 +166,7 @@ class OutputFile
         std::string              baseFilename_;       /**< Base of the output file name. */
         std::string              title_;              /**< Title for the graph. */
         int                      numDim_;             /**< Number of dimensions. */
-        int                      firstGraphSubblock_; /**< Index in the energy sub-blocks for the first graph. */
+        int                      firstGraphSubBlock_; /**< Index in the energy sub-blocks for the first graph. */
         int                      numGraph_;           /**< Number of actual graphs. */
         bool                     useKTForEnergy_;     /**< Whether to use kT instead of kJ/mol for energy. */
         std::vector<real>        scaleFactor_;        /**< Scale factors from energy file data to output for each of the numGraph quantities. */
@@ -161,11 +182,11 @@ class BiasReader
     public:
         //! Constructor.
         BiasReader(int                         subblockStart,
-                   int                         numSubblocks,
+                   int                         numSubBlocks,
                    std::unique_ptr<OutputFile> awhOutputFile,
                    std::unique_ptr<OutputFile> frictionOutputFile) :
             subblockStart_(subblockStart),
-            numSubblocks_(numSubblocks),
+            numSubBlocks_(numSubBlocks),
             awhOutputFile_(std::move(awhOutputFile)),
             frictionOutputFile_(std::move(frictionOutputFile))
         {
@@ -174,6 +195,8 @@ class BiasReader
         //! Return the AWH output file data.
         const OutputFile &awhOutputFile() const
         {
+            GMX_RELEASE_ASSERT(awhOutputFile_ != nullptr, "awhOutputFile() called without initialized AWH output file");
+
             return *awhOutputFile_.get();
         }
 
@@ -191,7 +214,7 @@ class BiasReader
 
     private:
         const int                   subblockStart_;      /**< The start index of the subblocks to read. */
-        const int                   numSubblocks_;       /**< Number of subblocks to read. */
+        const int                   numSubBlocks_;       /**< Number of subblocks to read. */
         std::unique_ptr<OutputFile> awhOutputFile_;      /**< The standard AWH output file data. */
         std::unique_ptr<OutputFile> frictionOutputFile_; /**< The friction/metric tensor output file data */
 };
@@ -223,9 +246,11 @@ class AwhReader
 namespace
 {
 
-/* NOTE: A second value will be added soon. */
-enum {
-    awhGraphTypeAwh, awhGraphTypeFriction
+//! Enum for selecting output file type.
+enum class OutputFileType
+{
+    Awh,      //!< AWH, all data except friction tensor.
+    Friction  //!< The full friction tensor.
 };
 
 /*! \brief The maximum number of observables per subblock, not including the full friction tensor.
@@ -238,7 +263,7 @@ static constexpr int maxAwhGraphs = 6;
 
 /*! \brief Constructs a legend for a standard awh output file */
 std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
-                                   int                  awhGraphType,
+                                   OutputFileType       outputFileType,
                                    size_t               numLegend)
 {
     const std::array<std::string, maxAwhGraphs> legendBase =
@@ -258,9 +283,9 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
         legend.push_back(gmx::formatString("dim%d", d));
     }
 
-    switch (awhGraphType)
+    switch (outputFileType)
     {
-        case awhGraphTypeAwh:
+        case OutputFileType::Awh:
         {
             /* Add as many legends as possible from the "base" legend list */
             size_t legendBaseIndex = 0;
@@ -271,7 +296,7 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
             }
         }
         break;
-        case awhGraphTypeFriction:
+        case OutputFileType::Friction:
             for (int i0 = 0; i0 < awhBiasParams->ndim; i0++)
             {
                 for (int i1 = 0; i1 <= i0; i1++)
@@ -294,7 +319,7 @@ OutputFile::OutputFile(const std::string  filename,
                        int                numBias,
                        int                biasIndex) :
     numDim_(0),
-    firstGraphSubblock_(0),
+    firstGraphSubBlock_(0),
     numGraph_(0),
     useKTForEnergy_(0),
     scaleFactor_(),
@@ -313,7 +338,7 @@ OutputFile::OutputFile(const std::string  filename,
 }
 
 void OutputFile::initializeAwhOutputFile(int                  subblockStart,
-                                         int                  numSubblocks,
+                                         int                  numSubBlocks,
                                          const AwhBiasParams *awhBiasParams,
                                          AwhGraphSelection    graphSelection,
                                          EnergyUnit           energyUnit,
@@ -321,11 +346,11 @@ void OutputFile::initializeAwhOutputFile(int                  subblockStart,
 {
     /* The first subblock with actual graph y-values is index 1 + ndim */
     numDim_             = awhBiasParams->ndim;
-    firstGraphSubblock_ = subblockStart + 1 + numDim_;
+    firstGraphSubBlock_ = subblockStart + 1 + numDim_;
     if (graphSelection == AwhGraphSelection::All)
     {
         /* There are one metadata and ndim coordinate blocks */
-        numGraph_       = std::min(numSubblocks - 1 - numDim_,
+        numGraph_       = std::min(numSubBlocks - 1 - numDim_,
                                    maxAwhGraphs);
     }
     else
@@ -340,7 +365,7 @@ void OutputFile::initializeAwhOutputFile(int                  subblockStart,
         std::fill(scaleFactor_.begin(), scaleFactor_.begin() + std::min(2, numGraph_), kTValue);
     }
     int numLegend = numDim_ - 1 + numGraph_;
-    legend_       = makeLegend(awhBiasParams, awhGraphTypeAwh, numLegend);
+    legend_       = makeLegend(awhBiasParams, OutputFileType::Awh, numLegend);
     /* We could have both length and angle coordinates in a single bias */
     xLabel_       = "(nm or deg)";
     yLabel_       = useKTForEnergy_ ? "(k\\sB\\NT)" : "(kJ/mol)";
@@ -352,28 +377,38 @@ void OutputFile::initializeAwhOutputFile(int                  subblockStart,
 }
 
 /*! \brief Initializes the output file setup for the fricion output (note that the filename is not set here). */
-void OutputFile::initializeFrictionOutputFile(int                  subblockStart,
-                                              int                  numSubblocks,
-                                              const AwhBiasParams *awhBiasParams)
+void OutputFile::initializeFrictionOutputFile(int                  subBlockStart,
+                                              int                  numSubBlocks,
+                                              const AwhBiasParams *awhBiasParams,
+                                              EnergyUnit           energyUnit,
+                                              real                 kTValue)
 {
     /* The first subblock with actual graph y-values is index 1 + ndim */
-    numDim_           = awhBiasParams->ndim;
-    int numTensorElem = (numDim_*(numDim_ + 1))/2;
+    numDim_               = awhBiasParams->ndim;
+    int numTensorElements = (numDim_*(numDim_ + 1))/2;
 
     /* The friction tensor elements are always the last subblocks */
-    if (numSubblocks < 1 + numDim_ + maxAwhGraphs + numTensorElem)
+    if (numSubBlocks < 1 + numDim_ + maxAwhGraphs + numTensorElements)
     {
         gmx_fatal(FARGS, "You requested friction tensor output, but the AWH data in the energy file does not contain the friction tensor");
     }
-    GMX_ASSERT(numSubblocks == 1 + numDim_ + maxAwhGraphs + numTensorElem, "The number of sub-blocks per bias should be 1 + ndim + maxAwhGraphs + (ndim*(ndim + 1))/2");
+    GMX_ASSERT(numSubBlocks == 1 + numDim_ + maxAwhGraphs + numTensorElements, "The number of sub-blocks per bias should be 1 + ndim + maxAwhGraphs + (ndim*(ndim + 1))/2");
 
-    firstGraphSubblock_ = subblockStart + numSubblocks - numTensorElem;
-    numGraph_           = numTensorElem;
-    scaleFactor_.resize(numGraph_, 1);
+    firstGraphSubBlock_ = subBlockStart + numSubBlocks - numTensorElements;
+    numGraph_           = numTensorElements;
+    useKTForEnergy_     = (energyUnit == EnergyUnit::KT);
+    scaleFactor_.resize(numGraph_, useKTForEnergy_ ? 1 : kTValue);
     int numLegend       = numDim_ - 1 + numGraph_;
-    legend_             = makeLegend(awhBiasParams, awhGraphTypeFriction, numLegend);
+    legend_             = makeLegend(awhBiasParams, OutputFileType::Friction, numLegend);
     xLabel_             = "(nm or deg)";
-    yLabel_             = "(nm\\S-2\\Nps or rad\\S-2\\Nps)";
+    if (useKTForEnergy_)
+    {
+        yLabel_         = "friction/k\\sB\\NT (nm\\S-2\\Nps or rad\\S-2\\Nps)";
+    }
+    else
+    {
+        yLabel_         = "friction (kJ mol\\S-1\\Nnm\\S-2\\Nps or kJ mol\\S-1\\Nrad\\S-2\\Nps)";
+    }
 }
 
 AwhReader::AwhReader(const AwhParams  *awhParams,
@@ -401,11 +436,11 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
     {
         AwhBiasParams              *awhBiasParams = &awhParams->awhBiasParams[k];
 
-        int                         numSubblocks  = (int)block->sub[subblockStart].fval[0];
+        int                         numSubBlocks  = (int)block->sub[subblockStart].fval[0];
 
         std::unique_ptr<OutputFile> awhOutputFile(new OutputFile(opt2fn("-o", numFileOptions, filenames), "AWH", awhParams->numBias, k));
 
-        awhOutputFile->initializeAwhOutputFile(subblockStart, numSubblocks,
+        awhOutputFile->initializeAwhOutputFile(subblockStart, numSubBlocks,
                                                awhBiasParams, awhGraphSelection,
                                                energyUnit, kT);
 
@@ -414,14 +449,14 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
         {
             frictionOutputFile = gmx::compat::make_unique<OutputFile>(opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams->numBias, k);
 
-            frictionOutputFile->initializeFrictionOutputFile(subblockStart, numSubblocks, awhBiasParams);
+            frictionOutputFile->initializeFrictionOutputFile(subblockStart, numSubBlocks, awhBiasParams, energyUnit, kT);
         }
 
-        biasReader_.emplace_back(BiasReader(subblockStart, numSubblocks,
+        biasReader_.emplace_back(BiasReader(subblockStart, numSubBlocks,
                                             std::move(awhOutputFile),
                                             std::move(frictionOutputFile)));
 
-        subblockStart += numSubblocks;
+        subblockStart += numSubBlocks;
     }
 }
 
@@ -453,7 +488,7 @@ void OutputFile::writeData(const t_enxblock &block,
         /* Print numGraph observables */
         for (int i = 0; i < numGraph_; i++)
         {
-            fprintf(fp, "  %g", block.sub[firstGraphSubblock_ + i].fval[j]*scaleFactor_[i]);
+            fprintf(fp, "  %g", block.sub[firstGraphSubBlock_ + i].fval[j]*scaleFactor_[i]);
         }
 
         fprintf(fp, "\n");
@@ -515,10 +550,7 @@ int gmx_awh(int argc, char *argv[])
         "are also printed, as well as the metric sqrt(det(friction_tensor))",
         "normalized such that the average is 1.",
         "Option [TT]-fric[tt] prints all components of the friction tensor",
-        "to an additional set of files. Note that the absolute values of",
-        "the friction tensor elements can be somewhat different from the real",
-        "friction due to the fact that we only have access to short parts",
-        "of the correlation time interval at each sampling point."
+        "to an additional set of files."
     };
     static gmx_bool     moreGraphs = FALSE;
     static int          skip       = 0;

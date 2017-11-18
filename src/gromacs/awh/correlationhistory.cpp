@@ -52,122 +52,79 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/awh-correlation-history.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "correlationgrid.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Packs the correlation history elements from a linear array into the correlation grid struct.
- *
- * \param[in,out] corr_flat           Flattened array of correlation elements.
- * \param[in] corrgrid_hist           Correlation grid to pack correlation elements into.
- */
-static void pack_correlation_history(CorrelationHistory *corr_flat, CorrelationGridHistory *corrgrid_hist)
+void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
+                                int                     numCorrelationTensors,
+                                int                     tensorSize,
+                                int                     blockDataListSize)
 {
-    int j = 0;
-    for (int i = 0; i < corrgrid_hist->numCorrTensor; i++)
-    {
-        corrgrid_hist->corrTensor[i].corr = &(corr_flat[j]);
-        j += corrgrid_hist->tensorSize;
-    }
+    correlationGridHistory->numCorrelationTensors = numCorrelationTensors;
+    correlationGridHistory->tensorSize            = tensorSize;
+    correlationGridHistory->blockDataListSize     = blockDataListSize;
+
+    correlationGridHistory->blockDataBuffer.resize(numCorrelationTensors*tensorSize*blockDataListSize);
 }
 
-/*! \brief
- * Packs the block data history structs from a linear array into the correlation grid struct.
- *
- * \param[in,out] blockdata_flat      Flattened array of block data structs.
- * \param[in] corrgrid_hist           Correlation grid to pack block data structs into.
- */
-static void pack_blockdata_history(CorrelationBlockdataHistory *blockdata_flat, CorrelationGridHistory *corrgrid_hist)
+CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid &correlationGrid)
 {
-    int k = 0;
-    for (int i = 0; i < corrgrid_hist->numCorrTensor; i++)
-    {
-        for (int j = 0; j < corrgrid_hist->tensorSize; j++)
-        {
-            corrgrid_hist->corrTensor[i].corr[j].blockData = &(blockdata_flat[k]);
-            k += corrgrid_hist->numBlockData;
-        }
-    }
-}
+    CorrelationGridHistory correlationGridHistory;
 
-/* Allocate and initialize correlation grid history. */
-void initCorrelationGridHistory(CorrelationGridHistory *corrGridHist, int numCorrTensors, int tensorSize, int numBlockData)
-{
-    corrGridHist->numCorrTensor = numCorrTensors;
-    corrGridHist->tensorSize    = tensorSize;
-    corrGridHist->numBlockData  = numBlockData;
+    initCorrelationGridHistory(&correlationGridHistory, correlationGrid.tensors().size(), correlationGrid.tensorSize(), correlationGrid.blockDataListSize());
 
-    snew(corrGridHist->corrTensor, numCorrTensors);
-
-    /* Allocate memory for correlation elements and block data in one block and distribute */
-    CorrelationHistory          *corr_flat;
-    CorrelationBlockdataHistory *blockdata_flat;
-    snew(corr_flat, numCorrTensors*tensorSize);
-    snew(blockdata_flat, numCorrTensors*tensorSize*numBlockData);
-    pack_correlation_history(corr_flat, corrGridHist);
-    pack_blockdata_history(blockdata_flat, corrGridHist);
-}
-
-/* Allocate a correlation grid history when restarting from a checkpoint. */
-CorrelationGridHistory *initCorrelationGridHistoryFromState(const CorrelationGrid &corrGrid)
-{
-    CorrelationGridHistory *corrGridHist;
-
-    snew(corrGridHist, 1);
-
-    initCorrelationGridHistory(corrGridHist, corrGrid.corr().size(), corrGrid.tensorSize(), corrGrid.blockDataSize());
-
-    return corrGridHist;
+    return correlationGridHistory;
 }
 
 /* Update the correlation grid history for checkpointing. */
-void updateCorrelationGridHistory(CorrelationGridHistory *corrGridHist, const CorrelationGrid &corrGrid)
+void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
+                                  const CorrelationGrid  &correlationGrid)
 {
-    GMX_RELEASE_ASSERT(corrGridHist->corrTensor != nullptr, "AWH force correlation matrix not initialized when updating history");
+    GMX_RELEASE_ASSERT(correlationGridHistory != nullptr, "We need a valid history object");
 
-    /* Matrix for each grid point */
-    for (size_t m = 0; m < corrGrid.corr().size(); m++)
+    gmx::ArrayRef<CorrelationBlockDataHistory> blockDataBuffer = correlationGridHistory->blockDataBuffer;
+
+    /* Store the grid in a linear array */
+    size_t bufferIndex = 0;
+    for (size_t m = 0; m < correlationGrid.tensors().size(); m++)
     {
-        CorrelationTensorHistory *corrTensorHist = &corrGridHist->corrTensor[m];
-        const CorrelationTensor  &corr           = corrGrid.corr()[m];
+        const CorrelationTensor &corr       = correlationGrid.tensors()[m];
+        const int                numDims    = corr.blockDataList()[0].coordData().size();
+        const int                tensorSize = corr.blockDataList()[0].correlationIntegral().size();
 
-        /* Correlation elements for each tensor.
-         * Currently the history blockdata struct contains all data needed
-         * for a tensor element. This leads to data duplication, but this
-         * simplifies the storage.
-         */
-        const int numDims    = corr.blockData()[0].coordData.size();
-        const int tensorSize = corr.blockData()[0].correlationIntegral.size();
+        /* Loop of the tensor elements, ignore the symmetric data */
         int       d1         = 0;
         int       d2         = 0;
         for (int k = 0; k < tensorSize; k++)
         {
-            CorrelationHistory *corrHist = &corrTensorHist->corr[k];
-
-            /* Blockdatas for each correlation element */
-            for (size_t l = 0; l < corr.blockData().size(); l++)
+            /* BlockData for each correlation element */
+            for (size_t l = 0; l < corr.blockDataList().size(); l++)
             {
-                CorrelationBlockdataHistory *blockDataHist = &corrHist->blockData[l];
-                const BlockData             &blockData     = corr.blockData()[l];
-                const CoordData             &cx            = blockData.coordData[d1];
-                const CoordData             &cy            = blockData.coordData[d2];
+                const CorrelationBlockData  &blockData = corr.blockDataList()[l];
+                const CorrelationCoordData  &cx        = blockData.coordData()[d1];
+                const CorrelationCoordData  &cy        = blockData.coordData()[d2];
 
-                blockDataHist->blockSumW           = blockData.blockSumW;
-                blockDataHist->blockSumSqrW        = blockData.blockSumSqrW;
-                blockDataHist->blockSumWX          = cx.blockSumWX;
-                blockDataHist->blockSumWY          = cy.blockSumWX;
-                blockDataHist->simSumSqrBlockW     = blockData.simSumSqrBlockW;
-                blockDataHist->simSumBlockSqrW     = blockData.simSumBlockSqrW;
-                blockDataHist->simSumBlockWBlockWX = cx.simSumBlockWBlockWX;
-                blockDataHist->simSumBlockWBlockWY = cy.simSumBlockWBlockWX;
-                blockDataHist->previousBlockIndex  = blockData.previousBlockIndex;
-                blockDataHist->blockLength         = blockData.blockLength;
-                blockDataHist->correlationIntegral = blockData.correlationIntegral[k];
+                CorrelationBlockDataHistory &bdh = blockDataBuffer[bufferIndex];
+
+                bdh.blockSumWeight                = blockData.blockSumWeight();
+                bdh.blockSumSqrWeight             = blockData.blockSumSqrWeight();
+                bdh.blockSumWeightX               = cx.blockSumWeightX;
+                bdh.blockSumWeightY               = cy.blockSumWeightX;
+                bdh.simSumSqrBlockWeight          = blockData.simSumSqrBlockWeight();
+                bdh.simSumBlockSqrWeight          = blockData.simSumBlockSqrWeight();
+                bdh.simSumBlockWeightBlockWeightX = cx.simSumBlockWeightBlockWeightX;
+                bdh.simSumBlockWeightBlockWeightY = cy.simSumBlockWeightBlockWeightX;
+                bdh.previousBlockIndex            = blockData.previousBlockIndex();
+                bdh.blockLength                   = blockData.blockLength();
+                bdh.correlationIntegral           = blockData.correlationIntegral()[k];
+
+                bufferIndex++;
             }
 
             d1++;
@@ -178,36 +135,67 @@ void updateCorrelationGridHistory(CorrelationGridHistory *corrGridHist, const Co
             }
         }
     }
+
+    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.size(), "We should store exactly as many elements as the buffer size");
+}
+
+void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory       &blockHistory,
+                                              const std::vector<CorrelationCoordData> &coordData,
+                                              const std::vector<double>               &correlationIntegral)
+{
+    blockSumWeight_        = blockHistory.blockSumWeight;
+    blockSumSqrWeight_     = blockHistory.blockSumSqrWeight;
+    simSumSqrBlockWeight_  = blockHistory.simSumSqrBlockWeight;
+    simSumBlockSqrWeight_  = blockHistory.simSumBlockSqrWeight;
+    previousBlockIndex_    = blockHistory.previousBlockIndex;
+    blockLength_           = blockHistory.blockLength;
+    coordData_             = coordData;
+    correlationIntegral_   = correlationIntegral;
 }
 
 /* Restore a correlation element from history. */
-void CorrelationTensor::restoreFromHistory(const CorrelationTensorHistory &corrTensorHist)
+void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDataHistory> &blockDataBuffer,
+                                           size_t                                         *bufferIndex)
 {
     /* Blockdata for each correlation element */
-    for (size_t l = 0; l < blockData_.size(); l++)
+    for (CorrelationBlockData &blockData : blockDataList_)
     {
-        BlockData *blockData = &blockData_[l];
-
         /* Correlation elements for each tensor */
-        const int numDims    = blockData_[0].coordData.size();
-        const int tensorSize = blockData_[0].correlationIntegral.size();
+        const int numDims    = blockDataList_[0].coordData().size();
+        const int tensorSize = blockDataList_[0].correlationIntegral().size();
         int       d1         = 0;
         int       d2         = 0;
+
+        /* Temporary containers to collect data */
+        std::vector<CorrelationCoordData> coordData(numDims);
+        std::vector<double>               correlationIntegral(tensorSize);
         for (int k = 0; k < tensorSize; k++)
         {
-            const CorrelationBlockdataHistory &bdh = corrTensorHist.corr[k].blockData[l];
+            if (*bufferIndex >= blockDataBuffer.size())
+            {
+                GMX_THROW(InvalidInputError("Mismatch of the correlation tensor size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
+            }
+            const CorrelationBlockDataHistory &blockHistory = blockDataBuffer[*bufferIndex];
 
-            blockData->blockSumW                         = bdh.blockSumW;
-            blockData->blockSumSqrW                      = bdh.blockSumSqrW;
-            blockData->coordData[d1].blockSumWX          = bdh.blockSumWX;
-            blockData->coordData[d2].blockSumWX          = bdh.blockSumWY;
-            blockData->simSumSqrBlockW                   = bdh.simSumSqrBlockW;
-            blockData->simSumBlockSqrW                   = bdh.simSumBlockSqrW;
-            blockData->coordData[d1].simSumBlockWBlockWX = bdh.simSumBlockWBlockWX;
-            blockData->coordData[d2].simSumBlockWBlockWX = bdh.simSumBlockWBlockWY;
-            blockData->previousBlockIndex                = bdh.previousBlockIndex;
-            blockData->blockLength                       = bdh.blockLength;
-            blockData->correlationIntegral[k]            = bdh.correlationIntegral;
+            /* To simplify the checkpointing, CorrelationBlockDataHistory
+             * duplicates some weight data for all tensor elements.
+             * Here we collect the coordinate and tensor data
+             * in temporary buffers.
+             */
+            coordData[d1].blockSumWeightX               = blockHistory.simSumBlockWeightBlockWeightX;
+            coordData[d2].blockSumWeightX               = blockHistory.simSumBlockWeightBlockWeightY;
+            coordData[d1].simSumBlockWeightBlockWeightX = blockHistory.simSumBlockWeightBlockWeightX;
+            coordData[d2].simSumBlockWeightBlockWeightX = blockHistory.simSumBlockWeightBlockWeightY;
+
+            correlationIntegral[k] = blockHistory.correlationIntegral;
+
+            /* Check if we collected all data needed for blockData */
+            if (k == tensorSize - 1)
+            {
+                blockData.restoreFromHistory(blockHistory, coordData, correlationIntegral);
+            }
+
+            (*bufferIndex)++;
 
             d1++;
             if (d1 == numDims)
@@ -220,14 +208,24 @@ void CorrelationTensor::restoreFromHistory(const CorrelationTensorHistory &corrT
 }
 
 /* Restores the correlation grid state from the correlation grid history. */
-void CorrelationGrid::restoreStateFromHistory(const CorrelationGridHistory &corrGridHist)
+void CorrelationGrid::restoreStateFromHistory(const CorrelationGridHistory &correlationGridHistory)
 {
-    GMX_RELEASE_ASSERT(corr_.size() == static_cast<size_t>(corrGridHist.numCorrTensor), "The size of the grid in the state and history should match");
-
-    /* Matrix for each grid point */
-    for (size_t m = 0; m < corr_.size(); m++)
+    if (tensors_.size() != static_cast<size_t>(correlationGridHistory.numCorrelationTensors))
     {
-        corr_[m].restoreFromHistory(corrGridHist.corrTensor[m]);
+        GMX_THROW(InvalidInputError("Mismatch of the grid size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
+    }
+
+    /* Extract the state from the linear history array */
+    size_t bufferIndex = 0;
+    for (size_t m = 0; m < tensors_.size(); m++)
+    {
+        tensors_[m].restoreFromHistory(correlationGridHistory.blockDataBuffer,
+                                       &bufferIndex);
+    }
+
+    if (bufferIndex != correlationGridHistory.blockDataBuffer.size())
+    {
+        GMX_THROW(InvalidInputError("Mismatch of the correlation tensor size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
     }
 }
 

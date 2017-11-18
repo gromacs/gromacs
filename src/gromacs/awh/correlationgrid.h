@@ -47,78 +47,161 @@
 #ifndef GMX_AWH_CORRELATIONGRID_H
 #define GMX_AWH_CORRELATIONGRID_H
 
+#include <cstddef>
+
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
+struct CorrelationBlockDataHistory;
 struct CorrelationGridHistory;
-struct CorrelationTensorHistory;
 
 /*! \internal \brief Correlation block averaging data.
  */
-struct CoordData
+struct CorrelationCoordData
 {
     /*! \brief Constructor.
      */
-    CoordData() :
-        blockSumWX(0),
-        simSumBlockWBlockWX(0)
+    CorrelationCoordData() :
+        blockSumWeightX(0),
+        simSumBlockWeightBlockWeightX(0)
     {
     };
 
-    double blockSumWX;          /**< Weighted sum of x for current block. */
-    double simSumBlockWBlockWX; /**< Sum over blocks of block weight times sum_wx. */
+    double blockSumWeightX;               /**< Weighted sum of x for current block. */
+    double simSumBlockWeightBlockWeightX; /**< Sum over blocks of block weight times sum_wx. */
 };
 
 /*! \internal \brief Correlation block averaging weight-only data.
  */
-struct BlockData
+class CorrelationBlockData
 {
-    /*! \brief Constructor.
-     *
-     * \param[in] numDims          The dimensionality.
-     * \param[in] blockLengthInit  The initial block length.
-     */
-    BlockData(int numDims, double blockLengthInit) :
-        blockSumW(0),
-        blockSumSqrW(0),
-        simSumSqrBlockW(0),
-        simSumBlockSqrW(0),
-        blockLength(blockLengthInit),
-        previousBlockIndex(-1),
-        coordData(numDims),
-        correlationIntegral(numDims*(numDims + 1)/2)
-    {
-    };
+    public:
+        /*! \brief Constructor.
+         *
+         * \param[in] numDim           The dimensionality.
+         * \param[in] blockLengthInit  The initial block length.
+         */
+        CorrelationBlockData(int    numDim,
+                             double blockLengthInit) :
+            blockSumWeight_(0),
+            blockSumSqrWeight_(0),
+            simSumSqrBlockWeight_(0),
+            simSumBlockSqrWeight_(0),
+            blockLength_(blockLengthInit),
+            previousBlockIndex_(-1),
+            coordData_(numDim),
+            correlationIntegral_(numDim*(numDim + 1)/2)
+        {
+        };
 
-    /*! \brief Adds a weighted data vector to one point in the correlation grid.
-     *
-     * \param[in] weight   The weight of the data.
-     * \param[in] dimData  Data for each dimension.
-     */
-    void addData(double weight, const double *dimData);
+        /*! \brief Restore the state from history.
+         *
+         * \param[in] blockHistory         The block data history containing the weight sums.
+         * \param[in] coordData            The coordinate data.
+         * \param[in] correlationIntegral  The correlation integral for all tensor elements.
+         */
+        void restoreFromHistory(const CorrelationBlockDataHistory       &blockHistory,
+                                const std::vector<CorrelationCoordData> &coordData,
+                                const std::vector<double>               &correlationIntegral);
 
-    /*! \brief Adds a filled data block to correlation time integral.
-     */
-    void addBlockToCorrelationIntegral();
+        /*! \brief Adds a weighted data vector to one point in the correlation grid.
+         *
+         * \note To avoid rounding noise, data with weight smaller than 1e-6
+         *       is ignored.
+         *
+         * \param[in] weight  The weight of the data.
+         * \param[in] data    One data point for each grid dimension.
+         */
+        void addData(double                        weight,
+                     gmx::ArrayRef<const double>   data);
 
-    /* Weight sum data, indentical for all dimensions */
-    double blockSumW;          /**< Sum weights for current block. */
-    double blockSumSqrW;       /**< Sum weights^2 for current block. */
-    double simSumSqrBlockW;    /**< Sum over blocks of block weight^2. */
-    double simSumBlockSqrW;    /**< Sum over blocks of weight^2. */
-    double blockLength;        /**< The length of each block used for block averaging */
-    int    previousBlockIndex; /**< The last block index data was added to (needed only for block length in terms of time). */
+        /*! \brief Adds a filled data block to correlation time integral.
+         */
+        void addBlockToCorrelationIntegral();
 
-    /* Sums for each coordinate dimension. */
-    std::vector<CoordData> coordData; /**< Array with sums for each coordinate dimension. */
+        /*! \brief Returns the sum weights for current block. */
+        double blockSumWeight() const
+        {
+            return blockSumWeight_;
+        };
 
-    /* Correlation tensor. */
-    std::vector<double>    correlationIntegral; /**< Array with the correlation elements corr(x, y) in the tensor, where x, y are vector components. */
+        /*! \brief Returns the sum weights^2 for current block. */
+        double blockSumSqrWeight() const
+        {
+            return blockSumSqrWeight_;
+        };
+
+        /*! \brief Returns the sum over blocks of block weight^2. */
+        double simSumSqrBlockWeight() const
+        {
+            return simSumSqrBlockWeight_;
+        };
+
+        /*! \brief Returns the sum over blocks of weight^2. */
+        double simSumBlockSqrWeight() const
+        {
+            return simSumBlockSqrWeight_;
+        };
+
+        /*! \brief Returns the length of each block used for block averaging. */
+        double blockLength() const
+        {
+            return blockLength_;
+        };
+
+        /*! \brief Double the length of each block used for block averaging. */
+        void doubleBlockLength()
+        {
+            blockLength_ *= 2;
+        };
+
+        /*! \brief Return the last block index data was added to (needed only for block length in terms of time). */
+        int previousBlockIndex() const
+        {
+            return previousBlockIndex_;
+        }
+
+        /*! \brief Set the last block index data was added to.
+         *
+         * \param[in] blockIndex  The block index.
+         */
+        void setPreviousBlockIndex(int blockIndex)
+        {
+            previousBlockIndex_ = blockIndex;
+        }
+
+        /*! \brief Return sums for each coordinate dimension. */
+        const std::vector<CorrelationCoordData> &coordData() const
+        {
+            return coordData_;
+        };
+
+        /*! \brief Return the correlation integral tensor. */
+        const std::vector<double> &correlationIntegral() const
+        {
+            return correlationIntegral_;
+        };
+
+    private:
+        /* Weight sum data, indentical for all dimensions */
+        double blockSumWeight_;       /**< Sum weights for current block. */
+        double blockSumSqrWeight_;    /**< Sum weights^2 for current block. */
+        double simSumSqrBlockWeight_; /**< Sum over blocks of block weight^2. */
+        double simSumBlockSqrWeight_; /**< Sum over blocks of weight^2. */
+        double blockLength_;          /**< The length of each block used for block averaging */
+        int    previousBlockIndex_;   /**< The last block index data was added to (needed only for block length in terms of time). */
+
+        /* Sums for each coordinate dimension. */
+        std::vector<CorrelationCoordData> coordData_; /**< Array with sums for each coordinate dimension. */
+
+        /* Correlation tensor. */
+        std::vector<double> correlationIntegral_; /**< Array with the correlation elements corr(x, y) in the tensor, where x, y are vector components. */
 };
 
 /*! \internal
@@ -139,21 +222,23 @@ class CorrelationTensor
 {
     public:
         /*! \brief 64 blocks is a good trade-off between signal and noise */
-        static const int c_numCorrelationBlocks = 64;
+        static constexpr int c_numCorrelationBlocks = 64;
 
         /*! \brief Constructor.
          *
-         * \param[in] numDims          The dimensionality.
+         * \param[in] numDim          The dimensionality.
          * \param[in] numBlockData     The number of data block data structs.
          * \param[in] blockLengthInit  The initial block length.
          */
-        CorrelationTensor(int numDims, int numBlockData, double blockLengthInit);
+        CorrelationTensor(int    numDim,
+                          int    numBlockData,
+                          double blockLengthInit);
 
-        /*! \brief Get a const reference to the block data.
+        /*! \brief Get a const reference to the list of block data.
          */
-        const std::vector<BlockData> &blockData() const
+        const std::vector<CorrelationBlockData> &blockDataList() const
         {
-            return blockData_;
+            return blockDataList_;
         }
 
         /*! \brief
@@ -165,12 +250,19 @@ class CorrelationTensor
 
         /*! \brief Restore a correlation element from history.
          *
-         * \param[in] corrTensorHist  Correlation history to restore from.
+         * \param[in]     blockDataBuffer  The linear correlation grid data history buffer.
+         * \param[in,out] bufferIndex      The index in \p blockDataBuffer to start reading, is increased with the number of blocks read.
          */
-        void restoreFromHistory(const CorrelationTensorHistory &corrTensorHist);
+        void restoreFromHistory(const std::vector<CorrelationBlockDataHistory> &blockDataBuffer,
+                                size_t                                         *bufferIndex);
 
     private:
         /*! \brief Updates the block length by doubling.
+         *
+         * The length of all blocks is doubled. This is achieved by removing
+         * the shortest block, moving all other blocks and duplicating
+         * the data of longest block to a nw block of double length (but
+         * currenly only half filled with data).
          */
         void doubleBlockLengths();
 
@@ -184,19 +276,23 @@ class CorrelationTensor
         /*! \brief Adds a weighted data vector to one point in the correlation grid.
          *
          * \param[in] weight               The weight of the data.
-         * \param[in] dimData              Data for each dimension.
+         * \param[in] data                 One data point for each grid dimension.
          * \param[in] blockLengthInWeight  If true, a block is measured in probability weight, otherwise in time.
          * \param[in] t                    The simulation time.
          */
-        void addData(double weight, const double *dimData,
-                     bool blockLengthInWeight, double t);
+        void addData(double                       weight,
+                     gmx::ArrayRef<const double>  data,
+                     bool                         blockLengthInWeight,
+                     double                       t);
 
         /*! \brief Returns an element of the time integrated correlation tensor at a given point in the grid.
          *
          * The units of the integral are time*(units of data)^2. This will be friction units time/length^2
          * if the data unit is 1/length.
          *
-         * The correlation index lists the elements of the upper-triangular correlation matrix row-wise.
+         * The correlation index lists the elements of the upper-triangular
+         * correlation matrix row-wise, so e.g. in 3D:
+         * 0 (0,0), 1 (1,0), 2 (1,1), 3 (2,0), 4 (2,1), 5 (2,2).
          * (TODO: this should ideally not have to be known by the caller.)
          *
          * \param[in] tensorIndex  Index in the tensor.
@@ -222,7 +318,7 @@ class CorrelationTensor
         double getVolumeElement(double dtSample) const;
 
     private:
-        std::vector<BlockData> blockData_; /**< The block data for different block lenghts. */
+        std::vector<CorrelationBlockData> blockDataList_; /**< The block data for different, consecutively doubling block lengths. */
 };
 
 /*! \internal
@@ -235,57 +331,71 @@ class CorrelationTensor
 class CorrelationGrid
 {
     public:
+        //! Enum that sets how we measure block length.
+        enum class BlockLengthMeasure
+        {
+            Time,   //!< Measure block length in time.
+            Weight  //!< Measure block length in sampled weight.
+        };
+
         /*! \brief Constructor.
          *
-         * \param[in] numPoints                   Number of points in the grid.
-         * \param[in] numDims                     Number of dimensions of the grid.
-         * \param[in] blockLengthInit             Initial length of the blocks used for block averaging.
-         * \param[in] measureBlockLengthInWeight  If true, a block is measured in probability weight, otherwise in time.
-         * \param[in] dtSample                    Time step for sampling correlations.
+         * \param[in] numPoints           Number of points in the grid.
+         * \param[in] numDims             Number of dimensions of the grid.
+         * \param[in] blockLengthInit     Initial length of the blocks used for block averaging.
+         * \param[in] blockLengthMeasure  Sets how we measure block length.
+         * \param[in] dtSample            Time step for sampling correlations.
          */
-        CorrelationGrid(int numPoints, int numDims,
-                        double blockLengthInit,
-                        bool measureBlockLengthInWeight,
-                        double dtSample);
+        CorrelationGrid(int                numPoints,
+                        int                numDims,
+                        double             blockLengthInit,
+                        BlockLengthMeasure blockLengthMeasure,
+                        double             dtSample);
 
         /*! \brief Adds a weighted data vector to one point in the correlation grid.
          *
          * \param[in] pointIndex  Index of the point to add data to.
          * \param[in] weight      Weight to assign to the data.
-         * \param[in] dimData     Data vector of the same dimensionality as the grid.
+         * \param[in] data        One data point for each grid dimension.
          * \param[in] t           The time when the data was sampled.
          */
-        void addData(int pointIndex, double weight, const double *dimData, double t);
+        void addData(int                          pointIndex,
+                     double                       weight,
+                     gmx::ArrayRef<const double>  data,
+                     double                       t);
 
         /*! \brief Restores the correlation grid state from the correlation grid history.
          *
-         * \param[in] corrGridHist  The correlation grid state history.
+         * The setup in the history should match that of this simulation.
+         * If this is not the case, an exception is thrown.
+         *
+         * \param[in] correlationGridHistory  The correlation grid state history.
          */
-        void restoreStateFromHistory(const CorrelationGridHistory &corrGridHist);
+        void restoreStateFromHistory(const CorrelationGridHistory &correlationGridHistory);
 
         /*! \brief Returns the number of elements in the tensor: dim*(dim+1)/2.
          */
         int tensorSize() const
         {
-            GMX_RELEASE_ASSERT(corr_.size() > 0, "Should only call tensorSize on a valid grid");
+            GMX_RELEASE_ASSERT(tensors_.size() > 0, "Should only call tensorSize on a valid grid");
 
-            return corr_[0].blockData()[0].correlationIntegral.size();
+            return tensors_[0].blockDataList()[0].correlationIntegral().size();
         }
 
-        /*! \brief Returns the size of the block data arrays.
+        /*! \brief Returns the size of the block data list.
          */
-        int blockDataSize() const
+        int blockDataListSize() const
         {
-            GMX_RELEASE_ASSERT(corr_.size() > 0, "Should only call tensorSize on a valid grid");
+            GMX_RELEASE_ASSERT(tensors_.size() > 0, "Should only call tensorSize on a valid grid");
 
-            return corr_[0].blockData().size();
+            return tensors_[0].blockDataList().size();
         }
 
         /*! \brief Get a const reference to the correlation grid data.
          */
-        const std::vector<CorrelationTensor> &corr() const
+        const std::vector<CorrelationTensor> &tensors() const
         {
-            return corr_;
+            return tensors_;
         }
 
         /* Right now the below functions are only used for an initial log printing. */
@@ -295,14 +405,18 @@ class CorrelationGrid
         double getBlockLength() const;
 
         /*! \brief Get the current number of blocks.
+         *
+         * If we have a finite block span we have a constant number of blocks,
+         * otherwise we are always adding more blocks (and we don't keep
+         * track of the number), so we return -1.
          */
         int getNumBlocks() const;
 
     public:
-        const double                   dtSample;            /**< Time in between samples. */
-        const bool                     blockLengthInWeight; /**< If true, a block is measured in probability weight, otherwise in time. */
+        const double                   dtSample;           /**< Time in between samples. */
+        const BlockLengthMeasure       blockLengthMeasure; /**< The measure for the block length. */
     private:
-        std::vector<CorrelationTensor> corr_;               /**< Correlation tensor grid */
+        std::vector<CorrelationTensor> tensors_;           /**< Correlation tensor grid */
 };
 
 }      // namespace gmx

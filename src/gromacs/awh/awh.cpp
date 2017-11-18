@@ -227,9 +227,9 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          * sampling observables based on the input pull coordinate value,
          * setting the bias force and/or updating the AWH bias state.
          */
-        awh_dvec biasForce;
-        double   biasPotential;
-        double   biasPotentialJump;
+        std::vector<double> biasForce(biasCts.bias.ndim());
+        double              biasPotential;
+        double              biasPotentialJump;
         /* Note: In the near future this call will be split in calls
          *       to supports bias sharing within a single simulation.
          */

@@ -48,62 +48,55 @@
 #ifndef GMX_MDTYPES_AWH_CORRELATION_HISTORY_H
 #define GMX_MDTYPES_AWH_CORRELATION_HISTORY_H
 
+#include <vector>
+
 namespace gmx
 {
 
 /*! \cond INTERNAL */
 
 //! Correlation block averaging data.
-struct CorrelationBlockdataHistory
+struct CorrelationBlockDataHistory
 {
-    double blockSumW;            /**< Sum weights for current block. */
-    double blockSumSqrW;         /**< Sum weights^2 for current block. */
-    double blockSumWX;           /**< Weighted sum of x for current block. */
-    double blockSumWY;           /**< Weighted sum of y for current block. */
-    double simSumSqrBlockW;      /**< Sum over blocks of block weight^2. */
-    double simSumBlockSqrW;      /**< Sum over blocks of weight^2. */
-    double simSumBlockWBlockWX;  /**< Sum over blocks of block weight times blockSumWX. */
-    double simSumBlockWBlockWY;  /**< Sum over blocks of block weight times blockSumWY. */
-    double blockLength;          /**< The length of each block used for block averaging. */
-    int    previousBlockIndex;   /**< The last block index data was added to (needed only for block length in terms of time). */
-    double correlationIntegral;  /**< The time integral of the correlation function of x and y, corr(x(0), y(t)). */
-};
-
-//! Correlation matrix element
-struct CorrelationHistory
-{
-    CorrelationBlockdataHistory *blockData; /**< The block averaging data */
-};
-
-/* The below structs do not contain any history dependence and are just for organizing the data in the structs above. */
-
-//! Correlation matrix.
-struct CorrelationTensorHistory
-{
-    CorrelationHistory *corr; /**< Array with the correlation elements corr(x, y) in the matrix, where x, y are vector components. */
+    double blockSumWeight;                /**< Sum weights for current block. */
+    double blockSumSqrWeight;             /**< Sum weights^2 for current block. */
+    double blockSumWeightX;               /**< Weighted sum of x for current block. */
+    double blockSumWeightY;               /**< Weighted sum of y for current block. */
+    double simSumSqrBlockWeight;          /**< Sum over blocks of block weight^2 over the whole simulation. */
+    double simSumBlockSqrWeight;          /**< Sum over blocks of weight^2 over the whole simulation. */
+    double simSumBlockWeightBlockWeightX; /**< Sum over blocks of block weight times blockSumWeightX over the whole simulation. */
+    double simSumBlockWeightBlockWeightY; /**< Sum over blocks of block weight times blockSumWeightY over the whole simulation. */
+    double blockLength;                   /**< The length of each block used for block averaging. */
+    int    previousBlockIndex;            /**< The last block index data was added to (needed only for block length in terms of time). */
+    double correlationIntegral;           /**< The time integral of the correlation function of x and y, corr(x(0), y(t)). */
 };
 
 //! Grid of local correlation matrices.
 struct CorrelationGridHistory
 {
     /* These counts here since we curently need them for initializing the correlation grid when reading a checkpoint */
-    int                       numCorrTensor; /**< Number correlation tensors in the grid (equal to the number of points). */
-    int                       tensorSize;    /**< The number of stored correlation matrix elements. */
-    int                       numBlockData;  /**< To be able to increase the block length later on, data is saved for several block lengths. */
-    CorrelationTensorHistory *corrTensor;    /**< Correlation tensors. */
+    int numCorrelationTensors; /**< Number correlation tensors in the grid (equal to the number of points). */
+    int tensorSize;            /**< The number of stored correlation matrix elements. */
+    int blockDataListSize;     /**< To be able to increase the block length later on, data is saved for several block lengths for each element. */
+
+    /* We store all tensor sequentially in a buffer */
+    std::vector<CorrelationBlockDataHistory> blockDataBuffer; /**< Buffer that contains the correlation data. */
 };
 
 /*! \endcond */
 
 /*! \brief
- * Allocate and initialize correlation grid history.
+ * Initialize correlation grid history, sets all sizes.
  *
- * \param[in,out] corrGridHist  Correlation grid history for master rank.
- * \param[in] numCorrTensors    Number of correlation tensors in the grid.
- * \param[in] tensorSize        Number of correlation elements in each tensor.
- * \param[in] numBlockData      Number of block data structs needed for each correlation element.
+ * \param[in,out] correlationGridHistory  Correlation grid history for master rank.
+ * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
+ * \param[in] tensorSize                  Number of correlation elements in each tensor.
+ * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
  */
-void initCorrelationGridHistory(CorrelationGridHistory *corrGridHist, int numCorrTensors, int tensorSize, int numBlockData);
+void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
+                                int                     numCorrelationTensors,
+                                int                     tensorSize,
+                                int                     blockDataListSize);
 
 }      // namespace gmx
 

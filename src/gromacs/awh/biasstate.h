@@ -57,6 +57,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -222,7 +223,7 @@ class BiasState
         double calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
                                              const Grid                   &grid,
                                              int                           point,
-                                             awh_dvec                      force) const;
+                                             gmx::ArrayRef<double>         force) const;
 
         /*! \brief
          * Calculates and sets the convolved force acting on the coordinate.
@@ -238,7 +239,7 @@ class BiasState
         void calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                 const Grid                   &grid,
                                 const std::vector<double>    &probWeightNeighbor,
-                                awh_dvec                      force) const;
+                                gmx::ArrayRef<double>         force) const;
 
         /*! \brief
          * Move the center point of the umbrella potential.
@@ -261,7 +262,7 @@ class BiasState
         double moveUmbrella(const std::vector<DimParams> &dimParams,
                             const Grid                   &grid,
                             const std::vector<double>    &probWeightNeighbor,
-                            awh_dvec                      biasForce,
+                            gmx::ArrayRef<double>         biasForce,
                             gmx_int64_t                   step,
                             gmx_int64_t                   seed,
                             int                           indexSeed);

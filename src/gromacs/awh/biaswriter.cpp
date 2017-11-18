@@ -158,7 +158,7 @@ BiasWriter::BiasWriter(const Bias &bias)
             }
             else if (outputType == AwhOutputEntryType::FrictionTensor)
             {
-                outputTypeNumBlock[outputType] = bias.forceCorr().tensorSize();
+                outputTypeNumBlock[outputType] = bias.forceCorrelation().tensorSize();
             }
             else
             {
@@ -300,8 +300,8 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
     int blockStart = getVarStartBlock(outputType);
     GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data().size()), "Attempt to transfer AWH data to block for point index out of range");
 
-    const CorrelationGrid &forceCorr      = bias.forceCorr();
-    int                    numCorrelation = forceCorr.tensorSize();
+    const CorrelationGrid &forceCorrelation = bias.forceCorrelation();
+    int                    numCorrelation   = forceCorrelation.tensorSize();
 
     /* Transfer the point data of this variable to the right block(s) */
     int b = blockStart;
@@ -339,13 +339,13 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
             block_[b].data()[pointIndex] = bias.state().points()[pointIndex].target();
             break;
         case AwhOutputEntryType::ForceCorrelationVolume:
-            block_[b].data()[pointIndex] = forceCorr.corr()[pointIndex].getVolumeElement(forceCorr.dtSample);
+            block_[b].data()[pointIndex] = forceCorrelation.tensors()[pointIndex].getVolumeElement(forceCorrelation.dtSample);
             break;
         case AwhOutputEntryType::FrictionTensor:
             /* Store force correlation in units of friction, i.e. time/length^2 */
             for (int n = 0; n < numCorrelation; n++)
             {
-                block_[b].data()[pointIndex] = forceCorr.corr()[pointIndex].getTimeIntegral(n, forceCorr.dtSample);
+                block_[b].data()[pointIndex] = forceCorrelation.tensors()[pointIndex].getTimeIntegral(n, forceCorrelation.dtSample);
                 b++;
             }
             break;
