@@ -386,6 +386,10 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
         force[d]   = -k*deviation;
         potential += 0.5*k*deviation*deviation;
     }
+    for( int d= grid.numDimensions() ; d < std::sizeof(force)/std::sizeof(force[0]) ; d++)
+    {
+        force[d]   = 0;
+    }
 
     return potential;
 }
@@ -445,10 +449,8 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
     for (size_t d = 0; d < dimParams.size(); d++)
     {
         /* clang thinks newForce[d] can be garbage */
-#ifndef __clang_analyzer__
         /* Average of the current and new force */
         biasForce[d] = 0.5*(biasForce[d] + newForce[d]);
-#endif
     }
 
     return newPotential;
