@@ -229,12 +229,12 @@ TEST_P(BiasTest, ForcesBiasPmf)
     double              coordMaxValue = 0;
     double              potentialJump = 0;
     gmx_int64_t         step          = 0;
+    std::vector<double> biasForce(bias.ndim());
     for (auto &coord : coordinates_)
     {
         coordMaxValue = std::max(coordMaxValue, std::abs(coord));
 
         awh_dvec coordValue = { coord, 0, 0, 0 };
-        awh_dvec biasForce;
         double   potential = 0;
         bias.calcForceAndUpdateBias(coordValue,
                                     biasForce, &potential, &potentialJump,

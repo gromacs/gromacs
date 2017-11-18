@@ -56,52 +56,101 @@
 namespace gmx
 {
 
+namespace
+{
+
+/*! \brief
+ * Get the block index for the current block and simulation length.
+ *
+ * This is simply how many blocks of length \p blockLength fit completely
+ * into \p totalAccumulatedLength, which is either the current time minus
+ * the start time, which time weighting, or the total weight.
+ *
+ * \param[in] blockLength               Block length.
+ * \param[in] currentAccumulatedLength  Sampling length of all data collected up to the current step, in time or weight.
+ * \returns the block index.
+ */
+int getBlockIndex(double blockLength,
+                  double currentAccumulatedLength)
+{
+    return static_cast<int>(currentAccumulatedLength/blockLength);
+}
+
+/*! \brief
+ * Return the number of block data structs needed for keeping a certain number of blocks.
+ *
+ * The list start with 1 block and doubles, so we need 1 + 2log(numBlocks).
+ *
+ * \param[in] numBlocks  Number of blocks.
+ * \returns the number of block data structs.
+ */
+int getBlockDataListSize(int numBlocks)
+{
+    int blockDataListSize = 1;
+
+    while (numBlocks > (1 << (blockDataListSize - 1)))
+    {
+        blockDataListSize++;
+    }
+
+    GMX_RELEASE_ASSERT((1 << (blockDataListSize - 1)) == numBlocks, "numBlocks should be a power of 2");
+
+    return blockDataListSize;
+}
+
+}   // namespace
+
 double CorrelationTensor::getTimeIntegral(int    tensorIndex,
                                           double dtSample) const
 {
-    const BlockData &blockData = blockData_[0];
-    double           weight    = blockData.simSumBlockSqrW;
-    double           corrsum   = 0;
+    const CorrelationBlockData &blockData           = blockDataList_[0];
+    double                      weight              = blockData.simSumBlockSqrWeight();
+    double                      correlationIntegral = 0;
     if (weight > 0)
     {
-        corrsum = blockData.correlationIntegral[tensorIndex]/weight;
+        correlationIntegral = blockData.correlationIntegral()[tensorIndex]/weight;
     }
 
-    return 0.5*corrsum*dtSample;
+    return 0.5*correlationIntegral*dtSample;
 }
 
 double CorrelationTensor::getVolumeElement(double dtSample) const
 {
-    double det, a, b, c, d, e, f;
+    double det;
 
-    switch (blockData_[0].correlationIntegral.size())
+    switch (blockDataList_[0].correlationIntegral().size())
     {
         case 1:
             /* 1-dimensional tensor: [a] */
             det = getTimeIntegral(0, dtSample);
             break;
         case 3:
+        {
             /* 2-dimensional tensor: [a b; b c] */
-            a   = getTimeIntegral(0, dtSample);
-            b   = getTimeIntegral(1, dtSample);
-            c   = getTimeIntegral(2, dtSample);
+            double a = getTimeIntegral(0, dtSample);
+            double b = getTimeIntegral(1, dtSample);
+            double c = getTimeIntegral(2, dtSample);
 
-            det = a*c - b*b;
-            break;
+            det      = a*c - b*b;
+        }
+        break;
         case 6:
+        {
             /* 3-dimensional tensor: [a b d; b c e; d e f] */
-            a   = getTimeIntegral(0, dtSample);
-            b   = getTimeIntegral(1, dtSample);
-            c   = getTimeIntegral(2, dtSample);
-            d   = getTimeIntegral(3, dtSample);
-            e   = getTimeIntegral(4, dtSample);
-            f   = getTimeIntegral(5, dtSample);
+            double a = getTimeIntegral(0, dtSample);
+            double b = getTimeIntegral(1, dtSample);
+            double c = getTimeIntegral(2, dtSample);
+            double d = getTimeIntegral(3, dtSample);
+            double e = getTimeIntegral(4, dtSample);
+            double f = getTimeIntegral(5, dtSample);
 
-            det = a*c*f + 2*b*d*e - d*c*d - b*b*f - a*e*e;
-            break;
+            det      = a*c*f + 2*b*d*e - d*c*d - b*b*f - a*e*e;
+        }
+        break;
         default:
             det = 0;
             /* meh */
+            break;
     }
 
     /* Returns 0 if no data, not supported number of dims
@@ -109,26 +158,24 @@ double CorrelationTensor::getVolumeElement(double dtSample) const
     return det > 0 ? std::sqrt(det) : 0;
 }
 
-/* Updates the block length by doubling. */
 void CorrelationTensor::doubleBlockLengths()
 {
     /* We need to shift the data so that a given blockdata gets the data for double the block length.
        The data for the shortest block length is not needed anymore. */
 
-    for (size_t i = 0; i < blockData_.size() - 1; i++)
+    for (size_t i = 0; i < blockDataList_.size() - 1; i++)
     {
-        blockData_[i] = blockData_[i + 1];
+        blockDataList_[i] = blockDataList_[i + 1];
     }
 
     /* The blockdata which has 1 block is the same as the old one but with double the block length */
-    blockData_[blockData_.size() - 1].blockLength *= 2.;
+    blockDataList_.back().doubleBlockLength();
 }
 
-/* Updates the block length such that data fits. */
 void CorrelationTensor::updateBlockLengths(double samplingLength)
 {
     /* How many times do we need to double the longest block length to fit the data? */
-    double longestLength = blockData_[blockData_.size() - 1].blockLength;
+    double longestLength = blockDataList_.back().blockLength();
     int    numDoublings  = 0;
     while (samplingLength > longestLength)
     {
@@ -144,85 +191,89 @@ void CorrelationTensor::updateBlockLengths(double samplingLength)
 }
 
 /* Adds a filled data block to correlation time integral. */
-void BlockData::addBlockToCorrelationIntegral()
+void CorrelationBlockData::addBlockToCorrelationIntegral()
 {
-    const bool firstBlock = (simSumSqrBlockW == 0);
+    const bool firstBlock = (simSumSqrBlockWeight_ == 0);
 
     if (!firstBlock)
     {
-        const int numDims     = coordData.size();
+        const int numDim      = coordData_.size();
         int       tensorIndex = 0;
-        for (int d1 = 0; d1 < numDims; d1++)
+        for (int d1 = 0; d1 < numDim; d1++)
         {
-            const CoordData &c1 = coordData[d1];
+            const CorrelationCoordData &c1 = coordData_[d1];
 
             for (int d2 = 0; d2 <= d1; d2++)
             {
-                const CoordData &c2 = coordData[d2];
+                const CorrelationCoordData &c2 = coordData_[d2];
 
+                /* Compute change in correlaion integral due to adding
+                 * the block through computing the different of the block
+                 * average with the old average for one component (we use x)
+                 * and with the new component (we use y).
+                 */
                 /* Need the old average, before the data of this block was added */
-                double avg_x_old    = c1.simSumBlockWBlockWX/simSumSqrBlockW;
+                GMX_ASSERT(simSumSqrBlockWeight_, "Denominator should be > 0 (should be guaranteed by the conditional above)");
+                double oldAverageX              = c1.simSumBlockWeightBlockWeightX/simSumSqrBlockWeight_;
 
-                double sum_wbwy_new = c2.simSumBlockWBlockWX + blockSumW*c2.blockSumWX;
-                double sum_wb2_new  = simSumSqrBlockW + gmx::square(blockSumW);
-                double avg_y_new    = sum_wbwy_new/sum_wb2_new;
+                double newSumWeightBlockWeightY = c2.simSumBlockWeightBlockWeightX + blockSumWeight_*c2.blockSumWeightX;
+                double newSumSqrBlockWeight     = simSumSqrBlockWeight_ + gmx::square(blockSumWeight_);
+                GMX_ASSERT(newSumSqrBlockWeight > 0, "Denominator should be > 0");
+                double newAverageY              = newSumWeightBlockWeightY/newSumSqrBlockWeight;
 
-                double sum_dx_old   = c1.blockSumWX - avg_x_old*blockSumW;
-                double sum_dy_new   = c2.blockSumWX - avg_y_new*blockSumW;
+                double diffBlockWithOldAverageX = c1.blockSumWeightX - oldAverageX*blockSumWeight_;
+                double diffBlockWithNewAverageY = c2.blockSumWeightX - newAverageY*blockSumWeight_;
 
                 /* Update the correlation integral using the changes in averages. */
-                correlationIntegral[tensorIndex] += sum_dx_old*sum_dy_new;
+                correlationIntegral_[tensorIndex] += diffBlockWithOldAverageX*diffBlockWithNewAverageY;
                 tensorIndex++;
             }
         }
     }
 
     /* Add the weights of the block to the block sums and clear the weights */
-    simSumSqrBlockW           += gmx::square(blockSumW);
-    simSumBlockSqrW           += blockSumSqrW;
-    for (auto &c : coordData)
+    simSumSqrBlockWeight_               += gmx::square(blockSumWeight_);
+    simSumBlockSqrWeight_               += blockSumSqrWeight_;
+    for (auto &c : coordData_)
     {
-        c.simSumBlockWBlockWX += blockSumW*c.blockSumWX;
+        c.simSumBlockWeightBlockWeightX += blockSumWeight_*c.blockSumWeightX;
         /* Reset */
-        c.blockSumWX           = 0;
+        c.blockSumWeightX                = 0;
     }
     /* Reset */
-    blockSumW                  = 0;
-    blockSumSqrW               = 0;
+    blockSumWeight_    = 0;
+    blockSumSqrWeight_ = 0;
 }
 
-/*! \brief
- * Get the block index for the current block and simulation length.
- *
- * \param[in] blockLength  Block length.
- * \param[in] length       Sampling length of all data, in time or weight.
- * \returns the block index.
- */
-static int getBlockIndex(double blockLength, double length)
+void CorrelationBlockData::addData(double                       weight,
+                                   gmx::ArrayRef<const double>  data)
 {
-    return static_cast<int>(length/blockLength);
-}
+    GMX_ASSERT(data.size() == coordData_.size(), "Size of data should match the size of coordData");
 
-void BlockData::addData(double weight, const double *dimData)
-{
-    blockSumW    += weight;
-    blockSumSqrW += weight*weight;
+    blockSumWeight_    += weight;
+    blockSumSqrWeight_ += weight*weight;
 
-    for (size_t d = 0; d < coordData.size(); d++)
+    for (size_t d = 0; d < coordData_.size(); d++)
     {
-        coordData[d].blockSumWX += weight*dimData[d];
+        coordData_[d].blockSumWeightX += weight*data[d];
     }
 }
 
 double CorrelationTensor::getWeight() const
 {
     /* The last blockdata has only 1 block containing all data */
-    return blockData()[blockData().size() - 1].blockSumW;
+    return blockDataList().back().blockSumWeight();
 }
 
-void CorrelationTensor::addData(double weight, const double *dimData,
-                                bool blockLengthInWeight, double t)
+void CorrelationTensor::addData(double                       weight,
+                                gmx::ArrayRef<const double>  data,
+                                bool                         blockLengthInWeight,
+                                double                       t)
 {
+    /* We should avoid adding data with small very weight to avoid
+     * divergence close to 0/0. The total spread weight for each sample is 1,
+     * so 1e-6 is a completely negligible amount.
+     */
     if (weight < 1e-6)
     {
         /* Nothing to add */
@@ -237,72 +288,59 @@ void CorrelationTensor::addData(double weight, const double *dimData,
 
     /* Store the data for each block length considered. First update the longest block which has all data since it's
        used for updating the correlation function for the other block lengths. */
-    for (size_t i = 0; i < blockData_.size() - 1; i++)
+    for (size_t i = 0; i < blockDataList_.size() - 1; i++)
     {
-        BlockData *bd = &blockData_[i];
+        CorrelationBlockData &bd = blockDataList_[i];
 
-        /* Find current block index given block length. */
-        int blockIndex = getBlockIndex(bd->blockLength, samplingLength);
+        /* Find current block index given the block length. */
+        int blockIndex = getBlockIndex(bd.blockLength(), samplingLength);
 
-        if (bd->previousBlockIndex >= 0 && bd->previousBlockIndex != blockIndex)
+        if (bd.previousBlockIndex() >= 0 &&
+            bd.previousBlockIndex() != blockIndex)
         {
             /* Changed block. Update correlation with old data before adding to new block. */
-            bd->addBlockToCorrelationIntegral();
+            bd.addBlockToCorrelationIntegral();
         }
 
         /* Keep track of which block index data was last added to */
-        bd->previousBlockIndex = blockIndex;
+        bd.setPreviousBlockIndex(blockIndex);
 
         /* Store the data */
-        bd->addData(weight, dimData);
+        bd.addData(weight, data);
     }
 
     /* The last blockdata has only 1 block which contains all data so far.
      * Add the data for the largest block length.
      */
-    blockData_[blockData_.size() - 1].addData(weight, dimData);
+    blockDataList_.back().addData(weight, data);
 }
 
-CorrelationTensor::CorrelationTensor(int numDims, int numBlockData,
+CorrelationTensor::CorrelationTensor(int    numDim,
+                                     int    numBlockData,
                                      double blockLengthInit)
 {
-    int scaling = 1;
+    unsigned int scaling = 1;
+
+    GMX_RELEASE_ASSERT(numBlockData < static_cast<int>(sizeof(scaling)*8), "numBlockData should we smaller than the number of bits in scaling");
 
     for (int n = 0; n < numBlockData; n++)
     {
-        blockData_.push_back(BlockData(numDims, scaling*blockLengthInit));
+        blockDataList_.push_back(CorrelationBlockData(numDim, scaling*blockLengthInit));
         scaling <<= 1; /* Double block length */
     }
 }
 
-/*! \brief
- * Return the number of block data structs needed for keeping a certain number of blocks.
- *
- * \param[in] numBlocks  Number of blocks.
- * \returns the number of block data structs.
- */
-static int getNumBlockData(int numBlocks)
-{
-    int numBlockData = 0;
-
-    while (numBlocks > 0)
-    {
-        numBlocks >>= 1; /* divide by 2 */
-        numBlockData++;
-    }
-    return numBlockData;
-}
-
-CorrelationGrid::CorrelationGrid(int numPoints, int numDims,
-                                 double blockLengthInit,
-                                 bool measureBlockLengthInWeight,
-                                 double dtSample) :
+CorrelationGrid::CorrelationGrid(int                numPoints,
+                                 int                numDim,
+                                 double             blockLengthInit,
+                                 BlockLengthMeasure blockLengthMeasure,
+                                 double             dtSample) :
     dtSample(dtSample),
-    blockLengthInWeight(measureBlockLengthInWeight)
+    blockLengthMeasure(blockLengthMeasure)
 {
     /* Set the initial block length for the block averaging. The length doesn't really matter
        after the block length has been doubled a few times, as long as it's set small enough */
-    if (blockLengthInWeight)
+    if (blockLengthMeasure == BlockLengthMeasure::Weight)
     {
         blockLengthInit = blockLengthInit > 0 ? blockLengthInit : 1;
     }
@@ -314,22 +352,25 @@ CorrelationGrid::CorrelationGrid(int numPoints, int numDims,
     /* Set the number of blocks. The number of blocks determines the current span of the data
        and how many different block lengths (nblockdata) we need to keep track of to be able to
        increase the block length later */
-    int numBlocks    = CorrelationTensor::c_numCorrelationBlocks;
-    int numBlockData = getNumBlockData(numBlocks);
+    int numBlocks         = CorrelationTensor::c_numCorrelationBlocks;
+    int BlockDataListSize = getBlockDataListSize(numBlocks);
 
-    corr_.resize(numPoints, CorrelationTensor(numDims, numBlockData, blockLengthInit));
+    tensors_.resize(numPoints, CorrelationTensor(numDim, BlockDataListSize, blockLengthInit));
 }
 
-void CorrelationGrid::addData(int pointIndex, double weight, const double *dimData, double t)
+void CorrelationGrid::addData(int                          pointIndex,
+                              double                       weight,
+                              gmx::ArrayRef<const double>  data,
+                              double                       t)
 {
-    corr_[pointIndex].addData(weight, dimData, blockLengthInWeight, t);
+    tensors_[pointIndex].addData(weight, data, blockLengthMeasure == BlockLengthMeasure::Weight, t);
 }
 
 int CorrelationGrid::getNumBlocks() const
 {
-    const std::vector<BlockData> &blockData      = corr()[0].blockData();
-    double                        maxBlockLength = blockData[blockData.size() - 1].blockLength;
-    double                        minBlockLength = blockData[0].blockLength;
+    const auto &blockDataList  = tensors()[0].blockDataList();
+    double      maxBlockLength = blockDataList.back().blockLength();
+    double      minBlockLength = blockDataList[0].blockLength();
 
     /* If we have a finite block span we have a constant number of blocks, otherwise we are always adding more blocks (and we don't keep track of the number) */
     if (maxBlockLength < GMX_DOUBLE_MAX)
@@ -345,7 +386,7 @@ int CorrelationGrid::getNumBlocks() const
 double CorrelationGrid::getBlockLength() const
 {
     /* Return the  minimum blocklength */
-    return corr()[0].blockData()[0].blockLength;
+    return tensors()[0].blockDataList()[0].blockLength();
 }
 
 } // namespace gmx

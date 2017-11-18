@@ -64,7 +64,7 @@ struct CorrelationGridHistory;
  * \param[in,out] corrGrid      Correlation grid state to initialize with.
  * \returns the correlation grid history struct.
  */
-CorrelationGridHistory *initCorrelationGridHistoryFromState(const CorrelationGrid &corrGrid);
+CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid &corrGrid);
 
 /*! \brief
  * Restores the correlation grid state from the correlation grid history.

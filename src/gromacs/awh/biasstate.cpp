@@ -372,7 +372,7 @@ int BiasState::warnForHistogramAnomalies(const Grid  &grid,
 double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
                                                 const Grid                   &grid,
                                                 int                           point,
-                                                awh_dvec                      force) const
+                                                gmx::ArrayRef<double>         force) const
 {
     double potential = 0;
     for (size_t d = 0; d < dimParams.size(); d++)
@@ -392,7 +392,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
 void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                    const Grid                   &grid,
                                    const std::vector<double>    &probWeightNeighbor,
-                                   awh_dvec                      force) const
+                                   gmx::ArrayRef<double>         force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -422,7 +422,7 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
 double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
                                const Grid                   &grid,
                                const std::vector<double>    &probWeightNeighbor,
-                               awh_dvec                      biasForce,
+                               gmx::ArrayRef<double>         biasForce,
                                gmx_int64_t                   step,
                                gmx_int64_t                   seed,
                                int                           indexSeed)

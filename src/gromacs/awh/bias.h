@@ -191,7 +191,7 @@ class Bias
          * - reweight samples to extract the PMF.
          *
          * \param[in]     coordValue     The current coordinate value(s).
-         * \param[out]    biasForce      The bias force.
+         * \param[out]    biasForce      The bias force, the size should match the dimensionality of the bias (exception otherwise).
          * \param[out]    awhPotential   Bias potential.
          * \param[out]    potentialJump  Change in bias potential for this bias.
          * \param[in]     ms             Struct for multi-simulation communication.
@@ -201,7 +201,7 @@ class Bias
          * \param[in,out] fplog          Log file.
          */
         void calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                    awh_dvec              biasForce,
+                                    gmx::ArrayRef<double> biasForce,
                                     double               *awhPotential,
                                     double               *potentialJump,
                                     const gmx_multisim_t *ms,
@@ -324,11 +324,11 @@ class Bias
     public:
         /*! \brief Return a const reference to the force correlation data.
          */
-        const CorrelationGrid &forceCorr() const
+        const CorrelationGrid &forceCorrelation() const
         {
-            GMX_ASSERT(forceCorr_ != nullptr, "forceCorr() should only be called with a valid force correlation object");
+            GMX_RELEASE_ASSERT(forceCorrelation_ != nullptr, "forceCorrelation() should only be called with a valid force correlation object");
 
-            return *forceCorr_.get();
+            return *forceCorrelation_.get();
         }
 
         /*! \brief Return the number of data blocks that have been prepared for writing.
@@ -355,7 +355,7 @@ class Bias
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
 
         /* Force correlation */
-        std::unique_ptr<CorrelationGrid> forceCorr_;   /**< Takes care of force correlation statistics. */
+        std::unique_ptr<CorrelationGrid> forceCorrelation_;   /**< Takes care of force correlation statistics. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */

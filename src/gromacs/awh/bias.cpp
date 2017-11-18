@@ -99,7 +99,7 @@ void Bias::doSkippedUpdatesForAllPoints()
 }
 
 void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                  awh_dvec              biasForce,
+                                  gmx::ArrayRef<double> biasForce,
                                   double               *awhPotential,
                                   double               *potentialJump,
                                   const gmx_multisim_t *ms,
@@ -108,6 +108,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
                                   gmx_int64_t           seed,
                                   FILE                 *fplog)
 {
+    GMX_RELEASE_ASSERT(biasForce.size() == dimParams_.size(), "The size of biasForce should match the dimensionality of the bias");
+
     if (step < 0)
     {
         GMX_THROW(InvalidInputError("The step number is negative which is not supported by the AWH code."));
@@ -211,10 +213,9 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
 
-        if (forceCorr_ != nullptr)
+        if (forceCorrelation_ != nullptr)
         {
-            GMX_RELEASE_ASSERT(biasHistory->forceCorr != nullptr, "When using force correlation we need a force correlation object in the history");
-            forceCorr_->restoreStateFromHistory(*biasHistory->forceCorr);
+            forceCorrelation_->restoreStateFromHistory(biasHistory->forceCorrelation);
         }
     }
 
@@ -230,9 +231,9 @@ void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
 
     state_.initHistoryFromState(biasHistory);
 
-    if (forceCorr_ != nullptr)
+    if (forceCorrelation_ != nullptr)
     {
-        biasHistory->forceCorr = initCorrelationGridHistoryFromState(forceCorr());
+        biasHistory->forceCorrelation = initCorrelationGridHistoryFromState(forceCorrelation());
     }
 }
 
@@ -242,10 +243,9 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
 
     state_.updateHistory(biasHistory, grid_);
 
-    if (forceCorr_ != nullptr)
+    if (forceCorrelation_ != nullptr)
     {
-        GMX_RELEASE_ASSERT(biasHistory->forceCorr != nullptr, "AWH history force correlation not initialized when updating history");
-        updateCorrelationGridHistory(biasHistory->forceCorr, forceCorr());
+        updateCorrelationGridHistory(&biasHistory->forceCorrelation, forceCorrelation());
     }
 }
 
@@ -275,12 +275,14 @@ Bias::Bias(int                             biasIndexInCollection,
     if (thisRankDoesIO_)
     {
         /* Set up the force correlation object. */
-        bool   blocklengthInWeight = false;
-        /* We let the correlation init function set its parameters to something useful for now. */
-        double blockLength       = 0;
+
+        /* We let the correlation init function set its parameters
+         * to something useful for now.
+         */
+        double blockLength = 0;
         /* Construct the force correlation object. */
-        forceCorr_ = std::unique_ptr<CorrelationGrid>(new CorrelationGrid(state_.points().size(), ndim(),
-                                                                          blockLength, blocklengthInWeight,
+        forceCorrelation_ = std::unique_ptr<CorrelationGrid>(new CorrelationGrid(state_.points().size(), ndim(),
+                                                                          blockLength, CorrelationGrid::BlockLengthMeasure::Time,
                                                                           awhParams.nstSampleCoord*mdTimeStep));
 
         writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
@@ -289,7 +291,7 @@ Bias::Bias(int                             biasIndexInCollection,
 
 void Bias::printInitializationToLog(FILE *fplog) const
 {
-    if (fplog != nullptr && forceCorr_ != nullptr)
+    if (fplog != nullptr && forceCorrelation_ != nullptr)
     {
         std::string prefix =
             gmx::formatString("\nawh%d:", params_.biasIndex + 1);
@@ -297,22 +299,23 @@ void Bias::printInitializationToLog(FILE *fplog) const
         fprintf(fplog,
                 "%s initial force correlation block length = %g %s"
                 "%s force correlation number of blocks = %d",
-                prefix.c_str(), forceCorr().getBlockLength(),
-                forceCorr().blockLengthInWeight ? "" : "ps",
-                prefix.c_str(), forceCorr().getNumBlocks());
+                prefix.c_str(), forceCorrelation().getBlockLength(),
+                forceCorrelation().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight ? "" : "ps",
+                prefix.c_str(), forceCorrelation().getNumBlocks());
     }
 }
 
 void Bias::updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
                                   double                        t)
 {
-    if (forceCorr_ == nullptr)
+    if (forceCorrelation_ == nullptr)
     {
         return;
     }
 
     const std::vector<int> &neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
 
+    std::vector<double> forceFromNeighbor(ndim());
     for (size_t n = 0; n < neighbor.size(); n++)
     {
         double weightNeighbor = probWeightNeighbor[n];
@@ -323,11 +326,10 @@ void Bias::updateForceCorrelation(const std::vector<double>    &probWeightNeighb
            We actually add the force normalized by beta which has the units of 1/length. This means that the
            resulting correlation time integral is directly in units of friction time/length^2 which is really what
            we're interested in. */
-        awh_dvec forceFromNeighbor;
         state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, forceFromNeighbor);
 
         /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
-        forceCorr_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
+        forceCorrelation_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
     }
 }
 
