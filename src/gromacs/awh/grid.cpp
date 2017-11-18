@@ -209,12 +209,10 @@ void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_iv
         int stride = 1;
 
         /* Workaround for bug in clang */
-#ifndef __clang_analyzer__
         for (int k = d + 1; k < numDimensions; k++)
         {
             stride *= numPointsDim[k];
         }
-#endif
 
         indexMulti[d] = indexLinear/stride;
         indexLinear  -= indexMulti[d]*stride;
@@ -230,6 +228,10 @@ void linearGridindexToMultiDim(const Grid &grid,
     for (int d = 0; d < grid.numDimensions(); d++)
     {
         numPointsDim[d] = grid.axis(d).numPoints();
+    }
+    for(int d = grid.numDimensions() ; d < c_biasMaxNumDim ; d++)
+    {
+        numPointsDim[d]   = 0;
     }
 
     linearArrayIndexToMultiDim(indexLinear, grid.numDimensions(), numPointsDim, indexMulti);
