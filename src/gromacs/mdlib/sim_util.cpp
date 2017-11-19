@@ -1069,7 +1069,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
-    if (useGpuPme && pmeRunMode == PmeRunMode::GPU)
+    if (useGpuPme && pmeRunMode == PmeRunMode::GPU && !fr->delayFftLaunch)
     {
         // In PME GPU mode we launch FFT / gather after the
         // X copy/transform to allow overlap.
@@ -1094,7 +1094,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (useGpuPme && pmeRunMode == PmeRunMode::Hybrid)
+    if (useGpuPme && (pmeRunMode == PmeRunMode::Hybrid || fr->delayFftLaunch))
     {
 
         // PME GPU - intermediate CPU work in mixed mode

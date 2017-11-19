@@ -3153,6 +3153,8 @@ void init_forcerec(FILE                *fp,
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
     }
+
+    fr->delayFftLaunch = (getenv("GMX_DELAY_GPU_FFT_LAUNCH") != nullptr);
 }
 
 /* Frees GPU memory and destroys the GPU context.
