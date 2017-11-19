@@ -158,7 +158,7 @@ BiasWriter::BiasWriter(const Bias &bias)
             }
             else if (outputType == AwhOutputEntryType::FrictionTensor)
             {
-                outputTypeNumBlock[outputType] = bias.forceCorrelation().tensorSize();
+                outputTypeNumBlock[outputType] = bias.forceCorrelationGrid().tensorSize();
             }
             else
             {
@@ -300,7 +300,7 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
     int blockStart = getVarStartBlock(outputType);
     GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data().size()), "Attempt to transfer AWH data to block for point index out of range");
 
-    const CorrelationGrid &forceCorrelation = bias.forceCorrelation();
+    const CorrelationGrid &forceCorrelation = bias.forceCorrelationGrid();
     int                    numCorrelation   = forceCorrelation.tensorSize();
 
     /* Transfer the point data of this variable to the right block(s) */

@@ -54,6 +54,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -191,7 +192,6 @@ class Bias
          * - reweight samples to extract the PMF.
          *
          * \param[in]     coordValue     The current coordinate value(s).
-         * \param[out]    biasForce      The bias force, the size should match the dimensionality of the bias (exception otherwise).
          * \param[out]    awhPotential   Bias potential.
          * \param[out]    potentialJump  Change in bias potential for this bias.
          * \param[in]     ms             Struct for multi-simulation communication.
@@ -199,16 +199,17 @@ class Bias
          * \param[in]     step           Time step.
          * \param[in]     seed           Random seed.
          * \param[in,out] fplog          Log file.
+         * \returns a reference to the bias force, size \ref ndim(), valid until the next call of this method or destruction of Bias, whichever comes first.
          */
-        void calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                    gmx::ArrayRef<double> biasForce,
-                                    double               *awhPotential,
-                                    double               *potentialJump,
-                                    const gmx_multisim_t *ms,
-                                    double                t,
-                                    gmx_int64_t           step,
-                                    gmx_int64_t           seed,
-                                    FILE                 *fplog);
+        gmx::ArrayRef<const double>
+        calcForceAndUpdateBias(const awh_dvec        coordValue,
+                               double               *awhPotential,
+                               double               *potentialJump,
+                               const gmx_multisim_t *ms,
+                               double                t,
+                               gmx_int64_t           step,
+                               gmx_int64_t           seed,
+                               FILE                 *fplog);
 
         /*! \brief
          * Calculates the convolved bias for a given coordinate value.
@@ -313,22 +314,22 @@ class Bias
                                        FILE        *fplog);
 
         /*! \brief
-         * Collect samples for the force correlation analysis.
+         * Collect samples for the force correlation analysis on the grid.
          *
          * \param[in] probWeightNeighbor  Probability weight of the neighboring points.
          * \param[in] t                   The time.
          */
-        void updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
-                                    double                        t);
+        void updateForceCorrelationGrid(const std::vector<double> &probWeightNeighbor,
+                                        double                     t);
 
     public:
-        /*! \brief Return a const reference to the force correlation data.
+        /*! \brief Return a const reference to the force correlation grid.
          */
-        const CorrelationGrid &forceCorrelation() const
+        const CorrelationGrid &forceCorrelationGrid() const
         {
-            GMX_RELEASE_ASSERT(forceCorrelation_ != nullptr, "forceCorrelation() should only be called with a valid force correlation object");
+            GMX_RELEASE_ASSERT(forceCorrelationGrid_ != nullptr, "forceCorrelationGrid() should only be called with a valid force correlation object");
 
-            return *forceCorrelation_.get();
+            return *forceCorrelationGrid_.get();
         }
 
         /*! \brief Return the number of data blocks that have been prepared for writing.
@@ -354,16 +355,19 @@ class Bias
 
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
 
-        /* Force correlation */
-        std::unique_ptr<CorrelationGrid> forceCorrelation_;   /**< Takes care of force correlation statistics. */
+        std::vector<double>          biasForce_;         /**< Vector for returning the force to the caller. */
+
+        /* Force correlation grid */
+        std::unique_ptr<CorrelationGrid> forceCorrelationGrid_; /**< Takes care of force correlation statistics for every grid point. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
 
-        /* Temporary working vector used during the update.
-         * This only here to avoid allocation at every MD step.
+        /* Temporary working vectors used during the update.
+         * These are only here to avoid allocation at every MD step.
          */
         std::vector<double>          tempWorkSpace_;     /**< Working vector of doubles. */
+        std::vector<double>          tempForce_;         /**< Bias force work buffer. */
 
         int                          numWarningsIssued_; /**< The number of warning issued in the current run. */
 };

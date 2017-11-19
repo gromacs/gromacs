@@ -59,11 +59,11 @@ namespace gmx
 struct CorrelationBlockDataHistory
 {
     double blockSumWeight;                       /**< Sum weights for current block. */
-    double blockSumSqrWeight;                    /**< Sum weights^2 for current block. */
+    double blockSumSquareWeight;                 /**< Sum weights^2 for current block. */
     double blockSumWeightX;                      /**< Weighted sum of x for current block. */
     double blockSumWeightY;                      /**< Weighted sum of y for current block. */
-    double sumOverBlocksSqrBlockWeight;          /**< Sum over all blocks in the simulation of block weight^2 over the whole simulation. */
-    double sumOverBlocksBlockSqrWeight;          /**< Sum over all blocks in the simulation of weight^2 over the whole simulation. */
+    double sumOverBlocksSquareBlockWeight;       /**< Sum over all blocks in the simulation of block weight^2 over the whole simulation. */
+    double sumOverBlocksBlockSquareWeight;       /**< Sum over all blocks in the simulation of weight^2 over the whole simulation. */
     double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times blockSumWeightX over the whole simulation. */
     double sumOverBlocksBlockWeightBlockWeightY; /**< Sum over all blocks in the simulation of block weight times blockSumWeightY over the whole simulation. */
     double blockLength;                          /**< The length of each block used for block averaging. */

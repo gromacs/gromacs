@@ -61,27 +61,27 @@ namespace gmx
 struct CorrelationBlockDataHistory;
 struct CorrelationGridHistory;
 
-/*! \internal \brief Correlation block averaging data.
- */
-struct CorrelationCoordData
-{
-    /*! \brief Constructor.
-     */
-    CorrelationCoordData() :
-        blockSumWeightX(0),
-        sumOverBlocksBlockWeightBlockWeightX(0)
-    {
-    };
-
-    double blockSumWeightX;                      /**< Weighted sum of x for current block. */
-    double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times sum_wx. */
-};
-
 /*! \internal \brief Correlation block averaging weight-only data.
  */
 class CorrelationBlockData
 {
     public:
+        /*! \internal \brief Correlation block averaging data.
+         */
+        struct CoordData
+        {
+            /*! \brief Constructor.
+             */
+        CoordData() :
+            blockSumWeightX(0),
+                sumOverBlocksBlockWeightBlockWeightX(0)
+            {
+            };
+
+            double blockSumWeightX;                      /**< Weighted sum of x for current block. */
+            double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times sum_wx. */
+        };
+
         /*! \brief Constructor.
          *
          * \param[in] numDim           The dimensionality.
@@ -90,9 +90,9 @@ class CorrelationBlockData
         CorrelationBlockData(int    numDim,
                              double blockLengthInit) :
             blockSumWeight_(0),
-            blockSumSqrWeight_(0),
-            sumOverBlocksSqrBlockWeight_(0),
-            sumOverBlocksBlockSqrWeight_(0),
+            blockSumSquareWeight_(0),
+            sumOverBlocksSquareBlockWeight_(0),
+            sumOverBlocksBlockSquareWeight_(0),
             blockLength_(blockLengthInit),
             previousBlockIndex_(-1),
             coordData_(numDim),
@@ -106,9 +106,9 @@ class CorrelationBlockData
          * \param[in] coordData            The coordinate data.
          * \param[in] correlationIntegral  The correlation integral for all tensor elements.
          */
-        void restoreFromHistory(const CorrelationBlockDataHistory       &blockHistory,
-                                const std::vector<CorrelationCoordData> &coordData,
-                                const std::vector<double>               &correlationIntegral);
+        void restoreFromHistory(const CorrelationBlockDataHistory &blockHistory,
+                                const std::vector<CoordData>      &coordData,
+                                const std::vector<double>         &correlationIntegral);
 
         /*! \brief Adds a weighted data vector to one point in the correlation grid.
          *
@@ -132,21 +132,21 @@ class CorrelationBlockData
         };
 
         /*! \brief Returns the sum weights^2 for current block. */
-        double blockSumSqrWeight() const
+        double blockSumSquareWeight() const
         {
-            return blockSumSqrWeight_;
+            return blockSumSquareWeight_;
         };
 
         /*! \brief Returns the sum over blocks of block weight^2. */
-        double sumOverBlocksSqrBlockWeight() const
+        double sumOverBlocksSquareBlockWeight() const
         {
-            return sumOverBlocksSqrBlockWeight_;
+            return sumOverBlocksSquareBlockWeight_;
         };
 
         /*! \brief Returns the sum over blocks of weight^2. */
-        double sumOverBlocksBlockSqrWeight() const
+        double sumOverBlocksBlockSquareWeight() const
         {
-            return sumOverBlocksBlockSqrWeight_;
+            return sumOverBlocksBlockSquareWeight_;
         };
 
         /*! \brief Returns the length of each block used for block averaging. */
@@ -177,7 +177,7 @@ class CorrelationBlockData
         }
 
         /*! \brief Return sums for each coordinate dimension. */
-        const std::vector<CorrelationCoordData> &coordData() const
+        const std::vector<CoordData> &coordData() const
         {
             return coordData_;
         };
@@ -190,15 +190,15 @@ class CorrelationBlockData
 
     private:
         /* Weight sum data, indentical for all dimensions */
-        double blockSumWeight_;              /**< Sum weights for current block. */
-        double blockSumSqrWeight_;           /**< Sum weights^2 for current block. */
-        double sumOverBlocksSqrBlockWeight_; /**< Sum over all blocks in the simulation of block weight^2. */
-        double sumOverBlocksBlockSqrWeight_; /**< Sum over all blocks in the simulation of weight^2. */
-        double blockLength_;                 /**< The length of each block used for block averaging */
-        int    previousBlockIndex_;          /**< The last block index data was added to (needed only for block length in terms of time). */
+        double blockSumWeight_;                 /**< Sum weights for current block. */
+        double blockSumSquareWeight_;           /**< Sum weights^2 for current block. */
+        double sumOverBlocksSquareBlockWeight_; /**< Sum over all blocks in the simulation of block weight^2. */
+        double sumOverBlocksBlockSquareWeight_; /**< Sum over all blocks in the simulation of weight^2. */
+        double blockLength_;                    /**< The length of each block used for block averaging */
+        int    previousBlockIndex_;             /**< The last block index data was added to (needed only for block length in terms of time). */
 
         /* Sums for each coordinate dimension. */
-        std::vector<CorrelationCoordData> coordData_; /**< Array with sums for each coordinate dimension. */
+        std::vector<CoordData> coordData_;      /**< Array with sums for each coordinate dimension. */
 
         /* Correlation tensor. */
         std::vector<double> correlationIntegral_; /**< Array with the correlation elements corr(x, y) in the tensor, where x, y are vector components. */

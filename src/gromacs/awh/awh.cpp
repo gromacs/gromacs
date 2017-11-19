@@ -232,16 +232,16 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          * sampling observables based on the input pull coordinate value,
          * setting the bias force and/or updating the AWH bias state.
          */
-        std::vector<double> biasForce(biasCts.bias.ndim());
         double              biasPotential;
         double              biasPotentialJump;
         /* Note: In the near future this call will be split in calls
          *       to supports bias sharing within a single simulation.
          */
-        biasCts.bias.calcForceAndUpdateBias(coordValue, biasForce,
-                                            &biasPotential, &biasPotentialJump,
-                                            commRecord_->ms,
-                                            t, step, seed_, fplog);
+        gmx::ArrayRef<const double> biasForce =
+            biasCts.bias.calcForceAndUpdateBias(coordValue,
+                                                &biasPotential, &biasPotentialJump,
+                                                commRecord_->ms,
+                                                t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -261,7 +261,9 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
 
         if (isOutputStep(step))
         {
-            /* Ensure that we output fully updated data */
+            /* We might have skipped updates for part of the grid points.
+             * Ensure all points are updated before writing out their data.
+             */
             biasCts.bias.doSkippedUpdatesForAllPoints();
         }
     }

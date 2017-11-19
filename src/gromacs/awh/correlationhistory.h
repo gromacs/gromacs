@@ -58,8 +58,8 @@ struct CorrelationGridHistory;
  * Allocate a correlation grid history with the same structure as the given correlation grid.
  *
  * This function would be called at the start of a new simulation.
- * Note that no data only constant data will be initialized here.
- * History data is set by update_correlation_grid_history.
+ * Note that only sizes and memory are initialized here.
+ * History data is set by \ref updateCorrelationGridHistory.
  *
  * \param[in,out] corrGrid      Correlation grid state to initialize with.
  * \returns the correlation grid history struct.

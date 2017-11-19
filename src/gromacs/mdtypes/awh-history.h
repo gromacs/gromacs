@@ -103,15 +103,15 @@ struct AwhBiasStateHistory
 //! AWH bias history data. Note that this is a copy of an AWH internal struct.
 struct AwhBiasHistory
 {
-    std::vector<AwhPointStateHistory> pointState;       /**< History for grid coordinate points. */
+    std::vector<AwhPointStateHistory> pointState;           /**< History for grid coordinate points. */
 
-    AwhBiasStateHistory               state;            /**< The global state of the AWH bias. */
-    CorrelationGridHistory            forceCorrelation; /**< History for force correlation statistics. */
+    AwhBiasStateHistory               state;                /**< The global state of the AWH bias. */
+    CorrelationGridHistory            forceCorrelationGrid; /**< History for force correlation statistics. */
 
     /*! \brief Constructor. */
     AwhBiasHistory() : pointState(),
                        state(),
-                       forceCorrelation()
+                       forceCorrelationGrid()
     {
     }
 };

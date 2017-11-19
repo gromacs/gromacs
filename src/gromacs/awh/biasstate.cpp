@@ -392,6 +392,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams> &di
 void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                    const Grid                   &grid,
                                    const std::vector<double>    &probWeightNeighbor,
+                                   gmx::ArrayRef<double>         forceWorkBuffer,
                                    gmx::ArrayRef<double>         force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
@@ -400,8 +401,8 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams> &dimParams,
     }
 
     /* Only neighboring points have non-negligible contribution. */
-    const std::vector<int> &neighbor = grid.point(coordState_.gridpointIndex()).neighbor;
-    std::vector<double>     forceFromNeighbor(force.size());
+    const std::vector<int> &neighbor          = grid.point(coordState_.gridpointIndex()).neighbor;
+    gmx::ArrayRef<double>   forceFromNeighbor = forceWorkBuffer;
     for (size_t n = 0; n < neighbor.size(); n++)
     {
         double weightNeighbor = probWeightNeighbor[n];

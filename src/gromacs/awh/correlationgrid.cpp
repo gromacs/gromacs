@@ -104,7 +104,7 @@ double CorrelationTensor::getTimeIntegral(int    tensorIndex,
                                           double dtSample) const
 {
     const CorrelationBlockData &blockData           = blockDataList_[0];
-    double                      weight              = blockData.sumOverBlocksBlockSqrWeight();
+    double                      weight              = blockData.sumOverBlocksBlockSquareWeight();
     double                      correlationIntegral = 0;
     if (weight > 0)
     {
@@ -193,7 +193,7 @@ void CorrelationTensor::updateBlockLengths(double samplingLength)
 /* Adds a filled data block to correlation time integral. */
 void CorrelationBlockData::addBlockToCorrelationIntegral()
 {
-    const bool firstBlock = (sumOverBlocksSqrBlockWeight_ == 0);
+    const bool firstBlock = (sumOverBlocksSquareBlockWeight_ == 0);
 
     if (!firstBlock)
     {
@@ -201,25 +201,26 @@ void CorrelationBlockData::addBlockToCorrelationIntegral()
         int       tensorIndex = 0;
         for (int d1 = 0; d1 < numDim; d1++)
         {
-            const CorrelationCoordData &c1 = coordData_[d1];
+            const CoordData &c1 = coordData_[d1];
 
             for (int d2 = 0; d2 <= d1; d2++)
             {
-                const CorrelationCoordData &c2 = coordData_[d2];
+                const CoordData &c2 = coordData_[d2];
 
                 /* Compute change in correlaion integral due to adding
-                 * the block through computing the different of the block
+                 * the block through computing the difference of the block
                  * average with the old average for one component (we use x)
                  * and with the new component (we use y).
                  */
                 /* Need the old average, before the data of this block was added */
-                GMX_ASSERT(sumOverBlocksSqrBlockWeight_, "Denominator should be > 0 (should be guaranteed by the conditional above)");
-                double oldAverageX              = c1.sumOverBlocksBlockWeightBlockWeightX/sumOverBlocksSqrBlockWeight_;
+                GMX_ASSERT(sumOverBlocksSquareBlockWeight_, "Denominator should be > 0 (should be guaranteed by the conditional above)");
+                double oldAverageX              = c1.sumOverBlocksBlockWeightBlockWeightX/sumOverBlocksSquareBlockWeight_;
 
                 double newSumWeightBlockWeightY = c2.sumOverBlocksBlockWeightBlockWeightX + blockSumWeight_*c2.blockSumWeightX;
-                double newSumSqrBlockWeight     = sumOverBlocksSqrBlockWeight_ + gmx::square(blockSumWeight_);
-                GMX_ASSERT(newSumSqrBlockWeight > 0, "Denominator should be > 0");
-                double newAverageY              = newSumWeightBlockWeightY/newSumSqrBlockWeight;
+                double newSumSquareBlockWeight  = sumOverBlocksSquareBlockWeight_ + gmx::square(blockSumWeight_);
+
+                GMX_ASSERT(newSumSquareBlockWeight > 0, "Denominator should be > 0");
+                double newAverageY              = newSumWeightBlockWeightY/newSumSquareBlockWeight;
 
                 double diffBlockWithOldAverageX = c1.blockSumWeightX - oldAverageX*blockSumWeight_;
                 double diffBlockWithNewAverageY = c2.blockSumWeightX - newAverageY*blockSumWeight_;
@@ -232,8 +233,8 @@ void CorrelationBlockData::addBlockToCorrelationIntegral()
     }
 
     /* Add the weights of the block to the block sums and clear the weights */
-    sumOverBlocksSqrBlockWeight_ += gmx::square(blockSumWeight_);
-    sumOverBlocksBlockSqrWeight_ += blockSumSqrWeight_;
+    sumOverBlocksSquareBlockWeight_ += gmx::square(blockSumWeight_);
+    sumOverBlocksBlockSquareWeight_ += blockSumSquareWeight_;
     for (auto &c : coordData_)
     {
         c.sumOverBlocksBlockWeightBlockWeightX += blockSumWeight_*c.blockSumWeightX;
@@ -241,8 +242,8 @@ void CorrelationBlockData::addBlockToCorrelationIntegral()
         c.blockSumWeightX                           = 0;
     }
     /* Reset */
-    blockSumWeight_    = 0;
-    blockSumSqrWeight_ = 0;
+    blockSumWeight_       = 0;
+    blockSumSquareWeight_ = 0;
 }
 
 void CorrelationBlockData::addData(double                       weight,
@@ -250,8 +251,8 @@ void CorrelationBlockData::addData(double                       weight,
 {
     GMX_ASSERT(data.size() == coordData_.size(), "Size of data should match the size of coordData");
 
-    blockSumWeight_    += weight;
-    blockSumSqrWeight_ += weight*weight;
+    blockSumWeight_       += weight;
+    blockSumSquareWeight_ += weight*weight;
 
     for (size_t d = 0; d < coordData_.size(); d++)
     {
@@ -270,7 +271,7 @@ void CorrelationTensor::addData(double                       weight,
                                 bool                         blockLengthInWeight,
                                 double                       t)
 {
-    /* We should avoid adding data with small very weight to avoid
+    /* We should avoid adding data with very small weight to avoid
      * divergence close to 0/0. The total spread weight for each sample is 1,
      * so 1e-6 is a completely negligible amount.
      */

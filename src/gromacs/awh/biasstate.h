@@ -127,9 +127,9 @@ class BiasState
          * Allocate and initialize a bias history with the given bias state.
          *
          * This function will be called at the start of a new simulation.
-         * Note that this only sets the correct size and does produces
-         * a history object with all variables zero.
-         * History data is set by \ref updateHistory.
+         * Note that this only sets the correct size and does produce
+         * a valid history object, but with all data set to zero.
+         * Actual history data is set by \ref updateHistory.
          *
          * \param[in,out] biasHistory  AWH history to initialize.
          */
@@ -234,11 +234,13 @@ class BiasState
          * \param[in]     dimParams           The bias dimensions parameters.
          * \param[in]     grid                The grid.
          * \param[in]     probWeightNeighbor  Probability weights of the neighbors.
+         * \param[in]     forceWorkBuffer     Force work buffer, values only used internally.
          * \param[in,out] force               Bias force vector to set.
          */
         void calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                 const Grid                   &grid,
                                 const std::vector<double>    &probWeightNeighbor,
+                                gmx::ArrayRef<double>         forceWorkBuffer,
                                 gmx::ArrayRef<double>         force) const;
 
         /*! \brief

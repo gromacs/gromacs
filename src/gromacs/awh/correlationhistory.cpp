@@ -36,7 +36,7 @@
 /*! \internal \file
  *
  * \brief
- * Implements functions needed by AWH to have its force correlation data checkpointed.
+ * Implements helper functions for checkpointing the AWH state and observables history.
  *
  * \author Viveca Lindahl
  * \author Berk Hess <hess@kth.se>
@@ -92,11 +92,10 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
 
     /* Store the grid in a linear array */
     size_t bufferIndex = 0;
-    for (size_t m = 0; m < correlationGrid.tensors().size(); m++)
+    for (const CorrelationTensor &tensor : correlationGrid.tensors())
     {
-        const CorrelationTensor &corr       = correlationGrid.tensors()[m];
-        const int                numDims    = corr.blockDataList()[0].coordData().size();
-        const int                tensorSize = corr.blockDataList()[0].correlationIntegral().size();
+        const int                numDims    = tensor.blockDataList()[0].coordData().size();
+        const int                tensorSize = tensor.blockDataList()[0].correlationIntegral().size();
 
         /* Loop of the tensor elements, ignore the symmetric data */
         int       d1         = 0;
@@ -104,20 +103,19 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
         for (int k = 0; k < tensorSize; k++)
         {
             /* BlockData for each correlation element */
-            for (size_t l = 0; l < corr.blockDataList().size(); l++)
+            for (const CorrelationBlockData &blockData : tensor.blockDataList())
             {
-                const CorrelationBlockData  &blockData = corr.blockDataList()[l];
-                const CorrelationCoordData  &cx        = blockData.coordData()[d1];
-                const CorrelationCoordData  &cy        = blockData.coordData()[d2];
+                const CorrelationBlockData::CoordData &cx  = blockData.coordData()[d1];
+                const CorrelationBlockData::CoordData &cy  = blockData.coordData()[d2];
 
-                CorrelationBlockDataHistory &bdh = blockDataBuffer[bufferIndex];
+                CorrelationBlockDataHistory           &bdh = blockDataBuffer[bufferIndex];
 
                 bdh.blockSumWeight                       = blockData.blockSumWeight();
-                bdh.blockSumSqrWeight                    = blockData.blockSumSqrWeight();
+                bdh.blockSumSquareWeight                 = blockData.blockSumSquareWeight();
                 bdh.blockSumWeightX                      = cx.blockSumWeightX;
                 bdh.blockSumWeightY                      = cy.blockSumWeightX;
-                bdh.sumOverBlocksSqrBlockWeight          = blockData.sumOverBlocksSqrBlockWeight();
-                bdh.sumOverBlocksBlockSqrWeight          = blockData.sumOverBlocksBlockSqrWeight();
+                bdh.sumOverBlocksSquareBlockWeight       = blockData.sumOverBlocksSquareBlockWeight();
+                bdh.sumOverBlocksBlockSquareWeight       = blockData.sumOverBlocksBlockSquareWeight();
                 bdh.sumOverBlocksBlockWeightBlockWeightX = cx.sumOverBlocksBlockWeightBlockWeightX;
                 bdh.sumOverBlocksBlockWeightBlockWeightY = cy.sumOverBlocksBlockWeightBlockWeightX;
                 bdh.previousBlockIndex                   = blockData.previousBlockIndex();
@@ -139,18 +137,18 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
     GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.size(), "We should store exactly as many elements as the buffer size");
 }
 
-void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory       &blockHistory,
-                                              const std::vector<CorrelationCoordData> &coordData,
-                                              const std::vector<double>               &correlationIntegral)
+void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory                  &blockHistory,
+                                              const std::vector<CorrelationBlockData::CoordData> &coordData,
+                                              const std::vector<double>                          &correlationIntegral)
 {
-    blockSumWeight_              = blockHistory.blockSumWeight;
-    blockSumSqrWeight_           = blockHistory.blockSumSqrWeight;
-    sumOverBlocksSqrBlockWeight_ = blockHistory.sumOverBlocksSqrBlockWeight;
-    sumOverBlocksBlockSqrWeight_ = blockHistory.sumOverBlocksBlockSqrWeight;
-    previousBlockIndex_          = blockHistory.previousBlockIndex;
-    blockLength_                 = blockHistory.blockLength;
-    coordData_                   = coordData;
-    correlationIntegral_         = correlationIntegral;
+    blockSumWeight_                 = blockHistory.blockSumWeight;
+    blockSumSquareWeight_           = blockHistory.blockSumSquareWeight;
+    sumOverBlocksSquareBlockWeight_ = blockHistory.sumOverBlocksSquareBlockWeight;
+    sumOverBlocksBlockSquareWeight_ = blockHistory.sumOverBlocksBlockSquareWeight;
+    previousBlockIndex_             = blockHistory.previousBlockIndex;
+    blockLength_                    = blockHistory.blockLength;
+    coordData_                      = coordData;
+    correlationIntegral_            = correlationIntegral;
 }
 
 /* Restore a correlation element from history. */
@@ -167,8 +165,8 @@ void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDat
         int       d2         = 0;
 
         /* Temporary containers to collect data */
-        std::vector<CorrelationCoordData> coordData(numDims);
-        std::vector<double>               correlationIntegral(tensorSize);
+        std::vector<CorrelationBlockData::CoordData> coordData(numDims);
+        std::vector<double>                          correlationIntegral(tensorSize);
         for (int k = 0; k < tensorSize; k++)
         {
             if (*bufferIndex >= blockDataBuffer.size())
@@ -217,10 +215,10 @@ void CorrelationGrid::restoreStateFromHistory(const CorrelationGridHistory &corr
 
     /* Extract the state from the linear history array */
     size_t bufferIndex = 0;
-    for (size_t m = 0; m < tensors_.size(); m++)
+    for (CorrelationTensor &tensor : tensors_)
     {
-        tensors_[m].restoreFromHistory(correlationGridHistory.blockDataBuffer,
-                                       &bufferIndex);
+        tensor.restoreFromHistory(correlationGridHistory.blockDataBuffer,
+                                  &bufferIndex);
     }
 
     if (bufferIndex != correlationGridHistory.blockDataBuffer.size())
