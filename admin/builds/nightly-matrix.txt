@@ -17,5 +17,5 @@
 
 # Test clang on ARM v8
 # Test ARM_NEON SIMD
-clang-3.9 simd=ARM_NEON_ASIMD release-with-assert
+clang-3.9 no-openmp simd=ARM_NEON_ASIMD release-with-assert
 
