@@ -330,6 +330,7 @@ void MolDip::Init(t_commrec                *cr,
                   real                      fc_esp,
                   real                      fc_epot,
                   real                      fc_force,
+                  real                      fc_polar,
                   char                     *fixchi,
                   gmx_bool                  bOptHfac,
                   real                      hfac,
@@ -361,6 +362,7 @@ void MolDip::Init(t_commrec                *cr,
     fc_[ermsCHARGE]             = fc_charge;
     fc_[ermsESP]                = fc_esp;
     fc_[ermsForce2]             = fc_force;
+    fc_[ermsPolar]              = fc_polar;
     fc_[ermsEPOT]               = fc_epot;
     fixchi_                     = fixchi;
     hfac_                       = hfac;

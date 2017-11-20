@@ -2050,13 +2050,11 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     {
         for (m = 0; m < DIM; m++)
         {
-            isoPol_elec_ += polar[m][m];
             for (n = 0; n < DIM; n++)
             {
                 alpha_elec_[m][n] = polar[m][n];
             }
         }
-        isoPol_elec_ /=DIM;
         CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
     } 
     return imm;

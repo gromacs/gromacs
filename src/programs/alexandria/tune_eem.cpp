@@ -798,6 +798,7 @@ int alex_tune_eem(int argc, char *argv[])
     static real                 fc_esp        = 1;
     static real                 fc_epot       = 0;
     static real                 fc_force      = 0;
+    static real                 fc_polar      = 1;
     static real                 th_toler      = 170;
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
@@ -884,6 +885,8 @@ int alex_tune_eem(int argc, char *argv[])
           "Force constant in the penalty function for the magnitude of the potential energy." },
         { "-fc_force",  FALSE, etREAL, {&fc_force},
           "Force constant in the penalty function for the magnitude of the force." },
+        { "-fc_polar",  FALSE, etREAL, {&fc_polar},
+          "Force constant in the penalty function for polarizability." },
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
@@ -1002,6 +1005,7 @@ int alex_tune_eem(int argc, char *argv[])
              fc_esp,
              fc_epot,
              fc_force,
+             fc_polar,
              fixchi,
              bOptHfac,
              hfac, 
