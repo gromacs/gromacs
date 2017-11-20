@@ -56,9 +56,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "poldata.h"
+#include "poldata_tables.h"
 #include "poldata_xml.h"
-
-
 
 
 enum EemAtomProps {
@@ -320,23 +319,33 @@ int alex_merge_pd(int argc, char *argv[])
     };    
     t_filenm                         fnm[] =
     {
-        { efDAT, "-di", "pdin",  ffRDMULT },
-        { efDAT, "-do", "pdout", ffWRITE }
+        { efDAT, "-di",    "pdin",  ffRDMULT},
+        { efDAT, "-do",    "pdout", ffWRITE },
+        { efTEX, "-latex", "zeta",  ffWRITE }
     };
     int                              NFILE       = asize(fnm);;
     
-    static int                       compress    = 1;    
+    static gmx_bool                  bcompress   = false;    
+    static gmx_bool                  bPrintTable = false;
+    static gmx_bool                  bPrintZeta  = false;
+    static gmx_bool                  bPrintChi   = false;
     static const char               *cqdist[]    = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
     static const char               *eemprop[]   = {nullptr, "j0", "chi", "zeta", nullptr};
     
     t_pargs                          pa[]        =
     {
-        { "-compress", FALSE, etBOOL, {&compress},
+        { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML files" },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-eemprop", FALSE, etENUM, {eemprop},
-          "Atomic property used to describe molecular eletric properties." }
+          "Atomic property used to describe molecular eletric properties." },
+        { "-btex", FALSE, etBOOL, {&bPrintTable},
+          "Print latex table" },
+        { "-printzeta", FALSE, etBOOL, {&bPrintZeta},
+          "Print zeta in the latex table" },
+        { "-printchi", FALSE, etBOOL, {&bPrintChi},
+          "Print chi in the latex table" }
     };
     char                           **fns;
     int                              nfiles;
@@ -350,9 +359,7 @@ int alex_merge_pd(int argc, char *argv[])
     {
         return 0;
     }
-
-    aps = gmx_atomprop_init();
-    
+    aps = gmx_atomprop_init();    
     /*
       Read all the gentop files.
      */
@@ -362,18 +369,14 @@ int alex_merge_pd(int argc, char *argv[])
         alexandria::Poldata pd;
         readPoldata(fns[i], pd, aps);
         pds.push_back(std::move(pd));
-    }
-    
+    }    
     /* 
        Copy one of the gentop files into pdout.
-       Later, we update different parts
-       of the pdout. 
+       Later, we update different parts of it. 
      */
-    readPoldata(fns[0], pdout, aps);
-    
+    readPoldata(fns[0], pdout, aps);    
     alexandria::ChargeDistributionModel   ieqd   = alexandria::name2eemtype(cqdist[0]);
-    EemAtomProps                          eem    = name2eemprop(eemprop[0]);  
-      
+    EemAtomProps                          eem    = name2eemprop(eemprop[0]);        
     if (eem == eEMJ00 || eem == eEMChi)
     {
         merge_J00Chi(pds, ieqd, pdout, eem);
@@ -384,10 +387,17 @@ int alex_merge_pd(int argc, char *argv[])
     }
     else
     {
-        gmx_fatal(FARGS, "There is no electric atomic property called %s in alexandria.\n", eemprop[0]);
-    }
-    
-    alexandria::writePoldata(opt2fn("-do", NFILE, fnm), pdout, 0);
+        gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
+    }    
+    alexandria::writePoldata(opt2fn("-do", NFILE, fnm), pdout, bcompress);    
+    if (bPrintTable)
+    {
+        FILE        *tp;
+        tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
+        alexandria_poldata_eemprops_table(tp, bPrintZeta, bPrintChi, pdout);
+        gmx_ffclose(tp);
+    }           
+    done_filenms(NFILE, fnm);
     
     return 0;
 }
