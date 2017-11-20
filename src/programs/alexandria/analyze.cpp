@@ -325,16 +325,16 @@ static void write_corr_xvg(FILE                             *fplog,
     }
     
     fprintf(fplog, "Fitting %s data to y = ax\n", exp_type);
-    fprintf(fplog, "%-12s %5s %13s %13s %8s %8s %8s\n", "Method", "N", "a", "R(%)", "RMSD", "MSE", "MAE");
-    fprintf(fplog, "---------------------------------------------------------------\n");              
+    fprintf(fplog, "%-12s %5s %13s %8s %8s %8s %8s\n", "Method", "N", "a", "R(%)", "RMSD", "MSE", "MAE");
+    fprintf(fplog, "-----------------------------------------------------------------------------\n");              
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
+        gmx_stats_get_npoints(lsq[i], &n);
         gmx_stats_get_a(lsq[i], elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq[i],    &rmsd);
-        gmx_stats_get_mse_mae(lsq[i], &mse, &mae);
-        gmx_stats_get_npoints(lsq[i], &n);        
-        fprintf(fplog, "%-12s %5d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n", 
+        gmx_stats_get_mse_mae(lsq[i], &mse, &mae);        
+        fprintf(fplog, "%-12s %5d %6.3f (%5.4f) %7.2f %8.4f %8.4f %8.4f\n", 
                 q->method().c_str(), n, a, da, Rfit*100, rmsd, mse, mae);
         gmx_stats_free(lsq[i]);
     }    
