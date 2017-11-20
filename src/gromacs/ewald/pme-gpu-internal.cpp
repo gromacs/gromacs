@@ -297,6 +297,7 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::
 
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGPU = pme->gpu;
+    changePinningPolicy(&pmeGPU->staging.h_forces, gmx::PinningPolicy::CanBePinned);
     pmeGPU->common = std::shared_ptr<PmeShared>(new PmeShared());
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
