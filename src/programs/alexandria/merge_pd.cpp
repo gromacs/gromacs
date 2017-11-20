@@ -75,7 +75,7 @@ typedef struct {
 t_eemAtom_props eemAtom_props[eEMNR] = {
     {eEMJ00,   "j0"},
     {eEMChi,   "chi"},
-    {eEMZeta,  "Zeta"}
+    {eEMZeta,  "zeta"}
 };
 
 static EemAtomProps name2eemprop(const std::string name)
