@@ -63,14 +63,14 @@ void print_stats(FILE        *fp,
     {
         fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
         fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
-                "Property", "N", "a", "b", "R", "RMSD", "MSE", "MAE");
+                "Property", "N", "a", "b", "R(%%)", "RMSD", "MSE", "MAE");
         fprintf(fp, "---------------------------------------------------------------\n");
     }
     gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
     gmx_stats_get_rmsd(lsq,    &rmsd);
     gmx_stats_get_mse_mae(lsq, &mse, &mae);
     gmx_stats_get_npoints(lsq, &n);
-    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f %8.4f %8.4f\n",
+    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
             prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
 }
 
