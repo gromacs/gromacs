@@ -1003,8 +1003,17 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
-        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme);
+        const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
+        if (globalState)
+        {
+            // The pinning of coordinates in the global state object works, because we only use
+            // PME on GPU without DD or on a separate PME rank, and because the local state pointer
+            // points to the global state object without DD.
+            // FIXME: MD and EM separately set up the local state - this should happen in the same function,
+            // which should also perform the pinning.
+            changePinningPolicy(&globalState->x, useGpuForPme ? PinningPolicy::CanBePinned : PinningPolicy::CannotBePinned);
+        }
 
         /* Initialize the virtual site communication */
         vsite = initVsite(*mtop, cr);
