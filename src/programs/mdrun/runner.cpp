@@ -616,6 +616,7 @@ int Mdrunner::mdrunner()
 
         gmx_bcast_sim(sizeof(nonbondedOnGpu), &nonbondedOnGpu, cr);
     }
+
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
 
@@ -1003,8 +1004,14 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
-        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme);
+        const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
+        if (globalState)
+        {
+            // TODO the pinning here works only because we don't use PME decomposition with GPUs.
+            // We should be doing pinning within MD/minimize.
+            changePinningPolicy(&globalState->x, useGpuForPme ? PinningPolicy::CanBePinned : PinningPolicy::CannotBePinned);
+        }
 
         /* Initialize the virtual site communication */
         vsite = initVsite(*mtop, cr);
