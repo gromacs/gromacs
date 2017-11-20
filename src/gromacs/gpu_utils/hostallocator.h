@@ -32,15 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief Declares gmx::HostAllocationPolicy, gmx::HostAllocator, and
  * gmx::HostVector, which are used to make/be standard library
  * containers that can allocate memory suitable for transfers.
  * Currently the only supported transfers using pinned memory are
  * to CUDA GPUs, but other possibilities exist in future.
  *
+ * \todo This should not be in the public API, but it needs to be
+ * for the moment because state.h is in that API.
+ *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  */
 #ifndef GMX_GPU_UTILS_HOSTALLOCATOR_H
 #define GMX_GPU_UTILS_HOSTALLOCATOR_H
