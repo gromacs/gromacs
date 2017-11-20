@@ -85,11 +85,13 @@ class OptZeta : public MolDip
     
         OptZeta(bool  bfitDipole, 
                 bool  bfitQuadrupole,
+                bool  bFitAlpha,
                 real  watoms, 
                 char *lot) 
            :
                bDipole_(bfitDipole),
                bQuadrupole_(bfitQuadrupole),
+               bFitAlpha_(bFitAlpha),
                watoms_(watoms),
                lot_(lot)
           {};
@@ -99,6 +101,7 @@ class OptZeta : public MolDip
         param_type    param_, lower_, upper_, best_;
         param_type    orig_, psigma_, pmean_;
         bool          bDipole_, bQuadrupole_; 
+        bool          bFitAlpha_;
         real          watoms_;
         char         *lot_;
     
@@ -154,7 +157,11 @@ void OptZeta::calcDeviation()
             mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, pd_);
             mymol.Qgresp_.optimizeCharges();  
             if (nullptr != mymol.shellfc_)
-            {                                              
+            {   
+                if (bFitAlpha_)
+                {
+                    mymol.UpdateIdef(pd_, eitPOLARIZATION);  
+                }
                 mymol.computeForces(nullptr, cr_);
                 mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
             }
@@ -269,7 +276,25 @@ void OptZeta::polData2TuneZeta()
             {
                 gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
                           ai->name().c_str(), iChargeDistributionModel_);
-            }            
+            } 
+            
+            if(bFitAlpha_)
+            {
+                auto alpha = 0.0;
+                auto sigma = 0.0;
+                if (pd_.getAtypePol(ai->name(), &alpha, &sigma))
+                {
+                    if (0 != alpha)
+                    {
+                        param_.push_back(std::move(alpha));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Polarizability is zero for atom %s\n",
+                                  ai->name().c_str());
+                    }
+                }
+            }           
         }      
     }
     if (bOptHfac_)
@@ -310,6 +335,22 @@ void OptZeta::tuneZeta2PolData()
             ei->setRowZetaQ(rowstr, zstr, qstr);
             ei->setZetastr(zstr);
             ei->setZeta_sigma(z_sig);
+            
+            
+            if (bFitAlpha_)
+            {
+                std::string ptype;
+                if (pd_.atypeToPtype(ai->name(), ptype))
+                {
+                    pd_.setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    n++;
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "No Ptype for atom type %s\n",
+                              ai->name().c_str());
+                }
+            }
         }               
     }
     if (bOptHfac_)
@@ -561,6 +602,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 fc_esp        = 1;
     static real                 fc_epot       = 0;
     static real                 fc_force      = 0;
+    static real                 fc_polar      = 1;
     static real                 th_toler      = 170;
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
@@ -581,6 +623,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static gmx_bool             bBound        = false;
     static gmx_bool             bQuadrupole   = false;
     static gmx_bool             bDipole       = false;
+    static gmx_bool             bFitAlpha     = false;
     static gmx_bool             bGenVSites    = false;
     static gmx_bool             bZero         = true;  
     static gmx_bool             bGaussianBug  = true;    
@@ -645,6 +688,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "Force constant in the penalty function for the magnitude of the potential energy." },
         { "-fc_force",  FALSE, etREAL, {&fc_force},
           "Force constant in the penalty function for the magnitude of the force." },
+        { "-fc_polar",  FALSE, etREAL, {&fc_polar},
+          "Force constant in the penalty function for polarizability." },
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
@@ -656,9 +701,11 @@ int alex_tune_zeta(int argc, char *argv[])
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended (the default)." },
         { "-dipole", FALSE, etBOOL, {&bDipole},
-          "Calibrate EEM paramters to reproduce dipole moment." },
+          "Calibrate paramters to reproduce dipole moment." },
         { "-quadrupole", FALSE, etBOOL, {&bQuadrupole},
-          "Calibrate EEM paramters to reproduce quadrupole tensor." },
+          "Calibrate paramters to reproduce quadrupole tensor." },
+        { "-fitalpha", FALSE, etBOOL, {&bFitAlpha},
+          "Calibrate atomic polarizability." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
@@ -739,7 +786,7 @@ int alex_tune_zeta(int argc, char *argv[])
         bPolar = true;
     }
     
-    alexandria::OptZeta opt(bDipole, bQuadrupole, watoms, lot);
+    alexandria::OptZeta opt(bDipole, bQuadrupole, bFitAlpha, watoms, lot);
     opt.Init(cr,
              bQM,
              bGaussianBug,
@@ -759,6 +806,7 @@ int alex_tune_zeta(int argc, char *argv[])
              fc_esp,
              fc_epot,
              fc_force,
+             fc_polar,
              fixchi,
              bOptHfac,
              hfac, 

@@ -1987,6 +1987,7 @@ int alex_tune_fc(int argc, char *argv[])
     static real           fc_esp        = 0; 
     static real           fc_epot       = 1;
     static real           fc_force      = 0.001;
+    static real           fc_polar      = 0;
     static real           factor        = 0.8;
     static real           beta0         = 0;
     static real           D0            = 0; 
@@ -2070,7 +2071,9 @@ int alex_tune_fc(int argc, char *argv[])
         { "-fc_epot",    FALSE, etREAL, {&fc_epot},
           "Force constant in the penalty function for the energy term" },
         { "-fc_force",    FALSE, etREAL, {&fc_force},
-          "Force constant in the penalty function for the force term" },                
+          "Force constant in the penalty function for the force term" },   
+        { "-fc_polar",  FALSE, etREAL, {&fc_polar},
+          "Force constant in the penalty function for polarizability." },             
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
@@ -2162,6 +2165,7 @@ int alex_tune_fc(int argc, char *argv[])
              fc_esp,
              fc_epot,
              fc_force,
+             fc_polar,
              fixchi,
              bOptHfac,
              hfac,

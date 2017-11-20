@@ -66,7 +66,8 @@ enum {
     ermsESP    = 4,
     ermsEPOT   = 5, 
     ermsForce2 = 6, 
-    ermsTOT    = 7, 
+    ermsPolar  = 7,
+    ermsTOT    = 8, 
     ermsNR     = 9
 };
 
@@ -225,6 +226,7 @@ class MolDip
                   real                      fc_esp,
                   real                      fc_epot,
                   real                      fc_force,
+                  real                      fc_polar,
                   char                     *fixchi,
                   gmx_bool                  bOptHfac,
                   real                      hfac,
