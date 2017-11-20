@@ -321,7 +321,7 @@ int alex_merge_pd(int argc, char *argv[])
     {
         { efDAT, "-di",    "pdin",  ffRDMULT},
         { efDAT, "-do",    "pdout", ffWRITE },
-        { efTEX, "-latex", "zeta",  ffWRITE }
+        { efTEX, "-latex", "pdout",  ffWRITE }
     };
     int                              NFILE       = asize(fnm);;
     
