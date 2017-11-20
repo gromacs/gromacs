@@ -616,6 +616,14 @@ int Mdrunner::mdrunner()
 
         gmx_bcast_sim(sizeof(nonbondedOnGpu), &nonbondedOnGpu, cr);
     }
+
+    // FIXME this should happen after the task assignment - confused about the proper spot
+    bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+    if (SIMMASTER(cr))
+    {
+        changePinningPolicy(&globalState->x, useGpuForPme ? PinningPolicy::CanBePinned : PinningPolicy::CannotBePinned);
+    }
+
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
 
@@ -1003,8 +1011,7 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
-        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme);
+        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
 
         /* Initialize the virtual site communication */
         vsite = initVsite(*mtop, cr);

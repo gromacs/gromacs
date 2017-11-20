@@ -111,15 +111,15 @@ struct gmx_pme_pp {
     int                  peerRankId;     /**< The peer PP rank id                  */
     //@{
     /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
-    std::vector<real>      chargeA;
-    std::vector<real>      chargeB;
-    std::vector<real>      sqrt_c6A;
-    std::vector<real>      sqrt_c6B;
-    std::vector<real>      sigmaA;
-    std::vector<real>      sigmaB;
+    std::vector<real, gmx::HostAllocator<real> >           chargeA;
+    std::vector<real>                                      chargeB;
+    std::vector<real>                                      sqrt_c6A;
+    std::vector<real>                                      sqrt_c6B;
+    std::vector<real>                                      sigmaA;
+    std::vector<real>                                      sigmaB;
     //@}
-    std::vector<gmx::RVec> x;    /**< Vector of atom coordinates to transfer to PME ranks */
-    std::vector<gmx::RVec> f;    /**< Vector of atom forces received from PME ranks */
+    std::vector<gmx::RVec, gmx::HostAllocator<gmx::RVec> > x; /**< Vector of atom coordinates to transfer to PME ranks */
+    std::vector<gmx::RVec>                                 f; /**< Vector of atom forces received from PME ranks */
     //@{
     /**< Vectors of MPI objects used in non-blocking communication between multiple PP ranks per PME rank */
     std::vector<MPI_Request> req;
@@ -548,7 +548,13 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     std::vector<gmx_pme_t *> pmedata;
     pmedata.push_back(pme);
 
-    auto pme_pp = gmx_pme_pp_init(cr);
+    auto       pme_pp       = gmx_pme_pp_init(cr);
+    const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Hybrid);
+    if (useGpuForPme)
+    {
+        changePinningPolicy(&pme_pp->chargeA, gmx::PinningPolicy::CanBePinned);
+        changePinningPolicy(&pme_pp->x, gmx::PinningPolicy::CanBePinned);
+    }
 
     init_nrnb(mynrnb);
 
@@ -620,7 +626,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         // fewer lines of code and less parameter passing.
         const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
         gmx::ArrayRef<const gmx::RVec> forces;
-        if (runMode != PmeRunMode::CPU)
+        if (useGpuForPme)
         {
             const bool boxChanged = true;
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
