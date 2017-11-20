@@ -108,8 +108,8 @@ static void merge_J00Chi(std::vector<alexandria::Poldata>     pds,
                          alexandria::Poldata                 &pdout,
                          EemAtomProps                         eematp)
 {
-    double average = 0;
-    double sigma   = 0;
+    real average = 0;
+    real sigma   = 0;
     
     auto nAtypes = pdout.getNatypes();
     gmx_stats_t lsq[nAtypes];
