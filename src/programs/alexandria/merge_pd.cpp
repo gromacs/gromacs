@@ -198,10 +198,10 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
                        alexandria::ChargeDistributionModel  ieqd,
                        alexandria::Poldata                 &pdout)
 {
-    double core_ave  = 0;
-    double core_sig  = 0;
-    double shell_ave = 0;
-    double shell_sig = 0;
+    real core_ave  = 0;
+    real core_sig  = 0;
+    real shell_ave = 0;
+    real shell_sig = 0;
     
     char  zstr[STRLEN];
     char  z_sig[STRLEN];
