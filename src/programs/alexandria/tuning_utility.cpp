@@ -63,7 +63,7 @@ void print_stats(FILE        *fp,
     {
         fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
         fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
-                "Property", "N", "a", "b", "R(%%)", "RMSD", "MSE", "MAE");
+                "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
         fprintf(fp, "---------------------------------------------------------------\n");
     }
     gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
@@ -354,7 +354,8 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           IndexCount                     *indexCount,
                           real                            hfac,
-                          t_commrec                      *cr)
+                          t_commrec                      *cr,
+                          real                            efield)
 {
     int           i    = 0, j     = 0, n     = 0;
     int           nout = 0, mm    = 0, nn    = 0;
@@ -469,7 +470,7 @@ void print_electric_props(FILE                           *fp,
             }
             if(bPolar)
             {
-                mol.CalcPolarizability(10, cr, nullptr);
+                mol.CalcPolarizability(efield, cr, nullptr);
                 gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_, 0, 0);
                 gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
                 for (mm = 0; mm < DIM; mm++)

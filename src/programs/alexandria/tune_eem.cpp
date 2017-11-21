@@ -805,6 +805,7 @@ int alex_tune_eem(int argc, char *argv[])
     static real                 quad_toler    = 5;
     static real                 factor        = 0.8;
     static real                 temperature   = 300;
+    static real                 efield        = 1;
     static char                *opt_elem      = nullptr;
     static char                *const_elem    = nullptr;
     static char                *fixchi        = (char *)"";
@@ -934,7 +935,9 @@ int alex_tune_eem(int argc, char *argv[])
         { "-temp",    FALSE, etREAL, {&temperature},
           "'Temperature' for the Monte Carlo simulation" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "Generate virtual sites. Check and double check." }
+          "Generate virtual sites. Check and double check." },
+        { "-efield",  FALSE, etREAL, {&efield},
+          "The magnitude of the external electeric field to calculate polarizability tensor." }
     };
 
     FILE                 *fp;
@@ -1086,7 +1089,8 @@ int alex_tune_eem(int argc, char *argv[])
                              opt.bfullTensor_,
                              ic,
                              opt.hfac_,
-                             opt.cr_);
+                             opt.cr_,
+                             efield);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);

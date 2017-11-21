@@ -110,7 +110,8 @@ namespace alexandria
                               bool                            bfullTensor,
                               IndexCount                     *indexCount,
                               real                            hfac,
-                              t_commrec                      *cr);
+                              t_commrec                      *cr,
+                              real                            efield);
 
 
 }
