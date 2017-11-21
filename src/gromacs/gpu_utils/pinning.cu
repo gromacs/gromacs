@@ -53,11 +53,13 @@
 namespace gmx
 {
 
+#ifndef NDEBUG
 //! Is \c ptr aligned on a boundary that is a multiple of \c bytes.
-gmx_unused static inline bool isAligned(const void *ptr, size_t bytes)
+static inline bool isAligned(const void *ptr, size_t bytes)
 {
     return (reinterpret_cast<intptr_t>(ptr) % bytes) == 0;
 }
+#endif
 
 void pinBuffer(void *pointer, std::size_t numBytes) noexcept
 {
