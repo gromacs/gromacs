@@ -104,6 +104,16 @@ void unpinBuffer(void *pointer) noexcept
 
     ensureNoPendingCudaError(errorMessage);
     cudaError_t stat = cudaHostUnregister(pointer);
+
+    if (stat == cudaErrorHostMemoryNotRegistered)
+    {
+        // FIXME: this should be a critical error, but currently this can happen,
+        // because we destroy GPU contexts before destroying containers
+        // which have pinned buffers associated with those contexts (such as mdAtoms->chargeA_)
+        cudaGetLastError();
+        return;
+    }
+
     // These errors can only arise from a coding error somewhere.
     GMX_RELEASE_ASSERT(stat != cudaErrorInvalidValue && stat != cudaErrorHostMemoryNotRegistered,
                        formatString("%s %s: %s", errorMessage,
