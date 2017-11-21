@@ -385,7 +385,7 @@ Note the use of dimensionless energies for compatibility with previously publish
 Units of energy are obtained by multiplication with $k_BT=1/\beta$.
 In the simulation, $\lambda$ samples the user-defined sampling interval $I$.
 For a multidimensional reaction coordinate $\xi$, the sampling interval is the Cartesian product
-$I=\Pi_d I_d$ (a rectangular domain).
+$I=\Pi_\mu I_\mu$ (a rectangular domain).
 The connection between atom coordinates and $\lambda$ is established through the extended ensemble~\cite{Lyubartsev1992},
 \begin{equation}\label{eq:awh:pxlambda}
 P(x,\lambda) = \frac{1}{\mathcal{Z}}e^{g(\lambda) - Q(\xi(x),\lambda) - V(x)},
@@ -429,7 +429,7 @@ Substituting this choice of $g=g_n$ back into Eq.~\ref{eq:awh:plambda} yields th
 which would yield a better estimate $F_{n+1} = F_n + \Delta F_n$, assuming $P_n(\lambda)$ can be measured accurately.
 AWH estimates $P_n(\lambda)$ by regularly calculating the conditional distribution
 \begin{equation}\label{eq:awh:omega}
-\omega_n(\lambda|x) \equiv P_n(\lambda|x) = \frac{e^{g_n(\lambda) - Q(\xi(x), \lambda)}}{\sum_{\lambda'} e^{g_n(\lambda') - Q(\xi(x),\lambda)}}.
+\omega_n(\lambda|x) \equiv P_n(\lambda|x) = \frac{e^{g_n(\lambda) - Q(\xi(x), \lambda)}}{\sum_{\lambda'} e^{g_n(\lambda') - Q(\xi(x),\lambda')}}.
 \end{equation}
 Accumulating these probability weights yields
 $\sum_t \omega(\lambda|x(t)) \sim P_n(\lambda)$,
@@ -548,22 +548,22 @@ see Fig.~\ref{fig:awh:bias-evolution}.
 This way, the initial stage also  makes AWH robust against the choice of $N_0$.
 
 \subsubsection{The covering criterion}
-In the general case of a multidimensional reaction coordinate $\lambda=(\lambda_d)$,
+In the general case of a multidimensional reaction coordinate $\lambda=(\lambda_\mu)$,
 the  sampling interval $I$ is considered covered when all dimensions have been covered.
-A dimension $d$ is covered if all points $\lambda_d$ in the one-dimensional sampling interval 
- $I_d$ have been ``visited''.
-Finally, a point $\lambda_d \in I_d$  has been visited  if there is at least one point $\lambda^*\in I$
-with $\lambda^*_d = \lambda_d$
+A dimension $d$ is covered if all points $\lambda_\mu$ in the one-dimensional sampling interval
+ $I_\mu$ have been ``visited''.
+Finally, a point $\lambda_\mu \in I_\mu$  has been visited  if there is at least one point $\lambda^*\in I$
+with $\lambda^*_\mu = \lambda_\mu$
 that since the last covering has
 accumulated probability weight corresponding to the peak of a
 multidimensional Gaussian distribution 
 \begin{equation}\label{eq:awh:covering}
 \Delta W(\lambda^*)
 \ge w_{\mathrm{peak}}
- \equiv \prod_d \frac{\Delta \lambda_{d}}{\sqrt{2\pi}\sigma_k}.
+ \equiv \prod_\mu \frac{\Delta \lambda_\mu}{\sqrt{2\pi}\sigma_k}.
 \end{equation}
-Here, $\Delta \lambda_d$ is the point spacing of the discretized  $I_d$ %of the $\lambda$ grid
-and $\sigma_k=1/\sqrt{\beta k_d}$ (where $k_d$ is the force constant) 
+Here, $\Delta \lambda_\mu$ is the point spacing of the discretized  $I_\mu$ %of the $\lambda$ grid
+and $\sigma_k=1/\sqrt{\beta k_\mu}$ (where $k_\mu$ is the force constant)
 is the Gaussian width.
 
 \subsubsection{Exit from the initial stage}
@@ -687,7 +687,7 @@ However, in contrast to the single walker case this does not ensure that any rea
 in principle all walkers could be sampling only very locally and still cover the whole interval.
 Just as with a standard umbrella sampling procedure, the free energy may appear to be converged while in reality simulations sampling closeby $\lambda$ values
 are sampling disconnected regions of phase space.
-A stricter criterion, which helps avoid such issues, is to require that before a simulation marks a  point $\lambda_d$ along dimension $d$ as visited,
+A stricter criterion, which helps avoid such issues, is to require that before a simulation marks a  point $\lambda_\mu$ along dimension $\mu$ as visited,
 and shares this with the other walkers, 
 also all points  within a certain diameter $D_{\mathrm{cover}}$ should have been visited (i.e.fulfill Eq.~\ref{eq:awh:covering}).
 Increasing $D_{\mathrm{cover}}$ 
@@ -720,6 +720,33 @@ Note that  Eq.~\ref{eq:awh:unbias}  can also be used to combine data from multip
 Furthermore, when multiple independent AWH biases have generated a set of PMF estimates $\{\hat{\Phi}^{(i)}(\xi)\}$,
 a combined best estimate $\hat{\Phi}(\xi)$ can be obtained by applying self-consistent exponential averaging.
 More details on this procedure and a derivation of Eq.~\ref{eq:awh:unbias} (using slightly different notation) can be found in \cite{lindahl2017sequence}.
+
+\subsection{The friction metric}\label{sec:awh:friction}
+During the AWH simulation, the following time-integrated force correlation function is calculated,
+\newcommand{\av}[1]{\left<{#1}\right>}
+\begin{equation} \label{eq:awh:metric}
+\eta_{\mu\nu}(\lambda) =
+\int_0^\infty
+\frac{
+\av{\delta \mathcal{F}_{\mu}(x(t),\lambda)
+\delta \mathcal{F}_\nu(x(0),\lambda)
+\omega(\lambda|x(t)) \omega(\lambda|x(0))}}
+{\av{\omega^2(\lambda(x))}}
+dt.
+\end{equation}
+Here $\mathcal F_\mu(x,\lambda) = k_\mu (\xi_\mu(x) - \lambda_\mu)$ 
+is the force along dimension $\mu$ from an harmonic potential centered at $\lambda$
+and $\delta \mathcal F_\mu(x,\lambda) = \mathcal F_\mu(x,\lambda) - \av{\mathcal F_\mu(x,\lambda)}$
+is the deviation of the force.
+The factors $\omega(\lambda|x(t))$, see Eq.~\ref{eq:awh:omega}, reweight the samples.
+$\eta_{\mu\nu}(\lambda)$ is a friction tensor~\cite{sivak2012thermodynamic}.
+Its matrix elements are inversely proportional to local diffusion coefficients.
+A measure of sampling efficiency at each $\lambda$ is given by
+\begin{equation}\label{eq:awh:sqrt-metric}
+\eta^{\frac{1}{2}}(\lambda) = \sqrt{\det\eta_{\mu\nu}(\lambda)}.
+\end{equation}
+A large value of  $\eta^{\frac{1}{2}}(\lambda)$ indicates slow dynamics and long correlation times,
+which may require more sampling.
 
 \subsection{Usage}\label{sec:awh:usage}
 
@@ -773,9 +800,12 @@ For reliable statistics (e.g. when reweighting the trajectory as described in se
 one would generally want to observe at least a few transitions after having exited the initial stage.
 Furthermore, if the dynamics of the reaction coordinate suddenly changes, this may be a sign of e.g.\ a reaction coordinate problem.
 
-Difficult regions of sampling may also be detected by calculating the local friction tensor $\eta(\xi)$ (inversely proportional to the diffusion) along the reaction coordinate.
-AWH calculates $\eta$~\cite{sivak2012thermodynamic} during simulation and writes it to the energy file.
-A high peak in the friction metric ($\sqrt{\det\eta}$) is an indicator of a region that takes relatively long to sample properly.
+Difficult regions of sampling may also be detected by calculating the friction tensor $\eta_{\mu\nu}(\lambda)$ in the sampling interval,
+see section~\ref{sec:awh:friction}.
+$\eta_{\mu\nu}(\lambda)$ as well as the sampling efficiency measure 
+$\eta^{\frac{1}{2}}(\lambda)$ (Eq.~\ref{eq:awh:sqrt-metric}) are written to the energy file 
+and can be extracted with  the {\tt gmx awh}.
+A high peak in $\eta^{\frac{1}{2}}(\lambda)$ indicates that this region requires longer time to sample properly.
 
 \section{\normindex{Enforced Rotation}}
 \index{rotational pulling|see{enforced rotation}}
