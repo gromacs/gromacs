@@ -1216,6 +1216,10 @@ int Mdrunner::mdrunner()
         pmedata = nullptr;
     }
 
+    // TODO this is only here to manually unpin mdAtoms->chargeA_ and state->x before we destroy the GPU context(s)
+    mdAtoms.reset(nullptr);
+    globalState.reset(nullptr);
+
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, shortRangedDeviceInfo);
 
