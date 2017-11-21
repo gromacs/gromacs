@@ -32,14 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief Declares functions for pinning memory to be suitable for
  * efficient GPU transfers on CUDA.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
  */
 
 #include <cstddef>
+
+#include "gromacs/gpu_utils/gpu_macros.h"
 
 namespace gmx
 {
@@ -50,7 +53,8 @@ namespace gmx
  *
  * Does not throw.
  */
-void pinBuffer(void *pointer, std::size_t numBytes) noexcept;
+CUDA_FUNC_QUALIFIER void pinBuffer(void *CUDA_FUNC_ARGUMENT(pointer),
+                                   std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM
 
 /*! \brief Unpin the allocation.
  *
@@ -59,6 +63,6 @@ void pinBuffer(void *pointer, std::size_t numBytes) noexcept;
  *
  * Does not throw.
  */
-void unpinBuffer(void *pointer) noexcept;
+CUDA_FUNC_QUALIFIER void unpinBuffer(void *CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM
 
 } // namespace gmx
