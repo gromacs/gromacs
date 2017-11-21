@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@ FILE* debug;
 #endif
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -122,7 +123,7 @@ struct fft5d_plan_t {
 typedef struct fft5d_plan_t *fft5d_plan;
 
 void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times);
-fft5d_plan fft5d_plan_3d(int N, int M, int K, MPI_Comm comm[2], int flags, t_complex**lin, t_complex**lin2, t_complex**lout2, t_complex**lout3, int nthreads);
+fft5d_plan fft5d_plan_3d(int N, int M, int K, MPI_Comm comm[2], int flags, t_complex**lin, t_complex**lin2, t_complex**lout2, t_complex**lout3, int nthreads, gmx::PinningPolicy realGridAllocation = gmx::PinningPolicy::CannotBePinned);
 void fft5d_local_size(fft5d_plan plan, int* N1, int* M0, int* K0, int* K1, int** coor);
 void fft5d_destroy(fft5d_plan plan);
 fft5d_plan fft5d_plan_3d_cart(int N, int M, int K, MPI_Comm comm, int P0, int flags, t_complex** lin, t_complex** lin2, t_complex** lout2, t_complex** lout3, int nthreads);

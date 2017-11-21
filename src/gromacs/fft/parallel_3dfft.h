@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #define GMX_FFT_PARALLEL_3DFFT_H
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -74,6 +75,8 @@ typedef struct gmx_parallel_3dfft *
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
  *  \param nthreads       Run in parallel using n threads
+ *  \param realGridAllocation  Whether to make real grid use allocation pinned for GPU transfers.
+ *                             Only used in PME mixed CPU+GPU mode.
  *
  *  \return 0 or a standard error code.
  */
@@ -84,7 +87,8 @@ int
                                t_complex **complex_data,
                                MPI_Comm                  comm[2],
                                gmx_bool                  bReproducible,
-                               int                       nthreads);
+                               int                       nthreads,
+                               gmx::PinningPolicy realGridAllocation = gmx::PinningPolicy::CannotBePinned);
 
 
 
