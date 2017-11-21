@@ -72,15 +72,15 @@ TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 {
-    auto allocator = Allocator<real, HostAllocationPolicy>(HostAllocationPolicy());
-    std::vector<real, decltype(allocator)> dummy(3, 1.5, allocator);
+    HostVector<real> dummy(3, 1.5);
+    changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
     EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
 }
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
-    auto allocator = Allocator<real, HostAllocationPolicy>(makeHostAllocationPolicyForGpu());
-    std::vector<real, decltype(allocator)> dummy(3, 1.5, allocator);
+    HostVector<real> dummy(3, 1.5);
+    changePinningPolicy(&dummy, PinningPolicy::CanBePinned);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
 }
 
