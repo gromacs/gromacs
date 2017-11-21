@@ -1216,6 +1216,12 @@ int Mdrunner::mdrunner()
         pmedata = nullptr;
     }
 
+    // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
+    // before we destroy the GPU context(s) in free_gpu_resources().
+    // Pinned buffers are associated with contexts in CUDA.
+    mdAtoms.reset(nullptr);
+    globalState.reset(nullptr);
+
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, shortRangedDeviceInfo);
 
