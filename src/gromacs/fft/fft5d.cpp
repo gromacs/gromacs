@@ -48,6 +48,9 @@
 
 #include <algorithm>
 
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/pinning.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -140,7 +143,7 @@ static int vmax(int* a, int s)
  * lin is allocated by fft5d because size of array is only known after planning phase
  * rlout2 is only used as intermediate buffer - only returned after allocation to reuse for back transform - should not be used by caller
  */
-fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads)
+fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads, bool allocateForPmeGpu)
 {
 
     int        P[2], bMaster, prank[2], i, t;
@@ -385,7 +388,19 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC))
     {
-        snew_aligned(lin, lsize, 32);
+        // only needed for PME GPU mixed mode
+#if GMX_GPU_CUDA
+        if (allocateForPmeGpu)
+        {
+            const std::size_t numBytes = lsize * sizeof(t_complex);
+            lin = static_cast<t_complex *>(gmx::PageAlignedAllocationPolicy::malloc(numBytes));
+            gmx::pinBuffer(lin, numBytes);
+        }
+        else
+#endif
+        {
+            snew_aligned(lin, lsize, 32);
+        }
         snew_aligned(lout, lsize, 32);
         if (nthreads > 1)
         {
@@ -1270,6 +1285,13 @@ void fft5d_destroy(fft5d_plan plan)
 
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
+#if GMX_GPU_CUDA
+        // only needed for PME GPU mixed mode
+        if (isHostMemoryPinned(plan->lin))
+        {
+            gmx::unpinBuffer(plan->lin);
+        }
+#endif
         sfree_aligned(plan->lin);
         sfree_aligned(plan->lout);
         if (plan->nthreads > 1)

@@ -48,11 +48,10 @@
 
 #include <memory>
 
+#include "gromacs/gpu_utils/pinning.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "pinning.h"
 
 namespace gmx
 {
