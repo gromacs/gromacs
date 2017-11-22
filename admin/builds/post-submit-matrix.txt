@@ -47,6 +47,9 @@ clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 # Test CMAKE_BUILD_TYPE=Release
 gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
 
+# Test GPU-sharing among 2 PP ranks
+gcc-5 gpu nranks=2 gpu_id=11 cuda-8.0 release-with-assert
+
 # TODO
 # Re-enable Phi build
 # Test without TNG support
