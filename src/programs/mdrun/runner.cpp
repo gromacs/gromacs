@@ -484,12 +484,10 @@ int Mdrunner::mdrunner()
         userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    auto             nonbondedTarget = findTaskTarget(nbpu_opt);
-    auto             pmeTarget       = findTaskTarget(pme_opt);
-    // TODO find a sensible home and behaviour for this
-    GMX_UNUSED_VALUE(pme_fft_opt);
-    //auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
-    PmeRunMode pmeRunMode = PmeRunMode::None;
+    auto       nonbondedTarget = findTaskTarget(nbpu_opt);
+    auto       pmeTarget       = findTaskTarget(pme_opt);
+    auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
+    PmeRunMode pmeRunMode      = PmeRunMode::None;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -655,8 +653,11 @@ int Mdrunner::mdrunner()
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes);
-        // FIXME decide how to implement -pmefft support
-        pmeRunMode = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
+        pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
+        if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
+        {
+            pmeRunMode = PmeRunMode::Hybrid;
+        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
