@@ -118,7 +118,7 @@ TEST_F(PmeTest, ReproducesEnergies)
     runModes["PmeOnCpu"] = {"-pme", "cpu"};
     runModes["PmeAuto"]  = {"-pme", "auto"};
     // TODO uncomment this when functionality gets activated.
-    //runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
     runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
     runModes["PmeOnGpuFftAuto"] = {"-pme", "gpu", "-pmefft", "auto"};
     TestReferenceData    refData;
