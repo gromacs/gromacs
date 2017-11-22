@@ -607,6 +607,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
     static real                 quad_toler    = 5;
+    static real                 alpha_toler   = 3;
     static real                 factor        = 0.8;
     static real                 temperature   = 300;
     static real                 efield        = 1;
@@ -719,6 +720,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "Tolerance (Debye) for marking dipole as an outlier in the log file" },
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
           "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
+        { "-alpha_toler", FALSE, etREAL, {&alpha_toler},
+          "Tolerance (A^3) for marking polarizability as an outlier in the log file" },
         { "-th_toler", FALSE, etREAL, {&th_toler},
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
@@ -876,7 +879,8 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt2fn("-isopol",    NFILE, fnm),
                              opt2fn("-anisopol",  NFILE, fnm),
                              dip_toler, 
-                             quad_toler, 
+                             quad_toler,
+                             alpha_toler, 
                              oenv,
                              bPolar,
                              bDipole,

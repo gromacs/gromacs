@@ -517,13 +517,13 @@ static void atomtype_tab_header(LongTable &lt)
 
     lt.setColumns("ccccccc");
 
-    snprintf(longbuf, STRLEN, "Definition of atom types for polarization (AX column). The number of datapoints used for fitting the polarizability of atomtypes is given in N$_{Exp}$ and N$_{QM}$ for experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
+    snprintf(longbuf, STRLEN, "$N$ is the number of experimental datapoints used for fitting the polarizability of atomtypes. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
     lt.setCaption(longbuf);
     lt.setLabel("fragments");
-    snprintf(longbuf, STRLEN, "Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability}");
+    snprintf(longbuf, STRLEN, "Name  & $N$ & \\multicolumn{4}{c}{Polarizability}");
     lt.addHeadLine(longbuf);
-    snprintf(longbuf, STRLEN, "& & & %s ($\\sigma_{AX}$) & Ahc & Ahp & %s ",
-             cs.searchCS(iCalexandria)->abbreviation(),
+    snprintf(longbuf, STRLEN, "& & %s ($\\sigma$) & Ahc & Ahp & %s ",
+             cs.searchCS(iCalexandria)->name(),
              cs.searchCS(iCbosque)->abbreviation());
     lt.addHeadLine(longbuf);
     lt.printHeader();
@@ -606,11 +606,6 @@ static void alexandria_molprop_atomtype_polar_table(FILE                 *fp,
             {
                 bos_pol = 0;
             }
-            /* Compute how many molecules contributed to the optimization
-             * of this polarizability.
-             */
-            /* Construct group name from element composition */
-            /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
             
             size_t      pos   = pType->getType().find("p_");
             std::string ptype = pType->getType();
@@ -618,10 +613,9 @@ static void alexandria_molprop_atomtype_polar_table(FILE                 *fp,
             {
                 ptype = ptype.substr(pos+2);
             }
-            snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
+            snprintf(longbuf, STRLEN, "%s & %s & %s (%s) & %s & %s & %s",
                      ptype.c_str(),
                      (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "",
-                     (nqm > 0)      ? gmx_itoa(nqm).c_str()      : "",
                      (pType->getPolarizability() > 0)  ? gmx_ftoa(pType->getPolarizability()).c_str()  : "",
                      (pType->getSigPol() > 0)  ? gmx_ftoa(pType->getSigPol()).c_str() : "-",
                      (ahc > 0)         ? gmx_ftoa(ahc).c_str()         : "",

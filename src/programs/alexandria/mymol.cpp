@@ -1623,7 +1623,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         commercials.push_back(buf);
     }
     
-    snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additivity Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
+    snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
        
     if (efield > 0 && nullptr != cr)
