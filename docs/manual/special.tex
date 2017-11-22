@@ -726,12 +726,13 @@ During the AWH simulation, the following time-integrated force correlation funct
 \newcommand{\av}[1]{\left<{#1}\right>}
 \begin{equation} \label{eq:awh:metric}
 \eta_{\mu\nu}(\lambda) =
+\beta
 \int_0^\infty
 \frac{
 \av{\delta \mathcal{F}_{\mu}(x(t),\lambda)
 \delta \mathcal{F}_\nu(x(0),\lambda)
 \omega(\lambda|x(t)) \omega(\lambda|x(0))}}
-{\av{\omega^2(\lambda(x))}}
+{\av{\omega^2(\lambda|x)}}
 dt.
 \end{equation}
 Here $\mathcal F_\mu(x,\lambda) = k_\mu (\xi_\mu(x) - \lambda_\mu)$ 
