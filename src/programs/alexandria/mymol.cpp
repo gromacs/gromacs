@@ -2047,7 +2047,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               lot, "", (char *)"electronic", 
                               &isoPol_elec_, &error, &T, 
                               myref, mylot, vec, polar))
-    {
+    {        
         for (m = 0; m < DIM; m++)
         {
             for (n = 0; n < DIM; n++)

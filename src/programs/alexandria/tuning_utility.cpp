@@ -137,7 +137,7 @@ void print_polarizability(FILE              *fp,
                     "             (%6s %6s %6.2f)\n",
                     mol->alpha_elec_[XX][XX], mol->alpha_elec_[XX][YY], mol->alpha_elec_[XX][ZZ],
                     "", mol->alpha_elec_[YY][YY], mol->alpha_elec_[YY][ZZ],
-                    "", "", mol->alpha_calc_[ZZ][ZZ]);
+                    "", "", mol->alpha_elec_[ZZ][ZZ]);
         }
     }
 }
@@ -246,7 +246,7 @@ void print_quadrapole(FILE              *fp,
                     "             (%6s %6s %6.2f)\n",
                     mol->Q_elec_[XX][XX], mol->Q_elec_[XX][YY], mol->Q_elec_[XX][ZZ],
                     "", mol->Q_elec_[YY][YY], mol->Q_elec_[YY][ZZ],
-                    "", "", mol->Q_calc_[ZZ][ZZ]);
+                    "", "", mol->Q_elec_[ZZ][ZZ]);
         }
     }
 }
