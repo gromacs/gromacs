@@ -134,13 +134,13 @@ static const char *wcsn[ewcsNR] =
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
 static const char *PMEStageNames[] =
 {
-    "Spline",
-    "Spread",
-    "Spline/spread",
-    "FFT r2c",
-    "Solve",
-    "FFT c2r",
-    "Gather",
+    "PME spline",
+    "PME spread",
+    "PME spline + spread",
+    "PME 3D-FFT r2c",
+    "PME solve",
+    "PME 3D-FFT c2r",
+    "PME gather",
 };
 
 gmx_bool wallcycle_have_counter(void)
