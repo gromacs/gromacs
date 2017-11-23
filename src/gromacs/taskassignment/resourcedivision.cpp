@@ -860,7 +860,11 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
     }
 }
 
-void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt)
+void check_and_update_hw_opt_3(gmx_hw_opt_t        *hw_opt,
+                               const gmx_hw_info_t &hwinfo,
+                               const t_commrec     *cr,
+                               PmeRunMode           pmeRunMode,
+                               const gmx_mtop_t    &mtop)
 {
 #if GMX_THREAD_MPI
     GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
@@ -878,6 +882,29 @@ void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt)
         }
     }
 #endif
+
+    /* With both non-bonded and PME on GPU, the work left on the CPU is often
+     * (much) slower with SMT than without SMT. This is mostly the case with
+     * few atoms per core. Thus, if the number of threads is set to auto,
+     * we turn off SMT in that case. Note that PME on GPU implies that also
+     * the non-bonded are computed on the GPU.
+     * We only need to do this when the number of hardware theads is larger
+     * than the number of cores. Note that a queuing system could limit
+     * the number of hardware threads available, but we are not trying to be
+     * too smart here in that case.
+     */
+    /* The number 10000 atoms per core is for Intel x86 and AMD Threadripper */
+    constexpr int c_numAtomsPerCoreSmtThreshold = 10000;
+    if (bHasOmpSupport &&
+        hw_opt->nthreads_omp <= 0 &&
+        hwinfo.nthreads_hw_avail > hwinfo.hardwareTopology->numberOfCores() &&
+        pmeRunMode == PmeRunMode::GPU &&
+        mtop.natoms/hwinfo.ncore_tot < c_numAtomsPerCoreSmtThreshold)
+    {
+        int numRanksInThisNode = (cr ? cr->nrank_intranode : 1);
+        /* Choose one OpenMP thread per physical core */
+        hw_opt->nthreads_omp = std::max(1, hwinfo.hardwareTopology->numberOfCores()/numRanksInThisNode);
+    }
 
     GMX_RELEASE_ASSERT(bHasOmpSupport || hw_opt->nthreads_omp == 1, "Without OpenMP support, only one thread per rank can be used");
 

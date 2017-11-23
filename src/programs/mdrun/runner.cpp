@@ -853,8 +853,8 @@ int Mdrunner::mdrunner()
     /* Check and update hw_opt for the cut-off scheme */
     check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
-    /* Check and update hw_opt for the number of MPI ranks */
-    check_and_update_hw_opt_3(&hw_opt);
+    /* Check and update hw_opt for the number of MPI ranks and PME run mode */
+    check_and_update_hw_opt_3(&hw_opt, *hwinfo, cr, pmeRunMode, *mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
