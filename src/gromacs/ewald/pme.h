@@ -83,7 +83,7 @@ enum PmeRunMode
 {
     CPU,     //!< Whole PME computation is done on CPU
     GPU,     //!< Whole PME computation is done on GPU
-    Hybrid,  //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
+    Mixed,   //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
 };
 
 //! PME gathering output forces treatment
