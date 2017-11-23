@@ -816,7 +816,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                           pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                           pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
             /* This routine will allocate the grid data to fit the FFTs */
-            const auto allocateRealGridForGpu = (pme->runMode == PmeRunMode::Hybrid) ? gmx::PinningPolicy::CanBePinned : gmx::PinningPolicy::CannotBePinned;
+            const auto allocateRealGridForGpu = (pme->runMode == PmeRunMode::Mixed) ? gmx::PinningPolicy::CanBePinned : gmx::PinningPolicy::CannotBePinned;
             gmx_parallel_3dfft_init(&pme->pfft_setup[i], ndata,
                                     &pme->fftgrid[i], &pme->cfftgrid[i],
                                     pme->mpi_comm_d,

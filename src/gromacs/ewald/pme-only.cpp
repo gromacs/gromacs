@@ -551,7 +551,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
     auto       pme_pp       = gmx_pme_pp_init(cr);
     //TODO the variable below should be queried from the task assignment info
-    const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Hybrid);
+    const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
     {
         changePinningPolicy(&pme_pp->chargeA, gmx::PinningPolicy::CanBePinned);

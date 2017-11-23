@@ -656,7 +656,7 @@ int Mdrunner::mdrunner()
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
         if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
         {
-            pmeRunMode = PmeRunMode::Hybrid;
+            pmeRunMode = PmeRunMode::Mixed;
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1104,7 +1104,7 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+        const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed);
         mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
         if (globalState)
         {

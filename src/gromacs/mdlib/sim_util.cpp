@@ -888,7 +888,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
-        ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
+        ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed));
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
