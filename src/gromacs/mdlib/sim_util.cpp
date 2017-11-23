@@ -1077,15 +1077,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
-    if (useGpuPme && pmeRunMode == PmeRunMode::GPU)
-    {
-        // In PME GPU mode we launch FFT / gather after the
-        // X copy/transform to allow overlap.
-        // Note that this is advantageous for the case where NB and PME
-        // tasks run on the same device, but may not be ideal otherwise.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
-    }
-
     if (bUseGPU)
     {
         if (DOMAINDECOMP(cr))
@@ -1102,12 +1093,12 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (useGpuPme && pmeRunMode == PmeRunMode::Hybrid)
+    if (useGpuPme)
     {
-
-        // PME GPU - intermediate CPU work in mixed mode
-        // TODO - move this below till after do_force_lowlevel() / special forces?
-        //        (to allow overlap of spread/drid D2H with some CPU work)
+        // In PME GPU and mixed mode we launch FFT / gather after the
+        // X copy/transform to allow overlap as well as after the GPU NB
+        // launch to avoid FFT launch overhead hijacking the CPU and delaying
+        // the nonbonded kernel.
         launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
