@@ -48,6 +48,7 @@
 
 #include <vector>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info_t;
@@ -103,7 +104,11 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                int           cutoff_scheme);
 
-/*! \brief Checks we can do when we know the thread-MPI rank count */
-void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt);
+/*! \brief Checks we can do when we know the MPI rank count and PME run mode */
+void check_and_update_hw_opt_3(gmx_hw_opt_t        *hw_opt,
+                               const gmx_hw_info_t &hwinfo,
+                               const t_commrec     *cr,
+                               PmeRunMode           pmeRunMode,
+                               const gmx_mtop_t    &mtop);
 
 #endif
