@@ -175,7 +175,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "MIC")
 
     # No flags needed. Not testing.
     set(GMX_SIMD_X86_MIC 1)
-    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions")
+    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions without special flags.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
 
@@ -244,7 +244,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_QPX")
 
     if (TEST_QPX)
         set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-        set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions (no special flags)")
+        set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions without special flags.")
     else()
         gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
@@ -287,7 +287,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SPARC64_HPC_ACE")
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
+    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions without special flags.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 
@@ -302,7 +302,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
     endif()
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling reference (emulated) SIMD instructions.")
+    set(SIMD_STATUS_MESSAGE "Enabling reference (emulated) SIMD instructions without special flags.")
 
 else()
     gmx_invalid_option_value(GMX_SIMD_ACTIVE)
@@ -328,8 +328,19 @@ mark_as_advanced(GMX_ENABLE_AVX512_TESTS)
 
 if(GMX_ENABLE_AVX512_TESTS AND
     (GMX_SIMD_ACTIVE STREQUAL "AVX_256" OR GMX_SIMD_ACTIVE STREQUAL "AVX2_256" OR GMX_SIMD_ACTIVE STREQUAL "AVX2_128"))
+    if(NOT DEFINED SIMD_AVX_512_CXX_SUPPORTED)
+        message(STATUS "Detecting flags to enable runtime detection of AVX-512 units on newer CPUs")
+        set(SIMD_AVX_512_REPORT_STATUS 1)
+    endif()
     gmx_find_simd_avx_512_flags(SIMD_AVX_512_C_SUPPORTED SIMD_AVX_512_CXX_SUPPORTED
                                 SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS)
+    if(SIMD_AVX_512_REPORT_STATUS)
+        if(SIMD_AVX_512_CXX_SUPPORTED)
+            message(STATUS "Detecting flags to enable runtime detection of AVX-512 units on newer CPUs - ${SIMD_AVX_512_CXX_FLAGS}")
+        else()
+            message(STATUS "Detecting flags to enable runtime detection of AVX-512 units on newer CPUs - not supported")
+        endif()
+    endif()
 endif()
 
 # By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
