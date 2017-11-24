@@ -77,13 +77,20 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
     # emulate AVX instructions with SSE4.1 otherwise.
     foreach(_testflag ${ARGN} "")
         # make valid variable names from the flag string: replace all non-alphanumerical chars
-        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_WORKS_VARIABLE "${LANGUAGE}_${_testflag}_FLAG_WORKS")
+        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_ACCEPTED_VARIABLE "${LANGUAGE}_${_testflag}_FLAG_ACCEPTED")
         string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_WORKS_VARIABLE "${LANGUAGE}_${_testflag}_COMPILE_WORKS")
 
-        # Check that the flag itself is fine, and that it does not generate warnings either
-        gmx_check_compiler_flag("${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}" "${LANGUAGE}" ${FLAG_WORKS_VARIABLE})
+        # Check that the flag itself is fine, and that it does not generate warnings either, but don't
+        # confuse the user by saying an empty flag was "accepted"
+        if("${_testflag}" STREQUAL "")
+            set(${FLAG_ACCEPTED_VARIABLE} 1)
+            # Give the empty flag variable a better name since we cannot control the CMake status messages
+            set(COMPILE_WORKS_VARIABLE "${LANGUAGE}_COMPILE_WORKS_WITHOUT_SPECIAL_FLAGS")
+        else()
+            gmx_check_compiler_flag("${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}" "${LANGUAGE}" ${FLAG_ACCEPTED_VARIABLE})
+        endif()
 
-        if(${FLAG_WORKS_VARIABLE})
+        if(${FLAG_ACCEPTED_VARIABLE})
             IF(DEFINED ${COMPILE_WORKS_VARIABLE})
                 # This is a subsequent call to CMake, don't spam the status line
                 set(RUN_QUIETLY TRUE)
@@ -94,11 +101,15 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
 
             if(NOT ${COMPILE_WORKS_VARIABLE})
                 if (NOT RUN_QUIETLY)
-                    message(STATUS "Compiler flag was valid, but executable did not build - perhaps update the binutils package")
+                    if("${_testflag}" STREQUAL "")
+                        message(STATUS "Could not find any flag to build test source (this could be due to either the compiler or binutils)")
+                    else()
+                        message(STATUS "Flag was accepted, but it did not build test source (this could be due to either the compiler or binutils)")
+                        set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
+                    endif()
                 endif()
-                set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
             endif()
-            if (${FLAG_WORKS_VARIABLE} AND ${COMPILE_WORKS_VARIABLE})
+            if (${FLAG_ACCEPTED_VARIABLE} AND ${COMPILE_WORKS_VARIABLE})
                 set(${RESULT_VARIABLE} 1 PARENT_SCOPE)
                 set(${NEW_FLAGS_VARIABLE} "${_testflag}" PARENT_SCOPE)
                 break()
