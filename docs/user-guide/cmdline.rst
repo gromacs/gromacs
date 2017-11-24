@@ -141,7 +141,7 @@ linked help for the new commands for a full description.
 This section lists only major changes; minor changes like additional/removed
 options or bug fixes are not typically included.
 
-Version 2017
+Version 2018
 ^^^^^^^^^^^^
 
 gmx trajectory
