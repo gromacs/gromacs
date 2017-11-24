@@ -185,6 +185,12 @@ TEST_F(PmeTest, ReproducesEnergies)
                 reciprocalChecker.checkReal(reciprocalEnergy, stepNum.c_str());
             }
         }
+#if GMX_LIB_MPI
+        if (parallelRun)
+        {
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+#endif
     }
 
     // This is a workaround for the output files to not be deleted in a parallel run.
