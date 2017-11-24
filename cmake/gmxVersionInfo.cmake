@@ -55,6 +55,7 @@
 #         GROMACS     5.0    0
 #         GROMACS     5.1    1
 #         GROMACS     2016   2
+#         GROMACS     2018   3
 #   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
 #       Should be increased for each release that changes only the implementation.
 #       In GROMACS, the typical policy is to increase it for each patch version
@@ -193,13 +194,13 @@
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2017)
+set(GMX_VERSION_MAJOR 2018)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "")
+set(GMX_VERSION_SUFFIX "-beta1")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -233,8 +234,8 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
-set(REGRESSIONTEST_MD5SUM "366438549270d005fa6def6e56ca0256" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_BRANCH "refs/heads/release-2018")
+set(REGRESSIONTEST_MD5SUM "44b667c4919e044027f5455e7d91d618" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
