@@ -85,7 +85,9 @@ module and documenting it.
 
         #include <...> // This should be used for system and external headers
 
-  * Installed headers must not include non-installed headers.
+  * Installed headers must not include non-installed headers. Headers can be
+    marked for install within ``CMakeLists.txt`` files of their respective
+    modules, using ``gmx_install_headers()``.
   * All source files must include "gmxpre.h" as the first header.
   * A source/header file should include "config.h," "gromacs/simd/simd.h",
     or "gromacs/ewald/pme-simd.h" if and only if it uses a macro declared
