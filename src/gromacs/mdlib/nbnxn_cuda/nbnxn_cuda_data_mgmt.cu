@@ -500,13 +500,11 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
-    /* CUDA timing disabled as event timers don't work:
-       - with multiple streams = domain-decomposition;
-       - when turned off by GMX_DISABLE_CUDA_TIMING/GMX_DISABLE_GPU_TIMING.
+    /* WARNING: CUDA timings are incorrect with multiple streams.
+     *          This is the main reason why they are disabled by default.
      */
-    nb->bDoTime = (!nb->bUseTwoStreams &&
-                   (getenv("GMX_DISABLE_CUDA_TIMING") == NULL) &&
-                   (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
+    // TODO: Consider turning on by default when we can detect nr of streams.
+    nb->bDoTime = (getenv("GMX_ENABLE_GPU_TIMING") != NULL);
 
     if (nb->bDoTime)
     {

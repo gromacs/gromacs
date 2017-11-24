@@ -441,11 +441,11 @@ void pme_gpu_init_internal(PmeGpu *pmeGPU)
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-    pmeGPU->archSpecific->useTiming = (getenv("GMX_DISABLE_CUDA_TIMING") == nullptr) &&
-        (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
-    /* TODO: multiple CUDA streams on same GPU cause nonsense cudaEvent_t timings.
-     * This should probably also check for gpuId exclusivity?
+    /* WARNING: CUDA timings are incorrect with multiple streams.
+     *          This is the main reason why they are disabled by default.
      */
+    // TODO: Consider turning on by default when we can detect nr of streams.
+    pmeGPU->archSpecific->useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
 
     /* Creating a PME CUDA stream */
     cudaError_t stat;
