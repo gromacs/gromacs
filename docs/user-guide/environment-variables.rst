@@ -78,6 +78,15 @@ Output Control
         Defaults to 1, which prints frame count e.g. when reading trajectory
         files. Set to 0 for quiet operation.
 
+``GMX_ENABLE_GPU_TIMING``
+        Enables GPU timings in the log file for CUDA. Note that CUDA timings
+        are incorrect with multiple streams, as happens with domain
+        decomposition or with both non-bondeds and PME on the GPU (this is
+        also the main reason why they are not turned on by default).
+
+``GMX_DISABLE_GPU_TIMING``
+        Disables GPU timings in the log file for OpenCL.
+
 Debugging
 ---------
 ``GMX_PRINT_DEBUG_LINES``
@@ -459,9 +468,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
 ``GMX_OCL_NB_EWALD_TWINCUT``
         Forces the use of twin-range cutoff kernel. Equivalent of
         CUDA environment variable ``GMX_CUDA_NB_EWALD_TWINCUT``
-
-``GMX_DISABLE_OCL_TIMING``
-        Disables timing for OpenCL operations
 
 ``GMX_OCL_FILE_PATH``
         Use this parameter to force |Gromacs| to load the OpenCL
