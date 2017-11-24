@@ -257,7 +257,6 @@ struct PmeGpuSettings
  */
 struct PmeGpuStaging
 {
-    //TODO pin me with whatever method we settle on
     //! Host-side force buffer
     std::vector < gmx::RVec, gmx::HostAllocator < gmx::RVec>> h_forces;
 
