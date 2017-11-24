@@ -80,16 +80,21 @@ namespace alexandria
                         int                     nsym, 
                         const char             *leg[],
                         const gmx_output_env_t *oenv);
+                        
+    void print_polarizability(FILE              *fp, 
+                              alexandria::MyMol *mol,
+                              char              *calc_name,
+                              real               q_toler);
     
-    void print_dipole(FILE  *fp, 
-                      alexandria::MyMol *mol, 
-                      char  *calc_name, 
-                      real   toler);
+    void print_dipole(FILE                      *fp, 
+                      alexandria::MyMol         *mol, 
+                      char                      *calc_name, 
+                      real                       toler);
                       
-    void print_quadrapole(FILE  *fp, 
-                          alexandria::MyMol *mol, 
-                          char  *calc_name, 
-                          real   toler); 
+    void print_quadrapole(FILE                  *fp, 
+                          alexandria::MyMol     *mol, 
+                          char                  *calc_name, 
+                          real                   toler); 
                           
     void print_electric_props(FILE                           *fp, 
                               std::vector<alexandria::MyMol>  mymol,
@@ -103,6 +108,7 @@ namespace alexandria
                               const char                     *anisopolCorr, 
                               real                            dip_toler, 
                               real                            quad_toler, 
+                              real                            alpha_toler,
                               const gmx_output_env_t         *oenv,
                               bool                            bPolar,
                               bool                            bDipole,
@@ -110,7 +116,8 @@ namespace alexandria
                               bool                            bfullTensor,
                               IndexCount                     *indexCount,
                               real                            hfac,
-                              t_commrec                      *cr);
+                              t_commrec                      *cr,
+                              real                            efield);
 
 
 }

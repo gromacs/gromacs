@@ -84,7 +84,7 @@ void LongTable::printHeader()
         fprintf(fp_, "\\begin{%s}\n", font_);
     }
     fprintf(fp_, "\\begin{longtable}{%s}\n", columns_.c_str());
-    printHLine();
+    //printHLine();
     fprintf(fp_, "\\caption{%s}\n", caption_.c_str());
     fprintf(fp_, "\\label{%s}\\\\\n", label_.c_str());
     printHLine();

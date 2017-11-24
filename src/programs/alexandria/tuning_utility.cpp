@@ -63,14 +63,14 @@ void print_stats(FILE        *fp,
     {
         fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
         fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
-                "Property", "N", "a", "b", "R", "RMSD", "MSE", "MAE");
+                "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
         fprintf(fp, "---------------------------------------------------------------\n");
     }
     gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
     gmx_stats_get_rmsd(lsq,    &rmsd);
     gmx_stats_get_mse_mae(lsq, &mse, &mae);
     gmx_stats_get_npoints(lsq, &n);
-    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f %8.4f %8.4f\n",
+    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
             prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
 }
 
@@ -98,6 +98,47 @@ void xvgr_symbolize(FILE                   *xvgf,
     {
         xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
         fprintf(xvgf, "@ s%d symbol %d\n", i, i+1);
+    }
+}
+
+void print_polarizability(FILE              *fp, 
+                          alexandria::MyMol *mol,
+                          char              *calc_name,
+                          real               q_toler)
+{
+    tensor dalpha;
+    real   delta = 0;
+    
+    if (nullptr != calc_name)
+    {
+        if (strcmp(calc_name, (char *)"Calc") == 0)
+        {
+            m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
+            delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
+                         gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
+            fprintf(fp,
+                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
+                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
+                    calc_name,
+                    mol->alpha_calc_[XX][XX], mol->alpha_calc_[XX][YY], mol->alpha_calc_[XX][ZZ],
+                    dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
+                    "", mol->alpha_calc_[YY][YY], mol->alpha_calc_[YY][ZZ],
+                    "", dalpha[YY][YY], dalpha[YY][ZZ],
+                    "", "", mol->alpha_calc_[ZZ][ZZ],
+                    "", "", dalpha[ZZ][ZZ]);
+        }
+        else
+        {
+            fprintf(fp, "Polarizability analysis\n");
+            fprintf(fp,
+                    "Electronic   (%6.2f %6.2f %6.2f)\n"
+                    "             (%6s %6.2f %6.2f)\n"
+                    "             (%6s %6s %6.2f)\n",
+                    mol->alpha_elec_[XX][XX], mol->alpha_elec_[XX][YY], mol->alpha_elec_[XX][ZZ],
+                    "", mol->alpha_elec_[YY][YY], mol->alpha_elec_[YY][ZZ],
+                    "", "", mol->alpha_elec_[ZZ][ZZ]);
+        }
     }
 }
 
@@ -205,7 +246,7 @@ void print_quadrapole(FILE              *fp,
                     "             (%6s %6s %6.2f)\n",
                     mol->Q_elec_[XX][XX], mol->Q_elec_[XX][YY], mol->Q_elec_[XX][ZZ],
                     "", mol->Q_elec_[YY][YY], mol->Q_elec_[YY][ZZ],
-                    "", "", mol->Q_calc_[ZZ][ZZ]);
+                    "", "", mol->Q_elec_[ZZ][ZZ]);
         }
     }
 }
@@ -346,7 +387,8 @@ void print_electric_props(FILE                           *fp,
                           const char                     *isopolCorr,
                           const char                     *anisopolCorr, 
                           real                            dip_toler, 
-                          real                            quad_toler, 
+                          real                            quad_toler,
+                          real                            alpha_toler, 
                           const gmx_output_env_t         *oenv,
                           bool                            bPolar,
                           bool                            bDipole,
@@ -354,7 +396,8 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           IndexCount                     *indexCount,
                           real                            hfac,
-                          t_commrec                      *cr)
+                          t_commrec                      *cr,
+                          real                            efield)
 {
     int           i    = 0, j     = 0, n     = 0;
     int           nout = 0, mm    = 0, nn    = 0;
@@ -412,6 +455,12 @@ void print_electric_props(FILE                           *fp,
             print_dipole(fp, &mol, (char *)"MPA",  dip_toler);
             print_dipole(fp, &mol, (char *)"HPA",  dip_toler);
             print_dipole(fp, &mol, (char *)"CM5",  dip_toler);
+            
+            gmx_stats_add_point(lsq_dip[eprCalc], mol.dip_elec_, mol.dip_calc_,      0, 0);
+            gmx_stats_add_point(lsq_dip[eprESP],  mol.dip_elec_, mol.dip_esp_,       0, 0);
+            gmx_stats_add_point(lsq_dip[eprMPA],  mol.dip_elec_, mol.dip_mulliken_,  0, 0);
+            gmx_stats_add_point(lsq_dip[eprHPA],  mol.dip_elec_, mol.dip_hirshfeld_, 0, 0);
+            gmx_stats_add_point(lsq_dip[eprCM5],  mol.dip_elec_, mol.dip_cm5_,       0, 0);
 
             sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
             
@@ -423,6 +472,49 @@ void print_electric_props(FILE                           *fp,
             print_quadrapole(fp, &mol, (char *)"HPA",  quad_toler);
             print_quadrapole(fp, &mol, (char *)"CM5",  quad_toler);
             
+            for (mm = 0; mm < DIM; mm++)
+            {
+                gmx_stats_add_point(lsq_mu[eprCalc], mol.mu_elec_[mm], mol.mu_calc_[mm],      0, 0);
+                gmx_stats_add_point(lsq_mu[eprESP],  mol.mu_elec_[mm], mol.mu_esp_[mm],       0, 0);
+                gmx_stats_add_point(lsq_mu[eprMPA],  mol.mu_elec_[mm], mol.mu_mulliken_[mm],  0, 0);
+                gmx_stats_add_point(lsq_mu[eprHPA],  mol.mu_elec_[mm], mol.mu_hirshfeld_[mm], 0, 0);
+                gmx_stats_add_point(lsq_mu[eprCM5],  mol.mu_elec_[mm], mol.mu_cm5_[mm],       0, 0);
+                
+                if (bfullTensor)
+                {
+                    for (nn = 0; nn < DIM; nn++)
+                    {
+                        gmx_stats_add_point(lsq_quad[eprCalc], mol.Q_elec_[mm][nn], mol.Q_calc_[mm][nn],      0, 0);
+                        gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][nn], mol.Q_esp_[mm][nn],       0, 0);
+                        gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][nn], mol.Q_mulliken_[mm][nn],  0, 0);
+                        gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][nn], mol.Q_hirshfeld_[mm][nn], 0, 0);
+                        gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][nn], mol.Q_cm5_[mm][nn],       0, 0);
+                    }
+                }
+                else
+                {
+                    gmx_stats_add_point(lsq_quad[eprCalc], mol.Q_elec_[mm][mm], mol.Q_calc_[mm][mm],      0, 0);
+                    gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][mm], mol.Q_esp_[mm][mm],       0, 0);
+                    gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][mm], mol.Q_mulliken_[mm][nn],  0, 0);
+                    gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][mm], mol.Q_hirshfeld_[mm][nn], 0, 0);
+                    gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][mm], mol.Q_cm5_[mm][nn],       0, 0);
+
+                }
+            }
+            
+            if(bPolar)
+            {
+                mol.CalcPolarizability(efield, cr, nullptr);
+                print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler);
+                print_polarizability(fp, &mol, (char *)"Calc",       alpha_toler);
+                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
+                gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
+                for (mm = 0; mm < DIM; mm++)
+                {
+                    gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
+                }
+            }
+            
             rms = mol.espRms();
             fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);                                  
             auto nEsp     = mol.Qgresp_.nEsp();
@@ -430,52 +522,6 @@ void print_electric_props(FILE                           *fp,
             for (size_t i = 0; i < nEsp; i++)
             {
                 gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(),eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
-            }
-            
-            gmx_stats_add_point(lsq_dip[eprCalc], mol.dip_elec_, mol.dip_calc_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprESP],  mol.dip_elec_, mol.dip_esp_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprMPA],  mol.dip_elec_, mol.dip_mulliken_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprHPA],  mol.dip_elec_, mol.dip_hirshfeld_, 0, 0);
-            gmx_stats_add_point(lsq_dip[eprCM5],  mol.dip_elec_, mol.dip_cm5_, 0, 0);
-            
-            for (mm = 0; mm < DIM; mm++)
-            {
-                gmx_stats_add_point(lsq_mu[eprCalc], mol.mu_elec_[mm], mol.mu_calc_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprESP],  mol.mu_elec_[mm], mol.mu_esp_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprMPA],  mol.mu_elec_[mm], mol.mu_mulliken_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprHPA],  mol.mu_elec_[mm], mol.mu_hirshfeld_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[eprCM5],  mol.mu_elec_[mm], mol.mu_cm5_[mm], 0, 0);
-                
-                if (bfullTensor)
-                {
-                    for (nn = 0; nn < DIM; nn++)
-                    {
-                        gmx_stats_add_point(lsq_quad[eprCalc], mol.Q_elec_[mm][nn], mol.Q_calc_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][nn], mol.Q_esp_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][nn], mol.Q_mulliken_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][nn], mol.Q_hirshfeld_[mm][nn], 0, 0);
-                        gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][nn], mol.Q_cm5_[mm][nn], 0, 0);
-                    }
-                }
-                else
-                {
-                    gmx_stats_add_point(lsq_quad[eprCalc], mol.Q_elec_[mm][mm], mol.Q_calc_[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprESP],  mol.Q_elec_[mm][mm], mol.Q_esp_[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprMPA],  mol.Q_elec_[mm][mm], mol.Q_mulliken_[mm][nn], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprHPA],  mol.Q_elec_[mm][mm], mol.Q_hirshfeld_[mm][nn], 0, 0);
-                    gmx_stats_add_point(lsq_quad[eprCM5],  mol.Q_elec_[mm][mm], mol.Q_cm5_[mm][nn], 0, 0);
-
-                }
-            }
-            if(bPolar)
-            {
-                mol.CalcPolarizability(10, cr, nullptr);
-                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_, 0, 0);
-                gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
-                for (mm = 0; mm < DIM; mm++)
-                {
-                    gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
-                }
             }
             
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_MPA     q_HPA     q_CM5       x       y       z\n");
@@ -532,7 +578,7 @@ void print_electric_props(FILE                           *fp,
     if (bPolar)
     {
         print_stats(fp, (char *)"Principal Components of Polarizability (A^3)",  lsq_alpha, false,  (char *)"Electronic", (char *)"Calc");
-        print_stats(fp, (char *)"Isotropic Polarizability (A^3)",  lsq_isoPol, false,  (char *)"Electronic", (char *)"Calc");
+        print_stats(fp, (char *)"Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  (char *)"Electronic", (char *)"Calc");
         print_stats(fp, (char *)"Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  (char *)"Electronic", (char *)"Calc");
     }
     fprintf(fp, "\n");
