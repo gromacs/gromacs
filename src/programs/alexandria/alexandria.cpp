@@ -38,6 +38,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdlib>
+
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
@@ -58,6 +60,7 @@ main(int argc, char *argv[])
         registerAlexandriaModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         manager.setQuiet(true);
+        setenv("GMX_NB_GENERIC", "1", 1);
         if (MASTER(cr))
         {
             printf("\n                   Welcome to Alexandria\n\n");
