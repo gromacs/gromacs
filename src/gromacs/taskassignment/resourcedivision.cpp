@@ -705,16 +705,27 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
     /* Check restrictions on the user supplied options before modifying them.
      * TODO: Put the user values in a const struct and preserve them.
      */
-#if !GMX_THREAD_MPI
-    if (hw_opt->nthreads_tot > 0)
+    if (GMX_THREAD_MPI)
     {
-        gmx_fatal(FARGS, "Setting the total number of threads is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
+        if (hw_opt->nthreads_omp > 0 && hw_opt->nthreads_tot == 0 && hw_opt->nthreads_tmpi == 0)
+        {
+            gmx_fatal(FARGS, "When specifying the number of OpenMP threads with thread-MPI, you also need to specify the number of thread-MPI ranks or the total number of threads");
+        }
     }
-    if (hw_opt->nthreads_tmpi > 0)
+    else
     {
-        gmx_fatal(FARGS, "Setting the number of thread-MPI ranks is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
+        if (hw_opt->nthreads_tot > 0)
+        {
+            gmx_fatal(FARGS, "Setting the total number of threads is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
+        }
+        if (hw_opt->nthreads_tmpi > 0)
+        {
+            gmx_fatal(FARGS, "Setting the number of thread-MPI ranks is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
+        }
     }
-#endif
+
+    /* Check if mdrun is free to choose the total number of threads */
+    hw_opt->totNumThreadsIsAuto = (hw_opt->nthreads_omp == 0 && hw_opt->nthreads_omp_pme == 0 && hw_opt->nthreads_tot == 0);
 
     if (bHasOmpSupport)
     {
