@@ -43,10 +43,10 @@
 #include <math.h>
 
 #include <gtest/gtest.h>
-#include "programs/alexandria/poldata_low.h"
 
 #include "programs/alexandria/plistwrapper.h"
 #include "programs/alexandria/poldata.h"
+#include "programs/alexandria/poldata_low.h"
 #include "programs/alexandria/poldata_xml.h"
 
 #include "testutils/refdata.h"

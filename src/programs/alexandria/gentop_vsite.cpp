@@ -40,13 +40,14 @@
 
 #include "gentop_vsite.h"
 
-#include <map>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/math/units.h"
+#include <map>
+
 #include "gromacs/math/paddedvector.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/smalloc.h"

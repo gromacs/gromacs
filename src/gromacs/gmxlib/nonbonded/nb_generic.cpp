@@ -35,7 +35,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gmxpre.h"
+
 #include "nb_generic.h"
+
 #include <cmath>
 
 #include "gromacs/coulombintegrals/coulombintegrals.h"

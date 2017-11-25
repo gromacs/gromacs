@@ -38,7 +38,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molprop.h"
+
 #include <cmath>
+
 #include <string>
 #include <vector>
 
@@ -48,7 +51,6 @@
 #include "communication.h"
 #include "composition.h"
 #include "gmx_simple_comm.h"
-#include "molprop.h"
 
 const char *mpo_name[MPO_NR] =
 {

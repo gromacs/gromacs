@@ -1,13 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Int Name="lwork">928</Int>
-  <Int Name="Info return value from dgelsd_. If non-zero, the algorithm computing SVD failed to converge and the least squares solution could not be computed.">0</Int>
   <Sequence Name="solution">
     <Int Name="Length">4</Int>
-    <Real>-0.68576484950692729</Real>
-    <Real>-0.79500524727957322</Real>
-    <Real>0.37668143573729418</Real>
-    <Real>0.28849606330103167</Real>
+    <Real>1.7909677862188254</Real>
+    <Real>-2.0396757021961376</Real>
+    <Real>-1.4970127048559121</Real>
+    <Real>1.3594579412255043</Real>
   </Sequence>
 </ReferenceData>

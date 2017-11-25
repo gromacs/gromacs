@@ -41,6 +41,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
@@ -62,8 +63,8 @@
 #include "categories.h"
 #include "composition.h"
 #include "molprop.h"
-#include "molprop_util.h"
 #include "molprop_tables.h"
+#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "molselect.h"
 #include "poldata.h"

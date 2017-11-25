@@ -52,11 +52,11 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
-#include "mymol_low.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "molprop.h"
 #include "molselect.h"
+#include "mymol_low.h"
 #include "poldata.h"
 #include "qgen_eem.h"
 #include "qgen_resp.h"

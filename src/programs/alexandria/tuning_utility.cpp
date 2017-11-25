@@ -37,12 +37,12 @@
  * \author Mohammad Mehdi Ghahremanpour <m.ghahremanpour@hotmail.com>
  */
 
+#include "tuning_utility.h"
+
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
- 
-#include "tuning_utility.h"
  
 namespace alexandria
 {

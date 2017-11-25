@@ -42,12 +42,13 @@
 #define MYMOL_LOW_H
 
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
 
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "gentop_core.h"
 #include "gentop_vsite.h"

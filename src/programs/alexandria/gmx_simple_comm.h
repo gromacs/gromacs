@@ -9,8 +9,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <string>
+
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"

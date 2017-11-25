@@ -36,13 +36,14 @@
 #include "gmxpre.h"
 
 #include <stdio.h>
-#include <iostream>
+
 #include <cmath>
 
-#include "gromacs/utility/fatalerror.h"
+#include <iostream>
 
-#include "coulombintegrals.h"
-#include "slater_low.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
+#include "gromacs/coulombintegrals/slater_low.h"
+#include "gromacs/utility/fatalerror.h"
 
 #if HAVE_LIBCLN
 

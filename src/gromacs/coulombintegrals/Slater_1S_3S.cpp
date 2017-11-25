@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "slater_low.h"
+#include "gromacs/coulombintegrals/slater_low.h"
 
 #if HAVE_LIBCLN
 cl_R Slater_1S_3S(cl_R r, cl_R xi, cl_R xj)

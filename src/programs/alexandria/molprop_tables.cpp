@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molprop_tables.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +54,6 @@
 #include "categories.h"
 #include "composition.h"
 #include "latex_util.h"
-#include "molprop_tables.h"
 
 namespace alexandria
 {

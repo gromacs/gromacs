@@ -44,7 +44,6 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/mdtypes/state.h"
 
-
 #include "plistwrapper.h"
 #include "poldata.h"
 

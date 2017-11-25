@@ -37,9 +37,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <math.h> 
 #include <stdlib.h>
 #include <string.h>
-#include <math.h> 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

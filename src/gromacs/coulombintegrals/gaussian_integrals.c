@@ -39,7 +39,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "coulombintegrals.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 
 static double sqr(double x)
 {

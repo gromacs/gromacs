@@ -42,6 +42,7 @@
 
 
 #include <math.h>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/coulombintegrals/coulombintegrals.h"

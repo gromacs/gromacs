@@ -39,24 +39,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_alexandria
  */
+#include "gromacs/linearalgebra/matrix.h"
 
+#include "programs/alexandria/regression.h"
 
 #include <cmath>
 #include <cstdlib>
 
 #include <gtest/gtest.h>
 
-#include "programs/alexandria/regression.h"
-
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-extern "C" void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
-                        double* b, int* ldb, double* s, double* rcond, int* rank,
-                        double* work, int* lwork, int* iwork, int* info );
-
 
 class RegressionTest : public gmx::test::CommandLineTestBase
 {
@@ -70,106 +65,106 @@ class RegressionTest : public gmx::test::CommandLineTestBase
             checker_.setDefaultTolerance(tolerance);
         }
 
-        void testRegression(int m, int n, double a[], double b[])
+        void testRegression(int ncol, int nrow, double **a, double b[])
         {
             // Code and data from
-            // https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mkl_lapack_examples/dgelsd_ex.c.htm
-            int    lwork = -1;
-            int    lda   = m;
-            int    ldb   = n;
-            int    nrhs  = 1;
-            int    rank  = 0;
-            int    info;
-            double rcond = -1.0;
-            double wkopt = 0.0;
-            std::vector<double> s;
-            s.resize(m);
-            int  smlsiz = 25;
-            int  nlvl   = std::max(0L, std::lround(std::log2(std::min(n, m)/smlsiz + 1) ) + 1);
-            int  liwork = 3*std::min(m, n)*nlvl + 11*std::min(m, n);
-            std::vector<int> iwork;
-            iwork.resize(liwork);
- 
-            dgelsd_( &m, &n, &nrhs, a, &lda, b, &ldb, s.data(), 
-                     &rcond, &rank, &wkopt, &lwork,
-                     iwork.data(), &info );
-            lwork = (int)wkopt;
-            checker_.checkInteger(lwork, "lwork");
-            std::vector<double> work;
-            work.resize(lwork);
-            /* Solve the equations A*X = B */
-            dgelsd_( &m, &n, &nrhs, a, &lda, b, &ldb, s.data(),
-                     &rcond, &rank, work.data(), &lwork,
-                     iwork.data(), &info );
-            /* Check for convergence */
-            checker_.checkInteger(info, "Info return value from dgelsd_. If non-zero, the algorithm computing SVD failed to converge and the least squares solution could not be computed.");
-            
             std::vector<double> x;
-            for(int i = 0; i < m; i++)
-            {
-                x.push_back(b[i]);
-            }
+            x.resize(ncol);
+            
+            multi_regression2(nrow, b, ncol, a, x.data());
+
             checker_.checkSequence(x.begin(), x.end(), "solution");
         }
 };
 
 TEST_F (RegressionTest, Solve_A_x_is_B_1)
 {
-#define M 4
-#define N 5
-#define NRHS 1
-#define LDA M
-#define LDB N
-    double a[LDA*N] = {
-        0.12, -6.91, -3.33,  3.97,
-        -8.19,  2.22, -8.94,  3.33,
-        7.69, -5.12, -6.72, -2.74,
-        -2.26, -9.08, -4.40, -7.92,
-        -4.71,  9.96, -9.98, -3.20
-    };
-    double b[LDB*NRHS] = {
+#define NCOL 4
+#define NROW 5
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] =  0.12; a[0][1] = -6.91; a[0][2] = -3.33; a[0][3] =  3.97;
+    a[1][0] = -8.19; a[1][1] =  2.22; a[1][2] = -8.94; a[1][3] =  3.33;
+    a[2][0] =  7.69; a[2][1] = -5.12; a[2][2] = -6.72; a[2][3] = -2.74;
+    a[3][0] = -2.26; a[3][1] = -9.08; a[3][2] = -4.40; a[3][4] = -7.92;
+    a[4][0] = -4.71; a[4][1] =  9.96; a[4][2] = -9.98; a[4][3] = -3.20;
+    
+    double b[NROW] = {
         7.30,  1.33,  2.68, -9.62,  0.00,
     };
 
-    testRegression(M, N, a, b);
-#undef M
-#undef N
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
 }
 
 TEST_F (RegressionTest, Solve_A_x_is_B_2)
 {
-#define M 3
-#define N 3
-    double a[M*N] = {
-        3.0,  0.0, 0.0,
-        0.0,  2.0, 0.0,
-        0.0,  0.0, 1.0 
-    };
-    double b[N] = {
+#define NCOL 3
+#define NROW 3
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] = 3.0;
+    a[1][1] = 2.0;
+    a[2][2] = 1.0;
+    double b[NROW] = {
         3.0, 4.0, 5.0,
     };
-
-    testRegression(M, N, a, b);
-#undef M
-#undef N
+    // Diagonal matrix, should give as answer ( 1, 2, 5 )
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
 }
 
 TEST_F (RegressionTest, Solve_A_x_is_B_3)
 {
-#define M 2
-#define N 4
-    double a[M*N] = {
-        3.0,  0.0, 
-        0.0,  2.0,
-        1.0,  0.0,
-        1.0,  2.0
-    };
-    double b[N] = {
+#define NCOL 2
+#define NROW 4
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] = 3.0;
+    a[1][1] = 2.0; 
+    a[2][0] = 1.0;
+    a[3][0] = 1.0;
+    a[3][1] = 2.0;
+    double b[NROW] = {
         3.0, 4.0, 1.0, 5.0
     };
+    // Answer should be ( 1, 2 )
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
+}
 
-    testRegression(M, N, a, b);
-#undef M
-#undef N
+TEST_F (RegressionTest, Solve_A_x_is_B_4)
+{
+#define NCOL 1
+#define NROW 2
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] = 3.0; a[0][1] = 2.0;
+    double b[NROW] = {
+        6.0, 4.0 
+    };
+    // Answer should be ( 2 )
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
+}
+
+TEST_F (RegressionTest, Solve_A_x_is_B_5)
+{
+#define NCOL 2
+#define NROW 2
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] = 3.0; a[1][1] = 2.0;
+    double b[NROW] = {
+        5.0, -5.0
+    };
+    // Answer should be ( 1, -1)
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
 }
 
