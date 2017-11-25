@@ -271,7 +271,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
           "Total number of threads to start (0 is guess)" },
         { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
-          "Number of thread-MPI threads to start (0 is guess)" },
+          "Number of thread-MPI ranks to start (0 is guess)" },
         { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
           "Number of OpenMP threads per MPI rank to start (0 is guess)" },
         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
