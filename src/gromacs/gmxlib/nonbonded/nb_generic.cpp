@@ -292,7 +292,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             {
                                 if (irow < 0 || jrow < 0)
                                 {
-                                    gmx_fatal(FARGS, "Row cannot be negative in Slater wave function.\n");
+                                    gmx_fatal(FARGS, "Row cannot be negative in Slater wave function!.\n");
                                 }
                                 else
                                 {
