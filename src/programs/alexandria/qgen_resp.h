@@ -36,8 +36,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GMX_RESP_H
-#define GMX_RESP_H
+#ifndef GMX_QGEN_RESP_H
+#define GMX_QGEN_RESP_H
 
 #include <cstdio>
 
@@ -175,12 +175,6 @@ class QgenResp
 
         void plotLsq(const gmx_output_env_t *oenv);
         
-        double calcJ(ChargeDistributionModel iChargeDistributionModel,
-                     rvec                    esp_x, 
-                     rvec                    atom_x,
-                     double                  zeta,
-                     int                     row);
-
         void calcRho();
 
         void calcPot();
@@ -224,8 +218,6 @@ class QgenResp
         //! Return the net charge for an atom
         double getAtomCharge(int atom) const;
 
-        double calcPenalty();
-
         real myWeight(int iatom) const;
 
         void updateZeta(t_atoms *atoms, const Poldata &pd);
@@ -240,16 +232,17 @@ class QgenResp
 
         void setZeta(int atom, int zz, double zeta);
 
+        double calcPenalty();
+
         ChargeDistributionModel   iDistributionModel_;
         double                    watoms_;
         int                       qtot_, qshell_;
-        double                    rms_, rrms_, penalty_, pfac_, entropy_, wtot_;
+        double                    rms_, rrms_, penalty_, pfac_, wtot_;
         dvec                      origin_, space_;
-        bool                      bFitZeta_, bEntropy_;
+        bool                      bFitZeta_;
         bool                      bRandZeta_, bRandQ_;
-        bool                      bAXpRESP_;
         ivec                      nxyz_;
-        real                      qfac_, bHyper_, zmin_, zmax_, deltaZ_, qmin_, qmax_, rDecrZeta_;
+        real                      qfac_, zmin_, zmax_, deltaZ_, qmin_, qmax_, rDecrZeta_;
         int                       uniqueQ_;
         int                       fitQ_;
         int                       nAtom_;

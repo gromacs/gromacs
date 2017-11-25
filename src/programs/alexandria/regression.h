@@ -1,5 +1,5 @@
-#ifndef ALEAXNDRIA_REGRESSION_H
-#define ALEAXNDRIA_REGRESSION_H
+#ifndef ALEXANDRIA_REGRESSION_H
+#define ALEXANDRIA_REGRESSION_H
 
 /*! \brief Solve a matrix equation A x = b for x
  *

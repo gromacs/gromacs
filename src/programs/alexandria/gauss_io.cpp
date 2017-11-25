@@ -66,7 +66,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
                                           int                                              natom,
                                           int                                              maxPotential)
 {
-    maxPotential = std::min(maxPotential, 100);
+    maxPotential = std::max(0, std::min(maxPotential, 100));
     /*std::sort(espv.begin()+natom, espv.end(),
               [](const alexandria::ElectrostaticPotential &a,
                  const alexandria::ElectrostaticPotential &b)

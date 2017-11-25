@@ -42,7 +42,8 @@
  */
 
 
-#include <math.h>
+#include <cmath>
+#include <cstdlib>
 
 #include <gtest/gtest.h>
 
@@ -78,6 +79,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
 
+            setenv("GMX_NB_GENERIC", "1", 1);
             //needed for ReadGauss
             const char *molnm    = (char *)"XXX";
             const char *iupac    = (char *)"";

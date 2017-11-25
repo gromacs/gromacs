@@ -68,12 +68,9 @@ namespace alexandria
 
 QgenResp::QgenResp()
 {
-    bAXpRESP_           = false;
     qfac_               = 1e-3;
-    bHyper_             = 0.1;
     wtot_               = 0;
     pfac_               = 1;
-    bEntropy_           = false;
     rDecrZeta_          = true;
     bFitZeta_           = false;
     zmin_               = 5;
@@ -195,8 +192,8 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     /*
       Generate Resp Atoms. In doing so, we need to compute the 
       starting charge for each Atom and Nucleus. We should take 
-      the charges of all the shells conntected to the Atom or 
-      the Nuncleus into account.
+      the charges of all the shells connected to the Atom or 
+      the Nucleus into account.
     */
     for (int i = 0; i < atoms->nr; i++)
     {           
@@ -771,9 +768,8 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv)
 
 double QgenResp::calcPenalty()
 {
-    double p, b2;
+    double p = 0;
 
-    p = 0;
     /* Check for excessive charges */
     for (auto &ra : ra_)
     {
@@ -797,17 +793,7 @@ double QgenResp::calcPenalty()
             p += qi*qi;
         }
     }
-    p *= pfac_;
-    if (bAXpRESP_ && (iDistributionModel_ == eqdAXp))
-    {
-        b2 = gmx::square(bHyper_);
-        for (size_t i = 0; (i < nRespAtom()); i++)
-        {
-            p += sqrt(gmx::square(ra_[i].q()) + b2) - bHyper_;
-        }
-        p = (qfac_ * p);
-    }
-    penalty_ = p;
+    penalty_ = p * pfac_;
 
     return penalty_;
 }
@@ -835,6 +821,11 @@ void QgenResp::regularizeCharges()
         }
     }
     double dq = (qtot_ - qtot)/(nRespAtom()-nfixed);
+    if (debug)
+    {
+        fprintf(debug, "Found qtot %g, should be %d. Subtracting %g from each atom.\n",
+                qtot, qtot_, dq);
+    }
     for (size_t ii = 0; ii < nRespAtom(); ii++)
     {
         auto rat = findRAT(ra_[ii].atype());
@@ -850,9 +841,9 @@ void QgenResp::regularizeCharges()
 
 void QgenResp::calcRms()
 {
-    double pot2, s2, sum2, entropy;
+    double pot2, s2, sum2;
 
-    pot2 = sum2 = entropy = 0;
+    pot2 = sum2 = 0;
     for (size_t i = 0; (i < nEsp()); i++)
     {
         double diff = ep_[i].v() - ep_[i].vCalc();
@@ -862,10 +853,6 @@ void QgenResp::calcRms()
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
         }
         s2    = gmx::square(diff);
-        if ((s2 > 0) && (bEntropy_))
-        {
-            entropy += s2*log(s2);
-        }
         sum2 += s2;
         pot2 += gmx::square(ep_[i].v());
     }
@@ -873,12 +860,10 @@ void QgenResp::calcRms()
     if (wtot_ > 0)
     {
         rms_     = gmx2convert(sqrt(sum2/wtot_), eg2cHartree_e);
-        entropy_ = gmx2convert(entropy/wtot_, eg2cHartree_e);
     }
     else
     {
         rms_     = 0;
-        entropy_ = 0;
     }
     rrms_ = sqrt(sum2/pot2);
 }
@@ -888,22 +873,16 @@ real QgenResp::getRms(real *wtot, real *rrms)
     calcRms();
     *wtot = wtot_;
     *rrms = rrms_;
-    if (bEntropy_)
-    {
-        return entropy_;
-    }
-    else
-    {
-        return rms_;
-    }
+    return rms_;
 }
 
 
-double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
-                       rvec                    espx, 
-                       rvec                    rax,
-                       double                  zeta,
-                       int                     row)
+double calcJ(ChargeDistributionModel iChargeDistributionModel,
+             rvec                    espx, 
+             rvec                    rax,
+             double                  zeta,
+             int                     watoms,
+             int                     row)
 {
     rvec   dx;
     double r    = 0;
@@ -915,7 +894,7 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
     {
         iChargeDistributionModel = eqdAXp;
     }
-    if(watoms_ == 0 && r == 0)
+    if(watoms == 0 && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
@@ -971,7 +950,7 @@ void QgenResp::calcPot()
                         {
                             q = ra.q();
                         }
-                        auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                        auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
                         vv += (q*epot);
                     }
                 }
@@ -1015,17 +994,11 @@ void QgenResp::optimizeCharges()
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
                     lhs[i][j] += pot;
-
-                    if (debug && j < 4*nRespAtom())
-                    {
-                        fprintf(debug, "Core[%zu] ESP[%zu] espx = %g espy = %g espz = %g V= %g  CalcV=%g\n", 
-                                ii, j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), pot);
-                    }
                 }
             }
-            lhs[i][factor] = factor;
+            lhs[i][nEsp()] = factor;
             i++;
         }
         else if (rat->ptype() == eptShell)
@@ -1036,17 +1009,20 @@ void QgenResp::optimizeCharges()
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
                     auto q   = k->q();
                     rhs[j]  -= (q*pot);
-                    
-                    if (debug && j < 4*nRespAtom())
-                    {
-                        fprintf(debug, "Shell[%zu] ESP[%zu] Shellx = %g shelly = %g shellz = %g pot= %g q=%g qpot=%g\n", 
-                                ii, j, rax[XX], rax[YY], rax[ZZ], pot, q, q*pot);
-                    }
                 }
             }
+        }
+    }
+    if (debug)
+    {
+        for(size_t j = 0; j < 4*nRespAtom(); j++)
+        {
+            auto espx = ep_[j].esp();
+            fprintf(debug, "ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n", 
+                    j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]);
         }
     }
     
@@ -1056,7 +1032,7 @@ void QgenResp::optimizeCharges()
     // Add the equations to ascertain symmetric charges
     // We store the index of the cores in ii1. 
     std::vector<int> ii1;
-    int    j1     = factor+1;
+    int    j1     = nEsp()+1;
     int    i1     = 0;  
     for (int i = 0; i < static_cast<int>(nRespAtom()); i++)
     {
@@ -1096,7 +1072,7 @@ void QgenResp::optimizeCharges()
             {
                 fprintf(debug, "  %8g", lhs[j][i]);
             }
-            fprintf(debug, "  %8g\n", rhs[i]);
+            fprintf(debug, "  RHS: %8g\n", rhs[i]);
         }
         fprintf(debug, "QCore in the r.h.s:%2g\n", rhs[nrow-1]);
         fprintf(debug, "Qtot:%2d\n",   qtot_);

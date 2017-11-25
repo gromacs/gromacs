@@ -43,6 +43,7 @@ gmx_add_unit_test(
     poldataTest.cpp	
     qgen_eemTest.cpp
     qgen_respTest.cpp
+    regression.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )
