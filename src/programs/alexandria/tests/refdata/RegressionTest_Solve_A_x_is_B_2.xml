@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="lwork">865</Int>
+  <Int Name="Info return value from dgelsd_. If non-zero, the algorithm computing SVD failed to converge and the least squares solution could not be computed.">0</Int>
+  <Sequence Name="solution">
+    <Int Name="Length">3</Int>
+    <Real>1</Real>
+    <Real>2</Real>
+    <Real>5</Real>
+  </Sequence>
+</ReferenceData>

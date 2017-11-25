@@ -94,6 +94,7 @@ class RegressionTest : public gmx::test::CommandLineTestBase
                      &rcond, &rank, &wkopt, &lwork,
                      iwork.data(), &info );
             lwork = (int)wkopt;
+            checker_.checkInteger(lwork, "lwork");
             std::vector<double> work;
             work.resize(lwork);
             /* Solve the equations A*X = B */
@@ -101,13 +102,10 @@ class RegressionTest : public gmx::test::CommandLineTestBase
                      &rcond, &rank, work.data(), &lwork,
                      iwork.data(), &info );
             /* Check for convergence */
-            if ( info > 0 ) {
-                printf( "The algorithm computing SVD failed to converge;\n" );
-                printf( "the least squares solution could not be computed.\n" );
-                exit( 1 );
-            }
+            checker_.checkInteger(info, "Info return value from dgelsd_. If non-zero, the algorithm computing SVD failed to converge and the least squares solution could not be computed.");
+            
             std::vector<double> x;
-            for(int i = 0; i < n; i++)
+            for(int i = 0; i < m; i++)
             {
                 x.push_back(b[i]);
             }
@@ -149,6 +147,25 @@ TEST_F (RegressionTest, Solve_A_x_is_B_2)
     };
     double b[N] = {
         3.0, 4.0, 5.0,
+    };
+
+    testRegression(M, N, a, b);
+#undef M
+#undef N
+}
+
+TEST_F (RegressionTest, Solve_A_x_is_B_3)
+{
+#define M 2
+#define N 4
+    double a[M*N] = {
+        3.0,  0.0, 
+        0.0,  2.0,
+        1.0,  0.0,
+        1.0,  2.0
+    };
+    double b[N] = {
+        3.0, 4.0, 1.0, 5.0
     };
 
     testRegression(M, N, a, b);
