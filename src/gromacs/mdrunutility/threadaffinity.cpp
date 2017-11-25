@@ -115,7 +115,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
                            const t_commrec *cr,
                            const gmx::HardwareTopology &hwTop,
                            int   threads,
-                           bool  automatic,
+                           bool  affinityIsAutoAndNumThreadsIsNotAuto,
                            int pin_offset, int * pin_stride,
                            int **localityOrder)
 {
@@ -176,7 +176,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
     }
     bool validLayout = !invalidValue;
 
-    if (automatic)
+    if (affinityIsAutoAndNumThreadsIsNotAuto)
     {
         invalidValue = (threads != hwThreads);
         bool warn = (invalidValue && threads > 1 && threads < hwThreads);
@@ -426,9 +426,12 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
         GMX_LOG(mdlog.warning).appendTextFormatted("Applying core pinning offset %d", offset);
     }
 
-    bool automatic = (hw_opt->thread_affinity == threadaffAUTO);
+    bool affinityIsAutoAndNumThreadsIsNotAuto =
+        (hw_opt->thread_affinity == threadaffAUTO &&
+         !hw_opt->totNumThreadsIsAuto);
     bool validLayout
-        = get_thread_affinity_layout(mdlog, cr, hwTop, nthread_node, automatic,
+        = get_thread_affinity_layout(mdlog, cr, hwTop, nthread_node,
+                                     affinityIsAutoAndNumThreadsIsNotAuto,
                                      offset, &core_pinning_stride, &localityOrder);
     const gmx::sfree_guard  localityOrderGuard(localityOrder);
 
