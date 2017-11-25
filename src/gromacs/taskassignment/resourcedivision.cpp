@@ -716,6 +716,9 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
     }
 #endif
 
+    /* Check if mdrun is free to choose the total number of threads */
+    hw_opt->totNumThreadsIsAuto = (hw_opt->nthreads_omp == 0 && hw_opt->nthreads_omp_pme == 0 && hw_opt->nthreads_tot == 0);
+
     if (bHasOmpSupport)
     {
         /* Check restrictions on PME thread related options set by the user */
