@@ -161,7 +161,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
     double b[NROW] = {
         5.0, -5.0
     };
-    // Answer should be ( 1, -1)
+    // Answer should be ( 1.6666, -2.5)
     testRegression(NCOL, NROW, a, b);
     free_matrix(a);
 #undef NCOL
