@@ -116,6 +116,8 @@ struct gmx_hw_opt_t
     std::string   gpuIdsAvailable = "";
     //! Empty, or a string provided by the user mapping GPU tasks to devices.
     std::string   userGpuTaskAssignment = "";
+    //! Tells whether the number of OpenMP threads and total threads (only with thread-MPI) where left at auto by the user.
+    bool          totNumThreadsIsAuto;
 };
 
 #endif
