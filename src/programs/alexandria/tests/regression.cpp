@@ -168,3 +168,23 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
 #undef NROW
 }
 
+TEST_F (RegressionTest, Solve_A_x_is_B_6)
+{
+#define NCOL 2
+#define NROW 4
+    double **a = alloc_matrix(NROW, NCOL);
+    a[0][0] = 1.0;
+    a[1][1] = 1.0; 
+    a[2][0] = 1.0;
+    a[3][0] = 1.0;
+    a[3][1] = 1.0;
+    double b[NROW] = {
+        1.0, 1.0, 1.0, 3.0
+    };
+    // Answer should be ( 1, 2 )
+    testRegression(NCOL, NROW, a, b);
+    free_matrix(a);
+#undef NCOL
+#undef NROW
+}
+
