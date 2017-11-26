@@ -371,6 +371,11 @@ immStatus updatePlist(const Poldata             &pd,
                         }
                         else if (!bBASTAT)
                         {
+			    if (debug)
+			    {
+				fprintf(debug, "Could not find bond information for %s - %s\n",
+					aai.c_str(), aaj.c_str());
+			    }
                             return immNotSupportedBond;
                         }
                     }

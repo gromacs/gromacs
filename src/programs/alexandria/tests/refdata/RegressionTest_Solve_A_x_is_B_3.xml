@@ -3,7 +3,7 @@
 <ReferenceData>
   <Sequence Name="solution">
     <Int Name="Length">2</Int>
-    <Real>0.5517241379310347</Real>
-    <Real>1.689655172413794</Real>
+    <Real>2</Real>
+    <Real>1</Real>
   </Sequence>
 </ReferenceData>

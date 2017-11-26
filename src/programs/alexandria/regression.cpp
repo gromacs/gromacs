@@ -42,9 +42,14 @@
 
 #include "gromacs/utility/exceptions.h"
 
-extern "C" void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
-                        double* b, int* ldb, double* s, double* rcond, int* rank,
-                        double* work, int* lwork, int* iwork, int* info );
+extern "C"
+{
+    void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
+                 double* b, int* ldb, double* s, double* rcond, int* rank,
+                 double* work, int* lwork, int* iwork, int* info );
+    void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
+                double* b, int* ldb, double* work, int* lwork, int* info );
+}
 
 void multi_regression2(int nrow, double y[], int ncol,
                        double **a, double x[])
@@ -67,16 +72,20 @@ void multi_regression2(int nrow, double y[], int ncol,
     std::vector<int> iwork;
     iwork.resize(liwork);
     int  info;
-    dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
-             &rcond, &rank, &wkopt, &lwork,
-             iwork.data(), &info );
+    //dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
+    //&rcond, &rank, &wkopt, &lwork,
+    //iwork.data(), &info );
+    dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, 
+            &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     std::vector<double> work;
     work.resize(lwork);
     /* Solve the equations A*X = B */
-    dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
-             &rcond, &rank, work.data(), &lwork,
-             iwork.data(), &info );
+    //dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
+    //&rcond, &rank, work.data(), &lwork,
+    //       iwork.data(), &info );
+    dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, 
+            work.data(), &lwork, &info );
     /* Check for convergence */
     if (info > 0)
     {
