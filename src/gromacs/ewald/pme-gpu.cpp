@@ -103,6 +103,10 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     {
         errorReasons.push_back("test particle insertion");
     }
+    if (ir->nwall > 0)
+    {
+        errorReasons.push_back("walls");
+    }
 
     bool inputSupported = errorReasons.empty();
     if (!inputSupported && error)
