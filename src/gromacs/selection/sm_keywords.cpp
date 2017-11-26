@@ -215,13 +215,6 @@ class StringKeywordMatchItem
             }
             if (bRegExp)
             {
-                if (!gmx::Regex::isSupported())
-                {
-                    std::string message
-                        = gmx::formatString("No regular expression support, "
-                                            "cannot match \"%s\"", str);
-                    GMX_THROW(gmx::InvalidInputError(message));
-                }
                 regex_.reset(new gmx::Regex(str));
             }
         }

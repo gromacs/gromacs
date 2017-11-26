@@ -163,6 +163,7 @@ int main() {
 #include <iterator>
 #include <map>
 #include <memory>
+#include <regex>
 #include <thread>
 #include <type_traits>
 #include <tuple>
@@ -201,6 +202,10 @@ int main() {
   std::tie(tupleInt, tupleDouble) = theTuple;
   // Test std::string
   std::string message(\"hello\");
+  // Test std::regex
+  std::regex re(\".*\");
+  // Test std::regex_match
+  std::regex_match(message, re);
 }" CXX11_STDLIB_PRESENT)
     if(NOT CXX11_STDLIB_PRESENT)
         if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "16.0.3")
