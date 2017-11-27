@@ -133,6 +133,10 @@ TEST_F(PmeTest, ReproducesEnergies)
     runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
     runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
     runModes["PmeOnGpuFftAuto"]  = {"-pme", "gpu", "-pmefft", "auto"};
+    // same manual modes but marked for PME tuning
+    runModes["PmeOnCpuTune"]         = {"-pme", "cpu"};
+    runModes["PmeOnGpuFftOnCpuTune"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnGpuTune"] = {"-pme", "gpu", "-pmefft", "gpu"};
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
     const bool           thisRankChecks = (gmx_node_rank() == 0);
@@ -154,7 +158,17 @@ TEST_F(PmeTest, ReproducesEnergies)
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
 
         CommandLine commandLine(mode.second);
-        commandLine.append("-notunepme"); // for reciprocal energy reproducibility
+
+        const bool  usePmeTuning = (mode.first.find("Tune") != std::string::npos);
+        if (usePmeTuning)
+        {
+            commandLine.append("-tunepme");
+            commandLine.addOption("-nstlist", 1); // a new grid every step
+        }
+        else
+        {
+            commandLine.append("-notunepme"); // for reciprocal energy reproducibility
+        }
         if (useSeparatePme)
         {
             commandLine.addOption("-npme", 1);
@@ -182,7 +196,10 @@ TEST_F(PmeTest, ReproducesEnergies)
                     conservedChecker.setDefaultTolerance(conservedTolerance);
                 }
                 conservedChecker.checkReal(conservedEnergy, stepNum.c_str());
-                reciprocalChecker.checkReal(reciprocalEnergy, stepNum.c_str());
+                if (!usePmeTuning) // with PME tuning come differing grids and differing reciprocal energy
+                {
+                    reciprocalChecker.checkReal(reciprocalEnergy, stepNum.c_str());
+                }
             }
         }
         // FIXME: without this barrier, one of the mdruns was somehow having a non-PME inputrec (!)
