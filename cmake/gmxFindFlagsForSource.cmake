@@ -64,7 +64,7 @@ endfunction()
 # LANGUAGE                  Specifies the language as "C" or "CXX"
 # TOOLCHAIN_FLAGS_VARIABLE  Name of a variable that contains any flags already known
 #                           to be needed by the toolchain (unchanged)
-# NEW_FLAGS_VARIABLE        The first working flag will be appended to this variable.
+# NEW_FLAGS_VARIABLE        The first working flag will be set to this variable.
 # Args 6 through N          Multiple strings with compiler flags to test
 #
 # If gmx_check_compiler_flag() finds a working compiler flag, but the project in
@@ -100,7 +100,7 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
             endif()
             if (${FLAG_WORKS_VARIABLE} AND ${COMPILE_WORKS_VARIABLE})
                 set(${RESULT_VARIABLE} 1 PARENT_SCOPE)
-                set(${NEW_FLAGS_VARIABLE} "${${NEW_FLAGS_VARIABLE}} ${_testflag}" PARENT_SCOPE)
+                set(${NEW_FLAGS_VARIABLE} "${_testflag}" PARENT_SCOPE)
                 break()
             endif()
         endif()
@@ -119,8 +119,8 @@ ENDFUNCTION()
 #                               by the C toolchain.
 # TOOLCHAIN_CXX_FLAGS_VARIABLE  As input, names a variable that contains flags needed
 #                               by the C++ toolchain.
-# NEW_C_FLAGS_VARIABLE          The first working C flag will be appended to this variable
-# NEW_CXX_FLAGS_VARIABLE        The first working C++ flag will be appended to this variable
+# NEW_C_FLAGS_VARIABLE          The first working C flag will be set to this variable
+# NEW_CXX_FLAGS_VARIABLE        The first working C++ flag will be set to this variable
 # Args 8 through N              Multiple strings with compiler flags to test
 #
 # If a compile flag is found, but the project in check_c/cxx_source_compiles
