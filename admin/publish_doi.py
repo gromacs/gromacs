@@ -54,8 +54,6 @@ parser.add_argument('id',metavar='id', type=int,
         help='The submission id')
 parser.add_argument('path',metavar='path', type=str,
         help='Full path to current build directory')
-parser.add_argument('secret',metavar='secret', type=str,
-        help='File location for our secret text file on Jenkins, passed by CMake')
 
 # get the kind of doi we will request
 doi_type = (vars(parser.parse_args()))['type']
@@ -65,8 +63,8 @@ version = (vars(parser.parse_args()))['version']
 zenodo_id = (vars(parser.parse_args()))['id']
 # get file path to this build from input
 file_path = (vars(parser.parse_args()))['path']
-# get secret file path
-secret_path = (vars(parser.parse_args()))['secret']
+# get secret file path from environment variable
+secret_path = os.path.expandvars('$ZenodoTokenFile')
 
 try:
     with open (secret_path, "r") as tokenfile:
