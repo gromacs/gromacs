@@ -121,11 +121,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
 #define NCOL 2
 #define NROW 4
     double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 3.0; // 3 0
-    a[1][1] = 2.0; // 0 2
-    a[2][0] = 1.0; // 1 0
-    a[3][0] = 1.0; // 1 2
-    a[3][1] = 2.0;
+    a[0][0] = 3.0; a[0][1] = 0.0; // 3 0  Note the order is swapped from row major to
+    a[1][0] = 1.0; a[1][1] = 1.0; // 0 2  column major.
+    a[2][0] = 0.0; a[2][1] = 2.0; // 1 0
+    a[3][0] = 0.0; a[3][1] = 2.0; // 1 2
     double b[NROW] = {
         6.0, 2.0, 2.0, 4.0
     };
@@ -173,10 +172,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
 #define NCOL 2
 #define NROW 3
     double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 1.0; // 1 0
-    a[1][1] = 1.0; // 0 1
-    a[2][0] = 1.0; // 1 2
-    a[2][1] = 2.0;
+    a[0][0] = 1.0; a[0][1] = 0.0; // 1 0 See above at test 3
+    a[1][0] = 1.0; a[1][1] = 0.0; // 0 1
+    a[2][0] = 1.0; a[2][1] = 2.0; // 1 2
+    
     double b[NROW] = {
         1.0, 2.0, 5.0
     };
