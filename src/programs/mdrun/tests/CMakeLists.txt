@@ -38,8 +38,6 @@ add_library(mdrun_test_objlib OBJECT
     mdruncomparisonfixture.cpp
     moduletest.cpp
     terminationhelper.cpp
-    # PME tests
-    pmetest.cpp
     )
 
 set(testname "MdrunTests")
@@ -58,6 +56,8 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     interactiveMD.cpp
     termination.cpp
+    # PME tests; FIXME: move this back into mdrun_test_objlib above and figure out the MPI race issue
+    pmetest.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
