@@ -263,14 +263,24 @@ behavior.
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
 
-``-gputasks``
-    A string that specifies the ID numbers of the GPUs to be
-    used by corresponding GPU tasks on this node. For example,
-    "0011" specifies that the first two GPU tasks will use GPU 0,
-    and the other two use GPU 1. When using this option, the
-    number of ranks must be known to mdrun, as well as where
-    tasks of different types should be run, such as by using
-    ``-nb gpu``.
+``-tasks``
+
+    A string that specifies the ID numbers of the GPUs to be used by
+    corresponding GPU tasks on ranks of this node. For example,
+    "[NB:GPU0][NB:GPU2][NB:GPU0][NB:GPU2]" maps GPUs with IDs 0 and 2
+    each to share the nonbonded work of the four ranks of the
+    node. The assignment "[NB:GPU1;PME:GPU1]" maps the nonbonded and
+    PME work of the single rank of that node to GPU 1. The assignment
+    "[NB:GPU1][NB:GPU2][PME:GPU0]" maps the work on the PME-only rank
+    to a GPU. Eiher upper or lower case may be used, any whitespace
+    may be inserted, and "GPU" may be abbreviated "G".
+
+    mdrun is not able to implement arbitrary task assignments, so you
+    will receive descriptive errors where a well-formed assignment
+    string cannot be implemented. In particular, when using this
+    option, the number of ranks must be known to mdrun (e.g. by using
+    ``-ntmpi``, as well as where tasks of different types should be
+    run, such as by using ``-nb gpu -pme gpu``.
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

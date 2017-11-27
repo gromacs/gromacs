@@ -52,6 +52,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/utility/arrayref.h"
 
 struct gmx_gpu_info_t;
@@ -107,7 +108,7 @@ makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
 
 /*! \brief Check that all user-selected GPUs are compatible.
  *
- * Given the \c gpuIds and \c hardwareInfo, throw if
+ * Given the \c gpuTaskAssignmentsOnNode and \c gpu_info, throw if
  * any selected GPUs is not compatible.
  *
  * The error is given with a suitable descriptive message, which will
@@ -126,14 +127,17 @@ makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
  *
  * \param[in]   gpu_info        Information detected about GPUs
  * \param[in]   compatibleGpus  Vector of GPUs that are compatible
- * \param[in]   gpuIds          The GPU IDs selected by the user.
+ * \param[in]   gpuTaskAssignmentsOnNode The GPU task assignments selected by the user for the ranks on this node.
  *
  * \throws  std::bad_alloc          If out of memory
  *          InconsistentInputError  If the assigned GPUs are not valid
  */
-void checkUserGpuIds(const gmx_gpu_info_t   &gpu_info,
-                     const std::vector<int> &compatibleGpus,
-                     const std::vector<int> &gpuIds);
+void checkUserTaskAssignmentGpuIds(const gmx_gpu_info_t     &gpu_info,
+                                   const std::vector<int>   &compatibleGpus,
+                                   const GpuTaskAssignments &gpuTaskAssignmentsOnNode);
+
+GpuTaskAssignments
+parseUserTaskAssignment(const std::string &userTaskAssignmentString);
 
 } // namespace
 

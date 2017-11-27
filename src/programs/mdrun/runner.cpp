@@ -478,12 +478,6 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    std::vector<int> userGpuTaskAssignment;
-    try
-    {
-        userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);
     auto       pmeTarget       = findTaskTarget(pme_opt);
     auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
@@ -592,14 +586,14 @@ int Mdrunner::mdrunner()
             // the number of GPUs to choose the number of ranks.
 
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
-                    (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
+                    (nonbondedTarget, gpuIdsToUse, hw_opt.userGpuTaskAssignment, emulateGpuNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
                     hw_opt.nthreads_tmpi);
             auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
             auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
-                    (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
+                    (useGpuForNonbonded, pmeTarget, gpuIdsToUse, hw_opt.userGpuTaskAssignment,
                     canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -647,12 +641,12 @@ int Mdrunner::mdrunner()
     bool useGpuForPme       = false;
     try
     {
-        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment,
+        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, gpuIdsToUse, hw_opt.userGpuTaskAssignment,
                                                                 emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun));
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
-        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks);
+        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, hw_opt.userGpuTaskAssignment, canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks);
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
         if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
         {
@@ -998,7 +992,7 @@ int Mdrunner::mdrunner()
     try
     {
         // Produce the task assignment for this rank.
-        gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
+        gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, hw_opt.userGpuTaskAssignment, *hwinfo,
                                               mdlog, cr, gpuTasksOnThisRank);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

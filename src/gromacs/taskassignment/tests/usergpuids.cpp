@@ -51,6 +51,8 @@
 
 #include "gromacs/utility/exceptions.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 
@@ -134,6 +136,252 @@ TEST(GpuIdStringHandlingTest, InvalidInputsThrow)
         {
             EXPECT_THROW(parseUserGpuIds(s), InvalidInputError) << "for string " << s;
         }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesEmptyAssignment)
+{
+    const char *strings[] = {
+        "",
+        " ",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        EXPECT_TRUE(assignment.empty());
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesSingleRankWithEmptyAssignment)
+{
+    const char *strings[] = {
+        "[]",
+        " [ ] ",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(assignment.size(), 1);
+
+        {
+            auto assignmentOnRank = assignment[0];
+            EXPECT_TRUE(assignmentOnRank.empty());
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesSingleRankWithNbAssignment)
+{
+    const char *strings[] = {
+        "[NB:GPU 1]",
+        "[nb : Gpu 1]",
+        "[ NB: G 1 ]",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(1, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            EXPECT_FALSE(assignmentOnRank.empty());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(1, assignmentOnRank[0].deviceId_);
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesMultiRankNbAssignments)
+{
+    const char *strings[] = {
+        "[NB:G0][NB:G1]",
+        "[NB: G0][ nb : G1]  ",
+        "[NB :G0] [NB:Gpu 1]",
+        " [Nb: gpu0][NB:G1]",
+        "  [Nb:G 0]  [NB:  G1] ",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(2, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            EXPECT_FALSE(assignmentOnRank.empty());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(0, assignmentOnRank[0].deviceId_);
+        }
+        {
+            auto assignmentOnRank = assignment[1];
+            EXPECT_FALSE(assignmentOnRank.empty());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(1, assignmentOnRank[0].deviceId_);
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesMultiRankPmeAssignments)
+{
+    const char *strings[] = {
+        "[PME:G0][PME:gpu1]",
+        "[PME: G0][ pme : G1]  ",
+        "[PME :Gpu0] [PME:G1]",
+        " [PME: G0][Pme:GPU1]",
+        "  [pme:G 0]  [PME:  G1] ",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(2, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            ASSERT_EQ(1, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Pme, assignmentOnRank[0].task_);
+            EXPECT_EQ(0, assignmentOnRank[0].deviceId_);
+        }
+        {
+            auto assignmentOnRank = assignment[1];
+            ASSERT_EQ(1, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Pme, assignmentOnRank[0].task_);
+            EXPECT_EQ(1, assignmentOnRank[0].deviceId_);
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesMultiTaskMultiRankAssignments)
+{
+    const char *strings[] = {
+        "[NB:G0,G1, gpu1][NB:G2, Gpu3][PME :g4, g5]",
+        "[NB:Gpu0,G1,G1] [Nb:G2,Gpu3] [PME: g4,g5 ]",
+        "[NB: G0,GPU1,g1][NB:G2 ,Gpu3][ PME:g4 ,g5]",
+        "[NB:G0;NB:G1,g1][NB:G2;NB:Gpu3][ PME:g4;PME:g5]",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(3, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            ASSERT_EQ(3, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(0, assignmentOnRank[0].deviceId_);
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[1].task_);
+            EXPECT_EQ(1, assignmentOnRank[1].deviceId_);
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[2].task_);
+            EXPECT_EQ(1, assignmentOnRank[2].deviceId_);
+        }
+        {
+            auto assignmentOnRank = assignment[1];
+            ASSERT_EQ(2, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(2, assignmentOnRank[0].deviceId_);
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[1].task_);
+            EXPECT_EQ(3, assignmentOnRank[1].deviceId_);
+        }
+        {
+            auto assignmentOnRank = assignment[2];
+            ASSERT_EQ(2, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Pme, assignmentOnRank[0].task_);
+            EXPECT_EQ(4, assignmentOnRank[0].deviceId_);
+            EXPECT_EQ(GpuTask::Pme, assignmentOnRank[1].task_);
+            EXPECT_EQ(5, assignmentOnRank[1].deviceId_);
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesMultiTaskAndRankAssignments)
+{
+    const char *strings[] = {
+        "[NB:G0,G1;PME:G1]"
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(1, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            ASSERT_EQ(3, assignmentOnRank.size());
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[0].task_);
+            EXPECT_EQ(0, assignmentOnRank[0].deviceId_);
+            EXPECT_EQ(GpuTask::Nonbonded, assignmentOnRank[1].task_);
+            EXPECT_EQ(1, assignmentOnRank[1].deviceId_);
+            EXPECT_EQ(GpuTask::Pme, assignmentOnRank[2].task_);
+            EXPECT_EQ(1, assignmentOnRank[2].deviceId_);
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, HandlesMultiTaskMultiRankAndEmptyAssignments)
+{
+    const char *strings[] = {
+        // Separate PME rank not using GPUs
+        "[NB:G0,G1][][NB:G2,G3]",
+        // Hypothetical future case where a rank does neither NB nor PME
+        "[NB:G0,G1][][PME:G2,G3]",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        GpuTaskAssignments assignment;
+        ASSERT_NO_THROW_GMX(assignment = parseUserTaskAssignment(string));
+        ASSERT_EQ(3, assignment.size());
+
+        {
+            auto assignmentOnRank = assignment[0];
+            ASSERT_FALSE(assignmentOnRank.empty());
+        }
+        {
+            auto assignmentOnRank = assignment[1];
+            ASSERT_TRUE(assignmentOnRank.empty());
+        }
+        {
+            auto assignmentOnRank = assignment[2];
+            ASSERT_FALSE(assignmentOnRank.empty());
+        }
+    }
+}
+
+TEST(ParseUserTaskAssignmentTest, ThrowsUponErrors)
+{
+    const char *strings[] = {
+        "x",
+        "[x]",
+        "x[NB:G0]",
+        "[NB:G0]x",
+        "x[NB:G0]x",
+        "[NBx:G0]",
+        "[xNB:G0]",
+        "[NB:xG0]",
+        "[NB:Gx0]",
+        "[NB:G0x]",
+        "[NB:G0x,1]",
+        "[NB:G0,1x]",
+        "[NB:G0,x1]",
+        "x[NB:G0][PME:G1]",
+        "[NB:G0]x[PME:G1]",
+        "[NB:G0][PME:G1]x",
+    };
+    for (const auto &string : strings)
+    {
+        SCOPED_TRACE(string);
+        EXPECT_THROW_GMX(parseUserTaskAssignment(string), InvalidInputError);
     }
 }
 

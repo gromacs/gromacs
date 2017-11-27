@@ -43,6 +43,7 @@
 #ifndef GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 #define GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 
+#include <string>
 #include <vector>
 
 struct gmx_hw_info_t;
@@ -82,7 +83,7 @@ enum class TaskTarget : int
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbondedTarget,
                                                      const std::vector<int>   &gpuIdsToUse,
-                                                     const std::vector<int>   &userGpuTaskAssignment,
+                                                     const std::string        &userGpuTaskAssignment,
                                                      const EmulateGpuNonbonded emulateGpuNonbonded,
                                                      const bool                usingVerletScheme,
                                                      const bool                nonbondedOnGpuIsUseful,
@@ -111,7 +112,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          n
 bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
                                                const TaskTarget        pmeTarget,
                                                const std::vector<int> &gpuIdsToUse,
-                                               const std::vector<int> &userGpuTaskAssignment,
+                                               const std::string      &userGpuTaskAssignment,
                                                const bool              canUseGpuForPme,
                                                const int               numRanksPerSimulation,
                                                const int               numPmeRanksPerSimulation);
@@ -145,7 +146,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
                                         const std::vector<int>    &gpuIdsToUse,
-                                        const std::vector<int>    &userGpuTaskAssignment,
+                                        const std::string         &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
                                         const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful);
@@ -179,7 +180,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
-                                  const std::vector<int> &userGpuTaskAssignment,
+                                  const std::string      &userGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation);

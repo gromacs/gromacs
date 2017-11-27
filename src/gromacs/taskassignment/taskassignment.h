@@ -51,6 +51,7 @@
 #define GMX_TASKASSIGNMENT_TASKASSIGNMENT_H
 
 #include <vector>
+#include <string>
 
 struct gmx_hw_info_t;
 struct t_commrec;
@@ -98,7 +99,7 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  * Releases the taskAssigner once its work is complete.
  *
  * \param[in]  gpuIdsToUse                The compatible GPUs that the user permitted us to use.
- * \param[in]  userGpuTaskAssignment      The user-specified assignment of GPU tasks to device IDs.
+ * \param[in]  userTaskAssignment         The user-specified assignment of e.g. GPU tasks to device IDs.
  * \param[in]  hardwareInfo               The detected hardware
  * \param[in]  mdlog                      Logging object to write to.
  * \param[in]  cr                         Communication object.
@@ -112,7 +113,7 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  */
 GpuTaskAssignments::value_type
 runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
-                  const std::vector<int>     &userGpuTaskAssignment,
+                  const std::string          &userTaskAssignmentString,
                   const gmx_hw_info_t        &hardwareInfo,
                   const MDLogger             &mdlog,
                   const t_commrec            *cr,

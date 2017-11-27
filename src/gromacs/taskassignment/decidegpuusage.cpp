@@ -103,7 +103,7 @@ const char * g_specifyEverythingFormatString =
 bool
 decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbondedTarget,
                                                 const std::vector<int>   &gpuIdsToUse,
-                                                const std::vector<int>   &userGpuTaskAssignment,
+                                                const std::string        &userGpuTaskAssignment,
                                                 const EmulateGpuNonbonded emulateGpuNonbonded,
                                                 const bool                usingVerletScheme,
                                                 const bool                nonbondedOnGpuIsUseful,
@@ -150,7 +150,7 @@ bool
 decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
                                           const TaskTarget        pmeTarget,
                                           const std::vector<int> &gpuIdsToUse,
-                                          const std::vector<int> &userGpuTaskAssignment,
+                                          const std::string      &userGpuTaskAssignment,
                                           const bool              canUseGpuForPme,
                                           const int               numRanksPerSimulation,
                                           const int               numPmeRanksPerSimulation)
@@ -234,7 +234,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
                                         const std::vector<int>    &gpuIdsToUse,
-                                        const std::vector<int>    &userGpuTaskAssignment,
+                                        const std::string         &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
                                         const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful)
@@ -317,7 +317,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
-                                  const std::vector<int> &userGpuTaskAssignment,
+                                  const std::string      &userGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation)

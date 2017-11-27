@@ -200,7 +200,7 @@ bool hasAnyTaskOfTypeOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode
 
 GpuTaskAssignments::value_type
 runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
-                  const std::vector<int>     &userGpuTaskAssignment,
+                  const std::string          &userTaskAssignmentString,
                   const gmx_hw_info_t        &hardwareInfo,
                   const MDLogger             &mdlog,
                   const t_commrec            *cr,
@@ -216,8 +216,8 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
     GpuTaskAssignments taskAssignmentOnRanksOfThisNode;
     try
     {
-        // Use the GPU IDs from the user if they supplied
-        // them. Otherwise, choose from the compatible GPUs.
+        // Use the task assignment from the user if they supplied
+        // them. Otherwise, choose GPUs from those compatible.
         //
         // GPU ID assignment strings, if provided, cover all the ranks
         // on a node. If nodes or the process placement on them are
@@ -226,15 +226,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         // assignment.  Thus this implementation of task assignment
         // can assume it has a GPU ID assignment appropriate for the
         // node upon which its process is running.
-        //
-        // Valid GPU ID assignments are `an ordered set of digits that
-        // identify GPU device IDs (e.g. as understood by the GPU
-        // runtime, and subject to environment modification such as
-        // with CUDA_VISIBLE_DEVICES) that will be used for the
-        // GPU-suitable tasks on all of the ranks of that node.
-        ArrayRef<const int> gpuIdsForTaskAssignment;
-        std::vector<int>    generatedGpuIds;
-        if (userGpuTaskAssignment.empty())
+        if (userTaskAssignmentString.empty())
         {
             ArrayRef<const int> compatibleGpusToUse = gpuIdsToUse;
             if (hasAnyTaskOfTypeOnThisNode(gpuTasksOnRanksOfThisNode, GpuTask::Pme))
@@ -247,12 +239,19 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
                     compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
                 }
             }
-            generatedGpuIds         = makeGpuIds(compatibleGpusToUse, numGpuTasksOnThisNode);
-            gpuIdsForTaskAssignment = generatedGpuIds;
+            taskAssignmentOnRanksOfThisNode =
+                buildTaskAssignment(gpuTasksOnRanksOfThisNode,
+                                    makeGpuIds(compatibleGpusToUse, numGpuTasksOnThisNode));
         }
         else
         {
-            if (numGpuTasksOnThisNode != userGpuTaskAssignment.size())
+            try
+            {
+                taskAssignmentOnRanksOfThisNode = parseUserTaskAssignment(userTaskAssignmentString);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+            if (numGpuTasksOnThisNode != taskAssignmentOnRanksOfThisNode.size())
             {
                 // TODO Decorating the message with hostname should be
                 // the job of an error-reporting module.
@@ -262,16 +261,13 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
                 GMX_THROW(InconsistentInputError
                               (formatString("There were %zu GPU tasks assigned on node %s, but %zu GPU tasks were "
                                             "identified, and these must match. Reconsider your GPU task assignment, "
-                                            "number of ranks, or your use of the -nb, -pme, and -npme options.", userGpuTaskAssignment.size(),
+                                            "number of ranks, or your use of the -nb, -pme, and -npme options.", taskAssignmentOnRanksOfThisNode.size(),
                                             host, numGpuTasksOnThisNode)));
             }
             // Did the user choose compatible GPUs?
-            checkUserGpuIds(hardwareInfo.gpu_info, gpuIdsToUse, userGpuTaskAssignment);
-
-            gpuIdsForTaskAssignment = userGpuTaskAssignment;
+            checkUserTaskAssignmentGpuIds(hardwareInfo.gpu_info, gpuIdsToUse,
+                                          taskAssignmentOnRanksOfThisNode);
         }
-        taskAssignmentOnRanksOfThisNode =
-            buildTaskAssignment(gpuTasksOnRanksOfThisNode, gpuIdsForTaskAssignment);
 
     }
     catch (const std::exception &ex)
@@ -302,11 +298,11 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         gmx_exit_on_fatal_error(ExitType_Abort, 1);
     }
 
-    reportGpuUsage(mdlog, !userGpuTaskAssignment.empty(), taskAssignmentOnRanksOfThisNode,
+    reportGpuUsage(mdlog, !userTaskAssignmentString.empty(), taskAssignmentOnRanksOfThisNode,
                    numGpuTasksOnThisNode, cr->nrank_intranode, cr->nnodes > 1);
 
     // If the user chose a task assignment, give them some hints where appropriate.
-    if (!userGpuTaskAssignment.empty())
+    if (!userTaskAssignmentString.empty())
     {
         logPerformanceHints(mdlog, gpuIdsToUse.size(),
                             numGpuTasksOnThisNode,
