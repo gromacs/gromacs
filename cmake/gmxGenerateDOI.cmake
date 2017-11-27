@@ -59,7 +59,7 @@ function (gmx_register_doi REGTYPE)
     endif()
     # get doi strings for source tarball and manual
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/reserve_doi.py ${REGTYPE} ${GMX_VERSION_STRING} ${TOKEN_PATH}
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/reserve_doi.py ${REGTYPE} ${GMX_VERSION_STRING}
         OUTPUT_VARIABLE GMX_DOI_OUTPUT_VARIABLE
         RESULT_VARIABLE GMX_DOI_RESULT_VARIABLE
         ERROR_QUIET
@@ -107,13 +107,13 @@ if(NOT GMX_GET_RELEASE_DOI)
         # gmxDOIVersion.cmake is generated from release builds,
         # and populates both manual and source doi strings. 
         include(gmxDOIVersion)
-        endif()
-        add_custom_target(gmx-publish-source
-            COMMENT "Dummy target"
-            )
-        add_custom_target(gmx-publish-manual
-            COMMENT "Dummy target"
-            )
+    endif()
+    add_custom_target(gmx-publish-source
+        COMMENT "Dummy target"
+        )
+    add_custom_target(gmx-publish-manual
+        COMMENT "Dummy target"
+        )
 else()
     # bool values to control if manual needs to be registered again or not
     set(GMX_HAS_MANUAL_DOI FALSE)
@@ -128,11 +128,6 @@ else()
     endif()
     # make sure we have python available
     find_package(PythonInterp REQUIRED)
-    # The Source_package_master build is configured to make available
-    # to the build job a secret file (from the Jenkins credential file
-    # gmxtoken.txt), and to put the name of the actual file in the
-    # environment variable TOKEN_PATH.
-    set(TOKEN_PATH $ENV{ZenodoTokenFile})
     # only run if we did not populate the variables in a previous build
     # unlikely to happen, but better be safe than sorry
     if(NOT ${GMX_HAS_MANUAL_DOI})
@@ -155,7 +150,6 @@ else()
             ${GMX_VERSION_STRING}
             ${GMX_SOURCE_ID}
             ${CMAKE_CURRENT_BINARY_DIR}
-            ${TOKEN_PATH}
         COMMENT "Final publishing of GROMACS source done with Zenodo"
         VERBATIM
         )
@@ -167,7 +161,6 @@ else()
             ${GMX_VERSION_STRING}
             ${GMX_MANUAL_ID}
             ${CMAKE_CURRENT_BINARY_DIR}
-            ${TOKEN_PATH}
         COMMENT "Final publishing of GROMACS manual done with Zenodo"
         VERBATIM
         )
