@@ -181,12 +181,16 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
     // TODO these flags are only here to honor the CPU PME code, and probably should be removed
 
     bool shouldUpdateBox = false;
-    for (int i = 0; i < DIM; ++i)
+    if (!needToUpdateBox)
     {
-        for (int j = 0; j <= i; ++j)
+        // TODO shouldUpdateBox should go away entirely, needToUpdateBox should be always set correctly by higher level runners
+        for (int i = 0; i < DIM; ++i)
         {
-            shouldUpdateBox                  |= (pmeGpu->common->previousBox[i][j] != box[i][j]);
-            pmeGpu->common->previousBox[i][j] = box[i][j];
+            for (int j = 0; j <= i; ++j)
+            {
+                shouldUpdateBox                  |= (pmeGpu->common->previousBox[i][j] != box[i][j]);
+                pmeGpu->common->previousBox[i][j] = box[i][j];
+            }
         }
     }
 
