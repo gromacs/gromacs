@@ -32,11 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
-import argparse
-import re
-import requests
-import json
+try:
+    import os
+except ImportError:
+    print "Could not import os"
+    exit(1)
+try:
+    import argparse
+except ImportError:
+    print "Could not import argparse"
+    exit(1)
+try:
+    import re
+except ImportError:
+    print "Could not import re"
+    exit(1)
+try:
+    import requests
+except ImportError:
+    print "Could not import requests"
+    exit(1)
+try:
+    import json
+except ImportError:
+    print "Could not import json"
+    exit(1)
 
 # This python script registers a doi for a source archive or manual
 # of a GROMACS release version, to allow for proper referencing in
@@ -52,16 +72,17 @@ parser.add_argument('type',metavar='type', type=str,
         choices=['manual', 'source'])
 parser.add_argument('version',metavar='ver', type=str,
         help='The current GROMACS version')
-parser.add_argument('secret',metavar='secret', type=str,
-        help='File location for our secret text file on Jenkins, passed by CMake')
 
+print os.environ['ZenodoTokenFile']
 
 # get the kind of doi we will request
 doi_type = (vars(parser.parse_args()))['type']
 # get GROMACS version from input
 version = (vars(parser.parse_args()))['version']
-# get secret file path
-secret_path = (vars(parser.parse_args()))['secret']
+# get secret file path from environment variable
+secret_path = os.environ['ZenodoTokenFile']
+
+print "reached this step, secret_path is: ",secret_path
 
 # set some general variables that are true for both cases
 creators = [{'name' : 'Abraham, Mark', 'affiliation': 'KTH'}, {'name':'van der Spoel, David', 'affiliation':'Uppsala University, ICM'},{'name':'Hess, Berk','affiliation':'KTH'}, {'name':'Lindahl, Erik','affiliation':'Stockholm University'}]
@@ -72,7 +93,7 @@ license = 'LGPL-2.1'
 try:
     with open (secret_path, "r") as tokenfile:
         token="".join(line.rstrip() for line in tokenfile)
-
+        print token[0]+token[-1]
 except IOError:
     print "Could not open file containing authentication token ",tokenfile
     exit(1)
@@ -109,6 +130,11 @@ zenodo_metadata = {
             'prereserve_doi':'true'
             }
         }
+
+print "Do we reach until here?"
+
+exit(1)
+
 # generate the new object on zenodo
 r = requests.post('https://zenodo.org/api/deposit/depositions',
         params={'access_token': token}, json={},
