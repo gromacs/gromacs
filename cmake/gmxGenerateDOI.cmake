@@ -81,6 +81,42 @@ function (gmx_register_doi REGTYPE)
     set(GMX_${REGTYPE}_ID ${RETURNVAR} CACHE INTERNAL "reserved doi id for GROMACS ${REGTYPE}")
 endfunction()
 
+# function that allows the interface to the update_doi.py python script
+# to update entries on zenodo
+function (gmx_update_doi REGTYPE OLD_ID)
+    include(CMakeParseArguments)
+    set(_options REMOTE_HASH)
+    set(_one_value_args COMMENT TARGET)
+    set(_multi_value_args EXTRA_VARS)
+    cmake_parse_arguments(
+        ARG "${_options}" "${_one_value_args}" "${_multi_value_args}" ${ARGN})
+    if (ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+    # get doi strings for source tarball and manual
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/update_doi.py ${REGTYPE} ${GMX_VERSION_STRING} ${OLD_ID} ${TOKEN_PATH}
+        OUTPUT_VARIABLE GMX_DOI_OUTPUT_VARIABLE
+        RESULT_VARIABLE GMX_DOI_RESULT_VARIABLE
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    if(NOT ${GMX_DOI_RESULT_VARIABLE} EQUAL "0")
+    # return with error here
+      MESSAGE(FATAL_ERROR "Something went wrong while registering the doi for the ${REGTYPE}.\nOutput value is: ${GMX_DOI_OUTPUT_VARIABLE}")
+    endif()
+    # need to split return string into two parts
+    separate_arguments(GMX_DOI_OUTPUT_VARIABLE)
+    set(RETURNVAR)
+    string(TOUPPER ${REGTYPE} REGTYPE)
+    # first element of list is always the doi string
+    list(GET GMX_DOI_OUTPUT_VARIABLE 0 RETURNVAR)
+    set(GMX_${REGTYPE}_DOI ${RETURNVAR} CACHE INTERNAL "reserved doi for GROMACS ${REGTYPE}" )
+    # second list element is the submission id
+    list(GET GMX_DOI_OUTPUT_VARIABLE 1 RETURNVAR)
+    set(GMX_${REGTYPE}_ID ${RETURNVAR} CACHE INTERNAL "reserved doi id for GROMACS ${REGTYPE}")
+endfunction()
+
 # master variables controlling build and submission
 option(GMX_GET_RELEASE_DOI "Activate for a build of the release tarball to submit for publishing using Zenodo" OFF)
 mark_as_advanced(GMX_GET_RELEASE_DOI)
@@ -133,16 +169,40 @@ else()
     # gmxtoken.txt), and to put the name of the actual file in the
     # environment variable TOKEN_PATH.
     set(TOKEN_PATH $ENV{ZenodoTokenFile})
-    # only run if we did not populate the variables in a previous build
-    # unlikely to happen, but better be safe than sorry
-    if(NOT ${GMX_HAS_MANUAL_DOI})
-        set(GMX_REGTYPE "manual")
-        gmx_register_doi(${GMX_REGTYPE})
-    endif()
-    # see above, not overwriting exisiting variables
-    if(NOT ${GMX_HAS_SOURCE_DOI})
-        set(GMX_REGTYPE "source")
-        gmx_register_doi(${GMX_REGTYPE})
+
+
+    if(GMX_UPDATE_RELEASE)
+        # we want to update a previous release, so we need to run a different script
+        # this will populate the remaining variables as before, but will use the old information
+        # to set stuff such as metadata
+        # only supported for source code updates, manual should stay the same, and gets its 
+        # doi information from the same script through a shorter code path for inclusion in the files
+        # but no new target is registered to publish the new version
+
+        # set id values for previous versions of manual and source code from
+        # environment variables InputManualID and InputSourceID
+        if(NOT ${GMX_HAS_MANUAL_DOI})
+            set(GMX_REGTYPE "manual")
+            set(INPUT_ID  $ENV{InputManualID})
+            gmx_update_doi(${GMX_REGTYPE} ${INPUT_ID})
+        endif()
+        if(NOT ${GMX_HAS_SOURCE_DOI})
+            set(GMX_REGTYPE "source")
+            set(INPUT_ID  $ENV{InputSourceID})
+            gmx_update_doi(${GMX_REGTYPE} ${INPUT_ID})
+        endif()
+    else()
+        # only run if we did not populate the variables in a previous build
+        # unlikely to happen, but better be safe than sorry
+        if(NOT ${GMX_HAS_MANUAL_DOI})
+            set(GMX_REGTYPE "manual")
+            gmx_register_doi(${GMX_REGTYPE})
+        endif()
+        # see above, not overwriting exisiting variables
+        if(NOT ${GMX_HAS_SOURCE_DOI})
+            set(GMX_REGTYPE "source")
+            gmx_register_doi(${GMX_REGTYPE})
+        endif()
     endif()
     # populate gmxDOIVersion file so that doi string is persistent
     # in the release source code archive
@@ -159,6 +219,7 @@ else()
         COMMENT "Final publishing of GROMACS source done with Zenodo"
         VERBATIM
         )
+    if (NOT GMX_UPDATE_RELEASE)
     add_custom_target(gmx-publish-manual
         COMMAND
             ${PYTHON_EXECUTABLE}
@@ -171,4 +232,9 @@ else()
         COMMENT "Final publishing of GROMACS manual done with Zenodo"
         VERBATIM
         )
+    else()
+        add_custom_target(gmx-publish-manual
+            COMMENT "Dummy target"              
+            )                                   
+    endif()
 endif()
