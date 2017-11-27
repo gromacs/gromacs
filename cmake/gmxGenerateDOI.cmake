@@ -58,8 +58,9 @@ function (gmx_register_doi REGTYPE)
         message(FATAL_ERROR "Unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
     endif()
     # get doi strings for source tarball and manual
+    MESSAGE("COMMAND is called like this: COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/reserve_doi.py ${REGTYPE} ${GMX_VERSION_STRING}")
     execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/reserve_doi.py ${REGTYPE} ${GMX_VERSION_STRING} ${TOKEN_PATH}
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/admin/reserve_doi.py ${REGTYPE} ${GMX_VERSION_STRING}
         OUTPUT_VARIABLE GMX_DOI_OUTPUT_VARIABLE
         RESULT_VARIABLE GMX_DOI_RESULT_VARIABLE
         ERROR_QUIET
@@ -132,7 +133,6 @@ else()
     # to the build job a secret file (from the Jenkins credential file
     # gmxtoken.txt), and to put the name of the actual file in the
     # environment variable TOKEN_PATH.
-    set(TOKEN_PATH $ENV{ZenodoTokenFile})
     # only run if we did not populate the variables in a previous build
     # unlikely to happen, but better be safe than sorry
     if(NOT ${GMX_HAS_MANUAL_DOI})
@@ -155,7 +155,6 @@ else()
             ${GMX_VERSION_STRING}
             ${GMX_SOURCE_ID}
             ${CMAKE_CURRENT_BINARY_DIR}
-            ${TOKEN_PATH}
         COMMENT "Final publishing of GROMACS source done with Zenodo"
         VERBATIM
         )
@@ -167,7 +166,6 @@ else()
             ${GMX_VERSION_STRING}
             ${GMX_MANUAL_ID}
             ${CMAKE_CURRENT_BINARY_DIR}
-            ${TOKEN_PATH}
         COMMENT "Final publishing of GROMACS manual done with Zenodo"
         VERBATIM
         )

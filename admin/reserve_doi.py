@@ -52,16 +52,14 @@ parser.add_argument('type',metavar='type', type=str,
         choices=['manual', 'source'])
 parser.add_argument('version',metavar='ver', type=str,
         help='The current GROMACS version')
-parser.add_argument('secret',metavar='secret', type=str,
-        help='File location for our secret text file on Jenkins, passed by CMake')
 
 
 # get the kind of doi we will request
 doi_type = (vars(parser.parse_args()))['type']
 # get GROMACS version from input
 version = (vars(parser.parse_args()))['version']
-# get secret file path
-secret_path = (vars(parser.parse_args()))['secret']
+# get secret file path from environment variable
+secret_path = os.path.expandvars('$ZenodoTokenFile')
 
 # set some general variables that are true for both cases
 creators = [{'name' : 'Abraham, Mark', 'affiliation': 'KTH'}, {'name':'van der Spoel, David', 'affiliation':'Uppsala University, ICM'},{'name':'Hess, Berk','affiliation':'KTH'}, {'name':'Lindahl, Erik','affiliation':'Stockholm University'}]
