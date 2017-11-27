@@ -630,7 +630,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         gmx::ArrayRef<const gmx::RVec> forces;
         if (useGpuForPme)
         {
-            const bool boxChanged = true;
+            const bool boxChanged = false;
             //TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
             pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags);
