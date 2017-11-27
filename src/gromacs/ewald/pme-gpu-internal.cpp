@@ -417,6 +417,10 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     pme_gpu_reinit_grids(pme->gpu);
     pme_gpu_reinit_computation(pme->gpu);
+    /* Clear the previous box - doesn't hurt, and forces the PME CPU recipbox
+     * update for mixed mode on grid switch. TODO: use shared recipbox field.
+     */
+    std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
 }
 
 void pme_gpu_destroy(PmeGpu *pmeGPU)
