@@ -133,6 +133,8 @@ else()
     # gmxtoken.txt), and to put the name of the actual file in the
     # environment variable TOKEN_PATH.
     set(TOKEN_PATH $ENV{ZenodoTokenFile})
+    MESSAGE("TOKEN_PATH is: ${TOKEN_PATH}")
+    MESSAGE("ENV{ZenodoTokenFile} is: $ENV{ZenodoTokenFile}")
     # only run if we did not populate the variables in a previous build
     # unlikely to happen, but better be safe than sorry
     if(NOT ${GMX_HAS_MANUAL_DOI})
