@@ -417,6 +417,12 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     pme_gpu_reinit_grids(pme->gpu);
     pme_gpu_reinit_computation(pme->gpu);
+    /* Clear the cached reciprocal box - doesn't hurt, and without this
+     * there have been problems with PME tuning before,
+     * due to PME CPU having different CPU structure for each new grid
+     */
+    std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
+
 }
 
 void pme_gpu_destroy(PmeGpu *pmeGPU)

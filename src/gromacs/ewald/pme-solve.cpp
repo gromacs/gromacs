@@ -364,6 +364,8 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     rzy = pme->recipbox[ZZ][YY];
     rzz = pme->recipbox[ZZ][ZZ];
 
+    GMX_ASSERT(rxx != 0.0, "Someone broke the reciprocal box again");
+
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
 
