@@ -103,14 +103,13 @@ void pme_gpu_get_energy_virial(const PmeGpu *pmeGPU, real *energy, matrix virial
 void pme_gpu_update_input_box(PmeGpu *pmeGPU, const matrix box)
 {
     auto        *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
-    kernelParamsPtr->current.boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-    GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0f, "Zero volume of the unit cell");
-
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
     matrix scaledBox, recipBox;
     pmeGPU->common->boxScaler->scaleBox(box, scaledBox);
+    kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
+    GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0f, "Zero volume of the unit cell");
     gmx::invertBoxMatrix(scaledBox, recipBox);
 
     /* The GPU recipBox is transposed as compared to the CPU recipBox.
