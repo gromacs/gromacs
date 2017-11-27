@@ -56,6 +56,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -861,11 +862,13 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
      * the number of hardware threads available, but we are not trying to be
      * too smart here in that case.
      */
-    /* The number 10000 atoms per core is a reasonable threshold
-     * for Intel x86 and AMD Threadripper. Note that around this regime
-     * the performance is not very sensitive to the SMT choice.
+    /* The thread reduction and synchronization costs go up roughy quadratically
+     * with the threads count, so we apply a threshold quadratic in #cores.
+     * Also more cores per GPU usually means the CPU gets faster than the GPU.
+     * The number 1000 atoms per core^2 is a reasonable threshold
+     * for Intel x86 and AMD Threadripper.
      */
-    constexpr int c_numAtomsPerCoreSmtThreshold = 10000;
+    constexpr int c_numAtomsPerCoreSquaredSmtThreshold = 1000;
 
     if (bHasOmpSupport &&
         hw_opt->nthreads_omp <= 0 &&
@@ -876,8 +879,7 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
          * all detected ncore_tot physical cores. We are currently not
          * checking for that here.
          */
-        int numAtomsPerPhysicalCore = mtop.natoms/hwinfo.ncore_tot;
-        if (numAtomsPerPhysicalCore < c_numAtomsPerCoreSmtThreshold)
+        if (mtop.natoms < c_numAtomsPerCoreSquaredSmtThreshold*gmx::square(hwinfo.ncore_tot))
         {
             int numRanksInThisNode = (cr ? cr->nrank_intranode : 1);
             /* Choose one OpenMP thread per physical core */
