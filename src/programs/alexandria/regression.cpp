@@ -42,14 +42,8 @@
 
 #include "gromacs/utility/exceptions.h"
 
-extern "C"
-{
-    void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
-                 double* b, int* ldb, double* s, double* rcond, int* rank,
-                 double* work, int* lwork, int* iwork, int* info );
-    void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
-                double* b, int* ldb, double* work, int* lwork, int* info );
-}
+extern "C" void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
+                       double* b, int* ldb, double* work, int* lwork, int* info );
 
 void multi_regression2(int nrow, double y[], int ncol,
                        double **a, double x[])
@@ -59,31 +53,23 @@ void multi_regression2(int nrow, double y[], int ncol,
     int     lda   = nrow;
     int     ldb   = nrow;
     int     nrhs  = 1;
-    int     rank;
-    double  rcond = -1.0;
     double  wkopt;
     std::vector<double> s;
     s.resize(nrow);
     // Compute length of integer array iwork according to
-    // https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mkl_lapack_examples/dgelsd_ex.c.htm
+    // https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mkl_lapack_examples/dgels.htm
     int  smlsiz = 25;
     int  nlvl   = std::max(0L, std::lround(std::log2(std::min(nrow, ncol)/smlsiz + 1) ) + 1);
     int  liwork = 3*std::min(ncol, nrow)*nlvl + 11*std::min(nrow, ncol);
     std::vector<int> iwork;
     iwork.resize(liwork);
     int  info;
-    //dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
-    //&rcond, &rank, &wkopt, &lwork,
-    //iwork.data(), &info );
     dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, 
             &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     std::vector<double> work;
     work.resize(lwork);
     /* Solve the equations A*X = B */
-    //dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
-    //&rcond, &rank, work.data(), &lwork,
-    //       iwork.data(), &info );
     dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, 
             work.data(), &lwork, &info );
     /* Check for convergence */
