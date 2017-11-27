@@ -32,11 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
-import argparse
-import re
-import requests
-import json
+try:
+    import os
+except ImportError:
+    print "Could not import os"
+    exit(1)
+try:
+    import argparse
+except ImportError:
+    print "Could not import argparse"
+    exit(1)
+try:
+    import re
+except ImportError:
+    print "Could not import re"
+    exit(1)
+try:
+    import requests
+except ImportError:
+    print "Could not import requests"
+    exit(1)
+try:
+    import json
+except ImportError:
+    print "Could not import json"
+    exit(1)
 
 # This python script publishes the source or manual on Zenodo
 # CMake passes the type of registration to it,
@@ -54,8 +74,6 @@ parser.add_argument('id',metavar='id', type=int,
         help='The submission id')
 parser.add_argument('path',metavar='path', type=str,
         help='Full path to current build directory')
-parser.add_argument('secret',metavar='secret', type=str,
-        help='File location for our secret text file on Jenkins, passed by CMake')
 
 # get the kind of doi we will request
 doi_type = (vars(parser.parse_args()))['type']
@@ -65,8 +83,10 @@ version = (vars(parser.parse_args()))['version']
 zenodo_id = (vars(parser.parse_args()))['id']
 # get file path to this build from input
 file_path = (vars(parser.parse_args()))['path']
-# get secret file path
-secret_path = (vars(parser.parse_args()))['secret']
+# get secret file path from environment variable
+secret_path = os.environ.get('$ZenodoTokenFile')
+
+print "do we even reach this point?"
 
 try:
     with open (secret_path, "r") as tokenfile:
