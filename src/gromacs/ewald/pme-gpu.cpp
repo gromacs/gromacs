@@ -154,13 +154,13 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t              *pme,
     }
     else
     {
-        wallcycle_start(wcycle, ewcPME_FFT);
+        wallcycle_start(wcycle, ewcPME_FFT_MIXED_MODE);
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
         for (int thread = 0; thread < pme->nthread; thread++)
         {
             gmx_parallel_3dfft_execute(pme->pfft_setup[gridIndex], dir, thread, wcycle);
         }
-        wallcycle_stop(wcycle, ewcPME_FFT);
+        wallcycle_stop(wcycle, ewcPME_FFT_MIXED_MODE);
     }
 }
 
@@ -278,14 +278,14 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
             }
             else
             {
-                wallcycle_start(wcycle, ewcPME_SOLVE);
+                wallcycle_start(wcycle, ewcPME_SOLVE_MIXED_MODE);
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
                 for (int thread = 0; thread < pme->nthread; thread++)
                 {
                     solve_pme_yzx(pme, cfftgrid, pme->boxVolume,
                                   computeEnergyAndVirial, pme->nthread, thread);
                 }
-                wallcycle_stop(wcycle, ewcPME_SOLVE);
+                wallcycle_stop(wcycle, ewcPME_SOLVE_MIXED_MODE);
             }
         }
 
