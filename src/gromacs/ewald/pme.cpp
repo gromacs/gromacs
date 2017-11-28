@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -298,10 +298,7 @@ init_overlap_comm(pme_overlap_t *  ol,
                   int              ndata,
                   int              commplainsize)
 {
-    int              b, i;
-    pme_grid_comm_t *pgc;
     gmx_bool         bCont;
-    int              fft_start, fft_end, send_index1, recv_index1;
 #if GMX_MPI
     MPI_Status       stat;
 
@@ -318,13 +315,13 @@ init_overlap_comm(pme_overlap_t *  ol,
      * that belong to higher nodes (modulo nnodes)
      */
 
-    snew(ol->s2g0, ol->nnodes+1);
-    snew(ol->s2g1, ol->nnodes);
+    ol->s2g0.resize(ol->nnodes + 1);
+    ol->s2g1.resize(ol->nnodes);
     if (debug)
     {
         fprintf(debug, "PME slab boundaries:");
     }
-    for (i = 0; i < nnodes; i++)
+    for (int i = 0; i < nnodes; i++)
     {
         /* s2g0 the local interpolation grid start.
          * s2g1 the local interpolation grid end.
@@ -347,55 +344,51 @@ init_overlap_comm(pme_overlap_t *  ol,
     }
 
     /* Determine with how many nodes we need to communicate the grid overlap */
-    b = 0;
+    int testNodeCount = 0;
     do
     {
-        b++;
+        testNodeCount++;
         bCont = FALSE;
-        for (i = 0; i < nnodes; i++)
+        for (int i = 0; i < nnodes; i++)
         {
-            if ((i+b <  nnodes && ol->s2g1[i] > ol->s2g0[i+b]) ||
-                (i+b >= nnodes && ol->s2g1[i] > ol->s2g0[i+b-nnodes] + ndata))
+            if ((i+testNodeCount <  nnodes && ol->s2g1[i] > ol->s2g0[i+testNodeCount]) ||
+                (i+testNodeCount >= nnodes && ol->s2g1[i] > ol->s2g0[i+testNodeCount-nnodes] + ndata))
             {
                 bCont = TRUE;
             }
         }
     }
-    while (bCont && b < nnodes);
-    ol->noverlap_nodes = b - 1;
+    while (bCont && testNodeCount < nnodes);
+    ol->noverlap_nodes = testNodeCount - 1;
 
-    snew(ol->send_id, ol->noverlap_nodes);
-    snew(ol->recv_id, ol->noverlap_nodes);
-    for (b = 0; b < ol->noverlap_nodes; b++)
-    {
-        ol->send_id[b] = (ol->nodeid + (b + 1)) % ol->nnodes;
-        ol->recv_id[b] = (ol->nodeid - (b + 1) + ol->nnodes) % ol->nnodes;
-    }
-    snew(ol->comm_data, ol->noverlap_nodes);
-
+    ol->comm_data.resize(ol->noverlap_nodes);
     ol->send_size = 0;
-    for (b = 0; b < ol->noverlap_nodes; b++)
+
+    for (int b = 0; b < ol->noverlap_nodes; b++)
     {
-        pgc = &ol->comm_data[b];
+        pme_grid_comm_t *pgc = &ol->comm_data[b];
+
         /* Send */
-        fft_start        = ol->s2g0[ol->send_id[b]];
-        fft_end          = ol->s2g0[ol->send_id[b]+1];
-        if (ol->send_id[b] < nodeid)
+        pgc->send_id = (ol->nodeid + (b + 1)) % ol->nnodes;
+        int fft_start = ol->s2g0[pgc->send_id];
+        int fft_end   = ol->s2g0[pgc->send_id + 1];
+        if (pgc->send_id < nodeid)
         {
             fft_start += ndata;
             fft_end   += ndata;
         }
-        send_index1       = ol->s2g1[nodeid];
-        send_index1       = std::min(send_index1, fft_end);
-        pgc->send_index0  = fft_start;
-        pgc->send_nindex  = std::max(0, send_index1 - pgc->send_index0);
-        ol->send_size    += pgc->send_nindex;
+        int send_index1  = ol->s2g1[nodeid];
+        send_index1      = std::min(send_index1, fft_end);
+        pgc->send_index0 = fft_start;
+        pgc->send_nindex = std::max(0, send_index1 - pgc->send_index0);
+        ol->send_size   += pgc->send_nindex;
 
         /* We always start receiving to the first index of our slab */
+        pgc->recv_id     = (ol->nodeid - (b + 1) + ol->nnodes) % ol->nnodes;
         fft_start        = ol->s2g0[ol->nodeid];
         fft_end          = ol->s2g0[ol->nodeid+1];
-        recv_index1      = ol->s2g1[ol->recv_id[b]];
-        if (ol->recv_id[b] > nodeid)
+        int recv_index1  = ol->s2g1[pgc->recv_id];
+        if (pgc->recv_id > nodeid)
         {
             recv_index1 -= ndata;
         }
@@ -406,30 +399,17 @@ init_overlap_comm(pme_overlap_t *  ol,
 
 #if GMX_MPI
     /* Communicate the buffer sizes to receive */
-    for (b = 0; b < ol->noverlap_nodes; b++)
+    for (int b = 0; b < ol->noverlap_nodes; b++)
     {
-        MPI_Sendrecv(&ol->send_size, 1, MPI_INT, ol->send_id[b], b,
-                     &ol->comm_data[b].recv_size, 1, MPI_INT, ol->recv_id[b], b,
+        MPI_Sendrecv(&ol->send_size, 1, MPI_INT, ol->comm_data[b].send_id, b,
+                     &ol->comm_data[b].recv_size, 1, MPI_INT, ol->comm_data[b].recv_id, b,
                      ol->mpi_comm, &stat);
     }
 #endif
 
     /* For non-divisible grid we need pme_order iso pme_order-1 */
-    snew(ol->sendbuf, norder*commplainsize);
-    snew(ol->recvbuf, norder*commplainsize);
-}
-
-/*! \brief Destroy data structure for communication */
-static void
-destroy_overlap_comm(const pme_overlap_t *ol)
-{
-    sfree(ol->s2g0);
-    sfree(ol->s2g1);
-    sfree(ol->send_id);
-    sfree(ol->recv_id);
-    sfree(ol->comm_data);
-    sfree(ol->sendbuf);
-    sfree(ol->recvbuf);
+    ol->sendbuf.resize(norder * commplainsize);
+    ol->recvbuf.resize(norder * commplainsize);
 }
 
 int minimalPmeGridSize(int pmeOrder)
@@ -1729,9 +1709,6 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     {
         sfree(pme->bsp_mod[i]);
     }
-
-    destroy_overlap_comm(&pme->overlap[0]);
-    destroy_overlap_comm(&pme->overlap[1]);
 
     sfree(pme->lb_buf1);
     sfree(pme->lb_buf2);
