@@ -128,7 +128,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         real ewaldcoeff_q, real ewaldcoeff_lj,
                         int nthread,
                         PmeRunMode runMode,
-                        PmeGpu *pmeGPU,
+                        PmeGpu *pmeGpu,
                         gmx_device_info_t *gpuInfo,
                         const gmx::MDLogger &mdlog);
 
