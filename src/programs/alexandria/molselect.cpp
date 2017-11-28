@@ -94,7 +94,7 @@ static void sample_molecules(FILE                            *fp,
     std::random_device                    rd;
     std::mt19937                          gen(rd());
     std::uniform_int_distribution<>       dis(0, mols.size()-1);
-    std::vector<const alexandria::MyMol>  sample;
+    std::vector<alexandria::MyMol>        sample;
        
     const char  *alexandria = cs.searchCS(alexandria::iCalexandria)->name();   
     for (auto atp = pd.getAtypeBegin(); atp < pd.getAtypeEnd(); atp++)
