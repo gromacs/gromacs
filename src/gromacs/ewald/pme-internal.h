@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,29 +115,32 @@ void gmx_pme_reinit(struct gmx_pme_t **pmedata,
 //! @cond Doxygen_Suppress
 
 /*! \brief Data structure for grid communication */
-typedef struct {
+struct pme_grid_comm_t
+{
+    int send_id;         //!< Source rank id
     int send_index0;
     int send_nindex;
+    int recv_id;         //!< Destination rank id
     int recv_index0;
     int recv_nindex;
-    int recv_size;   /* Receive buffer width, used with OpenMP */
-} pme_grid_comm_t;
+    int recv_size = 0;   //!< Receive buffer width, used with OpenMP
+};
 
-/*! \brief Data structure for grid overlap communication */
-typedef struct {
+/*! \brief Data structure for grid overlap communication in a single dimension */
+struct pme_overlap_t
+{
 #if GMX_MPI
-    MPI_Comm         mpi_comm;
+    MPI_Comm                     mpi_comm;       //!< MPI communcator
 #endif
-    int              nnodes, nodeid;
-    int             *s2g0;
-    int             *s2g1;
-    int              noverlap_nodes;
-    int             *send_id, *recv_id;
-    int              send_size; /* Send buffer width, used with OpenMP */
-    pme_grid_comm_t *comm_data;
-    real            *sendbuf;
-    real            *recvbuf;
-} pme_overlap_t;
+    int                          nnodes;         //!< Number of ranks
+    int                          nodeid;         //!< Unique rank identifcator
+    std::vector<int>             s2g0;           //!< The local interpolation grid start
+    std::vector<int>             s2g1;           //!< The local interpolation grid end
+    int                          send_size;      //!< Send buffer width, used with OpenMP
+    std::vector<pme_grid_comm_t> comm_data;      //!< All the individual communication data for each rank
+    std::vector<real>            sendbuf;        //!< Shared buffer for sending
+    std::vector<real>            recvbuf;        //!< Shared buffer for receiving
+};
 
 /*! \brief Data structure for organizing particle allocation to threads */
 typedef struct {
