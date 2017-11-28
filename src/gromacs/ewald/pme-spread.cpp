@@ -710,8 +710,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
     MPI_Status stat;
 #endif
     int  recv_size_y;
-    int  ipulse, size_yx;
-    real *sendptr, *recvptr;
+    int  size_yx;
     int  x, y, z, indg, indb;
 
     /* Note that this routine is only used for forward communication.
@@ -745,7 +744,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         int send_size_y = overlap->send_size;
 #endif
 
-        for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
+        for (size_t ipulse = 0; ipulse < overlap->comm_data.size(); ipulse++)
         {
             send_index0   =
                 overlap->comm_data[ipulse].send_index0 -
@@ -755,8 +754,8 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_size_y   = overlap->comm_data[ipulse].recv_size;
 
-            sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
-            recvptr = overlap->recvbuf;
+            auto *sendptr = const_cast<real *>(overlap->sendbuf.data()) + send_index0 * local_fft_ndata[ZZ];
+            auto *recvptr = const_cast<real *>(overlap->recvbuf.data());
 
             if (debug != nullptr)
             {
@@ -765,8 +764,8 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             }
 
 #if GMX_MPI
-            int send_id = overlap->send_id[ipulse];
-            int recv_id = overlap->recv_id[ipulse];
+            int send_id = overlap->comm_data[ipulse].send_id;
+            int recv_id = overlap->comm_data[ipulse].recv_id;
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
                          send_id, ipulse,
                          recvptr, recv_size_y*datasize, GMX_MPI_REAL,
@@ -790,7 +789,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
             if (pme->nnodes_major > 1)
             {
                 /* Copy from the received buffer to the send buffer for dim 0 */
-                sendptr = pme->overlap[0].sendbuf;
+                sendptr = const_cast<real *>(pme->overlap[0].sendbuf.data());
                 for (x = 0; x < size_yx; x++)
                 {
                     for (y = 0; y < recv_nindex; y++)
@@ -816,13 +815,11 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         /* Major dimension */
         const pme_overlap_t *overlap = &pme->overlap[0];
 
-        ipulse = 0;
+        size_t ipulse = 0;
 
         send_nindex   = overlap->comm_data[ipulse].send_nindex;
         /* We don't use recv_index0, as we always receive starting at 0 */
         recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
-
-        recvptr = overlap->recvbuf;
 
         if (debug != nullptr)
         {
@@ -831,10 +828,11 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
         }
 
 #if GMX_MPI
-        int datasize = local_fft_ndata[YY]*local_fft_ndata[ZZ];
-        int send_id  = overlap->send_id[ipulse];
-        int recv_id  = overlap->recv_id[ipulse];
-        sendptr      = overlap->sendbuf;
+        int datasize  = local_fft_ndata[YY]*local_fft_ndata[ZZ];
+        int send_id   = overlap->comm_data[ipulse].send_id;
+        int recv_id   = overlap->comm_data[ipulse].recv_id;
+        auto *sendptr = const_cast<real *>(overlap->sendbuf.data());
+        auto *recvptr = const_cast<real *>(overlap->recvbuf.data());
         MPI_Sendrecv(sendptr, send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
                      recvptr, recv_nindex*datasize, GMX_MPI_REAL,
@@ -850,7 +848,7 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
                 indb = (x*local_fft_ndata[YY] + y)*local_fft_ndata[ZZ];
                 for (z = 0; z < local_fft_ndata[ZZ]; z++)
                 {
-                    fftgrid[indg+z] += recvptr[indb+z];
+                    fftgrid[indg + z] += overlap->recvbuf[indb + z];
                 }
             }
         }
@@ -979,8 +977,8 @@ void spread_on_grid(const gmx_pme_t *pme,
             {
                 reduce_threadgrid_overlap(pme, grids, thread,
                                           fftgrid,
-                                          pme->overlap[0].sendbuf,
-                                          pme->overlap[1].sendbuf,
+                                          const_cast<real *>(pme->overlap[0].sendbuf.data()),
+                                          const_cast<real *>(pme->overlap[1].sendbuf.data()),
                                           grid_index);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
