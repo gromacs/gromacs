@@ -39,8 +39,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_alexandria
  */
-#include "gromacs/linearalgebra/matrix.h"
-
 #include "programs/alexandria/regression.h"
 
 #include <cmath>
@@ -65,53 +63,33 @@ class RegressionTest : public gmx::test::CommandLineTestBase
             checker_.setDefaultTolerance(tolerance);
         }
 
-        void testRegression(int ncol, int nrow, double **a, double b[])
+        void testRegression(MatrixWrapper &a, std::vector<double> b)
         {
-            // Code and data from
-            std::vector<double> x;
-            x.resize(ncol);
-            
-            multi_regression2(nrow, b, ncol, a, x.data());
-
+            std::vector<double> x(a.nColumn());
+            a.solve(b, &x);
             checker_.checkSequence(x.begin(), x.end(), "solution");
         }
 };
-
-TEST_F (RegressionTest, Solve_A_x_is_B_1)
-{
-#define NCOL 4
-#define NROW 5
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] =  0.12; a[0][1] = -6.91; a[0][2] = -3.33; a[0][3] =  3.97;
-    a[1][0] = -8.19; a[1][1] =  2.22; a[1][2] = -8.94; a[1][3] =  3.33;
-    a[2][0] =  7.69; a[2][1] = -5.12; a[2][2] = -6.72; a[2][3] = -2.74;
-    a[3][0] = -2.26; a[3][1] = -9.08; a[3][2] = -4.40; a[3][4] = -7.92;
-    a[4][0] = -4.71; a[4][1] =  9.96; a[4][2] = -9.98; a[4][3] = -3.20;
-    
-    double b[NROW] = {
-        7.30,  1.33,  2.68, -9.62,  0.00,
-    };
-
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
-#undef NCOL
-#undef NROW
-}
 
 TEST_F (RegressionTest, Solve_A_x_is_B_2)
 {
 #define NCOL 3
 #define NROW 3
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 3.0;
-    a[1][1] = 2.0;
-    a[2][2] = 1.0;
-    double b[NROW] = {
-        3.0, 4.0, 5.0,
+    double        aa[NROW][NCOL] =
+    {
+        { 3, 0, 0 },
+        { 0, 2, 0 },
+        { 0, 0, 1 }
     };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 3, 4, 5 });
+
     // Diagonal matrix, should give as answer ( 1, 2, 5 )
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
+    testRegression(a, b);
 #undef NCOL
 #undef NROW
 }
@@ -120,17 +98,21 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
 {
 #define NCOL 2
 #define NROW 4
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 3.0; a[0][1] = 0.0; // 3 0  Note the order is swapped from row major to
-    a[1][0] = 1.0; a[1][1] = 1.0; // 0 2  column major.
-    a[2][0] = 0.0; a[2][1] = 2.0; // 1 0
-    a[3][0] = 0.0; a[3][1] = 2.0; // 1 2
-    double b[NROW] = {
-        6.0, 2.0, 2.0, 4.0
+    double        aa[NROW][NCOL] =
+    {
+        { 3, 0 },
+        { 0, 2 },
+        { 1, 0 },
+        { 1, 2 }
     };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 6, 2, 2, 4 });
     // Answer should be ( 2, 1 )
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
+    testRegression(a, b);
 #undef NCOL
 #undef NROW
 }
@@ -139,14 +121,19 @@ TEST_F (RegressionTest, Solve_A_x_is_B_4)
 {
 #define NCOL 1
 #define NROW 2
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 3.0; a[0][1] = 2.0;
-    double b[NROW] = {
-        6.0, 4.0 
+    double        aa[NROW][NCOL] =
+    {
+        { 3 },
+        { 2 }
     };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 6, 4 });
     // Answer should be ( 2 )
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
+    testRegression(a, b);
 #undef NCOL
 #undef NROW
 }
@@ -155,14 +142,19 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
 {
 #define NCOL 2
 #define NROW 2
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 3.0; a[1][1] = 2.0;
-    double b[NROW] = {
-        5.0, -5.0
+    double        aa[NROW][NCOL] =
+    {
+        { 3, 0 },
+        { 0, 2 }
     };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 5, -5 });
     // Answer should be ( 1.6666, -2.5)
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
+    testRegression(a, b);
 #undef NCOL
 #undef NROW
 }
@@ -171,18 +163,20 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
 {
 #define NCOL 2
 #define NROW 3
-    double **a = alloc_matrix(NROW, NCOL);
-    a[0][0] = 1.0; a[0][1] = 0.0; // 1 0 See above at test 3
-    a[1][0] = 1.0; a[1][1] = 0.0; // 0 1
-    a[2][0] = 1.0; a[2][1] = 2.0; // 1 2
-    
-    double b[NROW] = {
-        1.0, 2.0, 5.0
+    double        aa[NROW][NCOL] =
+    {
+        { 1, 0 },
+        { 0, 1 },
+        { 1, 2 }
     };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 1, 2, 5 });
     // Answer should be ( 1, 2 )
-    testRegression(NCOL, NROW, a, b);
-    free_matrix(a);
+    testRegression(a, b);
 #undef NCOL
 #undef NROW
 }
-
