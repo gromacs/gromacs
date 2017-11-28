@@ -115,29 +115,33 @@ void gmx_pme_reinit(struct gmx_pme_t **pmedata,
 //! @cond Doxygen_Suppress
 
 /*! \brief Data structure for grid communication */
-typedef struct {
+struct pme_grid_comm_t
+{
     int send_index0;
     int send_nindex;
     int recv_index0;
     int recv_nindex;
-    int recv_size;   /* Receive buffer width, used with OpenMP */
-} pme_grid_comm_t;
+    int recv_size = 0;   /* Receive buffer width, used with OpenMP */
+};
 
-/*! \brief Data structure for grid overlap communication */
-typedef struct {
+/*! \brief Data structure for grid overlap communication in a single dimension */
+struct pme_overlap_t
+{
 #if GMX_MPI
-    MPI_Comm         mpi_comm;
+    MPI_Comm                     mpi_comm;       //!< MPI communcator
 #endif
-    int              nnodes, nodeid;
-    int             *s2g0;
-    int             *s2g1;
-    int              noverlap_nodes;
-    int             *send_id, *recv_id;
-    int              send_size; /* Send buffer width, used with OpenMP */
-    pme_grid_comm_t *comm_data;
-    real            *sendbuf;
-    real            *recvbuf;
-} pme_overlap_t;
+    int                          nnodes;         //!< Number of nodes
+    int                          nodeid;         //!< Unique node identifcator
+    std::vector<int>             s2g0;           //!< The local interpolation grid start
+    std::vector<int>             s2g1;           //!< The local interpolation grid end
+    int                          noverlap_nodes; //!< Number of nodes that actually communicate the overlap
+    std::vector<int>             send_id;        //!< Destination node ids
+    std::vector<int>             recv_id;        //!< Source node ids
+    int                          send_size;      //!< Send buffer width, used with OpenMP
+    std::vector<pme_grid_comm_t> comm_data;
+    std::vector<real>            sendbuf;        //!< Working buffer for sending
+    std::vector<real>            recvbuf;        //!< Working bufefr for receiving
+};
 
 /*! \brief Data structure for organizing particle allocation to threads */
 typedef struct {
