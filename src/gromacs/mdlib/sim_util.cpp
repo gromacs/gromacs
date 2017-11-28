@@ -850,6 +850,42 @@ static void launchPmeGpuFftAndGather(gmx_pme_t        *pmedata,
     pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
 }
 
+/*! \brief
+ *  Launch the dynamic rolling pruning GPU task.
+ *
+ *  We currently alternate local/non-local list pruning in odd-even steps
+ *  (only pruning every second step without DD).
+ *
+ * \param[in]     cr               The communication record
+ * \param[in]     nbv              Nonbonded verlet structure
+ * \param[in]     inputrec         The input record
+ * \param[in]     step             The current MD step
+ */
+static inline void launchGpuRollingPruning(const t_commrec          *cr,
+                                           const nonbonded_verlet_t *nbv,
+                                           const t_inputrec         *inputrec,
+                                           const gmx_int64_t         step)
+{
+    /* We should not launch the rolling pruning kernel at a search
+     * step or just before search steps, since that's useless.
+     * Without domain decomposition we prune at even steps.
+     * With domain decomposition we alternate local and non-local
+     * pruning at even and odd steps.
+     */
+    int  numRollingParts     = nbv->listParams->numRollingParts;
+    GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
+    int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
+    bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
+    if (stepWithCurrentList > 0 &&
+        stepWithCurrentList < inputrec->nstlist - 1 &&
+        (stepIsEven || DOMAINDECOMP(cr)))
+    {
+        nbnxn_gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
+                                          stepIsEven ? eintLocal : eintNonlocal,
+                                          numRollingParts);
+    }
+}
+
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1466,24 +1502,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* Is dynamic pair-list pruning activated? */
             if (nbv->listParams->useDynamicPruning)
             {
-                /* We should not launch the rolling pruning kernel at a search
-                 * step or just before search steps, since that's useless.
-                 * Without domain decomposition we prune at even steps.
-                 * With domain decomposition we alternate local and non-local
-                 * pruning at even and odd steps.
-                 */
-                int  numRollingParts     = nbv->listParams->numRollingParts;
-                GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-                int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
-                bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
-                if (stepWithCurrentList > 0 &&
-                    stepWithCurrentList < inputrec->nstlist - 1 &&
-                    (stepIsEven || DOMAINDECOMP(cr)))
-                {
-                    nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
-                                                      stepIsEven ? eintLocal : eintNonlocal,
-                                                      numRollingParts);
-                }
+                launchGpuRollingPruning(cr, nbv, inputrec, step);
             }
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
