@@ -130,9 +130,9 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 
         datasize      = pme->pmegrid_nx * pme->nkz;
 
-        MPI_Sendrecv(overlap->sendbuf, send_nindex*datasize, GMX_MPI_REAL,
+        MPI_Sendrecv(overlap->sendbuf.data(), send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
-                     overlap->recvbuf, recv_nindex*datasize, GMX_MPI_REAL,
+                     overlap->recvbuf.data(), recv_nindex*datasize, GMX_MPI_REAL,
                      recv_id, ipulse,
                      overlap->mpi_comm, &stat);
 
@@ -185,7 +185,7 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
             send_nindex   = overlap->comm_data[ipulse].send_nindex;
             recv_index0   = overlap->comm_data[ipulse].recv_index0;
             recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
-            recvptr       = overlap->recvbuf;
+            recvptr       = overlap->recvbuf.data();
         }
         else
         {
