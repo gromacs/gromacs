@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,8 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
          */
         if (direction == GMX_SUM_GRID_FORWARD)
         {
-            send_id       = overlap->send_id[ipulse];
-            recv_id       = overlap->recv_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].send_id;
+            recv_id       = overlap->comm_data[ipulse].recv_id;
             send_index0   = overlap->comm_data[ipulse].send_index0;
             send_nindex   = overlap->comm_data[ipulse].send_nindex;
             recv_index0   = overlap->comm_data[ipulse].recv_index0;
@@ -96,8 +96,8 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
         }
         else
         {
-            send_id       = overlap->recv_id[ipulse];
-            recv_id       = overlap->send_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].recv_id;
+            recv_id       = overlap->comm_data[ipulse].send_id;
             send_index0   = overlap->comm_data[ipulse].recv_index0;
             send_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_index0   = overlap->comm_data[ipulse].send_index0;
@@ -130,9 +130,9 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 
         datasize      = pme->pmegrid_nx * pme->nkz;
 
-        MPI_Sendrecv(overlap->sendbuf, send_nindex*datasize, GMX_MPI_REAL,
+        MPI_Sendrecv(overlap->sendbuf.data(), send_nindex*datasize, GMX_MPI_REAL,
                      send_id, ipulse,
-                     overlap->recvbuf, recv_nindex*datasize, GMX_MPI_REAL,
+                     overlap->recvbuf.data(), recv_nindex*datasize, GMX_MPI_REAL,
                      recv_id, ipulse,
                      overlap->mpi_comm, &stat);
 
@@ -179,18 +179,18 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
     {
         if (direction == GMX_SUM_GRID_FORWARD)
         {
-            send_id       = overlap->send_id[ipulse];
-            recv_id       = overlap->recv_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].send_id;
+            recv_id       = overlap->comm_data[ipulse].recv_id;
             send_index0   = overlap->comm_data[ipulse].send_index0;
             send_nindex   = overlap->comm_data[ipulse].send_nindex;
             recv_index0   = overlap->comm_data[ipulse].recv_index0;
             recv_nindex   = overlap->comm_data[ipulse].recv_nindex;
-            recvptr       = overlap->recvbuf;
+            recvptr       = overlap->recvbuf.data();
         }
         else
         {
-            send_id       = overlap->recv_id[ipulse];
-            recv_id       = overlap->send_id[ipulse];
+            send_id       = overlap->comm_data[ipulse].recv_id;
+            recv_id       = overlap->comm_data[ipulse].send_id;
             send_index0   = overlap->comm_data[ipulse].recv_index0;
             send_nindex   = overlap->comm_data[ipulse].recv_nindex;
             recv_index0   = overlap->comm_data[ipulse].send_index0;
