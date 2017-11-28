@@ -1049,8 +1049,19 @@ Temperature coupling
    The number of chained Nose-Hoover thermostats for velocity Verlet
    integrators, the leap-frog :mdp-value:`integrator=md` integrator
    only supports 1. Data for the NH chain variables is not printed to
-   the :ref:`edr` file, but can be using the ``GMX_NOSEHOOVER_CHAINS``
+   the :ref:`edr` file, but can be with :mdp-value:`using the ````
    environment variable
+
+.. mdp:: print-nose-hoover-chain-variables
+
+   .. mdp-value:: no
+
+      Do not store Nose-Hoover chain variables in the energy file.
+
+   .. mdp-value:: Berendsen
+
+      Store all positions and velocities of the Nose-Hoover chain
+      in the energy file.
 
 .. mdp:: tc-grps
 
