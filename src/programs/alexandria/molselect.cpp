@@ -123,6 +123,10 @@ static void sample_molecules(FILE                            *fp,
                 atempt++;
             }
             while (nmol < minmol && atempt < maxatempt);
+            if (debug && atempt >= maxatempt)
+            {
+                fprintf(debug, "No molecule picked randomly for %s after %d attempts\n", atp->getType().c_str(), atempt);
+            }
         }
     }    
     for (const auto &mol : sample)
