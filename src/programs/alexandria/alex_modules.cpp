@@ -60,6 +60,7 @@ int alex_mp2csv(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
 int alex_molprop_check(int argc, char *argv[]);
 int alex_tune_zeta(int argc, char *argv[]);
+int alex_molselect(int argc, char *argv[]);
 
 //! Initializer for a module that defaults to nice level zero.
 void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
@@ -115,6 +116,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Utility to merge a number of molecular property files and a SQLite database");
     registerModule(manager, &alex_merge_pd, "merge_pd",
                    "Utility to merge a number of gentop files");
+    registerModule(manager, &alex_molselect, "molselect",
+                   "Utility to generate random samples from molprop database");
 
     {
         gmx::CommandLineModuleGroup group =
@@ -144,6 +147,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("analyze");
         group.addModule("merge_mp");
         group.addModule("mp2csv");
+        group.addModule("molselect");
     }
     {
         gmx::CommandLineModuleGroup group =

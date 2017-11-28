@@ -178,6 +178,11 @@ class MyMol
         void findInPlaneAtoms(int ca, std::vector<int> &atoms);
         
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
+           
+        friend bool operator==(const MyMol &mol1, const MyMol &mol2)
+        { 
+            return (mol1.molProp()->getMolname().c_str() == mol2.molProp()->getMolname().c_str());
+        }
        
     public:
         rvec                     *buf_;
@@ -253,6 +258,7 @@ class MyMol
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
+        
 
         /*! \brief
          * It generates the topology structure which will be used to print the topology file.
