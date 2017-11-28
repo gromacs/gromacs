@@ -1459,62 +1459,72 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         pme_gpu_reduce_outputs(wcycle, &forceWithVirial, pmeGpuForces, enerd, vir_Q, Vlr_q);
     }
 
+    /* Wait for local NB forces */
+    if (bUseGPU)
+    {
+        /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
+         * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
+         * but even with a step of 0.1 ms the difference is less than 1%
+         * of the step time.
+         */
+        const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
+
+        wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+        nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                               flags, eatLocal,
+                               enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                               fr->fshift);
+        float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+
+        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
+        {
+            DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
+            if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
+            {
+                /* We measured few cycles, it could be that the kernel
+                 * and transfer finished earlier and there was no actual
+                 * wait time, only API call overhead.
+                 * Then the actual time could be anywhere between 0 and
+                 * cycles_wait_est. We will use half of cycles_wait_est.
+                 */
+                waitedForGpu = DdBalanceRegionWaitedForGpu::no;
+            }
+            ddCloseBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
+        }
+    }
+
+    if (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes)
+    {
+        // NOTE: emulation kernel is not included in the balancing region,
+        // but emulation mode does not target performance anyway
+        wallcycle_start_nocount(wcycle, ewcFORCE);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal,
+                     DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
+                     step, nrnb, wcycle);
+        wallcycle_stop(wcycle, ewcFORCE);
+    }
+
+    if (bUseGPU)
+    {
+        /* now clear the GPU outputs while we finish the step on the CPU */
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
+
+        /* Is dynamic pair-list pruning activated? */
+        if (nbv->listParams->useDynamicPruning)
+        {
+            launchGpuRollingPruning(cr, nbv, inputrec, step);
+        }
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+
+        // TODO: move here the PME buffer clearing call pme_gpu_reinit_computation()
+    }
+
+    /* Do the nonbonded GPU (or emulation) force buffer reduction. */
     if (bUseOrEmulGPU)
     {
-        /* wait for local forces (or calculate in emulation mode) */
-        if (bUseGPU)
-        {
-            /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
-             * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
-             * but even with a step of 0.1 ms the difference is less than 1%
-             * of the step time.
-             */
-            const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
-
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   flags, eatLocal,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
-            float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-
-            if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
-            {
-                DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
-                if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
-                {
-                    /* We measured few cycles, it could be that the kernel
-                     * and transfer finished earlier and there was no actual
-                     * wait time, only API call overhead.
-                     * Then the actual time could be anywhere between 0 and
-                     * cycles_wait_est. We will use half of cycles_wait_est.
-                     */
-                    waitedForGpu = DdBalanceRegionWaitedForGpu::no;
-                }
-                ddCloseBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
-            }
-
-            /* now clear the GPU outputs while we finish the step on the CPU */
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-            wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
-
-            /* Is dynamic pair-list pruning activated? */
-            if (nbv->listParams->useDynamicPruning)
-            {
-                launchGpuRollingPruning(cr, nbv, inputrec, step);
-            }
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-        }
-        else
-        {
-            wallcycle_start_nocount(wcycle, ewcFORCE);
-            do_nb_verlet(fr, ic, enerd, flags, eintLocal,
-                         DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         step, nrnb, wcycle);
-            wallcycle_stop(wcycle, ewcFORCE);
-        }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
