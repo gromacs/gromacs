@@ -309,6 +309,18 @@ calc_one_bond(int thread,
                           md, fcd, global_atom_index);
         }
 #if GMX_SIMD_HAVE_REAL
+        else if (ftype == F_BONDS && bUseSIMD &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
+            bonds_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                              idef->iparams,
+                              x, f,
+                              pbc, g, lambda[efptFTYPE], md, fcd,
+                              global_atom_index);
+            v = 0;
+        }
+
         else if (ftype == F_ANGLES && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
