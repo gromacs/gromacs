@@ -320,6 +320,18 @@ calc_one_bond(int thread,
                                global_atom_index);
             v = 0;
         }
+
+        else if (ftype == F_UREY_BRADLEY && bUseSIMD &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
+            urey_bradley_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                                     idef->iparams,
+                                     x, f,
+                                     pbc, g, lambda[efptFTYPE], md, fcd,
+                                     global_atom_index);
+            v = 0;
+        }
 #endif
         else if (ftype == F_PDIHS &&
                  !bCalcEnerVir && fr->efep == efepNO)
