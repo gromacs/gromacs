@@ -159,7 +159,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
                             /* Transformed grid */
                             TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                            const auto                    ulpToleranceGrid = 40;
+                            const auto                    ulpToleranceGrid = 45;
                             gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
@@ -186,7 +186,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                 energyChecker.checkReal(energy, "Energy");
                                 /* Virial */
                                 TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
-                                virialChecker.setDefaultTolerance(relativeToleranceAsUlp(1000, 8));
+                                virialChecker.setDefaultTolerance(relativeToleranceAsUlp(1000, 10));
                                 for (int i = 0; i < DIM; i++)
                                 {
                                     for (int j = 0; j <= i; j++)
