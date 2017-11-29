@@ -393,7 +393,8 @@ void MolDip::Read(FILE            *fp,
                   bool             bZPE,
                   const char      *tabfn,
                   int              qcycle,
-                  real             qtol)
+                  real             qtol,
+                  bool             qsymm)
 {
     int                              nwarn    = 0;
     int                              nmol_cpu = 0;
@@ -509,7 +510,7 @@ void MolDip::Read(FILE            *fp,
                                                 watoms,
                                                 hfac_,
                                                 lot,
-                                                true,
+                                                qsymm,
                                                 nullptr,
                                                 cr_,
                                                 tabfn,
@@ -637,7 +638,7 @@ void MolDip::Read(FILE            *fp,
                                             watoms,
                                             hfac_,
                                             lot,
-                                            true,
+                                            qsymm,
                                             nullptr, 
                                             cr_,
                                             tabfn,

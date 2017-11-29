@@ -253,7 +253,8 @@ class MolDip
                   bool                       bZPE,
                   const char                *tabfn,
                   int                        qcycle,
-                  real                       qtol);
+                  real                       qtol,
+                  bool                       qsymm);
 
 };
 

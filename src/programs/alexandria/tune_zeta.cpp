@@ -627,6 +627,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static gmx_bool             bDipole       = false;
     static gmx_bool             bFitAlpha     = false;
     static gmx_bool             bGenVSites    = false;
+    static gmx_bool             bQsym          = false;
     static gmx_bool             bZero         = true;  
     static gmx_bool             bGaussianBug  = true;    
     static gmx_bool             bPrintTable   = false; 
@@ -741,7 +742,9 @@ int alex_tune_zeta(int argc, char *argv[])
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "Generate virtual sites. Check and double check." },
         { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electeric field to calculate polarizability tensor." }
+          "The magnitude of the external electeric field to calculate polarizability tensor." },
+        { "-qsymm",  FALSE, etBOOL, {&bQsym},
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." }
     };
 
     FILE                 *fp;
@@ -839,7 +842,8 @@ int alex_tune_zeta(int argc, char *argv[])
              bZPE,
              tabfn,
              qcycle,
-             qtol);
+             qtol,
+             bQsym);
             
     if (nullptr != fp)
     {

@@ -300,7 +300,7 @@ int alex_molselect(int argc, char *argv[])
                  opt2fn_null("-d", NFILE, fnm),
                  false, opt_elem, nullptr, lot,
                  gms, 0, true, false, false, false,
-                 false, nullptr, 0, 0);
+                 false, nullptr, 0, 0, false);
         
         char  buf[STRLEN];      
         for (int i = 0; i < nsample; i++)

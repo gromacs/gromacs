@@ -2003,6 +2003,7 @@ int alex_tune_fc(int argc, char *argv[])
     static gmx_bool       bGaussianBug  = true;
     static gmx_bool       bZero         = true;
     static gmx_bool       bGenVSites    = false;
+    static gmx_bool       bQsym         = false;
     static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char    *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     static bool           bOpt[eitNR]   = {true, false, false, false, false, false, false, false, false, false};
@@ -2085,7 +2086,9 @@ int alex_tune_fc(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "Generate virtual sites. Check and double check." }
+          "Generate virtual sites. Check and double check." },
+        { "-qsymm",  FALSE, etBOOL, {&bQsym},
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." }
     };
 
     FILE                 *fp;
@@ -2184,7 +2187,8 @@ int alex_tune_fc(int argc, char *argv[])
              bZPE,
              tabfn,
              qcycle,
-             qtol);
+             qtol,
+             bQsym);
 
     opt.checkSupport(fp, bOpt);
 
