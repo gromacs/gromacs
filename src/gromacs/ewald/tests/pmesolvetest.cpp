@@ -160,7 +160,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             /* Transformed grid */
                             TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
                             const auto                    ulpToleranceGrid = 40;
-                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+                            gridValuesChecker.setDefaultTolerance(getSplineTolerance(ulpToleranceGrid));
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
                                 // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
