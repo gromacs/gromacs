@@ -290,10 +290,10 @@ reduceIncr4ReturnSum(double *    m,
     t4 = _mm256_add_pd(t4, t3);
     _mm256_store_pd(m, t4);
 
-    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0x4E));
-    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0xB1));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
 
-    return _mm_cvtsd_f64(_mm256_castpd256_pd128(t3));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(t0));
 }
 
 static inline SimdDouble gmx_simdcall
@@ -429,10 +429,10 @@ reduceIncr4ReturnSumHsimd(double *     m,
     t3 = _mm256_add_pd(t3, t2);
     _mm256_store_pd(m, t3);
 
-    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0x4E));
-    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0xB1));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
+    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
 
-    return _mm_cvtsd_f64(_mm256_castpd256_pd128(t2));
+    return _mm_cvtsd_f64(_mm512_castpd512_pd128(t0));
 }
 
 static inline SimdDouble gmx_simdcall
