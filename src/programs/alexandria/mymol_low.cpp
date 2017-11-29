@@ -1042,11 +1042,11 @@ int get_subtype(directive d, int ftype)
     return 1;
 }
 
-void print_bondeds2(FILE                     *out,
-                    directive                 d,
-                    int                       plist_ftype,
-                    int                       print_ftype,
-                    std::vector<PlistWrapper> plist)
+void print_bondeds(FILE                     *out,
+                   directive                 d,
+                   int                       plist_ftype,
+                   int                       print_ftype,
+                   std::vector<PlistWrapper> plist)
 {
     auto p = SearchPlist(plist, plist_ftype);
 
@@ -1078,16 +1078,16 @@ void print_bondeds2(FILE                     *out,
     fprintf(out, "\n");
 }
 
-void write_top2(FILE                     *out, 
-                char                     *molname,
-                t_atoms                  *at, 
-                gmx_bool                  bRTPresname,
-                std::vector<PlistWrapper> plist_,
-                t_excls                   excls[],
-                gpp_atomtype_t            atype, 
-                int                      *cgnr, 
-                int                       nrexcl,
-                const Poldata            &pd)
+void write_top(FILE                     *out, 
+               char                     *molname,
+               t_atoms                  *at, 
+               gmx_bool                  bRTPresname,
+               std::vector<PlistWrapper> plist_,
+               t_excls                   excls[],
+               gpp_atomtype_t            atype, 
+               int                      *cgnr, 
+               int                       nrexcl,
+               const Poldata            &pd)
 {
     if (at && atype && cgnr)
     {
@@ -1099,40 +1099,40 @@ void write_top2(FILE                     *out,
         {
             if (eitBONDS == fs->iType())
             {
-                print_bondeds2(out, d_bonds, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_bonds, fs->fType(), fs->fType(), plist_);
             }
             else if (eitANGLES == fs->iType() || eitLINEAR_ANGLES == fs->iType())
             {
-                print_bondeds2(out, d_angles, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_angles, fs->fType(), fs->fType(), plist_);
             }
             else if (eitPROPER_DIHEDRALS == fs->iType() || eitIMPROPER_DIHEDRALS == fs->iType())
             {
-                print_bondeds2(out, d_dihedrals, fs->fType(), fs->fType(), plist_);
+                print_bondeds(out, d_dihedrals, fs->fType(), fs->fType(), plist_);
             }
         }
-        print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
-        print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
-        print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
+        print_bondeds(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
+        print_bondeds(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
+        print_bondeds(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
-        print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist_);
-        print_bondeds2(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
-        print_bondeds2(out, d_vsites2, F_VSITE2, F_VSITE2, plist_);
-        print_bondeds2(out, d_vsites3, F_VSITE3, F_VSITE3, plist_);
-        print_bondeds2(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist_);
-        print_bondeds2(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist_);
-        print_bondeds2(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist_);
-        print_bondeds2(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist_);
-        print_bondeds2(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist_);
+        print_bondeds(out, d_cmap, F_CMAP, F_CMAP, plist_);
+        print_bondeds(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist_);
+        print_bondeds(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
+        print_bondeds(out, d_vsites2, F_VSITE2, F_VSITE2, plist_);
+        print_bondeds(out, d_vsites3, F_VSITE3, F_VSITE3, plist_);
+        print_bondeds(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist_);
+        print_bondeds(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist_);
+        print_bondeds(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist_);
+        print_bondeds(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist_);
+        print_bondeds(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist_);
     }
 }
 
-void print_top_header2(FILE                    *fp, 
-                       const Poldata           &pd,
-                       gmx_atomprop_t           aps, 
-                       bool                     bPol,
-                       std::vector<std::string> commercials,
-                       bool                     bItp)
+void print_top_header(FILE                    *fp, 
+                      const Poldata           &pd,
+                      gmx_atomprop_t           aps, 
+                      bool                     bPol,
+                      std::vector<std::string> commercials,
+                      bool                     bItp)
 {
     std::string   gt_old, gt_type;
     std::string   btype;
@@ -1189,8 +1189,16 @@ void print_top_header2(FILE                    *fp,
                             aType->getRefEnthalpy().c_str());
                     if (bPol)
                     {
-                        fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
-                                sgt_type, sgt_type, 0, 0.0, 0.0);
+                        if (strcasecmp(ff.c_str(), "LJ") == 0)
+                        {
+                            fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
+                                    sgt_type, sgt_type, 0, 0.0, 0.0);
+                        }
+                        else
+                        {
+                            fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0  0\n",
+                                    sgt_type, sgt_type, 0, 0.0, 0.0);
+                        }
                     }
                 }
             }

@@ -105,8 +105,8 @@ class MyForceProvider : public IForceProvider
         void setField(std::vector<double> field) { efield_ = field; }
 };
 
-bool is_planar(rvec xi, rvec xj, 
-               rvec xk,  rvec xl, 
+bool is_planar(rvec   xi,  rvec xj, 
+               rvec   xk,  rvec xl, 
                t_pbc *pbc, real phi_toler);
 
 bool is_linear(rvec xi, rvec xj, 
@@ -178,31 +178,41 @@ void mtop_update_cgs(gmx_mtop_t *mtop);
 
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
-void write_zeta_q(FILE *fp, QgenEem * qgen,
-                  t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel);
+void write_zeta_q(FILE                   *fp, 
+                  QgenEem                *qgen,
+                  t_atoms                *atoms, 
+                  ChargeDistributionModel iChargeDistributionModel);
 
-void write_zeta_q2(QgenEem * qgen, gpp_atomtype_t atype,
-                   t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel);
+void write_zeta_q2(QgenEem                *qgen, 
+                   gpp_atomtype_t          atype,
+                   t_atoms                *atoms, 
+                   ChargeDistributionModel iChargeDistributionModel);
                    
 int get_subtype(directive d, int ftype);
 
-void print_bondeds2(FILE                     *out,
-                    directive                 d,
-                    int                       plist_ftype,
-                    int                       print_ftype,
-                    std::vector<PlistWrapper> plist);
+void print_bondeds(FILE                     *out,
+                   directive                 d,
+                   int                       plist_ftype,
+                   int                       print_ftype,
+                   std::vector<PlistWrapper> plist);
 
-void write_top2(FILE *out, char *molname,
-                t_atoms *at, gmx_bool bRTPresname,
-                std::vector<PlistWrapper> plist_,
-                t_excls excls[],
-                gpp_atomtype_t atype, int *cgnr, int nrexcl,
-                const Poldata &pd);
+void write_top(FILE                     *out, 
+               char                     *molname,
+               t_atoms                  *at, 
+               gmx_bool                  bRTPresname,
+               std::vector<PlistWrapper> plist_,
+               t_excls                   excls[],
+               gpp_atomtype_t            atype, 
+               int                      *cgnr, 
+               int                       nrexcl,
+               const Poldata            &pd);
                 
-void print_top_header2(FILE *fp, const Poldata &pd,
-                       gmx_atomprop_t aps, bool bPol,
-                       std::vector<std::string> commercials,
-                       bool bItp);
+void print_top_header(FILE                    *fp, 
+                      const Poldata           &pd,
+                      gmx_atomprop_t           aps, 
+                      bool                     bPol,
+                      std::vector<std::string> commercials,
+                      bool                     bItp);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
                 

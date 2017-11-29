@@ -1668,9 +1668,9 @@ void MyMol::PrintTopology(FILE                   *fp,
         }        
     }
           
-    print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
-    write_top2(fp, printmol.name, &topology_->atoms, false,
-               plist_, excls_, atype_, cgnr_, nexcl_, pd);
+    print_top_header(fp, pd, aps, bHaveShells_, commercials, bITP);
+    write_top(fp, printmol.name, &topology_->atoms, false,
+              plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
