@@ -721,6 +721,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (bStopCM && cgloIteration == 0)
         {
             cglo_flags_iteration |= CGLO_STOPCM;
+            cglo_flags_iteration &= ~CGLO_TEMPERATURE;
         }
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         nullptr, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
