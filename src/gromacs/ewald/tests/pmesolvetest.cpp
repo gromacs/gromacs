@@ -159,8 +159,9 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
                             /* Transformed grid */
                             TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                            const auto                    ulpToleranceGrid = 40;
-                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+                            // Spline moduli participate 3 times in the computation; 2 is an additiona lfactor for SIMD exp() precision
+                            const auto                    ulpToleranceGrid = DIM * c_splineModuliToleranceUlpsSingle * 2;
+                            gridValuesChecker.setDefaultTolerance(getSplineTolerance(ulpToleranceGrid));
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
                                 // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
