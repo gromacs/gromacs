@@ -1295,6 +1295,150 @@ real urey_bradley(int nbonds,
     return vtot;
 }
 
+#if GMX_SIMD_HAVE_REAL
+
+/* As urey_bradley, but using SIMD to calculate many potentials at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void urey_bradley_noener_simd(int nbonds,
+                              const t_iatom forceatoms[], const t_iparams forceparams[],
+                              const rvec x[], rvec4 f[],
+                              const t_pbc *pbc, const t_graph gmx_unused *g,
+                              real gmx_unused lambda,
+                              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                              int gmx_unused *global_atom_index)
+{
+    constexpr int            nfa1 = 4;
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[4*GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+
+    set_pbc_simd(pbc, pbc_simd);
+
+    /* nbonds is the number of angles times nfa1, here we step GMX_SIMD_REAL_WIDTH angles */
+    for (int i = 0; i < nbonds; i += GMX_SIMD_REAL_WIDTH*nfa1)
+    {
+        /* Collect atoms for GMX_SIMD_REAL_WIDTH angles.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        int iu = i;
+        for (int s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
+        {
+            const int type                     = forceatoms[iu];
+            ai[s] = forceatoms[iu+1];
+            aj[s] = forceatoms[iu+2];
+            ak[s] = forceatoms[iu+3];
+
+            /* At the end fill the arrays with the last atoms and 0 params */
+            if (i + s*nfa1 < nbonds)
+            {
+                coeff[s]                       = forceparams[type].u_b.kthetaA;
+                coeff[GMX_SIMD_REAL_WIDTH+s]   = forceparams[type].u_b.thetaA;
+                coeff[GMX_SIMD_REAL_WIDTH*2+s] = forceparams[type].u_b.kUBA;
+                coeff[GMX_SIMD_REAL_WIDTH*3+s] = forceparams[type].u_b.r13A;
+
+                if (iu + nfa1 < nbonds)
+                {
+                    iu += nfa1;
+                }
+            }
+            else
+            {
+                coeff[s]                       = 0;
+                coeff[GMX_SIMD_REAL_WIDTH+s]   = 0;
+                coeff[GMX_SIMD_REAL_WIDTH*2+s] = 0;
+                coeff[GMX_SIMD_REAL_WIDTH*3+s] = 0;
+            }
+        }
+
+        SimdReal xi_S, yi_S, zi_S;
+        SimdReal xj_S, yj_S, zj_S;
+        SimdReal xk_S, yk_S, zk_S;
+
+        /* Store the non PBC corrected distances packed and aligned */
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi_S, &yi_S, &zi_S);
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ak, &xk_S, &yk_S, &zk_S);
+        SimdReal       rijx_S = xi_S - xj_S;
+        SimdReal       rijy_S = yi_S - yj_S;
+        SimdReal       rijz_S = zi_S - zj_S;
+        SimdReal       rkjx_S = xk_S - xj_S;
+        SimdReal       rkjy_S = yk_S - yj_S;
+        SimdReal       rkjz_S = zk_S - zj_S;
+        SimdReal       rikx_S = xi_S - xk_S;
+        SimdReal       riky_S = yi_S - yk_S;
+        SimdReal       rikz_S = zi_S - zk_S;
+
+        const SimdReal deg2rad_S(DEG2RAD);
+        const SimdReal ktheta_S = load<SimdReal>(coeff);
+        const SimdReal theta0_S = load<SimdReal>(coeff+GMX_SIMD_REAL_WIDTH) * deg2rad_S;
+        const SimdReal kUB_S    = load<SimdReal>(coeff+2*GMX_SIMD_REAL_WIDTH);
+        const SimdReal r13_S    = load<SimdReal>(coeff+3*GMX_SIMD_REAL_WIDTH);
+
+        pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc_simd);
+        pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc_simd);
+        pbc_correct_dx_simd(&rikx_S, &riky_S, &rikz_S, pbc_simd);
+
+        const SimdReal rij_rkj_S = iprod(rijx_S, rijy_S, rijz_S,
+                                         rkjx_S, rkjy_S, rkjz_S);
+
+        const SimdReal dr2_S     = iprod(rikx_S, riky_S, rikz_S,
+                                         rikx_S, riky_S, rikz_S);
+
+        const SimdReal nrij2_S   = norm2(rijx_S, rijy_S, rijz_S);
+        const SimdReal nrkj2_S   = norm2(rkjx_S, rkjy_S, rkjz_S);
+
+        const SimdReal nrij_1_S  = invsqrt(nrij2_S);
+        const SimdReal nrkj_1_S  = invsqrt(nrkj2_S);
+        const SimdReal invdr2_S  = invsqrt(dr2_S);
+        const SimdReal dr_S      = dr2_S*invdr2_S;
+
+        SimdReal       cos_S     = rij_rkj_S * nrij_1_S * nrkj_1_S;
+
+        const SimdReal min_one_plus_eps_S(-1.0 + 2.0*GMX_REAL_EPS); // Smallest number > -1
+
+        /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
+         * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
+         * This also ensures that rounding errors would cause the argument
+         * of simdAcos to be < -1.
+         * Note that we do not take precautions for cos(0)=1, so the outer
+         * atoms in an angle should not be on top of each other.
+         */
+        cos_S                    = max(cos_S, min_one_plus_eps_S);
+
+        const SimdReal theta_S   = acos(cos_S);
+        const SimdReal one_S(1.0);
+        const SimdReal invsin_S  = invsqrt( one_S - cos_S * cos_S );
+        const SimdReal st_S      = ktheta_S * (theta0_S - theta_S) * invsin_S;
+        const SimdReal sth_S     = st_S * cos_S;
+
+        const SimdReal cik_S     = st_S  * nrij_1_S * nrkj_1_S;
+        const SimdReal cii_S     = sth_S * nrij_1_S * nrij_1_S;
+        const SimdReal ckk_S     = sth_S * nrkj_1_S * nrkj_1_S;
+
+        const SimdReal sUB_S     = kUB_S * (r13_S - dr_S) * invdr2_S;
+
+        const SimdReal f_ikx_S   = sUB_S * rikx_S;
+        const SimdReal f_iky_S   = sUB_S * riky_S;
+        const SimdReal f_ikz_S   = sUB_S * rikz_S;
+
+        const SimdReal f_ix_S    = fnma(cik_S, rkjx_S, cii_S * rijx_S) + f_ikx_S;
+        const SimdReal f_iy_S    = fnma(cik_S, rkjy_S, cii_S * rijy_S) + f_iky_S;
+        const SimdReal f_iz_S    = fnma(cik_S, rkjz_S, cii_S * rijz_S) + f_ikz_S;
+        const SimdReal f_kx_S    = fnma(cik_S, rijx_S, ckk_S * rkjx_S) - f_ikx_S;
+        const SimdReal f_ky_S    = fnma(cik_S, rijy_S, ckk_S * rkjy_S) - f_iky_S;
+        const SimdReal f_kz_S    = fnma(cik_S, rijz_S, ckk_S * rkjz_S) - f_ikz_S;
+
+        transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ai, f_ix_S, f_iy_S, f_iz_S);
+        transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, f_ix_S + f_kx_S, f_iy_S + f_ky_S, f_iz_S + f_kz_S);
+        transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ak, f_kx_S, f_ky_S, f_kz_S);
+    }
+}
+
+#endif // GMX_SIMD_HAVE_REAL
+
 real quartic_angles(int nbonds,
                     const t_iatom forceatoms[], const t_iparams forceparams[],
                     const rvec x[], rvec4 f[], rvec fshift[],

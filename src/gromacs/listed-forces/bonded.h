@@ -136,6 +136,17 @@ void
                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                        int gmx_unused *global_atom_index);
 
+/* As urey_bradley, but using SIMD to calculate many potentials at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void urey_bradley_noener_simd(int nbonds,
+                              const t_iatom forceatoms[], const t_iparams forceparams[],
+                              const rvec x[], rvec4 f[],
+                              const t_pbc *pbc, const t_graph gmx_unused *g,
+                              real gmx_unused lambda,
+                              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                              int gmx_unused *global_atom_index);
+
 /* As pdihs_noener(), but using SIMD to calculate many dihedrals at once. */
 void
     pdihs_noener_simd(int nbonds,
