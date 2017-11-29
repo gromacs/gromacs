@@ -501,7 +501,7 @@ loadU4NOffset(const float* f, int offset)
     const __m256i gdx = _mm256_add_epi32(_mm256_setr_epi32(0, 2, 0, 2, 0, 2, 0, 2),
                                          _mm256_mullo_epi32(idx, _mm256_set1_epi32(offset)));
     return {
-               _mm512_castpd_ps(_mm512_i32gather_pd(gdx, f, sizeof(float)))
+               _mm512_castpd_ps(_mm512_i32gather_pd(gdx, reinterpret_cast<const double*>(f), sizeof(float)))
     };
 }
 
