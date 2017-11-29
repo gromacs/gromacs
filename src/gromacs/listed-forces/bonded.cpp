@@ -419,6 +419,94 @@ real bonds(int nbonds,
     return vtot;
 }
 
+#if GMX_SIMD_HAVE_REAL
+
+/* As bonds, but using SIMD to calculate many bonds at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void
+bonds_noener_simd(int nbonds,
+                  const t_iatom forceatoms[], const t_iparams forceparams[],
+                  const rvec x[], rvec4 f[],
+                  const t_pbc *pbc, const t_graph gmx_unused *g,
+                  real gmx_unused lambda,
+                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                  int gmx_unused *global_atom_index)
+{
+    const int            nfa1 = 3;
+    SimdReal             floatMin(GMX_FLOAT_MIN);
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[2*GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+
+    set_pbc_simd(pbc, pbc_simd);
+
+    /* nbonds is the number of bonds times nfa1, here we step GMX_SIMD_REAL_WIDTH bonds */
+    for (int i = 0; (i < nbonds); i += GMX_SIMD_REAL_WIDTH*nfa1)
+    {
+        /* Collect atoms for GMX_SIMD_REAL_WIDTH bonds.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        int iu = i;
+        for (int s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
+        {
+            int type = forceatoms[iu];
+            ai[s]    = forceatoms[iu+1];
+            aj[s]    = forceatoms[iu+2];
+
+            /* At the end fill the arrays with the last atoms and 0 params */
+            if (i + s*nfa1 < nbonds)
+            {
+                coeff[s]                     = forceparams[type].harmonic.krA;
+                coeff[GMX_SIMD_REAL_WIDTH+s] = forceparams[type].harmonic.rA;
+
+                if (iu + nfa1 < nbonds)
+                {
+                    iu += nfa1;
+                }
+            }
+            else
+            {
+                coeff[s]                     = 0;
+                coeff[GMX_SIMD_REAL_WIDTH+s] = 0;
+            }
+        }
+
+        /* Store the non PBC corrected distances packed and aligned */
+        SimdReal xi_S, yi_S, zi_S;
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi_S, &yi_S, &zi_S);
+        SimdReal xj_S, yj_S, zj_S;
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
+        SimdReal rijx_S  = xi_S - xj_S;
+        SimdReal rijy_S  = yi_S - yj_S;
+        SimdReal rijz_S  = zi_S - zj_S;
+
+        SimdReal kr_S    = load<SimdReal>(coeff);
+        SimdReal r_S     = load<SimdReal>(coeff+GMX_SIMD_REAL_WIDTH);
+
+        pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc_simd);
+
+        SimdReal dr2_S   = iprod(rijx_S, rijy_S, rijz_S,
+                                 rijx_S, rijy_S, rijz_S);
+
+        /* Allow for distance=0 by setting invdr_S=0 */
+        SimdReal invdr_S = maskzInvsqrt(dr2_S, floatMin <= dr2_S);
+        SimdReal dr_S    = dr2_S*invdr_S;
+
+        SimdReal sbond_S = kr_S * (r_S - dr_S) * invdr_S;
+
+        SimdReal f_ijx_S = sbond_S * rijx_S;
+        SimdReal f_ijy_S = sbond_S * rijy_S;
+        SimdReal f_ijz_S = sbond_S * rijz_S;
+
+        transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ai, f_ijx_S, f_ijy_S, f_ijz_S);
+        transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, f_ijx_S, f_ijy_S, f_ijz_S);
+    }
+}
+
+#endif // GMX_SIMD_HAVE_REAL
+
 real restraint_bonds(int nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
                      const rvec x[], rvec4 f[], rvec fshift[],

@@ -123,6 +123,17 @@ void
 
 /* TODO these declarations should be internal to the module */
 
+/* As bonds, but using SIMD to calculate many bonds at once.
+ * This routines does not calculate energies and shift forces.
+ */
+void bonds_noener_simd(int nbonds,
+                       const t_iatom forceatoms[], const t_iparams forceparams[],
+                       const rvec x[], rvec4 f[],
+                       const t_pbc *pbc, const t_graph gmx_unused *g,
+                       real gmx_unused lambda,
+                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                       int gmx_unused *global_atom_index);
+
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
