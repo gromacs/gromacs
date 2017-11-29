@@ -159,8 +159,18 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                             SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
                             /* Transformed grid */
                             TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                            const auto                    ulpToleranceGrid = 40;
-                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+
+                            real gridValuesMagnitude = 1.0;
+                            for (const auto &point : nonZeroGridValuesOutput)
+                            {
+                                gridValuesMagnitude = std::max(std::fabs(point.second.re), gridValuesMagnitude);
+                                gridValuesMagnitude = std::max(std::fabs(point.second.im), gridValuesMagnitude);
+                            }
+                            // Spline moduli participate 3 times in the computation; 2 is an additional factor for SIMD exp() precision
+                            const auto ulpToleranceGridFactor = DIM * 2;
+                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsPrecisionDependentUlp(gridValuesMagnitude,
+                                                                                                           ulpToleranceGridFactor * c_splineModuliSinglePrecisionUlps,
+                                                                                                           ulpToleranceGridFactor * c_splineModuliDoublePrecisionUlps));
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
                                 // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
