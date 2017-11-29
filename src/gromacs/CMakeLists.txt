@@ -40,7 +40,6 @@ endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
-set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
@@ -192,8 +191,11 @@ if (HAS_NO_UNUSED)
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
-if(SIMD_AVX_512_CXX_SUPPORTED)
-    set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS}")
+if(AVX_512_FMA_UNIT_DETECTION_COMPILED)
+    set_source_files_properties(hardware/identifyavx512fmaunits_asm.s PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_C_FLAGS}")
+    if (CMAKE_ASM_COMPILER_ID MATCHES "Clang")
+        SET(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
+    endif()
 endif()
 
 gmx_setup_tng_for_libgromacs()

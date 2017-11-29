@@ -370,6 +370,9 @@
 /* Define if we have feenableexcept */
 #cmakedefine01 HAVE_FEENABLEEXCEPT
 
+/* Define if FMA detection compiled (asm is supported) */
+#cmakedefine01 AVX_512_FMA_UNIT_DETECTION_COMPILED
+
 /*! \endcond */
 
 #endif

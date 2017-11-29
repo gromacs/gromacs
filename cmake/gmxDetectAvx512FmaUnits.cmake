@@ -58,7 +58,9 @@ function(gmx_detect_avx_512_fma_units RESULT)
                 set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE ${SIMD_AVX_512_CXX_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
                 try_compile(AVX_512_FMA_UNIT_DETECTION_COMPILED
                     "${PROJECT_BINARY_DIR}"
+		    SOURCES
                     "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits.cpp"
+                    "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits_asm.s"
                     COMPILE_DEFINITIONS "${_compile_definitions}"
                     LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}"
                     OUTPUT_VARIABLE AVX_512_FMA_UNIT_DETECTION_COMPILED_OUTPUT

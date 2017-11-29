@@ -41,6 +41,10 @@ gmx_add_libgromacs_sources(
     identifyavx512fmaunits.cpp
     )
 
+if(AVX_512_FMA_UNIT_DETECTION_COMPILED)
+    gmx_add_libgromacs_sources(identifyavx512fmaunits_asm.s)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
