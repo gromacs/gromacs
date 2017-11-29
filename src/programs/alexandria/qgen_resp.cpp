@@ -38,12 +38,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_resp.h"
-
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
-
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
@@ -61,6 +58,7 @@
 #include "gromacs/utility/textreader.h"
 
 #include "nmsimplex.h"
+#include "qgen_resp.h"
 #include "poldata.h"
 #include "regression.h"
 
@@ -641,7 +639,7 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
     if (spacing <= 0)
     {
         spacing = 0.1;
-        fprintf(stderr, "spacing too small, setting it to %g\n", spacing);
+        fprintf(stderr, "Spacing too small, setting it to %g\n", spacing);
     }
     for (size_t i = 0; (i < nRespAtom()); i++)
     {
@@ -683,7 +681,7 @@ void QgenResp::calcRho()
             double               r     = norm(dx);
             int                  atype = ra.atype();
             RespAtomTypeIterator rat   = findRAT(atype);
-            GMX_RELEASE_ASSERT(rat == endRAT(), "Can not find atomtype");
+            GMX_RELEASE_ASSERT(rat == endRAT(), "Cannot find atomtype");
             switch (iDistributionModel_)
             {
                 case eqdYang:
@@ -715,7 +713,7 @@ void QgenResp::calcRho()
                 case eqdAXp:
                 case eqdAXs:
                 default:
-                    gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %d!", iDistributionModel_);
+                    gmx_fatal(FARGS, "Unsupported charge model %d", iDistributionModel_);
             }
             V  += vv;
         }
@@ -963,12 +961,14 @@ void QgenResp::calcPot()
 
 void QgenResp::optimizeCharges()
 {
-    // Increase number of rows for the symmetric atoms. E.g.
-    // if we know that atoms 2, 3 and 4 have the same charge we
-    // add two equation q2 - q3 = 0 and q2 - q4 = 0.
-    // An extra row is needed to fix the total charge.
+    /*
+      Increase number of rows for the symmetric atoms. E.g.
+      if we know that atoms 2, 3 and 4 have the same charge we
+      add two equation q2 - q3 = 0 and q2 - q4 = 0.
+      One extra row is needed to reproduce the total charge.
+    */
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
-    int                   factor   = nEsp();
+    int                   factor   = nEsp()*50;
     int                   ncolumn  = fitQ_;
     MatrixWrapper         lhs(ncolumn, nrow);
     std::vector<double>   rhs;
@@ -1027,11 +1027,10 @@ void QgenResp::optimizeCharges()
             fprintf(debug, "ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
                     j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]);
         }
-    }
-
-    // Add the total charge
-    rhs.push_back(factor * (qtot_ - qshell_));
-
+    }  
+      
+    rhs.push_back(factor * (qtot_ - qshell_)); // Add the total charge
+    
     // Add the equations to ascertain symmetric charges
     // We store the index of the cores in ii1.
     std::vector<int> ii1;
@@ -1063,7 +1062,6 @@ void QgenResp::optimizeCharges()
     }
     GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
     GMX_RELEASE_ASSERT(j1 == nrow, "Something fishy adding equations for symmetric charges");
-
     if (debug)
     {
         fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n",
@@ -1081,7 +1079,6 @@ void QgenResp::optimizeCharges()
         fprintf(debug, "Qtot:%2d\n",   qtot_);
         fprintf(debug, "QShell:%2d\n", qshell_);
     }
-
     // Fit the charge
     std::vector<double> q;
     q.resize(ncolumn);
@@ -1089,7 +1086,7 @@ void QgenResp::optimizeCharges()
     //    multi_regression2(nrow, rhs.data(), ncolumn, lhs.matrix(), q.data());
     if (debug)
     {
-        fprintf(debug, "Fitted Charges from optimizeCharges\n");
+        fprintf(debug, "Fitted Charges from optimizeCharges:\n");
     }
     i = 0;
     for (size_t ii = 0; ii < nRespAtom(); ii++)
