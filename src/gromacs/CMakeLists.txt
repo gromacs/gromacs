@@ -193,7 +193,8 @@ endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
 if(SIMD_AVX_512_CXX_SUPPORTED)
-    set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS}")
+    # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file
+    set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} -Wno-unused-command-line-argument")
 endif()
 
 gmx_setup_tng_for_libgromacs()
