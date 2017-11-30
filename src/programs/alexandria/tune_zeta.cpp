@@ -105,11 +105,11 @@ class OptZeta : public MolDip
         real          watoms_;
         char         *lot_;
     
-        double harmonic (double x, 
-                         double min, 
-                         double max)
+        double l2_regularizer (double x, 
+                               double min, 
+                               double max)
        {
-           return (x < min) ? (gmx::square(x-min)) : ((x > max) ? (gmx::square(x-max)) : 0);
+           return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
        }                              
         
         void polData2TuneZeta();
@@ -122,140 +122,19 @@ class OptZeta : public MolDip
     
         double objFunction(const double v[]);
         
-        void optRun(FILE *fp, FILE *fplog, int maxiter,
-                    int nrun, real stepsize, int seed,
+        void optRun(FILE                   *fp, 
+                    FILE                   *fplog, 
+                    int                     maxiter,
+                    int                     nrun, 
+                    real                    stepsize, 
+                    int                     seed,
                     const gmx_output_env_t *oenv,
-                    int nprint, const char *xvgconv, 
-                    const char *xvgepot, real temperature, 
-                    bool bBound);
+                    int                     nprint, 
+                    const char             *xvgconv, 
+                    const char             *xvgepot, 
+                    real                    temperature, 
+                    bool                    bBound);
 };
-
-void OptZeta::calcDeviation()
-{
-    int    i, j;
-    double qtot = 0;
-    real   rrms = 0;
-    real   wtot = 0; 
-
-    if (PAR(cr_))
-    {
-        gmx_bcast(sizeof(bFinal_), &bFinal_, cr_);
-    }
-    if (PAR(cr_) && !bFinal_)
-    {
-        pd_.broadcast(cr_);
-    }   
-    for (j = 0; j < ermsNR; j++)
-    {
-        ener_[j] = 0;
-    }    
-    for (auto &mymol : mymol_)
-    {        
-        if ((mymol.eSupp_ == eSupportLocal) ||
-            (bFinal_ && (mymol.eSupp_ == eSupportRemote)))
-        {
-            mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, pd_);
-            mymol.Qgresp_.optimizeCharges();  
-            if (nullptr != mymol.shellfc_)
-            {   
-                if (bFitAlpha_)
-                {
-                    mymol.UpdateIdef(pd_, eitPOLARIZATION);  
-                }
-                mymol.computeForces(nullptr, cr_);
-                mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
-            }
-            for (j = 0; j < mymol.topology_->atoms.nr; j++)
-            {
-                mymol.mtop_->moltype[0].atoms.atom[j].q = 
-                  mymol.mtop_->moltype[0].atoms.atom[j].qB = mymol.Qgresp_.getAtomCharge(j);
-
-                mymol.topology_->atoms.atom[j].q      =
-                    mymol.topology_->atoms.atom[j].qB = mymol.Qgresp_.getAtomCharge(j);
-                    
-            }            
-            mymol.Qgresp_.calcPot();
-            ener_[ermsESP] += convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);            
-            qtot  = 0;
-            for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
-            {
-                auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
-                auto qq     = mymol.topology_->atoms.atom[j].q;
-                qtot       += qq;
-                if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
-                    mymol.topology_->atoms.atom[j].ptype == eptNucleus)
-                {
-                    if (((qq < 0) && (atomnr == 1)) ||
-                        ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
-                                      (atomnr == 16) || (atomnr == 17) ||
-                                      (atomnr == 35) || (atomnr == 53))))
-                    {
-                        ener_[ermsBOUNDS] += fabs(qq);
-                    }
-                }
-            }
-            if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
-            {
-                fprintf(stderr, "Warning qtot for %s is %g, should be %d\n",
-                        mymol.molProp()->getMolname().c_str(),
-                        qtot, mymol.molProp()->getCharge());
-            }            
-            if (bDipole_)
-            {
-                mymol.CalcDipole();
-                if (bQM_)
-                {
-                    for (auto mm = 0; mm < DIM; mm++)
-                    {                    
-                        ener_[ermsMU] += gmx::square(mymol.mu_calc_[mm] - mymol.mu_elec_[mm]);
-                    }
-                }
-                else
-                {
-                    ener_[ermsMU] += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
-                }
-            }                          
-            if (bQuadrupole_)
-            {
-                mymol.CalcQuadrupole();
-                for (auto mm = 0; mm < DIM; mm++)
-                {
-                    if (bfullTensor_)
-                    {
-                        for (auto nn = 0; nn < DIM; nn++)
-                        {
-                            ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
-                        }
-                    }
-                    else
-                    {
-                        ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
-                    }
-                }
-            }
-        }
-    }    
-    if (PAR(cr_) && !bFinal_)
-    {
-        gmx_sum(ermsNR, ener_, cr_);
-    }    
-    if (MASTER(cr_))
-    {
-        for (j = 0; j < ermsTOT; j++)
-        {
-            ener_[ermsTOT] += ((fc_[j]*ener_[j])/nmol_support_);
-        }
-    }   
-    if (nullptr != debug && MASTER(cr_))
-    {
-        fprintf(debug, "ENER:");
-        for (j = 0; j < ermsNR; j++)
-        {
-            fprintf(debug, "  %8.3f", ener_[j]);
-        }
-        fprintf(debug, "\n");
-    }    
-}
 
 void OptZeta::polData2TuneZeta()
 {
@@ -369,7 +248,6 @@ void OptZeta::InitOpt(real  factor)
     upper_.resize(param_.size(), 0);
     psigma_.resize(param_.size(), 0);
     pmean_.resize(param_.size(), 0);
-
     if (factor < 1)
     {
         factor = 1/factor;
@@ -380,6 +258,126 @@ void OptZeta::InitOpt(real  factor)
         lower_[i] = orig_[i]/factor;
         upper_[i] = orig_[i]*factor;
     }
+}
+
+void OptZeta::calcDeviation()
+{
+    int    j;
+    double qtot = 0;
+    real   rrms = 0;
+    real   wtot = 0; 
+
+    if (PAR(cr_))
+    {
+        gmx_bcast(sizeof(bFinal_), &bFinal_, cr_);
+    }
+    if (PAR(cr_) && !bFinal_)
+    {
+        pd_.broadcast(cr_);
+    }   
+    for (j = 0; j < ermsNR; j++)
+    {
+        ener_[j] = 0;
+    }    
+    for (auto &mymol : mymol_)
+    {        
+        if ((mymol.eSupp_ == eSupportLocal) ||
+            (bFinal_ && (mymol.eSupp_ == eSupportRemote)))
+        {
+            mymol.Qgresp_.updateZeta(&mymol.topology_->atoms, pd_);
+            mymol.Qgresp_.optimizeCharges();  
+            if (nullptr != mymol.shellfc_)
+            {   
+                if (bFitAlpha_)
+                {
+                    mymol.UpdateIdef(pd_, eitPOLARIZATION);  
+                }
+                mymol.computeForces(nullptr, cr_);
+                mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
+            }
+            qtot = 0;
+            for (j = 0; j < mymol.topology_->atoms.nr; j++)
+            {
+                auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
+                auto qq     = mymol.Qgresp_.getAtomCharge(j);
+                qtot       += qq;
+                mymol.mtop_->moltype[0].atoms.atom[j].q  = 
+                mymol.mtop_->moltype[0].atoms.atom[j].qB = 
+                mymol.topology_->atoms.atom[j].q         =
+                mymol.topology_->atoms.atom[j].qB        = qq;
+                if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
+                    mymol.topology_->atoms.atom[j].ptype == eptNucleus)
+                {
+                    auto q_H        = 0 ? (nullptr != mymol.shellfc_) : 1;
+                    auto q_OFSClBrI = 0 ? (nullptr != mymol.shellfc_) : 2;                    
+                    if (((qq < q_H) && (atomnr == 1)) ||
+                        ((qq > q_OFSClBrI) && ((atomnr == 8)  || (atomnr == 9) ||
+                                               (atomnr == 16) || (atomnr == 17) ||
+                                               (atomnr == 35) || (atomnr == 53))))
+                    {
+                            ener_[ermsCHARGE] += gmx::square(qq);
+                    }
+                }
+                    
+            } 
+            ener_[ermsCHARGE] += gmx::square(qtot - mymol.molProp()->getCharge());                     
+            mymol.Qgresp_.calcPot();
+            ener_[ermsESP]    += convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);                                   
+            if (bDipole_)
+            {
+                mymol.CalcDipole();
+                if (bQM_)
+                {
+                    for (auto mm = 0; mm < DIM; mm++)
+                    {                    
+                        ener_[ermsMU] += gmx::square(mymol.mu_calc_[mm] - mymol.mu_elec_[mm]);
+                    }
+                }
+                else
+                {
+                    ener_[ermsMU] += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                }
+            }                          
+            if (bQuadrupole_)
+            {
+                mymol.CalcQuadrupole();
+                for (auto mm = 0; mm < DIM; mm++)
+                {
+                    if (bfullTensor_)
+                    {
+                        for (auto nn = 0; nn < DIM; nn++)
+                        {
+                            ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
+                        }
+                    }
+                    else
+                    {
+                        ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
+                    }
+                }
+            }
+        }
+    }    
+    if (PAR(cr_) && !bFinal_)
+    {
+        gmx_sum(ermsNR, ener_, cr_);
+    }    
+    if (MASTER(cr_))
+    {
+        for (j = 0; j < ermsTOT; j++)
+        {
+            ener_[ermsTOT] += ((fc_[j]*ener_[j])/nmol_support_);
+        }
+    }   
+    if (nullptr != debug && MASTER(cr_))
+    {
+        fprintf(debug, "ENER:");
+        for (j = 0; j < ermsNR; j++)
+        {
+            fprintf(debug, "  %8.3f", ener_[j]);
+        }
+        fprintf(debug, "\n");
+    }    
 }
 
 double OptZeta::objFunction(const double v[])
@@ -399,7 +397,7 @@ double OptZeta::objFunction(const double v[])
         if (!ai->isConst())
         {                       
             auto zeta = param_[n++];
-            bounds += harmonic(zeta, zeta_min_, zeta_max_);
+            bounds   += l2_regularizer(zeta, zeta_min_, zeta_max_);
      
         }
     }   
@@ -421,12 +419,18 @@ double OptZeta::objFunction(const double v[])
     return ener_[ermsTOT];
 }
 
-void OptZeta::optRun(FILE *fp, FILE *fplog, int maxiter,
-                     int nrun, real stepsize, int seed,
+void OptZeta::optRun(FILE                   *fp, 
+                     FILE                   *fplog, 
+                     int                     maxiter,
+                     int                     nrun, 
+                     real                    stepsize, 
+                     int                     seed,
                      const gmx_output_env_t *oenv,
-                     int nprint, const char *xvgconv, 
-                     const char *xvgepot, real temperature, 
-                     bool bBound)
+                     int                     nprint, 
+                     const char             *xvgconv, 
+                     const char             *xvgepot, 
+                     real                    temperature, 
+                     bool                    bBound)
 {
     std::vector<double> optb, opts, optm;
     double              chi2, chi2_min;
