@@ -54,7 +54,9 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "grid.h"
 
@@ -149,8 +151,38 @@ CoordState::sampleUmbrellaGridpoint(const Grid                  &grid,
 void CoordState::setCoordValue(const Grid     &grid,
                                const awh_dvec  coordValue)
 {
+    /* We need to check for valid (probable) coordinate values, to give
+     * a clear error message instead of a low-level assertion failure.
+     * We allow values up to 10*sigma beyond the bounds. For points at
+     * the bounds this means a chance of less than 2*10-45 of a false positive
+     * in the usual case that the PMF is flat or goes up beyond the bounds.
+     * In the worst reasonable case of the PMF curving down with a curvature
+     * of half the harmonic force constant, the chance is 1.5*10-12.
+     */
+    constexpr int c_marginInSigma = 10;
+
     for (int dim = 0; dim < grid.numDimensions(); dim++)
     {
+        const GridAxis &axis = grid.axis(dim);
+        /* We do not check periodic coordinates, since that is more complicated
+         * and those cases are less likely to cause problems.
+         */
+        if (!axis.isPeriodic())
+        {
+            const double margin = axis.spacing()*c_marginInSigma/Grid::c_numPointsPerSigma;
+            if (coordValue[dim] < axis.origin() - margin ||
+                coordValue[dim] > axis.origin() + axis.length() + margin)
+            {
+                std::string mesg = gmx::formatString("Coordinate %d of an AWH bias has a value %f which is more than %d sigma out of the AWH range of [%f, %f]. You seem to have an unstable reaction coordinate setup or an unequilibrated system.",
+                                                     dim + 1,
+                                                     coordValue[dim],
+                                                     c_marginInSigma,
+                                                     axis.origin(),
+                                                     axis.origin() + axis.length());
+                GMX_THROW(SimulationInstabilityError(mesg));
+            }
+        }
+
         coordValue_[dim] = coordValue[dim];
     }
 
