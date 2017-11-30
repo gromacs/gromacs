@@ -2009,8 +2009,8 @@ AWH adaptive biasing
    .. mdp-value:: yes
 
       Initialize the PMF and target distribution with user provided data. For :mdp:`awh-nbias` = 1,
-      :ref:`gmx mdrun` will expect a file ``awh-init.xvg`` to be present in the run directory.
-      For multiple biases, :ref:`gmx mdrun` expects files ``awh-init1.xvg``, ``awh-init2.xvg``, etc.
+      :ref:`gmx mdrun` will expect a file ``awhinit.xvg`` to be present in the run directory.
+      For multiple biases, :ref:`gmx mdrun` expects files ``awhinit1.xvg``, ``awhinit2.xvg``, etc.
       The file name can be changed with the ``-awh`` option.
       The first :mdp:`awh1-ndim` columns of
       each input file should contain the coordinate values, such that each row defines a point in
