@@ -50,10 +50,12 @@ macro (gmx_ctest_init)
         set(MEMORYCHECK_TYPE "AddressSanitizer")
     endif()
     include(CTest)
-    # At least with CMake 3.4.1 on OS X, AddressSanitizer support in CTest
-    # does not work without this...
-    set(_ctest_config_file "${PROJECT_BINARY_DIR}/DartConfiguration.tcl")
-    file(STRINGS ${_ctest_config_file} _existing REGEX "^CMakeCommand: ")
+    if(APPLE)
+	    # At least with CMake 3.4.1 on OS X, AddressSanitizer support in CTest
+	    # does not work without this...
+	    set(_ctest_config_file "${PROJECT_BINARY_DIR}/DartConfiguration.tcl")
+	    file(STRINGS ${_ctest_config_file} _existing REGEX "^CMakeCommand: ")
+    endif()
     if (NOT _existing)
         file(APPEND ${_ctest_config_file} "\nCMakeCommand: ${CMAKE_COMMAND}\n")
     endif()
