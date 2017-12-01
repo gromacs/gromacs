@@ -48,6 +48,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 
+struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
@@ -58,6 +59,69 @@ namespace gmx
 template <typename T>
 class ArrayRef;
 class ForceWithVirial;
+
+
+/*! \libinternal \brief
+ * Helper struct for force provider input data
+ *
+ * This class assembles all input data that any of the force providers need.
+ * For a particular force provider, one just needs to call the set...() methods
+ * for the data this force provider expects. If in the future a new force
+ * provider needs another input variable, one just adds it to the
+ * public variables list and implements the corresponding set...() method.
+ */
+class ForceProviderInput
+{
+    //! workarounds to be able to save the box vector matrix
+    typedef real matrix_type[DIM];
+
+    public:
+        ForceProviderInput()
+            : cr(nullptr), mdatoms(nullptr), box(nullptr), t(0.0), x(nullptr)
+        {  };
+
+        //! \brief Stores a pointer to the commrec struct in ForceProviderInput
+        ForceProviderInput &setCommrec  (const t_commrec *crIn)      { cr      = crIn;      return *this; }
+
+        //! \brief Stores a pointer to the mdatoms struct in ForceProviderInput
+        ForceProviderInput &setMdatoms  (const t_mdatoms *mdatomsIn) { mdatoms = mdatomsIn; return *this; }
+
+        //! \brief Stores a pointer to the box in ForceProviderInput
+        ForceProviderInput &setBox      (const matrix     boxIn)     { box     = boxIn;     return *this; }
+
+        //! \brief Copies the current time of the simulation into ForceProviderInput
+        ForceProviderInput &setTime     (double           tIn)       { t       = tIn;       return *this; }
+
+        //! \brief Stores a pointer to the atomic positions in ForceProviderInput
+        ForceProviderInput &setPositions(const real      *xIn)       { x       = xIn;       return *this; }
+
+        const t_commrec      *cr;         //!< communication record structure
+        const t_mdatoms      *mdatoms;    //!< structure containing atomic data
+        const matrix_type    *box;        //!< the simulation box
+        double                t;          //!< the current time (ps) in the simulation
+        const real           *x;          //!< the atomic positions
+};
+
+/*! \libinternal \brief
+ * Helper struct assembling the output data of a force provider
+ *
+ * Same as for the ForceProviderInput class, but these variables can be written as well.
+ */
+class ForceProviderOutput
+{
+    public:
+        //! \brief As the reason for a force provider is to calculate forces, a pointer to these is requested in the constructor
+        ForceProviderOutput(ForceWithVirial *forceWithVirialIn)
+            : forceWithVirial(forceWithVirialIn), enerd(nullptr)
+        { };
+
+        //! \brief Stores a pointer to the energy data struct in ForceProviderInput
+        ForceProviderOutput &setEnerdata(gmx_enerdata_t *enerdIn) { enerd = enerdIn; return *this; }
+
+        ForceWithVirial *forceWithVirial; //!< Container for force and virial
+        gmx_enerdata_t  *enerd;           //!< structure containing energy data
+};
+
 
 /*! \libinternal \brief
  * Interface for a component that provides forces during MD.
@@ -83,19 +147,11 @@ class IForceProvider
         /*! \brief
          * Computes forces.
          *
-         * \param[in]    cr               Communication record for parallel operations
-         * \param[in]    mdatoms          Atom information
-         * \param[in]    box              The box
-         * \param[in]    t                The actual time in the simulation (ps)
-         * \param[in]    x                The coordinates
-         * \param[inout] forceWithVirial  The forces and virial
+         * \param[in]    forceProviderInput    struct that collects input data for the force providers
+         * \param[inout] forceProviderOutput   struct that collects output data of the force providers
          */
-        virtual void calculateForces(const t_commrec          *cr,
-                                     const t_mdatoms          *mdatoms,
-                                     const matrix              box,
-                                     double                    t,
-                                     const rvec               *x,
-                                     gmx::ForceWithVirial     *forceWithVirial) = 0;
+        virtual void calculateForces(const ForceProviderInput &forceProviderInput,
+                                     ForceProviderOutput      &forceProviderOutput) = 0;
 
     protected:
         ~IForceProvider() {}
@@ -128,12 +184,8 @@ struct ForceProviders
         bool hasForceProvider() const;
 
         //! Computes forces.
-        void calculateForces(const t_commrec          *cr,
-                             const t_mdatoms          *mdatoms,
-                             const matrix              box,
-                             double                    t,
-                             const rvec               *x,
-                             gmx::ForceWithVirial     *forceWithVirial) const;
+        void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
+                             gmx::ForceProviderOutput      &forceProviderOutput) const;
 
     private:
         class Impl;
