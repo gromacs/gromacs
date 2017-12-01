@@ -108,7 +108,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             /* Setting up the checker */
             TestReferenceData    refData;
             TestReferenceChecker checker(refData.rootChecker());
-            auto                 singlePrecisionUlps = 6;
+            auto                 singlePrecisionUlps = 1;
             checker.setDefaultTolerance(getSplineTolerance(singlePrecisionUlps));
 
             /* Perform a correctness check */
