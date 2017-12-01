@@ -184,7 +184,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                             /* Spline values */
                             SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
                             TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
-                            splineValuesChecker.setDefaultTolerance(getSplineTolerance(ulpToleranceSplineValues));
+                            splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
                             for (int i = 0; i < DIM; i++)
                             {
                                 auto splineValuesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Values, i);
@@ -196,7 +196,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                             /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
                             SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %ld", ulpToleranceSplineDerivatives));
                             TestReferenceChecker splineDerivativesChecker(rootChecker.checkCompound("Splines", "Derivatives"));
-                            splineDerivativesChecker.setDefaultTolerance(getSplineTolerance(ulpToleranceSplineDerivatives));
+                            splineDerivativesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
                             for (int i = 0; i < DIM; i++)
                             {
                                 auto splineDerivativesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Derivatives, i);
@@ -226,7 +226,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                                 EXPECT_EQ(previousGridValuesSize, nonZeroGridValues.size());
                             }
 
-                            gridValuesChecker.setDefaultTolerance(getSplineTolerance(ulpToleranceGrid));
+                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                             for (const auto &point : nonZeroGridValues)
                             {
                                 gridValuesChecker.checkReal(point.second, point.first.c_str());
