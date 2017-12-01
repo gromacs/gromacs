@@ -839,8 +839,11 @@ computeSpecialForces(FILE             *fplog,
      */
     if (computeForces)
     {
+        ForceProviderInput  forceProviderInput(x, mdatoms, t, box, cr);
+        ForceProviderOutput forceProviderOutput(forceWithVirial, enerd);
+
         /* Collect forces from modules */
-        forceProviders->calculateForces(cr, mdatoms, box, t, x, forceWithVirial);
+        forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
     if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
