@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016, by the GROMACS development team, led by
+# Copyright (c) 2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,14 @@ macro (gmx_ctest_init)
         set(MEMORYCHECK_TYPE "AddressSanitizer")
     endif()
     include(CTest)
-    # At least with CMake 3.4.1 on OS X, AddressSanitizer support in CTest
-    # does not work without this...
-    set(_ctest_config_file "${PROJECT_BINARY_DIR}/DartConfiguration.tcl")
-    file(STRINGS ${_ctest_config_file} _existing REGEX "^CMakeCommand: ")
-    if (NOT _existing)
-        file(APPEND ${_ctest_config_file} "\nCMakeCommand: ${CMAKE_COMMAND}\n")
+    if(_cmake_build_type STREQUAL "ASAN")
+        # AddressSanitizer support in CTest
+        # does not work without this...
+        set(_ctest_config_file "${PROJECT_BINARY_DIR}/DartConfiguration.tcl")
+        file(STRINGS ${_ctest_config_file} _existing REGEX "^CMakeCommand: ")
+        if (NOT _existing)
+            file(APPEND ${_ctest_config_file} "\nCMakeCommand: ${CMAKE_COMMAND}\n")
+        endif()
     endif()
 endmacro()
 
