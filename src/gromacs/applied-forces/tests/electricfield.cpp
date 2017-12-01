@@ -114,8 +114,13 @@ class ElectricFieldTest : public ::testing::Test
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;
 
-            t_commrec  *cr = init_commrec();
-            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, &forceWithVirial);
+            t_commrec               *cr = init_commrec();
+            gmx::ForceProviderInput  forceProviderInput;
+            forceProviderInput
+                .setCommrec(cr)
+                .setMdatoms(&md);
+            gmx::ForceProviderOutput       forceProviderOutput(&forceWithVirial);
+            forceProviders.calculateForces(forceProviderInput, forceProviderOutput);
             done_commrec(cr);
 
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
