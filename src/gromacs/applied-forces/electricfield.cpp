@@ -194,12 +194,8 @@ class ElectricField final : public IMDModule,
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
-        void calculateForces(const t_commrec               *cr,
-                             const t_mdatoms               *mdatoms,
-                             const matrix                   box,
-                             double                         t,
-                             gmx::ArrayRef<const gmx::RVec> x,
-                             gmx::ForceWithVirial          *forceWithVirial) override;
+        void calculateForces(const ForceProviderInput &forceProviderInput,
+                             ForceProviderOutput      *forceProviderOutput) override;
 
     private:
         //! Return whether or not to apply a field
@@ -356,19 +352,17 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-using gmx::ArrayRef;
-
-void ElectricField::calculateForces(const t_commrec           *cr,
-                                    const t_mdatoms           *mdatoms,
-                                    const matrix,
-                                    double                     t,
-                                    ArrayRef<const gmx::RVec>,
-                                    gmx::ForceWithVirial      *forceWithVirial)
+void ElectricField::calculateForces(const ForceProviderInput &forceProviderInput,
+                                    ForceProviderOutput      *forceProviderOutput)
 {
     if (isActive())
     {
+        const t_mdatoms &mdatoms = forceProviderInput.mdatoms;
+        const double     t       = forceProviderInput.t;
+        const t_commrec &cr      = forceProviderInput.cr;
+
         // NOTE: The non-conservative electric field does not have a virial
-        rvec *f = as_rvec_array(forceWithVirial->force_.data());
+        rvec *f = as_rvec_array(forceProviderOutput->forceWithVirial.force_.data());
 
         for (int m = 0; (m < DIM); m++)
         {
@@ -377,14 +371,14 @@ void ElectricField::calculateForces(const t_commrec           *cr,
             if (Ext != 0)
             {
                 // TODO: Check parallellism
-                for (int i = 0; i < mdatoms->homenr; ++i)
+                for (int i = 0; i < mdatoms.homenr; ++i)
                 {
                     // NOTE: Not correct with perturbed charges
-                    f[i][m] += mdatoms->chargeA[i]*Ext;
+                    f[i][m] += mdatoms.chargeA[i]*Ext;
                 }
             }
         }
-        if (MASTER(cr) && fpField_ != nullptr)
+        if (MASTER(&cr) && fpField_ != nullptr)
         {
             printComponents(t);
         }
