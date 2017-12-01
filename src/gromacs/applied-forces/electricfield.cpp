@@ -194,12 +194,8 @@ class ElectricField final : public IMDModule,
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
-        void calculateForces(const t_commrec       *cr,
-                             const t_mdatoms       *mdatoms,
-                             const matrix           box,
-                             double                 t,
-                             const rvec            *x,
-                             gmx::ForceWithVirial  *forceWithVirial) override;
+        void calculateForces(const ForceProviderInput &forceProviderInput,
+                             ForceProviderOutput      &forceProviderOutput) override;
 
     private:
         //! Return whether or not to apply a field
@@ -356,17 +352,17 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-void ElectricField::calculateForces(const t_commrec       *cr,
-                                    const t_mdatoms       *mdatoms,
-                                    const matrix           /* box */,
-                                    double                 t,
-                                    const rvec             * /* x */,
-                                    gmx::ForceWithVirial  *forceWithVirial)
+void ElectricField::calculateForces(const ForceProviderInput &forceProviderInput,
+                                    ForceProviderOutput      &forceProviderOutput)
 {
     if (isActive())
     {
+        const t_mdatoms * const mdatoms            = forceProviderInput.mdatoms;
+        const double            t                  = forceProviderInput.t;
+        const t_commrec * const cr                 = forceProviderInput.cr;
+
         // NOTE: The non-conservative electric field does not have a virial
-        rvec *f = as_rvec_array(forceWithVirial->force_.data());
+        rvec *f = as_rvec_array(forceProviderOutput.forceWithVirial->force_.data());
 
         for (int m = 0; (m < DIM); m++)
         {

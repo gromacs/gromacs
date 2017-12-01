@@ -74,15 +74,11 @@ bool ForceProviders::hasForceProvider() const
     return !impl_->providers_.empty();
 }
 
-void ForceProviders::calculateForces(const t_commrec       *cr,
-                                     const t_mdatoms       *mdatoms,
-                                     const matrix           box,
-                                     double                 t,
-                                     const rvec            *x,
-                                     gmx::ForceWithVirial  *forceWithVirial) const
+void ForceProviders::calculateForces(const ForceProviderInput &forceProviderInput,
+                                     ForceProviderOutput      &forceProviderOutput) const
 {
     for (auto provider : impl_->providers_)
     {
-        provider->calculateForces(cr, mdatoms, box, t, x, forceWithVirial);
+        provider->calculateForces(forceProviderInput, forceProviderOutput);
     }
 }
