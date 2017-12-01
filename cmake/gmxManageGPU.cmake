@@ -148,6 +148,16 @@ if (GMX_GPU)
     mark_as_advanced(GMX_USE_NVML)
     if(GMX_USE_NVML)
         if(NVML_FOUND)
+            # NVML linking requires appropriate display driver - let's try it, and terminate with a useful message if it doesn't
+            try_compile(nvmlLinkingWorks
+                ${CMAKE_BINARY_DIR}
+                ${CMAKE_SOURCE_DIR}/cmake/TestNVML.c
+                CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${NVML_INCLUDE_DIR}"
+                LINK_LIBRARIES ${NVML_LIBRARY})
+            if(NOT ${nvmlLinkingWorks})
+                message(FATAL_ERROR "The NVML functionality is not supported by this version of the NVIDIA display driver. Please make sure your NVIDIA driver is up-to-date and supports the required CUDA version, if you intend to run Gromacs with this version of the driver. Alternatively you can disable NVML support by passing -DGMX_USE_NVML=OFF argument." )
+            endif()
+
             include_directories(SYSTEM ${NVML_INCLUDE_DIR})
             set(HAVE_NVML 1)
             list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
