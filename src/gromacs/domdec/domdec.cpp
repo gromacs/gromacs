@@ -8462,7 +8462,8 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
 
 static void set_zones_size(gmx_domdec_t *dd,
                            matrix box, const gmx_ddbox_t *ddbox,
-                           int zone_start, int zone_end)
+                           int zone_start, int zone_end,
+                           int numMovedChargeGroupsInHomeZone)
 {
     gmx_domdec_comm_t  *comm;
     gmx_domdec_zones_t *zones;
@@ -8681,7 +8682,7 @@ static void set_zones_size(gmx_domdec_t *dd,
         {
             vol *= zones->size[0].x1[dim] - zones->size[0].x0[dim];
         }
-        zones->dens_zone0 = (zones->cg_range[1] - zones->cg_range[0])/vol;
+        zones->dens_zone0 = (zones->cg_range[1] - zones->cg_range[0] - numMovedChargeGroupsInHomeZone)/vol;
     }
 
     if (debug)
@@ -9551,7 +9552,7 @@ void dd_partition_system(FILE                *fplog,
         switch (fr->cutoff_scheme)
         {
             case ecutsVERLET:
-                set_zones_size(dd, state_local->box, &ddbox, 0, 1);
+                set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
                 nbnxn_put_on_grid(fr->nbv->nbs, fr->ePBC, state_local->box,
                                   0,
@@ -9621,7 +9622,8 @@ void dd_partition_system(FILE                *fplog,
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         set_zones_size(dd, state_local->box, &ddbox,
-                       bSortCG ? 1 : 0, comm->zones.n);
+                       bSortCG ? 1 : 0, comm->zones.n,
+                       0);
     }
 
     wallcycle_sub_stop(wcycle, ewcsDD_SETUPCOMM);
