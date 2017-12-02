@@ -8460,9 +8460,26 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
     }
 }
 
+/* \brief Set zone dimensions for zones \p zone_start to \p zone_end-1
+ *
+ * Also sets the atom density for the home zone when \p zone_start=0.
+ * For this \p numMovedChargeGroupsInHomeZone needs to be passed to tell
+ * how many charge groups will move but are still part of the current range.
+ * \todo When converting domdec to use proper classes, all these variables
+ *       should be private and a method should return the correct count
+ *       depending on an internal state.
+ *
+ * \param[in,out] dd          The domain decomposition struct
+ * \param[in]     box         The box
+ * \param[in]     ddbox       The domain decomposition box struct
+ * \param[in]     zone_start  The start of the zone range to set sizes for
+ * \param[in]     zone_end    The end of the zone range to set sizes for
+ * \param[in]     numMovedChargeGroupsInHomeZone  The number of charge groups in the home zone that should moved but are still present in dd->comm->zones.cg_range
+ */
 static void set_zones_size(gmx_domdec_t *dd,
                            matrix box, const gmx_ddbox_t *ddbox,
-                           int zone_start, int zone_end)
+                           int zone_start, int zone_end,
+                           int numMovedChargeGroupsInHomeZone)
 {
     gmx_domdec_comm_t  *comm;
     gmx_domdec_zones_t *zones;
@@ -8681,7 +8698,7 @@ static void set_zones_size(gmx_domdec_t *dd,
         {
             vol *= zones->size[0].x1[dim] - zones->size[0].x0[dim];
         }
-        zones->dens_zone0 = (zones->cg_range[1] - zones->cg_range[0])/vol;
+        zones->dens_zone0 = (zones->cg_range[1] - zones->cg_range[0] - numMovedChargeGroupsInHomeZone)/vol;
     }
 
     if (debug)
@@ -9493,6 +9510,11 @@ void dd_partition_system(FILE                *fplog,
 
     ncg_home_old = dd->ncg_home;
 
+    /* When repartitioning we mark charge groups that will move to neighboring
+     * DD cells, but we do not move them right away for performance reasons.
+     * Thus we need to keep track of how many charge groups will move for
+     * obtaining correct local charge group / atom counts.
+     */
     ncg_moved = 0;
     if (bRedist)
     {
@@ -9551,7 +9573,7 @@ void dd_partition_system(FILE                *fplog,
         switch (fr->cutoff_scheme)
         {
             case ecutsVERLET:
-                set_zones_size(dd, state_local->box, &ddbox, 0, 1);
+                set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
                 nbnxn_put_on_grid(fr->nbv->nbs, fr->ePBC, state_local->box,
                                   0,
@@ -9621,7 +9643,8 @@ void dd_partition_system(FILE                *fplog,
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         set_zones_size(dd, state_local->box, &ddbox,
-                       bSortCG ? 1 : 0, comm->zones.n);
+                       bSortCG ? 1 : 0, comm->zones.n,
+                       0);
     }
 
     wallcycle_sub_stop(wcycle, ewcsDD_SETUPCOMM);
