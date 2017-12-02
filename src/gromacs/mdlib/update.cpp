@@ -154,6 +154,21 @@ static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
             do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple));
 }
 
+/*! \brief Sets the velocities of virtual sites to zero */
+static void clearVsiteVelocities(int                   start,
+                                 int                   nrend,
+                                 const unsigned short *particleType,
+                                 rvec * gmx_restrict   v)
+{
+    for (int a = start; a < nrend; a++)
+    {
+        if (particleType[a] == eptVSite)
+        {
+            clear_rvec(v[a]);
+        }
+    }
+}
+
 /*! \brief Sets the number of different temperature coupling values */
 enum class NumTempScaleValues
 {
@@ -555,6 +570,19 @@ static void do_update_md(int                         start,
     }
     else
     {
+        /* Use a simple and thus more efficient integration loop. */
+        /* The simple loop does not check for particle type (so it can
+         * be vectorized), which means we need to clear the velocities
+         * of virtual sites in advance, when present. Note that vsite
+         * velocities are computed after update and constraints from
+         * their displacement.
+         */
+        if (md->haveVsites)
+        {
+            /* Note: The overhead of this loop is completely neligible */
+            clearVsiteVelocities(start, nrend, md->ptype, v);
+        }
+
         /* We determine if we have a single T-coupling lambda value for all
          * atoms. That allows for better SIMD acceleration in the template.
          * If we do not do temperature coupling (in the run or this step),

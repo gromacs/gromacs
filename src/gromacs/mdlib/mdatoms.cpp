@@ -95,6 +95,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     double                     totalMassA = 0.0;
     double                     totalMassB = 0.0;
 
+    md->haveVsites = FALSE;
     gmx_mtop_atomloop_block_t  aloop = gmx_mtop_atomloop_block_init(&mtop);
     const t_atom              *atom;
     int                        nmol;
@@ -102,6 +103,11 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     {
         totalMassA += nmol*atom->m;
         totalMassB += nmol*atom->mB;
+
+        if (atom->ptype == eptVSite)
+        {
+            md->haveVsites = TRUE;
+        }
 
         if (ir.efep != efepNO && PERTURBED(*atom))
         {
