@@ -62,6 +62,8 @@ typedef struct t_mdatoms {
     int                    nenergrp;
     //! Do we have multiple center of mass motion removal groups
     gmx_bool               bVCMgrps;
+    //! Do we have any virtual sites?
+    gmx_bool               haveVsites;
     //! Do we have atoms that are frozen along 1 or 2 (not 3) dimensions?
     gmx_bool               havePartiallyFrozenAtoms;
     //! Number of perturbed atoms
