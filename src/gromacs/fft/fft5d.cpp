@@ -49,6 +49,7 @@
 #include <algorithm>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/gpu_utils/pinning.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
@@ -143,7 +144,7 @@ static int vmax(int* a, int s)
  * lin is allocated by fft5d because size of array is only known after planning phase
  * rlout2 is only used as intermediate buffer - only returned after allocation to reuse for back transform - should not be used by caller
  */
-fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads, gmx::PinningPolicy realGridAllocation)
+fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads, gmx::PinningPolicy realGridAllocationPinningPolicy)
 {
 
     int        P[2], bMaster, prank[2], i, t;
@@ -389,7 +390,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     if (!(flags&FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (realGridAllocation == gmx::PinningPolicy::CanBePinned)
+        if (realGridAllocationPinningPolicy == gmx::PinningPolicy::CanBePinned)
         {
             const std::size_t numBytes = lsize * sizeof(t_complex);
             lin = static_cast<t_complex *>(gmx::PageAlignedAllocationPolicy::malloc(numBytes));
@@ -654,12 +655,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     plan->direction=direction;
     plan->realcomplex=realcomplex;
  */
-    plan->flags    = flags;
-    plan->nthreads = nthreads;
-    *rlin          = lin;
-    *rlout         = lout;
-    *rlout2        = lout2;
-    *rlout3        = lout3;
+    plan->flags         = flags;
+    plan->nthreads      = nthreads;
+    plan->pinningPolicy = realGridAllocationPinningPolicy;
+    *rlin               = lin;
+    *rlout              = lout;
+    *rlout2             = lout2;
+    *rlout3             = lout3;
     return plan;
 }
 
@@ -1284,7 +1286,8 @@ void fft5d_destroy(fft5d_plan plan)
     if (!(plan->flags&FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (isHostMemoryPinned(plan->lin))
+        if (plan->pinningPolicy == gmx::PinningPolicy::CanBePinned &&
+            isHostMemoryPinned(plan->lin))
         {
             gmx::unpinBuffer(plan->lin);
         }
