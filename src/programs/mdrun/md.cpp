@@ -1435,13 +1435,22 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* this just makes signals[].sig compatible with the hack
                of sending signals around by MPI_Reduce together with
                other floats */
-            if (gmx_get_stop_condition() == gmx_stop_cond_next_ns)
+            if ((gmx_get_stop_condition() == gmx_stop_cond_next_ns) ||
+                (mdrunOptions.reproducible &&
+                 gmx_get_stop_condition() == gmx_stop_cond_next))
             {
+                /* We need at least two global communication steps to pass
+                 * around the signal. We stop at a pair-list creation step
+                 * to allow for exact continuation, when possible.
+                 */
                 signals[eglsSTOPCOND].sig = 1;
                 nsteps_stop               = std::max(ir->nstlist, 2*nstglobalcomm);
             }
-            if (gmx_get_stop_condition() == gmx_stop_cond_next)
+            else if (gmx_get_stop_condition() == gmx_stop_cond_next)
             {
+                /* Stop directly after the next global communication step.
+                 * This breaks exact continuation.
+                 */
                 signals[eglsSTOPCOND].sig = -1;
                 nsteps_stop               = nstglobalcomm + 1;
             }
