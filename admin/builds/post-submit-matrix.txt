@@ -62,3 +62,4 @@ gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert
 # Test own-fftw build (from local copy of the file)
 # Test mdrun -tunepme (e.g. with relaxed tolerances, for now)
 # Consider testing of other CMake option paths
+# Add CUDA build and run the tests on a node with no CUDA GPUs
