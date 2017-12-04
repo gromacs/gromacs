@@ -87,7 +87,7 @@ class GridData : public TContainer
         /*! \brief
          * Default constructor for convenience.
          *
-         * \TODO: causes segfaults when grid functions are accessed before initialisation  */
+         * \todo: causes segfaults when grid functions are accessed before initialisation  */
         GridData() = default;
         /*! \brief
          * Consumes a grid to construct GridData.
@@ -180,12 +180,12 @@ class GridData : public TContainer
         }
 
         /*! \brief Serialize / De-serialize griddata.
-         * \TODO: This should be moved out of this class.
-         * \TODO: implemented for float, double, bool, and integer containers.
-         * \TODO: reads/writes always GridWithTranslation
-         * \TODO: this asks for trouble, because the grid type is not known
-         * to the griddata, but needs to be used consistently for serialisation.
-         * \para[in] serializer A serializer.
+         * \todo: This should be moved out of this class.
+         * \todo: implemented for float, double, bool, and integer containers.
+         * \todo: reads/writes always GridWithTranslation
+         * \todo: this asks for trouble, because the grid type is not known
+         * to the griddata, but needs to be used consistently for serialization.
+         * \param[in] serializer A serializer.
          */
         void readwrite(ISerializer * serializer)
         {
