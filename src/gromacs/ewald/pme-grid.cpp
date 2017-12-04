@@ -509,7 +509,7 @@ void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
     if (pme_order == 5
-#ifndef PME_SIMD4_UNALIGNED
+#if !PME_4NSIMD_GATHER
         || pme_order == 4
 #endif
         )
@@ -523,7 +523,7 @@ void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 static void set_gridsize_alignment(int gmx_unused *gridsize, int gmx_unused pme_order)
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
-#ifndef PME_SIMD4_UNALIGNED
+#if !PME_4NSIMD_GATHER
     if (pme_order == 4)
     {
         /* Add extra elements to ensured aligned operations do not go

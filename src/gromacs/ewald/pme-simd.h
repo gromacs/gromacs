@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,13 @@
 #else
 /* We can use any alignment, apart from 0, so we use 4 reals */
 #    define SIMD4_ALIGNMENT  (4*sizeof(real))
+#endif
+
+/* Check if we can use SIMD with packs of 4 for gather with order 4 */
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL && GMX_SIMD_REAL_WIDTH <= 16
+#    define PME_4NSIMD_GATHER  1
+#else
+#    define PME_4NSIMD_GATHER  0
 #endif
 
 #endif

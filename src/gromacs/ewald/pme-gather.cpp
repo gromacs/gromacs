@@ -131,7 +131,7 @@ struct do_fspline
     }
 
 //TODO: Consider always have at least a dummy implementation of Simd (enough for first phase of two-phase lookup) and then use enable_if instead of #ifdef
-#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL && GMX_SIMD_REAL_WIDTH <= 16
+#if PME_4NSIMD_GATHER
 /* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
  * Uses 4N SIMD where N is SIMD_WIDTH/4 to operate on all of z and N of y.
  * This code does not assume any memory alignment for the grid.
