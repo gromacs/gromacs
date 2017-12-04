@@ -131,7 +131,7 @@ extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *
                                         ivec *extra_shifts, const gmx_bool bNS,
                                         const rvec *x_loc, const int nr, const int nr_loc,
                                         const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
-                                        matrix box);
+                                        const matrix box);
 
 /*! \brief Calculates the center of the positions x locally.
  *
@@ -161,7 +161,7 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec center);
  * \return Sum of weights.
  *
  */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec dsumvec);
+extern double get_sum_of_positions(const rvec x[], const real weight[], const int nr, dvec dsumvec);
 
 
 /*! \brief Calculates the global center of all local arrays x.
