@@ -50,6 +50,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
@@ -464,6 +465,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
                         top_global,
                         state_global, observablesHistory,
                         cr, &atomSets, oenv, mdrunOptions);
+    }
+
+    if (ir->bDensityFitting)
+    {
+        /* Initialize additional potential due to experimental density maps */
+        fr->densfit->init(ir->ePBC, top_global, MASTER(cr) ?  as_rvec_array(state_global->x.data()) : nullptr,
+                          state_global->box, &atomSets, cr);
     }
 
     /* Initial values */

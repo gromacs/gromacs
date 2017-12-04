@@ -49,6 +49,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
@@ -9795,6 +9796,11 @@ void dd_partition_system(FILE                     *fplog,
     {
         /* Update the local rotation groups */
         dd_make_local_rotation_groups(dd, ir->rot);
+    }
+
+    if (fr->densfit)
+    {
+        fr->densfit->triggerShiftUpdate();
     }
 
     if (atomSets != nullptr)
