@@ -57,7 +57,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/functions.h"
@@ -88,6 +88,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/forcetable.h"
+#include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
@@ -1585,9 +1586,10 @@ gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 }
 
 
-static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
-                                  int                         *kernel_type,
-                                  int                         *ewald_excl)
+static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
+                                  int                            *kernel_type,
+                                  int                            *ewald_excl,
+                                  const gmx_hw_info_t gmx_unused &hwInfo)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1603,8 +1605,8 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 
 #if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
         /* We need to choose if we want 2x(N+N) or 4xN kernels.
-         * Currently this is based on the SIMD acceleration choice,
-         * but it might be better to decide this at runtime based on CPU.
+         * This is based on the SIMD acceleration choice and CPU information
+         * detected at runtime.
          *
          * 4xN calculates more (zero) interactions, but has less pair-search
          * work and much better kernel instruction scheduling.
@@ -1630,6 +1632,11 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
+        if (hwInfo.haveAmdZenCpu)
+        {
+            /* One 256-bit FMA per cycle makes 2xNN faster */
+            *kernel_type = nbnxnk4xN_SIMD_2xNN;
+        }
 #endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
@@ -1661,7 +1668,11 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          */
 #if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) \
         && !GMX_SIMD_X86_AVX_512) || GMX_SIMD_IBM_QPX
-        *ewald_excl = ewaldexclAnalytical;
+        /* On AMD Zen tabulated Ewald kernels are faster sp/dp and 128/256bit */
+        if (!hwInfo.haveAmdZenCpu)
+        {
+            *ewald_excl = ewaldexclAnalytical;
+        }
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
         {
@@ -1710,6 +1721,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
+                              const gmx_hw_info_t &hwInfo,
                               gmx_bool             bUseGPU,
                               EmulateGpuNonbonded  emulateGpu,
                               const t_inputrec    *ir,
@@ -1741,7 +1753,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
         if (use_simd_kernels &&
             nbnxn_simd_supported(mdlog, ir))
         {
-            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
+            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hwInfo);
         }
         else
         {
@@ -2134,15 +2146,16 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
-static void init_nb_verlet(const gmx::MDLogger     &mdlog,
-                           nonbonded_verlet_t     **nb_verlet,
-                           gmx_bool                 bFEP_NonBonded,
-                           const t_inputrec        *ir,
-                           const t_forcerec        *fr,
-                           const t_commrec         *cr,
-                           const gmx_device_info_t *deviceInfo,
-                           const gmx_mtop_t        *mtop,
-                           matrix                   box)
+static void init_nb_verlet(const gmx::MDLogger                    &mdlog,
+                           nonbonded_verlet_t                    **nb_verlet,
+                           gmx_bool                                bFEP_NonBonded,
+                           const t_inputrec                       *ir,
+                           const t_forcerec                       *fr,
+                           const t_commrec                        *cr,
+                           const gmx_hw_info_t                    &hwInfo,
+                           const std::vector<gmx::GpuTaskMapping> &gpuTaskAssignment,
+                           const gmx_mtop_t                       *mtop,
+                           matrix                                  box)
 {
     nonbonded_verlet_t *nbv;
     char               *env;
@@ -2152,8 +2165,12 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     nbv = new nonbonded_verlet_t();
 
+    // This works because only one task of each type is currently permitted.
+    auto nbGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(),
+                                         gmx::hasTaskType<gmx::GpuTask::Nonbonded>);
+
     nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    nbv->bUseGPU    = deviceInfo != nullptr;
+    nbv->bUseGPU    = (nbGpuTaskMapping != gpuTaskAssignment.end());
 
     GMX_RELEASE_ASSERT(!(nbv->emulateGpu == EmulateGpuNonbonded::Yes && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
 
@@ -2168,7 +2185,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels,
+            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hwInfo,
                               nbv->bUseGPU, nbv->emulateGpu, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -2244,6 +2261,9 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     if (nbv->bUseGPU)
     {
+        gmx_device_info_t *deviceInfo =
+            getDeviceInfo(hwInfo.gpu_info, nbGpuTaskMapping->deviceId_);
+
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_gpu_init(&nbv->gpu_nbv,
@@ -2309,20 +2329,21 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE                    *fp,
-                   const gmx::MDLogger     &mdlog,
-                   t_forcerec              *fr,
-                   t_fcdata                *fcd,
-                   const t_inputrec        *ir,
-                   const gmx_mtop_t        *mtop,
-                   const t_commrec         *cr,
-                   matrix                   box,
-                   const char              *tabfn,
-                   const char              *tabpfn,
-                   const t_filenm          *tabbfnm,
-                   const gmx_device_info_t *deviceInfo,
-                   gmx_bool                 bNoSolvOpt,
-                   real                     print_force)
+void init_forcerec(FILE                                   *fp,
+                   const gmx::MDLogger                    &mdlog,
+                   t_forcerec                             *fr,
+                   t_fcdata                               *fcd,
+                   const t_inputrec                       *ir,
+                   const gmx_mtop_t                       *mtop,
+                   const t_commrec                        *cr,
+                   matrix                                  box,
+                   const char                             *tabfn,
+                   const char                             *tabpfn,
+                   const t_filenm                         *tabbfnm,
+                   const gmx_hw_info_t                    &hwInfo,
+                   const std::vector<gmx::GpuTaskMapping> &gpuTaskAssignment,
+                   gmx_bool                                bNoSolvOpt,
+                   real                                    print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
@@ -3127,7 +3148,7 @@ void init_forcerec(FILE                    *fp,
         }
 
         init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, deviceInfo,
+                       cr, hwInfo, gpuTaskAssignment,
                        mtop, box);
     }
 
