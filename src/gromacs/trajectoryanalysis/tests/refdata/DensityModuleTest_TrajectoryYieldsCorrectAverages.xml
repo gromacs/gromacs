@@ -1,0 +1,1013 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">tide -select 'resname DMP' -nonormalize -timewindow 10 -correlation</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="fitness">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">1</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">2</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">3</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">4</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">6</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">7</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame8">
+        <Real Name="X">8</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame9">
+        <Real Name="X">9</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame10">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.99999994</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame11">
+        <Real Name="X">11</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame12">
+        <Real Name="X">12</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame13">
+        <Real Name="X">13</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame14">
+        <Real Name="X">14</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame15">
+        <Real Name="X">15</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame16">
+        <Real Name="X">16</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame17">
+        <Real Name="X">17</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame18">
+        <Real Name="X">18</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame19">
+        <Real Name="X">19</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame20">
+        <Real Name="X">20</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.77453482</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame21">
+        <Real Name="X">21</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame22">
+        <Real Name="X">22</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame23">
+        <Real Name="X">23</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame24">
+        <Real Name="X">24</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame25">
+        <Real Name="X">25</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame26">
+        <Real Name="X">26</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame27">
+        <Real Name="X">27</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame28">
+        <Real Name="X">28</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame29">
+        <Real Name="X">29</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame30">
+        <Real Name="X">30</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.59366226</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame31">
+        <Real Name="X">31</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame32">
+        <Real Name="X">32</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame33">
+        <Real Name="X">33</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame34">
+        <Real Name="X">34</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame35">
+        <Real Name="X">35</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame36">
+        <Real Name="X">36</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame37">
+        <Real Name="X">37</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame38">
+        <Real Name="X">38</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame39">
+        <Real Name="X">39</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame40">
+        <Real Name="X">40</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.55214846</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame41">
+        <Real Name="X">41</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame42">
+        <Real Name="X">42</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame43">
+        <Real Name="X">43</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame44">
+        <Real Name="X">44</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame45">
+        <Real Name="X">45</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame46">
+        <Real Name="X">46</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame47">
+        <Real Name="X">47</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame48">
+        <Real Name="X">48</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame49">
+        <Real Name="X">49</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame50">
+        <Real Name="X">50</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.41865948</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame51">
+        <Real Name="X">51</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame52">
+        <Real Name="X">52</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame53">
+        <Real Name="X">53</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame54">
+        <Real Name="X">54</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame55">
+        <Real Name="X">55</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame56">
+        <Real Name="X">56</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame57">
+        <Real Name="X">57</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame58">
+        <Real Name="X">58</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame59">
+        <Real Name="X">59</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame60">
+        <Real Name="X">60</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.49030429</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame61">
+        <Real Name="X">61</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame62">
+        <Real Name="X">62</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame63">
+        <Real Name="X">63</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame64">
+        <Real Name="X">64</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame65">
+        <Real Name="X">65</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame66">
+        <Real Name="X">66</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame67">
+        <Real Name="X">67</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame68">
+        <Real Name="X">68</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame69">
+        <Real Name="X">69</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame70">
+        <Real Name="X">70</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.41201022</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame71">
+        <Real Name="X">71</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame72">
+        <Real Name="X">72</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame73">
+        <Real Name="X">73</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame74">
+        <Real Name="X">74</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame75">
+        <Real Name="X">75</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame76">
+        <Real Name="X">76</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame77">
+        <Real Name="X">77</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame78">
+        <Real Name="X">78</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame79">
+        <Real Name="X">79</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame80">
+        <Real Name="X">80</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.35677654</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame81">
+        <Real Name="X">81</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame82">
+        <Real Name="X">82</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame83">
+        <Real Name="X">83</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame84">
+        <Real Name="X">84</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame85">
+        <Real Name="X">85</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame86">
+        <Real Name="X">86</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame87">
+        <Real Name="X">87</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame88">
+        <Real Name="X">88</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame89">
+        <Real Name="X">89</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame90">
+        <Real Name="X">90</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.0010048153</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame91">
+        <Real Name="X">91</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame92">
+        <Real Name="X">92</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame93">
+        <Real Name="X">93</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame94">
+        <Real Name="X">94</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame95">
+        <Real Name="X">95</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame96">
+        <Real Name="X">96</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame97">
+        <Real Name="X">97</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame98">
+        <Real Name="X">98</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame99">
+        <Real Name="X">99</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame100">
+        <Real Name="X">100</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.0074556223</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-mo"></File>
+    <File Name="-stddevmap"></File>
+  </OutputFiles>
+</ReferenceData>
