@@ -1,0 +1,26 @@
+; Contributions to the atomic potentials according to equation (6) in
+; J. Electron Microscopy, 56(4):131-140 (2007)
+; atomic-number amplitude precision
+; Atom types wihtout atomic number, e.g., virtual sites, are ignored
+-1 0 0
+; Unknown atom type behaves like carbon
+ 0 5.948015e-01 1.700190e+02
+ 0 5.657122e+00 1.041647e+03
+; H
+ 1 1.242258e-01 1.718695e+02
+ 1 1.133291e+00 9.919200e+02
+; C
+ 6 5.948015e-01 1.700190e+02
+ 6 5.657122e+00 1.041647e+03
+; N
+ 7 7.587542e-01 2.236738e+02
+ 7 7.705668e+00 1.342803e+03
+; O
+ 8 9.061284e-01 2.786056e+02
+ 8 9.848492e+00 1.644934e+03
+; P
+ 15 1.056651e+00 1.390085e+02
+ 15 1.083431e+01 1.081600e+03
+; S
+ 16 1.335159e+00 1.711987e+02
+ 16 1.271311e+01 1.226038e+03
