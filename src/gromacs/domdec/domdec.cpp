@@ -49,6 +49,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/maputil.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/ewald/pme.h"
@@ -9789,6 +9790,12 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local rotation groups */
         dd_make_local_rotation_groups(dd, ir->rot);
+    }
+
+    if (ir->densfit)
+    {
+        /* Make a selection of the local atoms for density fitting */
+        dd_make_local_df_indices(dd, ir->densfit.get());
     }
 
     if (ir->eSwapCoords != eswapNO)
