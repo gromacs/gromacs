@@ -106,6 +106,23 @@ void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)
     }
 }
 
+void pr_floats(FILE *fp, int indent, const char *title, const float *vec, int n)
+{
+    int i;
+
+    if (available(fp, vec, indent, title))
+    {
+        (void) pr_indent(fp, indent);
+        (void) fprintf(fp, "%s:\t", title);
+        for (i = 0; i < n; i++)
+        {
+            fprintf(fp, "  %10g", vec[i]);
+        }
+        (void) fprintf(fp, "\n");
+    }
+}
+
+
 void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n)
 {
     int i;
