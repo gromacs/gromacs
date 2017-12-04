@@ -45,6 +45,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
+
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
@@ -102,12 +103,12 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
 
 
 static void get_shifts_group(
-        int     npbcdim,
-        matrix  box,
-        rvec   *xcoll,     /* IN:  Collective set of positions [0..nr] */
-        int     nr,        /* IN:  Total number of atoms in the group */
-        rvec   *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
-        ivec   *shifts)    /* OUT: Shifts for xcoll */
+        int           npbcdim,
+        const matrix  box,
+        const rvec   *xcoll,     /* IN:  Collective set of positions [0..nr] */
+        int           nr,        /* IN:  Total number of atoms in the group */
+        const rvec   *xcoll_old, /* IN:  Positions from the last time step [0...nr] */
+        ivec         *shifts)    /* OUT: Shifts for xcoll */
 {
     int  i, m, d;
     rvec dx;
@@ -152,10 +153,10 @@ static void get_shifts_group(
 
 
 static void shift_positions_group(
-        matrix  box,
-        rvec    x[],     /* The positions [0..nr] */
-        ivec   *is,      /* The shifts [0..nr] */
-        int     nr)      /* The number of positions and shifts */
+        const matrix  box,
+        rvec          x[], /* The positions [0..nr] */
+        const ivec   *is,  /* The shifts [0..nr] */
+        int           nr)  /* The number of positions and shifts */
 {
     int      i, tx, ty, tz;
 
@@ -194,19 +195,19 @@ static void shift_positions_group(
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
 extern void communicate_group_positions(
-        const t_commrec *cr,           /* Pointer to MPI communication data */
-        rvec            *xcoll,        /* Collective array of positions */
-        ivec            *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
-        ivec            *extra_shifts, /* (optional) Extra shifts since last time step */
-        const gmx_bool   bNS,          /* (optional) NS step, the shifts have changed */
-        const rvec      *x_loc,        /* Local positions on this node */
-        const int        nr,           /* Total number of atoms in the group */
-        const int        nr_loc,       /* Local number of atoms in the group */
-        const int       *anrs_loc,     /* Local atom numbers */
-        const int       *coll_ind,     /* Collective index */
-        rvec            *xcoll_old,    /* (optional) Positions from the last time step,
-                                          used to make group whole */
-        matrix           box)          /* (optional) The box */
+        const t_commrec       *cr,           /* Pointer to MPI communication data */
+        rvec                  *xcoll,        /* Collective array of positions */
+        ivec                  *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
+        ivec                  *extra_shifts, /* (optional) Extra shifts since last time step */
+        const gmx_bool         bNS,          /* (optional) NS step, the shifts have changed */
+        const rvec            *x_loc,        /* Local positions on this node */
+        const int              nr,           /* Total number of atoms in the group */
+        const int              nr_loc,       /* Local number of atoms in the group */
+        const int             *anrs_loc,     /* Local atom numbers */
+        const int             *coll_ind,     /* Collective index */
+        rvec                  *xcoll_old,    /* (optional) Positions from the last time step,
+                                                used to make group whole */
+        const matrix           box)          /* (optional) The box */
 {
     int i;
 
@@ -269,7 +270,7 @@ extern void communicate_group_positions(
 
 
 /* Determine the (weighted) sum vector from positions x */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec dsumvec)
+extern double get_sum_of_positions(const rvec x[], const real weight[], const int nat, dvec dsumvec)
 {
     int    i;
     rvec   x_weighted;
