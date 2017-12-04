@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef GMX_MATH_GRIDINTERPOLATOR_H
+#define GMX_MATH_GRIDINTERPOLATOR_H
+
+#include <memory>
+
+#include "gromacs/math/griddata/canonicalvectorbasis.h"
+#include "gromacs/math/griddata/griddata.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
+template <int N> class IGrid;
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
-};
-
-} // namespace gmx
-
+#ifndef DIM
+#define DIM 3
 #endif
+
+/*!\brief Overwrite target grid data with intepolated data.
+ */
+void interpolateLinearly(const GridDataReal3D &other,
+                         GridDataReal3D       *targetGrid);
+
+GridDataReal3D interpolateLinearly(const GridDataReal3D &other,
+                                   const IGrid<DIM>     &targetGrid);
+/*! \brief
+    Interpolating after shifting and orienting the other grid.
+ */
+real getLinearInterpolationAt(const GridDataReal3D                      &field,
+                              const CanonicalVectorBasis<DIM>::NdVector &r);
+/*! \brief
+    Interpolating after shifting and orienting the other grid.
+ */
+real getLinearInterpolationAt(const GridDataReal3D &field, const RVec &r);
+
+}      // namespace gmx
+
+#endif /* end of include guard: GMX_MATH_GRIDINTERPOLATOR_H */
