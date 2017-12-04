@@ -536,6 +536,14 @@ void init_gpu(const gmx::MDLogger &mdlog,
 
 void free_gpu(const gmx_device_info_t *deviceInfo)
 {
+    // One should only attempt to clear the device context when
+    // it has been used, but currently the only way to know that a GPU
+    // device was used is that deviceInfo will be non-null.
+    if (deviceInfo == nullptr)
+    {
+        return;
+    }
+
     cudaError_t  stat;
 
     if (debug)
@@ -546,12 +554,9 @@ void free_gpu(const gmx_device_info_t *deviceInfo)
         fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
     }
 
-    if (deviceInfo != nullptr)
+    if (!reset_gpu_application_clocks(deviceInfo))
     {
-        if (!reset_gpu_application_clocks(deviceInfo))
-        {
-            gmx_warning("Failed to reset GPU application clocks on GPU #%d", deviceInfo->id);
-        }
+        gmx_warning("Failed to reset GPU application clocks on GPU #%d", deviceInfo->id);
     }
 
     stat = cudaDeviceReset();
