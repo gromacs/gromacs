@@ -122,6 +122,7 @@ void init_forcerec(FILE                    *fplog,
                    const char              *tabfn,
                    const char              *tabpfn,
                    const t_filenm          *tabbfnm,
+                   bool                     haveX86AmdCpu,
                    const gmx_device_info_t *deviceInfo,
                    gmx_bool                 bNoSolvOpt,
                    real                     print_force);

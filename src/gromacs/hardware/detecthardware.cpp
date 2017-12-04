@@ -269,10 +269,10 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     sfree(buf);
     sfree(all);
 
-    int sum[4], maxmin[10];
-
+    cosntexpr int numElementsSum =  4;
+    int           sum[numElementsSum];
     {
-        int buf[4];
+        int       buf[numElementsSum];
 
         /* Sum values from only intra-rank 0 so we get the sum over all nodes */
         buf[0] = nnode0;
@@ -280,27 +280,30 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
         buf[2] = nhwthread0;
         buf[3] = ngpu0;
 
-        MPI_Allreduce(buf, sum, 4, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(buf, sum, numElementsSum, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
 
+    constexpr int numElementsMax = 11;
+    int           maxmin[numElementsMax];
     {
-        int buf[10];
+        int       buf[numElementsMax];
 
         /* Store + and - values for all ranks,
          * so we can get max+min with one MPI call.
          */
-        buf[0] = ncore;
-        buf[1] = nhwthread;
-        buf[2] = ngpu;
-        buf[3] = static_cast<int>(gmx::simdSuggested(cpuInfo));
-        buf[4] = gpu_hash;
-        buf[5] = -buf[0];
-        buf[6] = -buf[1];
-        buf[7] = -buf[2];
-        buf[8] = -buf[3];
-        buf[9] = -buf[4];
+        buf[0]  = ncore;
+        buf[1]  = nhwthread;
+        buf[2]  = ngpu;
+        buf[3]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
+        buf[4]  = gpu_hash;
+        buf[5]  = -buf[0];
+        buf[6]  = -buf[1];
+        buf[7]  = -buf[2];
+        buf[8]  = -buf[3];
+        buf[9]  = -buf[4];
+        buf[10] = (cpuInfo.feature(CpuInfo::Feature::X86_Amd) ? 1 : 0);
 
-        MPI_Allreduce(buf, maxmin, 10, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(buf, maxmin, numElementsMax, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     }
 
     hwinfo_g->nphysicalnode       = sum[0];
@@ -316,6 +319,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_min    = -maxmin[8];
     hwinfo_g->simd_suggest_max    = maxmin[3];
     hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
+    hwinfo_g->haveX86AmdCpu       = (maxmin[10] > 0);
 #else
     /* All ranks use the same pointer, protected by a mutex in the caller */
     hwinfo_g->nphysicalnode       = 1;
@@ -331,6 +335,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
+    hwinfo_g->haveX86AmdCpu       = (cpuInfo.feature(CpuInfo::Feature::X86_Amd) ? 1 : 0);
 #endif
 }
 
