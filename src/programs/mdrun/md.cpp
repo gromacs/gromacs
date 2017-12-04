@@ -50,6 +50,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"

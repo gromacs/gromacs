@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -653,7 +654,6 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
     }
 }
 
-
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     // Note that this overwrites pointers in inputrec, so all pointer fields
@@ -720,6 +720,14 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         snew_bc(cr, inputrec->rot, 1);
         bc_rot(cr, inputrec->rot);
+    }
+    if (inputrec->bDensityFitting)
+    {
+        if (!MASTER(cr))
+        {
+            inputrec->densfit = std::unique_ptr<gmx::Densfit>(new gmx::Densfit);
+        }
+        inputrec->densfit->broadcast(cr);
     }
     if (inputrec->bIMD)
     {

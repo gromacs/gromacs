@@ -194,19 +194,19 @@ static void shift_positions_group(
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
 extern void communicate_group_positions(
-        t_commrec     *cr,           /* Pointer to MPI communication data */
-        rvec          *xcoll,        /* Collective array of positions */
-        ivec          *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
-        ivec          *extra_shifts, /* (optional) Extra shifts since last time step */
-        const gmx_bool bNS,          /* (optional) NS step, the shifts have changed */
-        rvec          *x_loc,        /* Local positions on this node */
-        const int      nr,           /* Total number of atoms in the group */
-        const int      nr_loc,       /* Local number of atoms in the group */
-        const int     *anrs_loc,     /* Local atom numbers */
-        const int     *coll_ind,     /* Collective index */
-        rvec          *xcoll_old,    /* (optional) Positions from the last time step,
-                                        used to make group whole */
-        matrix         box)          /* (optional) The box */
+        const t_commrec *cr,           /* Pointer to MPI communication data */
+        rvec            *xcoll,        /* Collective array of positions */
+        ivec            *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
+        ivec            *extra_shifts, /* (optional) Extra shifts since last time step */
+        const gmx_bool   bNS,          /* (optional) NS step, the shifts have changed */
+        rvec            *x_loc,        /* Local positions on this node */
+        const int        nr,           /* Total number of atoms in the group */
+        const int        nr_loc,       /* Local number of atoms in the group */
+        const int       *anrs_loc,     /* Local atom numbers */
+        const int       *coll_ind,     /* Collective index */
+        rvec            *xcoll_old,    /* (optional) Positions from the last time step,
+                                          used to make group whole */
+        matrix           box)          /* (optional) The box */
 {
     int i;
 

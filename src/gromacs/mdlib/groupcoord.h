@@ -127,7 +127,7 @@ extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
  *                             the group becomes whole (optional).
  */
-extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
+extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
                                         ivec *extra_shifts, const gmx_bool bNS,
                                         rvec *x_loc, const int nr, const int nr_loc,
                                         const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,

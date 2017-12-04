@@ -47,9 +47,13 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
+#include "gromacs/applied-forces/densityfitting/densfitdata.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
+#include "gromacs/fileio/mrcmetadata.h"
+#include "gromacs/math/griddata/griddata.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -119,6 +123,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_DensityFitting,                                     /**< fitting to cryo (and other) EM densities */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -961,6 +966,37 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
 
 }
 
+/* Read from / write to tpr all data needed for fitting to electron density maps */
+static void do_density_fitting(t_fileio *fio, gmx::Densfit *densfit, gmx_bool bRead, gmx_unused int file_version)
+{
+    fprintf(stderr, "%s data for fitting to cryo-EM density maps.\n", bRead ? "Reading" : "Writing");
+
+    GMX_RELEASE_ASSERT(densfit != nullptr,
+                       "Density fitting structure must be defined");
+    gmx::DensfitData parameters;
+    if (!bRead)
+    {
+        parameters = densfit->parameters();
+    }
+
+    parameters.do_fio(fio, bRead);
+
+    gmx::GridDataReal3D referenceMap;
+    if (!bRead)
+    {
+        referenceMap = densfit->referenceMapCopy();
+    }
+    gmx::FileIOXdrSerializer serializer(fio);
+    referenceMap.readwrite(&serializer);
+
+    if (bRead)
+    {
+        parameters.setReferenceMap(referenceMap);
+        densfit->setParameters(parameters);
+    }
+}
+
+
 static void do_legacy_efield(t_fileio *fio, gmx::KeyValueTreeObjectBuilder *root)
 {
     const char *const dimName[] = { "x", "y", "z" };
@@ -1477,6 +1513,24 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Fitting to an electron density map */
+    if (file_version >= tpxv_DensityFitting)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bDensityFitting);
+        if (ir->bDensityFitting)
+        {
+            if (bRead)
+            {
+                ir->densfit = std::unique_ptr<gmx::Densfit>(new gmx::Densfit);
+            }
+            do_density_fitting(fio, ir->densfit.get(), bRead, file_version);
+        }
+    }
+    else
+    {
+        ir->densfit = NULL;
     }
 
     /* Interactive molecular dynamics */
