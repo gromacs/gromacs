@@ -1,0 +1,37 @@
+;
+;	File 'topol_Ion2.itp' was generated
+;	By user: onbekend (0)
+;	On host: onbekend
+;	At date: Fri May 11 13:03:20 2012
+;
+;	This is a include topology file
+;
+;	It was generated using program:
+;	pdb2gmx - VERSION 4.5.5-dev-20110921-e25c350
+;
+;	Command line was:
+;	pdb2gmx -f ions.gro -ff amber99sb -water tip3p -vsite hydrogen -o 1AKE_final.pdb 
+;
+;	Force field was read from the standard Gromacs share directory.
+;
+
+[ moleculetype ]
+; Name            nrexcl
+Ion2                3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+; residue 17569 K   rtp K    q +1.0
+     1          K  17569      K      K      1          1       39.1   ; qtot 1
+; residue 17570 K   rtp K    q +1.0
+     2          K  17570      K      K      2          1       39.1   ; qtot 2
+; residue 17571 K   rtp K    q +1.0
+     3          K  17571      K      K      3          1       39.1   ; qtot 3
+; residue 17572 K   rtp K    q +1.0
+     4          K  17572      K      K      4          1       39.1   ; qtot 4
+
+; Include Position restraint file
+#ifdef POSRES
+#include "posre_Ion2.itp"
+#endif
+

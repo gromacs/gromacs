@@ -44,6 +44,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/awh-params.h"
@@ -829,6 +830,32 @@ static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
+/* Print the options corresponding to the electron density map fitting procedure */
+extern void pr_density_fitting(FILE *fp, int indent, const gmx::Densfit &densfit)
+{
+    const gmx::t_mapdata &map = densfit.referenceMapCopy();
+
+    fprintf(fp, "density fitting options:\n");
+    densfit.parameters().print(fp, indent);
+
+
+    PS("map-title", map.title);
+    /* Print the map header information: */
+    PI("map-datamode", map.datamode);
+    pr_floats(fp, indent, "map-cell", map.cell.data(), map.cell.size());
+    //pr_ints(fp, indent, "map_Grid"   , map.grid      , 3);
+    pr_ivec(fp, 0, "map-grid", map.grid.data(), map.grid.size(), FALSE);
+    pr_ivec(fp, indent, "map-origin", map.origin.data(), map.origin.size(), FALSE);
+    pr_ivec(fp, indent, "map-axorder", map.axes_order.data(), map.axes_order.size(), FALSE);
+    pr_ivec(fp, indent, "map-dim", map.map_dim.data(), map.map_dim.size(), FALSE);
+    PI("map_spacegroup", map.spacegroup);
+    PR("map-min", map.min );
+    PR("map-max", map.max );
+    PR("map-mean", map.mean);
+    PD("map-RMS", map.rms );
+    pr_floats(fp, indent, "map-skew-trans", map.skew_trans.data(), map.skew_trans.size());
+    pr_floats(fp, indent, "map-skew-mat", map.skew_mat.data(), map.skew_mat.size());
+}
 
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -1002,6 +1029,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bRot)
         {
             pr_rot(fp, indent, ir->rot);
+        }
+
+        /* FITTING TO CRYO-EM DENSITY MAPS */
+        PS("density_fitting", EBOOL(ir->bDensityFitting));
+        if (ir->bDensityFitting)
+        {
+            pr_density_fitting(fp, indent, *(ir->densfit));
         }
 
         /* INTERACTIVE MD */
