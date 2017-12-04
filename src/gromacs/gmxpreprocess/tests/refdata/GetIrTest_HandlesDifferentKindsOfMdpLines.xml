@@ -226,6 +226,10 @@ awh                      = no
 ; Enforced rotation: No or Yes
 rotation                 = no
 
+; FITTING TO A DENSITY MAP
+; Add an extra potential resulting from a density map (yes/no)
+DensityFitting           = no
+
 ; Group to display and/or manipulate in interactive MD session
 IMD-group                = 
 

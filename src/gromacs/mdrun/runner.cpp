@@ -54,6 +54,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -406,6 +407,7 @@ int Mdrunner::mdrunner()
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
+    std::unique_ptr<Densfit>        densityFitting;
     t_inputrec                      inputrecInstance;
     t_inputrec                     *inputrec = &inputrecInstance;
     gmx_mtop_t                      mtop;
@@ -654,6 +656,15 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules->assignOptionsToModules(*inputrec->params, nullptr);
+    if (inputrec->bDensityFitting)
+    {
+        densityFitting = std::unique_ptr<Densfit>(new Densfit(*inputrec->densfitParameters));
+        if (SIMMASTER(cr))
+        {
+            densityFitting->initOutputFromCommandLineParameters(fplog, nfile, fnm, oenv, mdrunOptions.continuationOptions.appendFiles, mdrunOptions.verbose);
+        }
+    }
+
 
     if (fplog != nullptr)
     {
@@ -1132,6 +1143,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
+        fr->densfit        = densityFitting.get();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
@@ -1291,6 +1303,14 @@ int Mdrunner::mdrunner()
             init_swapcoords(fplog, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
                             &mtop, globalState.get(), &observablesHistory,
                             cr, &atomSets, oenv, mdrunOptions);
+        }
+
+        if (inputrec->bDensityFitting)
+        {
+            GMX_RELEASE_ASSERT(fr, "fr is nullptr although cr->duty is DUTY_PP"); // make clang analyzer happy
+            /* Initialize additional potential due to experimental density maps */
+            fr->densfit->init(inputrec->ePBC, &mtop, MASTER(cr) ?  as_rvec_array(globalState->x.data()) : nullptr,
+                              globalState->box, &atomSets, cr);
         }
 
         /* Set up interactive MD (IMD) */
