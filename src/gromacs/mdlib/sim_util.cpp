@@ -48,6 +48,7 @@
 
 #include <array>
 
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
@@ -282,7 +283,7 @@ static void pull_potential_wrapper(const t_commrec *cr,
                                    ForceWithVirial *force,
                                    const t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
-                                   real *lambda,
+                                   const real *lambda,
                                    double t,
                                    gmx_wallcycle_t wcycle)
 {
@@ -822,22 +823,23 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void
-computeSpecialForces(FILE                *fplog,
-                     const t_commrec     *cr,
-                     const t_inputrec    *inputrec,
-                     gmx_int64_t          step,
-                     double               t,
-                     gmx_wallcycle_t      wcycle,
-                     ForceProviders      *forceProviders,
-                     matrix               box,
-                     ArrayRef<const RVec> x,
-                     const t_mdatoms     *mdatoms,
-                     real                *lambda,
-                     int                  forceFlags,
-                     ForceWithVirial     *forceWithVirial,
-                     gmx_enerdata_t      *enerd,
-                     const gmx_edsam     *ed,
-                     gmx_bool             bNS)
+computeSpecialForces(FILE                          *fplog,
+                     const t_commrec               *cr,
+                     const t_inputrec              *inputrec,
+                     gmx_int64_t                    step,
+                     double                         t,
+                     gmx_wallcycle_t                wcycle,
+                     ForceProviders                *forceProviders,
+                     Densfit                       *densfit,
+                     matrix                         box,
+                     gmx::PaddedArrayRef<gmx::RVec> x,
+                     const t_mdatoms               *mdatoms,
+                     const real                    *lambda,
+                     int                            forceFlags,
+                     ForceWithVirial               *forceWithVirial,
+                     gmx_enerdata_t                *enerd,
+                     const gmx_edsam              * ed,
+                     gmx_bool                       bNS)
 {
     const bool computeForces = (forceFlags & GMX_FORCE_FORCES);
 
@@ -875,6 +877,12 @@ computeSpecialForces(FILE                *fplog,
         wallcycle_start(wcycle, ewcROTadd);
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
+    }
+
+    /* Apply the forces resulting from the density fitting potential */
+    if (inputrec->bDensityFitting)
+    {
+        densfit->add_forces( f, step, t);
     }
 
     if (ed)
@@ -1412,6 +1420,16 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcROT);
     }
 
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        fr->densfit->do_densfit(t, step, cr, x, box, wcycle);
+    }
+
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force.data());
 
@@ -1542,7 +1560,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     wallcycle_stop(wcycle, ewcFORCE);
 
     computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
-                         fr->forceProviders, box, x, mdatoms, lambda,
+                         fr->forceProviders, fr->densfit, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
@@ -1937,6 +1955,16 @@ static void do_force_cutsGROUP(FILE *fplog,
         wallcycle_stop(wcycle, ewcROT);
     }
 
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        fr->densfit->do_densfit(t, step, cr, x, box, wcycle);
+    }
+
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force.data());
 
@@ -1999,7 +2027,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     }
 
     computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
-                         fr->forceProviders, box, x, mdatoms, lambda,
+                         fr->forceProviders, fr->densfit, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
