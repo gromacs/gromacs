@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">maptide -select 'resname DPPC'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="fitness"></AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-mo"></File>
+  </OutputFiles>
+</ReferenceData>
