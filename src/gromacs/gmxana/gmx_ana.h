@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,17 @@
 
 #ifndef _gmx_ana_h
 #define _gmx_ana_h
+
+namespace gmx
+{
+int gmx_mapcompare(int argc, char *argv[]);
+int gmx_mapconvert(int argc, char *argv[]);
+int gmx_mapcreate(int argc, char *argv[]);
+int gmx_mapdiff(int argc, char *argv[]);
+int gmx_mapinfo(int argc, char *argv[]);
+int gmx_maplog(int argc, char *argv[]);
+int gmx_mapnorm(int argc, char *argv[]);
+}
 
 #ifdef __cplusplus
 extern "C" {
