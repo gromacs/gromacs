@@ -111,8 +111,8 @@ nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
             int cj      = cjOuter[cjind].cj;
 
             /* Atom indices (of the first atom in the cluster) */
-            int aj      = cj*UNROLLJ;
 #if UNROLLJ == STRIDE
+            int aj      = cj*UNROLLJ;
             int ajx     = aj*DIM;
 #else
             int ajx     = (cj >> 1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
