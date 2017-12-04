@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,6 +158,58 @@ typedef struct t_expanded {
     real     mc_temp;             /* To override the main temperature, or define it if it's not defined */
     real    *init_lambda_weights; /* user-specified initial weights to start with  */
 } t_expanded;
+
+
+/* This data structure holds all the data extracted from a ccp4 cmap datafile */
+typedef struct t_mapdata
+{
+    char              *title;
+    unsigned short int datamode;
+    float              cell[6];
+    int                grid[3];
+    int                origin[3];
+    int                axes_order[3];
+    int                map_dim[3];
+    int                spacegroup;
+    float              min, max;
+    double             mean, rms;
+    float              skew_mat[9], skew_trans[3];
+    float             *vox; /* 1d continuous array for 3d voxel density        */
+} t_mapdata;
+
+/* Abstract type for density fitting mdrun-data only defined in maputil.cpp    */
+typedef struct gmx_densfit *densfit_t;
+
+typedef struct t_densfit
+{
+    int   npoints;                         /* Number of time points for the refinement with
+                                              different values for sigma, k and T             */
+    real *time_values;                     /* Array (size npoints) of time values (ps)        */
+    real *temp_values;                     /* Same for T (K)                                  */
+    real *k_values;                        /* Same for k (kJ/mol)                             */
+    real *sigma_values;                    /* Same for sigma (nm)                             */
+    real  dist;                            /* Cutoff distance (in sigmas) for density spreading
+                                              spread each atom only in the range
+                                              -dist ... +dist, ignore contributions further
+                                              away                                            */
+    int                nstfit;             /* Only recalculate V_fit every nstfit time steps  */
+    int                nstout;             /* Write diagnostic output every nstout time steps */
+    int                nstmapout;          /* Keep simulated maps in these intervals          */
+    int                nat;                /* Number of atoms to be spread on the map         */
+    int               *ind;                /* The global atoms numbers                        */
+    int                nat_loc;            /* Number of local spreading atoms                 */
+    int                nalloc_loc;         /* Allocation size for ind_loc and weight_loc      */
+    int               *ind_loc;            /* Local spreading indices                         */
+    int                nweight;            /* The number of weights (0 or nat)                */
+    real              *weight;             /* Weights (use all 1 when weight==NULL)           */
+    real              *weight_loc;         /* Weights for the local indices                   */
+
+    t_mapdata         *map_ref;            /* The reference=experimental map to fit to        */
+    t_mapdata         *map_sim;            /* The map simulated from atomic position data     */
+    gmx_bool           bKeepAndNumberMaps; /* ... or just keep the last one ...               */
+    densfit_t          df;                 /* Stores non-inputrec density fitting data        */
+} t_densfit;
+
 
 
 /* Abstract types for enforced rotation only defined in pull_rotation.c       */
@@ -374,12 +426,15 @@ struct t_inputrec
     int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
     t_swapcoords            *swap;
 
-    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
-    t_IMD                   *imd;            /* Interactive molecular dynamics               */
+    gmx_bool                 bIMD;            /* Allow interactive MD sessions for this .tpr? */
+    t_IMD                   *imd;             /* Interactive molecular dynamics               */
 
-    real                     cos_accel;      /* Acceleration for viscosity calculation       */
-    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
-    int                      userint1;       /* User determined parameters                   */
+    gmx_bool                 bDensityFitting; /* Fit to a (electron) density map?             */
+    t_densfit               *densfit;         /* (Electron) density reference map for fitting */
+
+    real                     cos_accel;       /* Acceleration for viscosity calculation       */
+    tensor                   deform;          /* Triclinic deformation velocities (nm/ps)     */
+    int                      userint1;        /* User determined parameters                   */
     int                      userint2;
     int                      userint3;
     int                      userint4;
@@ -492,5 +547,7 @@ int inputrec2nboundeddim(const t_inputrec *ir);
  * \return the number of degrees of freedom of the center of mass
  */
 int ndof_com(const t_inputrec *ir);
+
+void pr_density_fitting(FILE *fp, int indent, t_densfit *densfit);
 
 #endif /* GMX_MDTYPES_INPUTREC_H */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -829,6 +829,46 @@ static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
+/* Print the options corresponding to the electron density map fitting procedure */
+extern void pr_density_fitting(FILE *fp, int indent, t_densfit *densfit)
+{
+    t_mapdata *map;
+
+
+    map = densfit->map_ref;
+
+    fprintf(fp, "density fitting options:\n");
+
+    PI("densfit-npoints", densfit->npoints  );
+    pr_reals(fp, indent, "densfit-time ", densfit->time_values, densfit->npoints);
+    pr_reals(fp, indent, "densfit-sigma", densfit->sigma_values, densfit->npoints);
+    pr_reals(fp, indent, "densfit-k    ", densfit->k_values, densfit->npoints);
+    pr_reals(fp, indent, "densfit-temp ", densfit->temp_values, densfit->npoints);
+    PR("densfit-dist", densfit->dist);
+    PI("densfit-nstfit", densfit->nstfit);
+    PI("densfit-nstout", densfit->nstout);
+    PI("densfit-nstmapout", densfit->nstmapout);
+    PS("densfit-bKeepMaps", EBOOL(densfit->bKeepAndNumberMaps));
+
+    pr_ivec_block(fp, indent, "atom", densfit->ind, densfit->nat, TRUE);
+
+    PS("map-title", map->title);
+    /* Print the map header information: */
+    PI("map-datamode", map->datamode);
+    pr_floats(fp, indent, "map-cell", map->cell, 6);
+    //pr_ints(fp, indent, "map_Grid"   , map->grid      , 3);
+    pr_ivec(fp, 0, "map-grid", map->grid, 3, FALSE);
+    pr_ivec(fp, indent, "map-origin", map->origin, 3, FALSE);
+    pr_ivec(fp, indent, "map-axorder", map->axes_order, 3, FALSE);
+    pr_ivec(fp, indent, "map-dim", map->map_dim, 3, FALSE);
+    PI("map_spacegroup", map->spacegroup);
+    PR("map-min", map->min );
+    PR("map-max", map->max );
+    PR("map-mean", map->mean);
+    PD("map-RMS", map->rms );
+    pr_floats(fp, indent, "map-skew-trans", map->skew_trans, 3);
+    pr_floats(fp, indent, "map-skew-mat", map->skew_mat, 3);
+}
 
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -1018,6 +1058,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bRot)
         {
             pr_rot(fp, indent, ir->rot);
+        }
+
+        /* FITTING TO CRYO-EM DENSITY MAPS */
+        PS("density_fitting", EBOOL(ir->bDensityFitting));
+        if (ir->bDensityFitting)
+        {
+            pr_density_fitting(fp, indent, ir->densfit);
         }
 
         /* INTERACTIVE MD */

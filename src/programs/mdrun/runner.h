@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ class Mdrunner
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
         //! Filenames and properties from command-line argument values.
-        std::array<t_filenm, 34> filenames =
+        std::array<t_filenm, 36> filenames =
         {{{ efTPR, nullptr,     nullptr,     ffREAD },
           { efTRN, "-o",        nullptr,     ffWRITE },
           { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
@@ -114,6 +114,8 @@ class Mdrunner
           { efLOG, "-ra",       "rotangles", ffOPTWR },
           { efLOG, "-rs",       "rotslabs",  ffOPTWR },
           { efLOG, "-rt",       "rottorque", ffOPTWR },
+          { efXVG, "-d",        "densfit",   ffOPTWR }, /* Density fitting output file */
+          { efDENSITYMAP, "-mo", "map",      ffOPTWR }, /* Computed density map used in density fitting */
           { efMTX, "-mtx",      "nm",        ffOPTWR },
           { efRND, "-multidir", nullptr,     ffOPTRDMULT},
           { efXVG, "-awh",      "awhinit",   ffOPTRD },

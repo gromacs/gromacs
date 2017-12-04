@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,9 @@ static const char *wcn[ewcNR] =
     "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force", "AWH",
     "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
+    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD",
+    "Dens. Fitting Comm.", "DF spreading", "DF sum dens. grid", "DF forces",
+    "Test"
 };
 
 static const char *wcsn[ewcsNR] =
