@@ -1100,6 +1100,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
+                      hwinfo->haveX86AmdCpu,
                       nonbondedDeviceInfo,
                       FALSE,
                       pforce);
