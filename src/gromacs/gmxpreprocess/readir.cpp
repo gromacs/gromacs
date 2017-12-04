@@ -107,11 +107,13 @@ typedef struct t_inputrec_strings
     char   lambda_weights[STRLEN];
     char **pull_grp;
     char **rot_grp;
+    char  *dens_grp;
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
            bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
            SAoff[STRLEN], SAsteps[STRLEN];
+    char densfit_time[STRLEN], densfit_sigma[STRLEN], densfit_k[STRLEN], densfit_temp[STRLEN];
 
 } gmx_inputrec_strings;
 
@@ -1765,6 +1767,157 @@ static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
     return;
 }
 
+
+static void make_densfit_groups(t_densfit *densfit, char *groupname, t_blocka *grps,
+                                char **gnames)
+{
+    int ig; /* Group index from group name */
+    int i;
+
+
+    ig           = search_string(groupname, grps->nr, gnames);
+    densfit->nat = grps->index[ig + 1] - grps->index[ig];
+
+    fprintf(stderr, "Density fitting group '%s' has %d atoms\n", groupname,
+            densfit->nat);
+    snew(densfit->ind, densfit->nat);
+    for (i = 0; i < densfit->nat; i++)
+    {
+        densfit->ind[i] = grps->a[grps->index[ig] + i];
+    }
+}
+
+/* Read in parameters for fitting to (electron) density maps */
+static void read_densparams(int *ninp_p, t_inpfile **inp_p, t_densfit *densfit, warninp_t wi)
+{
+    int         i, nRead;
+    int         ninp;
+    t_inpfile  *inp;
+    const char *tmp;
+    char       *ptr1[MAXPTR];
+
+    ninp   = *ninp_p;
+    inp    = *inp_p;
+
+    snew(is->dens_grp, STRLEN);
+    CTYPE ("Index group of atoms used for spreading");
+    STYPE ("spread-group", is->dens_grp, "");
+
+    /* We need at least one value for k and sigma. But if the user wishes
+     * to do multiple refinement steps in an automated way, additional
+     * values can be added. Interpolation between these values will be
+     * done like in the simulated annealing case. */
+    CTYPE("Number of time points to use for specifying the refinement with different values for k, sigma, and temperature");
+    ITYPE("densfit-npoints", densfit->npoints, 1);
+    if (densfit->npoints < 1 || densfit->npoints >= MAXPTR)
+    {
+        gmx_fatal(FARGS, "The number of refinement points should be at least 1 and at most %d\n", MAXPTR);
+    }
+    snew(densfit->time_values, densfit->npoints);
+    snew(densfit->sigma_values, densfit->npoints);
+    snew(densfit->k_values, densfit->npoints);
+    snew(densfit->temp_values, densfit->npoints);
+
+    CTYPE ("List of times (ps) at which density fitting / refinement parameters are given and exactly matched,");
+    CTYPE ("interpolate linearly in between");
+    STYPE ("densfit-time", is->densfit_time, NULL);
+    CTYPE ("Gaussian width(s) used to transform the discrete atomic positions into a density (one sigma per refinement point)");
+    STYPE ("densfit-sigma", is->densfit_sigma, NULL);
+    CTYPE ("Strength constant(s) k (kJ/mol) of map potential V_fit = k*(1 - corr.coeff.) (one k per refinement point)");
+    STYPE ("densfit-k", is->densfit_k, NULL);
+    CTYPE ("Temperature(s) (K) (one T per refinement point) - leave empty if you do not want to change the temperature!");
+    STYPE ("densfit-temp", is->densfit_temp,  NULL);
+
+    CTYPE ("Cutoff distance (in sigmas) for density spreading, spread only within +/- sigma*dist");
+    RTYPE ("dist", densfit->dist, 4.0);
+    CTYPE ("Calculate V_fit every nstfit time steps");
+    ITYPE ("nstfit", densfit->nstfit, 1);
+    CTYPE ("Write diagnostic output every nstout time steps");
+    ITYPE ("nstout", densfit->nstout, 1);
+    CTYPE ("Write simulated density map to file every nstmapout time steps");
+    ITYPE ("nstmapout", densfit->nstmapout, 1000);
+    CTYPE ("Keep and number simulated density maps (results in a bunch of map files)");
+    EETYPE("KeepMaps", densfit->bKeepAndNumberMaps, yesno_names);
+
+    /* Get values for the refinement points from input strings */
+    /* Read time values from input string*/
+    nRead = str_nelem(is->densfit_time, MAXPTR, ptr1);
+    if (nRead != densfit->npoints)
+    {
+        gmx_fatal(FARGS, "Found %d time values for density fitting refinement,\n"
+                  "but expected %d (as given in densfit-npoints)\n", nRead, densfit->npoints);
+    }
+    for (i = 0; i < densfit->npoints; i++)
+    {
+        densfit->time_values[i] = strtod(ptr1[i], NULL);
+    }
+    for (i = 1; i < densfit->npoints; i++)
+    {
+        if (densfit->time_values[i] <= densfit->time_values[i-1])
+        {
+            gmx_fatal(FARGS, "Density fitting time points must be given in increasing order!\n");
+        }
+    }
+
+    /* Read sigma values from input string */
+    nRead = str_nelem(is->densfit_sigma, MAXPTR, ptr1);
+    if (nRead != densfit->npoints)
+    {
+        gmx_fatal(FARGS, "Found %d sigma values for density fitting refinement,\n"
+                  "but expected %d (as given in densfit-npoints)\n", nRead, densfit->npoints);
+    }
+    for (i = 0; i < densfit->npoints; i++)
+    {
+        densfit->sigma_values[i] = strtod(ptr1[i], NULL);
+    }
+
+    /* Read k values from input string */
+    nRead = str_nelem(is->densfit_k, MAXPTR, ptr1);
+    if (nRead != densfit->npoints)
+    {
+        gmx_fatal(FARGS, "Found %d k values for density fitting refinement,\n"
+                  "but expected %d (as given in densfit-npoints)\n", nRead, densfit->npoints);
+    }
+    for (i = 0; i < densfit->npoints; i++)
+    {
+        densfit->k_values[i] = strtod(ptr1[i], NULL);
+        if (densfit->k_values[i] < 0)
+        {
+            warning(wi, "Got a negative value for a density fitting k value. This will expel atoms from the map!");
+        }
+    }
+
+    /* Read temperature values from string */
+    nRead = str_nelem(is->densfit_temp, MAXPTR, ptr1);
+    if (0 == nRead) /* A user can omit the temperature specification altogether if T should not be touched */
+    {
+        for (i = 0; i < densfit->npoints; i++)
+        {
+            densfit->temp_values[i] = -1;  /* negative value signals: not set */
+        }
+    }
+    else
+    {
+        if (nRead != densfit->npoints)
+        {
+            gmx_fatal(FARGS, "Found %d temperature values for density fitting refinement,\n"
+                      "but expected %d (as given in densfit-npoints)\n", nRead, densfit->npoints);
+        }
+        for (i = 0; i < densfit->npoints; i++)
+        {
+            densfit->temp_values[i] = strtod(ptr1[i], NULL);
+            if (densfit->temp_values[i] < 0.0)
+            {
+                gmx_fatal(FARGS, "Sorry, I don't know what a negative temperature means.\n"
+                          "Density fitting temperature point %d is %f K\n", i, densfit->temp_values[i]);
+            }
+        }
+    }
+
+    *ninp_p   = ninp;
+    *inp_p    = inp;
+}
+
 /*! \brief Return whether an end state with the given coupling-lambda
  * value describes fully-interacting VDW.
  *
@@ -2170,6 +2323,16 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         snew(ir->rot, 1);
         is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
+    }
+
+    /* Fitting to cryo-EM density maps */
+    CCTYPE("FITTING TO A DENSITY MAP");
+    CTYPE("Add an extra potential resulting from a density map (yes/no)");
+    EETYPE("DensityFitting", ir->bDensityFitting, yesno_names);
+    if (ir->bDensityFitting)
+    {
+        snew(ir->densfit, 1);
+        read_densparams(&ninp, &inp, ir->densfit, wi);
     }
 
     /* Interactive MD */
@@ -3587,6 +3750,11 @@ void do_index(const char* mdparin, const char *ndx,
     if (ir->bRot)
     {
         make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
+    }
+
+    if (ir->densfit != NULL)
+    {
+        make_densfit_groups(ir->densfit, is->dens_grp, grps, gnames);
     }
 
     if (ir->eSwapCoords != eswapNO)

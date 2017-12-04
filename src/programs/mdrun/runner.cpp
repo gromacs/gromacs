@@ -54,6 +54,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/maputil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -1300,6 +1301,14 @@ int Mdrunner::mdrunner()
         {
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), mtop, oenv, mdrunOptions);
+        }
+
+        if (inputrec->bDensityFitting)
+        {
+            /* Initialize additional potential due to experimental density maps */
+            init_density_fitting(fplog, inputrec, nfile, fnm, mtop,
+                                 MASTER(cr) ?  as_rvec_array(globalState.get()->x.data()) : nullptr,
+                                 box, cr, oenv, mdrunOptions.continuationOptions.appendFiles, mdrunOptions.verbose);
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
