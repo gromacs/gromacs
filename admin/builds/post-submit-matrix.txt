@@ -28,6 +28,9 @@ gcc-7 mpi no-openmp fftpack mdrun-only
 # TODO enable simd=avx_256 in this config, and change the above description once #2335 is resolved
 icc-18 npme=1 nranks=2 no-openmp  double fftpack release simd=none
 
+# Test CUDA build on a slave with no CUDA devices
+gcc-4.9 gpu cuda-7.0 openmp release-with-assert
+
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
 # msvc-2015 double no-threadmpi no-prefer-static-libs release-with-assert
@@ -65,4 +68,3 @@ gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert
 # Test own-fftw build (from local copy of the file)
 # Test mdrun -tunepme (e.g. with relaxed tolerances, for now)
 # Consider testing of other CMake option paths
-# Add CUDA build and run the tests on a node with no CUDA GPUs
