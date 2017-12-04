@@ -39,7 +39,8 @@
 
 #include <cstdio>
 
-#include <memory>
+#include <array>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -55,6 +56,7 @@ namespace gmx
 {
 class Awh;
 struct AwhParams;
+class DensfitData;
 class KeyValueTreeObject;
 }
 
@@ -357,30 +359,34 @@ struct t_inputrec
     gmx::Awh                *awh;       /* AWH work object */
 
     /* Enforced rotation data */
-    gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
-    t_rot                   *rot;            /* The data for enforced rotation potentials    */
+    gmx_bool                          bRot;        /* Calculate enforced rotation potential(s)?    */
+    t_rot                            *rot;         /* The data for enforced rotation potentials    */
 
-    int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
-    t_swapcoords            *swap;
+    int                               eSwapCoords; /* Do ion/water position exchanges (CompEL)?    */
+    t_swapcoords                     *swap;
 
-    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
-    t_IMD                   *imd;            /* Interactive molecular dynamics               */
+    gmx_bool                          bIMD;              /* Allow interactive MD sessions for this .tpr? */
+    t_IMD                            *imd;               /* Interactive molecular dynamics               */
 
-    real                     cos_accel;      /* Acceleration for viscosity calculation       */
-    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
-    int                      userint1;       /* User determined parameters                   */
-    int                      userint2;
-    int                      userint3;
-    int                      userint4;
-    real                     userreal1;
-    real                     userreal2;
-    real                     userreal3;
-    real                     userreal4;
-    t_grpopts                opts;          /* Group options				*/
-    gmx_bool                 bQMMM;         /* QM/MM calculation                            */
-    int                      QMconstraints; /* constraints on QM bonds                      */
-    int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
-    real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
+    gmx_bool                          bDensityFitting;   /* Fit to a (electron) density map?             */
+
+    gmx::DensfitData                 *densfitParameters; /* (Electron) density reference map for fitting */
+
+    real                              cos_accel;         /* Acceleration for viscosity calculation       */
+    tensor                            deform;            /* Triclinic deformation velocities (nm/ps)     */
+    int                               userint1;          /* User determined parameters                   */
+    int                               userint2;
+    int                               userint3;
+    int                               userint4;
+    real                              userreal1;
+    real                              userreal2;
+    real                              userreal3;
+    real                              userreal4;
+    t_grpopts                         opts;          /* Group options				*/
+    gmx_bool                          bQMMM;         /* QM/MM calculation                            */
+    int                               QMconstraints; /* constraints on QM bonds                      */
+    int                               QMMMscheme;    /* Scheme: ONIOM or normal                      */
+    real                              scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
     gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
