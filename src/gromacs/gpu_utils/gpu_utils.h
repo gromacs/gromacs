@@ -125,8 +125,12 @@ void init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
- * The context is explicitly destroyed and therefore all data uploaded to the GPU
- * is lost. This should only be called when none of this data is required anymore.
+ * If \c deviceInfo is nullptr, then it is understood that no device
+ * was selected so no context is active to be freed. Otherwise, the
+ * context is explicitly destroyed and therefore all data uploaded to
+ * the GPU is lost. This must only be called when none of this data is
+ * required anymore, because subsequent attempts to free memory
+ * associated with the context will otherwise fail.
  *
  * Calls gmx_warning upon errors.
  *
