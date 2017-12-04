@@ -55,6 +55,7 @@ gmx_add_gtest_executable(
     compressed_x_output.cpp
     swapcoords.cpp
     interactiveMD.cpp
+    densityfitting.cpp
     termination.cpp
     # PME tests; FIXME: move this back into mdrun_test_objlib above and figure out the MPI race issue
     pmetest.cpp
