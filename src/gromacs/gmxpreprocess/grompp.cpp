@@ -48,6 +48,8 @@
 
 #include <sys/types.h>
 
+#include "gromacs/applied-forces/maputil.h"
+#include "gromacs/applied-forces/densityfitting/densfit.h"
 #include "gromacs/awh/read-params.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/ewald/ewald-utils.h"
@@ -58,6 +60,8 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/warninp.h"
+#include "gromacs/fileio/griddataio.h"
+#include "gromacs/fileio/mrcmetadata.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
@@ -1262,6 +1266,21 @@ static int count_constraints(gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
     return count;
 }
 
+
+/* For density fitting, read in the (electron) density map */
+static void setup_densfit(const char *fn_map, gmx::Densfit *densfit, gmx_bool bVerbose)
+{
+    /* Process input file (map) */
+
+    gmx::MrcMetaData meta;
+    auto             gridData = gmx::MrcFile().read_with_meta(fn_map, &meta);
+    if (bVerbose)
+    {
+        fprintf(stdout, "%s\n", meta.to_string().c_str());
+    }
+    densfit->map_ref = gmx::gridDataToMapData(gridData);
+}
+
 static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
@@ -1738,7 +1757,8 @@ int gmx_grompp(int argc, char *argv[])
         { efEDR, "-e",  nullptr,        ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
         { efGRO, "-imd", "imdgroup", ffOPTWR },
-        { efTRN, "-ref", "rotref",   ffOPTRW }
+        { efTRN, "-ref", "rotref",   ffOPTRW },
+        { efDENSITYMAP, "-mi", "mapin", ffOPTRD }    /* CCP4 density map input file */
     };
 #define NFILE asize(fnm)
 
@@ -2275,6 +2295,12 @@ int gmx_grompp(int argc, char *argv[])
         set_reference_positions(ir->rot, as_rvec_array(state.x.data()), state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
+    }
+
+    /* Was an input (electron) density map provided? */
+    if (ir->bDensityFitting)
+    {
+        setup_densfit(opt2fn("-mi", NFILE, fnm), ir->densfit.get(), bVerbose);
     }
 
     /*  reset_multinr(sys); */
