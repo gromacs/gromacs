@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,59 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef GMX_MATH_DATAVECTORMEASURE_H
+#define GMX_MATH_DATAVECTORMEASURE_H
+
+#include "containermeasure.h"
+
+#include "gromacs/utility/real.h"
+
+#include <algorithm>
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
-};
+namespace containeroperation
+{
 
+template <typename T>
+void multiply(T * vecData, typename T::value_type factor)
+{
+    std::for_each(std::begin(*vecData), std::end(*vecData), [factor](typename T::value_type &v) { v *= factor; });
+}
+
+template <typename T>
+void divide(T * vecData, typename T::value_type divisor)
+{
+    std::for_each(std::begin(*vecData), std::end(*vecData), [divisor](typename T::value_type &v) { v /= divisor; });
+}
+
+template <typename T>
+void addScalar(T * vecData, typename T::value_type summand)
+{
+    std::for_each(std::begin(*vecData), std::end(*vecData), [summand](typename T::value_type &datum) { datum += summand; });
+}
+
+template <typename T, typename U>
+void add(T * vecData, const U &summand)
+{
+    std::transform(std::begin(*vecData), std::end(*vecData), std::begin(summand), std::begin(*vecData), [](typename T::value_type a, typename U::value_type b) { return a+b; });
+}
+
+template <typename T>
+void normalize(T * vecData)
+{
+    divide(vecData, containermeasure::mean(*vecData));
+}
+
+
+template <typename T>
+void setZero(T * vecData)
+{
+    std::fill(vecData->begin(), vecData->end(), 0);
+}
+
+} // namespace containeroperation
 } // namespace gmx
 
 #endif
