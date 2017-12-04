@@ -18,3 +18,8 @@ gpu_utils -> hardware
 topology -> listed-forces
 listed-forces -> mdlib
 mdtypes -> gpu_utils
+# The following cycles need to be addressed by the density fitting code:
+applied-forces -> gmxana
+applied-forces -> mdlib
+applied-forces -> domdec
+fileio -> applied-forces
