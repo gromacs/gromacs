@@ -32,67 +32,56 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 #include "gmxpre.h"
 
-#include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/toolrunner.h"
+#include "densfitoutput.h"
 
-#include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/optionfiletype.h"
-
-#include "gromacs/math/griddata/griddata.h"
-#include "gromacs/fileio/griddataview.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/pleasecite.h"
 
 namespace gmx
 {
 
-class MapConvert final : public ToolRunner
+DensfitOutput::DensfitOutput(FILE * fplog, const char *fnLogFile, const char * fnDensity, const gmx_output_env_t *oenv, bool bAppend)
 {
-
-    public:
-        void initOptions(Options* options) override;
-        void optionsFinished() override;
-        void analyze() override;
-    private:
-        std::string               fnInput_;
-        std::string               fnOutput_;
-};
-
-void MapConvert::initOptions(Options* options)
-{
-    setHelpText(" [THISMODULE] reads a density map,"
-                " guesses its format from the file extension, "
-                " and then outputs according to the to the output file format.");
-    setBugDescriptions({"This tool is under construction.", ""});
-
-    options->addOption(StringOption("mi")
-                           .defaultValue("input.ccp4")
-                           .store(&fnInput_)
-                           .required());
-
-    options->addOption(StringOption("mo")
-                           .defaultValue("output.ccp4")
-                           .store(&fnOutput_)
-                           .required());
+    if (bAppend)
+    {
+        logFile_ = gmx_fio_fopen(fnLogFile, "a");
+    }
+    else
+    {
+        please_cite(fplog, "Tama2008");
+        logFile_ = xvgropen(fnLogFile, "Density fitting correlation coefficient", "Time (ps)",
+                            "correlation coefficient", oenv);
+        fflush(logFile_);
+    }
+    fnDensity_ = fnDensity;
 }
 
-void MapConvert::optionsFinished()
+FILE* DensfitOutput::logFile()
 {
+    return logFile_;
 }
 
-void MapConvert::analyze()
+DensfitOutput::~DensfitOutput()
 {
-    MapConverter(fnInput_).to(fnOutput_);
+    if (logFile_) // Close the density fitting output file
+    {
+        if (bAppend_)
+        {
+            gmx_fio_fclose(logFile_);
+        }
+        else
+        {
+            xvgrclose(logFile_);
+        }
+    }
 }
 
-}
-
-int gmx_mapconvert(int argc, char *argv[])
+std::string DensfitOutput::outputMapFileNameWithStep(gmx_int64_t step) const
 {
-    return gmx::MapConvert().run(argc, argv);
+    return fnDensity_.substr(0, fnDensity_.find_last_of("."))+std::to_string(step)+".ccp4";
+}
 }

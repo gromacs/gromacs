@@ -32,36 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Declares trajectory analysis module for TIme-averaged electron DEnsities
- *
- * \author Camilo Aponte <ca.aponte.uniandes.edu.co>
- * \author Carsten Kutzner <ckutzne@gwdg.de>
- *
- * \ingroup module_trajectoryanalysis
- */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_TIDE_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_TIDE_H
-
-#include "gromacs/trajectoryanalysis/analysismodule.h"
+#ifndef GMX_APPLIEDFORCES_DENSITYFITTING_DENSFITFORCES_H_
+#define GMX_APPLIEDFORCES_DENSITYFITTING_DENSFITFORCES_H_
+#include <memory>
+#include "gromacs/math/vectypes.h"
+#include "gromacs/math/griddata/griddata.h"
+#include "gromacs/math/paddedvector.h"
 
 namespace gmx
 {
+template <int N> class IGrid;
 
-namespace analysismodules
-{
-
-class TimeAveragedDensityInfo
+class DensfitForces
 {
     public:
-        static const char name[];
-        static const char shortDescription[];
-        static TrajectoryAnalysisModulePointer create();
+        DensfitForces(const IGrid<DIM> &grid, real sigma, real nSigma);
+        RVec force(const RVec &x, const GridDataReal3D &densityDensityDerivative);
+        void setSigma(real sigma, real nSigma);
+
+    private:
+        std::unique_ptr < IGrid < DIM>> grid_;
+        int          voxrange_; /**< Max. number of voxels to be computed for a single atom in a single dimension x, y, or z   */
+        const double dRhoDxPrefactor_ = sqrt(2. / M_PI) * 1 / (2. * 2. * 2.);
+        real         nu_;
+        /* The following two temporary vectors (one for each OpenMP thread) store
+         * erf values around a single atoms, thus we can compute them all in one go,
+         * and with SIMD acceleration */
+        using AlignedRealVector = std::vector < real, gmx::AlignedAllocator < real>>;
+        std::vector<AlignedRealVector>
+        erfVector;                                /**< vector of vectors of erf values */
+        std::vector<AlignedRealVector> expVector; /**< same for exp values */
+
+        real sigma_;
 };
-
-} // namespace analysismodules
-
-} // namespace gmx
-
-#endif
+}
+#endif /* end of include guard: \
+          GMX_APPLIEDFORCES_DENSITYFITTING_DENSFITFORCES_H_ */

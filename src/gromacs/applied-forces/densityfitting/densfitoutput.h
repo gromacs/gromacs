@@ -32,67 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
-
-#include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/toolrunner.h"
-
-#include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/optionfiletype.h"
-
-#include "gromacs/math/griddata/griddata.h"
-#include "gromacs/fileio/griddataview.h"
+#include <string>
+#include "gromacs/utility/cstringutil.h"
+struct gmx_output_env_t;
 
 namespace gmx
 {
 
-class MapConvert final : public ToolRunner
+class DensfitOutput
 {
-
     public:
-        void initOptions(Options* options) override;
-        void optionsFinished() override;
-        void analyze() override;
+        DensfitOutput(FILE * fplog, const char *fnLogFile, const char * fnDensity, const gmx_output_env_t *oenv, bool bAppend);
+        ~DensfitOutput();
+        FILE * logFile();
+        std::string outputMapFileNameWithStep(gmx_int64_t step) const;
     private:
-        std::string               fnInput_;
-        std::string               fnOutput_;
+        bool        bAppend_;
+        FILE      * logFile_;
+        std::string fnDensity_;        /**< Output filename for simulated density maps     */
 };
 
-void MapConvert::initOptions(Options* options)
-{
-    setHelpText(" [THISMODULE] reads a density map,"
-                " guesses its format from the file extension, "
-                " and then outputs according to the to the output file format.");
-    setBugDescriptions({"This tool is under construction.", ""});
-
-    options->addOption(StringOption("mi")
-                           .defaultValue("input.ccp4")
-                           .store(&fnInput_)
-                           .required());
-
-    options->addOption(StringOption("mo")
-                           .defaultValue("output.ccp4")
-                           .store(&fnOutput_)
-                           .required());
-}
-
-void MapConvert::optionsFinished()
-{
-}
-
-void MapConvert::analyze()
-{
-    MapConverter(fnInput_).to(fnOutput_);
-}
-
-}
-
-int gmx_mapconvert(int argc, char *argv[])
-{
-    return gmx::MapConvert().run(argc, argv);
 }

@@ -32,67 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_APPLIED_FORCES_DENSITYFITTING_H
+#define GMX_APPLIED_FORCES_DENSITYFITTING_H
 
-#include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/toolrunner.h"
-
-#include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/optionfiletype.h"
-
-#include "gromacs/math/griddata/griddata.h"
-#include "gromacs/fileio/griddataview.h"
+#include <memory>
 
 namespace gmx
 {
 
-class MapConvert final : public ToolRunner
-{
+class IMDModule;
 
-    public:
-        void initOptions(Options* options) override;
-        void optionsFinished() override;
-        void analyze() override;
-    private:
-        std::string               fnInput_;
-        std::string               fnOutput_;
-};
+/*! \brief
+ * Creates a module to do correlation-based fitting to density data.
+ *
+ */
+std::unique_ptr<IMDModule> createDensityFittingModule();
 
-void MapConvert::initOptions(Options* options)
-{
-    setHelpText(" [THISMODULE] reads a density map,"
-                " guesses its format from the file extension, "
-                " and then outputs according to the to the output file format.");
-    setBugDescriptions({"This tool is under construction.", ""});
+} // namespace gmx
 
-    options->addOption(StringOption("mi")
-                           .defaultValue("input.ccp4")
-                           .store(&fnInput_)
-                           .required());
-
-    options->addOption(StringOption("mo")
-                           .defaultValue("output.ccp4")
-                           .store(&fnOutput_)
-                           .required());
-}
-
-void MapConvert::optionsFinished()
-{
-}
-
-void MapConvert::analyze()
-{
-    MapConverter(fnInput_).to(fnOutput_);
-}
-
-}
-
-int gmx_mapconvert(int argc, char *argv[])
-{
-    return gmx::MapConvert().run(argc, argv);
-}
+#endif

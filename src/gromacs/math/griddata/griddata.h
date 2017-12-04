@@ -64,7 +64,9 @@
 #include <vector>
 
 #include "grid.h"
+
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/real.h"
@@ -213,9 +215,9 @@ class GridData : public TContainer
 };
 
 //! Three-dimensional real numbers on a grid.
-typedef class GridData < std::vector < float, AlignedAllocator < float>>, DIM> GridDataReal3D;
+using GridDataReal3D = GridData < std::vector < float, AlignedAllocator < float>>, DIM>;
 //! Three-dimensional complex numbers on a grid.
-typedef class GridData < std::vector < t_complex, AlignedAllocator < t_complex>>, DIM> GridDataComplex3D;
+using GridDataComplex3D = GridData < std::vector < t_complex, AlignedAllocator < t_complex>>, DIM>;
 
 }      // namespace gmx
 

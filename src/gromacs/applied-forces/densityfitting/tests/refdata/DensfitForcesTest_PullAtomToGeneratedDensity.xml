@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="CrossCorrelationForces">
+    <Int Name="Length">1</Int>
+    <Vector>
+      <Real Name="X">0.00054199505</Real>
+      <Real Name="Y">0.00054199429</Real>
+      <Real Name="Z">0.00054199295</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="CrossEntropyForces">
+    <Int Name="Length">1</Int>
+    <Vector>
+      <Real Name="X">-0.20685297</Real>
+      <Real Name="Y">-0.20685296</Real>
+      <Real Name="Z">-0.20685299</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="MsdForces">
+    <Int Name="Length">1</Int>
+    <Vector>
+      <Real Name="X">2.0880243e-05</Real>
+      <Real Name="Y">2.0880225e-05</Real>
+      <Real Name="Z">2.0880292e-05</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

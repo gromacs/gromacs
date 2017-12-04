@@ -46,6 +46,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct Densfit;
 struct ForceProviders;
 
 /* Abstract type for PME that is defined only in the routine that use them. */
@@ -322,7 +323,7 @@ struct t_forcerec {
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc;
     struct ewald_corr_thread_t *ewc_t;
-
+    struct Densfit             *densfit;
     struct ForceProviders      *forceProviders;
 };
 

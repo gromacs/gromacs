@@ -44,6 +44,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/densityfitting/densfitdata.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/awh-params.h"
@@ -827,7 +828,6 @@ static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
-
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -1000,6 +1000,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bRot)
         {
             pr_rot(fp, indent, ir->rot);
+        }
+
+        /* FITTING TO CRYO-EM DENSITY MAPS */
+        PS("density_fitting", EBOOL(ir->bDensityFitting));
+        if (ir->bDensityFitting)
+        {
+            ir->densfitParameters->print(fp, indent);
         }
 
         /* INTERACTIVE MD */
