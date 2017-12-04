@@ -67,7 +67,7 @@ icc-16 msvc-2015 fftpack
 # Test MKL
 # Test without any MPI
 # Test on CentOS (because icc-18.0 is only available there)
-icc-18 no-thread-mpi openmp mkl cmake-3.8.1 simd=avx_256
+icc-18 no-thread-mpi openmp mkl cmake-3.10.0 simd=avx_256
 
 # Test NVIDIA OpenCL
 # Test MPI + OpenCL
