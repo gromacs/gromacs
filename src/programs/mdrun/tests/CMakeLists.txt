@@ -57,6 +57,7 @@ gmx_add_gtest_executable(
     compressed_x_output.cpp
     swapcoords.cpp
     interactiveMD.cpp
+    densityfitting.cpp
     termination.cpp
     tpitest.cpp
     # pseudo-library for code for testing mdrun
