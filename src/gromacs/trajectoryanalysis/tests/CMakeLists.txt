@@ -44,6 +44,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   sasa.cpp
                   select.cpp
                   surfacearea.cpp
+                  tide.cpp
                   trajectory.cpp
                   unionfind.cpp
                   $<TARGET_OBJECTS:analysisdata-test-shared>)

@@ -654,6 +654,59 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 }
 
 
+static void bc_t_mapdata(const t_commrec *cr, t_mapdata *map)
+{
+    int grid1d;
+
+
+    block_bc(cr, *map);
+
+    if (!MASTER(cr))
+    {
+        /* For now it is sufficient to have the map title on the master node only */
+        map->title = NULL;
+    }
+    grid1d = map->grid[XX] * map->grid[YY] * map->grid[ZZ];
+    snew_bc(cr, map->vox, grid1d);
+    nblock_bc(cr, grid1d, map->vox);
+}
+
+
+static void bc_densfit(const t_commrec *cr, t_densfit *densfit)
+{
+    int i;
+
+
+    block_bc (cr, *densfit);
+
+    /* Now broadcast all remaining data. This is everything
+     * not covered by the above statement, i.e. all data pointed to
+     * by pointers.
+     */
+    for (i = 0; i < densfit->npoints; i++)
+    {
+        snew_bc(cr, densfit->time_values, densfit->npoints);
+        snew_bc(cr, densfit->temp_values, densfit->npoints);
+        snew_bc(cr, densfit->k_values, densfit->npoints);
+        snew_bc(cr, densfit->sigma_values, densfit->npoints);
+    }
+    nblock_bc(cr, densfit->npoints, densfit->time_values );
+    nblock_bc(cr, densfit->npoints, densfit->temp_values );
+    nblock_bc(cr, densfit->npoints, densfit->k_values    );
+    nblock_bc(cr, densfit->npoints, densfit->sigma_values);
+
+    snew_bc  (cr, densfit->ind, densfit->nat);
+    nblock_bc(cr, densfit->nat, densfit->ind);
+    if (densfit->nweight > 0)
+    {
+        snew_bc  (cr, densfit->weight, densfit->nat);
+        nblock_bc(cr, densfit->nat, densfit->weight);
+    }
+    snew_bc     (cr, densfit->map_ref, 1);
+    bc_t_mapdata(cr, densfit->map_ref);
+}
+
+
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     // Note that this overwrites pointers in inputrec, so all pointer fields
@@ -720,6 +773,11 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         snew_bc(cr, inputrec->rot, 1);
         bc_rot(cr, inputrec->rot);
+    }
+    if (inputrec->bDensityFitting)
+    {
+        snew_bc(cr, inputrec->densfit, 1);
+        bc_densfit(cr, inputrec->densfit);
     }
     if (inputrec->bIMD)
     {

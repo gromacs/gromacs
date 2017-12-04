@@ -48,6 +48,7 @@
 
 #include <array>
 
+#include "gromacs/applied-forces/maputil.h"
 #include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
@@ -797,6 +798,12 @@ computeSpecialForces(FILE             *fplog,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Apply the forces resulting from the density fitting potential */
+    if (inputrec->bDensityFitting)
+    {
+        enerd->term[F_DENSFIT_CC] = add_densfit_forces(inputrec, f, cr, step, t);
+    }
+
     if (ed)
     {
         /* Note that since init_edsam() is called after the initialization
@@ -1258,6 +1265,17 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcROT);
         do_rotation(cr, inputrec, box, as_rvec_array(x.data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
+    }
+
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        do_densfit(t, step, do_per_step(step, inputrec->densfit->nstmapout), inputrec,
+                   cr, x, box, wcycle);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
@@ -1785,6 +1803,17 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcROT);
         do_rotation(cr, inputrec, box, as_rvec_array(x.data()), t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
+    }
+
+    if (inputrec->bDensityFitting)
+    {
+        /* Density fitting has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing.
+         * If one uses enforced rotation and density fitting together, load balancing
+         * will not be optimal. TODO */
+        do_densfit(t, step, do_per_step(step, inputrec->densfit->nstmapout), inputrec,
+                   cr, x, box, wcycle);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */

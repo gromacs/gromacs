@@ -87,7 +87,9 @@ const FileTypeMapping c_fileTypeMapping[] =
     { eftPDB,         efPDB },
     { eftIndex,       efNDX },
     { eftPlot,        efXVG },
-    { eftGenericData, efDAT }
+    { eftGenericData, efDAT },
+    { eftCCP4,        efDENSITYMAP },
+    { eftXPLOR,       efXPLOR }
 };
 
 /********************************************************************
