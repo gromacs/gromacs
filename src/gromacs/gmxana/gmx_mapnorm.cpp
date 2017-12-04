@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,55 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
+
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/toolrunner.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/fileio/griddataview.h"
+#include "gromacs/math/container/containeroperation.h"
+#include "gromacs/math/container/mask.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+class MapNorm final : public ToolRunner
+{
+
+    public:
+        void initOptions(Options* options) override;
+        void optionsFinished() override;
+        void analyze() override;
+    private:
+        std::string               fnInput;
+        std::string               fnOutput;
 };
 
-} // namespace gmx
+void MapNorm::initOptions(Options *options)
+{
+    setHelpText( "[THISMODULE] normalizes density maps to zero mean and unit standard deviation");
+    setBugDescriptions({"This tool is under construction.", ""});
 
-#endif
+    options->addOption(StringOption("mi").store(&fnInput));
+    options->addOption(StringOption("mo").store(&fnOutput));
+}
+
+void MapNorm::optionsFinished()
+{
+
+}
+
+void MapNorm::analyze()
+{
+    auto map   = MapConverter(fnInput).map();
+    containeroperation::addScalar(&map, -containermeasure::mean(map));
+    containeroperation::divide(&map, containermeasure::rms(map));
+
+    MapConverter(map).to(fnOutput);
+}
+}
+
+int gmx_mapnorm(int argc, char *argv[])
+{
+    return gmx::MapNorm().run(argc, argv);
+}

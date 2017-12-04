@@ -1,0 +1,473 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">maptide -select 'resname DMP' -timewindow 10</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="fitness">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.5895533</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">1</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.550219</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">2</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.60670936</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">3</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.60186058</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">4</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.50385368</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.93538618</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">11</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.52311218</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">12</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.50987691</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame8">
+        <Real Name="X">13</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.58154511</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame9">
+        <Real Name="X">14</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.47494698</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame10">
+        <Real Name="X">20</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.66946566</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame11">
+        <Real Name="X">21</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.42982265</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame12">
+        <Real Name="X">22</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.2871024</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame13">
+        <Real Name="X">23</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.39692038</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame14">
+        <Real Name="X">24</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.3855046</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame15">
+        <Real Name="X">30</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.48530942</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame16">
+        <Real Name="X">31</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.32898432</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame17">
+        <Real Name="X">32</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.47435337</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame18">
+        <Real Name="X">33</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.42587826</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame19">
+        <Real Name="X">34</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.4030109</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame20">
+        <Real Name="X">40</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.40828326</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame21">
+        <Real Name="X">41</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.19633229</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame22">
+        <Real Name="X">42</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.22828938</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame23">
+        <Real Name="X">43</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.16466473</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame24">
+        <Real Name="X">44</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.19272293</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame25">
+        <Real Name="X">50</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.37758929</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame26">
+        <Real Name="X">51</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.240944</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame27">
+        <Real Name="X">52</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.20088908</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame28">
+        <Real Name="X">53</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.28901273</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame29">
+        <Real Name="X">54</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.27337453</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame30">
+        <Real Name="X">60</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.44799784</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame31">
+        <Real Name="X">61</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.22660787</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame32">
+        <Real Name="X">62</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.23738438</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame33">
+        <Real Name="X">63</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.23991674</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame34">
+        <Real Name="X">64</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.22696076</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame35">
+        <Real Name="X">70</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.36868301</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame36">
+        <Real Name="X">71</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.23621224</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame37">
+        <Real Name="X">72</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.21623956</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame38">
+        <Real Name="X">73</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.26360682</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame39">
+        <Real Name="X">74</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.13332352</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame40">
+        <Real Name="X">80</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.2065815</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame41">
+        <Real Name="X">81</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.019769076</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame42">
+        <Real Name="X">82</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021279959</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame43">
+        <Real Name="X">83</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021458149</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame44">
+        <Real Name="X">84</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021269111</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame45">
+        <Real Name="X">90</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.033301596</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame46">
+        <Real Name="X">91</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021019025</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame47">
+        <Real Name="X">92</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021770118</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame48">
+        <Real Name="X">93</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.019707309</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame49">
+        <Real Name="X">94</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.021241613</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame50">
+        <Real Name="X">100</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">-0.023395149</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-mo"></File>
+    <File Name="-stddevmap"></File>
+    <File Name="-correlation"></File>
+  </OutputFiles>
+</ReferenceData>

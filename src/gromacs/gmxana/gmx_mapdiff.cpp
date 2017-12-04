@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,61 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include "gmxpre.h"
+
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/toolrunner.h"
+
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/optionfiletype.h"
+
+#include "gromacs/math/container/containeroperation.h"
+#include "gromacs/fileio/griddataview.h"
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCCP4,
-    eftXPLOR,
-    eftOptionFileType_NR
+class MapDiff final : public ToolRunner
+{
+
+    public:
+        void initOptions(Options* options) override;
+        void optionsFinished() override;
+        void analyze() override;
+    private:
+        std::string fnInput_;
+        std::string fnMinus_;
+        std::string fnOutput_;
 };
 
-} // namespace gmx
+void MapDiff::initOptions(Options* options)
+{
+    setHelpText("[THISMODULE] calculates the difference between two density maps.");
+    setBugDescriptions({"This tool is under construction.", ""});
 
-#endif
+    options->addOption(StringOption("mi").store(&fnInput_));
+    options->addOption(StringOption("minus").store(&fnMinus_));
+    options->addOption(StringOption("mo").store(&fnOutput_));
+}
+
+void MapDiff::optionsFinished()
+{ }
+
+void MapDiff::analyze()
+{
+    auto referenceMap   = MapConverter(fnInput_).map();
+    auto substractedMap = MapConverter(fnMinus_).map();
+
+    containeroperation::multiply(&substractedMap, -1.);
+    containeroperation::add(&referenceMap, substractedMap);
+
+    MapConverter(referenceMap).to(fnOutput_);
+}
+
+}
+
+int gmx_mapdiff(int argc, char *argv[])
+{
+    return gmx::MapDiff().run(argc, argv);
+}
