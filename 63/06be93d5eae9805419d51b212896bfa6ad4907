@@ -1,0 +1,12 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Kasson <kasson@gmail.com>
+Code-Review+1: Vedran Miletić <vedran@miletic.net>
+Verified+1: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+1: Szilárd Páll <pall.szilard@gmail.com>
+Verified+1: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Mon, 04 Dec 2017 13:33:19 +0100
+Reviewed-on: https://gerrit.gromacs.org/7255
+Project: gromacs
+Branch: refs/heads/release-2018
