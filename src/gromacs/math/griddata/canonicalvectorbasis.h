@@ -77,9 +77,8 @@ class CanonicalVectorBasis
          * Construct a basis from the length of the unit vectors.
          * \param[in] basisVectorLengths length of the basis vectors.
          */
-        CanonicalVectorBasis(const NdVector &basisVectorLengths)
+        CanonicalVectorBasis(const NdVector &basisVectorLengths) : basisVectorLengths_(basisVectorLengths)
         {
-            basisVectorLengths_ = basisVectorLengths;
             const auto &isZero = [](real length){return fabs(length) <= GMX_REAL_EPS; };
             if (std::any_of(std::begin(basisVectorLengths_), std::end(basisVectorLengths_), isZero))
             {

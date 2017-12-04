@@ -76,7 +76,7 @@ template <int N> class ColumnMajorLattice
          * Constructs Lattice by setting its extend and checking extend validity.
          *
          * Indices span (0,...,0) to (extend[0]-1,...,extend[N]-1)
-         * \TODO check for overflow of number of lattice points
+         * \todo check for overflow of number of lattice points
          * \throws gmx::RangeError if any extend is not larger than zero.
          */
         ColumnMajorLattice(const MultiIndex &extend) : extend_ (extend)
