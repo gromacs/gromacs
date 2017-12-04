@@ -39,7 +39,9 @@
 
 #include <cstdio>
 
+#include <array>
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -55,6 +57,7 @@ namespace gmx
 {
 class Awh;
 struct AwhParams;
+class Densfit;
 class KeyValueTreeObject;
 }
 
@@ -357,30 +360,33 @@ struct t_inputrec
     gmx::Awh                *awh;       /* AWH work object */
 
     /* Enforced rotation data */
-    gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
-    t_rot                   *rot;            /* The data for enforced rotation potentials    */
+    gmx_bool                      bRot;        /* Calculate enforced rotation potential(s)?    */
+    t_rot                        *rot;         /* The data for enforced rotation potentials    */
 
-    int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
-    t_swapcoords            *swap;
+    int                           eSwapCoords; /* Do ion/water position exchanges (CompEL)?    */
+    t_swapcoords                 *swap;
 
-    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
-    t_IMD                   *imd;            /* Interactive molecular dynamics               */
+    gmx_bool                      bIMD;            /* Allow interactive MD sessions for this .tpr? */
+    t_IMD                        *imd;             /* Interactive molecular dynamics               */
 
-    real                     cos_accel;      /* Acceleration for viscosity calculation       */
-    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
-    int                      userint1;       /* User determined parameters                   */
-    int                      userint2;
-    int                      userint3;
-    int                      userint4;
-    real                     userreal1;
-    real                     userreal2;
-    real                     userreal3;
-    real                     userreal4;
-    t_grpopts                opts;          /* Group options				*/
-    gmx_bool                 bQMMM;         /* QM/MM calculation                            */
-    int                      QMconstraints; /* constraints on QM bonds                      */
-    int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
-    real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
+    gmx_bool                      bDensityFitting; /* Fit to a (electron) density map?             */
+    std::unique_ptr<gmx::Densfit> densfit;         /* (Electron) density reference map for fitting */
+
+    real                          cos_accel;       /* Acceleration for viscosity calculation       */
+    tensor                        deform;          /* Triclinic deformation velocities (nm/ps)     */
+    int                           userint1;        /* User determined parameters                   */
+    int                           userint2;
+    int                           userint3;
+    int                           userint4;
+    real                          userreal1;
+    real                          userreal2;
+    real                          userreal3;
+    real                          userreal4;
+    t_grpopts                     opts;          /* Group options				*/
+    gmx_bool                      bQMMM;         /* QM/MM calculation                            */
+    int                           QMconstraints; /* constraints on QM bonds                      */
+    int                           QMMMscheme;    /* Scheme: ONIOM or normal                      */
+    real                          scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
     gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
@@ -481,5 +487,7 @@ int inputrec2nboundeddim(const t_inputrec *ir);
  * \return the number of degrees of freedom of the center of mass
  */
 int ndof_com(const t_inputrec *ir);
+
+void pr_density_fitting(FILE *fp, int indent, const gmx::Densfit &densfit);
 
 #endif /* GMX_MDTYPES_INPUTREC_H */
