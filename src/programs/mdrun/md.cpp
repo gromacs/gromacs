@@ -50,6 +50,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/applied-forces/maputil.h"
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
@@ -2008,6 +2009,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     if (ir->eSwapCoords != eswapNO)
     {
         finish_swapcoords(ir->swap);
+    }
+
+    // Clean up density fitting.
+    if (ir->bDensityFitting)
+    {
+        finish_density_fitting(ir->densfit);
     }
 
     /* Do essential dynamics cleanup if needed. Close .edo file */

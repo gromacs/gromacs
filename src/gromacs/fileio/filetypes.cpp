@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,6 +156,8 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
     { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
     { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
+    { eftGEN, ".ccp4", "density", NULL, "CCP4 density map" },
+    { eftASC, ".xplor", "density", NULL, "X-PLOR crystallographic data file format" },
     { eftASC, "", "rundir", nullptr, "Run directory" }
 };
 
@@ -305,7 +307,20 @@ int fn2ftp(const char *fn)
     }
     else
     {
-        return efNR;
+        // catch four-character extension used, e.g. in .ccp4 files
+        if ((len >= 5) && (fn[len - 5] == '.'))
+        {
+            feptr = &(fn[len - 5]);
+        }
+        // catch five-character extension used, e.g. in .xplor files
+        else if ((len >= 6) && (fn[len - 6] == '.'))
+        {
+            feptr = &(fn[len - 6]);
+        }
+        else
+        {
+            return efNR;
+        }
     }
 
     for (i = 0; (i < efNR); i++)
