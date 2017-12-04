@@ -226,6 +226,13 @@ awh                      = no
 ; Enforced rotation: No or Yes
 rotation                 = no
 
+<<<<<<< 8752b2fbb618cefc5db549dd3607ac49944ba3a3
+=======
+; FITTING TO A DENSITY MAP
+; Add an extra potential resulting from a density map (yes/no)
+DensityFitting           = no
+
+>>>>>>> [WIP] Density map toolset for GROMACS
 ; Group to display and/or manipulate in interactive MD session
 IMD-group                = 
 
