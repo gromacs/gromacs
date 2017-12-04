@@ -385,7 +385,7 @@ int gmx_genion(int argc, char *argv[])
     };
     t_topology         top;
     rvec              *x, *v;
-    real               vol, qtot;
+    real               vol;
     matrix             box;
     t_atoms            atoms;
     t_pbc              pbc;
@@ -425,7 +425,7 @@ int gmx_genion(int argc, char *argv[])
     atoms = top.atoms;
 
     /* Compute total charge */
-    qtot = 0;
+    double qtot = 0;
     for (i = 0; (i < atoms.nr); i++)
     {
         qtot += atoms.atom[i].q;
