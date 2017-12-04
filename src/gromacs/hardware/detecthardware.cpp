@@ -43,6 +43,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -206,7 +207,10 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 //! Reduce the locally collected \p hwinfo_g over MPI ranks
 static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
-    const int ncore = hwinfo_g->hardwareTopology->numberOfCores();
+    const int  ncore        = hwinfo_g->hardwareTopology->numberOfCores();
+    const bool cpuIsAmdZen  = (cpuInfo.vendor() == CpuInfo::Vendor::Amd &&
+                               cpuInfo.feature(CpuInfo::Feature::X86_Avx2));
+
 #if GMX_LIB_MPI
     int       rank_id;
     int       nrank, rank, nhwthread, ngpu, i;
@@ -269,53 +273,57 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     sfree(buf);
     sfree(all);
 
-    int sum[4], maxmin[10];
-
+    constexpr int                          numElementsCounts =  4;
+    std::array<int, numElementsCounts>     countsReduced;
     {
-        int buf[4];
-
+        std::array<int, numElementsCounts> countsLocal;
         /* Sum values from only intra-rank 0 so we get the sum over all nodes */
-        buf[0] = nnode0;
-        buf[1] = ncore0;
-        buf[2] = nhwthread0;
-        buf[3] = ngpu0;
+        countsLocal[0] = nnode0;
+        countsLocal[1] = ncore0;
+        countsLocal[2] = nhwthread0;
+        countsLocal[3] = ngpu0;
 
-        MPI_Allreduce(buf, sum, 4, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(),
+                      MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
 
+    constexpr int                       numElementsMax = 11;
+    std::array<int, numElementsMax>     maxMinReduced;
     {
-        int buf[10];
-
+        std::array<int, numElementsMax> maxMinLocal;
         /* Store + and - values for all ranks,
          * so we can get max+min with one MPI call.
          */
-        buf[0] = ncore;
-        buf[1] = nhwthread;
-        buf[2] = ngpu;
-        buf[3] = static_cast<int>(gmx::simdSuggested(cpuInfo));
-        buf[4] = gpu_hash;
-        buf[5] = -buf[0];
-        buf[6] = -buf[1];
-        buf[7] = -buf[2];
-        buf[8] = -buf[3];
-        buf[9] = -buf[4];
+        maxMinLocal[0]  = ncore;
+        maxMinLocal[1]  = nhwthread;
+        maxMinLocal[2]  = ngpu;
+        maxMinLocal[3]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
+        maxMinLocal[4]  = gpu_hash;
+        maxMinLocal[5]  = -maxMinLocal[0];
+        maxMinLocal[6]  = -maxMinLocal[1];
+        maxMinLocal[7]  = -maxMinLocal[2];
+        maxMinLocal[8]  = -maxMinLocal[3];
+        maxMinLocal[9]  = -maxMinLocal[4];
+        maxMinLocal[10] = (cpuIsAmdZen ? 1 : 0);
 
-        MPI_Allreduce(buf, maxmin, 10, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(),
+                      MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     }
 
-    hwinfo_g->nphysicalnode       = sum[0];
-    hwinfo_g->ncore_tot           = sum[1];
-    hwinfo_g->ncore_min           = -maxmin[5];
-    hwinfo_g->ncore_max           = maxmin[0];
-    hwinfo_g->nhwthread_tot       = sum[2];
-    hwinfo_g->nhwthread_min       = -maxmin[6];
-    hwinfo_g->nhwthread_max       = maxmin[1];
-    hwinfo_g->ngpu_compatible_tot = sum[3];
-    hwinfo_g->ngpu_compatible_min = -maxmin[7];
-    hwinfo_g->ngpu_compatible_max = maxmin[2];
-    hwinfo_g->simd_suggest_min    = -maxmin[8];
-    hwinfo_g->simd_suggest_max    = maxmin[3];
-    hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
+    hwinfo_g->nphysicalnode       = countsReduced[0];
+    hwinfo_g->ncore_tot           = countsReduced[1];
+    hwinfo_g->ncore_min           = -maxMinReduced[5];
+    hwinfo_g->ncore_max           = maxMinReduced[0];
+    hwinfo_g->nhwthread_tot       = countsReduced[2];
+    hwinfo_g->nhwthread_min       = -maxMinReduced[6];
+    hwinfo_g->nhwthread_max       = maxMinReduced[1];
+    hwinfo_g->ngpu_compatible_tot = countsReduced[3];
+    hwinfo_g->ngpu_compatible_min = -maxMinReduced[7];
+    hwinfo_g->ngpu_compatible_max = maxMinReduced[2];
+    hwinfo_g->simd_suggest_min    = -maxMinReduced[8];
+    hwinfo_g->simd_suggest_max    = maxMinReduced[3];
+    hwinfo_g->bIdenticalGPUs      = (maxMinReduced[4] == -maxMinReduced[9]);
+    hwinfo_g->haveAmdZenCpu       = (maxMinReduced[10] > 0);
 #else
     /* All ranks use the same pointer, protected by a mutex in the caller */
     hwinfo_g->nphysicalnode       = 1;
@@ -331,6 +339,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
+    hwinfo_g->haveAmdZenCpu       = cpuIsAmdZen;
 #endif
 }
 
