@@ -1115,7 +1115,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
-                      nonbondedDeviceInfo,
+                      *hwinfo, nonbondedDeviceInfo,
                       FALSE,
                       pforce);
 

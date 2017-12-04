@@ -57,7 +57,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/functions.h"
@@ -1585,9 +1585,10 @@ gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 }
 
 
-static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
-                                  int                         *kernel_type,
-                                  int                         *ewald_excl)
+static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
+                                  int                            *kernel_type,
+                                  int                            *ewald_excl,
+                                  const gmx_hw_info_t gmx_unused &hardwareInfo)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1603,8 +1604,8 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 
 #if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
         /* We need to choose if we want 2x(N+N) or 4xN kernels.
-         * Currently this is based on the SIMD acceleration choice,
-         * but it might be better to decide this at runtime based on CPU.
+         * This is based on the SIMD acceleration choice and CPU information
+         * detected at runtime.
          *
          * 4xN calculates more (zero) interactions, but has less pair-search
          * work and much better kernel instruction scheduling.
@@ -1630,6 +1631,11 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
+        if (hardwareInfo.haveAmdZenCpu)
+        {
+            /* One 256-bit FMA per cycle makes 2xNN faster */
+            *kernel_type = nbnxnk4xN_SIMD_2xNN;
+        }
 #endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
@@ -1661,7 +1667,13 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          */
 #if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) \
         && !GMX_SIMD_X86_AVX_512) || GMX_SIMD_IBM_QPX
-        *ewald_excl = ewaldexclAnalytical;
+        /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
+         * of single or double precision and 128 or 256-bit AVX2.
+         */
+        if (!hardwareInfo.haveAmdZenCpu)
+        {
+            *ewald_excl = ewaldexclAnalytical;
+        }
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
         {
@@ -1710,6 +1722,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
+                              const gmx_hw_info_t &hardwareInfo,
                               gmx_bool             bUseGPU,
                               EmulateGpuNonbonded  emulateGpu,
                               const t_inputrec    *ir,
@@ -1741,7 +1754,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
         if (use_simd_kernels &&
             nbnxn_simd_supported(mdlog, ir))
         {
-            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
+            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hardwareInfo);
         }
         else
         {
@@ -2140,6 +2153,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                            const t_inputrec        *ir,
                            const t_forcerec        *fr,
                            const t_commrec         *cr,
+                           const gmx_hw_info_t     &hardwareInfo,
                            const gmx_device_info_t *deviceInfo,
                            const gmx_mtop_t        *mtop,
                            matrix                   box)
@@ -2168,7 +2182,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels,
+            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
                               nbv->bUseGPU, nbv->emulateGpu, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -2320,6 +2334,7 @@ void init_forcerec(FILE                    *fp,
                    const char              *tabfn,
                    const char              *tabpfn,
                    const t_filenm          *tabbfnm,
+                   const gmx_hw_info_t     &hardwareInfo,
                    const gmx_device_info_t *deviceInfo,
                    gmx_bool                 bNoSolvOpt,
                    real                     print_force)
@@ -3127,7 +3142,7 @@ void init_forcerec(FILE                    *fp,
         }
 
         init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, deviceInfo,
+                       cr, hardwareInfo, deviceInfo,
                        mtop, box);
     }
 
