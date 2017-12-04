@@ -1343,12 +1343,11 @@ H = \sum_{i=1}^{N} \frac{\pb_i}{2m_i} + U\left(\rv_1,\rv_2,\ldots,\rv_N\right) +
 The values and velocities of the Nos{\'e}-Hoover thermostat variables
 are generally not included in the output, as they take up a fair
 amount of space and are generally not important for analysis of
-simulations, but this can be overridden by defining the environment
-variable {\tt GMX_NOSEHOOVER_CHAINS}, which will print the values of all
+simulations, but by setting an mdp option the values of all
 the positions and velocities of all Nos{\'e}-Hoover particles in the
-chain to the {\tt .edr} file.  Leap-frog simulations currently can only have 
-Nos{\'e}-Hoover chain lengths of 1, but this will likely be updated in 
-later version.
+chain are written to the {\tt .edr} file.  Leap-frog simulations
+currently can only have  Nos{\'e}-Hoover chain lengths of 1,
+but this will likely be updated in later version.
 
 As described in the integrator section, for temperature coupling, the
 temperature that the algorithm attempts to match to the reference
