@@ -654,6 +654,11 @@ int Mdrunner::mdrunner()
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks);
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
+        if ((pmeRunMode != PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Gpu))
+        {
+            // We only compare pmeRunMode to GPU above, since Mixed is only assigned below
+            gmx_fatal(FARGS, "Assigning FFTs to GPU requires PME to be assigned to GPU as well");
+        }
         if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
         {
             pmeRunMode = PmeRunMode::Mixed;
