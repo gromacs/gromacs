@@ -233,11 +233,11 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 }
 
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
-                                        const std::vector<int>    &gpuIdsToUse,
                                         const std::vector<int>    &userGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
                                         const bool                 usingVerletScheme,
-                                        const bool                 nonbondedOnGpuIsUseful)
+                                        const bool                 nonbondedOnGpuIsUseful,
+                                        const bool                 gpusWereDetected)
 {
     if (nonbondedTarget == TaskTarget::Cpu)
     {
@@ -262,7 +262,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
                           ("Nonbonded interactions on the GPU were required, which is inconsistent "
                           "with choosing emulation. Make no more than one of these choices."));
         }
-        if (!gpuIdsToUse.empty() || !userGpuTaskAssignment.empty())
+        if (!userGpuTaskAssignment.empty())
         {
             GMX_THROW(InconsistentInputError
                           ("GPU ID usage was specified, as was GPU emulation. Make no more than one of these choices."));
@@ -306,13 +306,18 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
         return true;
     }
 
-    // We still don't know whether it is an error if no GPUs are found
-    // because we don't know the duty of this rank, yet. For example,
-    // a node with only PME ranks and -pme cpu is OK if there are not
-    // GPUs.
+    if (nonbondedTarget == TaskTarget::Gpu)
+    {
+        // We still don't know whether it is an error if no GPUs are found
+        // because we don't know the duty of this rank, yet. For example,
+        // a node with only PME ranks and -pme cpu is OK if there are not
+        // GPUs.
+        return true;
+    }
 
-    // If we get here, then the user permitted or required GPUs.
-    return true;
+    // If we get here, then the user permitted GPUs, which we should
+    // use for nonbonded interactions.
+    return gpusWereDetected;
 }
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
@@ -320,7 +325,8 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const std::vector<int> &userGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
                                   const int               numRanksPerSimulation,
-                                  const int               numPmeRanksPerSimulation)
+                                  const int               numPmeRanksPerSimulation,
+                                  const bool              gpusWereDetected)
 {
     if (pmeTarget == TaskTarget::Cpu)
     {
@@ -389,11 +395,13 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         return true;
     }
 
+    // If we get here, then the user permitted GPUs.
     if (numRanksPerSimulation == 1)
     {
-        // PME can run well on a single GPU shared with NB when
-        // there is one rank, so we permit mdrun to try that.
-        return true;
+        // PME can run well on a single GPU shared with NB when there
+        // is one rank, so we permit mdrun to try that if we have
+        // detected GPUs.
+        return gpusWereDetected;
     }
 
     // Not enough support for PME on GPUs for anything else
