@@ -127,8 +127,7 @@ class ArrayRefTest : public test::SimdTest
         }
 };
 
-using ArrayRefTypes = ::testing::Types<ArrayRef<SimdReal>, ArrayRef<const SimdReal>,
-                                       ArrayRef<SimdInt32>, ArrayRef<const SimdInt32> >;
+using ArrayRefTypes = ::testing::Types< ArrayRef<SimdReal>, ArrayRef<const SimdReal> >;
 TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
 
 TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
@@ -166,7 +165,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromArrayWorks)
 template <typename TypeParam>
 using ArrayRefReadWriteTest = ArrayRefTest<TypeParam>;
 
-using ArrayRefReadWriteTypes = ::testing::Types< ArrayRef<SimdReal>, ArrayRef<SimdInt32> >;
+using ArrayRefReadWriteTypes = ::testing::Types< ArrayRef<SimdReal> >;
 TYPED_TEST_CASE(ArrayRefReadWriteTest, ArrayRefReadWriteTypes);
 
 TYPED_TEST(ArrayRefReadWriteTest, Assignment)
@@ -194,11 +193,7 @@ TYPED_TEST(ArrayRefReadWriteTest, Assignment)
 template <typename TypeParam>
 using ArrayRefArithmeticTest = ArrayRefTest<TypeParam>;
 
-using ArrayRefArithmeticTypes = ::testing::Types< ArrayRef<SimdReal>
-#if GMX_SIMD_HAVE_INT32_ARITHMETICS
-                                                  , ArrayRef<SimdInt32>
-#endif
-                                                  >;
+using ArrayRefArithmeticTypes = ::testing::Types< ArrayRef<SimdReal> >;
 TYPED_TEST_CASE(ArrayRefArithmeticTest, ArrayRefArithmeticTypes);
 
 TYPED_TEST(ArrayRefArithmeticTest, Basic)

@@ -267,18 +267,6 @@ class ArrayRef<const SimdFloat> : public internal::SimdArrayRef<const SimdFloat>
     using Base = internal::SimdArrayRef<const SimdFloat>;
     using Base::Base;
 };
-template<>
-class ArrayRef<SimdFInt32> : public internal::SimdArrayRef<SimdFInt32>
-{
-    using Base = internal::SimdArrayRef<SimdFInt32>;
-    using Base::Base;
-};
-template<>
-class ArrayRef<const SimdFInt32> : public internal::SimdArrayRef<const SimdFInt32>
-{
-    using Base = internal::SimdArrayRef<const SimdFInt32>;
-    using Base::Base;
-};
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
 template<>
@@ -291,18 +279,6 @@ template<>
 class ArrayRef<const SimdDouble> : public internal::SimdArrayRef<const SimdDouble>
 {
     using Base = internal::SimdArrayRef<const SimdDouble>;
-    using Base::Base;
-};
-template<>
-class ArrayRef<SimdDInt32> : public internal::SimdArrayRef<SimdDInt32>
-{
-    using Base = internal::SimdArrayRef<SimdDInt32>;
-    using Base::Base;
-};
-template<>
-class ArrayRef<const SimdDInt32> : public internal::SimdArrayRef<const SimdDInt32>
-{
-    using Base = internal::SimdArrayRef<const SimdDInt32>;
     using Base::Base;
 };
 #endif
