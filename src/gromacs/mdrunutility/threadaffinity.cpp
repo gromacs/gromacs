@@ -447,7 +447,9 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
         // Produce the warning if any rank fails.
         allAffinitiesSet = false;
     }
-    if (invalidWithinSimulation(cr, !allAffinitiesSet))
+    /* We only pin automatically with totNumThreadsIsAuto=true */
+    if (invalidWithinSimulation(cr, !allAffinitiesSet) &&
+        (hw_opt->thread_affinity == threadaffON || hw_opt->totNumThreadsIsAuto))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText(
                 "NOTE: Thread affinity setting failed. This can cause performance degradation.\n"
@@ -480,8 +482,12 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             char *message;
             if (!gmx_omp_check_thread_affinity(&message))
             {
-                /* TODO: with -pin auto we should only warn when using all cores */
-                GMX_LOG(mdlog.warning).asParagraph().appendText(message);
+                /* We only pin automatically with totNumThreadsIsAuto=true */
+                if (hw_opt->thread_affinity == threadaffON ||
+                    hw_opt->totNumThreadsIsAuto)
+                {
+                    GMX_LOG(mdlog.warning).asParagraph().appendText(message);
+                }
                 sfree(message);
                 hw_opt->thread_affinity = threadaffOFF;
             }

@@ -102,6 +102,11 @@ class ThreadAffinityTestHelper
 
         void setLogicalProcessorCount(int logicalProcessorCount);
 
+        void setTotNumThreadsIsAuto(bool isAuto)
+        {
+            hwOpt_.totNumThreadsIsAuto = isAuto;
+        }
+
         void expectAffinitySet(int core)
         {
             EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core));
