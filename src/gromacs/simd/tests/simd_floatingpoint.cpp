@@ -215,6 +215,16 @@ TEST_F(SimdFloatingpointTest, round)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-4), round(rSimd_m3p75));
 }
 
+TEST_F(SimdFloatingpointTest, roundMode)
+{
+    /* Rounding mode needs to be consistent between round and cvtR2I */
+    SimdReal x0  = setSimdRealFrom3R(0.5, 11.5, 99.5);
+    SimdReal x1  = setSimdRealFrom3R(-0.5, -11.5, -99.5);
+
+    GMX_EXPECT_SIMD_REAL_EQ(round(x0), cvtI2R(cvtR2I(x0)));
+    GMX_EXPECT_SIMD_REAL_EQ(round(x1), cvtI2R(cvtR2I(x1)));
+}
+
 TEST_F(SimdFloatingpointTest, trunc)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2), trunc(rSimd_2p25));
@@ -254,8 +264,6 @@ TEST_F(SimdFloatingpointTest, frexp)
 
 TEST_F(SimdFloatingpointTest, ldexp)
 {
-    SimdReal x0  = setSimdRealFrom3R(0.5, 11.5, 99.5);
-    SimdReal x1  = setSimdRealFrom3R(-0.5, -11.5, -99.5);
     SimdReal one = setSimdRealFrom1R(1.0);
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
@@ -264,10 +272,6 @@ TEST_F(SimdFloatingpointTest, ldexp)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
                             ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(587, -462, 672)));
 #endif
-    /* Rounding mode in conversions must be consistent with simdRound() for SetExponent() to work */
-    GMX_EXPECT_SIMD_REAL_EQ(ldexp<MathOptimization::Unsafe>(one, cvtR2I(round(x0))), ldexp<MathOptimization::Unsafe>(one, cvtR2I(x0)));
-    GMX_EXPECT_SIMD_REAL_EQ(ldexp<MathOptimization::Unsafe>(one, cvtR2I(round(x1))), ldexp<MathOptimization::Unsafe>(one, cvtR2I(x1)));
-
     // The default safe version must be able to handle very negative arguments too
     GMX_EXPECT_SIMD_REAL_EQ(setZero(), ldexp(one, setSimdIntFrom3I(-2000, -1000000, -1000000000)));
 }
