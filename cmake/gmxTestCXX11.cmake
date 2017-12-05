@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include(CheckCXXSourceCompiles)
+include(FindThreads)
 
 # Check whether both a suitable C++11-compatible compiler and standard
 # library is available, and give a fatal error if not.
@@ -155,7 +156,7 @@ int main() {
     # Now check the standard library is OK
 
     set(CMAKE_REQUIRED_FLAGS "${CXX11_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
-    set(CMAKE_REQUIRED_LIBRARIES "${${STDLIB_LIBRARIES_NAME}}")
+    set(CMAKE_REQUIRED_LIBRARIES "${${STDLIB_LIBRARIES_NAME}} ${CMAKE_THREAD_LIBS_INIT}")
     check_cxx_source_compiles(
 "#include <algorithm>
 #include <array>
