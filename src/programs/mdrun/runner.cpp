@@ -647,12 +647,20 @@ int Mdrunner::mdrunner()
     bool useGpuForPme       = false;
     try
     {
-        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment,
+        // It's possible that there are different numbers of GPUs on
+        // different nodes, which is the user's responsibilty to
+        // handle. If unsuitable, we will notice that during task
+        // assignment.
+        bool gpusWereDetected = hwinfo->ngpu_compatible_tot > 0;
+        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
-                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun));
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
+                                                                gpusWereDetected);
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
-        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks);
+        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
+                                                    canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
+                                                    gpusWereDetected);
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
         if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
         {
