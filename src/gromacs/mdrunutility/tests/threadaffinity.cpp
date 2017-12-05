@@ -64,7 +64,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWhenNotSupported)
     helper_.setAffinity(1);
 }
 
-TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewThreads)
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("The number of threads is not equal to the number of");
@@ -72,9 +72,27 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewThreads)
     helper_.setAffinity(2);
 }
 
-TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyThreads)
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectGenericFailureMessage();
+    helper_.setAffinity(8);
+}
+
+TEST_F(ThreadAffinityTest, PinsWithAutoAndFewerAutoSetThreads)
+{
+    helper_.setLogicalProcessorCount(4);
+    helper_.setTotNumThreadsIsAuto(true);
+    helper_.expectPinningMessage(false, 2);
+    helper_.expectAffinitySet({0, 2});
+    helper_.setAffinity(2);
+}
+
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
+{
+    helper_.setLogicalProcessorCount(4);
+    helper_.setTotNumThreadsIsAuto(true);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
     helper_.expectGenericFailureMessage();
     helper_.setAffinity(8);
@@ -151,7 +169,7 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithSingleThread)
 {
     helper_.setLogicalProcessorCount(1);
     helper_.expectPinningMessage(false, 1);
-    helper_.expectGenericFailureMessage();
+    // It would be good to check for the warning, but that currently goes to stderr
     helper_.expectAffinitySetThatFails(0);
     helper_.setAffinity(1);
 }
