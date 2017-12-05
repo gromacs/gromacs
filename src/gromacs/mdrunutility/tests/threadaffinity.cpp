@@ -64,19 +64,32 @@ TEST_F(ThreadAffinityTest, DoesNothingWhenNotSupported)
     helper_.setAffinity(1);
 }
 
-TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewThreads)
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("The number of threads is not equal to the number of");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(2);
 }
 
-TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyThreads)
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper_.expectGenericFailureMessage();
+    helper_.setAffinity(8);
+}
+
+TEST_F(ThreadAffinityTest, PinsWithAutoAndFewerAutoSetThreads)
+{
+    helper_.setLogicalProcessorCount(4);
+    helper_.setTotNumThreadsIsAuto(true);
+    helper_.expectAffinitySet({0, 2});
+    helper_.setAffinity(2);
+}
+
+TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
+{
+    helper_.setLogicalProcessorCount(4);
+    helper_.setTotNumThreadsIsAuto(true);
     helper_.setAffinity(8);
 }
 
@@ -147,11 +160,10 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWithOffsetWhenForced)
     helper_.setAffinity(1);
 }
 
-TEST_F(ThreadAffinityTest, HandlesPinningFailureWithSingleThread)
+TEST_F(ThreadAffinityTest, DoesNothingWithSingleThread)
 {
     helper_.setLogicalProcessorCount(1);
     helper_.expectPinningMessage(false, 1);
-    helper_.expectGenericFailureMessage();
     helper_.expectAffinitySetThatFails(0);
     helper_.setAffinity(1);
 }
