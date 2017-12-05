@@ -107,7 +107,7 @@ class SimdIterator
 
         explicit SimdIterator(pointer p = 0) : p_(p)
         {
-            GMX_ASSERT(reinterpret_cast<size_type>(p)%sizeof(value_type) == 0,
+            GMX_ASSERT((reinterpret_cast<size_type>(p)/sizeof(*p))%simdWidth == 0,
                        "Trying to create aligned iterator for non aligned address.");
         }
         SimdIterator &operator++()
@@ -198,9 +198,9 @@ class SimdArrayRef
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
-            GMX_ASSERT(reinterpret_cast<size_type>(begin)%sizeof(value_type) == 0,
+            GMX_ASSERT((reinterpret_cast<size_type>(begin)/sizeof(*begin))%simdWidth == 0,
                        "Aligned ArrayRef requires aligned starting address");
-            GMX_ASSERT(reinterpret_cast<size_type>(end)%sizeof(value_type) == 0,
+            GMX_ASSERT((reinterpret_cast<size_type>(end)/sizeof(*end))%simdWidth == 0,
                        "Size of ArrayRef needs to be divisible by type size");
         }
         //! \copydoc ArrayRef::ArrayRef(const EmptyArrayRef&)
@@ -235,17 +235,20 @@ class SimdArrayRef
         //! Returns the first element in the container.
         reference back() const { return reference(end_ - simdWidth); }
     private:
+        static constexpr int simdWidth = SimdTraits<T>::width;
+        using pack_type = typename SimdTraits<T>::type[simdWidth];
         // Private because dereferencing return value is undefined behavior (strict aliasing rule)
         // Only use is conversion constructor above which immediately casts it back.
         // Return type is not "pointer" because then data()+size() would be ill defined.
-        value_type* data() const { return reinterpret_cast<value_type*>(begin_); }
+        // Has to be pack_type and not value_type in case
+        // sizeof(value_type)/sizeof(pointer)!=simdWidth (e.g. int32 for double SSE2).
+        pack_type* data() const { return reinterpret_cast<pack_type*>(begin_); }
 
         template<typename U>
         friend class SimdArrayRef;
 
         pointer const        begin_;
         pointer const        end_;
-        static constexpr int simdWidth = SimdTraits<T>::width;
 };
 
 }   //namespace internal
