@@ -275,14 +275,10 @@ simdCheck(gmx::SimdType    wanted,
     }
     else if (compiled == SimdType::X86_Avx2 && wanted == SimdType::X86_Avx2_128)
     {
-        logMsg = wrapper.wrapToString(formatString("Highest SIMD level requested by all nodes in run: %s\n"
-                                                   "SIMD instructions selected at compile time:       %s\n"
-                                                   "This program was compiled for different hardware than you are running on, "
-                                                   "which could influence performance."
-                                                   "Ryzen/Threadripper CPUs support 256-bit AVX2, but 128-bit is faster.",
-                                                   simdString(wanted).c_str(), simdString(compiled).c_str()));
-        warnMsg = wrapper.wrapToString(formatString("Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                                                    simdString(compiled).c_str(), simdString(wanted).c_str()));
+        // Wanted SimdType::X86_Avx2_128 can only be the AMD Zen architecture.
+        // AVX2_256 is only up to a few percent slower than AVX2_128
+        // in both single and double precision. AVX2_256 is slightly
+        // faster with nonbondeds and PME on a GPU. Don't warn the user.
     }
     else if (compiled > wanted && !(compiled == SimdType::X86_Avx && wanted == SimdType::X86_Avx128Fma))
     {
@@ -307,11 +303,11 @@ simdCheck(gmx::SimdType    wanted,
                                                     simdString(compiled).c_str(), simdString(wanted).c_str()));
     }
 
-    if (log != nullptr)
+    if (!logMsg.empty() && log != nullptr)
     {
         fprintf(log, "%s\n", logMsg.c_str());
     }
-    if (warnToStdErr)
+    if (!warnMsg.empty() && warnToStdErr)
     {
         fprintf(stderr, "%s\n", warnMsg.c_str());
     }
