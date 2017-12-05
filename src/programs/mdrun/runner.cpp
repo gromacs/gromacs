@@ -662,9 +662,16 @@ int Mdrunner::mdrunner()
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
-        if ((pmeRunMode == PmeRunMode::GPU) && (pmeFftTarget == TaskTarget::Cpu))
+        if (pmeRunMode == PmeRunMode::GPU)
         {
-            pmeRunMode = PmeRunMode::Mixed;
+            if (pmeFftTarget == TaskTarget::Cpu)
+            {
+                pmeRunMode = PmeRunMode::Mixed;
+            }
+        }
+        else if (pmeFftTarget == TaskTarget::Gpu)
+        {
+            gmx_fatal(FARGS, "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME on CPU you should not be using -pmefft.");
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
