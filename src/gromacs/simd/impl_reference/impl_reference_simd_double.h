@@ -814,6 +814,9 @@ min(SimdDouble a, SimdDouble b)
  *
  * \param a Any floating-point value
  * \return The nearest integer, represented in floating-point format.
+ *
+ * \note Round mode is implementation defined. Only guarantee is that it is
+ * consistent between rounding functions (round, cvtR2I).
  */
 static inline SimdDouble gmx_simdcall
 round(SimdDouble a)
@@ -1547,6 +1550,9 @@ blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
  *
  * \param a SIMD floating-point
  * \return SIMD integer, rounded to nearest integer.
+ *
+ * \note Round mode is implementation defined. Only guarantee is that it is
+ * consistent between rounding functions (round, cvtR2I).
  */
 static inline SimdDInt32 gmx_simdcall
 cvtR2I(SimdDouble a)
