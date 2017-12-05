@@ -98,7 +98,6 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithAuto)
     ThreadAffinityTestHelper helper;
     helper.setLogicalProcessorCount(6);
     helper.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper.expectGenericFailureMessage();
     helper.setAffinity(2);
 }
 
@@ -189,7 +188,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{2, 1}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
-    helper.expectGenericFailureMessageIf(isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -204,7 +202,6 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{1, 2}});
     helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
-    helper.expectGenericFailureMessageIf(currentNode() == 0);
     if (currentNode() == 1)
     {
         helper.expectPinningMessage(false, 1);
