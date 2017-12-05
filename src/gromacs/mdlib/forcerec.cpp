@@ -1588,7 +1588,7 @@ gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
                                   int                            *kernel_type,
                                   int                            *ewald_excl,
-                                  const gmx_hw_info_t gmx_unused &hwInfo)
+                                  const gmx_hw_info_t gmx_unused &hardwareInfo)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1631,7 +1631,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
-        if (hwInfo.haveAmdZenCpu)
+        if (hardwareInfo.haveAmdZenCpu)
         {
             /* One 256-bit FMA per cycle makes 2xNN faster */
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
@@ -1668,7 +1668,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
 #if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) \
         && !GMX_SIMD_X86_AVX_512) || GMX_SIMD_IBM_QPX
         /* On AMD Zen tabulated Ewald kernels are faster sp/dp and 128/256bit */
-        if (!hwInfo.haveAmdZenCpu)
+        if (!hardwareInfo.haveAmdZenCpu)
         {
             *ewald_excl = ewaldexclAnalytical;
         }
@@ -1720,7 +1720,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
-                              const gmx_hw_info_t &hwInfo,
+                              const gmx_hw_info_t &hardwareInfo,
                               gmx_bool             bUseGPU,
                               EmulateGpuNonbonded  emulateGpu,
                               const t_inputrec    *ir,
@@ -1752,7 +1752,7 @@ static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
         if (use_simd_kernels &&
             nbnxn_simd_supported(mdlog, ir))
         {
-            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hwInfo);
+            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hardwareInfo);
         }
         else
         {
@@ -2151,7 +2151,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                            const t_inputrec        *ir,
                            const t_forcerec        *fr,
                            const t_commrec         *cr,
-                           const gmx_hw_info_t     &hwInfo,
+                           const gmx_hw_info_t     &hardwareInfo,
                            const gmx_device_info_t *deviceInfo,
                            const gmx_mtop_t        *mtop,
                            matrix                   box)
@@ -2180,7 +2180,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hwInfo,
+            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
                               nbv->bUseGPU, nbv->emulateGpu, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -2332,7 +2332,7 @@ void init_forcerec(FILE                    *fp,
                    const char              *tabfn,
                    const char              *tabpfn,
                    const t_filenm          *tabbfnm,
-                   const gmx_hw_info_t     &hwInfo,
+                   const gmx_hw_info_t     &hardwareInfo,
                    const gmx_device_info_t *deviceInfo,
                    gmx_bool                 bNoSolvOpt,
                    real                     print_force)
@@ -3140,7 +3140,7 @@ void init_forcerec(FILE                    *fp,
         }
 
         init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, hwInfo, deviceInfo,
+                       cr, hardwareInfo, deviceInfo,
                        mtop, box);
     }
 
