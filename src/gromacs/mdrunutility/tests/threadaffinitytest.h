@@ -102,6 +102,11 @@ class ThreadAffinityTestHelper
 
         void setLogicalProcessorCount(int logicalProcessorCount);
 
+        void setTotNumThreadsIsAuto(bool isAuto)
+        {
+            hwOpt_.totNumThreadsIsAuto = isAuto;
+        }
+
         void expectAffinitySet(int core)
         {
             EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core));
@@ -142,7 +147,7 @@ class ThreadAffinityTestHelper
         }
         void expectGenericFailureMessageIf(bool condition)
         {
-            expectWarningMatchingRegexIf("NOTE: Thread affinity setting failed.", condition);
+            expectWarningMatchingRegexIf("NOTE: Thread affinity was not set.", condition);
         }
         void expectPinningMessage(bool userSpecifiedStride, int stride)
         {

@@ -184,7 +184,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
         {
             GMX_LOG(mdlog.warning).asParagraph().appendText(
                     "NOTE: The number of threads is not equal to the number of (logical) cores\n"
-                    "      and the -pin option is set to auto: will not pin thread to cores.\n"
+                    "      and the -pin option is set to auto: will not pin threads to cores.\n"
                     "      This can lead to significant performance degradation.\n"
                     "      Consider using -pin on (and -pinoffset in case you run multiple jobs).");
             alreadyWarned = true;
@@ -449,9 +449,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     }
     if (invalidWithinSimulation(cr, !allAffinitiesSet))
     {
-        GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "NOTE: Thread affinity setting failed. This can cause performance degradation.\n"
-                "      If you think your settings are correct, ask on the gmx-users list.");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: Thread affinity was not set.");
     }
 }
 
@@ -480,8 +478,12 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             char *message;
             if (!gmx_omp_check_thread_affinity(&message))
             {
-                /* TODO: with -pin auto we should only warn when using all cores */
-                GMX_LOG(mdlog.warning).asParagraph().appendText(message);
+                /* We only pin automatically with totNumThreadsIsAuto=true */
+                if (hw_opt->thread_affinity == threadaffON ||
+                    hw_opt->totNumThreadsIsAuto)
+                {
+                    GMX_LOG(mdlog.warning).asParagraph().appendText(message);
+                }
                 sfree(message);
                 hw_opt->thread_affinity = threadaffOFF;
             }
