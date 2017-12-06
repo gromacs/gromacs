@@ -160,18 +160,13 @@ TEST_P(BiasStateTest, InitializesFromFile)
      * The target is (index + 1)/120.
      */
     double msdPmf    = 0;
-    double msdTarget = 0;
     for (size_t i = 0; i < points.size(); i++)
     {
-        msdPmf    += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5*i);
-        msdTarget += gmx::square(points[i].target() - (i + 1)/120.0);
+        msdPmf += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5*i) / points.size();
+        EXPECT_DOUBLE_EQ(points[i].target(), (i + 1)/120.0);
     }
 
-    msdPmf    /= points.size();
-    msdTarget /= points.size();
-
-    EXPECT_EQ(0.0, msdPmf);
-    EXPECT_EQ(0.0, msdTarget);
+    EXPECT_NEAR(0.0, msdPmf, 1e-31);
 }
 
 // Test that Bias initialization open and reads the correct initialization
