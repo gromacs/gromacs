@@ -174,8 +174,10 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         TestReferenceChecker rootChecker(refData.rootChecker());
 
                         const auto           maxGridSize              = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
-                        const auto           ulpToleranceSplineValues = 2 * (pmeOrder - 2) * maxGridSize;
-                        /* 2 is empiric, the rest follows from the amount of operations */
+                        const auto           ulpToleranceSplineValues = 4 * (pmeOrder - 2) * maxGridSize;
+                        /* 4 is a modest estimate for amount of operations; (pmeOrder - 2) is a number of iterations;
+                         * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
+                         */
 
                         if (computeSplines)
                         {
