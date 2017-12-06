@@ -170,8 +170,8 @@ TEST_P(BiasStateTest, InitializesFromFile)
     msdPmf    /= points.size();
     msdTarget /= points.size();
 
-    EXPECT_EQ(0.0, msdPmf);
-    EXPECT_EQ(0.0, msdTarget);
+    EXPECT_NEAR(0.0, msdPmf, 1e-34);
+    EXPECT_NEAR(0.0, msdTarget, 1e-34);
 }
 
 // Test that Bias initialization open and reads the correct initialization
