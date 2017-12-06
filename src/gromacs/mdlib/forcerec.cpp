@@ -2750,6 +2750,15 @@ void init_forcerec(FILE              *fp,
         {
             gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
+        /* old versions supported the definition of user defined interaction values for verlet in grompp
+         * disable those here now so that the users know it does not work
+         */
+        if (EEL_USER(fr->eeltype))
+        {
+            gmx_fatal(FARGS, "Combination of %s and cutoff scheme %s is not supported",
+                      eel_names[ir->coulombtype], ecutscheme_names[ir->cutoff_scheme]);
+        }
+
         fr->bvdwtab  = FALSE;
         fr->bcoultab = FALSE;
     }
