@@ -1,0 +1,9 @@
+Code-Review+1: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+2: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Berk Hess <hess@kth.se>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Wed, 06 Dec 2017 15:57:33 +0100
+Reviewed-on: https://gerrit.gromacs.org/7296
+Project: gromacs
+Branch: refs/heads/release-2018
