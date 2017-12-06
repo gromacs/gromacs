@@ -1,0 +1,69 @@
+Release notes
+=============
+
+These release notes document the functionality changes in |Gromacs|
+|version| that have taken place in |Gromacs| since version 2016.
+
+Some bug fixes are mentioned here, but those fixed in 5.1 or 2016
+branches are (or will be) documented there. If the same functionality
+is supported in both branches, bugs fixed on older branches can
+generally be assumed to be fixed in patch releases of subsequent
+major/minor versions. Where issue numbers are reported, more details
+can be found at https://redmine.gromacs.org at that issue number.
+If you are reading this in the RELEASENOTES file, you may find the
+version on the |Gromacs| website more useful for searching and links.
+
+Highlights
+----------
+
+Here's some highlights of what you can expect, along with more detail
+in the links below!
+
+As always, we've got several useful performance improvements, with or
+without GPUs, and all enabled and automated by default. We are
+extremely interested in your feedback on how well this worked on your
+simulations and hardware. They are:
+
+* A new dual-list dynamic-pruning algorithm for the short-ranged
+  interactions, that uses an inner and outer list to permit a longer-lived
+  outer list, while doing less work overall.
+* PME long-ranged interactions can now run on a single GPU, which
+  means many fewer CPU cores are needed for good performance.
+
+There are some new features available also:
+
+* The AWH (Accelerated Weight Histogram) method is now supported,
+  which is an adaptive biasing method used for overcoming free energy
+  barriers and calculating free energies (see
+  http://dx.doi.org/10.1063/1.4890371).
+* A physical validation suite is added, which runs a series of short
+  simulations, to verify the expected statistical properties,
+  e.g. of energy distributions between the simulations, as a sensitive
+  test that the code correctly samples the expected ensemble.
+* Conserved quantities are computed and reported for more integration
+  schemes - now including all Berendsen and Parrinello-Rahman schemes.
+
+.. TODO remove before final release
+
+Beta phase
+----------
+
+During the beta phase, numerous fixes will occur, many of which will
+be fixes of fixes, or fixes of new features. Those will be temporarily
+documented in the release notes, but will not appear in the final 2018
+release notes because they were never bugs that formally affected
+users. If you want to find whether a beta-phase issue has been fixed,
+you can find them by searching for the text "beta-phase fix" in the
+relevant subsection.
+
+Details
+-------
+
+.. toctree::
+   features
+   performance
+   tools
+   bugs-fixed
+   removed-features
+   portability
+   miscellaneous
