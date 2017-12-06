@@ -605,7 +605,7 @@ static double get_pull_coord_period(const pull_params_t *pull_params,
 
            Note: we make these checks here for AWH and not in pull because we allow pull to be more general.
          */
-        int m_pullvec, count_nonzeros = 0;
+        int m_pullvec = -1, count_nonzeros = 0;
 
         /* Check that pull vec has only one component and which component it is. This component gives the relevant box vector */
         for (int m = 0; m < DIM; m++)
