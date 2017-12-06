@@ -2614,6 +2614,12 @@ void init_forcerec(FILE              *fp,
         case eelENCADSHIFT:
         case eelPMESWITCH:
         case eelPMEUSER:
+            /* check if the correct cutoff scheme is used for pme-user*/
+            if (ir->cutoff_scheme == ecutsVERLET)
+            {
+                gmx_fatal(FARGS, "Combination of pme-user and cutoff scheme %s is not supported", ecutscheme_names[ir->cutoff_scheme]);
+                break;
+            }
         case eelPMEUSERSWITCH:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
             break;
