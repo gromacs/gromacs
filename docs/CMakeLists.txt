@@ -124,6 +124,14 @@ if (SPHINX_FOUND)
         dev-manual/uncrustify.rst
         fragments/doxygen-links.rst
         install-guide/index.rst
+        release-notes/index.rst
+        release-notes/features.rst
+        release-notes/performance.rst
+        release-notes/tools.rst
+        release-notes/bugs-fixed.rst
+        release-notes/removed-features.rst
+        release-notes/portability.rst
+        release-notes/miscellaneous.rst
         user-guide/index.rst
         user-guide/cutoff-schemes.rst
         user-guide/getting-started.rst
