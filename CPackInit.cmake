@@ -49,12 +49,13 @@ if (BUILDING_SOURCE_PACKAGE)
     # And this does not detect if things have been built in the past, but are
     # outdated.
     if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/text/INSTALL" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/plain-text/for-tarball/INSTALL" OR
+        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/plain-text/for-tarball/RELEASENOTES" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash")
         message(FATAL_ERROR
             "To create a complete source package, bash completions, "
             "man pages, and INSTALL need to be generated. "
-            "Run 'make completion man install-guide' to build "
+            "Run 'make completion man install-guide release-notes' to build "
             "these parts (you will need Sphinx). You can also configure with "
             "GMX_BUILD_HELP=ON to automatically build the completions.")
     endif()
