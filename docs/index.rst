@@ -13,6 +13,7 @@ Contents:
    :maxdepth: 2
 
    download
+   release-notes/index
    install-guide/index
 
    user-guide/index
