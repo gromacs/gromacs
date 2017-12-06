@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -124,6 +124,7 @@ if (SPHINX_FOUND)
         dev-manual/uncrustify.rst
         fragments/doxygen-links.rst
         install-guide/index.rst
+        release-notes/index.rst
         user-guide/index.rst
         user-guide/cutoff-schemes.rst
         user-guide/getting-started.rst
@@ -199,30 +200,13 @@ if (SPHINX_FOUND)
     # executable tries to write things there.
     add_dependencies(sphinx-programs sphinx-input)
 
-    # Make the INSTALL file for CPack for the tarball. This gets put
-    # into the tarball via the CPack rules below, which requires that
-    # the INSTALL file is in a separate directory by itself.
-    set(TEXT_INSTALL_GUIDE_OUTPUT_DIR "install-guide/text")
-    add_custom_target(install-guide
-        COMMAND
-            ${SPHINX_EXECUTABLE}
-            -q -b text
-            -w sphinx-install.log
-            -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
-            -c ${SPHINX_INPUT_DIR}
-            "${SPHINX_INPUT_DIR}/install-guide"
-            "${TEXT_INSTALL_GUIDE_OUTPUT_DIR}"
-        COMMAND
-            ${CMAKE_COMMAND} -E rename
-            ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/index.txt
-            ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/INSTALL
-        WORKING_DIRECTORY
-            ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Building INSTALL with Sphinx"
-        VERBATIM
-        )
+    # Make the INSTALL file for the tarball via sphinx and CPack.
+    make_plain_text_for_tarball(install-guide install-guide INSTALL)
     add_dependencies(install-guide sphinx-input)
-    gmx_cpack_add_generated_source_directory(install-guide/text DESTINATION /)
+
+    # Make the RELEASENOTES file for the tarball via sphinx and CPack.
+    make_plain_text_for_tarball(release-notes release-notes RELEASENOTES)
+    add_dependencies(release-notes sphinx-input)
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
@@ -270,6 +254,10 @@ else()
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
             "INSTALL cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+        VERBATIM)
+    add_custom_target(release-notes
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "RELEASENOTES cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo

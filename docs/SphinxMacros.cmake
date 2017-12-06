@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,3 +82,31 @@ macro(gmx_add_sphinx_input_target TARGETNAME)
     gmx_add_custom_output_target(${TARGETNAME} OUTPUT STAMP
         DEPENDS ${_SPHINX_INPUT_FILES})
 endmacro()
+
+# Make a plain text file for CPack to put into the top level of the
+# tarball. This requires some particular CPack rules below, which
+# requires that such files are in a separate directory by itself.
+function(make_plain_text_for_tarball TARGET_NAME DIR_WITH_RST_FILES INSTALLED_FILE_NAME)
+    set(PLAIN_TEXT_OUTPUT_DIR "plain-text")
+    add_custom_target(${TARGET_NAME}
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b text
+            -w sphinx-${TARGET_NAME}.log
+            -d ${CMAKE_CURRENT_BINARY_DIR}/${DIR_WITH_RST_FILES}/_doctrees
+            -c ${SPHINX_INPUT_DIR}
+            "${SPHINX_INPUT_DIR}/${DIR_WITH_RST_FILES}"
+            "${PLAIN_TEXT_OUTPUT_DIR}/${DIR_WITH_RST_FILES}"
+        COMMAND
+            ${CMAKE_COMMAND} -E make_directory ${PLAIN_TEXT_OUTPUT_DIR}/for-tarball
+        COMMAND
+            ${CMAKE_COMMAND} -E rename
+            ${PLAIN_TEXT_OUTPUT_DIR}/${DIR_WITH_RST_FILES}/index.txt
+            ${PLAIN_TEXT_OUTPUT_DIR}/for-tarball/${INSTALLED_FILE_NAME}
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Building plain text ${INSTALLED_FILE_NAME} for the tarball with Sphinx"
+        VERBATIM
+        )
+    gmx_cpack_add_generated_source_directory(${PLAIN_TEXT_OUTPUT_DIR}/for-tarball/ DESTINATION /)
+endfunction()
