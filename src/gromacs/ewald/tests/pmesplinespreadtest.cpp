@@ -176,15 +176,20 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         const auto           maxGridSize              = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
                         const auto           ulpToleranceSplineValues = 2 * (pmeOrder - 2) * maxGridSize;
                         /* 2 is empiric, the rest follows from the amount of operations */
+                        const auto           doublePrecisionRelaxationFactor = 2;
+                        /* This 2 is for error propagation in double since spline interpolation involves plenty of FMAs */
 
                         if (computeSplines)
                         {
                             const char *dimString[] = { "X", "Y", "Z" };
 
                             /* Spline values */
+                            const auto splineValuesTolerance = relativeToleranceAsPrecisionDependentUlp(1.0,
+                                                                                                        ulpToleranceSplineValues,
+                                                                                                        doublePrecisionRelaxationFactor * ulpToleranceSplineValues);
                             SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
                             TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
-                            splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
+                            splineValuesChecker.setDefaultTolerance(splineValuesTolerance);
                             for (int i = 0; i < DIM; i++)
                             {
                                 auto splineValuesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Values, i);
@@ -194,9 +199,12 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                             /* Spline derivatives */
                             const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
                             /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
+                            const auto splineDerivativesTolerance = relativeToleranceAsPrecisionDependentUlp(1.0,
+                                                                                                             ulpToleranceSplineDerivatives,
+                                                                                                             doublePrecisionRelaxationFactor * ulpToleranceSplineDerivatives);
                             SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %ld", ulpToleranceSplineDerivatives));
                             TestReferenceChecker splineDerivativesChecker(rootChecker.checkCompound("Splines", "Derivatives"));
-                            splineDerivativesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
+                            splineDerivativesChecker.setDefaultTolerance(splineDerivativesTolerance);
                             for (int i = 0; i < DIM; i++)
                             {
                                 auto splineDerivativesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Derivatives, i);
