@@ -1,3 +1,7 @@
+.. Note that this must be a single rst file in order for Sphinx
+   to build into into a single plain-text file to place in the
+   installation tarball.
+
 .. _install guide:
 
 ******************
