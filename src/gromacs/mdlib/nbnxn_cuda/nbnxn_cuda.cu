@@ -580,8 +580,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
 
     if (debug)
     {
-        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tThread block: %ux%ux%u\n\t"
+                "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, numSciInPart*c_numClPerSupercl,
