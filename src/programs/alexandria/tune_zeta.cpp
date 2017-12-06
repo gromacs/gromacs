@@ -153,8 +153,8 @@ void OptZeta::polData2TuneZeta()
             }
             else
             {
-                gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
-                          ai->name().c_str(), iChargeDistributionModel_);
+                gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
+                          ai->name().c_str(), getEemtypeName(iChargeDistributionModel_));
             } 
             
             if(bFitAlpha_)
