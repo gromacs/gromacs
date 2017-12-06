@@ -2750,6 +2750,15 @@ void init_forcerec(FILE              *fp,
         {
             gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
+        /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
+         * while mdrun does not (and never did) support this.
+         */
+        if (EEL_USER(fr->eeltype))
+        {
+            gmx_fatal(FARGS, "Combination of %s and cutoff scheme %s is not supported",
+                      eel_names[ir->coulombtype], ecutscheme_names[ir->cutoff_scheme]);
+        }
+
         fr->bvdwtab  = FALSE;
         fr->bcoultab = FALSE;
     }
