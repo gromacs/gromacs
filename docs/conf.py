@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -73,11 +73,14 @@ needs_sphinx = gmx_min_sphinx
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.graphviz',
+    'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',
     'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'gmxsphinx'
 ]
+extlinks = {'issue': ('https://redmine.gromacs.org/issues/%s',
+                      'Issue ')}
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
