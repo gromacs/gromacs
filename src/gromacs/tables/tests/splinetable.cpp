@@ -152,7 +152,7 @@ SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string           
 
         table.template evaluateDerivative<numFuncInTable, funcIndex>(x, &tmpDer);
 
-        if (testFuncValue != tmpFunc)
+        if (abs(testFuncValue-tmpFunc) > tolerance_)
         {
             ADD_FAILURE()
             << "Interpolation inconsistency for table " << desc << std::endl
@@ -206,7 +206,7 @@ SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string           
 
         // Since the reference magnitude will change over each interval we need to re-evaluate
         // the derivative tolerance inside the loop.
-        FloatingPointTolerance  derTolerance(relativeToleranceAsFloatingPoint(derMagnitude, tolerance_));
+        FloatingPointTolerance  derTolerance(relativeToleranceAsFloatingPoint(derMagnitude, tolerance_*10));
 
         FloatingPointDifference funcDiff(refFuncValue, testFuncValue);
         FloatingPointDifference derDiff(refDerValue, testDerValue);
