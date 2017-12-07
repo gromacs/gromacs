@@ -23,7 +23,7 @@
 # Test oldest supported gcc at time of release
 # Test mpi support
 # Test mdrun-only build
-gcc-4.8 mpi mdrun-only release
+gcc-4.8 mpi mdrun-only release cmake-3.8.1
 
 # Test static linking with gcc
 # Test newest gcc at time of release
@@ -36,7 +36,10 @@ icc-18 double release
 # Test static linking with clang
 # Test double precision
 # Test newest supported clang version
-clang-4 static double release
+clang-5 static double release cmake-3.6.1
 
 # Test with GPU support
 gcc-5 gpu cuda-8.0 release
+
+# TODO items
+# Avoid specifying cmake versions just to move jobs away from bs_nix-amd
