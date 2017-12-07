@@ -36,16 +36,19 @@ gcc-5 gpu cuda-8.0 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_2
 # Test fftpack fallback
 gcc-7 tsan no-openmp fftpack
 
+# Test newest cmake at time of release
 # Test newest gcc at time of release
-gcc-7 mpi
+# Test gcc in double precision
+# Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
+gcc-7 double mpi cmake-3.10.0 simd=avx_128_fma
 
 # Test on MacOS (because gcc-6 is only available there)
 # Test X11 build
-gcc-6 double x11
+gcc-6 x11
 
 # Test oldest supported cmake
 # Test older clang
-# Test double precision
+# Test clang in double precision
 # Test without OpenMP
 # Test thread-MPI
 clang-3.4 double thread-mpi no-openmp fftpack cmake-3.4.3
@@ -60,25 +63,28 @@ msvc-2015 openmp release-with-assert
 
 # Test oldest supported icc
 # Test icc on Windows
-icc-16 msvc-2015 fftpack
+# Test icc with SIMD in double precision in release mode
+icc-16 msvc-2015 double fftpack simd=avx2_256 release
 
-# Test newest cmake at time of release
 # Test newest icc at the time of release
+# Test icc without SIMD in double precision in release mode
 # Test MKL
 # Test without any MPI
-# Test on CentOS (because icc-18.0 is only available there)
-icc-18 no-thread-mpi openmp mkl cmake-3.10.0 simd=avx_256
+# Test on CentOS (because cmake-3.9.6 is available there)
+icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
 
 # Test NVIDIA OpenCL
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
-gcc-4.8 openmp opencl cuda-7.5 mpi release-with-assert simd=avx2_256
+# Test icc with SIMD in mixed precision in release mode
+icc-18 openmp opencl cuda-7.5 mpi release simd=avx2_256
 
 # Test AMD OpenCL
 # Test AVX_128_FMA SIMD
 gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
 
 # TODO
+# Add support for CUDA 9.0
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc support
 # Test newest supported LTS Ubuntu
