@@ -65,7 +65,7 @@ function(gmx_set_cmake_compiler_flags)
         # inconvenient in CMake to pass more than one list, and such a
         # list is only used here.
         foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
-            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
+            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE} ${GMXC_${language}FLAGS_${build_type}}")
         endforeach()
         # Copy the flags that are only used by the real Release build
         # type. Used for, e.g., -Wno-array-bounds in Release to work around
