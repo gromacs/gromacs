@@ -153,11 +153,11 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
             if (denormalsToZero)
             {
                 // Clamp denormal values to zero if requested
-                if (std::abs(vref[i]) < GMX_REAL_MIN)
+                if (std::abs(vref[i]) <= GMX_REAL_MIN)
                 {
                     vref[i] = 0.0;
                 }
-                if (std::abs(vtst[i]) < GMX_REAL_MIN)
+                if (std::abs(vtst[i]) <= GMX_REAL_MIN)
                 {
                     vtst[i] = 0.0;
                 }
@@ -423,7 +423,7 @@ TEST_F(SimdMathTest, exp)
     // First test the range where we get normalized (non-denormal) results,
     // since we don't require denormal results to be reproduced correctly.
 #if GMX_DOUBLE
-    setRange(-708.4, 709.1);
+    setRange(-708.3, 709.1);
 #else
     setRange(-87.3, 88.0);
 #endif
@@ -435,7 +435,7 @@ TEST_F(SimdMathTest, exp)
     // Then multiply with ln(2) to get our limit for exp().
     // In this range we allow the value to be either correct (denormal) or 0.0
 #if GMX_DOUBLE
-    setRange(-746.0, -708.4);
+    setRange(-746.0, -708.3);
 #else
     setRange(-104.0, -87.3);
 #endif
@@ -459,7 +459,7 @@ TEST_F(SimdMathTest, exp)
 TEST_F(SimdMathTest, expUnsafe)
 {
 #if GMX_DOUBLE
-    setRange(-708.4, 709.1);
+    setRange(-708.3, 709.1);
 #else
     setRange(-87.3, 88.0);
 #endif
