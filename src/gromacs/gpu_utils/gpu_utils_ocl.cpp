@@ -165,7 +165,7 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 //! This function is documented in the header file
 bool canDetectGpus()
 {
-    cl_uint numPlatforms = -1;
+    cl_uint numPlatforms;
     cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);
     GMX_ASSERT(status != CL_INVALID_VALUE, "Incorrect call of clGetPlatformIDs detected");
     if (status == CL_PLATFORM_NOT_FOUND_KHR)
