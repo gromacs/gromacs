@@ -18,12 +18,14 @@ gcc-4.8 simd=ARM_NEON release-with-assert
 gcc-5 simd=ARM_NEON_ASIMD release-with-assert
 
 # Test the mdrun-only build
+# Test newest gcc at time of release
 # TODO In combination with gmx from another build, arrange to run regressiontests
-clang-3.7 double mpi no-openmp fftpack mdrun-only
+gcc-7 mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
-# TODO Add double to this configuration if/when we stablize the essentialdynamics tests
-gcc-7 npme=1 nranks=2 no-openmp fftpack release-with-assert
+# Test newest icc at time of release
+# Test icc without SIMD in mixed precision in release mode
+icc-18 npme=1 nranks=2 no-openmp fftpack release simd=none
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
