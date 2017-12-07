@@ -283,18 +283,21 @@ void Bayes<T>::simulate()
     {
         for (j = 0; j < nParam; j++)
         {
+            double xiter = iter + (1.0*j)/nParam;
             if ((nullptr != fpc) && ((j % nprint_) == 0))
             {
-                fprintf(fpc, "%5d", iter);
+                fprintf(fpc, "%8f", xiter);
                 for (auto value : param_)
                 {
                     fprintf(fpc, "  %10g", value);
                 }
                 fprintf(fpc, "\n");
+                fflush(fpc);
             }
             if ((nullptr != fpe) && ((j % nprint_) == 0))
             {
-                fprintf(fpe, "%5d  %10g\n", iter, prevEval);
+                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+                fflush(fpe);
             }
             storeParam = param_[j];
             changeParam(j, uniform(gen));
