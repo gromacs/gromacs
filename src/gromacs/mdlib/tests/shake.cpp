@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,9 @@
 
 #include <assert.h>
 
+#include <cmath>
+
+#include <algorithm>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -181,11 +184,20 @@ class ShakeTest : public ::testing::Test
             std::vector<real> lagrangianValues;
             std::vector<real> constrainedDistancesSquared;
 
+            real              coordMax = 0;
             for (size_t i = 0; i != numConstraints; ++i)
             {
                 constrainedDistancesSquared.push_back(constrainedDistances[i] * constrainedDistances[i]);
-                distanceSquaredTolerances.push_back(1.0 / (constrainedDistancesSquared.back() * ShakeTest::tolerance_));
+                distanceSquaredTolerances.push_back(0.5 / (constrainedDistancesSquared.back() * ShakeTest::tolerance_));
                 lagrangianValues.push_back(0.0);
+
+                for (size_t j = 1; j < constraintStride; j++)
+                {
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        coordMax = std::max(coordMax, std::abs(positions[iatom[i*constraintStride + j]*DIM + d]));
+                    }
+                }
             }
             std::vector<real> halfOfReducedMasses  = computeHalfOfReducedMasses(iatom, inverseMasses);
             std::vector<real> initialDisplacements = computeDisplacements(iatom, positions);
@@ -213,12 +225,13 @@ class ShakeTest : public ::testing::Test
             // other tests like it some time?
             for (size_t i = 0; i != numConstraints; ++i)
             {
+                // We need to allow for the requested tolerance plus rounding
+                // errors due to the absolute size of the coordinate values
                 gmx::test::FloatingPointTolerance constraintTolerance =
-                    gmx::test::relativeToleranceAsFloatingPoint(constrainedDistancesSquared[i],
-                                                                ShakeTest::tolerance_);
+                    gmx::test::absoluteTolerance(std::sqrt(constrainedDistancesSquared[i])*ShakeTest::tolerance_ + coordMax*GMX_REAL_EPS);
                 // Assert that the constrained distances are within the required tolerance
-                EXPECT_FLOAT_EQ_TOL(constrainedDistancesSquared[i],
-                                    finalDistancesSquared[i],
+                EXPECT_FLOAT_EQ_TOL(std::sqrt(constrainedDistancesSquared[i]),
+                                    std::sqrt(finalDistancesSquared[i]),
                                     constraintTolerance);
             }
         }
