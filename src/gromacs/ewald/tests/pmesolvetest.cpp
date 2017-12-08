@@ -167,15 +167,20 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                 gridValuesMagnitude = std::max(std::fabs(point.second.im), gridValuesMagnitude);
                             }
                             // Spline moduli participate 3 times in the computation; 2 is an additional factor for SIMD exp() precision
-                            auto ulpToleranceGridFactor = DIM * 2;
+                            gmx_uint64_t gridUlpToleranceFactor = DIM * 2;
                             if (method == PmeSolveAlgorithm::LennardJones)
                             {
                                 // Lennard Jones is more complex and also uses erfc(), relax more
-                                ulpToleranceGridFactor *= 2;
+                                gridUlpToleranceFactor *= 2;
                             }
-                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsPrecisionDependentUlp(gridValuesMagnitude,
-                                                                                                           ulpToleranceGridFactor * c_splineModuliSinglePrecisionUlps,
-                                                                                                           ulpToleranceGridFactor * c_splineModuliDoublePrecisionUlps));
+                            const gmx_uint64_t splineModuliDoublePrecisionUlps
+                                = getSplineModuliDoublePrecisionUlps(inputRec.pme_order + 1);
+                            auto               gridTolerance
+                                = relativeToleranceAsPrecisionDependentUlp(gridValuesMagnitude,
+                                                                           gridUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                                                                           gridUlpToleranceFactor * splineModuliDoublePrecisionUlps);
+                            gridValuesChecker.setDefaultTolerance(gridTolerance);
+
                             for (const auto &point : nonZeroGridValuesOutput)
                             {
                                 // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
@@ -192,16 +197,37 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 
                             if (computeEnergyAndVirial)
                             {
+                                // Extract the energy and virial
                                 real       energy;
                                 Matrix3x3  virial;
                                 std::tie(energy, virial) = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), mode.first, method);
+
+                                // These quantities are computed based on the grid values, so must have
+                                // checking relative tolerances at least as large. Virial needs more flops
+                                // than energy, so needs a larger tolerance.
+
                                 /* Energy */
+                                double       energyMagnitude = 10.0;
+                                // TODO This factor is arbitrary, do a proper error-propagation analysis
+                                gmx_uint64_t energyUlpToleranceFactor = gridUlpToleranceFactor * 2;
+                                auto         energyTolerance
+                                    = relativeToleranceAsPrecisionDependentUlp(energyMagnitude,
+                                                                               energyUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                                                                               energyUlpToleranceFactor * splineModuliDoublePrecisionUlps);
                                 TestReferenceChecker energyChecker(checker);
-                                energyChecker.setDefaultTolerance(relativeToleranceAsUlp(10.0, 40));
+                                energyChecker.setDefaultTolerance(energyTolerance);
                                 energyChecker.checkReal(energy, "Energy");
+
                                 /* Virial */
+                                double       virialMagnitude = 1000.0;
+                                // TODO This factor is arbitrary, do a proper error-propagation analysis
+                                gmx_uint64_t virialUlpToleranceFactor = energyUlpToleranceFactor * 2;
+                                auto         virialTolerance
+                                    = relativeToleranceAsPrecisionDependentUlp(virialMagnitude,
+                                                                               virialUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                                                                               virialUlpToleranceFactor * splineModuliDoublePrecisionUlps);
                                 TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
-                                virialChecker.setDefaultTolerance(relativeToleranceAsUlp(1000, 8));
+                                virialChecker.setDefaultTolerance(virialTolerance);
                                 for (int i = 0; i < DIM; i++)
                                 {
                                     for (int j = 0; j <= i; j++)
