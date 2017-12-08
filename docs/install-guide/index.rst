@@ -112,6 +112,10 @@ Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
 
+The xlc compiler is not supported and has not been tested on POWER
+architectures for |Gromacs|\ -\ |version|. We recommend to use the gcc
+compiler instead, as it is being extensively tested.
+
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
 these are often shipped by your OS distribution's binutils package.
