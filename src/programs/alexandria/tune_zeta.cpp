@@ -293,7 +293,7 @@ void OptZeta::calcDeviation()
                     mymol.UpdateIdef(pd_, eitPOLARIZATION);  
                 }
                 mymol.computeForces(nullptr, cr_);
-                mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
+                mymol.Qgresp_.updateAtomCoords(mymol.x());
             }
             qtot = 0;
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
@@ -328,14 +328,13 @@ void OptZeta::calcDeviation()
                 mymol.CalcDipole();
                 if (bQM_)
                 {
-                    for (auto mm = 0; mm < DIM; mm++)
-                    {                    
-                        ener_[ermsMU] += gmx::square(mymol.mu_calc_[mm] - mymol.mu_elec_[mm]);
-                    }
+                    rvec dmu;
+                    rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
+                    ener_[ermsMU] += iprod(dmu, dmu);
                 }
                 else
                 {
-                    ener_[ermsMU] += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                    ener_[ermsMU] += gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper());
                 }
             }                          
             if (bQuadrupole_)
@@ -347,12 +346,12 @@ void OptZeta::calcDeviation()
                     {
                         for (auto nn = 0; nn < DIM; nn++)
                         {
-                            ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
+                            ener_[ermsQUAD] += gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]);
                         }
                     }
                     else
                     {
-                        ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
+                        ener_[ermsQUAD] += gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]);
                     }
                 }
             }

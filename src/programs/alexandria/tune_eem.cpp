@@ -151,7 +151,7 @@ void OptEEM::addEspPoint()
         {
             mymol.Qgresp_.setChargeDistributionModel(iChargeDistributionModel_);
             mymol.Qgresp_.setAtomWeight(watoms_);
-            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, pd_, mymol.state_->x, mymol.molProp()->getCharge());
+            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, pd_, mymol.x(), mymol.molProp()->getCharge());
             mymol.Qgresp_.setAtomSymmetry(mymol.symmetric_charges_);
             mymol.Qgresp_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.Qgresp_.summary(debug);
@@ -238,7 +238,7 @@ void OptEEM::calcDeviation()
                                            pd_, 
                                            &(mymol.topology_->atoms),
                                            &mymol.chieq_,
-                                           mymol.state_->x);           
+                                           mymol.x());           
             if (nullptr != mymol.shellfc_)
             {      
                 if (bFitAlpha_)
@@ -283,7 +283,7 @@ void OptEEM::calcDeviation()
                 real  wtot   = 0;              
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
+                    mymol.Qgresp_.updateAtomCoords(mymol.x());
                 }
                 mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.Qgresp_.calcPot();
@@ -295,12 +295,12 @@ void OptEEM::calcDeviation()
                 if (bQM_)
                 {
                     rvec dmu;                    
-                    rvec_sub(mymol.mu_calc_, mymol.mu_elec_, dmu);
+                    rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
                     ener_[ermsMU]  += iprod(dmu, dmu);
                 }
                 else
                 {
-                    ener_[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                    ener_[ermsMU]  += gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper());
                 }
             }                          
             if (bQuadrupole_)
@@ -312,12 +312,12 @@ void OptEEM::calcDeviation()
                     {
                         for (auto nn = 0; nn < DIM; nn++)
                         {
-                            ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
+                            ener_[ermsQUAD] += gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]);
                         }
                     }
                     else
                     {
-                        ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
+                        ener_[ermsQUAD] += gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]);
                     }
                 }
             }

@@ -687,6 +687,7 @@ int alex_bastat(int argc, char *argv[])
                         mmi.molProp()->getMolname().c_str());
                 continue;
             }
+            auto x        = mmi.x();
             for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
             {
                 if (eitBONDS == fs->iType())
@@ -697,7 +698,7 @@ int alex_bastat(int argc, char *argv[])
                     {
                         auto ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         auto aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                        rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
+                        rvec_sub(x[ai], x[aj], dx);
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
                         {
@@ -739,8 +740,8 @@ int alex_bastat(int argc, char *argv[])
                         auto ai       = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         auto aj       = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         auto ak       = mmi.ltop_->idef.il[funcType].iatoms[j+3];
-                        rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
-                        rvec_sub(mmi.state_->x[ak], mmi.state_->x[aj], dx2);
+                        rvec_sub(x[ai], x[aj], dx);
+                        rvec_sub(x[ak], x[aj], dx2);
                         refValue = RAD2DEG*gmx_angle(dx, dx2);
                         if ( (refValue > 175) || (refValue < 5))
                         {
@@ -779,8 +780,7 @@ int alex_bastat(int argc, char *argv[])
                         auto aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         auto ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         auto al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                        angle    = RAD2DEG*dih_angle(mmi.state_->x[ai], mmi.state_->x[aj],
-                                                     mmi.state_->x[ak], mmi.state_->x[al],
+                        angle    = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al],
                                                      &pbc, r_ij, r_kj, r_kl, mm, nn,
                                                      &sign, &t1, &t2, &t3);
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&

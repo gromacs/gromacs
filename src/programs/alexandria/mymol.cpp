@@ -96,6 +96,21 @@ static void vsiteType_to_atomType(const std::string &vsiteType, std::string *ato
    *atomType        = vsiteType.substr (0, pos);
 }
 
+const char *qTypeName(qType qt)
+{
+    switch(qt)
+    {
+    case qtESP: return "ESP";
+    case qtMulliken: return "Mulliken";
+    case qtHirshfeld: return "Hirshfeld";
+    case qtCM5: return "CM5";
+    case qtCalc: return "Calculated";
+    case qtElec: return "Electronic";
+    default:
+        return "Unknown charge type";
+    }
+}
+
 const char *immsg(immStatus imm)
 {
     static const char *msg[immNR] = {
@@ -155,6 +170,11 @@ MyMol::MyMol() : gvt_(evtALL)
     snew(fcd_, 1);
     init_enerdata(1, 0, enerd_);
     init_nrnb(&nrnb_);
+    for(int j=0; j < qtNR; j++)
+    {
+        clear_rvec(mu_qm_[j]);
+        clear_mat(Q_qm_[j]);
+    }
 }
 
 bool MyMol::IsSymmetric(real toler)
@@ -1351,16 +1371,9 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 
 void MyMol::CalcDipole()
 {
-    clear_rvec(mu_calc_);
-    for (auto i = 0; i < topology_->atoms.nr; i++)
-    {
-        auto q = e2d(topology_->atoms.atom[i].q);
-        for (auto m = 0; m < DIM; m++)
-        {
-            mu_calc_[m] += state_->x[i][m]*q;
-        }
-    }
-    dip_calc_ = norm(mu_calc_);
+    rvec mu;
+    CalcDipole(mu);
+    set_muQM(qtCalc, mu);
 }
 
 void MyMol::CalcDipole(rvec mu)
@@ -1378,10 +1391,10 @@ void MyMol::CalcDipole(rvec mu)
 
 void MyMol::CalcQuadrupole()
 {
-    real  r2, q;   
-    rvec  r; /* distance of atoms to center of charge */
-
-    clear_mat(Q_calc_);   
+    real   r2, q;   
+    rvec   r; /* distance of atoms to center of charge */
+    tensor Q;
+    clear_mat(Q);   
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         rvec_sub(state_->x[i], coc_, r);
@@ -1391,13 +1404,14 @@ void MyMol::CalcQuadrupole()
         {
             for (auto n = 0; n < DIM; n++) 
             {
-                Q_calc_[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
+                Q[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
             }
         }
     }
+    set_QQM(qtCalc, Q);
 }
 
-void MyMol::CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q)
+void MyMol::CalcQMbasedMoments(double *q, rvec mu, tensor Q)
 {
     int   i, j;
     real  r2;
@@ -1423,7 +1437,6 @@ void MyMol::CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q)
             j++;
         }
     }       
-    *dip = norm(mu);  
 }
 
 void MyMol::CalcQPol(const Poldata &pd, rvec mu)
@@ -1585,43 +1598,45 @@ void MyMol::PrintTopology(FILE                   *fp,
              norm(mu));
     commercials.push_back(buf);
     
+    tensor myQ;
     if (molProp()->getPropRef(MPO_DIPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
-                              &T, myref, mylot, vec, Q_elec_))
+                              &T, myref, mylot, vec, myQ))
     {
-        for (int m = 0; m < DIM; m++)
-        {
-            mu_elec_[m] = vec[m];
-        }
+        set_muQM(qtElec, vec);
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "(%.2f %6.2f %6.2f) Total= %.2f\n", 
                  lot, 
-                 mu_elec_[XX], mu_elec_[YY], mu_elec_[ZZ], 
-                 norm(mu_elec_));
+                 mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ], 
+                 norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
     }
     
-    snprintf(buf, sizeof(buf), "ALexandria Traceless Quadrupole Moments (Buckingham):\n"
-             "(%6.2f %6.2f %6.2f)\n"
-             "(%6.2f %6.2f %6.2f)\n"
-             "(%6.2f %6.2f %6.2f)\n", 
-             Q_calc_[XX][XX], Q_calc_[XX][YY], Q_calc_[XX][ZZ], 
-             Q_calc_[YY][XX], Q_calc_[YY][YY], Q_calc_[YY][ZZ],
-             Q_calc_[ZZ][XX], Q_calc_[ZZ][YY], Q_calc_[ZZ][ZZ]);
-    commercials.push_back(buf);
+    {
+        const tensor &Q = QQM(qtCalc);
+        snprintf(buf, sizeof(buf), "Alexandria Traceless Quadrupole Moments (Buckingham):\n"
+                 "(%6.2f %6.2f %6.2f)\n"
+                 "(%6.2f %6.2f %6.2f)\n"
+                 "(%6.2f %6.2f %6.2f)\n", 
+                 Q[XX][XX], Q[XX][YY], Q[XX][ZZ], 
+                 Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
+                 Q[ZZ][XX], Q[ZZ][YY], Q[ZZ][ZZ]);
+        commercials.push_back(buf);
+    }
     
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
-                              &T, myref, mylot, vec, Q_elec_))
+                              &T, myref, mylot, vec, myQ))
     {
+        set_QQM(qtElec, myQ);
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham):\n"
              "(%6.2f %6.2f %6.2f)\n"
              "(%6.2f %6.2f %6.2f)\n"
              "(%6.2f %6.2f %6.2f)\n", 
                  lot,
-                 Q_elec_[XX][XX], Q_elec_[XX][YY], Q_elec_[XX][ZZ], 
-                 Q_elec_[YY][XX], Q_elec_[YY][YY], Q_elec_[YY][ZZ],
-                 Q_elec_[ZZ][XX], Q_elec_[ZZ][YY], Q_elec_[ZZ][ZZ]);
+                 myQ[XX][XX], myQ[XX][YY], myQ[XX][ZZ], 
+                 myQ[YY][XX], myQ[YY][YY], myQ[YY][ZZ],
+                 myQ[ZZ][XX], myQ[ZZ][YY], myQ[ZZ][ZZ]);
         commercials.push_back(buf);
     }
     
@@ -1782,15 +1797,48 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     }
 }
 
+void rotateQuadrupole(tensor Q, tensor Qreference)
+{
+    matrix rotmatrix;
+    rvec   tmpvec;
+    // TODO: this code is not correct!
+    // the whole tensor should be taken into account, not
+    // just the components. All vectors should be transformed
+    // by the same matrix.
+    for(int m = 0; m < DIM; m++)
+    {
+        calc_rotmatrix(Q[m], Qreference[m], rotmatrix);
+        mvmul(rotmatrix, Q[m], tmpvec);
+        copy_rvec(tmpvec, Q[m]);
+    }
+}
+
+void MyMol::setQandMoments(qType qt, int natom, double q[])
+{
+    int i, j;
+    
+    if (natom > 0)
+    {
+        charge_QM_[qt].resize(natom);
+        for (i = j = 0; i < topology_->atoms.nr; i++)
+        {
+            if (topology_->atoms.atom[i].ptype == eptAtom || 
+                topology_->atoms.atom[i].ptype == eptNucleus)
+            {
+                charge_QM_[qt][j] = q[j];
+                j++;
+            }
+        }
+        CalcQMbasedMoments(q, mu_qm_[qt], Q_qm_[qt]);
+    }
+}
+
 immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                              gmx_bool bZPE, const char *lot,
                              const Poldata &pd)
 {
     int          ia    = 0;
     int          natom = 0;
-    immStatus    imm   = immOK;
-    unsigned int m     = 0;
-    unsigned int n     = 0;
     unsigned int nwarn = 0;
     double       value = 0;
     double       Hatom = 0;
@@ -1820,18 +1868,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int i, j;
-        snew(qESP_, natom);
-        for (i = j = 0; i < topology_->atoms.nr; i++)
-        {
-            if (topology_->atoms.atom[i].ptype == eptAtom || 
-                topology_->atoms.atom[i].ptype == eptNucleus)
-            {
-                qESP_[j] = q[j];
-                j++;
-            }
-        }
-        CalcQMbasedMoments(qESP_, &dip_esp_, mu_esp_, Q_esp_);
+        setQandMoments(qtESP, natom, q);
         esp_dipole_found = true;
     }
     T = -1;
@@ -1841,28 +1878,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int i, j;
-        snew(qMulliken_, natom);
-        for (i = j = 0; i < topology_->atoms.nr; i++)
+        setQandMoments(qtMulliken, natom, q);
+        if (esp_dipole_found && dipQM(qtMulliken) > 0)
         {
-            if (topology_->atoms.atom[i].ptype == eptAtom ||
-                topology_->atoms.atom[i].ptype == eptNucleus)
-            {
-                qMulliken_[j] = q[j];
-                j++;
-            }
-        }
-        CalcQMbasedMoments(qMulliken_, &dip_mulliken_, mu_mulliken_, Q_mulliken_);
-        if (immOK == imm && esp_dipole_found)
-        {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            for(m = 0; m < DIM; m++)
-            {
-                calc_rotmatrix(Q_mulliken_[m], Q_esp_[m], rotmatrix);
-                mvmul(rotmatrix, Q_mulliken_[m], tmpvec);
-                copy_rvec(tmpvec, Q_mulliken_[m]);
-            }
+            rotateQuadrupole(Q_qm_[qtMulliken], Q_qm_[qtESP]);
         }
     }
     T = -1;
@@ -1872,29 +1891,12 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int i, j;
-        snew(qHirshfeld_, natom);
-        for (i = j = 0; i < topology_->atoms.nr; i++)
+        setQandMoments(qtHirshfeld, natom, q);
+        if (esp_dipole_found && dipQM(qtHirshfeld) > 0)
         {
-            if (topology_->atoms.atom[i].ptype == eptAtom || 
-                topology_->atoms.atom[i].ptype == eptNucleus)
-            {
-                qHirshfeld_[j] = q[j];
-                j++;
-            }
+            rotateQuadrupole(Q_qm_[qtHirshfeld], Q_qm_[qtESP]);
         }
-        CalcQMbasedMoments(qHirshfeld_, &dip_hirshfeld_, mu_hirshfeld_, Q_hirshfeld_); 
-        if (immOK == imm && esp_dipole_found)
-        {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            for(m = 0; m < DIM; m++)
-            {
-                calc_rotmatrix(Q_hirshfeld_[m], Q_esp_[m], rotmatrix);
-                mvmul(rotmatrix, Q_hirshfeld_[m], tmpvec);
-                copy_rvec(tmpvec, Q_hirshfeld_[m]);
-            }
-        }    
+
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
@@ -1903,31 +1905,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int i, j;
-        snew(qCM5_, natom);
-        for (i = j = 0; i < topology_->atoms.nr; i++)
+        setQandMoments(qtCM5, natom, q);
+        if (esp_dipole_found && dipQM(qtCM5) > 0)
         {
-            if (topology_->atoms.atom[i].ptype == eptAtom ||
-                topology_->atoms.atom[i].ptype == eptNucleus)
-            {
-                qCM5_[j] = q[j];
-                j++;
-            }
+            rotateQuadrupole(Q_qm_[qtCM5], Q_qm_[qtESP]);
         }
-        CalcQMbasedMoments(qCM5_, &dip_cm5_, mu_cm5_, Q_cm5_);  
-        if (immOK == imm && esp_dipole_found)
-        {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            for(m = 0; m < DIM; m++)
-            {
-                calc_rotmatrix(Q_cm5_[m], Q_esp_[m], rotmatrix);
-                mvmul(rotmatrix, Q_cm5_[m], tmpvec);
-                copy_rvec(tmpvec, Q_cm5_[m]);
-            }
-        }   
+
     } 
     T = -1;
+    immStatus imm = immOK;
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
@@ -1984,12 +1970,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     {       
         dip_exp_  = value;
         dip_err_  = error;
-        for (m = 0; m < DIM; m++)
-        {
-            mu_elec_[m] = vec[m];
-        }
-        dip_elec_ = norm(mu_elec_);
-        mu_elec2_ = gmx::square(value);
+        copy_rvec(vec, mu_qm_[qtElec]);
+        
         if (error <= 0)
         {
             if (debug)
@@ -2002,18 +1984,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
         dip_weight_ = gmx::square(1.0/error);
         
-        if (!bZero && dip_elec_ == 0.0)
+        if (!bZero && dipQM(qtElec) == 0.0)
         {
           imm = immZeroDip;
         }
-        if (immOK == imm && esp_dipole_found)
-        {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            calc_rotmatrix(mu_elec_, mu_esp_, rotmatrix);
-            mvmul(rotmatrix, mu_elec_, tmpvec);
-            copy_rvec(tmpvec, mu_elec_);
-        }   
     }
     else
     {
@@ -2025,23 +1999,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
     {
-        for (m = 0; m < DIM; m++)
+        set_QQM(qtElec, quadrupole);
+        if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
         {
-            for (n = 0; n < DIM; n++)
-            {
-                Q_elec_[m][n] = quadrupole[m][n];
-            }
-        }
-        if (immOK == imm && esp_dipole_found)
-        {
-            matrix rotmatrix;
-            rvec   tmpvec;
-            for(m = 0; m < DIM; m++)
-            {
-                calc_rotmatrix(Q_elec_[m], Q_esp_[m], rotmatrix);
-                mvmul(rotmatrix, Q_elec_[m], tmpvec);
-                copy_rvec(tmpvec, Q_elec_[m]);
-            }
+            rotateQuadrupole(Q_qm_[qtElec], Q_qm_[qtESP]);
         }
     }
     T = -1;  
@@ -2050,13 +2011,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &isoPol_elec_, &error, &T, 
                               myref, mylot, vec, polar))
     {        
-        for (m = 0; m < DIM; m++)
-        {
-            for (n = 0; n < DIM; n++)
-            {
-                alpha_elec_[m][n] = polar[m][n];
-            }
-        }
+        copy_mat(polar, alpha_elec_);
         CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
     } 
     return imm;

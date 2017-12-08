@@ -43,6 +43,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -85,6 +86,13 @@ enum eSupport {
 
 namespace alexandria
 {
+    /*! \brief Enumerated type to differentiate the charge types */
+    enum qType { qtESP = 0, qtMulliken = 1, qtHirshfeld = 2, qtCM5 = 3, 
+                 qtCalc = 4, qtElec = 5, qtNR = 6 };
+
+    /*! \brief return string corresponding to charge type */
+    const char *qTypeName(qType qt);
+    
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -183,30 +191,67 @@ class MyMol
         { 
             return (mol1.molProp()->getMolname().c_str() == mol2.molProp()->getMolname().c_str());
         }
-       
-    public:
-        rvec                     *buf_;
-        rvec                      coc_           = {0,0,0};
-        rvec                      mu_elec_       = {0,0,0};
-        rvec                      mu_calc_       = {0,0,0};
-        rvec                      mu_esp_        = {0,0,0};
-        rvec                      mu_mulliken_   = {0,0,0};
-        rvec                      mu_hirshfeld_  = {0,0,0};
-        rvec                      mu_cm5_        = {0,0,0};
+        
+        /*! \brief Extract charges and electric moments and store them.
+         *
+         * \param[in] qt     Charge type to store in
+         * \param[in] natom  Number of atoms
+         * \param[in] q      The charges
+         */
+        void setQandMoments(qType qt, int natom, double q[]);
+
+        //! Array of dipole vectors
+        rvec                      mu_qm_[qtNR];
+        //! Experimental dipole
         double                    dip_exp_       = 0;
-        double                    dip_elec_      = 0;
-        double                    dip_calc_      = 0;
-        double                    dip_esp_       = 0;
-        double                    dip_mulliken_  = 0;
-        double                    dip_hirshfeld_ = 0;
-        double                    dip_cm5_       = 0;
-        double                   *qESP_;
-        double                   *qMulliken_;
-        double                   *qCM5_;
-        double                   *qHirshfeld_;       
-        double                    mu_elec2_      = 0;
+        //! Error in experimental dipole
         double                    dip_err_       = 0;
+        //! Weighting factor for dipole????
         double                    dip_weight_    = 0;
+        //! Center of charge
+        rvec                      coc_           = {0,0,0};
+        //! Array of quadrupole tensors
+        tensor                    Q_qm_[qtNR];
+        //! Array of vectors of charges
+        std::vector<double>       charge_QM_[qtNR];
+        
+        //! GROMACS state variable
+        t_state                  *state_;
+        //! GROMACS force record
+        t_forcerec               *fr_;
+
+ public:
+        //! \brief return QM dipole corresponding to charge type qt
+        const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
+        
+        //! \brief return QM quadrupole corresponding to charge type qt
+        const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
+        
+        //! \brief return Charge vector corresponding to charge type qt
+        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
+        
+        /*! \brief Store dipole in appropriate vector
+         *
+         * \param[in] qt The charge type
+         * \param[in] mu The dipole to be stored
+         */
+        void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
+
+        /*! \brief Store quadrupole in appropriate tensor
+         *
+         * \param[in] qt The charge type
+         * \param[in] Q  The quadrupole to be stored
+         */
+        void set_QQM(qType qt, tensor Q) { copy_mat(Q, Q_qm_[qt]); }
+
+        //! Return computed dipole for charge type qt
+        double dipQM(qType qt) const { return norm(mu_qm_[qt]); }
+
+        //! Return experimental dipole
+        double dipExper() const { return dip_exp_; }
+        
+        const PaddedRVecVector &x() const { return state_->x; }
+        
         double                    chieq_         = 0;
         double                    Hform_         = 0;
         double                    Emol_          = 0;
@@ -219,17 +264,9 @@ class MyMol
         double                    anisoPol_elec_ = 0;
         double                    anisoPol_calc_ = 0;
         matrix                    box_;
-        tensor                    Q_elec_        = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    Q_calc_        = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    Q_esp_         = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    Q_mulliken_    = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    Q_hirshfeld_   = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    Q_cm5_         = {{0,0,0},{0,0,0},{0,0,0}};
         tensor                    alpha_elec_    = {{0,0,0},{0,0,0},{0,0,0}};
         tensor                    alpha_calc_    = {{0,0,0},{0,0,0},{0,0,0}};
         eSupport                  eSupp_;
-        t_state                  *state_;
-        t_forcerec               *fr_;
         PaddedRVecVector          f_;
         PaddedRVecVector          optf_;
         std::vector<int>          symmetric_charges_;
@@ -368,7 +405,7 @@ class MyMol
          *
          * \param[in] fn        A File pointer opened previously.
          * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-         * \param[in] bVerbose  Verobse
+         * \param[in] bVerbose  Verbose
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] aps       Gromacs atom properties
          */
@@ -444,13 +481,16 @@ class MyMol
          */
         void CalcQuadrupole();
 
-        /*! \brief
-          CalcQMbasedMoments calculates total dipole moment,
-          dipole components, and quadrupoles using QM-based charges like
-          Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
-          QM calculations, it loops over eptAtoms, only. 
-        */
-        void CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q);
+        /*! \brief Calculates dipole components, and quadrupoles.
+         *
+         * Compute moments using QM-based charges like
+         * Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
+         * QM calculations, it loops over eptAtoms, only. 
+         * \param[in] q  Array of charges
+         * \param[out] mu Dipole vector
+         * \param[out] Q  Quadrupole tensor
+         */
+        void CalcQMbasedMoments(double *q, rvec mu, tensor Q);
 
         /*! \brief
          * Generate Charge Groups
