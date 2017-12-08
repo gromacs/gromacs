@@ -110,7 +110,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             TestReferenceChecker checker(refData.rootChecker());
             checker.setDefaultTolerance(relativeToleranceAsPrecisionDependentUlp(1.0,
                                                                                  c_splineModuliSinglePrecisionUlps,
-                                                                                 c_splineModuliDoublePrecisionUlps));
+                                                                                 getSplineModuliDoublePrecisionUlps(pmeOrder+1)));
 
             /* Perform a correctness check */
             const char *dimString[] = { "X", "Y", "Z" };
