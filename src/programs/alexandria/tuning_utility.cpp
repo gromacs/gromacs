@@ -219,7 +219,7 @@ void print_dipole(FILE              *fp,
     {
         ebuf[0] = '\0';
     }
-    fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
+    fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
             qTypeName(qt), mol->muQM(qtCalc)[XX], mol->muQM(qtCalc)[YY], mol->muQM(qtCalc)[ZZ], 
             mol->dipQM(qtCalc), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
 }
