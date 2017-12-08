@@ -122,6 +122,7 @@ void printCopyright(gmx::TextWriter *writer)
         "Carsten Kutzner",
         "Per Larsson",
         "Justin A. Lemkul",
+        "Viveca Lindahl",
         "Magnus Lundborg",
         "Pieter Meulenhoff",
         "Erik Marklund",
