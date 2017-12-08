@@ -2137,7 +2137,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                         mtop_->ffparams.iparams[tp].u_b.kthetaB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].u_b.kthetaA     =
-                                        ltop_->idef.iparams[tp].u_b.kthetaA = gmx::doubleFromString(pi->c_str());
+                                        ltop_->idef.iparams[tp].u_b.kthetaB = gmx::doubleFromString(pi->c_str());
                                 }
                                 else
                                 {
