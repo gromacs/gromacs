@@ -181,11 +181,20 @@ class ShakeTest : public ::testing::Test
             std::vector<real> lagrangianValues;
             std::vector<real> constrainedDistancesSquared;
 
+            real coordMax = 0;
             for (size_t i = 0; i != numConstraints; ++i)
             {
                 constrainedDistancesSquared.push_back(constrainedDistances[i] * constrainedDistances[i]);
                 distanceSquaredTolerances.push_back(1.0 / (constrainedDistancesSquared.back() * ShakeTest::tolerance_));
                 lagrangianValues.push_back(0.0);
+
+                for (size_t j = 1; j < 3; j++)
+                {
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        coordMax == std::max(coordMax, std::abs(positions[iatom[i*constraintStride + j]][d]));
+                    }
+                }
             }
             std::vector<real> halfOfReducedMasses  = computeHalfOfReducedMasses(iatom, inverseMasses);
             std::vector<real> initialDisplacements = computeDisplacements(iatom, positions);
