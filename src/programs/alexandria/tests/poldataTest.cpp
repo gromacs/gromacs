@@ -113,17 +113,19 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->getType(), "type");
     checker_.checkString(aType->getPtype(), "ptype");
     checker_.checkString(aType->getBtype(), "btype");
+    checker_.checkString(aType->getZtype(), "ztype");
     checker_.checkString(aType->getVdwparams(), "vdwparams");
     checker_.checkString(aType->getRefEnthalpy(), "refEnthalpy");
 }
 
 TEST_F(PoldataTest, addAtype){
-    const std::string        elem         = "elem";
+    const std::string        elem         = "U";
     const std::string        desc         = "temporary test atom";
-    const std::string        atype        = "aType";
-    const std::string        ptype        = "Type";
-    const std::string        btype        = "bType";
-          std::string        vdwparams    = "vdwparams";
+    const std::string        atype        = "U";
+    const std::string        ptype        = "p_U";
+    const std::string        ztype        = "z_U";
+    const std::string        btype        = "b_U";
+          std::string        vdwparams    = "10.0 11.1 12.2";
     const std::string        ref_enthalpy = "1000";
 
     pd_.addAtype(elem,
@@ -131,6 +133,7 @@ TEST_F(PoldataTest, addAtype){
                  atype,
                  ptype,
                  btype,
+                 ztype,
                  vdwparams,
                  ref_enthalpy);
 
@@ -143,6 +146,7 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->getType(), atype.c_str());
         checker_.checkString(fa->getPtype(), ptype.c_str());
         checker_.checkString(fa->getBtype(), btype.c_str());
+        checker_.checkString(fa->getZtype(), ztype.c_str());
         checker_.checkString(fa->getVdwparams(), vdwparams.c_str());
     }
 }

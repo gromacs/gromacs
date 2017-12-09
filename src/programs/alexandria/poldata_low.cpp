@@ -131,6 +131,7 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &type,
                  const std::string &ptype,
                  const std::string &btype,
+                 const std::string &ztype,
                  const std::string &elem,
                  std::string       &vdwparams,
                  const std::string &refEnthalpy)
@@ -139,6 +140,7 @@ Ffatype::Ffatype(const std::string &desc,
       type_(type),
       ptype_(ptype),
       btype_(btype),
+      ztype_(ztype),
       elem_(elem),
       vdwparams_(vdwparams),
       refEnthalpy_(refEnthalpy)
@@ -154,6 +156,7 @@ CommunicationStatus Ffatype::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &type_);
         gmx_send_str(cr, dest, &ptype_);
         gmx_send_str(cr, dest, &btype_);
+        gmx_send_str(cr, dest, &ztype_);
         gmx_send_str(cr, dest, &elem_);
         gmx_send_str(cr, dest, &vdwparams_);
         gmx_send_str(cr, dest, &refEnthalpy_);
@@ -180,6 +183,7 @@ CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &type_);
         gmx_recv_str(cr, src, &ptype_);        
         gmx_recv_str(cr, src, &btype_);
+        gmx_recv_str(cr, src, &ztype_);
         gmx_recv_str(cr, src, &elem_);
         gmx_recv_str(cr, src, &vdwparams_);
         gmx_recv_str(cr, src, &refEnthalpy_);

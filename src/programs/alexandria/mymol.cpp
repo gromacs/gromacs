@@ -863,26 +863,36 @@ void MyMol::addShells(const Poldata          &pd,
         {
             std::string atomtype;
             vsiteType_to_atomType(*topology_->atoms.atomtype[i], &atomtype);
-            if (pd.getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
-                (pd.getNzeta(iModel, atomtype) == 2))
+            auto fa    = pd.findAtype(atomtype);
+            if (pd.getAtypeEnd() != fa)
             {
-                p.a[0] = renum[i];
-                p.a[1] = renum[i]+1;
-                if(bHaveVSites_)
+                auto ztype = fa->getZtype();
+                if (pd.getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
+                    (pd.getNzeta(iModel, ztype) == 2))
                 {
-                    auto vsite = pd.findVsite(atomtype);
-                    if (vsite != pd.getVsiteEnd())
+                    p.a[0] = renum[i];
+                    p.a[1] = renum[i]+1;
+                    if(bHaveVSites_)
                     {
-                        pol /= vsite->nvsite();
+                        auto vsite = pd.findVsite(atomtype);
+                        if (vsite != pd.getVsiteEnd())
+                        {
+                            pol /= vsite->nvsite();
+                        }
                     }
+                    p.c[0] = convert2gmx(pol, polarUnit);
+                    add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
                 }
-                p.c[0] = convert2gmx(pol, polarUnit);
-                add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
+                else
+                {
+                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s.\n", 
+                              pol, *topology_->atoms.atomtype[i], ztype.c_str(),
+                              fa->getBtype().c_str(), fa->getPtype().c_str());
+                }
             }
             else
             {
-                gmx_fatal(FARGS, "Polarizability is zero for %s atom type.\n", 
-                          *topology_->atoms.atomtype[i]);
+                printf("Can not find atomtype %s in poldata\n", atomtype.c_str());
             }
         }
     }

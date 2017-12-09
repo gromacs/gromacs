@@ -125,6 +125,7 @@ class Ffatype
          * \param[in] type        Atom type
          * \param[in] ptype       Polarizability type
          * \param[in] btype       Bond type
+         * \param[in] ztype       Zeta type
          * \param[in] elem        Element name
          * \param[in] vdwparams   Van der Waals parameters
          * \param[in] refEnthalpy Reference Enthalpy of Formation
@@ -133,6 +134,7 @@ class Ffatype
                 const std::string &type,
                 const std::string &ptype,
                 const std::string &btype,
+                const std::string &ztype,
                 const std::string &elem,
                 std::string       &vdwparams,
                 const std::string &refEnthalpy);
@@ -163,6 +165,11 @@ class Ffatype
         const std::string &getBtype() const { return btype_; }
 
         /*! \brief
+         * Return the zeta type of atoms
+         */
+        const std::string &getZtype() const { return ztype_; }
+
+        /*! \brief
          * Return the element name of atoms
          */
         const std::string &getElem() const { return elem_; }
@@ -188,6 +195,7 @@ class Ffatype
         std::string type_;
         std::string ptype_;
         std::string btype_;
+        std::string ztype_;
         std::string elem_;
         std::string vdwparams_;
         std::string refEnthalpy_;

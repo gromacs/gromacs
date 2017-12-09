@@ -81,6 +81,7 @@ void Poldata::addAtype(const std::string &elem,
                        const std::string &atype,
                        const std::string &ptype,
                        const std::string &btype,
+                       const std::string &ztype,
                        std::string       &vdwparams,
                        const std::string &refEnthalpy)
 {
@@ -95,7 +96,7 @@ void Poldata::addAtype(const std::string &elem,
     }
     if (i == alexandria_.size())
     {
-        Ffatype sp(desc, atype, ptype, btype,
+        Ffatype sp(desc, atype, ptype, btype, ztype,
                    elem, vdwparams, refEnthalpy);
 
         alexandria_.push_back(sp);
@@ -582,19 +583,19 @@ int Poldata::havePolSupport(const std::string &atype) const
 }
 
 bool Poldata::haveEemSupport(ChargeDistributionModel  eqdModel,
-                             const std::string       &name,
+                             const std::string       &atype,
                              gmx_bool                 bAllowZeroParameters) const
 {
-    auto eep = findEem(eqdModel, name);
+    auto eep = findEem(eqdModel, atype);
     return (eep != EndEemprops() &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
 
 double Poldata::getJ00(ChargeDistributionModel  eqdModel,
-                       const std::string       &name) const
+                       const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
     {
         return eer->getJ0();
     }
@@ -602,10 +603,10 @@ double Poldata::getJ00(ChargeDistributionModel  eqdModel,
 }
 
 const char *Poldata::getQstr(ChargeDistributionModel  eqdModel,
-                             const std::string       &name) const
+                             const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
     {
         return eer->getQstr();
     }
@@ -654,10 +655,10 @@ double Poldata::getZeta(ChargeDistributionModel  eqdModel,
 }
 
 int Poldata::getNzeta(ChargeDistributionModel  eqdModel,
-                      const std::string       &name) const
+                      const std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
     {
         return eer->getNzeta();
     }
@@ -665,11 +666,11 @@ int Poldata::getNzeta(ChargeDistributionModel  eqdModel,
 }
 
 double Poldata::getQ(ChargeDistributionModel  eqdModel,
-                     const std::string       &name,
+                     const std::string       &atype,
                      int                      zz) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
         return eer->getQ(zz);
@@ -678,17 +679,17 @@ double Poldata::getQ(ChargeDistributionModel  eqdModel,
 }
 
 double Poldata::getChi0(ChargeDistributionModel   eqdModel,
-                        const  std::string       &name) const
+                        const  std::string       &atype) const
 {
     EempropsConstIterator eer;
-    if ((eer = findEem(eqdModel, name)) != EndEemprops())
+    if ((eer = findEem(eqdModel, atype)) != EndEemprops())
     {
         return eer->getChi0();
     }
     else
     {
-        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and name %s", 
-                  getEemtypeName(eqdModel), name.c_str());
+        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and atype %s", 
+                  getEemtypeName(eqdModel), atype.c_str());
     }
     return -1;
 }
@@ -1024,51 +1025,61 @@ void Poldata::broadcast(t_commrec *cr)
 }
 
 EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
-                                       const std::string       &name) const
+                                       const std::string       &atype) const
 {
-    std::string nn = name;
-    if (eqdModel == eqdRappe || eqdModel == eqdBultinck || eqdModel == eqdYang)
+    std::string nn;
+    auto fa = findAtype(atype);
+    if (fa != getAtypeEnd())
     {
-        auto fa = findAtype(name);
-        if (fa != getAtypeEnd())
+        if (eqdModel == eqdRappe || eqdModel == eqdBultinck || 
+            eqdModel == eqdYang)
         {
             nn = fa->getElem();
         }
         else
         {
-            return eep_.end();
+            nn = fa->getZtype();
         }
+    }
+    else
+    {
+        nn = atype;
     }
     return std::find_if(eep_.begin(), eep_.end(),
                         [eqdModel, nn](Eemprops const &eep)
-        {
-            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                    (eep.getEqdModel() == eqdModel));
-        });
+                        {
+                            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
+                                    (eep.getEqdModel() == eqdModel));
+                        });
 }
 
 EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
-                                  const std::string       &name)
+                                  const std::string       &atype)
 {
-    std::string nn = name;
-    if (eqdModel == eqdRappe || eqdModel == eqdBultinck || eqdModel == eqdYang)
+    std::string nn;
+    auto fa = findAtype(atype);
+    if (fa != getAtypeEnd())
     {
-        auto fa = findAtype(name);
-        if (fa != getAtypeEnd())
+        if (eqdModel == eqdRappe || eqdModel == eqdBultinck || 
+            eqdModel == eqdYang)
         {
             nn = fa->getElem();
         }
         else
         {
-            return eep_.end();
+            nn = fa->getZtype();
         }
+    }
+    else
+    {
+        nn = atype;
     }
     return std::find_if(eep_.begin(), eep_.end(),
                         [eqdModel, nn](Eemprops const &eep)
-        {
-            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                    (eep.getEqdModel() == eqdModel));
-        });
+                        {
+                            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
+                                    (eep.getEqdModel() == eqdModel));
+                        });
 }
 
 } // namespace alexandria

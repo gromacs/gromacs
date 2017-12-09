@@ -93,7 +93,7 @@ enum {
     exmlPOLTYPES, exmlPOLTYPE, exmlPTYPE,
     exmlELEM, exmlNAME, exmlDESC,
     exmlATYPE, exmlMILLER, exmlVALENCE, exmlBOSQUE,
-    exmlBTYPE, exmlNEIGHBORS, exmlAROMATIC,
+    exmlBTYPE, exmlZTYPE, exmlNEIGHBORS, exmlAROMATIC,
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, 
     exmlSIGPOL, exmlVDWPARAMS, exmlEREF,
     exmlFUNCTION, exmlINTERACTION,
@@ -128,7 +128,7 @@ const char * exml_names[exmlNR] = {
     "poltypes", "poltype", "ptype",
     "elem", "name", "description",
     "atype", "miller", "valence", "bosque",
-    "btype", "neighbors", "aromatic",
+    "btype", "ztype", "neighbors", "aromatic",
     "geometry", "numbonds", "polarizability", 
     "sigma_pol", "vdwparams", "ref_enthalpy",
     "function", "interaction",
@@ -325,6 +325,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlATYPE]) &&
                 NN(xbuf[exmlBTYPE]) &&
                 NN(xbuf[exmlPTYPE]) &&
+                NN(xbuf[exmlZTYPE]) &&
                 NN(xbuf[exmlVDWPARAMS]) &&
                 NN(xbuf[exmlEREF]))
             {
@@ -333,6 +334,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                             xbuf[exmlATYPE],
                             xbuf[exmlPTYPE],
                             xbuf[exmlBTYPE],
+                            xbuf[exmlZTYPE],
                             xbuf[exmlVDWPARAMS],
                             xbuf[exmlEREF]);
             }
@@ -611,6 +613,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
             add_xml_char(grandchild, exml_names[exmlATYPE], aType->getType().c_str());
             add_xml_char(grandchild, exml_names[exmlPTYPE], aType->getPtype().c_str());
             add_xml_char(grandchild, exml_names[exmlBTYPE], aType->getBtype().c_str());
+            add_xml_char(grandchild, exml_names[exmlZTYPE], aType->getZtype().c_str());
             add_xml_char(grandchild, exml_names[exmlVDWPARAMS], aType->getVdwparams().c_str());
             add_xml_char(grandchild, exml_names[exmlEREF], aType->getRefEnthalpy().c_str());
         }

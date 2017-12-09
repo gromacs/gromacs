@@ -276,8 +276,8 @@ MolDip::MolDip()
     fill_inputrec(inputrec_);
 }
 
-immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol, 
-                                         IndexCount          *ic)
+immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol, 
+                                         IndexCount       *ic)
 {
     immStatus imm = immOK;
 
@@ -286,15 +286,24 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol,
         if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
             (mymol.topology_->atoms.atom[i].ptype == eptAtom))
         {
-            auto ai = ic->findName(*(mymol.topology_->atoms.atomtype[i]));
-            if (ic->endIndex() == ai)
+            auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+            if (pd_.getAtypeEnd() != fa)
             {
-                if (debug)
+                const std::string &ztype = fa->getZtype();
+                auto ai = ic->findName(ztype);
+                if (ic->endIndex() == ai)
                 {
-                    fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                            mymol.molProp()->getMolname().c_str(),
-                            *(mymol.topology_->atoms.atomtype[i]));
+                    if (debug)
+                    {
+                        fprintf(debug, "Removing %s because of lacking support for atom %s\n",
+                                mymol.molProp()->getMolname().c_str(),
+                                ztype.c_str());
+                    }
+                    imm = immInsufficientDATA;
                 }
+            }
+            else
+            {
                 imm = immInsufficientDATA;
             }
         }
@@ -306,7 +315,8 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol,
             if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
                 (mymol.topology_->atoms.atom[i].ptype == eptAtom))
             {
-                ic->incrementName(*(mymol.topology_->atoms.atomtype[i]));
+                auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
+                ic->incrementName(fa->getZtype());
             }
         }
     }
