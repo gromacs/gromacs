@@ -1983,6 +1983,13 @@ int gmx_grompp(int argc, char *argv[])
     if (nint_ftype(sys, mi, F_POSRES) > 0 ||
         nint_ftype(sys, mi, F_FBPOSRES) > 0)
     {
+        if (ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK)
+        {
+            sprintf(warn_buf, "You are combining position restraints with %s pressure coupling, which can lead to instabilities. If you really want to combine position restraints with pressure coupling, we suggest to use %s pressure coupling instead.",
+                    EPCOUPLTYPE(ir->epc), EPCOUPLTYPE(epcBERENDSEN));
+            warning_note(wi, warn_buf);
+        }
+
         const char *fn = opt2fn("-r", NFILE, fnm);
         const char *fnB;
 
