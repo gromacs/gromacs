@@ -433,7 +433,9 @@ static gmx_bool init_gpu_application_clocks(
         return true;
     }
 
-    if (cuda_compute_capability >= 60)
+    // Only warn about not being able to change clocks if they are not already at the max values
+    if (cuda_compute_capability >= 60 &&
+        (max_mem_clock > cuda_dev->nvml_orig_app_mem_clock || max_sm_clock > cuda_dev->nvml_orig_app_sm_clock))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "Cannot change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nPlease contact your admin to change application clocks.\n",
@@ -452,7 +454,9 @@ static gmx_bool init_gpu_application_clocks(
         return false;
     }
 
-    if (cuda_dev->nvml_is_restricted != NVML_FEATURE_DISABLED)
+    // Only warn about not being able to change clocks if they are not already at the max values
+    if (cuda_dev->nvml_is_restricted != NVML_FEATURE_DISABLED &&
+        (max_mem_clock > cuda_dev->nvml_orig_app_mem_clock || max_sm_clock > cuda_dev->nvml_orig_app_sm_clock))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "Cannot change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clocks.",
