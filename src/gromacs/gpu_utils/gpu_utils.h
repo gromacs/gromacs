@@ -74,12 +74,26 @@ enum class GpuTaskCompletion
     Check /*<< Only check whether the task has completed */
 };
 
+/*! \brief Return whether GPUs can be detected
+ *
+ * Returns true when this is a build of \Gromacs configured to support
+ * GPU usage, and a valid device driver or ICD was detected by the GPU
+ * runtime.
+ *
+ * Does not throw. */
+GPU_FUNC_QUALIFIER
+bool canDetectGpus() GPU_FUNC_TERM_WITH_RETURN(false);
+
 /*! \brief Detect all GPUs in the system.
  *
- *  Will detect every GPU supported by the device driver in use. Also
- *  check for the compatibility of each and fill the gpu_info->gpu_dev array
- *  with the required information on each the device: ID, device properties,
- *  status.
+ *  Will detect every GPU supported by the device driver in use. If
+ *  the device driver is missing or unsuitable, returns the same error
+ *  as for "no valid devices detected," so generally calling code
+ *  should have checked the return value from canDetectGpus() first,
+ *  in order to understand the behaviour of this routine. This routine
+ *  also checks for the compatibility of each and fill the
+ *  gpu_info->gpu_dev array with the required information on each the
+ *  device: ID, device properties, status.
  *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
  *  \param[out] err_str    The error message of any GPU API error that caused

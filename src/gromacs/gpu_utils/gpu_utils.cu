@@ -636,6 +636,18 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     }
 }
 
+bool canDetectGpus()
+{
+    cudaError_t        stat;
+    int                driverVersion = -1;
+    stat = cudaGetDriverVersion(&driverVersion);
+    GMX_ASSERT(stat != cudaErrorInvalidValue, "An impossible null pointer was passed to cudaGetDriverVersion");
+    GMX_RELEASE_ASSERT(stat == cudaSuccess,
+                       formatString("An unexpected value was returned from cudaGetDriverVersion %s: %s",
+                                    cudaGetErrorName(stat), cudaGetErrorString(stat)).c_str());
+    bool foundDriver = (driverversion > 0);
+    return foundDriver;
+}
 
 int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 {
