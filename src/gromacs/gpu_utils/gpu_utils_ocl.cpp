@@ -60,6 +60,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Helper macro for error handling */
 #define CALLOCLFUNC_LOGERROR(func, err_str, retval) { \
@@ -160,6 +161,24 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
     return OCL_VENDOR_UNKNOWN;
 }
 
+
+//! This function is documented in the header file
+bool canDetectGpus()
+{
+    cl_uint numPlatforms = -1;
+    cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);
+    GMX_ASSERT(status != CL_INVALID_VALUE, "Incorrect call of clGetPlatformIDs detected");
+    if (status == CL_PLATFORM_NOT_FOUND_KHR)
+    {
+        // No valid ICDs found
+        return false;
+    }
+    GMX_RELEASE_ASSERT(status == CL_SUCCESS,
+                       gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
+                                         status, ocl_get_error_string(status).c_str()).c_str());
+    bool foundPlatform = (numPlatforms > 0);
+    return foundPlatform;
+}
 
 //! This function is documented in the header file
 int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
