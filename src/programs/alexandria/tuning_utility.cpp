@@ -226,6 +226,7 @@ void print_dipole(FILE              *fp,
 
 void print_electric_props(FILE                           *fp, 
                           std::vector<alexandria::MyMol>  mymol,
+                          const Poldata                  &pd,
                           const char                     *qhisto,
                           const char                     *DipCorr,
                           const char                     *MuCorr, 
@@ -255,15 +256,15 @@ void print_electric_props(FILE                           *fp,
     FILE          *dipc, *muc,  *Qc;
     FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc;   
         
-    struct AtomTypeLsq {
-        std::string atomtype;
+    struct ZetaTypeLsq {
+        std::string ztype;
         gmx_stats_t lsq;
     };    
     
     gmx_stats_t               lsq_mu[qtNR], lsq_dip[qtNR], lsq_quad[qtNR];
     gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol;
     const char               *eprnm[qtNR] = {"Calc", "ESP", "MPA", "HPA", "CM5"};
-    std::vector<AtomTypeLsq>  lsqt;
+    std::vector<ZetaTypeLsq>  lsqt;
 
     for (int i = 0; i < qtNR; i++)
     {
@@ -279,8 +280,8 @@ void print_electric_props(FILE                           *fp,
     
     for (auto ai = indexCount->beginIndex(); ai < indexCount->endIndex(); ++ai)
     {
-        AtomTypeLsq k;
-        k.atomtype.assign(ai->name());
+        ZetaTypeLsq k;
+        k.ztype.assign(ai->name());
         k.lsq = gmx_stats_init();
         lsqt.push_back(std::move(k));
     }       
@@ -355,15 +356,17 @@ void print_electric_props(FILE                           *fp,
             auto x    = mol.x();
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
+                // TODO Or virtual site?
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom)
                 {               
-                    const char *at = *(mol.topology_->atoms.atomtype[j]);
+                    auto fa = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
+                    auto at = fa->getZtype();
                     if(indexCount->isOptimized(at))
                     {
                         auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                      [at](const AtomTypeLsq &atlsq)
+                                                      [at](const ZetaTypeLsq &atlsq)
                                                       {
-                                                          return atlsq.atomtype.compare(at) == 0;
+                                                          return atlsq.ztype.compare(at) == 0;
                                                       });                                                 
                         if (k != lsqt.end())
                         {
@@ -434,7 +437,7 @@ void print_electric_props(FILE                           *fp,
     std::vector<const char*> atypes;
     for (const auto &k : lsqt)
     {
-        atypes.push_back(k.atomtype.c_str());
+        atypes.push_back(k.ztype.c_str());
     }
     
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
@@ -447,7 +450,7 @@ void print_electric_props(FILE                           *fp,
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
             real *x, *y;
-            fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
+            fprintf(fp, "%-4d copies for %4s\n", nbins, k->ztype.c_str());
             if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");

@@ -99,6 +99,7 @@ namespace alexandria
                           
     void print_electric_props(FILE                           *fp, 
                               std::vector<alexandria::MyMol>  mymol,
+                              const Poldata                  &pd,
                               const char                     *qhisto,
                               const char                     *dipcorr,
                               const char                     *mucorr, 

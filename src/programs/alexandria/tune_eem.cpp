@@ -1080,6 +1080,7 @@ int alex_tune_eem(int argc, char *argv[])
         auto *ic = opt.indexCount();
         print_electric_props(fp,  
                              opt.mymol_,
+                             opt.pd_,
                              opt2fn("-qhisto",    NFILE, fnm),
                              opt2fn("-dipcorr",   NFILE, fnm),
                              opt2fn("-mucorr",    NFILE, fnm),
