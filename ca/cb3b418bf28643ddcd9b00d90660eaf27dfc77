@@ -1,0 +1,11 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+1: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+1: Erik Lindahl <erik.lindahl@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Sun, 10 Dec 2017 20:25:20 +0100
+Reviewed-on: https://gerrit.gromacs.org/7289
+Project: gromacs
+Branch: refs/heads/release-2018
