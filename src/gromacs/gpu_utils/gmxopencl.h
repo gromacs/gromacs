@@ -50,9 +50,13 @@
 #define GMX_GPU_UTILS_GMXOPENCL_H
 
 /*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
-   features that were deprecated in 2.0, so that they don't warn about
-   it. */
+   features that were deprecated in 1.2 or 2.0, so that they don't
+   warn about it. */
+///@{
+#  define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+#  define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #  define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+///@}
 #  ifdef __APPLE__
 #    include <OpenCL/opencl.h>
 #  else

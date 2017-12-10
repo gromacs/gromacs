@@ -114,7 +114,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     int              rank_world;
     MPI_Comm         physicalnode_comm;
 #endif
-    int              rank_local;
+    bool             isMasterRankOfNode;
 
     hwinfo_g->gpu_info.bDetectGPUs =
         (bGPUBinary && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
@@ -142,20 +142,32 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
     MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(),
                    rank_world, &physicalnode_comm);
-    MPI_Comm_rank(physicalnode_comm, &rank_local);
+    {
+        int rankOnNode = -1;
+        MPI_Comm_rank(physicalnode_comm, &rankOnNode);
+        isMasterRankOfNode = (rankOnNode == 0);
+    }
     GMX_UNUSED_VALUE(cr);
 #else
-    /* Here there should be only one process, check this */
+    // Here there should be only one process, because if we are using
+    // thread-MPI, only one thread is active so far. So we check this.
     GMX_RELEASE_ASSERT(cr->nnodes == 1 && cr->sim_nodeid == 0, "Only a single (master) process should execute here");
-
-    rank_local = 0;
+    isMasterRankOfNode = true;
 #endif
 
     /*  With CUDA detect only on one rank per host, with OpenCL need do
      *  the detection on all PP ranks */
     bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasDuty(cr, DUTY_PP));
 
-    if (rank_local == 0 || isOpenclPpRank)
+    bool gpusCanBeDetected = false;
+    if (isMasterRankOfNode || isOpenclPpRank)
+    {
+        gpusCanBeDetected = canDetectGpus();
+        // No need to tell the user anything at this point, they get a
+        // hardware report later.
+    }
+
+    if (gpusCanBeDetected)
     {
         char detection_error[STRLEN] = "", sbuf[STRLEN];
 
@@ -188,7 +200,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 
             dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
 
-            if (rank_local > 0)
+            if (!isMasterRankOfNode)
             {
                 hwinfo_g->gpu_info.gpu_dev =
                     (struct gmx_device_info_t *)malloc(dev_size);
