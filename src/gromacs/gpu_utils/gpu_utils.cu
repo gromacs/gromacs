@@ -664,6 +664,10 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
         retval = -1;
         s      = cudaGetErrorString(stat);
         strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
+
+        // Consume the error now that we have prepared to handle
+        // it. This stops it reappearing next time we check for errors.
+        cudaGetLastError();
     }
     else
     {
