@@ -68,7 +68,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("The number of threads is not equal to the number of");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(2);
 }
 
@@ -76,7 +75,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(8);
 }
 
@@ -85,7 +83,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
     helper_.setLogicalProcessorCount(4);
     helper_.setTotNumThreadsIsAuto(true);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(8);
 }
 
@@ -94,7 +91,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithUnknownHardware)
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(0);
     helper_.expectWarningMatchingRegex("No information on available cores");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(2);
 }
 
@@ -103,7 +99,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooManyThreads)
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(8);
 }
 
@@ -114,7 +109,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeOffset)
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Applying core pinning offset 2");
     helper_.expectWarningMatchingRegex("Requested offset too large");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(3);
 }
 
@@ -124,7 +118,6 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeStride)
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
     helper_.expectWarningMatchingRegex("Requested stride too large");
-    helper_.expectGenericFailureMessage();
     helper_.setAffinity(3);
 }
 

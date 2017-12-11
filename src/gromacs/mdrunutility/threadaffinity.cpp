@@ -117,7 +117,8 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
                            int   threads,
                            bool  affinityIsAutoAndNumThreadsIsNotAuto,
                            int pin_offset, int * pin_stride,
-                           int **localityOrder)
+                           int **localityOrder,
+                           bool *issuedWarning)
 {
     int                          hwThreads;
     int                          hwThreadsPerCore = 0;
@@ -247,6 +248,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
         /* We are oversubscribing, don't pin */
         GMX_LOG(mdlog.warning).asParagraph().appendText(
                 "WARNING: Requested stride too large for available cores, thread pinning disabled.");
+        alreadyWarned = true;
     }
     validLayout = validLayout && !invalidValue;
 
@@ -257,6 +259,8 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
                 bPickPinStride ? "n auto-selected" : " user-specified",
                 *pin_stride);
     }
+
+    *issuedWarning = alreadyWarned;
 
     return validLayout;
 }
@@ -429,10 +433,12 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     bool affinityIsAutoAndNumThreadsIsNotAuto =
         (hw_opt->thread_affinity == threadaffAUTO &&
          !hw_opt->totNumThreadsIsAuto);
+    bool issuedWarning;
     bool validLayout
         = get_thread_affinity_layout(mdlog, cr, hwTop, nthread_node,
                                      affinityIsAutoAndNumThreadsIsNotAuto,
-                                     offset, &core_pinning_stride, &localityOrder);
+                                     offset, &core_pinning_stride, &localityOrder,
+                                     &issuedWarning);
     const gmx::sfree_guard  localityOrderGuard(localityOrder);
 
     bool                    allAffinitiesSet;
@@ -447,7 +453,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
         // Produce the warning if any rank fails.
         allAffinitiesSet = false;
     }
-    if (invalidWithinSimulation(cr, !allAffinitiesSet))
+    if (invalidWithinSimulation(cr, !allAffinitiesSet) && !issuedWarning)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: Thread affinity was not set.");
     }
