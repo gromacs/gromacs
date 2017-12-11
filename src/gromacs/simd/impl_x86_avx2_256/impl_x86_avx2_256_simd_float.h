@@ -139,22 +139,6 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
 }
 
 static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    return {
-               _mm256_slli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    return {
-               _mm256_srli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
 operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {

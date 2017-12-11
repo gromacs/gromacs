@@ -508,38 +508,6 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 }
 
 static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    // The shift constant magic requires an explanation:
-    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
-    // and we need to be able to shift up to 31 bits. The code on the right hand
-    // side splits the constant in three parts with values in the range 0..15.
-    // Since the argument has to be a constant (both our and VMX requirement), these
-    // constants will be evaluated at compile-time, and if one or two parts evaluate
-    // to zero they will be removed with -O2 or higher optimization (checked).
-
-    return {
-               vec_sl(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    // The shift constant magic requires an explanation:
-    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
-    // and we need to be able to shift up to 31 bits. The code on the right hand
-    // side splits the constant in three parts with values in the range 0..15.
-    // Since the argument has to be a constant (both our and VMX requirement), these
-    // constants will be evaluated at compile-time, and if one or two parts evaluate
-    // to zero they will be removed with -O2 or higher optimization (checked).
-
-    return {
-               vec_sr(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
 operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {

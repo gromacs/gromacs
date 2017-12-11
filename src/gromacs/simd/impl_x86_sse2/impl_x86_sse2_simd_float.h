@@ -538,22 +538,6 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 #endif
 
 static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    return {
-               _mm_slli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    return {
-               _mm_srli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
 operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {

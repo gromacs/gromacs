@@ -104,15 +104,6 @@ TEST_F(SimdIntegerTest, mul)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), SimdInt32(16384) * SimdInt32(16384) ); // 16384*16384 = 268435456 (long mul)
 }
 
-TEST_F(SimdIntegerTest, slli)
-{
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), SimdInt32(2) << 21); // 2 << 21 = 4194304
-}
-
-TEST_F(SimdIntegerTest, srli)
-{
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), SimdInt32(4194304) >> 20); // 4194304 >> 20 = 4
-}
 #endif                                                                     // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
