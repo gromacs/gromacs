@@ -147,7 +147,7 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
 }
 
 
-/*! \brief Update minQuotient if the ratio of this function value and its second derivative is smaller
+/*! \brief Calculate absolute quotient of function and its second derivative
  *
  * This is a utility function used in the functions to find the smallest quotient
  * in a range.
@@ -156,14 +156,15 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
  * \param[in]    thisPoint     Value of function at x.
  * \param[in]    nextPoint     Value of function at x+h.
  * \param[in]    spacing       Value of h.
- * \param[inout] minQuotient   Current minimum of such quotients, updated if this quotient is smaller.
+ *
+ * \return The absolute value of the quotient. If the second derivative is
+ *         zero, we rather divide by sqrt(GMX_REAL_MIN).
  */
-static void
-updateMinQuotientOfFunctionAndSecondDerivative(double     previousPoint,
-                                               double     thisPoint,
-                                               double     nextPoint,
-                                               double     spacing,
-                                               double *   minQuotient)
+static double
+quotientOfFunctionAndSecondDerivative(double     previousPoint,
+                                      double     thisPoint,
+                                      double     nextPoint,
+                                      double     spacing)
 {
     double value             = std::abs( thisPoint );
     double secondDerivative  = std::abs( (previousPoint - 2.0 * thisPoint + nextPoint) / (spacing * spacing ) );
@@ -173,7 +174,7 @@ updateMinQuotientOfFunctionAndSecondDerivative(double     previousPoint,
     // and the whole routine is searching for the smallest value.
     secondDerivative = std::max(secondDerivative, static_cast<double>(std::sqrt(GMX_REAL_MIN)));
 
-    *minQuotient = std::min(*minQuotient, value / secondDerivative);
+    return (value / secondDerivative);
 }
 
 
@@ -186,14 +187,33 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
     // outside the range specified.
     double                     h           = std::pow( GMX_DOUBLE_EPS, 0.25 );
     std::pair<double, double>  newRange(range.first + h, range.second - h);
-    const int                  points      = 1000; // arbitrary
+    const int                  points      = 500; // arbitrary
     double                     dx          = (newRange.second - newRange.first) / points;
     double                     minQuotient = GMX_REAL_MAX;
+    double                     minX        = newRange.first;
 
+    // We sweep the range in two stages so we are more likely find the min
+    // quotient without using a very large number of points
+
+    // Coarse screening
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
-        updateMinQuotientOfFunctionAndSecondDerivative(f(x-h), f(x), f(x+h), h, &minQuotient);
+        double quotient = quotientOfFunctionAndSecondDerivative(f(x-h), f(x), f(x+h), h);
+        if (quotient < minQuotient)
+        {
+            minQuotient = quotient;
+            minX        = x;
+        }
     }
+
+    // fine screening
+    dx = dx / points;
+    std::pair<double, double>  fineRange(minX - 0.5 * dx, minX + 0.5 * dx);
+    for (double x = fineRange.first; x <= fineRange.second; x += dx)
+    {
+        minQuotient = std::min(minQuotient, quotientOfFunctionAndSecondDerivative(f(x-h), f(x), f(x+h), h));
+    }
+
     return static_cast<real>(minQuotient);
 }
 
@@ -214,14 +234,14 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        
 
     for (std::size_t i = firstIndex + 1; (i + 1) < lastIndex; i++)
     {
-        updateMinQuotientOfFunctionAndSecondDerivative(function[i-1], function[i], function[i+1], inputSpacing, &minQuotient);
+        minQuotient = std::min(minQuotient, quotientOfFunctionAndSecondDerivative(function[i-1], function[i], function[i+1], inputSpacing));
     }
     return static_cast<real>(minQuotient);
 }
 
 
 
-/*! \brief Update minQuotient if the ratio of this function value and its third derivative is smaller
+/*! \brief Calculate absolute quotient of function and its third derivative
  *
  * This is a utility function used in the functions to find the smallest quotient
  * in a range.
@@ -232,16 +252,17 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        
  * \param[in]    nextPoint             Value of function at x+h.
  * \param[in]    nextNextPoint         Value of function at x+2h.
  * \param[in]    spacing               Value of h.
- * \param[inout] minQuotient   Current minimum of such quotients, updated if this quotient is smaller.
+ *
+ * \return The absolute value of the quotient. If the third derivative is
+ *         zero, we rather divide by sqrt(GMX_REAL_MIN).
  */
-static void
-updateMinQuotientOfFunctionAndThirdDerivative(double     previousPreviousPoint,
-                                              double     previousPoint,
-                                              double     thisPoint,
-                                              double     nextPoint,
-                                              double     nextNextPoint,
-                                              double     spacing,
-                                              double *   minQuotient)
+static double
+quotientOfFunctionAndThirdDerivative(double     previousPreviousPoint,
+                                     double     previousPoint,
+                                     double     thisPoint,
+                                     double     nextPoint,
+                                     double     nextNextPoint,
+                                     double     spacing)
 {
     double value            = std::abs( thisPoint );
     double thirdDerivative  = std::abs((nextNextPoint - 2 * nextPoint + 2 * previousPoint - previousPreviousPoint) / (2 * spacing * spacing * spacing));
@@ -251,7 +272,7 @@ updateMinQuotientOfFunctionAndThirdDerivative(double     previousPreviousPoint,
     // and the whole routine is searching for the smallest value.
     thirdDerivative = std::max(thirdDerivative, static_cast<double>(std::sqrt(GMX_REAL_MIN)));
 
-    *minQuotient = std::min(*minQuotient, value / thirdDerivative);
+    return (value / thirdDerivative);
 }
 
 
@@ -264,13 +285,30 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
     // outside the range specified.
     double                     h           = std::pow( GMX_DOUBLE_EPS, 0.2 ); // optimal spacing for 3rd derivative
     std::pair<double, double>  newRange(range.first + 2*h, range.second - 2*h);
-    const int                  points      = 1000;                            // arbitrary
+    const int                  points      = 500;                             // arbitrary
     double                     dx          = (newRange.second - newRange.first) / points;
     double                     minQuotient = GMX_REAL_MAX;
+    double                     minX        = newRange.first;
 
+    // We sweep the range in two stages so we are more likely find the min
+    // quotient without using a very large number of points
+
+    // Coarse screening
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
-        updateMinQuotientOfFunctionAndThirdDerivative(f(x-2*h), f(x-h), f(x), f(x+h), f(x+2*h), h, &minQuotient);
+        double quotient = quotientOfFunctionAndThirdDerivative(f(x-2*h), f(x-h), f(x), f(x+h), f(x+2*h), h);
+        if (quotient < minQuotient)
+        {
+            minQuotient = quotient;
+            minX        = x;
+        }
+    }
+
+    // fine screening
+    std::pair<double, double>  fineRange(minX - 0.5 * dx / points, minX + 0.5 * dx / points);
+    for (double x = fineRange.first; x <= fineRange.second; x += dx / points)
+    {
+        minQuotient = std::min(minQuotient, quotientOfFunctionAndThirdDerivative(f(x-2*h), f(x-h), f(x), f(x+h), f(x+2*h), h));
     }
     return static_cast<real>(minQuotient);
 }
@@ -288,7 +326,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        f
 
     for (std::size_t i = firstIndex + 2; (i + 2) < lastIndex; i++)
     {
-        updateMinQuotientOfFunctionAndThirdDerivative(function[i-2], function[i-1], function[i], function[i+1], function[i+2], inputSpacing, &minQuotient);
+        minQuotient = std::min(minQuotient, quotientOfFunctionAndThirdDerivative(function[i-2], function[i-1], function[i], function[i+1], function[i+2], inputSpacing));
     }
     return static_cast<real>(minQuotient);
 }
