@@ -340,6 +340,8 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
             ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
             throw;
         }
+        // TODO This is not applicable to cubic splines, please fix
+        //
         // Calculate the required table spacing h. The error we make with linear interpolation
         // of the derivative will be described by the third-derivative correction term.
         // This means we can compute the required spacing as h = sqrt(12*tolerance*min(f'/f''')),
