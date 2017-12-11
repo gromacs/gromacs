@@ -374,7 +374,23 @@ Unfortunately reality is not that simple. Some algorithms like lattice
 summation need quartets of elements, so even when the SIMD width is >4 we
 need width-4 SIMD if it is supported. The availability of SIMD4 is indicated
 by \ref GMX_SIMD4_HAVE_FLOAT and \ref GMX_SIMD4_HAVE_DOUBLE. For now we only
-support a small subset of SIMD operations for SIMD4.
+support a small subset of SIMD operations for SIMD4. Because SIMD4 doesn't
+scale with increasingly large SIMD width it should be avoided for all new
+code and SIMD4N should be used instead.
+
+SIMD4N implementation
+--------------------
+
+Some code, like lattice summation, has inner loops which are smaller
+than the full SIMD width and require the two most inner loops to be
+vectorized together (OMP calls this collapse). For this SIMD4N functions are
+provided. The availability of these function is indicated by
+\ref GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT and
+\ref GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE.
+These functions return the type alias Simd4NFloat / Simd4NDouble with is
+either the normal SIMD type or the SIMD4 type and thus only supports
+the operations the SIMD4 type supports.
+
 
 Predefined SIMD preprocessor macros
 ===================================
