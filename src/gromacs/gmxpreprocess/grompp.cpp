@@ -79,6 +79,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -645,6 +646,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     set_box_rel(ir, state);
 
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
+
     done_top(conftop);
     sfree(conftop);
 
@@ -655,6 +657,14 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
                 "atom names from %s will be ignored\n",
                 nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
         warning(wi, buf);
+    }
+
+    /* If using the group scheme, make sure charge groups are made whole to avoid errors
+     * in calculating charge group size later on
+     */
+    if (ir->cutoff_scheme == ecutsGROUP && ir->ePBC != epbcNONE)
+    {
+        do_pbc_first_mtop(nullptr, ir->ePBC, state->box, sys, x);
     }
 
     /* Do more checks, mostly related to constraints */
