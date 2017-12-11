@@ -120,7 +120,9 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
         {
             *simulation_part = 0;
-            fprintf(stderr, "Warning: No checkpoint file found with -cpi option. Assuming this is a new run.\n\n");
+            /* We have already warned the user that no checkpoint file existed before, don't
+             * need to do it again
+             */
         }
         else
         {
@@ -255,7 +257,7 @@ handleRestart(t_commrec *cr,
                              part_suffix, &bAddPart, bDoAppendFiles);
         if (sim_part_fn == 0 && MULTIMASTER(cr))
         {
-            fprintf(stdout, "No previous checkpoint file present, assuming this is a new run.\n");
+            fprintf(stdout, "No previous checkpoint file present with -cpi option, assuming this is a new run.\n");
         }
         else
         {
