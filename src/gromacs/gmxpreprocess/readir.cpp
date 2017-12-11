@@ -375,6 +375,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_error(wi, "Implicit solvent is not (yet) supported with the with Verlet lists.");
         }
 
+        if (EEL_USER(ir->coulombtype))
+        {
+            sprintf(warn_buf, "Coulomb type %s is not supported with the verlet scheme", eel_names[ir->coulombtype]);
+            warning_error(wi, warn_buf);
+        }
+
         if (ir->nstlist <= 0)
         {
             warning_error(wi, "With Verlet lists nstlist should be larger than 0");
