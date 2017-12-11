@@ -86,6 +86,8 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
@@ -610,8 +612,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     t_topology *conftop;
     rvec       *x = nullptr;
     rvec       *v = nullptr;
+    int      ePBC = -1;
     snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
+    read_tps_conf(confin, conftop, &ePBC, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -645,6 +648,16 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     set_box_rel(ir, state);
 
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
+
+    /* If using the group scheme, make sure atoms are made whole to avoid errors
+     * in calculating charge group size later on
+     */
+    if (ir->cutoff_scheme == ecutsGROUP)
+    {
+            gmx_rmpbc_t gpbc = gmx_rmpbc_init(&conftop->idef, ePBC, state->natoms);
+            gmx_rmpbc(gpbc, state->natoms, state->box, x);
+            gmx_rmpbc_done(gpbc);
+    }
     done_top(conftop);
     sfree(conftop);
 
