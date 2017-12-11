@@ -139,7 +139,7 @@ struct do_fspline
     RVec
     operator()(std::integral_constant<int, 4>) const
     {
-        const int                      norder = nn*4;
+        const int                    norder = nn*4;
         /* Pointer arithmetic alert, next six statements */
         const real *const gmx_restrict thx  = spline->theta[XX] + norder;
         const real *const gmx_restrict thy  = spline->theta[YY] + norder;
@@ -148,32 +148,32 @@ struct do_fspline
         const real *const gmx_restrict dthy = spline->dtheta[YY] + norder;
         const real *const gmx_restrict dthz = spline->dtheta[ZZ] + norder;
 
-        SimdReal                       fx_S = setZero();
-        SimdReal                       fy_S = setZero();
-        SimdReal                       fz_S = setZero();
+        Simd4NReal                     fx_S = setZero();
+        Simd4NReal                     fy_S = setZero();
+        Simd4NReal                     fz_S = setZero();
 
         /* With order 4 the z-spline is actually aligned */
-        const SimdReal tz_S = load4DuplicateN(thz);
-        const SimdReal dz_S = load4DuplicateN(dthz);
+        const Simd4NReal tz_S = load4DuplicateN(thz);
+        const Simd4NReal dz_S = load4DuplicateN(dthz);
 
         for (int ithx = 0; ithx < 4; ithx++)
         {
-            const int      index_x = (idxX + ithx)*gridNY*gridNZ;
-            const SimdReal tx_S    = SimdReal(thx[ithx]);
-            const SimdReal dx_S    = SimdReal(dthx[ithx]);
+            const int        index_x = (idxX + ithx)*gridNY*gridNZ;
+            const Simd4NReal tx_S    = Simd4NReal(thx[ithx]);
+            const Simd4NReal dx_S    = Simd4NReal(dthx[ithx]);
 
-            for (int ithy = 0; ithy < 4; ithy += GMX_SIMD_REAL_WIDTH/4)
+            for (int ithy = 0; ithy < 4; ithy += GMX_SIMD4N_REAL_WIDTH/4)
             {
-                const int      index_xy = index_x + (idxY+ithy)*gridNZ;
+                const int        index_xy = index_x + (idxY+ithy)*gridNZ;
 
-                const SimdReal ty_S = loadUNDuplicate4(thy +ithy);
-                const SimdReal dy_S = loadUNDuplicate4(dthy+ithy);
+                const Simd4NReal ty_S = loadUNDuplicate4(thy +ithy);
+                const Simd4NReal dy_S = loadUNDuplicate4(dthy+ithy);
 
-                const SimdReal gval_S = loadU4NOffset(grid+index_xy+idxZ, gridNZ);
+                const Simd4NReal gval_S = loadU4NOffset(grid+index_xy+idxZ, gridNZ);
 
 
-                const SimdReal fxy1_S = tz_S * gval_S;
-                const SimdReal fz1_S  = dz_S * gval_S;
+                const Simd4NReal fxy1_S = tz_S * gval_S;
+                const Simd4NReal fz1_S  = dz_S * gval_S;
 
                 fx_S = fma(dx_S * ty_S, fxy1_S, fx_S);
                 fy_S = fma(tx_S * dy_S, fxy1_S, fy_S);
