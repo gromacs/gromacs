@@ -79,8 +79,8 @@ class ArrayRefTest : public test::SimdTest
         using ArrayRefType = TypeParam;
         using PointerType  = typename ArrayRefType::pointer;
         using ValueType    = typename ArrayRefType::value_type;
-        using ElementType  = typename std::remove_const<typename SimdTraits<ValueType>::type>::type;
-        static constexpr int width = SimdTraits<ValueType>::width;
+        using ElementType  = typename std::remove_const<typename gmx::internal::SimdTraits<ValueType>::type>::type;
+        static constexpr int width = gmx::internal::SimdTraits<ValueType>::width;
 
         /*! \brief Run the same tests all the time
          *
