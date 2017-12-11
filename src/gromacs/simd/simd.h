@@ -402,6 +402,8 @@ typedef Simd4FBool                Simd4Bool;
  * \{
  */
 
+namespace internal
+{
 /*! \libinternal \brief Simd traits */
 template<typename T>
 struct SimdTraits {};
@@ -450,6 +452,7 @@ struct SimdTraits<const T>
     static constexpr int width = SimdTraits<T>::width;
     using tag = typename SimdTraits<T>::tag;
 };
+}   //namespace internal
 
 /*! \brief Load function that returns SIMD or scalar
  *
@@ -459,9 +462,9 @@ struct SimdTraits<const T>
  */
 template<typename T>
 static inline T
-load(const typename SimdTraits<T>::type *m) //disabled by SFINAE for non-SIMD types
+load(const typename internal::SimdTraits<T>::type *m) //disabled by SFINAE for non-SIMD types
 {
-    return simdLoad(m, typename SimdTraits<T>::tag());
+    return simdLoad(m, typename internal::SimdTraits<T>::tag());
 }
 
 template<typename T>
@@ -478,9 +481,9 @@ load(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
 
 template <typename T, size_t N>
 static inline T gmx_simdcall
-load(const AlignedArray<typename SimdTraits<T>::type, N> &m)
+load(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
 {
-    return simdLoad(m.data(), typename SimdTraits<T>::tag());
+    return simdLoad(m.data(), typename internal::SimdTraits<T>::tag());
 }
 
 /*! \brief Load function that returns SIMD or scalar based on template argument
@@ -491,9 +494,9 @@ load(const AlignedArray<typename SimdTraits<T>::type, N> &m)
  */
 template<typename T>
 static inline T
-loadU(const typename SimdTraits<T>::type *m)
+loadU(const typename internal::SimdTraits<T>::type *m)
 {
-    return simdLoadU(m, typename SimdTraits<T>::tag());
+    return simdLoadU(m, typename internal::SimdTraits<T>::tag());
 }
 
 template<typename T>
@@ -505,9 +508,9 @@ loadU(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
 
 template <typename T, size_t N>
 static inline T gmx_simdcall
-loadU(const AlignedArray<typename SimdTraits<T>::type, N> &m)
+loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
 {
-    return simdLoadU(m.data(), typename SimdTraits<T>::tag());
+    return simdLoadU(m.data(), typename internal::SimdTraits<T>::tag());
 }
 
 class SimdSetZeroProxyInternal;
@@ -572,89 +575,145 @@ setZero()
     return {};
 }
 
+namespace internal
+{
+//TODO: Don't foward function but properly rename them and use proper traits
+template<typename T>
+struct Simd4Traits {};
+
+#if GMX_SIMD4_HAVE_FLOAT
+template<>
+struct Simd4Traits<Simd4Float>
+{
+    using type = float;
+};
+#endif
+
+#if GMX_SIMD4_HAVE_DOUBLE
+template<>
+struct Simd4Traits<Simd4Double>
+{
+    using type = double;
+};
+#endif
+}   //namespace internal
+
+#if GMX_SIMD4_HAVE_REAL
+template<typename T>
+T load(const typename internal::Simd4Traits<T>::type* m)
+{
+    return load4(m);
+}
+template<typename T>
+T loadU(const typename internal::Simd4Traits<T>::type* m)
+{
+    return load4U(m);
+}
+#endif
+
 /* Implement most of 4xn functions by forwarding them to other functions when possible.
  * The functions forwarded here don't need to be implemented by each implementation.
  * For width=4 all functions are forwarded and for width=8 all but loadU4NOffset are forwarded.
  */
 #if GMX_SIMD_HAVE_FLOAT
-#if GMX_SIMD_FLOAT_WIDTH < 4 || !GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
-#elif GMX_SIMD_FLOAT_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 1
+#if GMX_SIMD_FLOAT_WIDTH < 4
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_FLOAT)
+#elif GMX_SIMD_FLOAT_WIDTH == 4
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT GMX_SIMD_HAVE_LOADU
 //For GMX_SIMD_FLOAT_WIDTH>4 it is the reponsibility of the implementation to set
 //GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
 #endif
 
-#if GMX_SIMD_FLOAT_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
-static inline SimdFloat gmx_simdcall
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#if GMX_SIMD_FLOAT_WIDTH < 4
+using Simd4NFloat = Simd4Float;
+#define GMX_SIMD4N_FLOAT_WIDTH 4
+#else
+using Simd4NFloat = SimdFloat;
+#define GMX_SIMD4N_FLOAT_WIDTH GMX_SIMD_FLOAT_WIDTH
+#endif
+
+#if GMX_SIMD_FLOAT_WIDTH <= 4
+static inline Simd4NFloat gmx_simdcall
 loadUNDuplicate4(const float* f)
 {
-    return SimdFloat(*f);
+    return Simd4NFloat(*f);
 }
-static inline SimdFloat gmx_simdcall
+static inline Simd4NFloat gmx_simdcall
 load4DuplicateN(const float* f)
 {
-    return load<SimdFloat>(f);
+    return load<Simd4NFloat>(f);
 }
-static inline SimdFloat gmx_simdcall
+static inline Simd4NFloat gmx_simdcall
 loadU4NOffset(const float* f, int)
 {
-    return loadU<SimdFloat>(f);
+    return loadU<Simd4NFloat>(f);
 }
-#elif GMX_SIMD_FLOAT_WIDTH == 8 && GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT && GMX_SIMD_HAVE_LOADU
-static inline SimdFloat gmx_simdcall
+#elif GMX_SIMD_FLOAT_WIDTH == 8
+static inline Simd4NFloat gmx_simdcall
 loadUNDuplicate4(const float* f)
 {
     return loadU1DualHsimd(f);
 }
-static inline SimdFloat gmx_simdcall
+static inline Simd4NFloat gmx_simdcall
 load4DuplicateN(const float* f)
 {
     return loadDuplicateHsimd(f);
 }
 #endif
-#else //GMX_SIMD_HAVE_FLOAT
+#endif //GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#else  //GMX_SIMD_HAVE_FLOAT
 #define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
 #endif
 
 #if GMX_SIMD_HAVE_DOUBLE
-#if GMX_SIMD_DOUBLE_WIDTH < 4 || !GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
-#elif GMX_SIMD_DOUBLE_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 1
+#if GMX_SIMD_DOUBLE_WIDTH < 4
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_DOUBLE)
+#elif GMX_SIMD_DOUBLE_WIDTH == 4
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE GMX_SIMD_HAVE_LOADU
 //For GMX_SIMD_DOUBLE_WIDTH>4 it is the reponsibility of the implementation to set
 //GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
 #endif
 
-#if GMX_SIMD_DOUBLE_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
-static inline SimdDouble gmx_simdcall
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#if GMX_SIMD_DOUBLE_WIDTH < 4
+using Simd4NDouble = Simd4Double;
+#define GMX_SIMD4N_DOUBLE_WIDTH 4
+#else
+using Simd4NDouble = SimdDouble;
+#define GMX_SIMD4N_DOUBLE_WIDTH GMX_SIMD_DOUBLE_WIDTH
+#endif
+
+#if GMX_SIMD_DOUBLE_WIDTH <= 4
+static inline Simd4NDouble gmx_simdcall
 loadUNDuplicate4(const double* f)
 {
-    return SimdDouble(*f);
+    return Simd4NDouble(*f);
 }
-static inline SimdDouble gmx_simdcall
+static inline Simd4NDouble gmx_simdcall
 load4DuplicateN(const double* f)
 {
-    return load<SimdDouble>(f);
+    return load<Simd4NDouble>(f);
 }
-static inline SimdDouble gmx_simdcall
+static inline Simd4NDouble gmx_simdcall
 loadU4NOffset(const double* f, int)
 {
-    return loadU<SimdDouble>(f);
+    return loadU<Simd4NDouble>(f);
 }
-#elif GMX_SIMD_DOUBLE_WIDTH == 8 && GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE && GMX_SIMD_HAVE_LOADU
-static inline SimdDouble gmx_simdcall
+#elif GMX_SIMD_DOUBLE_WIDTH == 8
+static inline Simd4NDouble gmx_simdcall
 loadUNDuplicate4(const double* f)
 {
     return loadU1DualHsimd(f);
 }
-static inline SimdDouble gmx_simdcall
+static inline Simd4NDouble gmx_simdcall
 load4DuplicateN(const double* f)
 {
     return loadDuplicateHsimd(f);
 }
 #endif
-#else //GMX_SIMD_HAVE_DOUBLE
+#endif //GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#else  //GMX_SIMD_HAVE_DOUBLE
 #define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
 #endif
 
@@ -662,6 +721,16 @@ load4DuplicateN(const double* f)
 #define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
 #else
 #define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#endif
+
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
+#if GMX_DOUBLE
+using Simd4NReal = Simd4NDouble;
+#define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_DOUBLE_WIDTH
+#else
+using Simd4NReal = Simd4NFloat;
+#define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_FLOAT_WIDTH
+#endif
 #endif
 
 //! \}  end of name-group proxy objects
