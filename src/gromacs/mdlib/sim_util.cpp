@@ -699,23 +699,88 @@ static gmx_inline void clear_rvecs_omp(int n, rvec v[])
     }
 }
 
-/*! \brief  This routine checks if the potential energy is finite.
+/*! \brief Return an estimate of the average kinetic energy or 0 when unreliable
  *
+ * \param groupOptions  Group options, containing T-coupling options
+ */
+static real averageKineticEnergyEstimate(const t_grpopts &groupOptions)
+{
+    real nrdfCoupled   = 0;
+    real nrdfUncoupled = 0;
+    real kineticEnergy = 0;
+    for (int g = 0; g < groupOptions.ngtc; g++)
+    {
+        if (groupOptions.tau_t[g] >= 0)
+        {
+            nrdfCoupled   += groupOptions.nrdf[g];
+            kineticEnergy += groupOptions.nrdf[g]*0.5*groupOptions.ref_t[g]*BOLTZ;
+        }
+        else
+        {
+            nrdfUncoupled += groupOptions.nrdf[g];
+        }
+    }
+
+    /* This conditional with > also catches nrdf=0 */
+    if (nrdfCoupled > nrdfUncoupled)
+    {
+        return kineticEnergy*(nrdfCoupled + nrdfUncoupled)/nrdfCoupled;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+/*! \brief This routine checks that the potential energy is finite.
+ *
+ * Always checks that the potential energy is finite. If step equals
+ * inputrec.init_step also checks that the magnitude of the potential energy
+ * is reasonable. Terminates with a fatal error when a check fails.
  * Note that passing this check does not guarantee finite forces,
  * since those use slightly different arithmetics. But in most cases
  * there is just a narrow coordinate range where forces are not finite
  * and energies are finite.
  *
- * \param[in] enerd  The energy data; the non-bonded group energies need to be added in here before calling this routine
+ * \param[in] step      The step number, used for checking and printing
+ * \param[in] enerd     The energy data; the non-bonded group energies need to be added to enerd.term[F_EPOT] before calling this routine
+ * \param[in] inputrec  The input record
  */
-static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
+static void checkPotentialEnergyValidity(gmx_int64_t           step,
+                                         const gmx_enerdata_t &enerd,
+                                         const t_inputrec     &inputrec)
 {
-    if (!std::isfinite(enerd->term[F_EPOT]))
+    /* Threshold valid for comparing absolute potential energy against
+     * the kinetic energy. Normally one should not consider absolute
+     * potential energy values, but with a factor of one million
+     * we should never get false positives.
+     */
+    constexpr real c_thresholdFactor = 1e6;
+
+    bool           energyIsNotFinite    = !std::isfinite(enerd.term[F_EPOT]);
+    real           averageKineticEnergy = 0;
+    /* We only check for large potential energy at the initial step,
+     * because that is by far the most likely step for this too occur
+     * and because computing the average kinetic energy is not free.
+     * Note: nstcalcenergy >> 1 often does not allow to catch large energies
+     * before they become NaN.
+     */
+    if (step == inputrec.init_step && EI_DYNAMICS(inputrec.eI))
     {
-        gmx_fatal(FARGS, "The total potential energy is %g, which is not finite. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A non-finite potential energy can be caused by overlapping interactions in bonded interactions or very large or NaN coordinate values. Usually this is caused by a badly or non-equilibrated initial configuration or incorrect interactions or parameters in the topology.",
-                  enerd->term[F_EPOT],
-                  enerd->term[F_LJ],
-                  enerd->term[F_COUL_SR]);
+        averageKineticEnergy = averageKineticEnergyEstimate(inputrec.opts);
+    }
+
+    if (energyIsNotFinite || (averageKineticEnergy > 0 &&
+                              enerd.term[F_EPOT] > c_thresholdFactor*averageKineticEnergy))
+    {
+        gmx_fatal(FARGS, "Step %" GMX_PRId64 ": The total potential energy is %g, which is %s. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A %s potential energy can be caused by overlapping interactions in bonded interactions or very large%s coordinate values. Usually this is caused by a badly- or non-equilibrated initial configuration, incorrect interactions or parameters in the topology.",
+                  step,
+                  enerd.term[F_EPOT],
+                  energyIsNotFinite ? "not finite" : "extremely high",
+                  enerd.term[F_LJ],
+                  enerd.term[F_COUL_SR],
+                  energyIsNotFinite ? "non-finite" : "very high",
+                  energyIsNotFinite ? " or Nan" : "");
     }
 }
 
@@ -1679,7 +1744,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         if (!EI_TPI(inputrec->eI))
         {
-            checkPotentialEnergyValidity(enerd);
+            checkPotentialEnergyValidity(step, *enerd, *inputrec);
         }
     }
 }
@@ -2015,7 +2080,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
         if (!EI_TPI(inputrec->eI))
         {
-            checkPotentialEnergyValidity(enerd);
+            checkPotentialEnergyValidity(step, *enerd, *inputrec);
         }
     }
 
