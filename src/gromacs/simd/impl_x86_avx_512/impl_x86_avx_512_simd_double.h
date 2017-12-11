@@ -509,22 +509,6 @@ blend(SimdDouble a, SimdDouble b, SimdDBool sel)
 }
 
 static inline SimdDInt32 gmx_simdcall
-operator<<(SimdDInt32 a, int n)
-{
-    return {
-               _mm256_slli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
-operator>>(SimdDInt32 a, int n)
-{
-    return {
-               _mm256_srli_epi32(a.simdInternal_, n)
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
 operator&(SimdDInt32 a, SimdDInt32 b)
 {
     return {

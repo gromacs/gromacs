@@ -63,15 +63,15 @@ SimdFInt32 fastMultiply(SimdFInt32 x)
 {
     if (n == 2)
     {
-        return x << 1;
+        return _mm512_slli_epi32(x.simdInternal_, 1);
     }
     else if (n == 4)
     {
-        return x << 2;
+        return _mm512_slli_epi32(x.simdInternal_, 2);
     }
     else if (n == 8)
     {
-        return x << 3;
+        return _mm512_slli_epi32(x.simdInternal_, 3);
     }
     else
     {

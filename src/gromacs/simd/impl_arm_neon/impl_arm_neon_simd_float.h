@@ -587,22 +587,6 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 }
 
 static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    return {
-               vshlq_s32(a.simdInternal_, vdupq_n_s32(n >= 32 ? 32 : n))
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    return {
-               vshlq_s32(a.simdInternal_, vdupq_n_s32(n >= 32 ? -32 : -n))
-    };
-}
-
-static inline SimdFInt32 gmx_simdcall
 operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {

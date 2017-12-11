@@ -1146,52 +1146,6 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
  * \{
  */
 
-/*! \brief SIMD integer shift left logical, based on immediate value.
- *
- * Available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL is 1.
- *
- *  Logical shift. Each element is shifted (independently) up to 32 positions
- *  left, while zeros are shifted in from the right.
- *
- * \param a integer data to shift
- * \param n number of positions to shift left. n<=32.
- * \return shifted values
- */
-static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
-{
-    SimdFInt32         res;
-
-    for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
-    {
-        res.simdInternal_[i] = a.simdInternal_[i] << n;
-    }
-    return res;
-}
-
-/*! \brief SIMD integer shift right logical, based on immediate value.
- *
- * Available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL is 1.
- *
- *  Logical shift. Each element is shifted (independently) up to 32 positions
- *  right, while zeros are shifted in from the left.
- *
- * \param a integer data to shift
- * \param n number of positions to shift right. n<=32.
- * \return shifted values
- */
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
-{
-    SimdFInt32         res;
-
-    for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
-    {
-        res.simdInternal_[i] = a.simdInternal_[i] >> n;
-    }
-    return res;
-}
-
 /*! \brief Integer SIMD bitwise and.
  *
  * Available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL is 1.

@@ -574,22 +574,6 @@ blend(SimdDouble a, SimdDouble b, SimdDBool sel)
 }
 
 static inline SimdDInt32 gmx_simdcall
-operator<<(SimdDInt32 a, int n)
-{
-    return {
-               vec_sl(a.simdInternal_, vec_splats(static_cast<unsigned int>(n)))
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
-operator>>(SimdDInt32 a, int n)
-{
-    return {
-               vec_sr(a.simdInternal_, vec_splats(static_cast<unsigned int>(n)))
-    };
-}
-
-static inline SimdDInt32 gmx_simdcall
 operator&(SimdDInt32 a, SimdDInt32 b)
 {
     return {
