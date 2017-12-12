@@ -2010,7 +2010,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)) &&
             !(ftype == F_LJC14_Q && nread == 1))
         {
-            sprintf(errbuf, "Incorrect number of parameters - found %d, expected %d or %d for %s.",
+            sprintf(errbuf, "Incorrect number of parameters - found %d, expected %d or %d for %s (after the function type).",
                     nread, NRFPA(ftype), NRFP(ftype), interaction_function[ftype].longname);
             warning_error_and_exit(wi, errbuf, FARGS);
         }
