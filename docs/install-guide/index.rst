@@ -601,17 +601,23 @@ this `NVIDIA blog post
 NVML support is only available if detected, and may be disabled by
 turning off the ``GMX_USE_NVML`` CMake advanced option.
 
-By default, optimized code will be generated for CUDA architectures
-supported by the nvcc compiler (and the |Gromacs| build system). 
-However, it can be beneficial to manually pick the specific CUDA architecture(s)
-to generate code for either to reduce compilation time (and binary size) or to
-target a new architecture not yet supported by the |Gromacs| build system.
-Setting the desired CUDA architecture(s) and virtual architecture(s)
-can be done using the ``GMX_CUDA_TARGET_SM`` and ``GMX_CUDA_TARGET_COMPUTE``
-variables, respectively. These take a semicolon delimited string with 
-the two digit suffixes of CUDA (virtual) architectures names
-(for details see the "Options for steering GPU code generation" section of the
-nvcc man / help or Chapter 6. of the nvcc manual).
+By default, code will be generated for the most common CUDA architectures.
+However, to reduce build time and binary size we do not generate code for
+every single possible architecture, which in rare cases can result in
+runtime errors about the GPU architecture not being supported.
+You can alter the architectures for which to generate code, e.g. if you
+are targeting a rare architecture (say, Tegra/Jetson systems), because you
+have a GPU with a special architecture newer than this |Gromacs| version, or
+because you want to remove some architectures to reduce compilation time
+and binary size. This can be done either with the ``GMX_CUDA_TARGET_SM``
+or ``GMX_CUDA_TARGET_COMPUTE`` CMake variables.
+These take a semicolon delimited string with the two digit suffixes of
+CUDA (virtual) architectures names, for instance "35;50;51;52;53;60".
+(for details, see the "Options for steering GPU code generation" section of the
+nvcc man / help or Chapter 6. of the nvcc manual). Unfortunately these
+variables are not yet visible as normal options in the CMake GUI build system,
+so for now you will have to specify them on the command line when invoking
+CMake.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the

@@ -113,12 +113,16 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     if (cudaErrorInvalidDeviceFunction == stat)
     {
         gmx_fatal(FARGS,
-                  "The %s binary was not compiled for the selected GPU "
-                  "(device ID #%d, compute capability %d.%d).\n"
-                  "When selecting target GPU architectures with GMX_CUDA_TARGET_SM, "
-                  "make sure to pass the appropriate architecture(s) corresponding to the "
-                  "device(s) intended to be used (see in the GPU info listing) or alternatively "
-                  "pass in GMX_CUDA_TARGET_COMPUTE an appropriate virtual architecture. ",
+                  "The %s binary does not include support for the CUDA architecture "
+                  "required by the selected GPU (device ID #%d, compute capability %d.%d). "
+                  "By default, GROMACS includes support for all common GPU architectures, "
+                  "so your GPU might either be a rare version (e.g. Tegra embedded platforms), "
+                  "an architecture newer than this GROMACS version, or some architectures "
+                  "might have been disabled when building GROMACS. This is usually easy to "
+                  "fix by selecting all possible target GPU architectures with "
+                  "GMX_CUDA_TARGET_SM at build time, or alternatively by passing a "
+                  "virtual architecture in GMX_CUDA_TARGET_COMPUTE. For more information, "
+                  "consult the CUDA GPU acceleration section of the install guide. ",
                   gmx::getProgramContext().displayName(), devInfo->id,
                   devInfo->prop.major, devInfo->prop.minor);
     }
