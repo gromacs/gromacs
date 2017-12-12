@@ -32,6 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxTestInlineASM)
 include(gmxSimdFlags)
 
 # gmx_detect_avx_512_fma_units()
@@ -51,11 +52,13 @@ function(gmx_detect_avx_512_fma_units RESULT)
             # Find flags required for AVX-512
             gmx_find_simd_avx_512_flags(SIMD_AVX_512_C_SUPPORTED SIMD_AVX_512_CXX_SUPPORTED
                                         SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS)
+            # Find flag for GCC inline assembly
+            gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
-            if(${SIMD_AVX_512_CXX_SUPPORTED})
+            if(SIMD_AVX_512_CXX_SUPPORTED AND GMX_X86_GCC_INLINE_ASM)
                 # Compile the detection program
 
-                set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE ${SIMD_AVX_512_CXX_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+                set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE -DSIMD_AVX_512_CXX_SUPPORTED=1 -DGMX_X86_GCC_INLINE_ASM=1 ${SIMD_AVX_512_CXX_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
                 try_compile(AVX_512_FMA_UNIT_DETECTION_COMPILED
                     "${PROJECT_BINARY_DIR}"
                     "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits.cpp"
@@ -67,6 +70,8 @@ function(gmx_detect_avx_512_fma_units RESULT)
                   message(STATUS "Could not identify number of AVX-512 units - detection program did not compile")
                 endif()
                 set(RUN_AVX_512_FMA_UNIT_DETECTION_COMPILATION_QUIETLY TRUE CACHE INTERNAL "Keep quiet on any future compilation attempts")
+            else()
+                message(STATUS "Could not identify number of AVX-512 units - detection program missing compilation prerequisites")
             endif()
 
             if(AVX_512_FMA_UNIT_DETECTION_COMPILED)
