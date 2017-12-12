@@ -195,8 +195,10 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
     invalidValue = (threads > hwThreads);
     if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
-        GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "NOTE: Oversubscribing the CPU, will not pin threads");
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: Oversubscribing the %d logical CPU cores with %d thread(s),\n"
+                "      which will degrade performance significantly. Further, we\n"
+                "      will not pin threads to cores.", hwThreads, threads);
         alreadyWarned = true;
     }
     validLayout = validLayout && !invalidValue;
@@ -205,7 +207,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
     if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "WARNING: Requested offset too large for available cores, thread pinning disabled.");
+                "NOTE: Requested offset too large for available cores, thread pinning disabled.");
         alreadyWarned = true;
 
     }
@@ -246,7 +248,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
     {
         /* We are oversubscribing, don't pin */
         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "WARNING: Requested stride too large for available cores, thread pinning disabled.");
+                "NOTE: Requested stride too large for available cores, thread pinning disabled.");
     }
     validLayout = validLayout && !invalidValue;
 
