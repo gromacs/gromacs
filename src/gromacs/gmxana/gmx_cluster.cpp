@@ -1476,7 +1476,7 @@ int gmx_cluster(int argc, char *argv[])
     };
     t_filenm          fnm[] = {
         { efTRX, "-f",     nullptr,        ffOPTRD },
-        { efTPS, "-s",     nullptr,        ffOPTRD },
+        { efTPS, "-s",     nullptr,        ffREAD },
         { efNDX, nullptr,     nullptr,        ffOPTRD },
         { efXPM, "-dm",   "rmsd",       ffOPTRD },
         { efXPM, "-om",   "rmsd-raw",   ffWRITE },
