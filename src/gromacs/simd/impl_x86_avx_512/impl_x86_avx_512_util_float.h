@@ -137,10 +137,10 @@ transposeScatterStoreU(float *              base,
     {
         simdoffset = fastMultiply<align>(simdoffset);
     }
-    constexpr int align_ = (align > 2) ? 1 : align;
-    _mm512_i32scatter_ps(base,   simdoffset.simdInternal_, v0.simdInternal_, sizeof(float)*align_);
-    _mm512_i32scatter_ps(base+1, simdoffset.simdInternal_, v1.simdInternal_, sizeof(float)*align_);
-    _mm512_i32scatter_ps(base+2, simdoffset.simdInternal_, v2.simdInternal_, sizeof(float)*align_);
+    constexpr size_t scale = sizeof(float);
+    _mm512_i32scatter_ps(base,       simdoffset.simdInternal_, v0.simdInternal_, scale);
+    _mm512_i32scatter_ps(&(base[1]), simdoffset.simdInternal_, v1.simdInternal_, scale);
+    _mm512_i32scatter_ps(&(base[2]), simdoffset.simdInternal_, v2.simdInternal_, scale);
 }
 
 
