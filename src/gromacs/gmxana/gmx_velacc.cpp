@@ -185,6 +185,9 @@ int gmx_velacc(int argc, char *argv[])
         "With option [TT]-mol[tt] the velocity autocorrelation function of",
         "molecules is calculated. In this case the index group should consist",
         "of molecule numbers instead of atom numbers.[PAR]",
+        "By using option [TT]-os[tt] you can also extract the estimated",
+        "(vibrational) power spectrum, which is the Fourier transform of the",
+        "velocity autocorrelation function."
         "Be sure that your trajectory contains frames with velocity information",
         "(i.e. [TT]nstvout[tt] was set in your original [REF].mdp[ref] file),",
         "and that the time interval between data collection points is",
