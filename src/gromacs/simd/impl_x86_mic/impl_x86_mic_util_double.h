@@ -70,11 +70,11 @@ gatherLoadBySimdIntTranspose(const double *  base,
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -99,15 +99,15 @@ gatherLoadUBySimdIntTranspose(const double *  base,
     // but multiplication otherwise.
     if (align == 2)
     {
-        simdoffset = simdoffset << 1;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 1);
     }
     else if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -176,11 +176,11 @@ gatherLoadUTranspose(const double *        base,
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
@@ -211,11 +211,11 @@ transposeScatterStoreU(double *            base,
     // but multiplication otherwise.
     if (align == 4)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 2);
     }
     else if (align == 8)
     {
-        simdoffset = simdoffset << 3;
+        simdoffset.simdInternal_ = _mm512_slli_epi32(simdoffset.simdInternal_, 3);
     }
     else
     {
