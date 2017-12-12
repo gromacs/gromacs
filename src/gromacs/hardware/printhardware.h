@@ -38,6 +38,7 @@
 #include <cstdio>
 
 struct gmx_hw_info_t;
+struct MdrunOptions;
 struct t_commrec;
 
 namespace gmx
@@ -49,6 +50,7 @@ class MDLogger;
  * and to stderr the master rank.
  */
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const MdrunOptions &mdrunOptions,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo);
 

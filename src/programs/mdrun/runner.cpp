@@ -496,7 +496,7 @@ int Mdrunner::mdrunner()
 
     hwinfo = gmx_detect_hardware(mdlog, cr);
 
-    gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
+    gmx_print_detected_hardware(fplog, cr, mdrunOptions, mdlog, hwinfo);
 
     std::vector<int> gpuIdsToUse;
     auto             compatibleGpus = getCompatibleGpus(hwinfo->gpu_info);
