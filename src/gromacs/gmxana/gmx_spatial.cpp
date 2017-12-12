@@ -181,7 +181,8 @@ int gmx_spatial(int argc, char *argv[])
     get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidxp, &indexp, &grpnmp);
 
     /* The first time we read data is a little special */
-    natoms = read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+    read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+    natoms = fr.natoms;
 
     /* Memory Allocation */
     MINBIN[XX] = MAXBIN[XX] = fr.x[0][XX];
