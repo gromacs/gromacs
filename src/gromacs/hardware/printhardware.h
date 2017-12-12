@@ -51,6 +51,7 @@ class MDLogger;
  */
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_multisim_t *ms,
+                                 bool  mdrunIsVerbose,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo);
 

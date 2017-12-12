@@ -356,6 +356,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_multisim_t *ms,
+                                 bool  mdrunIsVerbose,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo)
 {
@@ -370,9 +371,14 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
         fprintf(fplog, "%s\n", detected.c_str());
     }
 
-    // Do not spam stderr with all our internal information unless
-    // there was something that actually went wrong; general information
-    // belongs in the logfile.
+    if (isMasterSimMasterRank(ms, cr) && mdrunIsVerbose)
+    {
+        std::string detected;
+
+        detected = detected_hardware_string(hwinfo, FALSE);
+
+        fprintf(stderr, "%s\n", detected.c_str());
+    }
 
     /* Check the compiled SIMD instruction set against that of the node
      * with the lowest SIMD level support (skip if SIMD detection did not work)
