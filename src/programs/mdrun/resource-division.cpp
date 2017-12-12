@@ -193,6 +193,14 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
      */
     if (ngpu > 0)
     {
+        if (hw_opt->nthreads_omp > 0)
+        {
+            /* In this case it is unclear if we should use 1 rank per GPU
+             * or more or less, so we require also setting the number of ranks.
+             */
+            gmx_fatal(FARGS, "When using GPUs and setting the number of OpenMP threads, the number of thread-MPI ranks should also be specified (option -ntmpi)");
+        }
+
         nrank = ngpu;
 
         /* When the user sets nthreads_omp, we can end up oversubscribing CPU cores
