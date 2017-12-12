@@ -211,9 +211,6 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
      */
     ndtot_c    = 0;
     ndtot_simd = 0;
-#if defined _ICC && __ICC == 1400 || defined __ICL && __ICL == 1400
-#pragma novector /* Work-around for incorrect vectorization */
-#endif
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
