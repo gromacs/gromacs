@@ -58,6 +58,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/mdlib/mdrun.h"
 
 //! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
@@ -356,6 +357,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_multisim_t *ms,
+                                 bool  mdrunIsVerbose,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo)
 {
@@ -370,9 +372,14 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
         fprintf(fplog, "%s\n", detected.c_str());
     }
 
-    // Do not spam stderr with all our internal information unless
-    // there was something that actually went wrong; general information
-    // belongs in the logfile.
+    if (MULTIMASTER(cr) && mdrunIsVerbose)
+    {
+        std::string detected;
+
+        detected = detected_hardware_string(hwinfo, FALSE);
+
+        fprintf(stderr, "%s\n", detected.c_str());
+    }
 
     /* Check the compiled SIMD instruction set against that of the node
      * with the lowest SIMD level support (skip if SIMD detection did not work)
