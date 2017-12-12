@@ -71,7 +71,7 @@ enum class Architecture
 static constexpr Architecture c_architecture =
 #if GMX_IS_X86_32 || GMX_IS_X86_64
     Architecture::X86;
-#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
+#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
     Architecture::Arm;
 #elif defined __powerpc__ || defined __ppc__ || defined __PPC__
     Architecture::PowerPC;

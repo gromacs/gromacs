@@ -778,6 +778,11 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
     {
         *brand = cpuInfo.at("Processor");
     }
+    else if (cpuInfo.count("model name"))
+    {
+        *brand = cpuInfo.at("model name");
+    }
+
     if (cpuInfo.count("CPU architecture"))
     {
         *family = std::strtol(cpuInfo.at("CPU architecture").c_str(), nullptr, 10);
