@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,10 @@ function(gmx_detect_target_architecture)
     if (NOT DEFINED GMX_TARGET_ARMV7)
         try_compile(GMX_TARGET_ARMV7 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestARMv7.cpp")
+    endif()
+    if (NOT DEFINED GMX_TARGET_ARMV8)
+      try_compile(GMX_TARGET_ARMV8 ${CMAKE_BINARY_DIR}
+	"${CMAKE_SOURCE_DIR}/cmake/TestARMv8.cpp")
     endif()
     if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
         try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
