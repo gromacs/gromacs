@@ -560,11 +560,18 @@ int gmx_trjcat(int argc, char *argv[])
 
     ftpin = fn2ftp(fnms[0]);
 
+    const char *extIn = ftp2ext(ftpin);
+
+    if (strncmp(extIn, "trr", 3) && strncmp(extIn, "xtc", 3) && strncmp(extIn, "tng", 3))
+    {
+        gmx_fatal(FARGS, "gmx trjcat can only handle binary trajectory formats (trr, xtc, tng)");
+    }
+
     for (i = 1; i < nfile_in; i++)
     {
         if (ftpin != fn2ftp(fnms[i]))
         {
-            gmx_fatal(FARGS, "All input files must be of the same format");
+            gmx_fatal(FARGS, "All input files must be of the same (trr, xtc or tng) format");
         }
     }
 
