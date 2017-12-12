@@ -96,7 +96,8 @@ gatherLoadBySimdIntTranspose(const double * base, SimdDInt32 offset, SimdDouble 
     {
         offset = fastMultiply<align>(offset);
     }
-    v->simdInternal_ = _mm512_i32gather_pd(offset.simdInternal_, base, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    v->simdInternal_ = _mm512_i32gather_pd(offset.simdInternal_, base, scale);
     gatherLoadBySimdIntTranspose<1>(base+1, offset, Fargs ...);
 }
 
@@ -130,13 +131,15 @@ transposeScatterStoreU(double *             base,
                        SimdDouble           v2)
 {
     SimdDInt32 simdoffset = simdLoad(offset, SimdDInt32Tag());
+
     if (align > 1)
     {
         simdoffset = fastMultiply<align>(simdoffset);;
     }
-    _mm512_i32scatter_pd(base,   simdoffset.simdInternal_, v0.simdInternal_, sizeof(double));
-    _mm512_i32scatter_pd(base+1, simdoffset.simdInternal_, v1.simdInternal_, sizeof(double));
-    _mm512_i32scatter_pd(base+2, simdoffset.simdInternal_, v2.simdInternal_, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    _mm512_i32scatter_pd(base,   simdoffset.simdInternal_, v0.simdInternal_, scale);
+    _mm512_i32scatter_pd(&(base[1]), simdoffset.simdInternal_, v1.simdInternal_, scale);
+    _mm512_i32scatter_pd(&(base[2]), simdoffset.simdInternal_, v2.simdInternal_, scale);
 }
 
 template <int align>
@@ -402,8 +405,9 @@ gatherLoadTransposeHsimd(const double *       base0,
 
     idx = _mm256_inserti128_si256(_mm256_castsi128_si256(idx0), idx1, 1);
 
-    tmp1 = _mm512_i32gather_pd(idx, base0, sizeof(double)); //TODO: Might be faster to use invidual loads
-    tmp2 = _mm512_i32gather_pd(idx, base1, sizeof(double));
+    constexpr size_t scale = sizeof(double);
+    tmp1 = _mm512_i32gather_pd(idx, base0, scale); //TODO: Might be faster to use invidual loads
+    tmp2 = _mm512_i32gather_pd(idx, base1, scale);
 
     v0->simdInternal_ = _mm512_shuffle_f64x2(tmp1, tmp2, 0x44 );
     v1->simdInternal_ = _mm512_shuffle_f64x2(tmp1, tmp2, 0xEE );
