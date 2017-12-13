@@ -195,26 +195,6 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-/*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-static real
-refInvsqrt(real x)
-{
-    return 1.0/std::sqrt(x);
-}
-
-TEST_F(Simd4MathTest, invsqrt)
-{
-    setRange(1e-10, 1e10);
-    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrt);
-}
-
-TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
-{
-    setRange(1e-10, 1e10);
-    /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
-    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
-}
 
 }      // namespace
 
