@@ -52,10 +52,29 @@
 namespace gmx
 {
 
+#if GMX_SIMD_HAVE_REAL
+
+/* SimdInt32 is a strange type which would never belong in an interface,
+ * because its properties are peculiar to int-to-float conversions within
+ * SIMD types, so there is no need to support it as a specialization of
+ * SimdArrayRef. But it is useful here for better test coverage of
+ * SimdArrayRef. */
+
+template<>
+class ArrayRef<SimdInt32> : public internal::SimdArrayRef<SimdInt32>
+{
+    using Base = internal::SimdArrayRef<SimdInt32>;
+    using Base::Base;
+};
+template<>
+class ArrayRef<const SimdInt32> : public internal::SimdArrayRef<const SimdInt32>
+{
+    using Base = internal::SimdArrayRef<const SimdInt32>;
+    using Base::Base;
+};
+
 namespace
 {
-
-#if GMX_SIMD_HAVE_REAL
 
 TEST(EmptyArrayRefTest, IsEmpty)
 {
@@ -222,8 +241,8 @@ TYPED_TEST(ArrayRefArithmeticTest, Basic)
 
 #endif // GTEST_HAS_TYPED_TEST
 
+}      // namespace
+
 #endif // GMX_HAVE_SIMD_REAL
 
-}      // namespace
-
-}      // namespace
+}      // namespace gmx
