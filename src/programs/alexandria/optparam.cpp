@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "gromacs/random.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
@@ -59,54 +60,46 @@
 namespace alexandria
 {
 
-OptParam::OptParam(){};
+void OptParam::add_pargs(std::vector<t_pargs> *pargs)
+{
+    t_pargs pa[] = {
+        { "-maxiter", FALSE, etINT, {&maxiter_},
+          "Max number of iterations for optimization" },
+        { "-nprint",  FALSE, etINT, {&nprint_},
+          "How often to print the parameters during the simulation" },
+        { "-temp",    FALSE, etREAL, {&temperature_},
+          "'Temperature' for the Monte Carlo simulation" },
+        { "-anneal", FALSE, etBOOL, {&anneal_},
+          "Use annealing in Monte Carlo simulation." },
+        { "-bound", FALSE, etBOOL, {&bBound_},
+          "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
+        { "-seed",   FALSE, etINT,  {&seed_},
+          "Random number seed. If zero, a seed will be generated." },
+        { "-step",  FALSE, etREAL, {&step_},
+          "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
+    };
+    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    {
+        pargs->push_back(pa[i]);
+    }
+}
 
-void OptParam::Init(const char *xvgconv, 
-                    const char *xvgepot, 
-                    const gmx_output_env_t *oenv, 
-                    real seed, real step, int maxiter, 
-                    int nprint, real temperature, 
-                    gmx_bool bBound)
+void OptParam::Init(const char             *xvgconv,
+                    const char             *xvgepot,
+                    const gmx_output_env_t *oenv)
 {
     xvgconv_     = xvgconv;
     xvgepot_     = xvgepot;
     oenv_        = oenv;
-    bBound_      = bBound;
-    seed_        = seed;
-    step_        = step;
-    maxiter_     = maxiter;
-    nprint_      = nprint;
-    temperature_ = temperature;
 }
 
-void OptParam::setSeed(real seed)
+double OptParam::computeBeta(int iter)
 {
-    seed_ = seed;
-}
-
-void OptParam::setMaxiter(int maxiter)
-{
-    maxiter_ = maxiter;
-}
-
-void OptParam::setNprint(int nprint)
-{
-    nprint_ = nprint;
-}
-
-void OptParam::setStep(real step)
-{
-    step_ = step;
-}
-
-void OptParam::setTemperature(real temperature)
-{
-    temperature_ = temperature;
-}
-
-void OptParam::setBeta(real temp)
-{
-    beta_ = 1/(BOLTZ*temp);
-    //beta_ = 1/(temp);
+    double temp = temperature_;
+    if (anneal_)
+    {
+        temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
+    }
+    return 1/(BOLTZ*temp);
 }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 #ifndef MOLDIP_H
 #define MOLDIP_H
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
 
@@ -58,18 +60,21 @@ typedef struct {
 
 extern char *opt_index_count(t_index_count *ic);
 
-enum {
-    ermsBOUNDS = 0, 
-    ermsMU     = 1, 
-    ermsQUAD   = 2, 
-    ermsCHARGE = 3, 
+enum eRMS {
+    ermsBOUNDS = 0,
+    ermsMU     = 1,
+    ermsQUAD   = 2,
+    ermsCHARGE = 3,
     ermsESP    = 4,
-    ermsEPOT   = 5, 
-    ermsForce2 = 6, 
+    ermsEPOT   = 5,
+    ermsForce2 = 6,
     ermsPolar  = 7,
-    ermsTOT    = 8, 
+    ermsTOT    = 8,
     ermsNR     = 9
 };
+
+//! \brief Return string corresponding to eRMS
+const char *rmsName(int e);
 
 namespace alexandria
 {
@@ -138,7 +143,7 @@ class IndexCount
         void decrementName(const std::string &name);
 
         int count(const std::string &name);
-        
+
         bool isOptimized(const std::string &name);
 
         std::vector<AtomIndex>::iterator beginIndex() { return atomIndex_.begin(); }
@@ -163,7 +168,6 @@ using IndexCountConstIterator = typename std::vector<IndexCount>::const_iterator
 class MolDip
 {
     private:
-    public:
         int                             nmol_support_;
         int                             mindata_;
         real                            J0_min_;
@@ -174,21 +178,21 @@ class MolDip
         real                            zeta_max_;
         real                            hfac_;
         real                            hfac0_;
-        real                            decrzeta_;
+        real                            watoms_;
+        real                            qtol_;
+        int                             qcycle_;
         real                            ener_[ermsNR];
         real                            fc_[ermsNR];
         char                           *fixchi_;
         gmx_bool                        bOptHfac_;
-        gmx_bool                        bPol_;
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
         gmx_bool                        bFinal_;
-        gmx_bool                        bGaussianBug_;
-        gmx_bool                        bFitZeta_;
-        gmx_bool                        bfullTensor_;
-        gmx_bool                        bGenViste_;
+        gmx_bool                        bGenVsite_;
+        gmx_bool                        qsymm_;
         Poldata                         pd_;
         t_commrec                      *cr_;
+        gmx::MDLogger                   mdlog_;
         t_inputrec                     *inputrec_;
         IndexCount                      indexCount_;
         gmx_hw_info_t                  *hwinfo_;
@@ -197,45 +201,142 @@ class MolDip
         ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
+    public:
 
         MolDip();
 
-        ~MolDip() {};
+        ~MolDip();
 
         IndexCount *indexCount() { return &indexCount_; }
-        
-        immStatus check_data_sufficiency(alexandria::MyMol  mymol, 
+
+        //! \brief Add options to the command line
+        void addOptions(std::vector<t_pargs> *pargs);
+
+        //! \brief Process options after parsing
+        void optionsFinished();
+
+        immStatus check_data_sufficiency(alexandria::MyMol  mymol,
                                          IndexCount        *ic);
-                                                 
-        void Init(t_commrec                *cr,
-                  gmx_bool                  bQM,
-                  gmx_bool                  bGaussianBug,
-                  ChargeDistributionModel   iChargeDistributionModel,
-                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real                      rDecrZeta,
-                  real                      J0_min,
-                  real                      Chi0_min,
-                  real                      zeta_min,
-                  real                      J0_max,
-                  real                      Chi0_max,
-                  real                      zeta_max,
-                  real                      fc_bound,
-                  real                      fc_mu,
-                  real                      fc_quad,
-                  real                      fc_charge,
-                  real                      fc_esp,
-                  real                      fc_epot,
-                  real                      fc_force,
-                  real                      fc_polar,
-                  char                     *fixchi,
-                  gmx_bool                  bOptHfac,
-                  real                      hfac,
-                  gmx_bool                  bPol,
-                  gmx_bool                  bFitZeta, 
-                  gmx_hw_info_t            *hwinfo,
-                  gmx_bool                  bfullTensor,
-                  int                       mindata,
-                  gmx_bool                  bGenViste);
+        //! \brief Return the poldata as const variable
+        const Poldata &poldata() const { return pd_; }
+        //! \brief Return the poldata
+        Poldata &poldata() { return pd_; }
+
+        //! \brief Return the atomprop structure
+        gmx_atomprop_t atomprop() const { return atomprop_; }
+
+        //! \brief Return the const vector of molecules
+        const std::vector<MyMol> &mymols() const { return mymol_; }
+
+        //! \brief Return the mutable vector of molecules
+        std::vector<MyMol> &mymols() { return mymol_; }
+
+        //! \brief Return the ChargeDistributionModel
+        ChargeDistributionModel iChargeDistributionModel() const { return iChargeDistributionModel_; }
+
+        //! \brief Return the ChargeGenerationAlgorithm
+        ChargeGenerationAlgorithm iChargeGenerationAlgorithm() const { return iChargeGenerationAlgorithm_; }
+
+        //! \brief Return whether to optimize the H factor
+        bool optHfac() const { return bOptHfac_; }
+
+        //! \brief Return the H factor
+        real hfac() const { return hfac_; }
+
+        //! \brief Set the H factor
+        void setHfac(real hfac) { hfac_ = hfac; }
+
+        real hfacDiff()
+        {
+            if (hfac_ > hfac0_)
+            {
+                return hfac_ - hfac0_;
+            }
+            else if (hfac_ < -hfac0_)
+            {
+                return (hfac() + hfac0_);
+            }
+            return 0;
+        }
+        //! \brief The atom to fix
+        const char *fixchi() const { return fixchi_; }
+
+        //! \brief Return ESP weighting factor for atoms
+        real watoms() const { return watoms_; }
+
+        //! \brief Return minimum amount of data needed
+        int mindata() const { return mindata_; }
+
+        //! \brief Return const communication record
+        const t_commrec *commrec() const { return cr_; }
+
+        //! \brief Return non-const communication record
+        t_commrec *commrec() { return cr_; }
+
+        //! \brief Is this the last calculation?
+        bool final() const { return bFinal_; }
+
+        //! \brief Are we using QM only?
+        bool bQM() const { return bQM_; }
+
+        void setFinal() { bFinal_ = true; }
+
+        double zetaMin() const { return zeta_min_; }
+        double zetaMax() const { return zeta_max_; }
+        double J0Min() const { return J0_min_; }
+        double J0Max() const { return J0_max_; }
+        double chi0Min() const { return Chi0_min_; }
+        double chi0Max() const { return Chi0_max_; }
+        void resetEner()
+        {
+            for (int j = 0; j < ermsNR; j++)
+            {
+                ener_[j] = 0;
+            }
+        }
+
+        double energy(int qt) const { return fc_[qt]*ener_[qt]; }
+
+        void incrEner(int qt, real delta)
+        {
+            ener_[qt] += delta;
+        }
+
+        void setEnergy(int qt, real ener)
+        {
+            ener_[qt] = ener;
+        }
+        void sumEnergies()
+        {
+            if (PAR(commrec()) && !final())
+            {
+                gmx_sum(ermsNR, ener_, commrec());
+            }
+        }
+
+        void normalizeEnergies()
+        {
+            if (MASTER(commrec()))
+            {
+                for (int j = 0; j < ermsTOT; j++)
+                {
+                    ener_[ermsTOT] += ((fc_[j]*ener_[j])/nmol_support_);
+                }
+            }
+        }
+
+        void printEnergies(FILE *fp)
+        {
+            if (nullptr != fp && MASTER(commrec()))
+            {
+                fprintf(fp, "ENER:");
+                for (int j = 0; j < ermsNR; j++)
+                {
+                    fprintf(fp, "  %8.3f", ener_[j]);
+                }
+                fprintf(fp, "\n");
+            }
+        }
 
         void Read(FILE                      *fp,
                   const char                *fn,
@@ -245,16 +346,12 @@ class MolDip
                   char                      *const_elem,
                   char                      *lot,
                   const MolSelect           &gms,
-                  real                       watoms,
                   gmx_bool                   bCheckSupport,
                   bool                       bPairs,
                   bool                       bDihedral,
-                  bool                       bPolar,
                   bool                       bZPE,
-                  const char                *tabfn,
-                  int                        qcycle,
-                  real                       qtol,
-                  bool                       qsymm);
+                  bool                       bFitZeta,
+                  const char                *tabfn);
 
 };
 

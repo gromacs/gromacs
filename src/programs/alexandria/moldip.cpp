@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,9 @@
 
 #include <vector>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -60,8 +62,28 @@
 
 #define STRLEN 256
 
+const char *rmsName(int e)
+{
+    static const char *rms[ermsNR] =
+    {
+        "BOUNDS", "MU", "QUAD", "CHARGE", "ESP",
+        "EPOT", "Force2", "Polar", "TOT"
+    };
+    if (e >= 0 && e < ermsNR)
+    {
+        return rms[e];
+    }
+    else
+    {
+        return "Incorrect index in rmsName";
+    }
+}
+
 namespace alexandria
 {
+
+const char *cqdist[] = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
+const char *cqgen[]  = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,
@@ -122,12 +144,12 @@ static void update_index_count_bool(IndexCount             *ic,
     }
 }
 
-static void make_index_count(IndexCount               *ic,
+static void make_index_count(IndexCount                *ic,
                              const Poldata             &pd,
                              char                      *opt_elem,
                              char                      *const_elem,
-                             ChargeDistributionModel   iDistributionModel,
-                             gmx_bool                  bFitZeta)
+                             ChargeDistributionModel    iDistributionModel,
+                             gmx_bool                   bFitZeta)
 {
     if (nullptr != const_elem)
     {
@@ -206,14 +228,14 @@ void IndexCount::incrementName(const std::string &name)
 bool IndexCount::isOptimized(const std::string &name)
 {
     bool isObtimized = false;
-    auto ai = findName(name);
+    auto ai          = findName(name);
     if (ai != atomIndex_.end())
     {
         if (!ai->isConst())
         {
             isObtimized = true;
         }
-    }    
+    }
     return isObtimized;
 }
 
@@ -242,7 +264,7 @@ int IndexCount::cleanIndex(int   minimum_data,
 {
     int nremove = 0;
 
-    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end();)
+    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end(); )
     {
         if (!ai->isConst() && (ai->count() < minimum_data))
         {
@@ -265,32 +287,128 @@ int IndexCount::cleanIndex(int   minimum_data,
 MolDip::MolDip()
 {
     cr_     = nullptr;
-    fixchi_ = nullptr;
+    fixchi_ = (char *)"";
     for (int i = 0; (i < ermsNR); i++)
     {
         fc_[i]   = 0;
         ener_[i] = 0;
     }
-
-    inputrec_ = mdModules_.inputrec();
+    fc_[ermsESP] = 1;
+    inputrec_    = mdModules_.inputrec();
     fill_inputrec(inputrec_);
+    bFinal_    = false;
+    bDone_     = false;
+    bGenVsite_ = false;
+    J0_min_    = 5;
+    Chi0_min_  = 1;
+    zeta_min_  = 1;
+    J0_max_    = 30;
+    Chi0_max_  = 30;
+    zeta_max_  = 50;
+    watoms_    = 0;
+    qtol_      = 1e-6;
+    qcycle_    = 1000;
+    mindata_   = 3;
 }
 
-immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol, 
+MolDip::~MolDip()
+{
+    done_commrec(cr_);
+}
+
+void MolDip::addOptions(std::vector<t_pargs> *pargs)
+{
+    t_pargs pa[] =
+    {
+        { "-mindata", FALSE, etINT, {&mindata_},
+          "Minimum number of data points to optimize force field parameters" },
+        { "-qdist",   FALSE, etENUM, {cqdist},
+          "Model used for charge distribution" },
+        { "-qgen",   FALSE, etENUM, {cqgen},
+          "Algorithm used for charge generation" },
+        { "-watoms", FALSE, etREAL, {&watoms_},
+          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
+        { "-fixchi", FALSE, etSTR,  {&fixchi_},
+          "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above (or somewhere)." },
+        { "-j0",    FALSE, etREAL, {&J0_min_},
+          "Minimum value that J0 (eV) can obtain in fitting" },
+        { "-chi0",    FALSE, etREAL, {&Chi0_min_},
+          "Minimum value that Chi0 (eV) can obtain in fitting" },
+        { "-z0",    FALSE, etREAL, {&zeta_min_},
+          "Minimum value that inverse radius (1/nm) can obtain in fitting" },
+        { "-j1",    FALSE, etREAL, {&J0_max_},
+          "Maximum value that J0 (eV) can obtain in fitting" },
+        { "-chi1",    FALSE, etREAL, {&Chi0_max_},
+          "Maximum value that Chi0 (eV) can obtain in fitting" },
+        { "-z1",    FALSE, etREAL, {&zeta_max_},
+          "Maximum value that inverse radius (1/nm) can obtain in fitting" },
+        { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
+          "Force constant in the penalty function for going outside the borders given with the above six options." },
+        { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
+          "Force constant in the penalty function for the magnitude of the dipole components." },
+        { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
+          "Force constant in the penalty function for the magnitude of the quadrupole components." },
+        { "-fc_esp",   FALSE, etREAL, {&fc_[ermsESP]},
+          "Force constant in the penalty function for the magnitude of the electrostatic potential." },
+        { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
+          "Force constant in the penalty function for the magnitude of the charges with respect to the ESP charges." },
+        { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
+          "Force constant in the penalty function for the magnitude of the potential energy." },
+        { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
+          "Force constant in the penalty function for the magnitude of the force." },
+        { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
+          "Force constant in the penalty function for polarizability." },
+        { "-qtol",   FALSE, etREAL, {&qtol_},
+          "Tolerance for assigning charge generation algorithm." },
+        { "-qcycle", FALSE, etINT, {&qcycle_},
+          "Max number of tries for optimizing the charges." },
+        { "-hfac",  FALSE, etREAL, {&hfac_},
+          "[HIDDEN]Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
+        { "-opthfac",  FALSE, etBOOL, {&bOptHfac_},
+          "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." },
+        { "-qm",     FALSE, etBOOL, {&bQM_},
+          "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
+        { "-qsymm",  FALSE, etBOOL, {&qsymm_},
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
+        { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
+          "Generate virtual sites. Check and double check." }
+    };
+    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    {
+        pargs->push_back(pa[i]);
+    }
+}
+
+void MolDip::optionsFinished()
+{
+    iChargeDistributionModel_   = name2eemtype(cqdist[0]);
+    iChargeGenerationAlgorithm_ = (ChargeGenerationAlgorithm) get_option(cqgen);
+    hfac0_                      = hfac_;
+    cr_                         = init_commrec();
+    mdlog_                      = getMdLogger(cr_, stdout);
+    hwinfo_                     = gmx_detect_hardware(mdlog_, cr_, false);
+    if (MASTER(cr_))
+    {
+        printf("There are %d threads/processes.\n", cr_->nnodes);
+    }
+
+}
+
+immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol,
                                          IndexCount       *ic)
 {
     immStatus imm = immOK;
 
     for (int i = 0; i < mymol.topology_->atoms.nr; i++)
     {
-        if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
+        if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
             (mymol.topology_->atoms.atom[i].ptype == eptAtom))
         {
             auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
             if (pd_.getAtypeEnd() != fa)
             {
                 const std::string &ztype = fa->getZtype();
-                auto ai = ic->findName(ztype);
+                auto               ai    = ic->findName(ztype);
                 if (ic->endIndex() == ai)
                 {
                     if (debug)
@@ -307,12 +425,12 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol,
                 imm = immInsufficientDATA;
             }
         }
-    }    
+    }
     if (imm == immOK)
     {
         for (int i = 0; i < mymol.topology_->atoms.nr; i++)
         {
-            if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
+            if ((mymol.topology_->atoms.atom[i].atomnumber > 0) &&
                 (mymol.topology_->atoms.atom[i].ptype == eptAtom))
             {
                 auto fa = pd_.findAtype(*(mymol.topology_->atoms.atomtype[i]));
@@ -323,70 +441,6 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol,
     return imm;
 }
 
-void MolDip::Init(t_commrec                *cr,
-                  gmx_bool                  bQM,
-                  gmx_bool                  bGaussianBug,
-                  ChargeDistributionModel   iChargeDistributionModel,
-                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real                      rDecrZeta,
-                  real                      J0_min,
-                  real                      Chi0_min,
-                  real                      zeta_min,
-                  real                      J0_max,
-                  real                      Chi0_max,
-                  real                      zeta_max,
-                  real                      fc_bound,
-                  real                      fc_mu,
-                  real                      fc_quad,
-                  real                      fc_charge,
-                  real                      fc_esp,
-                  real                      fc_epot,
-                  real                      fc_force,
-                  real                      fc_polar,
-                  char                     *fixchi,
-                  gmx_bool                  bOptHfac,
-                  real                      hfac,
-                  gmx_bool                  bPol,
-                  gmx_bool                  bFitZeta, 
-                  gmx_hw_info_t            *hwinfo,
-                  gmx_bool                  bfullTensor,
-                  int                       mindata,
-                  gmx_bool                  bGenViste)
-{
-    cr_                         = cr;
-    bQM_                        = bQM;
-    bDone_                      = false;
-    bFinal_                     = false;
-    bGaussianBug_               = bGaussianBug;
-    bFitZeta_                   = bFitZeta;
-    iChargeDistributionModel_   = iChargeDistributionModel;
-    iChargeGenerationAlgorithm_ = iChargeGenerationAlgorithm;
-    decrzeta_                   = rDecrZeta;
-    J0_min_                     = J0_min;
-    Chi0_min_                   = Chi0_min;
-    zeta_min_                   = zeta_min;
-    J0_max_                     = J0_max;
-    Chi0_max_                   = Chi0_max;
-    zeta_max_                   = zeta_max;
-    fc_[ermsMU]                 = fc_mu;
-    fc_[ermsBOUNDS]             = fc_bound;
-    fc_[ermsQUAD]               = fc_quad;
-    fc_[ermsCHARGE]             = fc_charge;
-    fc_[ermsESP]                = fc_esp;
-    fc_[ermsForce2]             = fc_force;
-    fc_[ermsPolar]              = fc_polar;
-    fc_[ermsEPOT]               = fc_epot;
-    fixchi_                     = fixchi;
-    hfac_                       = hfac;
-    hfac0_                      = hfac;
-    bOptHfac_                   = bOptHfac;
-    bPol_                       = bPol;
-    hwinfo_                     = hwinfo;
-    bfullTensor_                = bfullTensor;
-    bGenViste_                  = bGenViste;
-    mindata_                    = mindata;
-}
-
 void MolDip::Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
@@ -395,16 +449,12 @@ void MolDip::Read(FILE            *fp,
                   char            *const_elem,
                   char            *lot,
                   const MolSelect &gms,
-                  real             watoms,
                   gmx_bool         bCheckSupport,
                   bool             bPairs,
                   bool             bDihedral,
-                  bool             bPolar,
                   bool             bZPE,
-                  const char      *tabfn,
-                  int              qcycle,
-                  real             qtol,
-                  bool             qsymm)
+                  bool             bFitZeta,
+                  const char      *tabfn)
 {
     int                              nwarn    = 0;
     int                              nmol_cpu = 0;
@@ -412,7 +462,7 @@ void MolDip::Read(FILE            *fp,
     immStatus                        imm      = immOK;
     std::vector<alexandria::MolProp> mp;
 
-    atomprop_  = gmx_atomprop_init();    
+    atomprop_  = gmx_atomprop_init();
     for (int i = 0; i < immNR; i++)
     {
         imm_count[i] = 0;
@@ -426,11 +476,11 @@ void MolDip::Read(FILE            *fp,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    /*Broadcasting Force Field Data from Master to Slave nodes*/    
+    /*Broadcasting Force Field Data from Master to Slave nodes*/
     if (PAR(cr_))
     {
         pd_.broadcast(cr_);
-    }    
+    }
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
@@ -441,7 +491,7 @@ void MolDip::Read(FILE            *fp,
     if (MASTER(cr_))
     {
         MolPropRead(fn, mp);
-        for (auto mpi = mp.begin(); mpi < mp.end();)
+        for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
             if (false == mpi->GenerateComposition(pd_) || imsTrain != gms.status(mpi->getIupac()))
@@ -466,23 +516,27 @@ void MolDip::Read(FILE            *fp,
                   [](alexandria::MolProp &mp1,
                      alexandria::MolProp &mp2)
                   {
-                    return (mp1.NAtom() < mp2.NAtom());
+                      return (mp1.NAtom() < mp2.NAtom());
                   });
     }
     if (PAR(cr_))
     {
         gmx_sumi(1, &nmol_cpu, cr_);
-    }    
+    }
     if (bCheckSupport && MASTER(cr_))
-    {                     
+    {
         make_index_count(&indexCount_,
                          pd_,
                          opt_elem,
-                         const_elem, 
-                         iChargeDistributionModel_, 
-                         bFitZeta_);
+                         const_elem,
+                         iChargeDistributionModel_,
+                         bFitZeta);
     }
     /*Generate topology for Molecules and distribute them among the nodes*/
+    bool bPolar = (iChargeDistributionModel() == eqdAXpp  ||
+                   iChargeDistributionModel() == eqdAXpg  ||
+                   iChargeDistributionModel() == eqdAXps);
+
     int ntopol = 0;
     if (MASTER(cr_))
     {
@@ -491,7 +545,7 @@ void MolDip::Read(FILE            *fp,
             if (imsTrain == gms.status(mpi->getIupac()))
             {
                 int               dest = (ntopol % cr_->nnodes);
-                alexandria::MyMol mymol;                
+                alexandria::MyMol mymol;
                 printf("%s\n", mpi->getMolname().c_str());
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
@@ -499,12 +553,12 @@ void MolDip::Read(FILE            *fp,
                                              pd_,
                                              lot,
                                              iChargeDistributionModel_,
-                                             bGenViste_,
+                                             bGenVsite_,
                                              bPairs,
-                                             bDihedral, 
+                                             bDihedral,
                                              bPolar,
                                              false,
-                                             tabfn);                                             
+                                             tabfn);
                 if (bCheckSupport && immOK == imm)
                 {
                     imm = check_data_sufficiency(mymol, &indexCount_);
@@ -517,16 +571,16 @@ void MolDip::Read(FILE            *fp,
                                                 atomprop_,
                                                 iChargeDistributionModel_,
                                                 iChargeGenerationAlgorithm_,
-                                                watoms,
+                                                watoms_,
                                                 hfac_,
                                                 lot,
-                                                qsymm,
+                                                qsymm_,
                                                 nullptr,
                                                 cr_,
                                                 tabfn,
                                                 hwinfo_,
-                                                qcycle,
-                                                qtol,
+                                                qcycle_,
+                                                qtol_,
                                                 nullptr);
                     (void) mymol.espRms();
                 }
@@ -610,7 +664,7 @@ void MolDip::Read(FILE            *fp,
         ntopol = 0;
         while (gmx_recv_int(cr_, 0) == 1)
         {
-            alexandria::MyMol mymol;          
+            alexandria::MyMol mymol;
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new molecule\n");
@@ -628,11 +682,11 @@ void MolDip::Read(FILE            *fp,
             mymol.setInputrec(inputrec_);
             imm = mymol.GenerateTopology(atomprop_,
                                          pd_,
-                                         lot, 
+                                         lot,
                                          iChargeDistributionModel_,
-                                         bGenViste_,
+                                         bGenVsite_,
                                          bPairs,
-                                         bDihedral, 
+                                         bDihedral,
                                          bPolar,
                                          false,
                                          tabfn);
@@ -642,19 +696,19 @@ void MolDip::Read(FILE            *fp,
                 gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
                 imm = mymol.GenerateCharges(pd_,
                                             mdlog,
-                                            atomprop_, 
+                                            atomprop_,
                                             iChargeDistributionModel_,
-                                            iChargeGenerationAlgorithm_, 
-                                            watoms,
+                                            iChargeGenerationAlgorithm_,
+                                            watoms_,
                                             hfac_,
                                             lot,
-                                            qsymm,
-                                            nullptr, 
+                                            qsymm_,
+                                            nullptr,
                                             cr_,
                                             tabfn,
                                             hwinfo_,
-                                            qcycle,
-                                            qtol,
+                                            qcycle_,
+                                            qtol_,
                                             nullptr);
                 (void) mymol.espRms();
             }
@@ -678,7 +732,7 @@ void MolDip::Read(FILE            *fp,
             }
             gmx_send_int(cr_, 0, imm);
         }
-    }   
+    }
     int              nnn = nmol_cpu;
     std::vector<int> nmolpar;
     if (PAR(cr_))
@@ -717,11 +771,11 @@ void MolDip::Read(FILE            *fp,
         {
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
-    }    
+    }
     if (bCheckSupport && MASTER(cr_))
-    {                     
+    {
         indexCount_.cleanIndex(mindata_, fp);
-    }    
+    }
     nmol_support_ = mymol_.size();
     if (nmol_support_ == 0)
     {

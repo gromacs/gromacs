@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,14 @@
  * \author Mohammad Mehdi Ghahremanpour <m.ghahremanpour@hotmail.com>
  */
 
-#ifndef OPTPARAM_H
-#define OPTPARAM_H
+#ifndef ALEXANDRIA_OPTPARAM_H
+#define ALEXANDRIA_OPTPARAM_H
 
 #include <functional>
 #include <random>
 #include <vector>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
@@ -53,7 +54,6 @@
 
 namespace alexandria
 {
-
 
 /*! \brief
  * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
@@ -66,61 +66,61 @@ namespace alexandria
 
 class OptParam
 {
-    public:
-
+    private:
+        int                     maxiter_;
         const gmx_output_env_t *oenv_;
         const char             *xvgconv_;
         const char             *xvgepot_;
         gmx_bool                bBound_;
-        int                     maxiter_;
         int                     nprint_;
         real                    seed_;
         real                    step_;
         real                    temperature_;
-        real                    beta_;
+        bool                    anneal_;
+    public:
 
-        OptParam();
+        OptParam() : maxiter_(100), oenv_(nullptr), xvgconv_(nullptr), xvgepot_(nullptr), bBound_(false), nprint_(1), seed_(1993), step_(1), temperature_(300), anneal_(true)
+        {}
 
         ~OptParam() {};
 
-        void Init(const char *xvgconv, 
-                  const char *xvgepot, 
-                  const gmx_output_env_t *oenv, 
-                  real seed, real step, int maxiter, 
-                  int nprint, real temperature, 
-                  gmx_bool bBound);
-
-        /*! \brief
-         * Set the seed number to get a random number based on the uniform distribution
+        /*! \brief Add command line arguments
          *
-         * \param[in] seed  The seed number
+         * \param[in] pargs Vector of pargs
          */
-        void setSeed(real seed);
+        void add_pargs(std::vector<t_pargs> *pargs);
 
-        /*! \brief
-         * Set the maximum number of iterations
+        void Init(const char             *xvgconv,
+                  const char             *xvgepot,
+                  const gmx_output_env_t *oenv);
+
+        /*! \brief Compute and return the Boltzmann factor
          *
-         * \param[in] maxiter  Number of iteration
+         * \param[in] iter  The iteration number
+         * \return The Boltzmann factor
          */
-        void setMaxiter(int maxiter);
+        double computeBeta(int iter);
 
-        void setNprint(int nprint);
+        //! \brief Return Max # iterations
+        int maxIter() const { return maxiter_; }
 
-        /*! \brief
-         * Set the step size to change each parameter per iteration
-         *
-         * \param[in] step
-         */
-        void setStep(real step);
+        //! \brief Return print frequency
+        int nPrint() const { return nprint_; }
 
-        /*! \brief
-         * Set the temperature
-         *
-         * \param[in] temperature
-         */
-        void setTemperature(real temperature);
-        
-        void setBeta(real temp);
+        //! \brief Return the step
+        real step() const { return step_; }
+
+        //! \brief Return whether or not bounds are used for parameters
+        bool bounds() const { return bBound_; }
+
+        //! \brief Return xvg file for convergence information
+        const char *xvgConv() const { return xvgconv_; }
+
+        //! \brief Return xvg file for epot information
+        const char *xvgEpot() const { return xvgepot_; }
+
+        //! \brief Return output environment
+        const gmx_output_env_t *oenv() const { return oenv_; }
 };
 
 template <class T> class Bayes : public OptParam
@@ -129,7 +129,6 @@ template <class T> class Bayes : public OptParam
     using parm_t = std::vector<T>;
 
     private:
-
         func_t  func_;
         parm_t  param_;
         parm_t  psigma_;
@@ -141,7 +140,9 @@ template <class T> class Bayes : public OptParam
 
     public:
 
-        Bayes(func_t func_, parm_t param_, parm_t lowerBound_, parm_t upperBound_, T *minEval_);
+        Bayes() {}
+
+        void setFunc(func_t func_, parm_t param_, parm_t lowerBound_, parm_t upperBound_, T *minEval_);
 
         void setParam(parm_t param);
 
@@ -180,9 +181,19 @@ template <class T> class Bayes : public OptParam
 };
 
 template <class T>
-Bayes<T>::Bayes(func_t func, parm_t param, parm_t lowerBound, parm_t upperBound, T *minEval)
-    : func_(func), param_(param), lowerBound_(lowerBound), upperBound_(upperBound), bestParam_(param), minEval_(minEval)
-{}
+void Bayes<T>::setFunc(func_t func,
+                       parm_t param,
+                       parm_t lowerBound,
+                       parm_t upperBound,
+                       T     *minEval)
+{
+    func_       = func;
+    param_      = param;
+    lowerBound_ = lowerBound;
+    upperBound_ = upperBound;
+    bestParam_  = param;
+    minEval_    = minEval;
+}
 
 template <class T>
 void Bayes<T>::setParam(parm_t param)
@@ -223,11 +234,11 @@ void Bayes<T>::getPsigma(parm_t &psigma)
 template <class T>
 void Bayes<T>::changeParam(int j, real rand)
 {
-    real delta = (2*rand-1)*step_*fabs(param_[j]);
+    real delta = (2*rand-1)*step()*fabs(param_[j]);
 
     param_[j] += delta;
 
-    if (bBound_)
+    if (bounds())
     {
         if (param_[j] < lowerBound_[j])
         {
@@ -245,27 +256,26 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0, nParam = 0; // ncycle = 0;
+    int                              j, nsum = 0, nParam = 0; // ncycle = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
     double                           deltaEval;
     double                           randProbability;
     double                           mcProbability;
-    //double                           T1, T2;
 
     FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> uniform(0, 1);
-    
-    if (nullptr != xvgconv_)
+
+    if (nullptr != xvgConv())
     {
-        fpc = xvgropen(xvgconv_, "Parameter convergence", "iteration", "", oenv_);
+        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
     }
-    if (nullptr != xvgepot_)
+    if (nullptr != xvgEpot())
     {
-        fpe = xvgropen(xvgepot_, "Parameter energy", "iteration", "kT", oenv_);
+        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "kT", oenv());
     }
 
     nParam = param_.size();
@@ -276,41 +286,34 @@ void Bayes<T>::simulate()
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-    //T1        = (temperature_/3.5);
-    //ncycle    = 10;
-    setBeta(temperature_);  
-    for (iter = 0; iter < maxiter_; iter++)
+    for (int iter = 0; iter < maxIter(); iter++)
     {
+        double beta = computeBeta(iter);
         for (j = 0; j < nParam; j++)
         {
-            double xiter = iter + (1.0*j)/nParam;
-            if ((nullptr != fpc) && ((j % nprint_) == 0))
-            {
-                fprintf(fpc, "%8f", xiter);
-                for (auto value : param_)
-                {
-                    fprintf(fpc, "  %10g", value);
-                }
-                fprintf(fpc, "\n");
-                fflush(fpc);
-            }
-            if ((nullptr != fpe) && ((j % nprint_) == 0))
-            {
-                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-                fflush(fpe);
-            }
             storeParam = param_[j];
             changeParam(j, uniform(gen));
             currEval        = func_(param_.data());
             deltaEval       = currEval-prevEval;
             randProbability = uniform(gen);
-            mcProbability   = exp(-beta_*deltaEval);
+            mcProbability   = exp(-beta*deltaEval);
             if ((deltaEval < 0) || (mcProbability > randProbability))
-            {   
-                if (nullptr != debug)
+            {
+                double xiter = iter + (1.0*j)/nParam;
+                if ((nullptr != fpc) && ((j % nPrint()) == 0))
                 {
-                    fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
-                            j, storeParam, param_[j], beta_*deltaEval);
+                    fprintf(fpc, "%8f", xiter);
+                    for (auto value : param_)
+                    {
+                        fprintf(fpc, "  %10g", value);
+                    }
+                    fprintf(fpc, "\n");
+                    fflush(fpc);
+                }
+                if ((nullptr != fpe) && ((j % nPrint()) == 0))
+                {
+                    fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+                    fflush(fpe);
                 }
                 if (currEval < *minEval_)
                 {
@@ -324,7 +327,7 @@ void Bayes<T>::simulate()
                 param_[j] = storeParam;
             }
         }
-        if (iter >= maxiter_/2)
+        if (iter >= maxIter()/2)
         {
             for (int k = 0; k < nParam; k++)
             {
@@ -333,8 +336,6 @@ void Bayes<T>::simulate()
             }
             nsum++;
         }
-        //T2 = T1 * ((exp(-iter/(0.3*(maxiter_+1)))) * (2.5 + cos((ncycle*M_PI*iter)/(maxiter_+1))));
-        //setBeta(T2);
     }
     if (nsum > 0)
     {

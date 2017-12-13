@@ -38,9 +38,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "qgen_resp.h"
+
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
@@ -58,7 +61,6 @@
 #include "gromacs/utility/textreader.h"
 
 #include "nmsimplex.h"
-#include "qgen_resp.h"
 #include "poldata.h"
 #include "regression.h"
 
@@ -962,11 +964,11 @@ void QgenResp::calcPot()
 void QgenResp::optimizeCharges()
 {
     /*
-      Increase number of rows for the symmetric atoms. E.g.
-      if we know that atoms 2, 3 and 4 have the same charge we
-      add two equation q2 - q3 = 0 and q2 - q4 = 0.
-      One extra row is needed to reproduce the total charge.
-    */
+       Increase number of rows for the symmetric atoms. E.g.
+       if we know that atoms 2, 3 and 4 have the same charge we
+       add two equation q2 - q3 = 0 and q2 - q4 = 0.
+       One extra row is needed to reproduce the total charge.
+     */
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   factor   = nEsp()*50;
     int                   ncolumn  = fitQ_;
@@ -1027,10 +1029,10 @@ void QgenResp::optimizeCharges()
             fprintf(debug, "ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
                     j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]);
         }
-    }  
-      
+    }
+
     rhs.push_back(factor * (qtot_ - qshell_)); // Add the total charge
-    
+
     // Add the equations to ascertain symmetric charges
     // We store the index of the cores in ii1.
     std::vector<int> ii1;

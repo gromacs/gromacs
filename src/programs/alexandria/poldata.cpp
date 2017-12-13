@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,9 +142,9 @@ std::string Poldata::getDesc(std::string atype)
     return "";
 }
 
-std::string  Poldata::getElem(std::string atype)
+const std::string &Poldata::getElem(const std::string &atype) const
 {
-    size_t i;  
+    size_t i;
     if (atype.size() != 0)
     {
         for (i = 0; i < alexandria_.size(); i++)
@@ -257,7 +257,7 @@ void Poldata::addPtype(const std::string &ptype,
  * Virtual Site STUFF
  *-+-+-+-+-+-+-+-+-+-+-+
  */
- 
+
 void  Poldata::addVsite(const std::string &atype,
                         const std::string &type,
                         int                number,
@@ -268,7 +268,7 @@ void  Poldata::addVsite(const std::string &atype,
     size_t i;
     for (i = 0; i < vsite_.size(); i++)
     {
-        if (vsite_[i].atype() == atype && 
+        if (vsite_[i].atype() == atype &&
             vsite_[i].type()  == string2vsiteType(atype.c_str()))
         {
             break;
@@ -296,9 +296,9 @@ bool Poldata::getBosquePol(const std::string &bosque,
 {
     auto bb  = bosque_.begin(), be = bosque_.end();
     auto bos = std::find_if(bb, be, [bosque](Bosque const &b)
-        {
-            return (bosque.compare(b.getBosque()) == 0);
-        });
+                            {
+                                return (bosque.compare(b.getBosque()) == 0);
+                            });
     if (bosque_.end() != bos)
     {
         *polarizability = bos->getPolarizability();
@@ -361,9 +361,9 @@ bool Poldata::getMillerPol(const std::string &miller,
 {
     auto mb  = miller_.begin(), me = miller_.end();
     auto mil = std::find_if(mb, me, [miller](Miller const &m)
-        {
-            return (miller.compare(m.getMiller()) == 0);
-        });
+                            {
+                                return (miller.compare(m.getMiller()) == 0);
+                            });
     if (miller_.end() != mil)
     {
         *atomnumber      = mil->getAtomnumber();
@@ -391,9 +391,9 @@ bool Poldata::atypeToBtype(const std::string &atype,
     }
     auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
                            [atype](Ffatype const &fa)
-        {
-            return fa.getType().compare(atype) == 0;
-        });
+                           {
+                               return fa.getType().compare(atype) == 0;
+                           });
     if (ai != alexandria_.end() && ai->getBtype().size() > 0)
     {
         btype = ai->getBtype();
@@ -538,7 +538,7 @@ void Poldata::addSymcharges(const std::string &central,
                             int                numattach)
 {
     size_t        i;
-    Symcharges * sc;
+    Symcharges  * sc;
     for (i = 0; i < symcharges_.size(); i++)
     {
         sc = &(symcharges_[i]);
@@ -688,7 +688,7 @@ double Poldata::getChi0(ChargeDistributionModel   eqdModel,
     }
     else
     {
-        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and atype %s", 
+        gmx_fatal(FARGS, "No chi0 data for eqdModel %s and atype %s",
                   getEemtypeName(eqdModel), atype.c_str());
     }
     return -1;
@@ -721,7 +721,7 @@ const char *Poldata::getEpref(ChargeDistributionModel eqdModel) const
     return nullptr;
 }
 
-CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
+CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -744,7 +744,7 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &bosquePolarUnit_);
         gmx_send_str(cr, dest, &bosqueRef_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
-        gmx_send_str(cr, dest, &vsite_length_unit_);       
+        gmx_send_str(cr, dest, &vsite_length_unit_);
         gmx_send_int(cr, dest, ptype_.size());
         gmx_send_int(cr, dest, vsite_.size());
         gmx_send_int(cr, dest, alexandria_.size());
@@ -755,61 +755,61 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, symcharges_.size());
         gmx_send_int(cr, dest, eep_.size());
         gmx_send_int(cr, dest, epr_.size());
-        
+
         /*Send ptype*/
         for (auto &ptype : ptype_)
         {
             cs = ptype.Send(cr, dest);
         }
-        
+
         /*Send Ffatype*/
         for (auto &alexandria : alexandria_)
         {
-            cs = alexandria.Send(cr, dest);           
+            cs = alexandria.Send(cr, dest);
         }
-        
+
         /*Send Vsite*/
         for (auto &vsite : vsite_)
         {
-            cs = vsite.Send(cr, dest);           
+            cs = vsite.Send(cr, dest);
         }
-        
+
         /*Send btype*/
         for (auto &btype : btype_)
         {
             gmx_send_str(cr, dest, &btype);
         }
-        
+
         /*Send Listed Forces*/
         for (auto &force : forces_)
         {
             cs = force.Send(cr, dest);
         }
-        
+
         /*Send Miller*/
         for (auto &miller : miller_)
         {
             cs = miller.Send(cr, dest);
         }
-        
+
         /*Send Bosque*/
         for (auto &bosque : bosque_)
         {
             cs = bosque.Send(cr, dest);
         }
-        
+
         /*Send Symcharge*/
         for (auto &symcharges : symcharges_)
         {
             cs = symcharges.Send(cr, dest);
         }
-        
+
         /*Send Eemprops*/
         for (auto &eep : eep_)
         {
             cs = eep.Send(cr, dest);
         }
-        
+
         /*Send Epref*/
         for (auto &epr : epr_)
         {
@@ -818,11 +818,11 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
 {
-    size_t nptype, nalexandria, nbtype, nforces, nvsite;
-    size_t nmiller, nbosque, nsymcharges, neep, nepr;
+    size_t              nptype, nalexandria, nbtype, nforces, nvsite;
+    size_t              nmiller, nbosque, nsymcharges, neep, nepr;
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
@@ -842,9 +842,9 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &millerAhpUnit_);
         gmx_recv_str(cr, src, &millerRef_);
         gmx_recv_str(cr, src, &bosquePolarUnit_);
-        gmx_recv_str(cr, src, &bosqueRef_); 
+        gmx_recv_str(cr, src, &bosqueRef_);
         gmx_recv_str(cr, src, &vsite_angle_unit_);
-        gmx_recv_str(cr, src, &vsite_length_unit_);    
+        gmx_recv_str(cr, src, &vsite_length_unit_);
         nptype                = gmx_recv_int(cr, src);
         nvsite                = gmx_recv_int(cr, src);
         nalexandria           = gmx_recv_int(cr, src);
@@ -855,8 +855,8 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
         nsymcharges           = gmx_recv_int(cr, src);
         neep                  = gmx_recv_int(cr, src);
         nepr                  = gmx_recv_int(cr, src);
-        
-        
+
+
         /*Receive ptype*/
         ptype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
@@ -868,7 +868,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 ptype_.push_back(ptype);
             }
         }
-        
+
         /*Receive Ffatype*/
         alexandria_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
@@ -880,7 +880,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 alexandria_.push_back(alexandria);
             }
         }
-        
+
         /*Receive Ffatype*/
         vsite_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
@@ -892,7 +892,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 vsite_.push_back(vsite);
             }
         }
-        
+
         /*Receive btype*/
         btype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
@@ -904,7 +904,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 btype_.push_back(btype);
             }
         }
-        
+
         /*Receive Listed Forces*/
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
@@ -916,7 +916,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 forces_.push_back(fs);
             }
         }
-        
+
         /*Receive Miller*/
         miller_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
@@ -940,7 +940,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 bosque_.push_back(bosque);
             }
         }
-        
+
         /*Receive Symcharges*/
         symcharges_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
@@ -952,7 +952,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 symcharges_.push_back(symcharges);
             }
         }
-        
+
         /*Receive Eemprops*/
         eep_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
@@ -964,7 +964,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
                 eep_.push_back(eep);
             }
         }
-        
+
         /*Receive Epref*/
         epr_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nepr); n++)
@@ -975,12 +975,12 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
             {
                 epr_.push_back(epr);
             }
-        }     
+        }
     }
     return cs;
 }
 
-void Poldata::broadcast(t_commrec *cr)
+void Poldata::broadcast(const t_commrec *cr)
 {
     const int src = 0;
     if (MASTER(cr))
@@ -1028,10 +1028,10 @@ EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
                                        const std::string       &atype) const
 {
     std::string nn;
-    auto fa = findAtype(atype);
+    auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
-        if (eqdModel == eqdRappe || eqdModel == eqdBultinck || 
+        if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {
             nn = fa->getElem();
@@ -1057,10 +1057,10 @@ EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
                                   const std::string       &atype)
 {
     std::string nn;
-    auto fa = findAtype(atype);
+    auto        fa = findAtype(atype);
     if (fa != getAtypeEnd())
     {
-        if (eqdModel == eqdRappe || eqdModel == eqdBultinck || 
+        if (eqdModel == eqdRappe || eqdModel == eqdBultinck ||
             eqdModel == eqdYang)
         {
             nn = fa->getElem();

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
  * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
+
 #include "poldata_low.h"
 
 #include <cmath>
@@ -59,26 +59,26 @@ namespace alexandria
 {
 
 static const char * eit_names[eitNR] = {
-    "BONDS", 
-    "ANGLES", 
+    "BONDS",
+    "ANGLES",
     "LINEAR_ANGLES",
-    "PROPER_DIHEDRALS", 
-    "IMPROPER_DIHEDRALS", 
+    "PROPER_DIHEDRALS",
+    "IMPROPER_DIHEDRALS",
     "VDW",
-    "LJ14", 
-    "POLARIZATION", 
-    "CONSTR", 
+    "LJ14",
+    "POLARIZATION",
+    "CONSTR",
     "VSITE2",
     "VSITE3FAD",
     "VSITE3OUT"
 };
 
 static const char * evt_names[evtNR] = {
-    "linear",  
+    "linear",
     "planar",
     "ring_planar",
     "in_plane",
-    "out_of_plane", 
+    "out_of_plane",
     "all"
 };
 
@@ -146,7 +146,7 @@ Ffatype::Ffatype(const std::string &desc,
       refEnthalpy_(refEnthalpy)
 {}
 
-CommunicationStatus Ffatype::Send(t_commrec *cr, int dest)
+CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -164,7 +164,7 @@ CommunicationStatus Ffatype::Send(t_commrec *cr, int dest)
         {
             fprintf(debug, "Sent Fftype %s %s %s %s %s %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
-                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str() ,
+                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -172,8 +172,8 @@ CommunicationStatus Ffatype::Send(t_commrec *cr, int dest)
     return cs;
 
 }
-        
-CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -181,7 +181,7 @@ CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
     {
         gmx_recv_str(cr, src, &desc_);
         gmx_recv_str(cr, src, &type_);
-        gmx_recv_str(cr, src, &ptype_);        
+        gmx_recv_str(cr, src, &ptype_);
         gmx_recv_str(cr, src, &btype_);
         gmx_recv_str(cr, src, &ztype_);
         gmx_recv_str(cr, src, &elem_);
@@ -192,7 +192,7 @@ CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
         {
             fprintf(debug, "Received Fftype %s %s %s %s %s %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
-                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str() ,
+                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -213,7 +213,7 @@ Ptype::Ptype(const std::string &ptype,
       sigPol_(sigPol)
 {}
 
-CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
+CommunicationStatus Ptype::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -227,8 +227,8 @@ CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(), 
-                    bosque_.c_str(), polarizability_, 
+                    type_.c_str(), miller_.c_str(),
+                    bosque_.c_str(), polarizability_,
                     sigPol_, cs_name(cs));
             fflush(debug);
         }
@@ -236,7 +236,7 @@ CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Ptype::Receive(t_commrec *cr, int src)
+CommunicationStatus Ptype::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -246,12 +246,12 @@ CommunicationStatus Ptype::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &miller_);
         gmx_recv_str(cr, src, &bosque_);
         polarizability_ = gmx_recv_double(cr, src);
-        sigPol_ = gmx_recv_double(cr, src);
+        sigPol_         = gmx_recv_double(cr, src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(), 
-                    bosque_.c_str(), polarizability_, 
+                    type_.c_str(), miller_.c_str(),
+                    bosque_.c_str(), polarizability_,
                     sigPol_, cs_name(cs));
             fflush(debug);
         }
@@ -264,7 +264,7 @@ Vsite::Vsite(const std::string &atype,
              int                number,
              double             distance,
              double             angle,
-             int                ncontrolatoms)  
+             int                ncontrolatoms)
     :
       atype_(atype),
       type_(string2vsiteType(type.c_str())),
@@ -274,9 +274,9 @@ Vsite::Vsite(const std::string &atype,
       ncontrolatoms_(ncontrolatoms)
 {}
 
-CommunicationStatus Vsite::Send(t_commrec *cr, int dest)
+CommunicationStatus Vsite::Send(const t_commrec *cr, int dest)
 {
-    CommunicationStatus cs;   
+    CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
@@ -291,7 +291,7 @@ CommunicationStatus Vsite::Send(t_commrec *cr, int dest)
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Vsite %s %s %d %g %g %d, status %s\n",
-                    atype_.c_str(), vsiteType2string(type_), number_, 
+                    atype_.c_str(), vsiteType2string(type_), number_,
                     distance_, angle_, ncontrolatoms_, cs_name(cs));
             fflush(debug);
         }
@@ -299,7 +299,7 @@ CommunicationStatus Vsite::Send(t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Vsite::Receive(t_commrec *cr, int src)
+CommunicationStatus Vsite::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -308,7 +308,7 @@ CommunicationStatus Vsite::Receive(t_commrec *cr, int src)
         std::string type;
         gmx_recv_str(cr, src, &atype_);
         gmx_recv_str(cr, src, &type);
-        type_          = string2vsiteType(type.c_str()); 
+        type_          = string2vsiteType(type.c_str());
         number_        = gmx_recv_int(cr, src);
         distance_      = gmx_recv_double(cr, src);
         angle_         = gmx_recv_double(cr, src);
@@ -316,7 +316,7 @@ CommunicationStatus Vsite::Receive(t_commrec *cr, int src)
         if (nullptr != debug)
         {
             fprintf(debug, "Received Vsite %s %s %d %g %g %d, status %s\n",
-                    atype_.c_str(), vsiteType2string(type_), number_, 
+                    atype_.c_str(), vsiteType2string(type_), number_,
                     distance_, angle_, ncontrolatoms_, cs_name(cs));
             fflush(debug);
         }
@@ -338,7 +338,7 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
 
 {}
 
-CommunicationStatus ListedForce::Send(t_commrec *cr, int dest)
+CommunicationStatus ListedForce::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -349,12 +349,12 @@ CommunicationStatus ListedForce::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, sigma_);
         gmx_send_int(cr, dest, static_cast<int>(ntrain_));
         gmx_send_int(cr, dest, atoms_.size());
-        
+
         for (auto &atom : atoms_)
         {
             gmx_send_str(cr, dest, &atom);
         }
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent ListedForce %s %g %g %zu, status %s\n",
@@ -365,34 +365,34 @@ CommunicationStatus ListedForce::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
+
+CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
 {
-    int natom;
+    int                 natom;
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &params_);
         refValue_ = gmx_recv_double(cr, src);
-        sigma_    = gmx_recv_double(cr, src);       
+        sigma_    = gmx_recv_double(cr, src);
         ntrain_   = static_cast<size_t>(gmx_recv_double(cr, src));
         natom     = gmx_recv_int(cr, src);
-        
-        for(auto n = 0; n < natom; n++)
+
+        for (auto n = 0; n < natom; n++)
         {
             std::string atom;
             gmx_recv_str(cr, src, &atom);
             if (!atom.empty())
             {
-                const_cast<std::vector<std::string>&>(atoms_).push_back(atom);
+                const_cast<std::vector<std::string> &>(atoms_).push_back(atom);
             }
             else
             {
                 gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
             }
         }
-       
+
         if (nullptr != debug)
         {
             fprintf(debug, "Received ListedForce %s %g %g %zu, status %s\n",
@@ -428,11 +428,11 @@ ListedForces::ListedForces(const std::string   iType,
     fType_ = funcType;
 }
 
-CommunicationStatus ListedForces::Send(t_commrec *cr, int dest)
+CommunicationStatus ListedForces::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     std::string         itype;
-    
+
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
@@ -442,12 +442,12 @@ CommunicationStatus ListedForces::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &unit_);
         gmx_send_int(cr, dest, static_cast<int>(fType_));
         gmx_send_int(cr, dest, force_.size());
-        
+
         for (auto &f : force_)
         {
             f.Send(cr, dest);
         }
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent ListedForces %s %s %s %d, status %s\n",
@@ -458,25 +458,25 @@ CommunicationStatus ListedForces::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus ListedForces::Receive(t_commrec *cr, int src)
+
+CommunicationStatus ListedForces::Receive(const t_commrec *cr, int src)
 {
-    size_t nforce;
+    size_t              nforce;
     CommunicationStatus cs;
-    std::string iType, function, unit;
-    
+    std::string         iType, function, unit;
+
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &iType);
         gmx_recv_str(cr, src, &function);
         gmx_recv_str(cr, src, &unit);
-        iType_    = string2iType(iType.c_str());        
-        const_cast<std::string&>(function_) = function;        
-        const_cast<std::string&>(unit_) = unit;
+        iType_    = string2iType(iType.c_str());
+        const_cast<std::string &>(function_) = function;
+        const_cast<std::string &>(unit_)     = unit;
         fType_    = static_cast<unsigned int>(gmx_recv_int(cr, src));
         nforce    = gmx_recv_int(cr, src);
-              
+
         force_.clear();
         for (size_t n = 0; n < nforce; n++)
         {
@@ -487,7 +487,7 @@ CommunicationStatus ListedForces::Receive(t_commrec *cr, int src)
                 force_.push_back(f);
             }
         }
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Received ListedForces %s %s %s %d, status %s\n",
@@ -579,16 +579,16 @@ Bosque::Bosque(const std::string &bosque, double polarizability)
     :
       bosque_(bosque),
       polarizability_(polarizability)
-   {}
+{}
 
-CommunicationStatus Bosque::Send(t_commrec *cr, int dest)
+CommunicationStatus Bosque::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &bosque_);
-        gmx_send_double(cr, dest, polarizability_);       
+        gmx_send_double(cr, dest, polarizability_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Bosque %s %g, status %s\n",
@@ -598,21 +598,21 @@ CommunicationStatus Bosque::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus Bosque::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Bosque::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &bosque_);
-        polarizability_ = gmx_recv_double(cr, src);        
+        polarizability_ = gmx_recv_double(cr, src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Bosque %s %g, status %s\n",
                     bosque_.c_str(), polarizability_, cs_name(cs));
             fflush(debug);
-        }        
+        }
     }
     return cs;
 }
@@ -628,9 +628,9 @@ Miller::Miller(const std::string &miller,
       tauAhc_(tauAhc),
       alphaAhp_(alphaAhp),
       alexandria_equiv_(alexandria_equiv)
-   {}
-   
-CommunicationStatus Miller::Send(t_commrec *cr, int dest)
+{}
+
+CommunicationStatus Miller::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -641,7 +641,7 @@ CommunicationStatus Miller::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, tauAhc_);
         gmx_send_double(cr, dest, alphaAhp_);
         gmx_send_str(cr, dest, &alexandria_equiv_);
-       
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Miller %s %d %g %g %s, status %s\n",
@@ -652,8 +652,8 @@ CommunicationStatus Miller::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus Miller::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Miller::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -663,7 +663,7 @@ CommunicationStatus Miller::Receive(t_commrec *cr, int src)
         atomnumber_ = gmx_recv_int(cr, src);
         tauAhc_     = gmx_recv_double(cr, src);
         alphaAhp_   = gmx_recv_double(cr, src);
-        gmx_recv_str(cr, src, &alexandria_equiv_);        
+        gmx_recv_str(cr, src, &alexandria_equiv_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
@@ -682,9 +682,9 @@ Symcharges::Symcharges(const std::string &central,
       central_(central),
       attached_(attached),
       numattach_(numattach)
-   {}
+{}
 
-CommunicationStatus Symcharges::Send(t_commrec *cr, int dest)
+CommunicationStatus Symcharges::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -693,7 +693,7 @@ CommunicationStatus Symcharges::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &central_);
         gmx_send_str(cr, dest, &attached_);
         gmx_send_int(cr, dest, numattach_);
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Symcharges %s %s %d, status %s\n",
@@ -703,19 +703,19 @@ CommunicationStatus Symcharges::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus Symcharges::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Symcharges::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    std::string central, attached;
+    std::string         central, attached;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &central);
         gmx_recv_str(cr, src, &attached);
-        const_cast<std::string&>(central_)   = central;
-        const_cast<std::string&>(attached_)  = attached;
-        numattach_ = gmx_recv_int(cr, src);        
+        const_cast<std::string &>(central_)   = central;
+        const_cast<std::string &>(attached_)  = attached;
+        numattach_ = gmx_recv_int(cr, src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",
@@ -727,25 +727,25 @@ CommunicationStatus Symcharges::Receive(t_commrec *cr, int src)
 }
 
 
-Epref::Epref(ChargeDistributionModel eqdModel,
+Epref::Epref(ChargeDistributionModel  eqdModel,
              const std::string       &epref)
     :
       eqdModel_(eqdModel),
       epref_(epref)
-   {}
+{}
 
-CommunicationStatus Epref::Send(t_commrec *cr, int dest)
+CommunicationStatus Epref::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     std::string         eqdModel;
-    
+
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         eqdModel.assign(getEemtypeName(eqdModel_));
         gmx_send_str(cr, dest, &eqdModel);
         gmx_send_str(cr, dest, &epref_);
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Epref %s %s, status %s\n",
@@ -755,19 +755,19 @@ CommunicationStatus Epref::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus Epref::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Epref::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    std::string eqdModel;
-    
+    std::string         eqdModel;
+
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-      gmx_recv_str(cr, src, &eqdModel);
-      eqdModel_ = name2eemtype(eqdModel);
-      gmx_recv_str(cr, src, &epref_);
-        
+        gmx_recv_str(cr, src, &eqdModel);
+        eqdModel_ = name2eemtype(eqdModel);
+        gmx_recv_str(cr, src, &epref_);
+
         if (nullptr != debug)
         {
             fprintf(debug, "Received Epref %s %s, status %s\n",
@@ -802,7 +802,7 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
     fixedQ_ = (q != 0);
 }
 
-CommunicationStatus RowZetaQ::Send(t_commrec *cr, int dest)
+CommunicationStatus RowZetaQ::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -813,7 +813,7 @@ CommunicationStatus RowZetaQ::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, q_);
         gmx_send_double(cr, dest, zetaRef_);
         gmx_send_int(cr, dest, zindex_);
-        gmx_send_int(cr, dest, fixedQ_);        
+        gmx_send_int(cr, dest, fixedQ_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent RowZetaQ %d %g %g %g %d %d, status %s\n",
@@ -823,8 +823,8 @@ CommunicationStatus RowZetaQ::Send(t_commrec *cr, int dest)
     }
     return cs;
 }
-        
-CommunicationStatus RowZetaQ::Receive(t_commrec *cr, int src)
+
+CommunicationStatus RowZetaQ::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
@@ -836,7 +836,7 @@ CommunicationStatus RowZetaQ::Receive(t_commrec *cr, int src)
         zetaRef_ = gmx_recv_double(cr, src);
         zindex_  = gmx_recv_int(cr, src);
         fixedQ_  = gmx_recv_int(cr, src);
-        
+
         if (nullptr != debug)
         {
             fprintf(debug, "Received RowZetaQ %d %g %g %g %d %d, status %s\n",
@@ -847,7 +847,7 @@ CommunicationStatus RowZetaQ::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
+Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
                    const std::string        &name,
                    const std::string        &rowstr,
                    const std::string        &zetastr,
@@ -872,7 +872,7 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
     setRowZetaQ(rowstr, zetastr, qstr);
 }
 
-CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
+CommunicationStatus Eemprops::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
     std::string         eqdModel;
@@ -891,28 +891,28 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, chi0_);
         gmx_send_double(cr, dest, chi0_sigma_);
         gmx_send_int(cr, dest, rzq_.size());
-        
+
         for (auto &rzq : rzq_)
         {
             cs = rzq.Send(cr, dest);
-        }         
+        }
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Eemprops %s %s %s %s %s %g %g, status %s\n",
-                    getEemtypeName(eqdModel_), name_.c_str(), rowstr_.c_str(), 
+                    getEemtypeName(eqdModel_), name_.c_str(), rowstr_.c_str(),
                     zetastr_.c_str(), qstr_.c_str(), J0_, chi0_, cs_name(cs));
             fflush(debug);
         }
     }
     return cs;
 }
-        
-CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
+
+CommunicationStatus Eemprops::Receive(const t_commrec *cr, int src)
 {
-    size_t nrzq;
+    size_t              nrzq;
     CommunicationStatus cs;
-    std::string eqdModel;
-    
+    std::string         eqdModel;
+
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
@@ -928,7 +928,7 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
         chi0_       = gmx_recv_double(cr, src);
         chi0_sigma_ = gmx_recv_double(cr, src);
         nrzq        = gmx_recv_int(cr, src);
-        
+
         rzq_.clear();
         for (size_t n = 0; n < nrzq; n++)
         {
@@ -938,7 +938,7 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
             {
                 rzq_.push_back(rzq);
             }
-        }      
+        }
     }
     return cs;
 }

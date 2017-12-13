@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,56 +66,56 @@ class Poldata
          *
          */
         void  setFilename(const std::string &fn2);
-        
+
         /*! \brief
-         * Set the force field 
+         * Set the force field
          */
         void setForceField(const std::string &forcefield)
         {
             alexandriaForcefield_ = forcefield;
         }
-        
+
         /*! \brief
          * Set the potential energy function for VDW interaction.
          * The VDW potentials supported by Alexandria are LJ, Buckingham, and Wang_Buckingham.
          *
          * \param[in] func  The name of the VDW potential function
-         */       
+         */
         void  setVdwFunction(const std::string &func);
-        
+
         /*! \brief
          * Set the combination rule
          *
          */
         void setCombinationRule(const std::string &func);
-        
+
         /*! \brief
          * Set the number of exclusion
          */
         void setNexcl(int nexcl) { nexcl_ = nexcl; }
-        
+
         /*! \brief
          * Set the scaling factor for 1-4 electrostatic interaction
          */
         void setFudgeQQ(double fudgeQQ) { fudgeQQ_ = fudgeQQ; }
-        
+
         /*! \brief
          * Set the scaling factor for 1-4 LJ interaction
          */
         void setFudgeLJ(double fudgeLJ) { fudgeLJ_ = fudgeLJ; }
-        
+
         /*! \brief
          * Add the atom types used in Alexandria FF
          *
-         *\param[in] elem          The element of the atom type
-         *\param[in] desc          The description of the atom type
-         *\param[in] atype         The atom type defined for this element in Alexandria FF
-         *\param[in] ptype         The polarizability type defined for this element in Alexandria FF
-         *\param[in] btype         The bond type defined for elem in Alexandria FF
-         *\param[in] ztype         The zeta type defined for elem in Alexandria FF
-         *\param[in] vdwparams     The VDW parameters for elem in Alexandria FF. The number of VDW parameters is 2 for LJ and 3 for 
+         **\param[in] elem          The element of the atom type
+         **\param[in] desc          The description of the atom type
+         **\param[in] atype         The atom type defined for this element in Alexandria FF
+         **\param[in] ptype         The polarizability type defined for this element in Alexandria FF
+         **\param[in] btype         The bond type defined for elem in Alexandria FF
+         **\param[in] ztype         The zeta type defined for elem in Alexandria FF
+         **\param[in] vdwparams     The VDW parameters for elem in Alexandria FF. The number of VDW parameters is 2 for LJ and 3 for
          *                         Buckingham and Wang_Buckingham potentials
-         *\param[in] ref_enthalpy  The reference enthalpy for elem
+         **\param[in] ref_enthalpy  The reference enthalpy for elem
          */
         void  addAtype(const std::string &elem,
                        const std::string &desc,
@@ -125,15 +125,15 @@ class Poldata
                        const std::string &ztype,
                        std::string       &vdwparams,
                        const std::string &ref_enthalpy);
-                       
+
         /*! \brief
          *  Add the polarizability types
          *
-         *\param[in] ptype           The name specifying the polarizability type in Alexandria FF
-         *\param[in] miller          Miller polarizability type
-         *\param[in] bosque          Bosque polarizability type
-         *\param[in] polarizability  The calulated value of polarizability
-         *\param[in] sigPol          The uncertainty of the calculated polarizability
+         **\param[in] ptype           The name specifying the polarizability type in Alexandria FF
+         **\param[in] miller          Miller polarizability type
+         **\param[in] bosque          Bosque polarizability type
+         **\param[in] polarizability  The calulated value of polarizability
+         **\param[in] sigPol          The uncertainty of the calculated polarizability
          */
         void  addPtype(const std::string &ptype,
                        const std::string &miller,
@@ -151,9 +151,9 @@ class Poldata
         /*! \brief
          * Set the value and the associated error for the given poltype
          *
-         *\param[in] ptype            Polarizabilty type
-         *\param[in] polarizability   The value of polarizabilty
-         *\param[in] sigPol           The error
+         **\param[in] ptype            Polarizabilty type
+         **\param[in] polarizability   The value of polarizabilty
+         **\param[in] sigPol           The error
          */
         bool setPtypePolarizability(const std::string &ptype,
                                     double             polarizability,
@@ -168,36 +168,36 @@ class Poldata
         }
 
         /*! \brief
-         * Set the reference polarizability value. 
+         * Set the reference polarizability value.
          */
         void setPolarRef(const std::string &polarRef)
         {
             alexandriaPolarRef_ = polarRef;
         }
-        
+
         /*! \brief
-         * Set the vsite angle unit. 
+         * Set the vsite angle unit.
          */
         void setVsite_angle_unit(const std::string &angle_unit)
         {
             vsite_angle_unit_ = angle_unit;
         }
-        
+
         /*! \brief
-         * Set the vsite angle unit. 
+         * Set the vsite angle unit.
          */
         void setVsite_length_unit(const std::string &length_unit)
         {
             vsite_length_unit_ = length_unit;
         }
-        
-        std::vector<Vsite> &getVsite() {return vsite_;}
+
+        std::vector<Vsite> &getVsite() {return vsite_; }
 
         const std::string &getForceField() const { return alexandriaForcefield_; }
 
         int getVdwFtype() const { return gtVdwFtype_; }
 
-        int getNexcl() const { return nexcl_; }      
+        int getNexcl() const { return nexcl_; }
 
         size_t getNatypes() const { return alexandria_.size(); }
 
@@ -208,10 +208,10 @@ class Poldata
         double getFudgeLJ() const { return fudgeLJ_; }
 
         /*! \brief
-         * Return the reference enthalpy for the given atom type 
-         * 
-         *\param[in] atype Atom type
-         *\param[ou] Href  Reference enthalpy
+         * Return the reference enthalpy for the given atom type
+         *
+         **\param[in] atype Atom type
+         **\param[ou] Href  Reference enthalpy
          */
         bool getAtypeRefEnthalpy(const std::string &atype,
                                  double            *Href) const;
@@ -242,9 +242,9 @@ class Poldata
          *
          * \param[in] atype  Atom Type
          */
-        std::string  getElem(std::string atype);
-        
-        
+        const std::string &getElem(const std::string &atype) const;
+
+
         /*! \brief
          * Return the charge corresponding to the atyom type
          * from the gentop.dat file
@@ -322,29 +322,29 @@ class Poldata
         PtypeConstIterator getPtypeBegin() const { return ptype_.begin(); }
 
         PtypeConstIterator getPtypeEnd() const { return ptype_.end(); }
-        
+
         VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
-        
+
         VsiteConstIterator getVsiteBegin()  const { return vsite_.begin(); }
 
         VsiteIterator getVsiteEnd() { return vsite_.end(); }
-        
+
         VsiteConstIterator getVsiteEnd() const { return vsite_.end(); }
-        
+
         VsiteIterator findVsite(std::string  atype)
         {
-        
-            return std::find_if(vsite_.begin(), vsite_.end(), 
+
+            return std::find_if(vsite_.begin(), vsite_.end(),
                                 [atype](const Vsite &vs)
                                 {
                                     return (atype == vs.atype());
                                 });
         }
-        
+
         VsiteConstIterator findVsite(std::string atype) const
         {
-        
-            return std::find_if(vsite_.begin(), vsite_.end(), 
+
+            return std::find_if(vsite_.begin(), vsite_.end(),
                                 [atype](const Vsite &vs)
                                 {
                                     return (atype == vs.atype());
@@ -520,7 +520,7 @@ class Poldata
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain) const;
-                         
+
         bool searchForce(std::vector<std::string> &atoms,
                          std::string              &params,
                          double                   *refValue,
@@ -533,10 +533,10 @@ class Poldata
         const std::string &getPolarUnit() const { return alexandriaPolarUnit_; }
 
         const std::string &getPolarRef() const { return alexandriaPolarRef_; }
-        
-        const std::string &getVsite_angle_unit() const { return vsite_angle_unit_;}
-        
-        const std::string &getVsite_length_unit() const { return vsite_length_unit_;}
+
+        const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
+
+        const std::string &getVsite_length_unit() const { return vsite_length_unit_; }
 
         void addSymcharges(const std::string &central,
                            const std::string &attached,
@@ -603,7 +603,7 @@ class Poldata
         EempropsIterator findEem(ChargeDistributionModel  eqdModel,
                                  const std::string       &atype);
 
-        std::vector<Eemprops> &getEemprops() {return eep_;}
+        std::vector<Eemprops> &getEemprops() {return eep_; }
 
         void  setEpref(ChargeDistributionModel eqdModel,
                        const std::string      &epref);
@@ -611,15 +611,15 @@ class Poldata
         const char *getEpref(ChargeDistributionModel eqdModel) const;
 
         //! Spread from master to slave nodes
-        void  broadcast(t_commrec *cr);
+        void  broadcast(const t_commrec *cr);
 
         EprefConstIterator epRefBegin() const { return epr_.begin(); }
 
         EprefConstIterator epRefEnd() const { return epr_.end(); }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         std::string                           filename_;

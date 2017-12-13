@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
@@ -58,10 +58,10 @@ enum CommunicationStatus {
 
 const char *cs_name(CommunicationStatus cs);
 
-CommunicationStatus gmx_send_data(t_commrec *cr, int dest);
+CommunicationStatus gmx_send_data(const t_commrec *cr, int dest);
 
-CommunicationStatus gmx_send_done(t_commrec *cr, int dest);
+CommunicationStatus gmx_send_done(const t_commrec *cr, int dest);
 
-CommunicationStatus gmx_recv_data(t_commrec *cr, int src);
+CommunicationStatus gmx_recv_data(const t_commrec *cr, int src);
 
 #endif

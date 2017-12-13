@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012-2016, by the GROMACS development team, led by
+ * Copyright (c) 2012-2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,28 +71,30 @@ struct t_inputrec;
 struct t_topology;
 
 enum eDih {
-    edihNo, 
-    edihOne, 
-    edihAll, 
+    edihNo,
+    edihOne,
+    edihAll,
     edihNR
 };
 
 enum eSupport {
-    eSupportNo, 
-    eSupportLocal, 
-    eSupportRemote, 
+    eSupportNo,
+    eSupportLocal,
+    eSupportRemote,
     eSupportNR
 };
 
 namespace alexandria
 {
-    /*! \brief Enumerated type to differentiate the charge types */
-    enum qType { qtESP = 0, qtMulliken = 1, qtHirshfeld = 2, qtCM5 = 3, 
-                 qtCalc = 4, qtElec = 5, qtNR = 6 };
+/*! \brief Enumerated type to differentiate the charge types */
+enum qType {
+    qtCalc = 0, qtESP = 1, qtMulliken = 2, qtHirshfeld = 3,
+    qtCM5  = 4, qtElec = 5, qtNR = 6
+};
 
-    /*! \brief return string corresponding to charge type */
-    const char *qTypeName(qType qt);
-    
+/*! \brief return string corresponding to charge type */
+const char *qTypeName(qType qt);
+
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -175,23 +177,23 @@ class MyMol
          * \param[in] pd
          */
         immStatus checkAtoms(const Poldata &pd);
-        
-        
-        immStatus zeta2atoms(ChargeDistributionModel iChargeDistributionModel,
-                             const Poldata &pd);
 
-        bool IsVsiteNeeded(std::string       atype,
+
+        immStatus zeta2atoms(ChargeDistributionModel iChargeDistributionModel,
+                             const Poldata          &pd);
+
+        bool IsVsiteNeeded(std::string        atype,
                            const Poldata     &pd);
-                           
+
         void findInPlaneAtoms(int ca, std::vector<int> &atoms);
-        
+
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
-           
+
         friend bool operator==(const MyMol &mol1, const MyMol &mol2)
-        { 
+        {
             return (mol1.molProp()->getMolname().c_str() == mol2.molProp()->getMolname().c_str());
         }
-        
+
         /*! \brief Extract charges and electric moments and store them.
          *
          * \param[in] qt     Charge type to store in
@@ -209,27 +211,27 @@ class MyMol
         //! Weighting factor for dipole????
         double                    dip_weight_    = 0;
         //! Center of charge
-        rvec                      coc_           = {0,0,0};
+        rvec                      coc_           = {0, 0, 0};
         //! Array of quadrupole tensors
         tensor                    Q_qm_[qtNR];
         //! Array of vectors of charges
         std::vector<double>       charge_QM_[qtNR];
-        
+
         //! GROMACS state variable
         t_state                  *state_;
         //! GROMACS force record
         t_forcerec               *fr_;
 
- public:
+    public:
         //! \brief return QM dipole corresponding to charge type qt
         const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
-        
+
         //! \brief return QM quadrupole corresponding to charge type qt
         const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
-        
+
         //! \brief return Charge vector corresponding to charge type qt
         const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
-        
+
         /*! \brief Store dipole in appropriate vector
          *
          * \param[in] qt The charge type
@@ -249,9 +251,9 @@ class MyMol
 
         //! Return experimental dipole
         double dipExper() const { return dip_exp_; }
-        
-        const PaddedRVecVector &x() const { return state_->x; }
-        
+
+        const PaddedRVecVector   &x() const { return state_->x; }
+
         double                    chieq_         = 0;
         double                    Hform_         = 0;
         double                    Emol_          = 0;
@@ -264,8 +266,8 @@ class MyMol
         double                    anisoPol_elec_ = 0;
         double                    anisoPol_calc_ = 0;
         matrix                    box_;
-        tensor                    alpha_elec_    = {{0,0,0},{0,0,0},{0,0,0}};
-        tensor                    alpha_calc_    = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        tensor                    alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         eSupport                  eSupp_;
         PaddedRVecVector          f_;
         PaddedRVecVector          optf_;
@@ -283,8 +285,8 @@ class MyMol
         t_mdatoms                *mdatoms_;
         t_topology               *topology_;
         t_fcdata                 *fcd_;
-        t_nrnb                   nrnb_;
-        gmx_wallcycle_t          wcycle_;
+        t_nrnb                    nrnb_;
+        gmx_wallcycle_t           wcycle_;
 
         /*! \brief
          * Constructor
@@ -295,7 +297,7 @@ class MyMol
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
-        
+
 
         /*! \brief
          * It generates the topology structure which will be used to print the topology file.
@@ -381,7 +383,7 @@ class MyMol
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
                               gmx_bool bZPE, const char *lot,
                               const Poldata &pd);
-                              
+
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
@@ -427,9 +429,9 @@ class MyMol
         void CalcQPol(const Poldata &pd, rvec mu);
 
         void CalcDipole();
-        
+
         void CalcDipole(rvec mu);
-        
+
         void CalcAnisoPolarizability(tensor polar, double *anisoPol);
 
         /*! \brief
@@ -437,7 +439,6 @@ class MyMol
          *
          * \param[in] fplog
          * \param[in] cr
-         * \param[in] mu_tot
          */
         void computeForces(FILE *fplog, t_commrec *cr);
 
@@ -455,7 +456,7 @@ class MyMol
          * \param[in] ei   ExperimentIterator
          */
         void changeCoordinate(ExperimentIterator ei);
-        
+
         bool getOptimizedGeometry(rvec *x);
 
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
@@ -484,8 +485,8 @@ class MyMol
         /*! \brief Calculates dipole components, and quadrupoles.
          *
          * Compute moments using QM-based charges like
-         * Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
-         * QM calculations, it loops over eptAtoms, only. 
+         * Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in
+         * QM calculations, it loops over eptAtoms, only.
          * \param[in] q  Array of charges
          * \param[out] mu Dipole vector
          * \param[out] Q  Quadrupole tensor

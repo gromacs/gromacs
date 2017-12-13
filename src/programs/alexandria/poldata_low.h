@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se> 
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef POLDATA_LOW_H
@@ -63,15 +63,15 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-    eqdAXp      = 0, 
-    eqdAXg      = 1, 
-    eqdAXs      = 2, 
-    eqdAXpp     = 3, 
-    eqdAXpg     = 4, 
-    eqdAXps     = 5, 
-    eqdYang     = 6, 
-    eqdBultinck = 7, 
-    eqdRappe    = 8, 
+    eqdAXp      = 0,
+    eqdAXg      = 1,
+    eqdAXs      = 2,
+    eqdAXpp     = 3,
+    eqdAXpg     = 4,
+    eqdAXps     = 5,
+    eqdYang     = 6,
+    eqdBultinck = 7,
+    eqdRappe    = 8,
     eqdNR       = 9
 };
 
@@ -117,7 +117,7 @@ VsiteType string2vsiteType(const char *string);
 class Ffatype
 {
     public:
-    
+
         /*! \brief
          * Fftype constructor
          *
@@ -178,17 +178,17 @@ class Ffatype
          * Return the Van der Waals parameters of atoms
          */
         const std::string &getVdwparams() const { return vdwparams_; }
-        
-        void setVdwparams(std::string param) {vdwparams_ = param;}
+
+        void setVdwparams(std::string param) {vdwparams_ = param; }
 
         /*! \brief
          * Return the reference enthalpy of formation of atoms
          */
         const std::string &getRefEnthalpy() const { return refEnthalpy_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         std::string desc_;
@@ -204,7 +204,7 @@ class Ffatype
 using FfatypeIterator      = typename std::vector<Ffatype>::iterator;
 using FfatypeConstIterator = typename std::vector<Ffatype>::const_iterator;
 
- 
+
 /*! \brief
  * Contains all the information realted to
  * polarizability.
@@ -215,9 +215,9 @@ using FfatypeConstIterator = typename std::vector<Ffatype>::const_iterator;
 class Ptype
 {
     public:
-    
+
         Ptype () {}
-            
+
         /*! \brief
          * Ptype constructor
          *
@@ -227,7 +227,7 @@ class Ptype
          * \param[in] polarizability  Polarizability value
          * \param[in] sigPol          Uncertainty in the calulated polarizability
          */
-        
+
         Ptype(const std::string &ptype,
               const std::string &miller,
               const std::string &bosque,
@@ -274,10 +274,10 @@ class Ptype
          *
          */
         double getSigPol() const { return sigPol_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         std::string type_;
@@ -295,51 +295,51 @@ using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 class Vsite
 {
     public:
-    
+
         Vsite () {};
-    
+
         Vsite(const std::string &atype,
               const std::string &type,
               int                number,
               double             distance,
               double             angle,
               int                ncontrolatoms);
-        
+
         /*! \brief
          * Return the atom type to which the vsites are connected.
          */
         const std::string &atype() const { return atype_; }
-        
+
         /*! \brief
          * Return the type pf virtual site.
          */
         const VsiteType &type() const { return type_; }
-        
+
         /*! \brief
          * Return the distance between the atom and the virtual site.
          */
-        double distance() const {return distance_;}
-        
+        double distance() const {return distance_; }
+
         /*! \brief
          * Return the angle between the atom and the virtual site.
          */
-        double angle() const {return angle_;}
-        
+        double angle() const {return angle_; }
+
         /*! \brief
          * Return the number of virtual sites connected to the atom.
          */
-        int nvsite() const {return number_;}
-        
+        int nvsite() const {return number_; }
+
         /*! \brief
          * Return the number of atoms needed to locate the vsite.
          */
-        int ncontrolatoms() const {return ncontrolatoms_;}
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
-        
-        
+        int ncontrolatoms() const {return ncontrolatoms_; }
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
+
+
     private:
         std::string atype_;
         VsiteType   type_;
@@ -365,7 +365,7 @@ class ListedForce
     public:
 
         ListedForce () {}
-        
+
         /*! \brief
          * ListedForce constructor
          *
@@ -374,7 +374,7 @@ class ListedForce
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
-         */        
+         */
         ListedForce(const std::vector<std::string> atoms,
                     std::string                    params,
                     double                         refValue,
@@ -425,10 +425,10 @@ class ListedForce
          * Return the number of molecules in the training set
          */
         int ntrain() const { return ntrain_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
 
@@ -456,7 +456,7 @@ class ListedForces
     public:
 
         ListedForces () {}
-        
+
         /*! \brief
          * ListedForces constructor
          *
@@ -564,10 +564,10 @@ class ListedForces
         ListedForceIterator forceEnd() {return force_.end(); }
 
         ListedForceConstIterator forceEnd() const {return force_.end(); }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
 
@@ -593,7 +593,7 @@ class Bosque
     public:
 
         Bosque () {}
-        
+
         /*! \brief
          * Bosque constructor
          *
@@ -611,10 +611,10 @@ class Bosque
          * Return polarizability value
          */
         double getPolarizability() const { return polarizability_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         std::string bosque_;
@@ -637,7 +637,7 @@ class Miller
     public:
 
         Miller () {}
-        
+
         /*! \brief
          * Miller constructor
          *
@@ -677,10 +677,10 @@ class Miller
          * Return Alexandria type
          */
         const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         std::string miller_;
@@ -696,9 +696,9 @@ using MillerConstIterator = typename std::vector<Miller>::const_iterator;
 class Symcharges
 {
     public:
-    
+
         Symcharges () {}
-    
+
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);
@@ -708,10 +708,10 @@ class Symcharges
         const std::string &getAttached() const { return attached_; }
 
         int getNumattach() const { return numattach_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         const std::string central_;
@@ -725,10 +725,10 @@ using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator
 class Epref
 {
     public:
-    
+
         Epref () {}
-    
-        Epref(ChargeDistributionModel  eqdModel,
+
+        Epref(ChargeDistributionModel   eqdModel,
               const std::string        &epref);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
@@ -736,10 +736,10 @@ class Epref
         const char *getEpref() const { return epref_.c_str(); }
 
         void setEpref(std::string epref) { epref_ = epref; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         ChargeDistributionModel eqdModel_;
@@ -759,7 +759,7 @@ using EprefConstIterator = typename std::vector<Epref>::const_iterator;
 class RowZetaQ
 {
     public:
-    
+
         RowZetaQ () {}
 
         /*! \brief
@@ -769,7 +769,7 @@ class RowZetaQ
          * \param[in] zeta     Inverse screening length of each of the components
          * \param[in] q        Charge of each of the components
          */
-         
+
         RowZetaQ(int row, double zeta, double q);
 
         /*! \brief
@@ -842,10 +842,10 @@ class RowZetaQ
          * Return true if the charge is fixed
          */
         bool fixedQ() const { return fixedQ_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         int    row_;
@@ -862,15 +862,15 @@ using RowZetaQConstIterator = typename std::vector<RowZetaQ>::const_iterator;
 class Eemprops
 {
     public:
-    
+
         Eemprops () {}
-    
+
         Eemprops(ChargeDistributionModel eqdModel,
                  const std::string      &name,
                  const std::string      &rowstr,
                  const std::string      &zetastr,
                  const std::string      &zeta_sigma,
-                 const std::string      &qstr,                
+                 const std::string      &qstr,
                  double                  J0,
                  double                  J0_sigma,
                  double                  chi0,
@@ -883,7 +883,7 @@ class Eemprops
         const char *getName() const { return name_.c_str(); }
 
         const char *getZetastr() const { return zetastr_.c_str(); }
-        
+
         const char *getZeta_sigma() const { return zeta_sigma_.c_str(); }
 
         const char *getQstr() const { return qstr_.c_str(); }
@@ -891,11 +891,11 @@ class Eemprops
         const char *getRowstr() const { return rowstr_.c_str(); }
 
         double getJ0() const { return J0_; }
-        
-        double getJ0_sigma()const { return J0_sigma_; }
+
+        double getJ0_sigma() const { return J0_sigma_; }
 
         double getChi0() const { return chi0_; }
-        
+
         double getChi0_sigma() const { return chi0_sigma_; }
 
         void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
@@ -906,17 +906,17 @@ class Eemprops
                          const std::string &zetastr,
                          const std::string &qstr);
 
-        void setZetastr(const std::string &zetastr) {zetastr_ = zetastr;}
-        
-        void setZeta_sigma(const std::string &zeta_sigma) {zeta_sigma_ = zeta_sigma;}
+        void setZetastr(const std::string &zetastr) {zetastr_ = zetastr; }
+
+        void setZeta_sigma(const std::string &zeta_sigma) {zeta_sigma_ = zeta_sigma; }
 
         void setJ0(double J0) { J0_ = J0; }
-        
-        void setJ0_sigma(double J0_sigma) { J0_sigma_ = J0_sigma;}
+
+        void setJ0_sigma(double J0_sigma) { J0_sigma_ = J0_sigma; }
 
         void setChi0(double chi0) { chi0_ = chi0; }
-        
-        void setChi0_sigma(double chi0_sigma) { chi0_sigma_ = chi0_sigma;}
+
+        void setChi0_sigma(double chi0_sigma) { chi0_sigma_ = chi0_sigma; }
 
         double getZeta(int index) const { return rzq_[index].zeta(); }
 
@@ -929,10 +929,10 @@ class Eemprops
         void setQ(int index, double q) { rzq_[index].setQ(q); }
 
         void setRow(int index, int row) { rzq_[index].setRow(row); }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
+
+        CommunicationStatus Send(const t_commrec *cr, int dest);
+
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
         ChargeDistributionModel eqdModel_;

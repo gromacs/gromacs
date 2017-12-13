@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,16 +36,16 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #include "communication.h"
 
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "gmx_simple_comm.h"
-    
-    
+
+
 const char *cs_name(CommunicationStatus cs)
 {
     switch (cs)
@@ -70,21 +70,21 @@ const char *cs_name(CommunicationStatus cs)
 
 #define GMX_SEND_DATA 19823
 #define GMX_SEND_DONE -666
-CommunicationStatus gmx_send_data(t_commrec *cr, int dest)
+CommunicationStatus gmx_send_data(const t_commrec *cr, int dest)
 {
     gmx_send_int(cr, dest, GMX_SEND_DATA);
 
     return CS_OK;
 }
 
-CommunicationStatus gmx_send_done(t_commrec *cr, int dest)
+CommunicationStatus gmx_send_done(const t_commrec *cr, int dest)
 {
     gmx_send_int(cr, dest, GMX_SEND_DONE);
 
     return CS_OK;
 }
 
-static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
+static CommunicationStatus gmx_recv_data_(const t_commrec *cr, int src, int line)
 {
     int kk = gmx_recv_int(cr, src);
 
@@ -96,10 +96,9 @@ static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
     return CS_OK;
 }
 
-CommunicationStatus gmx_recv_data(t_commrec *cr, int src) 
+CommunicationStatus gmx_recv_data(const t_commrec *cr, int src)
 {
     return gmx_recv_data_(cr, src, __LINE__);
 }
 #undef GMX_SEND_DATA
 #undef GMX_SEND_DONE
-
