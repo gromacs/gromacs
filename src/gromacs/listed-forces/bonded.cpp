@@ -3003,7 +3003,7 @@ cmap_dihs(int nbonds,
           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
           int  gmx_unused *global_atom_index)
 {
-    int         i, j, k, n, idx;
+    int         i, j, n;
     int         ai, aj, ak, al, am;
     int         a1i, a1j, a1k, a1l, a2i, a2j, a2k, a2l;
     int         type, cmapA;
@@ -3013,7 +3013,7 @@ cmap_dihs(int nbonds,
     int         l1, l2, l3;
     int         pos1, pos2, pos3, pos4;
 
-    real        ty[4], ty1[4], ty2[4], ty12[4], tc[16], tx[16];
+    real        ty[4], ty1[4], ty2[4], ty12[4], tx[16];
     real        phi1, cos_phi1, sin_phi1, xphi1;
     real        phi2, cos_phi2, sin_phi2, xphi2;
     real        dx, xx, tt, tu, e, df1, df2, vtot;
@@ -3248,19 +3248,12 @@ cmap_dihs(int nbonds,
             tx[i+12] = ty12[i]*dx*dx;
         }
 
-        idx = 0;
-        for (i = 0; i < 4; i++) /* 1056 */
+        real tc[16] = {0};
+        for (int idx = 0; idx < 16; idx++) /* 1056 */
         {
-            for (j = 0; j < 4; j++)
+            for (int k = 0; k < 16; k++)
             {
-                xx = 0;
-                for (k = 0; k < 16; k++)
-                {
-                    xx = xx + cmap_coeff_matrix[k*16+idx]*tx[k];
-                }
-
-                idx++;
-                tc[i*4+j] = xx;
+                tc[idx] += cmap_coeff_matrix[k*16+idx]*tx[k];
             }
         }
 
