@@ -276,7 +276,6 @@ int alex_molselect(int argc, char *argv[])
     static int                  nsample   = 1;
     static int                  maxatempt = 5000;
     static char                *opt_elem  = nullptr;
-    static char                *lot       = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool             bZero     = TRUE;
     t_pargs                     pa[]      =
     {
@@ -287,9 +286,7 @@ int alex_molselect(int argc, char *argv[])
         { "-maxatempt", FALSE, etINT, {&maxatempt},
           "Maximum number of atempts to sample mindata molecules per atom types." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of atom types to select molecules. If this variable is not set, all elements will be used." },
-        { "-lot",       FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting molecules." }
+          "Space-separated list of atom types to select molecules. If this variable is not set, all elements will be used." }
     };
 
     gmx_output_env_t       *oenv;
@@ -328,7 +325,7 @@ int alex_molselect(int argc, char *argv[])
     mdp.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, opt_elem, nullptr, lot,
+             bZero, opt_elem, nullptr,
              gms, true, false, false,
              false, true, nullptr);
 

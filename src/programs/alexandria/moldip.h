@@ -201,6 +201,7 @@ class MolDip
         ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
+        const char                     *lot_;
     public:
 
         MolDip();
@@ -279,6 +280,9 @@ class MolDip
         //! \brief Are we using QM only?
         bool bQM() const { return bQM_; }
 
+        //! \brief Return level of theory
+        const char *lot() const { return lot_; }
+
         void setFinal() { bFinal_ = true; }
 
         double zetaMin() const { return zeta_min_; }
@@ -344,7 +348,6 @@ class MolDip
                   gmx_bool                   bZero,
                   char                      *opt_elem,
                   char                      *const_elem,
-                  char                      *lot,
                   const MolSelect           &gms,
                   gmx_bool                   bCheckSupport,
                   bool                       bPairs,

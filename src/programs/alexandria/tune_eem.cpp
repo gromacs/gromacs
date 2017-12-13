@@ -83,13 +83,12 @@ class OptEEM : public MolDip
         gmx_bool       bESP_, bDipole_, bQuadrupole_, bFullTensor_, bCharge_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bFitZeta_;
-        char          *lot_;
 
         Bayes <double> TuneEEM_;
 
     public:
 
-        OptEEM() : bESP_(TRUE), bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE), bFitZeta_(FALSE), lot_(nullptr) {}
+        OptEEM() : bESP_(TRUE), bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE), bFitZeta_(FALSE) {}
 
         ~OptEEM() {}
 
@@ -118,8 +117,6 @@ class OptEEM : public MolDip
                   "Calibrate EEM parameters to reproduce quadrupole tensor." },
                 { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                   "Calibrate atomic polarizability." },
-                { "-lot",    FALSE, etSTR,  {&lot_},
-                  "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
                 { "-charge", FALSE, etBOOL, {&bCharge_},
                   "Calibrate parameters to keep reasonable charges (do not use with ESP)." }
             };
@@ -177,7 +174,7 @@ void OptEEM::addEspPoint()
             mymol.Qgresp_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.Qgresp_.summary(debug);
 
-            auto ci = mymol.molProp()->getLotPropType(lot_, MPO_POTENTIAL, nullptr);
+            auto ci = mymol.molProp()->getLotPropType(lot(), MPO_POTENTIAL, nullptr);
             if (ci != mymol.molProp()->EndExperiment())
             {
                 size_t iesp = 0;
@@ -770,32 +767,29 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
 
-    const  int                  NFILE         = asize(fnm);
+    const int                   NFILE         = asize(fnm);
 
-    static int                  nrun          = 1;
-    static int                  reinit        = 0;
-    static real                 th_toler      = 170;
-    static real                 ph_toler      = 5;
-    static real                 dip_toler     = 0.5;
-    static real                 quad_toler    = 5;
-    static real                 alpha_toler   = 3;
-    static real                 factor        = 0.8;
-    static real                 efield        = 1;
-    static char                *opt_elem      = nullptr;
-    static char                *const_elem    = nullptr;
-    static char                *lot           = (char *)"B3LYP/aug-cc-pVTZ";
-    static gmx_bool             bRandom       = false;
-    static gmx_bool             bcompress     = false;
-    static gmx_bool             bZPE          = false;
-    static gmx_bool             bZero         = true;
+    int                         nrun          = 1;
+    int                         reinit        = 0;
+    real                        th_toler      = 170;
+    real                        ph_toler      = 5;
+    real                        dip_toler     = 0.5;
+    real                        quad_toler    = 5;
+    real                        alpha_toler   = 3;
+    real                        factor        = 0.8;
+    real                        efield        = 1;
+    char                       *opt_elem      = nullptr;
+    char                       *const_elem    = nullptr;
+    gmx_bool                    bRandom       = false;
+    gmx_bool                    bcompress     = false;
+    gmx_bool                    bZPE          = false;
+    gmx_bool                    bZero         = true;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-nrun",   FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of atom types to optimize, e.g. \"H C Br\". The other available atom types in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
         { "-const_elem",  FALSE, etSTR, {&const_elem},
@@ -878,7 +872,6 @@ int alex_tune_eem(int argc, char *argv[])
              bZero,
              opt_elem,
              const_elem,
-             lot,
              gms,
              true,
              false,

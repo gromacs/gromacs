@@ -309,6 +309,7 @@ MolDip::MolDip()
     qtol_      = 1e-6;
     qcycle_    = 1000;
     mindata_   = 3;
+    lot_       = "B3LYP/aug-cc-pVTZ";
 }
 
 MolDip::~MolDip()
@@ -326,6 +327,8 @@ void MolDip::addOptions(std::vector<t_pargs> *pargs)
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
+        { "-lot",    FALSE, etSTR,  {&lot_},
+          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-watoms", FALSE, etREAL, {&watoms_},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
         { "-fixchi", FALSE, etSTR,  {&fixchi_},
@@ -447,7 +450,6 @@ void MolDip::Read(FILE            *fp,
                   gmx_bool         bZero,
                   char            *opt_elem,
                   char            *const_elem,
-                  char            *lot,
                   const MolSelect &gms,
                   gmx_bool         bCheckSupport,
                   bool             bPairs,
@@ -551,7 +553,7 @@ void MolDip::Read(FILE            *fp,
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
                                              pd_,
-                                             lot,
+                                             lot_,
                                              iChargeDistributionModel_,
                                              bGenVsite_,
                                              bPairs,
@@ -573,7 +575,7 @@ void MolDip::Read(FILE            *fp,
                                                 iChargeGenerationAlgorithm_,
                                                 watoms_,
                                                 hfac_,
-                                                lot,
+                                                lot_,
                                                 qsymm_,
                                                 nullptr,
                                                 cr_,
@@ -590,7 +592,7 @@ void MolDip::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
+                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, pd_);
                 }
                 if (immOK == imm)
                 {
@@ -682,7 +684,7 @@ void MolDip::Read(FILE            *fp,
             mymol.setInputrec(inputrec_);
             imm = mymol.GenerateTopology(atomprop_,
                                          pd_,
-                                         lot,
+                                         lot_,
                                          iChargeDistributionModel_,
                                          bGenVsite_,
                                          bPairs,
@@ -701,7 +703,7 @@ void MolDip::Read(FILE            *fp,
                                             iChargeGenerationAlgorithm_,
                                             watoms_,
                                             hfac_,
-                                            lot,
+                                            lot_,
                                             qsymm_,
                                             nullptr,
                                             cr_,
@@ -718,7 +720,7 @@ void MolDip::Read(FILE            *fp,
             }
             if (immOK == imm)
             {
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot_, pd_);
             }
             mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;

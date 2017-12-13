@@ -88,11 +88,10 @@ class OptZeta : public MolDip
         gmx_bool       bFitAlpha_;
         param_type     param_, lower_, upper_, best_;
         param_type     orig_, psigma_, pmean_;
-        char          *lot_;
 
     public:
 
-        OptZeta() : bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE), lot_(nullptr)
+        OptZeta() : bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE)
         {}
 
         ~OptZeta() {}
@@ -115,8 +114,6 @@ class OptZeta : public MolDip
                   "Calibrate parameters to reproduce quadrupole tensor." },
                 { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                   "Calibrate atomic polarizability." },
-                { "-lot",    FALSE, etSTR,  {&lot_},
-                  "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
                 { "-charge", FALSE, etBOOL, {&bCharge_},
                   "Calibrate parameters to keep reasonable charges (do not use with ESP)." },
             };
@@ -494,7 +491,7 @@ void OptZeta::optRun(FILE                   *fp,
 
 int alex_tune_zeta(int argc, char *argv[])
 {
-    static const char          *desc[] = {
+    const char                 *desc[] = {
         "tune_zeta reads a series of molecules and corresponding experimental",
         "dipole moments from a file, and tunes parameters in an algorithm",
         "until the experimental dipole moments are reproduced by the",
@@ -550,7 +547,7 @@ int alex_tune_zeta(int argc, char *argv[])
         { efTEX, "-latex",     "zeta",          ffWRITE }
     };
 
-    const  int                  NFILE         = asize(fnm);
+    const int                   NFILE         = asize(fnm);
 
     int                         nrun          = 1;
     int                         reinit        = 0;
@@ -563,13 +560,12 @@ int alex_tune_zeta(int argc, char *argv[])
     real                        efield        = 1;
     char                       *opt_elem      = nullptr;
     char                       *const_elem    = nullptr;
-    char                       *lot           = (char *)"B3LYP/aug-cc-pVTZ";
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
     gmx_bool                    bZero         = true;
     gmx_bool                    bPrintTable   = false;
 
-    t_pargs                     pa[]         = {
+    t_pargs                     pa[]          = {
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-nrun",   FALSE, etINT,  {&nrun},
@@ -649,7 +645,6 @@ int alex_tune_zeta(int argc, char *argv[])
              bZero,
              opt_elem,
              const_elem,
-             lot,
              gms,
              true,
              false,

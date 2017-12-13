@@ -79,12 +79,12 @@
  *
  * Writes the whole bond energy matrix.
  */
-static void dump_csv(const std::vector<std::string>        &ctest,
-                     const std::vector<alexandria::MyMol>  &mm,
-                     const std::vector<int>                &ntest,
-                     const std::vector<double>             &Edissoc,
-                     const MatrixWrapper                   &a,
-                     const double                           x[])
+void dump_csv(const std::vector<std::string>        &ctest,
+              const std::vector<alexandria::MyMol>  &mm,
+              const std::vector<int>                &ntest,
+              const std::vector<double>             &Edissoc,
+              const MatrixWrapper                   &a,
+              const double                           x[])
 {
     FILE *csv = gmx_ffopen("tune_fc.csv", "w");
     fprintf(csv, ",");
@@ -909,8 +909,6 @@ class Optimization : public MolDip
                 //  "Calibrate parameters to reproduce quadrupole tensor." },
                 //{ "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                 //  "Calibrate atomic polarizability." },
-                { "-lot",    FALSE, etSTR,  {&lot_},
-                  "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
                 //{ "-charge", FALSE, etBOOL, {&bCharge_},
                 //"Calibrate parameters to keep reasonable charges (do not use with ESP)." },
                 { "-factor", FALSE, etREAL, {&factor_},
@@ -924,6 +922,7 @@ class Optimization : public MolDip
             TuneFc_.add_pargs(pargs);
         }
 
+        const char *lot() const { return lot_; }
 
         /*! \brief
          *
@@ -1559,19 +1558,6 @@ void Optimization::Print(FILE *fp)
     }
 }
 
-static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
-                           const gmx_output_env_t *oenv)
-{
-    int i;
-
-    xvgr_legend(xvgf, nsym, leg, oenv);
-    for (i = 0; i < nsym; i++)
-    {
-        xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
-        fprintf(xvgf, "@ s%d symbol %d\n", i, i+1);
-    }
-}
-
 double Optimization::calcDeviation()
 {
     int     j;
@@ -1845,8 +1831,8 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
     }
 }
 
-static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
-                              gmx_bool bForce, gmx_bool bMtop)
+void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
+                       gmx_bool bForce, gmx_bool bMtop)
 {
     int j, k;
 
@@ -2004,18 +1990,17 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-epot",  "param-epot", ffWRITE }
     };
 
-    const  int            NFILE         = asize(fnm);
+    const int             NFILE         = asize(fnm);
 
-    static int            nrun          = 1;
-    static int            reinit        = 0;
-    static int            compress      = 0;
-    static int            nmultisim     = 0;
-    static char          *opt_elem      = nullptr;
-    static char          *const_elem    = nullptr;
-    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
-    static gmx_bool       bWeighted     = false;
-    static gmx_bool       bZPE          = false;
-    static gmx_bool       bZero         = true;
+    int                   nrun          = 1;
+    int                   reinit        = 0;
+    int                   compress      = 0;
+    int                   nmultisim     = 0;
+    char                 *opt_elem      = nullptr;
+    char                 *const_elem    = nullptr;
+    gmx_bool              bWeighted     = false;
+    gmx_bool              bZPE          = false;
+    gmx_bool              bZero         = true;
 
     t_pargs               pa[]         = {
         { "-multi",   FALSE, etINT, {&nmultisim},
@@ -2091,7 +2076,6 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero, opt_elem, const_elem,
-             lot,
              gms,
              false,
              opt.bOpt(eitLJ14),
