@@ -162,30 +162,23 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     bool gpusCanBeDetected = false;
     if (isMasterRankOfNode || isOpenclPpRank)
     {
-        gpusCanBeDetected = canDetectGpus();
-        // No need to tell the user anything at this point, they get a
-        // hardware report later.
+        std::string errorMessage;
+        gpusCanBeDetected = canDetectGpus(&errorMessage);
+        if (!gpusCanBeDetected)
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: GPUs cannot be detected:\n"
+                    "      %s\n"
+                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
+                    errorMessage.c_str());
+        }
     }
 
     if (gpusCanBeDetected)
     {
-        char detection_error[STRLEN] = "", sbuf[STRLEN];
-
-        if (detect_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
-        {
-            if (detection_error[0] != '\0')
-            {
-                sprintf(sbuf, ":\n      %s\n", detection_error);
-            }
-            else
-            {
-                sprintf(sbuf, ".");
-            }
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "NOTE: Error occurred during GPU detection%s"
-                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
-                    sbuf);
-        }
+        findGpus(&hwinfo_g->gpu_info);
+        // No need to tell the user anything at this point, they get a
+        // hardware report later.
     }
 
 #if GMX_LIB_MPI

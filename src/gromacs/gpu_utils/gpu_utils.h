@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
@@ -82,27 +83,23 @@ enum class GpuTaskCompletion
  *
  * Does not throw. */
 GPU_FUNC_QUALIFIER
-bool canDetectGpus() GPU_FUNC_TERM_WITH_RETURN(false);
+bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_WITH_RETURN(false);
 
-/*! \brief Detect all GPUs in the system.
+/*! \brief Find all GPUs in the system.
  *
- *  Will detect every GPU supported by the device driver in use. If
- *  the device driver is missing or unsuitable, returns the same error
- *  as for "no valid devices detected," so generally calling code
- *  should have checked the return value from canDetectGpus() first,
- *  in order to understand the behaviour of this routine. This routine
+ *  Will detect every GPU supported by the device driver in use. Must
+ *  only be called if canDetectGpus() has returned true. This routine
  *  also checks for the compatibility of each and fill the
  *  gpu_info->gpu_dev array with the required information on each the
  *  device: ID, device properties, status.
  *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
- *  \param[out] err_str    The error message of any GPU API error that caused
- *                         the detection to fail (if there was any). The memory
- *                         the pointer points to should be managed externally.
- *  \returns               non-zero if the detection encountered a failure, zero otherwise.
+ *
+ *  \throws                InternalError if a GPU API returns an unexpected failure (because
+ *                         the call to canDetectGpus() should always prevent this occuring)
  */
 GPU_FUNC_QUALIFIER
-int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
+void findGpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
 
 /*! \brief Return a container of the detected GPUs that are compatible.
  *
