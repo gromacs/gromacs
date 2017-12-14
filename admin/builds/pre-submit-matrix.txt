@@ -48,7 +48,8 @@ gcc-6 double x11
 # Test double precision
 # Test without OpenMP
 # Test thread-MPI
-clang-3.4 double thread-mpi no-openmp fftpack cmake-3.4.3
+# Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
+clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
