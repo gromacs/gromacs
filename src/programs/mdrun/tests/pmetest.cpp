@@ -75,7 +75,9 @@ namespace test
 namespace
 {
 
-//! A basic PME runner
+/*! \brief A basic PME runner
+ *
+ * \todo Consider also using GpuTest class. */
 class PmeTest : public MdrunTestFixture
 {
     public:
@@ -96,6 +98,7 @@ void PmeTest::SetUpTestCase()
     // re-use it, but this is OK. Note that this also caters for when
     // there is no GPU support in the build.
     if (GMX_GPU == GMX_GPU_CUDA &&
+        canDetectGpus() &&
         (detect_gpus(&gpuInfo, detection_error) >= 0) &&
         gpuInfo.n_dev_compatible > 0)
     {
