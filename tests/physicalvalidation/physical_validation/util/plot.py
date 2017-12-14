@@ -27,16 +27,22 @@
 ###########################################################################
 
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
+import warnings
 
 
 def plot(res, legend=None, title=None,
          xlabel=None, ylabel=None, xlim=None, ylim=None,
-         inv_x=False, inv_y=False,
+         inv_x=False, inv_y=False, sci_x=False, sci_y=False,
          axtext=None, annotation_location=None,
          filename=None, screen=True):
+
+    try:
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+        from matplotlib.ticker import AutoMinorLocator
+    except ImportError:
+        warnings.warn('Install matplotlib to enable plotting.')
+        return
 
     font = {'family': 'serif',
             'weight': 'normal',
@@ -111,7 +117,10 @@ def plot(res, legend=None, title=None,
                 ax.text(loc[0], loc[1], t,
                         bbox=bbox)
 
-    ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 4))
+    if sci_x:
+        ax.ticklabel_format(style='sci', axis='x', scilimits=(-3, 4))
+    if sci_y:
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(-3, 4))
     ax.xaxis.major.formatter._useMathText = True
 
     if filename is not None:

@@ -4,7 +4,7 @@ Physical validation reference
 `physical_validation` is a package aimed at testing results obtained
 by molecular dynamics simulations for their physical validity.
 
-Please check [https://shirtsgroup.github.io/physical-validation](https://shirtsgroup.github.io/physical-validation)
+Please check [http://physical_validation.readthedocs.io](http://physical_validation.readthedocs.io)
 for the full reference.
 
 `physical_validation` largely incorporates the functionality of
@@ -16,4 +16,8 @@ Colorado in Boulder.
 GROMACS-bundled version
 -----------------------
 The version of physical_validation shipped with GROMACS 
-corresponds to commit 045370b.
+corresponds to commit 8b80492.
+It requires
+* numpy
+* scipy
+* pymbar

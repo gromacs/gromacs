@@ -41,14 +41,13 @@ add_custom_target(tests)
 add_custom_target(run-ctest
                   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
                   COMMENT "Running all tests"
-                  USES_TERMINAL VERBATIM)
+                  USES_TERMINAL VERBATIM
+                  DEPENDS run-physval-sims)
 add_dependencies(run-ctest tests)
-# "check-all" target builds and runs all tests.
+# "check-all" target builds and runs all tests, simulating the physical validation systems first.
 add_custom_target(check-all DEPENDS run-ctest)
-# "check-all-run" target builds and runs all tests, simulating the physical validation systems first.
-add_custom_target(check-all-run DEPENDS run-phys-tests check-all)
 
-# "run-ctest-nophys" is an internal target that actually runs the tests in analogy to "run-ctest".
+# "run-ctest-nophys" is an internal target that actually runs the tests analogously to "run-ctest".
 # It runs all tests except the physical validation tests.
 add_custom_target(run-ctest-nophys
                   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -E physicalvalidationtests
@@ -58,19 +57,23 @@ add_dependencies(run-ctest-nophys tests)
 # "check" target builds and runs all tests except physical validation .
 add_custom_target(check DEPENDS run-ctest-nophys)
 
-# "run-ctest-phys" is an internal target that actually runs the tests in analogy to "run-ctest".
+# "run-ctest-phys" is an internal target that actually runs the tests analogously to "run-ctest".
 # It only runs the physical validation tests.
 add_custom_target(run-ctest-phys
                   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R physicalvalidationtests
                   COMMENT "Running physical validation tests"
-                  USES_TERMINAL VERBATIM)
-# "check-phys" target runs only physical validation tests.
+                  USES_TERMINAL VERBATIM
+                  DEPENDS run-physval-sims)
+# "run-ctest-phys-analyze" is the equivalent to "run-ctest-phys" not running the physical validation simulations.
+add_custom_target(run-ctest-phys-analyze
+                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R physicalvalidationtests
+                  COMMENT "Running physical validation tests"
+                  USES_TERMINAL VERBATIM
+                  DEPENDS gmx)
+# "check-phys" target runs only physical validation tests, simulating the systems first.
 add_custom_target(check-phys DEPENDS run-ctest-phys)
-# "check-phys-run" target runs only physical validation tests, simulating the systems first
-add_custom_target(check-phys-run DEPENDS run-phys-tests check-phys)
-# "check-phys-prepare" target does only prepare physical validation runs, to be ran externally.
-add_custom_target(check-phys-prepare DEPENDS prepare-phys-tests)
-
+# "check-phys-analyze" target runs only physical validation tests, without simulating the systems first.
+add_custom_target(check-phys-analyze DEPENDS run-ctest-phys-analyze)
 
 # Calling targets "check-all" and "check-phys" does not make much sense if -DGMX_PHYSICAL_VALIDATION=OFF
 if(NOT GMX_PHYSICAL_VALIDATION)
@@ -81,6 +84,13 @@ if(NOT GMX_PHYSICAL_VALIDATION)
             DEPENDS run-ctest-phys
             COMMENT "No physical validation" VERBATIM)
     add_dependencies(check-phys missing-phys-val-phys)
+    add_custom_target(missing-phys-val-phys-analyze
+            COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `check-phys-analyze`, but ran cmake with\
+ `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\
+ and this target is not testing anything."
+            DEPENDS run-ctest-phys-analyze
+            COMMENT "No physical validation" VERBATIM)
+    add_dependencies(check-phys-analyze missing-phys-val-phys)
     add_custom_target(missing-phys-val-all
             COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `check-all`, but ran cmake with\
  `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\

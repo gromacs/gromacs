@@ -7,3 +7,4 @@ verlet-buffer-tolerance  = 1e-10
 integrator               = md
 vdwtype                  = cut-off
 vdw-modifier             = force-switch
+rvdw-switch              = 0.8
