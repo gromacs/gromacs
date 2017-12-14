@@ -75,8 +75,8 @@ icc-18 no-thread-mpi openmp mkl cmake-3.10.0 simd=avx_256
 gcc-4.8 openmp opencl cuda-7.5 mpi release-with-assert simd=avx2_256
 
 # Test AMD OpenCL
-# Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
+# Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
+gcc-5 double openmp simd=avx_128_fma opencl amdappsdk-3.0
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
