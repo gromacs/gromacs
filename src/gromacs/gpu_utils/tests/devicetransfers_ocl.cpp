@@ -74,8 +74,12 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
                        ArrayRef<char>        output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
-    cl_int status;
-    GMX_RELEASE_ASSERT(gpuInfo.n_dev > 0, "Must have a GPU device");
+    if (gpuInfo.n_dev == 0)
+    {
+        std::copy(input.begin(), input.end(), output.begin());
+        return;
+    }
+    cl_int                status;
 
     const auto           &device       = gpuInfo.gpu_dev[0];
     cl_context_properties properties[] = {
