@@ -35,5 +35,9 @@ class Parser(object):
     r"""
     Parser base class
     """
+    @staticmethod
+    def units():
+        raise NotImplementedError
+
     def get_simulation_data(self):
         raise NotImplementedError

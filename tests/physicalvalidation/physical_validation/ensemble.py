@@ -38,8 +38,7 @@ http://dx.doi.org/10.1021/ct300688p
 
 import numpy as np
 
-from .util import timeseries
-from .util import checkensemble
+from .util import ensemble
 from .data import SimulationData
 from .util import error as pv_error
 
@@ -47,7 +46,7 @@ from .util import error as pv_error
 def check(data_sim_one, data_sim_two,
           total_energy=False,
           screen=False, filename=None,
-          quiet=False):
+          verbosity=1):
     r"""
     Check the ensemble. The correct check is inferred from the
     simulation data given.
@@ -61,11 +60,14 @@ def check(data_sim_one, data_sim_two,
         Plot distributions on screen. Default: False.
     filename : string
         Plot distributions to `filename`.pdf. Default: None.
-    quiet : bool
-        Turns off nearly all messages. Default: False.
+    verbosity : int
+        Level of verbosity, from 0 (quiet) to 3 (very verbose).
+        Default: 1
 
     Returns
     -------
+    quantiles : List[float]
+        The number of quantiles the computed result is off the analytical one.
 
     """
     if not SimulationData.compatible(data_sim_one,
@@ -80,61 +82,37 @@ def check(data_sim_one, data_sim_two,
                                   '(e.g. target temperature, target pressure), but not '
                                   'in their sampled ensemble (e.g. NVT, NPT).')
 
-    ensemble = data_sim_one.ensemble.ensemble
+    sampled_ensemble = data_sim_one.ensemble.ensemble
 
-    if ensemble == 'NVE' or ensemble == 'muVE':
+    if sampled_ensemble == 'NVE' or sampled_ensemble == 'muVE':
         raise pv_error.InputError(['data_sim_one', 'data_sim_two'],
-                                  'Test of ensemble ' + ensemble + ' is not implemented '
+                                  'Test of ensemble ' + sampled_ensemble + ' is not implemented '
                                   '(yet).')
 
-    n1 = data_sim_one.observables.nframes
-    n2 = data_sim_two.observables.nframes
-
     if total_energy:
+        eneq = 'E'
         e1 = data_sim_one.observables.total_energy
         e2 = data_sim_two.observables.total_energy
     else:
+        eneq = 'U'
         e1 = data_sim_one.observables.potential_energy
         e2 = data_sim_two.observables.potential_energy
 
-    # padding the array - checkensemble requires same length
-    if n1 < n2:
-        e1 = np.append(e1, np.zeros(n2-n1))
-    if n2 < n1:
-        e2 = np.append(e2, np.zeros(n1-n2))
-
-    number_of_samples = np.array([n1, n2])
-    energy = np.array([e1, e2])
-
-    do_linear_fit = True
-    do_non_linear_fit = False
-    do_max_likelhood = True
-    do_maxwell = False
-
     quantiles = None
 
-    if ensemble == 'NVT':
-        temperatures = np.array([data_sim_one.ensemble.temperature,
-                                 data_sim_two.ensemble.temperature])
-
-        analysis_type = 'dbeta-constV'
-
-        ge = []
-        for e in energy:
-            ge.append(timeseries.statisticalInefficiency(e, fast=False))
-
-        quantiles = checkensemble.ProbabilityAnalysis(
-            number_of_samples, type=analysis_type,
-            T_k=temperatures, P_k=None, mu_k=None,
-            U_kn=energy, V_kn=None, N_kn=None,
-            nbins=40, reptype=None, g=ge,
-            bMaxwell=do_maxwell, bLinearFit=do_linear_fit,
-            bNonLinearFit=do_non_linear_fit, bMaxLikelihood=do_max_likelhood,
-            kB=data_sim_one.units.kb, units=data_sim_one.units,
-            filename=filename, screen=screen, quiet=quiet
+    if sampled_ensemble == 'NVT':
+        quantiles = ensemble.check_1d(
+            traj1=e1, traj2=e2,
+            param1=data_sim_one.ensemble.temperature,
+            param2=data_sim_two.ensemble.temperature,
+            kb=data_sim_one.units.kb,
+            quantity=eneq,
+            dtemp=True, dpress=False,
+            verbosity=verbosity,
+            filename=filename, screen=screen
         )
 
-    elif ensemble == 'NPT':
+    elif sampled_ensemble == 'NPT':
         temperatures = np.array([data_sim_one.ensemble.temperature,
                                  data_sim_two.ensemble.temperature])
         pressures = np.array([data_sim_one.ensemble.pressure,
@@ -144,41 +122,150 @@ def check(data_sim_one, data_sim_two,
 
         v1 = data_sim_one.observables.volume
         v2 = data_sim_two.observables.volume
-        # padding the array - checkensemble requires same length
-        if n1 < n2:
-            v1 = np.append(v1, np.zeros(n2-n1))
-        if n2 < n1:
-            v2 = np.append(v2, np.zeros(n1-n2))
-        volume = np.array([v1, v2])
+
+        # Calculate conversion from p*V to energy units
+        #
+        # GROMACS standard units are
+        #   energy: kJ/mol
+        #   volume: nm^3
+        #   pressure: bar
+        #   => pV-term: bar * nm^3 == 1e-25 kJ == 6.022140857e-2 kJ/mol
+        #   => pvconvert = 6.022140857e-2
+        # UnitData stores conversion factors relative to GROMACS units
+        #   energy: energy_conversion * kJ/mol
+        #   volume: volume_conversion * nm^3
+        #   pressure: pressure_conversion * bar
+        #   => pV-term: [p]*[V] == pressure_conversion * volume_conversion bar * nm^3
+        # Units were checked earlier, so we can use either simulation data structure
+        pvconvert = 6.022140857e-2
+        pvconvert *= (data_sim_one.units.pressure_conversion *
+                      data_sim_one.units.volume_conversion)
+        pvconvert /= data_sim_one.units.energy_conversion
 
         if equal_press and not equal_temps:
-            analysis_type = 'dbeta-constP'
+            e1 = e1 + pvconvert * pressures[0] * v1
+            e2 = e2 + pvconvert * pressures[1] * v2
+            if eneq == 'U':
+                eneq = 'H'
+            quantiles = ensemble.check_1d(
+                traj1=e1, traj2=e2,
+                param1=temperatures[0],
+                param2=temperatures[1],
+                kb=data_sim_one.units.kb,
+                quantity=eneq,
+                dtemp=True, dpress=False,
+                verbosity=verbosity,
+                filename=filename, screen=screen
+            )
         elif equal_temps and not equal_press:
-            analysis_type = 'dpressure-constB'
+            quantiles = ensemble.check_1d(
+                traj1=v1, traj2=v2,
+                param1=pressures[0],
+                param2=pressures[1],
+                kb=data_sim_one.units.kb,
+                quantity='V',
+                dtemp=False, dpress=True,
+                temp=temperatures[0],
+                pvconvert=pvconvert,
+                verbosity=verbosity,
+                filename=filename, screen=screen
+            )
         else:
-            analysis_type = 'dbeta-dpressure'
-            do_linear_fit = False
-            do_non_linear_fit = False
-
-        ge = []
-        for e in energy:
-            ge.append(timeseries.statisticalInefficiency(e, fast=False))
-        gv = []
-        for v in volume:
-            gv.append(timeseries.statisticalInefficiency(v, fast=False))
-        g = np.maximum(ge, gv)
-
-        quantiles = checkensemble.ProbabilityAnalysis(
-            number_of_samples, type=analysis_type,
-            T_k=temperatures, P_k=pressures, mu_k=None,
-            U_kn=energy, V_kn=volume, N_kn=None,
-            kB=data_sim_one.units.kb, nbins=40,
-            bMaxLikelihood=do_max_likelhood, bLinearFit=do_linear_fit,
-            bNonLinearFit=do_non_linear_fit, reptype=None,
-            g=g,
-            bMaxwell=do_maxwell,
-            units=data_sim_one.units,
-            screen=screen, filename=filename, quiet=quiet
-        )
+            traj1 = np.array([e1, v1])
+            traj2 = np.array([e2, v2])
+            param1 = np.array([temperatures[0], pressures[0]])
+            param2 = np.array([temperatures[1], pressures[1]])
+            quantiles = ensemble.check_2d(
+                traj1=traj1, traj2=traj2,
+                param1=param1, param2=param2,
+                kb=data_sim_one.units.kb,
+                pvconvert=pvconvert,
+                quantity=[eneq, 'V'],
+                dtempdpress=True,
+                verbosity=verbosity,
+                filename=filename, screen=screen
+            )
 
     return quantiles
+
+
+def estimate_interval(data, verbosity=1, total_energy=False):
+    r"""
+    In order to perform an ensemble check, two simulations at distinct state
+    point are needed. Choosing two state points too far apart will result
+    in poor or zero overlap between the distributions, leading to very noisy
+    results (due to sample errors in the tails) or a breakdown of the method,
+    respectively. Choosing two state points very close to each others, on the
+    other hand, makes it difficult to distinguish the slope from statistical
+    error in the samples.
+
+    This function implements a rule of thumb based on the standard deviations
+    of distributions. It takes a single simulation and suggests appropriate
+    intervals for a second simulation to be used for ensemble checking.
+
+    Parameters
+    ----------
+    data : SimulationData
+        The performed simulation.
+    verbosity : int, optional
+        If 0, no output is printed on screen. If 1, estimated intervals are
+        printed. If larger, additional information during calculation are
+        printed.
+        Default: 1
+    total_energy : bool, optional
+        Use total energy instead of potential energy only.
+        Default: False
+
+    Returns
+    -------
+    intervals : Dict
+        If `data` was performed under NVT conditions, `intervals` contains only
+        one entry:
+
+            * `'dT'`, containing the suggested temperature interval.
+
+        If `data` was performed under NPT conditions, `intervals` contains three
+        entries:
+
+            * `'dT'`: Suggested temperature interval at constant pressure
+            * `'dP'`: Suggested pressure interval at constant temperature
+            * `'dTdP'`: Suggested combined temperature and pressure interval
+
+    """
+
+    if total_energy:
+        ene = data.observables.total_energy
+    else:
+        ene = data.observables.potential_energy
+
+    if data.ensemble.ensemble == 'NVT':
+        result = ensemble.estimate_interval(
+            ens_string='NVT',
+            ens_temp=data.ensemble.temperature,
+            energy=ene,
+            kb=data.units.kb,
+            verbosity=verbosity,
+            tunit=data.units.temperature_str
+        )
+    elif data.ensemble.ensemble == 'NPT':
+        pvconvert = 6.022140857e-2
+        pvconvert *= (data.units.pressure_conversion *
+                      data.units.volume_conversion)
+        pvconvert /= data.units.energy_conversion
+        result = ensemble.estimate_interval(
+            ens_string='NPT',
+            ens_temp=data.ensemble.temperature,
+            energy=ene,
+            kb=data.units.kb,
+            ens_press=data.ensemble.pressure,
+            volume=data.observables.volume,
+            pvconvert=pvconvert,
+            verbosity=verbosity,
+            tunit=data.units.temperature_str,
+            punit=data.units.pressure_str
+        )
+    else:
+        raise NotImplementedError('estimate_interval() not implemented for ensemble ' +
+                                  data.ensemble.ensemble)
+
+    return result
