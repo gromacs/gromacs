@@ -82,7 +82,7 @@ class SimulationData(object):
         self.__dt = 0
         if dt is not None:
             self.dt = dt
-        self.__topology = None
+        self.__system = None
         if system is not None:
             self.system = system
         self.__ensemble = None
@@ -108,7 +108,7 @@ class SimulationData(object):
     @ensemble.setter
     def ensemble(self, ensemble):
         if not isinstance(ensemble, EnsembleData):
-            raise TypeError('No known conversion from ' + type(ensemble) +
+            raise TypeError('No known conversion from ' + str(type(ensemble)) +
                             'to EnsembleData')
         self.__ensemble = ensemble
 
@@ -125,7 +125,7 @@ class SimulationData(object):
     @units.setter
     def units(self, units):
         if not isinstance(units, UnitData):
-            raise TypeError('No known conversion from ' + type(units) +
+            raise TypeError('No known conversion from ' + str(type(units)) +
                             'to UnitData')
         self.__units = units
 
@@ -142,7 +142,7 @@ class SimulationData(object):
     @observables.setter
     def observables(self, observables):
         if not isinstance(observables, ObservableData):
-            raise TypeError('No known conversion from ' + type(observables) +
+            raise TypeError('No known conversion from ' + str(type(observables)) +
                             'to ObservableData')
         self.__observables = observables
 
@@ -159,7 +159,7 @@ class SimulationData(object):
     @trajectory.setter
     def trajectory(self, trajectory):
         if not isinstance(trajectory, TrajectoryData):
-            raise TypeError('No known conversion from ' + type(trajectory) +
+            raise TypeError('No known conversion from ' + str(type(trajectory)) +
                             'to TrajectoryData')
         self.__trajectory = trajectory
 
@@ -171,14 +171,14 @@ class SimulationData(object):
         -------
         system : SystemData
         """
-        return self.__topology
+        return self.__system
 
     @system.setter
-    def system(self, topology):
-        if not isinstance(topology, SystemData):
-            raise TypeError('No known conversion from ' + type(topology) +
+    def system(self, system):
+        if not isinstance(system, SystemData):
+            raise TypeError('No known conversion from ' + str(type(system)) +
                             'to SystemData')
-        self.__topology = topology
+        self.__system = system
 
     @property
     def dt(self):

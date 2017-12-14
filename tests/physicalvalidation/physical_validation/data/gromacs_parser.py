@@ -61,12 +61,31 @@ class GromacsParser(parser.Parser):
             length_conversion=1.0,
             volume_str='nm^3',
             volume_conversion=1.0,
+            temperature_str='K',
+            temperature_conversion=1.0,
             pressure_str='bar',
             pressure_conversion=1.0,
             time_str='ps',
             time_conversion=1.0)
 
     def __init__(self, exe=None, includepath=None):
+        r"""
+        Create a GromacsParser object
+
+        Parameters
+        ----------
+        exe: str, optional
+            Path to a gmx executable (or simply the executable name, if it is in the path)
+            Default: Looks for `gmx`, then for `gmx_d` in the path. If neither is found, `exe` is
+                     set to None, and any parsing including simulation trajectories (`edr`, `trr`
+                     and `gro` arguments in `get_simulation_data()`) will fail.
+        includepath: str or List[str], optional
+            Path or list of paths to location(s) of topology file. Is used for the lookup of
+            `#include` statements in topologies.
+            Default: None - no additional topology location. Lookup will be restricted to current
+                     directory and location of the `top` file given to `get_simulation_data()`,
+                     plus any include locations added to the `mdp` file.
+        """
         super(GromacsParser, self).__init__()
         self.__interface = GromacsInterface(exe=exe, includepath=includepath)
         # gmx energy codes
@@ -99,9 +118,8 @@ class GromacsParser(parser.Parser):
         Returns
         -------
         result: SimulationData
-            A SimulationData filled with the provided ensemble and
-            system objects as well as the trajectory data found in the
-            edr and trr / gro files.
+            A SimulationData filled with the results of the simulation as described by
+            the provided GROMACS files.
 
         """
         result = SimulationData()
@@ -183,56 +201,53 @@ class GromacsParser(parser.Parser):
                 molec_bonds.extend([all_bonds] * molecule['nmolecs'])
                 molec_bonds_constrained.extend([constrained_bonds] * molecule['nmolecs'])
 
-            topology = SystemData()
-            topology.natoms = natoms
-            topology.mass = mass
-            topology.molecule_idx = molecule_idx
-            topology.nconstraints = np.sum(constraints_per_molec)
-            topology.nconstraints_per_molecule = constraints_per_molec
-            topology.ndof_reduction_tra = 3
-            topology.ndof_reduction_rot = 0
+            system = SystemData()
+            system.natoms = natoms
+            system.mass = mass
+            system.molecule_idx = molecule_idx
+            system.nconstraints = np.sum(constraints_per_molec)
+            system.nconstraints_per_molecule = constraints_per_molec
+            system.ndof_reduction_tra = 3
+            system.ndof_reduction_rot = 0
             if 'comm-mode' in mdp_options:
-                if mdp_options['comm-mode'] == 'Linear':
-                    topology.ndof_reduction_tra = 3
-                elif mdp_options['comm-mode'] == 'Angular':
-                    topology.ndof_reduction_tra = 3
-                    topology.ndof_reduction_rot = 3
-                if mdp_options['comm-mode'] == 'None':
-                    topology.ndof_reduction_tra = 0
-            topology.bonds = molec_bonds
-            topology.constrained_bonds = molec_bonds_constrained
-            result.system = topology
+                if mdp_options['comm-mode'] == 'linear':
+                    system.ndof_reduction_tra = 3
+                elif mdp_options['comm-mode'] == 'angular':
+                    system.ndof_reduction_tra = 3
+                    system.ndof_reduction_rot = 3
+                if mdp_options['comm-mode'] == 'none':
+                    system.ndof_reduction_tra = 0
+            system.bonds = molec_bonds
+            system.constrained_bonds = molec_bonds_constrained
+            result.system = system
 
             thermostat = ('tcoupl' in mdp_options and
                           mdp_options['tcoupl'] and
-                          mdp_options['tcoupl'] != 'no' and
-                          mdp_options['tcoupl'] != 'No')
+                          mdp_options['tcoupl'] != 'no')
             stochastic_dyn = ('integrator' in mdp_options and
                               mdp_options['integrator'] in ['sd', 'sd2', 'bd'])
             constant_temp = thermostat or stochastic_dyn
             temperature = None
             if constant_temp:
-                ref_t_key = 'ref-t'
-                if ref_t_key not in mdp_options and 'ref_t' in mdp_options:
-                    ref_t_key = 'ref_t'
-                ref_t = [float(t) for t in mdp_options[ref_t_key].split()]
+                ref_t = [float(t) for t in mdp_options['ref-t'].split()]
                 if len(ref_t) == 1 or np.allclose(ref_t, [ref_t[0]]*len(ref_t)):
                     temperature = ref_t[0]
                 else:
                     raise pv_error.InputError('mdp',
-                                              'Ensemble definition ambiguous.')
+                                              'Ensemble definition ambiguous: Different t-ref values found.')
 
             constant_press = ('pcoupl' in mdp_options and
                               mdp_options['pcoupl'] and
-                              mdp_options['pcoupl'] != 'no' and
-                              mdp_options['pcoupl'] != 'No')
+                              mdp_options['pcoupl'] != 'no')
             volume = None
             pressure = None
             if constant_press:
-                ref_p_key = 'ref-p'
-                if ref_p_key not in mdp_options and 'ref_p' in mdp_options:
-                    ref_p_key = 'ref_p'
-                pressure = float(mdp_options[ref_p_key])
+                ref_p = [float(p) for p in mdp_options['ref-p'].split()]
+                if len(ref_p) == 1 or np.allclose(ref_p, [ref_p[0]]*len(ref_p)):
+                    pressure = ref_p[0]
+                else:
+                    raise pv_error.InputError('mdp',
+                                              'Ensemble definition ambiguous: Different p-ref values found.')
             else:
                 if trajectory_dict is not None:
                     box = trajectory_dict['box'][0]

@@ -43,11 +43,15 @@ class TrajectoryData(object):
 
     The position and velocity trajectories can be accessed either using the getters
     of an object, as in
-        trajectory.position
-        trajectory.velocity
+
+        * trajectory.position
+        * trajectory.velocity
+
     or using the key notation, as in
-        trajectory['position']
-        trajectory['velocity']
+
+        * trajectory['position']
+        * trajectory['velocity']
+
     """
 
     @staticmethod

@@ -293,7 +293,7 @@ if(GMX_PHYSICAL_VALIDATION)
                     GMX_PHYSCIAL_VALIDATION=OFF to disable the physical validation tests.")
         endif()
         #
-        foreach(module numpy scipy) # add further modules if necessary
+        foreach(module numpy scipy pymbar) # add further modules if necessary
             find_python_module(${module})
             string(TOUPPER ${module} module_upper)
             if(NOT PYTHONMODULE_${module_upper})
@@ -308,11 +308,11 @@ if(GMX_PHYSICAL_VALIDATION)
         # Hook in our own tests
         # Read them from json file to make every system a separate test
         #
-	if (GMX_DOUBLE)
-	    set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems_d.json")
-	else()
-	    set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems.json")
-	endif()
+        if (GMX_DOUBLE)
+            set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems_d.json")
+        else()
+            set(PHYSVALTEST_JSON "${PHYSVALTEST_SOURCE_PATH}/systems.json")
+        endif()
         file(STRINGS "${PHYSVALTEST_JSON}" json)
         string(REPLACE "\"" "" json ${json})
         string(REPLACE "," "" json ${json})
@@ -324,11 +324,11 @@ if(GMX_PHYSICAL_VALIDATION)
         string(REPLACE "}" "" json ${json})
         string(REPLACE "<<>>" ";" json ${json})
         foreach(line ${json})
-            if("${line}" MATCHES "dir:")
-                string(REPLACE "dir:" "" dirname ${line})
-                add_test(NAME physicalvalidationtests/${dirname}
-                        COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -s ${dirname} -a ${PARGS})
-                set_tests_properties(physicalvalidationtests/${dirname} PROPERTIES
+            if("${line}" MATCHES "name:")
+                string(REPLACE "name:" "" testname ${line})
+                add_test(NAME physicalvalidationtests/${testname}
+                        COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -s ${testname} -a ${PARGS})
+                set_tests_properties(physicalvalidationtests/${testname} PROPERTIES
                         ENVIRONMENT "PATH=${PATH}"
                         LABELS "PhysicalValidationTest")
             endif()
@@ -338,27 +338,31 @@ if(GMX_PHYSICAL_VALIDATION)
         # Create prepare and run targets while all variables are set
         # Will be referenced in CheckTarget.cmake
         #
-        # "prepare-phys-tests" prepares the systems needed for physical validation for external running
-        add_custom_target(prepare-phys-tests
-                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_SOURCE_PATH}/systems.json" -p ${PARGS})
-        # "run-phys-tests" prepares and runs the systems needed for physical validation
-        add_custom_target(run-phys-tests
-                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_SOURCE_PATH}/systems.json" -r ${PARGS})
+        # "check-phys-prepare" prepares the systems needed for physical validation for external running
+        add_custom_target(check-phys-prepare
+                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -p ${PARGS}
+                          COMMENT "Preparing systems for physical validation"
+                          DEPENDS gmx)
+        # "run-physval-sims" prepares and runs the systems needed for physical validation
+        add_custom_target(run-physval-sims
+                          COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -r ${PARGS}
+                          COMMENT "Preparing and running systems for physical validation"
+                          DEPENDS gmx)
     endif()
 else()
     #
     # Create dummy prepare and run targets
     # Will be referenced in CheckTarget.cmake
     #
-    # "prepare-phys-tests" prepares the systems needed for physical validation for external running
-    add_custom_target(prepare-phys-tests
-                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `prepare-phys-tests`, but ran cmake with\
+    # "check-phys-prepare" prepares the systems needed for physical validation for external running
+    add_custom_target(check-phys-prepare
+                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `check-phys-prepare`, but ran cmake with\
  `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\
  and this target is not doing anything."
                       COMMENT "No physical validation" VERBATIM)
-    # "run-phys-tests" prepares and runs the systems needed for physical validation
-    add_custom_target(run-phys-tests
-                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `run-phys-tests`, but ran cmake with\
+    # "run-physval-sims" prepares and runs the systems needed for physical validation
+    add_custom_target(run-physval-sims
+                      COMMAND ${CMAKE_COMMAND} -E echo "NOTE: You called the target `run-physval-sims`, but ran cmake with\
  `-DGMX_PHYSICAL_VALIDATION=OFF`. The physical validation tests are therefore unavailable,\
  and this target is not doing anything."
                       COMMENT "No physical validation" VERBATIM)

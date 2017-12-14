@@ -41,35 +41,42 @@ class SystemData(object):
     in the system as far as the physical validation tests need it.
 
     The system is described in terms of
-    natoms: the total number of atoms in the system
-    nconstraints: the total number of constraints in the system
-    ndof_reduction_tra: global reduction of translational degrees of freedom (e.g.
-                        due to constraining the center of mass of the system)
-    ndof_reduction_rot: global reduction of rotational degrees of freedom (e.g.
-                        due to constraining the center of mass of the system)
+
+    * natoms: the total number of atoms in the system
+    * nconstraints: the total number of constraints in the system
+    * ndof_reduction_tra: global reduction of translational degrees of freedom (e.g.
+      due to constraining the center of mass of the system)
+    * ndof_reduction_rot: global reduction of rotational degrees of freedom (e.g.
+      due to constraining the center of mass of the system)
 
     The atoms are described in terms of
-    mass: a list of the mass of every atom in the system
+
+    * mass: a list of the mass of every atom in the system
 
     The molecules are described by
-    molecule_idx: a list with the indices first atoms of every molecule (this assumes
-                  that the atoms are sorted by molecule)
-    nconstraints_per_molecule: a list with the number of constraints in every molecule
+
+    * molecule_idx: a list with the indices first atoms of every molecule (this assumes
+      that the atoms are sorted by molecule)
+    * nconstraints_per_molecule: a list with the number of constraints in every molecule
 
     Only used internally:
-    ndof_per_molecule: a list with the number of degrees of freedom of every molecule
+
+    * ndof_per_molecule: a list with the number of degrees of freedom of every molecule
 
     Reserved for future use:
-    bonds
-    constrained_bonds
 
-    Notes:
-    ------
-    kinetic_energy.mb_ensemble() only requires information on the system
-        (natoms, nconstraints, ndof_reduction_tra, ndof_reduction_rot)
-    kinetic_energy.equipartition() additionally requires information on the atoms and molecules
-        (mass, molecule_idx, nconstraints_per_molecule)
+    * bonds
+    * constrained_bonds
+
+    *Notes:*
+
+    * kinetic_energy.mb_ensemble() only requires information on the system
+      (natoms, nconstraints, ndof_reduction_tra, ndof_reduction_rot)
+    * kinetic_energy.equipartition() additionally requires information on the atoms and molecules
+      (mass, molecule_idx, nconstraints_per_molecule)
+
     All other tests do not require and information from SystemData.
+
     """
 
     def __init__(self,
