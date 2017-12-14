@@ -810,14 +810,14 @@ static int pdb_first_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     return fr->natoms;
 }
 
-gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxframe *fr)
+bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxframe *fr)
 {
     real     pt;
     int      ct;
-    gmx_bool bOK, bRet, bMissingData = FALSE, bSkip = FALSE;
+    gmx_bool bOK, bMissingData = FALSE, bSkip = FALSE;
+    bool     bRet = false;
     int      ftp;
 
-    bRet = FALSE;
     pt   = status->tf;
 
     do
@@ -908,7 +908,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 }
                 else if (ct > 0)
                 {
-                    bRet = FALSE;
+                    bRet = false;
                 }
                 else
                 {
@@ -933,8 +933,8 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
     return bRet;
 }
 
-int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
-                     const char *fn, t_trxframe *fr, int flags)
+bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
+                      const char *fn, t_trxframe *fr, int flags)
 {
     t_fileio      *fio = nullptr;
     gmx_bool       bFirst, bOK;
