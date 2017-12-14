@@ -687,7 +687,8 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
         // Consume the error now that we have prepared to handle
         // it. This stops it reappearing next time we check for errors.
-        cudaGetLastError();
+        cudaGetLastError(); // <-- does not work
+        cudaDeviceReset();  // Overkill, but still does not work
     }
     else
     {
@@ -707,6 +708,7 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
         }
         retval = 0;
     }
+    GMX_RELEASE_ASSERT(cudaSuccess == cudaPeekAtLastError(), "Should be cudaSuccess");
 
     gpu_info->n_dev   = ndev;
     gpu_info->gpu_dev = devs;

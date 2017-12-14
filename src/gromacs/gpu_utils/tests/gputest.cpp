@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -57,8 +58,14 @@ namespace test
 GpuTest::GpuTest()
 {
     snew(gpuInfo_, 1);
-    char errorString[STRLEN];
-    detect_gpus(gpuInfo_, errorString);
+    if (canDetectGpus())
+    {
+        char errorString[STRLEN] = "";
+        if (0 != detect_gpus(gpuInfo_, errorString))
+        {
+            GMX_THROW(InternalError(errorString));
+        }
+    }
 }
 
 GpuTest::~GpuTest()
