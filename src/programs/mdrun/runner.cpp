@@ -1038,7 +1038,7 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
+    check_resource_division_efficiency(hwinfo, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
                                        cr, mdlog);
 
     gmx_device_info_t *nonbondedDeviceInfo = nullptr;
