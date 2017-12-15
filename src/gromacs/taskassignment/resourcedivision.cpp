@@ -910,3 +910,56 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
         print_hw_opt(debug, hw_opt);
     }
 }
+
+void checkHardwareOversubscription(int                          numThreadsOnThisRank,
+                                   const gmx::HardwareTopology &hwTop,
+                                   const t_commrec             *cr,
+                                   const gmx::MDLogger         &mdlog)
+{
+    int numRanksOnThisNode   = 1;
+    int numThreadsOnThisNode = numThreadsOnThisRank;
+#if GMX_MPI
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        /* Count the threads within this physical node */
+        MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);
+        MPI_Allreduce(&numThreadsOnThisRank, &numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, cr->mpi_comm_physicalnode);
+    }
+#endif
+
+    if (numThreadsOnThisNode > hwTop.machine().logicalProcessorCount)
+    {
+        std::string mesg = "WARNING: ";
+        if (GMX_LIB_MPI)
+        {
+            mesg += gmx::formatString("On rank %d: o", cr->sim_nodeid);
+        }
+        else
+        {
+            mesg += "O";
+        }
+        mesg     += gmx::formatString("versubscribing the available %d logical CPU cores", hwTop.machine().logicalProcessorCount);
+        if (GMX_LIB_MPI)
+        {
+            mesg += " per node";
+        }
+        mesg     += gmx::formatString(" with %d ", numThreadsOnThisNode);
+        if (numRanksOnThisNode == numThreadsOnThisNode)
+        {
+            if (GMX_THREAD_MPI)
+            {
+                mesg += "thread-MPI threads.";
+            }
+            else
+            {
+                mesg += "MPI processes.";
+            }
+        }
+        else
+        {
+            mesg += "threads.";
+        }
+        mesg     += "\n         This will cause considerable performance loss.";
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(mesg.c_str());
+    }
+}

@@ -1078,6 +1078,34 @@ int Mdrunner::mdrunner()
      */
     nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
+    int nthread_local;
+    /* threads on this MPI process or TMPI thread */
+    if (thisRankHasDuty(cr, DUTY_PP))
+    {
+        nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+    }
+    else
+    {
+        nthread_local = nthreads_pme;
+    }
+
+    checkHardwareOversubscription(nthread_local, *hwinfo->hardwareTopology,
+                                  cr, mdlog);
+
+    if (hw_opt.thread_affinity != threadaffOFF)
+    {
+        /* Before setting affinity, check whether the affinity has changed
+         * - which indicates that probably the OpenMP library has changed it
+         * since we first checked).
+         */
+        gmx_check_thread_affinity_set(mdlog, cr,
+                                      &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
+
+        /* Set the CPU affinity */
+        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
+                                nthread_local, nullptr);
+    }
+
     wcycle = wallcycle_init(fplog, mdrunOptions.timingOptions.resetStep, cr);
 
     if (PAR(cr))
@@ -1188,31 +1216,6 @@ int Mdrunner::mdrunner()
     // This reference hides the fact that PME data is owned by runner on PME-only ranks and by forcerec on other ranks
     GMX_ASSERT(thisRankHasDuty(cr, DUTY_PP) == (fr != nullptr), "Double-checking that only PME-only ranks have no forcerec");
     gmx_pme_t * &pmedata = fr ? fr->pmedata : sepPmeData;
-
-    if (hw_opt.thread_affinity != threadaffOFF)
-    {
-        /* Before setting affinity, check whether the affinity has changed
-         * - which indicates that probably the OpenMP library has changed it
-         * since we first checked).
-         */
-        gmx_check_thread_affinity_set(mdlog, cr,
-                                      &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
-
-        int nthread_local;
-        /* threads on this MPI process or TMPI thread */
-        if (thisRankHasDuty(cr, DUTY_PP))
-        {
-            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
-        }
-        else
-        {
-            nthread_local = gmx_omp_nthreads_get(emntPME);
-        }
-
-        /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
-                                nthread_local, nullptr);
-    }
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
