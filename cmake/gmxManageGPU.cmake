@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -271,6 +271,32 @@ macro(gmx_gpu_setup)
         if(NOT GMX_OPENMP)
             message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
         endif()
+
+        if(NOT GMX_CLANG_CUDA)
+            gmx_check_if_changed(GMX_CHECK_NVCC CUDA_NVCC_EXECUTABLE CUDA_HOST_COMPILER CUDA_NVCC_FLAGS)
+
+            if(GMX_CHECK_NVCC OR NOT GMX_NVCC_WORKS)
+                message(STATUS "Check for working NVCC/C compiler combination")
+                execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -ccbin ${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+                                RESULT_VARIABLE _cuda_test_res
+                                OUTPUT_VARIABLE _cuda_test_out
+                                ERROR_VARIABLE  _cuda_test_err
+                                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+                if(${_cuda_test_res})
+                    message(STATUS "Check for working NVCC/C compiler combination - broken")
+                    if(${_cuda_test_err} MATCHES "nsupported")
+                        string(REGEX MATCH "#error[^\n]*" _test_str "${_cuda_test_err}")
+                        message(FATAL_ERROR "NVCC/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible.\nError message:\n${_test_str}\n")
+                    else()
+                        message(FATAL_ERROR "CUDA compiler does not seem to be functional.")
+                    endif()
+                elseif(NOT GMX_CUDA_TEST_COMPILER_QUIETLY)
+                    message(STATUS "Check for working NVCC/C compiler combination - works")
+                    set(GMX_NVCC_WORKS TRUE CACHE INTERNAL "Nvcc can compile a trivial test program")
+                endif()
+            endif() # GMX_CHECK_NVCC
+        endif() #GMX_CLANG_CUDA
     endif() # GMX_GPU
 
     if (GMX_CLANG_CUDA)
