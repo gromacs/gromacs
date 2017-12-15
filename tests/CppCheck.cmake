@@ -60,6 +60,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/gromacs/selection/scanner.cpp
         ${CMAKE_SOURCE_DIR}/src/gromacs/selection/parser.cpp
         ${CMAKE_SOURCE_DIR}/src/gromacs/gpu_utils/ocl_compiler.cpp
+        ${CMAKE_SOURCE_DIR}/src/*\#* #ignore emacs lock files throwing of cmake
         )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
 
