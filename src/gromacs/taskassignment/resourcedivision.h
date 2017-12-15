@@ -59,6 +59,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+class HardwareTopology;
 class MDLogger;
 }
 
@@ -112,5 +113,12 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
                                              const t_commrec     *cr,
                                              PmeRunMode           pmeRunMode,
                                              const gmx_mtop_t    &mtop);
+
+/*! \brief Warns for oversubscribing the hardware threads, when that is the case
+ */
+void checkHardwareOversubscription(int                          numThreadsOnThisRank,
+                                   const gmx::HardwareTopology &hwTop,
+                                   const t_commrec             *cr,
+                                   const gmx::MDLogger         &mdlog);
 
 #endif
