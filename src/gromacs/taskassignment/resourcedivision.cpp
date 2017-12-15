@@ -614,49 +614,6 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
             }
         }
     }
-    else
-    {
-        const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
-
-        /* No domain decomposition (or only one domain) */
-        if (nth_omp_max > nthreads_omp_faster(cpuInfo, anyRankIsUsingGpus))
-        {
-            /* To arrive here, the user/system set #ranks and/or #OMPthreads */
-            gmx_bool bEnvSet;
-            char     buf2[256];
-
-            bEnvSet = (getenv("OMP_NUM_THREADS") != nullptr);
-
-            if (bNtOmpOptionSet || bEnvSet)
-            {
-                sprintf(buf2, "You requested %d OpenMP threads", nth_omp_max);
-            }
-            else
-            {
-                sprintf(buf2, "Your choice of %d MPI rank%s and the use of %d total threads %sleads to the use of %d OpenMP threads",
-                        cr->nnodes + cr->npmenodes,
-                        cr->nnodes + cr->npmenodes == 1 ? "" : "s",
-                        numTotalThreads > 0 ? numTotalThreads : hwinfo->nthreads_hw_avail,
-                        hwinfo->nphysicalnode > 1 ? "on a node " : "",
-                        nth_omp_max);
-            }
-            sprintf(buf, "%s, whereas we expect the optimum to be with more MPI ranks with %d to %d OpenMP threads.",
-                    buf2, nthreads_omp_mpi_ok_min, nthreads_omp_mpi_target_max);
-
-            /* We can not quit with a fatal error when OMP_NUM_THREADS is set
-             * with different values per rank or node, since in that case
-             * the user can not set -ntomp to override the error.
-             */
-            if (bNtOmpOptionSet || (bEnvSet && nth_omp_min != nth_omp_max))
-            {
-                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("NOTE: %s", buf);
-            }
-            else
-            {
-                gmx_fatal(FARGS, "%s If you want to run with this many OpenMP threads, specify the -ntomp option. But we suggest to increase the number of MPI ranks%s.", buf, mpi_option);
-            }
-        }
-    }
 #else /* GMX_OPENMP && GMX_MPI */
       /* No OpenMP and/or MPI: it doesn't make much sense to check */
     GMX_UNUSED_VALUE(bNtOmpOptionSet);
