@@ -269,6 +269,26 @@ macro(gmx_gpu_setup)
         if(NOT GMX_OPENMP)
             message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
         endif()
+
+        message(STATUS "Trying to compile trivial CUDA test program")
+        execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} ${CUDA_NVCC_FLAGS} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+            RESULT_VARIABLE _cuda_test_res
+            OUTPUT_VARIABLE _cuda_test_out
+            ERROR_VARIABLE  _cuda_test_err
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+        if(${_cuda_test_res})
+            message(STATUS "Trying to compile trivial CUDA test program - Failed")
+            if(${_cuda_test_err} MATCHES "nsupported")
+                string(REGEX MATCH "#error[^\n]*" _test_str "${_cuda_test_err}")
+                message(FATAL_ERROR "CUDA/C compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler (in particular for gcc), so you might want to try an earlier C/C++ compiler version and make sure your CUDA compiler and driver are as recent as possible. Error message:\n${_test_str}\n")
+            else()
+                message(FATAL_ERROR "CUDA compiler does not seem to be functional.")
+            endif()
+        else()
+            message(STATUS "Trying to compile trivial CUDA test program - Success")
+        endif()
+
     endif() # GMX_GPU
 
     if (GMX_CLANG_CUDA)
