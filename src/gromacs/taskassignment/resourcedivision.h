@@ -89,7 +89,6 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
  * This function should be called after thread-MPI and OpenMP are set up.
  */
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
-                                        int                  numTotalThreads,
                                         bool                 willUsePhysicalGpu,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
