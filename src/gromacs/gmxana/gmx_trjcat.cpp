@@ -77,7 +77,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
     int          i, natoms = 0;
     t_trxstatus *status;
     t_trxframe   fr;
-    gmx_bool     ok;
+    bool         ok;
 
     for (i = 0; i < nfiles; i++)
     {
@@ -312,7 +312,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
                      real **value, real *time, real dt_remd, int isize,
                      int index[], real dt, const gmx_output_env_t *oenv)
 {
-    int           i, j, k, natoms, nnn;
+    int           i, j, k, natoms;
     t_trxstatus **fp_in, **fp_out;
     gmx_bool      bCont, *bSet;
     real          t, first_time = 0;
@@ -325,16 +325,16 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
     t      = -1;
     for (i = 0; (i < nset); i++)
     {
-        nnn = read_first_frame(oenv, &(fp_in[i]), fnms[i], &(trx[i]),
-                               TRX_NEED_X);
+        read_first_frame(oenv, &(fp_in[i]), fnms[i], &(trx[i]),
+                         TRX_NEED_X);
         if (natoms == -1)
         {
-            natoms     = nnn;
+            natoms     = trx[i].natoms;
             first_time = trx[i].time;
         }
-        else if (natoms != nnn)
+        else if (natoms != trx[i].natoms)
         {
-            gmx_fatal(FARGS, "Trajectory file %s has %d atoms while previous trajs had %d atoms", fnms[i], nnn, natoms);
+            gmx_fatal(FARGS, "Trajectory file %s has %d atoms while previous trajs had %d atoms", fnms[i], trx[i].natoms, natoms);
         }
         if (t == -1)
         {

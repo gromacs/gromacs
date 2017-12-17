@@ -1663,10 +1663,9 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
          * With FMA analytical is sometimes faster for a width if 4 as well.
          * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
-         * On Skylake table is faster in single and double. TODO: Test 5xxx series.
          */
-#if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) \
-        && !GMX_SIMD_X86_AVX_512) || GMX_SIMD_IBM_QPX
+#if GMX_SIMD_REAL_WIDTH >= 8 || \
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
          * of single or double precision and 128 or 256-bit AVX2.
          */
@@ -2763,6 +2762,15 @@ void init_forcerec(FILE                    *fp,
         {
             gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
+        /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
+         * while mdrun does not (and never did) support this.
+         */
+        if (EEL_USER(fr->ic->eeltype))
+        {
+            gmx_fatal(FARGS, "Combination of %s and cutoff scheme %s is not supported",
+                      eel_names[ir->coulombtype], ecutscheme_names[ir->cutoff_scheme]);
+        }
+
         fr->bvdwtab  = FALSE;
         fr->bcoultab = FALSE;
     }

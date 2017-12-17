@@ -919,11 +919,12 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
 
 #endif      // GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 
-#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
+//Test Currently doesn't work for GMX_SIMD_REAL_WIDTH<4. Should be fixed by having GMX_EXPECT_SIMD_REAL_EQ which works for both Simd and Simd4
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL && GMX_SIMD_REAL_WIDTH >= 4
 
 TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
 {
-    SimdReal        v0, v1;
+    Simd4NReal      v0, v1;
     int             i;
     real            data[GMX_SIMD_REAL_WIDTH/4];
     std::iota(data, data+GMX_SIMD_REAL_WIDTH/4, 1);
@@ -936,7 +937,7 @@ TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
         val0_[i*4] = val0_[i*4+1] = val0_[i*4+2] = val0_[i*4+3] = data[i];
     }
 
-    v0 = load<SimdReal>(val0_);
+    v0 = load<Simd4NReal>(val0_);
     v1 = loadUNDuplicate4(data);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
@@ -944,9 +945,9 @@ TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
 
 TEST_F(SimdFloatingpointUtilTest, load4DuplicateN)
 {
-    SimdReal        v0, v1;
-    int             i;
-    real            data[4] = { 1, 2, 3, 4};
+    Simd4NReal        v0, v1;
+    int               i;
+    real              data[4] = { 1, 2, 3, 4};
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
     {
@@ -956,7 +957,7 @@ TEST_F(SimdFloatingpointUtilTest, load4DuplicateN)
         val0_[i*4+3] = data[3];
     }
 
-    v0 = load<SimdReal>(val0_);
+    v0 = load<Simd4NReal>(val0_);
     v1 = load4DuplicateN(val0_);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
@@ -977,8 +978,8 @@ TEST_F(SimdFloatingpointUtilTest, loadU4NOffset)
         val0_[i*4+3] = data[3+offset*i];
     }
 
-    const SimdReal v0 = load<SimdReal>(val0_);
-    const SimdReal v1 = loadU4NOffset(data, offset);
+    const Simd4NReal v0 = load<Simd4NReal>(val0_);
+    const Simd4NReal v1 = loadU4NOffset(data, offset);
 
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
 }
