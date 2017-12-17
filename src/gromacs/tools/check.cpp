@@ -831,7 +831,10 @@ int gmx_check(int argc, char *argv[])
         "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
         "The program can compare two run input ([REF].tpr[ref])",
         "files",
-        "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
+        "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied. When comparing",
+        "run input files this way, the default relative and tolerances are changed",
+        "to zero to find all differences, although you can still set any other",
+        "tolerance through the options."
         "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
         "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
         "For free energy simulations the A and B state topology from one",
@@ -914,6 +917,16 @@ int gmx_check(int argc, char *argv[])
                 gmx_fatal(FARGS, "With -ab you need to set the -s1 option");
             }
             fn2 = nullptr;
+        }
+
+        fprintf(stderr, "Note: When comparing run input files, default gmx check tolerances are 0.\n");
+        if (!opt2parg_bSet("-tol", asize(pa), pa))
+        {
+            ftol = 0;
+        }
+        if (!opt2parg_bSet("-abstol", asize(pa), pa))
+        {
+            abstol = 0;
         }
         comp_tpx(fn1, fn2, bRMSD, ftol, abstol);
     }
