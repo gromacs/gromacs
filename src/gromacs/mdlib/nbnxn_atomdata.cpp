@@ -1061,8 +1061,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
-                                     nbnxn_atomdata_t    *nbat)
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle_t      wcycle)
 {
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
+
     int g0 = 0, g1 = 0;
     int nth, th;
 
@@ -1131,6 +1135,9 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
+
+    wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 }
 
 static void
@@ -1518,8 +1525,12 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
-                                    rvec                   *f)
+                                    rvec                   *f,
+                                    gmx_wallcycle_t         wcycle)
 {
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+
     int a0 = 0, na = 0;
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);

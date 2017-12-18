@@ -46,6 +46,7 @@
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct t_commrec;
+const gmx_wallcycle_t nullWallcycle = nullptr;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,

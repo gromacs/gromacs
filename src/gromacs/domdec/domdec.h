@@ -287,14 +287,14 @@ void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
 float dd_pme_f_ratio(struct gmx_domdec_t *dd);
 
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
-void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
+void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle_t wcycle);
 
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift);
+void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle_t wcycle);
 
 /*! \brief Communicate a real for each atom to the neighboring cells. */
 void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);
