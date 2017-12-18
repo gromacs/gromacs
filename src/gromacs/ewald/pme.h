@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -65,6 +64,7 @@ struct PmeGpu;
 struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
 struct gmx_pme_t;
+struct gmx_wallcycle;
 
 enum class GpuTaskCompletion;
 
@@ -167,7 +167,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                real sigmaA[],   real sigmaB[],
                matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
-               t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
+               t_nrnb *nrnb,    gmx_wallcycle *wcycle,
                matrix vir_q,    matrix vir_lj,
                real *energy_q,  real *energy_lj,
                real lambda_q,   real lambda_lj,
@@ -177,7 +177,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 /*! \brief Called on the nodes that do PME exclusively (as slaves) */
 int gmx_pmeonly(struct gmx_pme_t *pme,
                 struct t_commrec *cr,     t_nrnb *mynrnb,
-                gmx_wallcycle_t wcycle,
+                gmx_wallcycle  *wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 t_inputrec *ir, PmeRunMode runMode);
 
@@ -204,7 +204,7 @@ void gmx_pme_send_parameters(struct t_commrec *cr,
 void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step);
+                              gmx_int64_t step, gmx_wallcycle *wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(struct t_commrec *cr);
@@ -296,7 +296,7 @@ void pme_gpu_get_timings(const gmx_pme_t         *pme,
 void pme_gpu_prepare_computation(gmx_pme_t      *pme,
                                  bool            needToUpdateBox,
                                  const matrix    box,
-                                 gmx_wallcycle_t wcycle,
+                                 gmx_wallcycle  *wcycle,
                                  int             flags);
 
 /*! \brief
@@ -308,7 +308,7 @@ void pme_gpu_prepare_computation(gmx_pme_t      *pme,
  */
 void pme_gpu_launch_spread(gmx_pme_t      *pme,
                            const rvec     *x,
-                           gmx_wallcycle_t wcycle);
+                           gmx_wallcycle  *wcycle);
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -317,7 +317,7 @@ void pme_gpu_launch_spread(gmx_pme_t      *pme,
  * \param[in] wcycle            The wallclock counter.
  */
 void pme_gpu_launch_complex_transforms(gmx_pme_t       *pme,
-                                       gmx_wallcycle_t  wcycle);
+                                       gmx_wallcycle   *wcycle);
 
 /*! \brief
  * Launches last stage of PME on GPU - force gathering and D2H force transfer.
@@ -329,7 +329,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t       *pme,
  *                               and accumulates. The reduction is non-atomic.
  */
 void pme_gpu_launch_gather(const gmx_pme_t        *pme,
-                           gmx_wallcycle_t         wcycle,
+                           gmx_wallcycle          *wcycle,
                            PmeForceOutputHandling  forceTreatment);
 
 /*! \brief
@@ -343,7 +343,7 @@ void pme_gpu_launch_gather(const gmx_pme_t        *pme,
  * \param[out] energy         The output energy.
  */
 void pme_gpu_wait_finish_task(const gmx_pme_t                *pme,
-                              gmx_wallcycle_t                 wcycle,
+                              gmx_wallcycle                  *wcycle,
                               gmx::ArrayRef<const gmx::RVec> *forces,
                               matrix                          virial,
                               real                           *energy);
@@ -369,7 +369,7 @@ void pme_gpu_wait_finish_task(const gmx_pme_t                *pme,
  * \returns                   True if the PME GPU tasks have completed
  */
 bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
-                             gmx_wallcycle_t                 wcycle,
+                             gmx_wallcycle                  *wcycle,
                              gmx::ArrayRef<const gmx::RVec> *forces,
                              matrix                          virial,
                              real                           *energy,
