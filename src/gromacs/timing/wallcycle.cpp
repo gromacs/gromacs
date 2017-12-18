@@ -74,7 +74,7 @@ typedef struct
     gmx_cycles_t start;
 } wallcc_t;
 
-typedef struct gmx_wallcycle
+/*typedef */struct gmx_wallcycle
 {
     wallcc_t        *wcc;
     /* did we detect one or more invalid cycle counts */

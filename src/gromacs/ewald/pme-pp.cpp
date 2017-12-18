@@ -246,8 +246,10 @@ void gmx_pme_send_parameters(t_commrec *cr,
 void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step)
+                              gmx_int64_t step, gmx_wallcycle_t wcycle)
 {
+    wallcycle_start(wcycle, ewcPP_PMESENDX);
+
     unsigned int flags = PP_PME_COORD;
     if (bEnerVir)
     {
@@ -255,6 +257,8 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
     }
     gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
                                box, x, lambda_q, lambda_lj, 0, 0, step);
+
+    wallcycle_stop(wcycle, ewcPP_PMESENDX);
 }
 
 void gmx_pme_send_finish(t_commrec *cr)

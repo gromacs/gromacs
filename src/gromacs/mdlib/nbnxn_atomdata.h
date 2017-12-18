@@ -49,6 +49,8 @@ class MDLogger;
 }
 
 struct t_mdatoms;
+struct gmx_wallcycle;
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
@@ -112,13 +114,15 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
-                                     nbnxn_atomdata_t    *nbat);
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle_t      wcycle);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
-                                    rvec                   *f);
+                                    rvec                   *f,
+                                    gmx_wallcycle_t         wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
