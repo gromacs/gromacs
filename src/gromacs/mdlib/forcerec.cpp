@@ -2498,10 +2498,6 @@ void init_forcerec(FILE                *fp,
         const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
             "removed in a future release when 'verlet' supports all interaction forms.\n";
 
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "\n%s\n", note);
-        }
         if (fp != nullptr)
         {
             fprintf(fp, "\n%s\n", note);

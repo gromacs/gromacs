@@ -72,14 +72,13 @@ class OptParam
         const char             *xvgconv_;
         const char             *xvgepot_;
         gmx_bool                bBound_;
-        int                     nprint_;
         real                    seed_;
         real                    step_;
         real                    temperature_;
         bool                    anneal_;
     public:
 
-        OptParam() : maxiter_(100), oenv_(nullptr), xvgconv_(nullptr), xvgepot_(nullptr), bBound_(false), nprint_(1), seed_(1993), step_(1), temperature_(300), anneal_(true)
+        OptParam() : maxiter_(100), oenv_(nullptr), xvgconv_(nullptr), xvgepot_(nullptr), bBound_(false), seed_(1993), step_(0.02), temperature_(5), anneal_(true)
         {}
 
         ~OptParam() {};
@@ -103,9 +102,6 @@ class OptParam
 
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
-
-        //! \brief Return print frequency
-        int nPrint() const { return nprint_; }
 
         //! \brief Return the step
         real step() const { return step_; }
@@ -254,9 +250,8 @@ void Bayes<T>::changeParam(int j, real rand)
 template <class T>
 void Bayes<T>::simulate()
 {
-
     parm_t                           sum, sum_of_sq;
-    int                              j, nsum = 0, nParam = 0; // ncycle = 0;
+    int                              nsum = 0, nParam = 0; // ncycle = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
@@ -286,46 +281,46 @@ void Bayes<T>::simulate()
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-    for (int iter = 0; iter < maxIter(); iter++)
+    for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
-        double beta = computeBeta(iter);
-        for (j = 0; j < nParam; j++)
+        double beta = computeBeta(iter/nParam);
+        // Pick random parameter to change
+        int j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam;
+        
+        storeParam = param_[j];
+        changeParam(j, uniform(gen));
+        currEval        = func_(param_.data());
+        deltaEval       = currEval-prevEval;
+        randProbability = uniform(gen);
+        mcProbability   = exp(-beta*deltaEval);
+        if ((deltaEval < 0) || (mcProbability > randProbability))
         {
-            storeParam = param_[j];
-            changeParam(j, uniform(gen));
-            currEval        = func_(param_.data());
-            deltaEval       = currEval-prevEval;
-            randProbability = uniform(gen);
-            mcProbability   = exp(-beta*deltaEval);
-            if ((deltaEval < 0) || (mcProbability > randProbability))
+            double xiter = (1.0*iter)/nParam;
+            if (nullptr != fpc)
             {
-                double xiter = iter + (1.0*j)/nParam;
-                if ((nullptr != fpc) && ((j % nPrint()) == 0))
+                fprintf(fpc, "%8f", xiter);
+                for (auto value : param_)
                 {
-                    fprintf(fpc, "%8f", xiter);
-                    for (auto value : param_)
-                    {
-                        fprintf(fpc, "  %10g", value);
-                    }
-                    fprintf(fpc, "\n");
-                    fflush(fpc);
+                    fprintf(fpc, "  %10g", value);
                 }
-                if ((nullptr != fpe) && ((j % nPrint()) == 0))
-                {
-                    fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-                    fflush(fpe);
-                }
-                if (currEval < *minEval_)
-                {
-                    bestParam_ = param_;
-                    *minEval_  = currEval;
-                }
-                prevEval = currEval;
+                fprintf(fpc, "\n");
+                fflush(fpc);
             }
-            else
+            if (nullptr != fpe)
             {
-                param_[j] = storeParam;
+                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+                fflush(fpe);
             }
+            if (currEval < *minEval_)
+            {
+                bestParam_ = param_;
+                *minEval_  = currEval;
+            }
+            prevEval = currEval;
+        }
+        else
+        {
+            param_[j] = storeParam;
         }
         if (iter >= maxIter()/2)
         {

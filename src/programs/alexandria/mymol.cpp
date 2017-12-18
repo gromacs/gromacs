@@ -1082,7 +1082,11 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     switch (iChargeGenerationAlgorithm)
     {
         case eqgNONE:
-            printf("WARNING! Using zero charges!\n");
+            if (debug)
+            {
+                fprintf(debug, "WARNING! Using zero charges for %s!\n",
+                        molProp()->getMolname().c_str());
+            }
             for (auto i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
@@ -1139,7 +1143,10 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             Qgresp_.optimizeCharges();
             Qgresp_.calcPot();
             EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
-            printf("RESP: RMS %g\n", chi2[cur]);
+            if (debug)
+            {
+                fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
+            }
             do
             {
                 Qgresp_.optimizeCharges();
@@ -1155,7 +1162,10 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 Qgresp_.updateAtomCoords(state_->x);
                 Qgresp_.calcPot();
                 EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
-                printf("RESP: RMS %g\n", chi2[cur]);
+                if (debug)
+                {
+                    fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
+                }
                 converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
                 cur       = 1-cur;
                 iter++;
@@ -1553,6 +1563,21 @@ void MyMol::PrintTopology(const char             *fn,
     fclose(fp);
 }
 
+void add_tensor(std::vector<std::string> *commercials,
+                const char *title, const tensor &Q)
+{
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s:\n"
+             "; (%6.2f %6.2f %6.2f)\n"
+             "; (%6.2f %6.2f %6.2f)\n"
+             "; (%6.2f %6.2f %6.2f)\n", 
+             title,
+             Q[XX][XX], Q[XX][YY], Q[XX][ZZ], 
+             Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
+             Q[ZZ][XX], Q[ZZ][YY], Q[ZZ][ZZ]);
+    commercials->push_back(buf);
+}
+
 void MyMol::PrintTopology(FILE                   *fp,
                           ChargeDistributionModel iChargeDistributionModel,
                           bool                    bVerbose,
@@ -1563,10 +1588,9 @@ void MyMol::PrintTopology(FILE                   *fp,
                           double                  efield,
                           const char             *lot)
 {
-
+    char                     buf[256];
     t_mols                   printmol;
     std::vector<std::string> commercials;
-    char                     buf[256];
     double                   vec[DIM];
     double                   value, error, T;    
     std::string              myref, mylot;
@@ -1603,7 +1627,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeDistributionModel));
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
-             "(%.2f %6.2f %6.2f) Total= %.2f\n", 
+             "; (%.2f %6.2f %6.2f) Total= %.2f\n", 
              mu[XX], mu[YY], mu[ZZ], 
              norm(mu));
     commercials.push_back(buf);
@@ -1615,39 +1639,24 @@ void MyMol::PrintTopology(FILE                   *fp,
     {
         set_muQM(qtElec, vec);
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
-                 "(%.2f %6.2f %6.2f) Total= %.2f\n", 
+                 "; (%.2f %6.2f %6.2f) Total= %.2f\n", 
                  lot, 
                  mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ], 
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
     }
     
-    {
-        const tensor &Q = QQM(qtCalc);
-        snprintf(buf, sizeof(buf), "Alexandria Traceless Quadrupole Moments (Buckingham):\n"
-                 "(%6.2f %6.2f %6.2f)\n"
-                 "(%6.2f %6.2f %6.2f)\n"
-                 "(%6.2f %6.2f %6.2f)\n", 
-                 Q[XX][XX], Q[XX][YY], Q[XX][ZZ], 
-                 Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
-                 Q[ZZ][XX], Q[ZZ][YY], Q[ZZ][ZZ]);
-        commercials.push_back(buf);
-    }
+    add_tensor(&commercials, 
+               "Alexandria Traceless Quadrupole Moments (Buckingham)",
+               QQM(qtCalc));
     
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
                               &T, myref, mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
-        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham):\n"
-             "(%6.2f %6.2f %6.2f)\n"
-             "(%6.2f %6.2f %6.2f)\n"
-             "(%6.2f %6.2f %6.2f)\n", 
-                 lot,
-                 myQ[XX][XX], myQ[XX][YY], myQ[XX][ZZ], 
-                 myQ[YY][XX], myQ[YY][YY], myQ[YY][ZZ],
-                 myQ[ZZ][XX], myQ[ZZ][YY], myQ[ZZ][ZZ]);
-        commercials.push_back(buf);
+        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", lot);
+        add_tensor(&commercials, buf , myQ);
     }
     
     snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
@@ -1656,14 +1665,8 @@ void MyMol::PrintTopology(FILE                   *fp,
     if (efield > 0 && nullptr != cr)
     {    
         CalcPolarizability(efield, cr, fp);
-        snprintf(buf, sizeof(buf), "Alexandria Polarizability components (A^3):\n" 
-                 "(%6.2f %6.2f %6.2f)\n" 
-                 "(%6.2f %6.2f %6.2f)\n"
-                 "(%6.2f %6.2f %6.2f)\n",
-                 alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
-                 alpha_calc_[YY][XX], alpha_calc_[YY][YY], alpha_calc_[YY][ZZ],
-                 alpha_calc_[ZZ][XX], alpha_calc_[ZZ][YY], alpha_calc_[ZZ][ZZ]);
-        commercials.push_back(buf);
+        add_tensor(&commercials, "Alexandria Polarizability components (A^3)",
+                   alpha_calc_);
         
         snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
         commercials.push_back(buf);
@@ -1676,16 +1679,9 @@ void MyMol::PrintTopology(FILE                   *fp,
                                   &T, myref, mylot, vec, alpha_elec_))
         {
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
-            snprintf(buf, sizeof(buf), "%s Polarizability components (A^3):\n"
-                     "(%6.2f %6.2f %6.2f)\n"
-                     "(%6.2f %6.2f %6.2f)\n"
-                     "(%6.2f %6.2f %6.2f)\n",  
-                     lot, 
-                     alpha_elec_[XX][XX], alpha_elec_[XX][YY], alpha_elec_[XX][ZZ],
-                     alpha_elec_[YY][XX], alpha_elec_[YY][YY], alpha_elec_[YY][ZZ],
-                     alpha_elec_[ZZ][XX], alpha_elec_[ZZ][YY], alpha_elec_[ZZ][ZZ]);
-            commercials.push_back(buf);
-            
+            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", lot);
+            add_tensor(&commercials, buf, alpha_elec_);
+       
             snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", lot, isoPol_elec_);
             commercials.push_back(buf);    
             snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", lot, anisoPol_elec_);

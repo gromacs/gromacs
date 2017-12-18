@@ -46,9 +46,9 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 int alex_gentop(int argc, char *argv[]);
-//int alex_tune_fc(int argc, char *argv[]);
-//int alex_tune_eem(int argc, char *argv[]);
-//int alex_tune_pol(int argc, char *argv[]);
+int alex_tune_fc(int argc, char *argv[]);
+int alex_tune_eem(int argc, char *argv[]);
+int alex_tune_pol(int argc, char *argv[]);
 int alex_poldata_test(int argc, char *argv[]);
 int alex_gauss2molprop(int argc, char *argv[]);
 int alex_bastat(int argc, char *argv[]);
@@ -88,13 +88,13 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     // Modules from this directory
     registerModule(manager, &alex_gentop, "gentop",
                    "Generate topology for structure files");
-    /*    registerModule(manager, &alex_tune_fc, "tune_fc",
+    registerModule(manager, &alex_tune_fc, "tune_fc",
                    "Optimize force field parameters");
-       registerModule(manager, &alex_tune_eem, "tune_eem",
+    registerModule(manager, &alex_tune_eem, "tune_eem",
                    "Optimize parameters of the EEM algorithm");
-       registerModule(manager, &alex_tune_pol, "tune_pol",
+    registerModule(manager, &alex_tune_pol, "tune_pol",
                    "Optimize atomic polarizabilities");
-     */registerModule(manager, &alex_tune_zeta, "tune_zeta",
+    registerModule(manager, &alex_tune_zeta, "tune_zeta",
                    "Optimize the distribution of Gaussian and Slater charges");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
@@ -123,10 +123,10 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
-        //group.addModule("tune_pol");
+        group.addModule("tune_pol");
         group.addModule("tune_zeta");
-        //group.addModule("tune_eem");
-        //group.addModule("tune_fc");
+        group.addModule("tune_eem");
+        group.addModule("tune_fc");
         group.addModule("gauss2molprop");
         group.addModule("molprop_check");
     }

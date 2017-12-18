@@ -82,8 +82,8 @@ const char *rmsName(int e)
 namespace alexandria
 {
 
-const char *cqdist[] = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
-const char *cqgen[]  = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+static const char *cqdist[] = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
+static const char *cqgen[]  = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
 
 static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,
@@ -294,27 +294,33 @@ MolDip::MolDip()
         ener_[i] = 0;
     }
     fc_[ermsESP] = 1;
+    fc_[ermsTOT] = 1;
     inputrec_    = mdModules_.inputrec();
     fill_inputrec(inputrec_);
     bFinal_    = false;
     bDone_     = false;
-    bGenVsite_ = false;
+    bGenVsite_ = FALSE;
     J0_min_    = 5;
     Chi0_min_  = 1;
-    zeta_min_  = 1;
+    zeta_min_  = 2;
     J0_max_    = 30;
     Chi0_max_  = 30;
-    zeta_max_  = 50;
+    zeta_max_  = 30;
     watoms_    = 0;
     qtol_      = 1e-6;
     qcycle_    = 1000;
     mindata_   = 3;
     lot_       = "B3LYP/aug-cc-pVTZ";
+    hfac_      = 0;
+    bOptHfac_  = FALSE;
 }
 
 MolDip::~MolDip()
 {
-    done_commrec(cr_);
+    if (cr_)
+    {
+        done_commrec(cr_);
+    }
 }
 
 void MolDip::addOptions(std::vector<t_pargs> *pargs)

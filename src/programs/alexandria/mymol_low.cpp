@@ -622,10 +622,10 @@ void plist_to_mtop(const Poldata             &pd,
         int nra    = NRAL(ftype);
         int nrfp   = NRFPA(ftype);
         int nratot = pw.nParam()*(1+nra);
-        if (nratot > 0)
+        if (nratot > 0 && debug)
         {
-            printf("There are %d interactions of type %s\n", nratot/(nra+1),
-                   interaction_function[ftype].name);
+            fprintf(debug, "There are %d interactions of type %s\n", nratot/(nra+1),
+                    interaction_function[ftype].name);
         }
         snew(mtop_->moltype[0].ilist[ftype].iatoms, nratot);
         int k = 0;

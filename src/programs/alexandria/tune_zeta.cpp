@@ -357,16 +357,13 @@ void OptZeta::calcDeviation()
                 mymol.CalcQuadrupole();
                 for (auto mm = 0; mm < DIM; mm++)
                 {
-                    if (bFullTensor_)
+                    for (auto nn = 0; nn < DIM; nn++)
                     {
-                        for (auto nn = 0; nn < DIM; nn++)
+                        if (bFullTensor_ || mm == nn)
                         {
-                            incrEner(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                            incrEner(ermsQUAD, 
+                                     gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
-                    }
-                    else
-                    {
-                        incrEner(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]));
                     }
                 }
             }

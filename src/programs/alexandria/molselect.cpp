@@ -301,17 +301,13 @@ int alex_molselect(int argc, char *argv[])
         pargs.push_back(pa[i]);
     }
     mdp.addOptions(&pargs);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, 
+                           pargs.size(), pargs.data(),
                            asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
     mdp.optionsFinished();
-
-    if (MASTER(mdp.commrec()))
-    {
-        printf("There are %d threads/processes.\n", mdp.commrec()->nnodes);
-    }
 
     fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
@@ -330,7 +326,7 @@ int alex_molselect(int argc, char *argv[])
              false, true, nullptr);
 
     printAtomtypeStatistics(fp, mdp.poldata(), mdp.mymols());
-    exit(0);
+    
     for (int i = 0; i < nsample; i++)
     {
         char  buf[STRLEN];

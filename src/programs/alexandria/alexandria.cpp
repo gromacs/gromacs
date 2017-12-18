@@ -74,7 +74,7 @@ main(int argc, char *argv[])
         gmx::finalizeForCommandLine();
         if (MASTER(cr))
         {
-            printf("\nThanks for using Alexandria\n");
+            printf("\nThanks for using Alexandria.\n");
         }
         return rc;
     }

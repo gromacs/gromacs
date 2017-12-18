@@ -235,7 +235,7 @@ class Poldata
          *
          * \param[in] atype  Atom Type
          */
-        std::string  getDesc(std::string atype);
+        const std::string &getDesc(const std::string &atype) const;
 
         /*! \brief
          * Return the element name corresponding to the atom type

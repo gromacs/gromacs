@@ -65,8 +65,6 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
           "Max number of iterations for optimization" },
-        { "-nprint",  FALSE, etINT, {&nprint_},
-          "How often to print the parameters during the simulation" },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
         { "-anneal", FALSE, etBOOL, {&anneal_},
@@ -98,7 +96,14 @@ double OptParam::computeBeta(int iter)
     double temp = temperature_;
     if (anneal_)
     {
-        temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
+        if (iter >= maxiter_)
+        {
+            temp = 0;
+        }
+        else
+        {
+            temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
+        }
     }
     return 1/(BOLTZ*temp);
 }

@@ -126,7 +126,7 @@ bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
     return false;
 }
 
-std::string Poldata::getDesc(std::string atype)
+const std::string &Poldata::getDesc(const std::string &atype) const
 {
     size_t i;
     if (atype.size() != 0)
@@ -139,7 +139,7 @@ std::string Poldata::getDesc(std::string atype)
             }
         }
     }
-    return "";
+    gmx_fatal(FARGS, "No such atomtype %s", atype.c_str());
 }
 
 const std::string &Poldata::getElem(const std::string &atype) const
@@ -155,7 +155,7 @@ const std::string &Poldata::getElem(const std::string &atype) const
             }
         }
     }
-    return "";
+    gmx_fatal(FARGS, "No such atomtype %s", atype.c_str());
 }
 
 /*

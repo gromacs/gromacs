@@ -520,8 +520,10 @@ static int *generate_cg_group(t_atoms                               *atoms,
             }
         }
     }
-    printf("There are %d charge groups\n", ncg-1);
-
+    if (debug)
+    {
+        fprintf(debug, "There are %d charge groups\n", ncg-1);
+    }
     return cgnr;
 }
 
