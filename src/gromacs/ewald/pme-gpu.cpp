@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,7 +169,7 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t              *pme,
 void pme_gpu_prepare_computation(gmx_pme_t            *pme,
                                  bool                  needToUpdateBox,
                                  const matrix          box,
-                                 gmx_wallcycle_t       wcycle,
+                                 gmx_wallcycle        *wcycle,
                                  int                   flags)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
@@ -212,7 +212,7 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
 
 void pme_gpu_launch_spread(gmx_pme_t            *pme,
                            const rvec           *x,
-                           gmx_wallcycle_t       wcycle)
+                           gmx_wallcycle        *wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -241,7 +241,7 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
 }
 
 void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
-                                       gmx_wallcycle_t wcycle)
+                                       gmx_wallcycle  *wcycle)
 {
     PmeGpu            *pmeGpu                 = pme->gpu;
     const bool         computeEnergyAndVirial = pmeGpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR;
@@ -297,7 +297,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
 }
 
 void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
-                           gmx_wallcycle_t gmx_unused       wcycle,
+                           gmx_wallcycle gmx_unused        *wcycle,
                            PmeForceOutputHandling           forceTreatment)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
@@ -345,7 +345,7 @@ static void pme_gpu_get_staged_results(const gmx_pme_t                *pme,
 }
 
 bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
-                             gmx_wallcycle_t                 wcycle,
+                             gmx_wallcycle                  *wcycle,
                              gmx::ArrayRef<const gmx::RVec> *forces,
                              matrix                          virial,
                              real                           *energy,
@@ -390,7 +390,7 @@ bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
 }
 
 void pme_gpu_wait_finish_task(const gmx_pme_t                *pme,
-                              gmx_wallcycle_t                 wcycle,
+                              gmx_wallcycle                  *wcycle,
                               gmx::ArrayRef<const gmx::RVec> *forces,
                               matrix                          virial,
                               real                           *energy)
