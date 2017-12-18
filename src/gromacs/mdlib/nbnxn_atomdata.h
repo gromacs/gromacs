@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@ class MDLogger;
 }
 
 struct t_mdatoms;
+struct gmx_wallcycle;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
@@ -112,13 +113,15 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
                                      rvec                *x,
-                                     nbnxn_atomdata_t    *nbat);
+                                     nbnxn_atomdata_t    *nbat,
+                                     gmx_wallcycle       *wcycle);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
-                                    rvec                   *f);
+                                    rvec                   *f,
+                                    gmx_wallcycle          *wcycle);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
