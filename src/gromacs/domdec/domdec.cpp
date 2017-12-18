@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -391,8 +391,10 @@ void dd_get_constraint_range(const gmx_domdec_t *dd, int *at_start, int *at_end)
     *at_end   = dd->comm->nat[ddnatCON];
 }
 
-void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[])
+void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle_t wcycle)
 {
+    wallcycle_start(wcycle, ewcMOVEX);
+
     int                    nzone, nat_tot, n, d, p, i, j, at0, at1, zone;
     int                   *index, *cgindex;
     gmx_domdec_comm_t     *comm;
@@ -499,10 +501,14 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[])
         }
         nzone += nzone;
     }
+
+    wallcycle_stop(wcycle, ewcMOVEX);
 }
 
-void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift)
+void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle_t wcycle)
 {
+    wallcycle_start(wcycle, ewcMOVEF);
+
     int                    nzone, nat_tot, n, d, p, i, j, at0, at1, zone;
     int                   *index, *cgindex;
     gmx_domdec_comm_t     *comm;
@@ -620,6 +626,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift)
         }
         nzone /= 2;
     }
+    wallcycle_stop(wcycle, ewcMOVEF);
 }
 
 void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
@@ -9804,7 +9811,7 @@ void dd_partition_system(FILE                *fplog,
 
     if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {
-        dd_move_x(dd, state_local->box, as_rvec_array(state_local->x.data()));
+        dd_move_x(dd, state_local->box, as_rvec_array(state_local->x.data()), nullWallcycle);
         write_dd_pdb("dd_dump", step, "dump", top_global, cr,
                      -1, as_rvec_array(state_local->x.data()), state_local->box);
     }
