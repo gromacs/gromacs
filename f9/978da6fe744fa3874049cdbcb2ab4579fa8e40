@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Code-Review+1: Berk Hess <hess@kth.se>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Mon, 18 Dec 2017 22:43:43 +0100
+Reviewed-on: https://gerrit.gromacs.org/7355
+Project: gromacs
+Branch: refs/heads/release-2018
