@@ -442,9 +442,9 @@ int Mdrunner::mdrunner()
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    gmx::MDModules mdModules;
-    t_inputrec     inputrecInstance;
-    t_inputrec    *inputrec = &inputrecInstance;
+    std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
+    t_inputrec                      inputrecInstance;
+    t_inputrec                     *inputrec = &inputrecInstance;
     snew(mtop, 1);
 
     if (mdrunOptions.continuationOptions.appendFiles)
@@ -677,7 +677,7 @@ int Mdrunner::mdrunner()
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     // TODO: Error handling
-    mdModules.assignOptionsToModules(*inputrec->params, nullptr);
+    mdModules->assignOptionsToModules(*inputrec->params, nullptr);
 
     if (fplog != nullptr)
     {
@@ -1109,7 +1109,7 @@ int Mdrunner::mdrunner()
     {
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
-        fr->forceProviders = mdModules.initForceProviders();
+        fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
@@ -1303,7 +1303,7 @@ int Mdrunner::mdrunner()
                                      oenv,
                                      mdrunOptions,
                                      vsite, constr,
-                                     mdModules.outputProvider(),
+                                     mdModules->outputProvider(),
                                      inputrec, mtop,
                                      fcd,
                                      globalState.get(),
@@ -1356,6 +1356,12 @@ int Mdrunner::mdrunner()
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
+
+    /* Call the destructor of MDModules with ForceProviders before cudaDeviceReset()
+     * is called in free_gpu().
+     * This way, a force provider that uses the GPU can clean up properly
+     * before the GPU context gets destroyed */
+    mdModules = nullptr;
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, cr);
