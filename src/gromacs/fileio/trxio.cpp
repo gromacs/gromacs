@@ -662,7 +662,10 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
     {
         fr->bDouble   = sh.bDouble;
         fr->natoms    = sh.natoms;
-        fr->bStep     = TRUE;
+        if (sh.step > 0)
+        {
+            fr->bStep     = TRUE;
+        }
         fr->step      = sh.step;
         fr->bTime     = TRUE;
         fr->time      = sh.t;
