@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
@@ -81,6 +80,7 @@ struct gmx_domdec_zones_t;
 struct MdrunOptions;
 struct t_commrec;
 struct t_inputrec;
+struct gmx_wallcycle;
 class t_state;
 
 namespace gmx
@@ -287,14 +287,14 @@ void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
 float dd_pme_f_ratio(struct gmx_domdec_t *dd);
 
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
-void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
+void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle);
 
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift);
+void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle);
 
 /*! \brief Communicate a real for each atom to the neighboring cells. */
 void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);

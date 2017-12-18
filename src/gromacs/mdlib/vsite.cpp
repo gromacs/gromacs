@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1615,8 +1615,9 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr)
+                    t_commrec *cr, gmx_wallcycle *wcycle)
 {
+    wallcycle_start(wcycle, ewcVSITESPREAD);
     const bool useDomdec = vsite->useDomdec;
     GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
 
@@ -1817,6 +1818,8 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(idef->il, F_VSITE4FD));
     inc_nrnb(nrnb, eNR_VSITE4FDN, vsite_count(idef->il, F_VSITE4FDN));
     inc_nrnb(nrnb, eNR_VSITEN,   vsite_count(idef->il, F_VSITEN));
+
+    wallcycle_stop(wcycle, ewcVSITESPREAD);
 }
 
 /*! \brief Returns the an array with charge-group indices for each atom
