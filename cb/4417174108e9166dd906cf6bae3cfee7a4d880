@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Paul Bauer <paul.bauer.q@gmail.com>
+Code-Review+2: Aleksei Iupinov <a.yupinov@gmail.com>
+Submitted-by: Aleksei Iupinov <a.yupinov@gmail.com>
+Submitted-at: Mon, 18 Dec 2017 10:51:45 +0100
+Reviewed-on: https://gerrit.gromacs.org/7359
+Project: gromacs
+Branch: refs/heads/release-2018
