@@ -204,7 +204,7 @@ void gmx_pme_send_parameters(struct t_commrec *cr,
 void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir,
-                              gmx_int64_t step);
+                              gmx_int64_t step, gmx_wallcycle_t wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(struct t_commrec *cr);
