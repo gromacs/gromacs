@@ -534,7 +534,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
 
 int gmx_pmeonly(struct gmx_pme_t *pme,
                 t_commrec *cr,    t_nrnb *mynrnb,
-                gmx_wallcycle_t wcycle,
+                gmx_wallcycle  *wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 t_inputrec *ir, PmeRunMode runMode)
 {

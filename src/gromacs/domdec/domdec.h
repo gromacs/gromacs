@@ -62,7 +62,6 @@
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -82,6 +81,7 @@ struct t_forcerec;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
+struct gmx_wallcycle;
 class t_state;
 
 namespace gmx
@@ -288,14 +288,14 @@ void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
 float dd_pme_f_ratio(struct gmx_domdec_t *dd);
 
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
-void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
+void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle);
 
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift);
+void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle);
 
 /*! \brief Communicate a real for each atom to the neighboring cells. */
 void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);
@@ -326,7 +326,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_vsite_t         *vsite,
                          struct gmx_constr   *constr,
                          t_nrnb              *nrnb,
-                         gmx_wallcycle_t      wcycle,
+                         gmx_wallcycle       *wcycle,
                          gmx_bool             bVerbose);
 
 /*! \brief Reset all the statistics and counters for total run counting */

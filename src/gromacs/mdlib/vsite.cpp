@@ -55,6 +55,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -63,7 +64,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
-
 
 /* The strategy used here for assigning virtual sites to (thread-)tasks
  * is as follows:
@@ -1617,8 +1617,9 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr)
+                    t_commrec *cr, gmx_wallcycle *wcycle)
 {
+    wallcycle_start(wcycle, ewcVSITESPREAD);
     const bool useDomdec = vsite->useDomdec;
     GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
 
@@ -1819,6 +1820,8 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
     inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(idef->il, F_VSITE4FD));
     inc_nrnb(nrnb, eNR_VSITE4FDN, vsite_count(idef->il, F_VSITE4FDN));
     inc_nrnb(nrnb, eNR_VSITEN,   vsite_count(idef->il, F_VSITEN));
+
+    wallcycle_stop(wcycle, ewcVSITESPREAD);
 }
 
 /*! \brief Returns the an array with charge-group indices for each atom
