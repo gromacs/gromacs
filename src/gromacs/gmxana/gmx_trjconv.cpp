@@ -1381,7 +1381,7 @@ int gmx_trjconv(int argc, char *argv[])
             /* Main loop over frames */
             do
             {
-                if (!fr.bStep)
+                if (fr.bStep)
                 {
                     /* set the step */
                     fr.step = newstep;
