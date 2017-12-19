@@ -146,17 +146,12 @@ Performance and Run Control
 ``GMX_CUDA_NB_TAB_EWALD``
         force the use of tabulated Ewald kernels. Should be used only for benchmarking.
 
-``GMX_CUDA_STREAMSYNC``
-        force the use of cudaStreamSynchronize on ECC-enabled GPUs, which leads
-        to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
-        Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
-
 ``GMX_DISABLE_CUDALAUNCH``
         disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
         Should only be used for benchmarking purposes.
 
 ``GMX_DISABLE_CUDA_TIMING``
-        Disables GPU timing of CUDA tasks; synonymous with ``GMX_DISABLE_GPU_TIMING``.
+        Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
@@ -290,11 +285,6 @@ Performance and Run Control
 ``GMX_NO_LJ_COMB_RULE``
         force the use of LJ paremeter lookup instead of using combination rules
         in the non-bonded kernels.
-
-``GMX_NO_CUDA_STREAMSYNC``
-        the opposite of ``GMX_CUDA_STREAMSYNC``. Disables the use of the
-        standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
-        ealier than v5.0 with ECC-enabled GPUs.
 
 ``GMX_NO_INT``, ``GMX_NO_TERM``, ``GMX_NO_USR1``
         disable signal handlers for SIGINT,
