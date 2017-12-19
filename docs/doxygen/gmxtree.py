@@ -766,8 +766,6 @@ class GromacsTree(object):
         relpath = self._get_rel_path(rootpath)
         self._dirs[relpath] = Directory(rootpath, relpath, None)
         for dirpath, dirnames, filenames in os.walk(rootpath):
-            if 'contrib' in dirnames:
-                dirnames.remove('contrib')
             if 'refdata' in dirnames:
                 dirnames.remove('refdata')
             currentdir = self._dirs[self._get_rel_path(dirpath)]

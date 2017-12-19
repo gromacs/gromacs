@@ -10,8 +10,7 @@ FILE_PATTERNS          = *.c *.cpp *.h *.md
 # FILE_PATTERNS         += *.cu *.cuh
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
-EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
-                         @CMAKE_SOURCE_DIR@/src/external \
+EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_blas \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_lapack \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
