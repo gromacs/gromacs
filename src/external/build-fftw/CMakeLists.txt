@@ -93,12 +93,12 @@ if (TARGET_HOST)
 endif()
 
 # Machinery for running the external project
-set(EXTERNAL_FFTW_VERSION 3.3.5)
+set(EXTERNAL_FFTW_VERSION 3.3.7)
 # cmake make eats slashes //// -> //
 set(GMX_BUILD_OWN_FFTW_URL
     "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH
     "URL from where to download fftw (use an absolute path when offline, adjust GMX_BUILD_OWN_FFTW_MD5 if downloading other version than ${EXTERNAL_FFTW_VERSION})")
-set(GMX_BUILD_OWN_FFTW_MD5 6cc08a3b9c7ee06fdd5b9eb02e06f569 CACHE STRING
+set(GMX_BUILD_OWN_FFTW_MD5 0d5915d7d39b3253c1cc05030d79ac47 CACHE STRING
     "Expected MD5 hash for the file at GMX_BUILD_OWN_FFTW_URL")
 mark_as_advanced(GMX_BUILD_OWN_FFTW_URL GMX_BUILD_OWN_FFTW_MD5)
 
