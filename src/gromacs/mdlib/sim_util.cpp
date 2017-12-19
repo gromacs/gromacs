@@ -2724,10 +2724,14 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
        communication deadlocks, we always do the communication for the
        report, even if we've decided not to write the report, because
        how long it takes to finish the run is not important when we've
-       decided not to report on the simulation performance. */
-    bool    printReport = SIMMASTER(cr);
+       decided not to report on the simulation performance.
 
-    if (!walltime_accounting_get_valid_finish(walltime_accounting))
+       Further, we only report performance for dynamical integrators,
+       because those are the only ones for which we plan to
+       consider doing any optimizations. */
+    bool printReport = EI_DYNAMICS(inputrec->eI) && SIMMASTER(cr);
+
+    if (printReport && !walltime_accounting_get_valid_finish(walltime_accounting))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText("Simulation ended prematurely, no performance report will be written.");
         printReport = false;
