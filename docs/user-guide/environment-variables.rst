@@ -1,3 +1,7 @@
+.. NOTE: Below is a useful bash one-liner to verify whether there are leftover variables
+..       in this file.
+.. ( export INPUT_FILE='docs/user-guide/environment-variables.rst' GIT_PAGER="cat "; for s in $(grep '^`'  $INPUT_FILE | sed 's/`//g' | sed 's/,/ /g'); do count=$(git grep $s | grep -v $INPUT_FILE | wc -l); [ $count -eq 0 ] && printf "%-30s%s\n" $s $count; done ; )
+
 Environment Variables
 =====================
 
@@ -51,9 +55,6 @@ Output Control
         as the |Gromacs| tool (which might not be what you want).
         Be careful not to use a command which blocks the terminal
         (e.g. ``vi``), since multiple instances might be run.
-
-``GMX_VIRIAL_TEMPERATURE``
-        print virial temperature energy term
 
 ``GMX_LOG_BUFFER``
         the size of the buffer for file I/O. When set
@@ -146,17 +147,12 @@ Performance and Run Control
 ``GMX_CUDA_NB_TAB_EWALD``
         force the use of tabulated Ewald kernels. Should be used only for benchmarking.
 
-``GMX_CUDA_STREAMSYNC``
-        force the use of cudaStreamSynchronize on ECC-enabled GPUs, which leads
-        to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
-        Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
-
 ``GMX_DISABLE_CUDALAUNCH``
         disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
         Should only be used for benchmarking purposes.
 
 ``GMX_DISABLE_CUDA_TIMING``
-        Disables GPU timing of CUDA tasks; synonymous with ``GMX_DISABLE_GPU_TIMING``.
+        Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
@@ -291,11 +287,6 @@ Performance and Run Control
         force the use of LJ paremeter lookup instead of using combination rules
         in the non-bonded kernels.
 
-``GMX_NO_CUDA_STREAMSYNC``
-        the opposite of ``GMX_CUDA_STREAMSYNC``. Disables the use of the
-        standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
-        ealier than v5.0 with ECC-enabled GPUs.
-
 ``GMX_NO_INT``, ``GMX_NO_TERM``, ``GMX_NO_USR1``
         disable signal handlers for SIGINT,
         SIGTERM, and SIGUSR1, respectively.
@@ -309,8 +300,8 @@ Performance and Run Control
         fast enough to complete the non-bonded calculations while the CPU does bonded force and PME computation.
         Freezing the particles will be required to stop the system blowing up.
 
-``GMX_NO_PULLVIR``
-        when set, do not add virial contribution to COM pull forces.
+``GMX_PULL_PARTICIPATE_ALL``
+        disable the default heuristic for when to use a separate pull MPI communicator (at >=32 ranks).
 
 ``GMX_NOPREDICT``
         shell positions are not predicted.
@@ -324,9 +315,10 @@ Performance and Run Control
         to a value of 10. Setting this environment variable to any other integer value overrides this hard-coded
         value.
 
-``GMX_PME_NTHREADS``
-        set the number of OpenMP or PME threads (overrides the number guessed by
-        :ref:`gmx mdrun`.
+``GMX_PME_NUM_THREADS``
+        set the number of OpenMP or PME threads; overrides the default set by
+        :ref:`gmx mdrun`; can be used instead of the `-npme` command line option,
+        also useful to set heterogeneous per-process/-node thread count.
 
 ``GMX_PME_P3M``
         use P3M-optimized influence function instead of smooth PME B-spline interpolation.
@@ -456,11 +448,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         simplicity of stepping in a kernel and see what is happening.
 
 ``GMX_OCL_DISABLE_I_PREFETCH``
-        Disables i-atom data (type or LJ parameter) prefetch allowig
+        Disables i-atom data (type or LJ parameter) prefetch allowing
         testing.
 
 ``GMX_OCL_ENABLE_I_PREFETCH``
-        Enables i-atom data (type or LJ parameter) prefetch allowig
+        Enables i-atom data (type or LJ parameter) prefetch allowing
         testing on platforms where this behavior is not default.
 
 ``GMX_OCL_NB_ANA_EWALD``
@@ -519,7 +511,7 @@ Analysis and Core Functions
         sets the maximum number of residues to be renumbered by
         :ref:`gmx grompp`. A value of -1 indicates all residues should be renumbered.
 
-``GMX_FFRTP_TER_RENAME``
+``GMX_NO_FFRTP_TER_RENAME``
         Some force fields (like AMBER) use specific names for N- and C-
         terminal residues (NXXX and CXXX) as :ref:`rtp` entries that are normally renamed. Setting
         this environment variable disables this renaming.
