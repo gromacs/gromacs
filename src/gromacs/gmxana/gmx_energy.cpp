@@ -1655,7 +1655,7 @@ int gmx_energy(int argc, char *argv[])
     };
     static gmx_bool    bSum    = FALSE, bFee = FALSE, bPrAll = FALSE, bFluct = FALSE, bDriftCorr = FALSE;
     static gmx_bool    bDp     = FALSE, bMutot = FALSE, bOrinst = FALSE, bOvec = FALSE, bFluctProps = FALSE;
-    static int         skip    = 0, nmol = 1, nbmin = 5, nbmax = 5;
+    static int         nmol    = 1, nbmin = 5, nbmax = 5;
     static real        reftemp = 300.0, ezero = 0;
     t_pargs            pa[]    = {
         { "-fee",   FALSE, etBOOL,  {&bFee},
@@ -1674,8 +1674,6 @@ int gmx_energy(int argc, char *argv[])
           "Maximum number of blocks for error estimate" },
         { "-mutot", FALSE, etBOOL, {&bMutot},
           "Compute the total dipole moment from the components" },
-        { "-skip", FALSE, etINT,  {&skip},
-          "Skip number of frames between data points" },
         { "-aver", FALSE, etBOOL, {&bPrAll},
           "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
         { "-nmol", FALSE, etINT,  {&nmol},
@@ -1706,7 +1704,7 @@ int gmx_energy(int argc, char *argv[])
     t_enxframe        *frame, *fr = nullptr;
     int                cur = 0;
 #define NEXT (1-cur)
-    int                nre, teller, nfr;
+    int                nre, nfr;
     gmx_int64_t        start_step;
     real               start_t;
     gmx_bool           bDHDL;
@@ -1872,7 +1870,6 @@ int gmx_energy(int argc, char *argv[])
     snew(edat.s, nset);
 
     /* Initiate counters */
-    teller       = 0;
     bFoundStart  = FALSE;
     start_step   = 0;
     start_t      = 0;
@@ -2000,69 +1997,62 @@ int gmx_energy(int argc, char *argv[])
                 time[edat.nframes] = fr->t;
                 edat.nframes++;
             }
-            /*
-             * Printing time, only when we do not want to skip frames
-             */
-            if (!skip || teller % skip == 0)
+            if (bDHDL)
             {
-                if (bDHDL)
-                {
-                    do_dhdl(fr, ir, &fp_dhdl, opt2fn("-odh", NFILE, fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
-                }
+                do_dhdl(fr, ir, &fp_dhdl, opt2fn("-odh", NFILE, fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
+            }
 
-                /*******************************************
-                 * E N E R G I E S
-                 *******************************************/
-                else
+            /*******************************************
+             * E N E R G I E S
+             *******************************************/
+            else
+            {
+                if (fr->nre > 0)
                 {
-                    if (fr->nre > 0)
+                    if (bPrAll)
                     {
-                        if (bPrAll)
-                        {
-                            /* We skip frames with single points (usually only the first frame),
-                             * since they would result in an average plot with outliers.
-                             */
-                            if (fr->nsum > 1)
-                            {
-                                print_time(out, fr->t);
-                                print1(out, bDp, fr->ener[set[0]].e);
-                                print1(out, bDp, fr->ener[set[0]].esum/fr->nsum);
-                                print1(out, bDp, std::sqrt(fr->ener[set[0]].eav/fr->nsum));
-                                fprintf(out, "\n");
-                            }
-                        }
-                        else
+                        /* We skip frames with single points (usually only the first frame),
+                         * since they would result in an average plot with outliers.
+                         */
+                        if (fr->nsum > 1)
                         {
                             print_time(out, fr->t);
-                            if (bSum)
-                            {
-                                sum = 0;
-                                for (i = 0; i < nset; i++)
-                                {
-                                    sum += fr->ener[set[i]].e;
-                                }
-                                print1(out, bDp, sum/nmol-ezero);
-                            }
-                            else
-                            {
-                                for (i = 0; (i < nset); i++)
-                                {
-                                    if (bIsEner[i])
-                                    {
-                                        print1(out, bDp, (fr->ener[set[i]].e)/nmol-ezero);
-                                    }
-                                    else
-                                    {
-                                        print1(out, bDp, fr->ener[set[i]].e);
-                                    }
-                                }
-                            }
+                            print1(out, bDp, fr->ener[set[0]].e);
+                            print1(out, bDp, fr->ener[set[0]].esum/fr->nsum);
+                            print1(out, bDp, std::sqrt(fr->ener[set[0]].eav/fr->nsum));
                             fprintf(out, "\n");
                         }
                     }
+                    else
+                    {
+                        print_time(out, fr->t);
+                        if (bSum)
+                        {
+                            sum = 0;
+                            for (i = 0; i < nset; i++)
+                            {
+                                sum += fr->ener[set[i]].e;
+                            }
+                            print1(out, bDp, sum/nmol-ezero);
+                        }
+                        else
+                        {
+                            for (i = 0; (i < nset); i++)
+                            {
+                                if (bIsEner[i])
+                                {
+                                    print1(out, bDp, (fr->ener[set[i]].e)/nmol-ezero);
+                                }
+                                else
+                                {
+                                    print1(out, bDp, fr->ener[set[i]].e);
+                                }
+                            }
+                        }
+                        fprintf(out, "\n");
+                    }
                 }
             }
-            teller++;
         }
     }
     while (bCont && (timecheck == 0));
