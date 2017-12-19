@@ -157,11 +157,8 @@ included at the root level.  All actual code is in subdirectories:
   parts of this code are included in the build.
   See :doc:`build-system` for some explanation about how the code in this
   directory is used.
-:file:`src/contrib/`
-  Contains collection of less well maintained code that may or may
-  not compile.  It is not included in the build.
-:file:`src/contrib/fftw/`
-  As an exception to the above, this folder contains the build system code for
+:file:`src/external/build-fftw/`
+  This folder contains the build system code for
   downloading and building FFTW to be included into :file:`libgromacs`.
 
 When compiling, the include search path is set to :file:`src/`.

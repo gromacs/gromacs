@@ -51,9 +51,6 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/nb_kernel_Elec*.c
         ${CMAKE_SOURCE_DIR}/src/gromacs/linearalgebra/gmx_blas/*.c
         ${CMAKE_SOURCE_DIR}/src/gromacs/linearalgebra/gmx_lapack/*.c
-        ${CMAKE_SOURCE_DIR}/src/contrib/*.c
-        ${CMAKE_SOURCE_DIR}/src/contrib/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/contrib/*.cu
         ${CMAKE_SOURCE_DIR}/src/external/*.c
         ${CMAKE_SOURCE_DIR}/src/external/*.cpp
         ${CMAKE_SOURCE_DIR}/src/external/*.cu
