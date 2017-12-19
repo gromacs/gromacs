@@ -811,7 +811,10 @@ real dd_choose_grid(FILE *fplog,
                 cr->npmenodes = nPmeRanks;
                 if (fplog)
                 {
-                    fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
+                    fprintf(fplog, "Using %d separate PME ranks\n", cr->npmenodes);
+                    // TODO: there was a ", per user request" note here, but it's not correct anymore,
+                    // as with GPUs decision about nPmeRanks can be made in runner() as well.
+                    // Consider a single spot for setting nPmeRanks.
                 }
             }
         }
