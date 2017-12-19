@@ -38,7 +38,6 @@ scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
 share/template/template.cpp             filter=copyright
 share/template/README.cmakein           !filter
-src/contrib/*                           -filter -gmx-doxygen
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter

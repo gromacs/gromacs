@@ -72,7 +72,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
             message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) on Windows")
         endif()
 
-        add_subdirectory(src/contrib/fftw)
+        add_subdirectory(src/external/build_own_fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
         # libgmxfftw is always built static, so libgromacs does not
         # have a dependency on anything, so PKG_FFT should be empty
