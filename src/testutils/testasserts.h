@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -486,6 +486,12 @@ relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
     return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
 
+namespace
+{
+//! Default tolerance in ULPs for two floating-point values to compare equal.
+static gmx_uint64_t g_defaultUlpTolerance = 4;
+}
+
 /*! \brief
  * Returns the default tolerance for comparing `real` numbers.
  *
@@ -493,7 +499,23 @@ relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
  */
 static inline FloatingPointTolerance defaultRealTolerance()
 {
-    return relativeToleranceAsUlp(1.0, 4);
+    return relativeToleranceAsUlp(1.0, g_defaultUlpTolerance);
+}
+
+
+/*! \brief
+ * Returns the default tolerance for comparing single-precision numbers when
+ * compared by \Gromacs built in either precision mode.
+ *
+ * This permits a checker compiled with any \Gromacs precision to compare
+ * equal or not in the same way.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance defaultFloatTolerance()
+{
+    return relativeToleranceAsPrecisionDependentUlp
+               (1.0, g_defaultUlpTolerance, g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS));
 }
 
 /*! \name Assertions for floating-point comparison

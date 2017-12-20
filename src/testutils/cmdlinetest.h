@@ -63,6 +63,7 @@ class ICommandLineOptionsModule;
 namespace test
 {
 
+class FloatingPointTolerance;
 class IFileMatcherSettings;
 class ITextBlockMatcherSettings;
 class TestFileManager;
@@ -443,7 +444,15 @@ class CommandLineTestBase : public ::testing::Test
          * file contents.
          */
         TestReferenceChecker rootChecker();
-
+        /*! \brief
+         * Sets the tolerance for floating-point comparisons.
+         *
+         * All following floating-point comparisons using the checker will use
+         * the new tolerance.
+         *
+         * Does not throw.
+         */
+        void setDefaultTolerance(const FloatingPointTolerance &tolerance);
         /*! \brief
          * Checks the output of writeHelp() against reference data.
          */
