@@ -57,8 +57,12 @@ namespace test
 GpuTest::GpuTest()
 {
     snew(gpuInfo_, 1);
-    char errorString[STRLEN];
-    detect_gpus(gpuInfo_, errorString);
+    std::string errorString;
+    if (canDetectGpus(&errorString))
+    {
+        findGpus(gpuInfo_);
+    }
+    // Failing to find valid GPUs does not require further action
 }
 
 GpuTest::~GpuTest()
