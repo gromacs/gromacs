@@ -100,30 +100,18 @@ static const int min_atoms_per_gpu        = 900;
 /* TODO choose nthreads_omp based on hardware topology
    when we have a hardware topology detection library */
 /* First we consider the case of no MPI (1 MPI rank).
- * In general, when running up to 8 threads, OpenMP should be faster.
- * Note: on AMD Bulldozer we should avoid running OpenMP over two dies.
- * On Intel>=Nehalem running OpenMP on a single CPU is always faster,
- * even on two CPUs it's usually faster (but with many OpenMP threads
- * it could be faster not to use HT, currently we always use HT).
- * On Nehalem/Westmere we want to avoid running 16 threads over
- * two CPUs with HT, so we need a limit<16; thus we use 12.
- * A reasonable limit for Intel Sandy and Ivy bridge,
- * not knowing the topology, is 16 threads.
- * Below we check for Intel and AVX, which for now includes
- * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
- * model numbers we ensure also future Intel CPUs are covered.
+ * With a few threads within a single die, OpenMP only is always faster.
+ * The worst case is likely AMD Zen, where OpenMP over more than 1 CCX
+ * is slow. 1 CCX is usually 4 cores and 8 hardware threads.
+ * Since we should be consistent with nthreads_omp_mpi_ok_max we use
+ * a value of 8 hardware threads (although we would prefer 4 cores).
  */
-const int nthreads_omp_faster_default   =  8;
-const int nthreads_omp_faster_Nehalem   = 12;
-const int nthreads_omp_faster_Intel_AVX = 16;
-const int nthreads_omp_faster_AMD_Ryzen = 16;
-/* For CPU only runs the fastest options are usually MPI or OpenMP only.
- * With one GPU, using MPI only is almost never optimal, so we need to
- * compare running pure OpenMP with combined MPI+OpenMP. This means higher
- * OpenMP threads counts can still be ok. Multiplying the numbers above
- * by a factor of 2 seems to be a good estimate.
+constexpr int c_numThreadsOpenmpOnlyAlwaysFaster = 8;
+/* For larger number of cores, we use a threshold based on the number
+ * of atoms per physical cores: 8000 atoms per core seems reasonable
+ * for Intel Haswell, Broadwell and Skylake and AMD Zen.
  */
-const int nthreads_omp_faster_gpu_fac   =  2;
+constexpr int c_numAtomsPerCoreOpenmpOnlyFaster = 8000;
 
 /* This is the case with MPI (2 or more MPI PP ranks).
  * By default we will terminate with a fatal error when more than 8
@@ -136,6 +124,7 @@ const int nthreads_omp_faster_gpu_fac   =  2;
 #if GMX_OPENMP && GMX_MPI
 const int nthreads_omp_mpi_ok_max              =  8;
 const int nthreads_omp_mpi_ok_min_cpu          =  1;
+static_assert(c_numThreadsOpenmpOnlyAlwaysFaster >= nthreads_omp_mpi_ok_max, "For consistency the OpenMP only case should not return less than MPI+OpenMP");
 #endif
 const int nthreads_omp_mpi_ok_min_gpu          =  2;
 const int nthreads_omp_mpi_target_max          =  6;
@@ -145,44 +134,30 @@ const int nthreads_omp_mpi_target_max          =  6;
 /*! \brief Returns the maximum OpenMP thread count for which using a single MPI rank
  * should be faster than using multiple ranks with the same total thread count.
  */
-static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
+static int nthreads_omp_faster(const gmx::HardwareTopology &hwTop,
+                               int                          numAtomsInSystem)
 {
-    int nth;
+    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
+    {
+        int numThreadsPerCore =
+            hwTop.machine().logicalProcessorCount/hwTop.numberOfCores();
+        int maxNumCoresToUse  =
+            numAtomsInSystem/c_numAtomsPerCoreOpenmpOnlyFaster;
 
-    if (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel &&
-        cpuInfo.feature(gmx::CpuInfo::Feature::X86_Avx))
-    {
-        nth = nthreads_omp_faster_Intel_AVX;
-    }
-    else if (gmx::cpuIsX86Nehalem(cpuInfo))
-    {
-        // Intel Nehalem
-        nth = nthreads_omp_faster_Nehalem;
-    }
-    else if (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() >= 23)
-    {
-        // AMD Ryzen
-        nth = nthreads_omp_faster_AMD_Ryzen;
+        return std::max(c_numThreadsOpenmpOnlyAlwaysFaster,
+                        maxNumCoresToUse*numThreadsPerCore);
     }
     else
     {
-        nth = nthreads_omp_faster_default;
+        return c_numThreadsOpenmpOnlyAlwaysFaster;
     }
-
-    if (bUseGPU)
-    {
-        nth *= nthreads_omp_faster_gpu_fac;
-    }
-
-    nth = std::min(nth, GMX_OPENMP_MAX_THREADS);
-
-    return nth;
 }
 
 /*! \brief Returns that maximum OpenMP thread count that passes the efficiency check */
-gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
-                                                 const gmx::CpuInfo  &cpuInfo,
-                                                 gmx_bool             bUseGPU)
+gmx_unused static int
+nthreads_omp_efficient_max(int gmx_unused               nrank,
+                           const gmx::HardwareTopology &hwTop,
+                           int                          numAtomsInSystem)
 {
 #if GMX_OPENMP && GMX_MPI
     if (nrank > 1)
@@ -192,7 +167,7 @@ gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
     else
 #endif
     {
-        return nthreads_omp_faster(cpuInfo, bUseGPU);
+        return nthreads_omp_faster(hwTop, numAtomsInSystem);
     }
 }
 
@@ -202,10 +177,11 @@ gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
 gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                                    const gmx_hw_opt_t  &hw_opt,
                                                    int                  nthreads_tot,
-                                                   int                  ngpu)
+                                                   int                  ngpu,
+                                                   int                  numAtomsInSystem)
 {
-    int                 nrank;
-    const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
+    int                          nrank;
+    const gmx::HardwareTopology &hwTop = *hwinfo->hardwareTopology;
 
     GMX_RELEASE_ASSERT(nthreads_tot > 0, "There must be at least one thread per rank");
 
@@ -243,7 +219,7 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
             nrank = nthreads_tot;
         }
-        else if (nthreads_tot > nthreads_omp_faster(cpuInfo, ngpu > 0) ||
+        else if (nthreads_tot > nthreads_omp_faster(hwTop, numAtomsInSystem) ||
                  (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max))
         {
             /* The high OpenMP thread count will likely result in sub-optimal
@@ -273,7 +249,7 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     }
     else
     {
-        if (nthreads_tot <= nthreads_omp_faster(cpuInfo, ngpu > 0))
+        if (nthreads_tot <= nthreads_omp_faster(hwTop, numAtomsInSystem))
         {
             /* Use pure OpenMP parallelization */
             nrank = 1;
@@ -354,7 +330,6 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int                          min_atoms_per_mpi_rank;
 
-    const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     if (pmeOnGpu)
@@ -430,7 +405,8 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     }
 
     nrank =
-        get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
+        get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu,
+                                     mtop->natoms);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
@@ -519,7 +495,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
              */
             int  nt_omp_max;
 
-            nt_omp_max = nthreads_omp_efficient_max(nrank, cpuInfo, ngpu >= 1);
+            nt_omp_max = nthreads_omp_efficient_max(nrank, hwTop, mtop->natoms);
 
             if (nrank*nt_omp_max < hwinfo->nthreads_hw_avail)
             {
@@ -557,9 +533,6 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     /* This function should be called after thread-MPI (when configured) and
      * OpenMP have been initialized. Check that here.
      */
-#if GMX_THREAD_MPI
-    GMX_RELEASE_ASSERT(nthreads_omp_faster_default >= nthreads_omp_mpi_ok_max, "Inconsistent OpenMP thread count default values");
-#endif
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1, "Must have at least one OpenMP thread");
 
     nth_omp_min = gmx_omp_nthreads_get(emntDefault);
