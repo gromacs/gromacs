@@ -226,6 +226,11 @@ TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
 
 TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
 {
+    if (!this->haveValidGpus())
+    {
+        return;
+    }
+
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::CanBePinned);
     this->fillInput(&input);
@@ -246,6 +251,11 @@ bool isPinned(const VectorType &v)
 
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 {
+    if (!this->haveValidGpus())
+    {
+        return;
+    }
+
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::CanBePinned);
     EXPECT_FALSE(isPinned(input));
