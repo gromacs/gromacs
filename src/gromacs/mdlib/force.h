@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
+#include <gromacs/essentialdynamics/edsam.h>
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/vsite.h"
@@ -177,6 +178,25 @@ void do_force(FILE *log, t_commrec *cr,
  *
  * f is always required.
  */
+
+void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+                         t_inputrec *inputrec,
+                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         gmx_localtop_t *top,
+                         gmx_groups_t gmx_unused *groups,
+                         matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
+                         gmx::PaddedArrayRef<gmx::RVec> force,
+                         tensor vir_force,
+                         t_mdatoms *mdatoms,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         real *lambda, t_graph *graph,
+                         t_forcerec *fr, interaction_const_t *ic,
+                         gmx_vsite_t *vsite, rvec mu_tot,
+                         double t, gmx_edsam_t ed,
+                         gmx_bool bBornRadii,
+                         int flags,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 void ns(FILE              *fplog,
         t_forcerec        *fr,

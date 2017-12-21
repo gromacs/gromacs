@@ -279,6 +279,8 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
+
+
 /*! \libinternal
     \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
@@ -943,6 +945,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                     "but we are proceeding anyway!");
         }
     }
+    // #TODO: Looks like a place to initialize the Schedule object and introduce selection of the right schedule.
+#ifdef SCHEDULERPATH
+    {
+        AbstractNBSchedule     nbSchedule;
+
+        MDLoopSharedPrimitives sp(&step, &t, &bBornRadii, &ddOpenBalanceRegion, &ddCloseBalanceRegion);
+
+        // Call a selector function to automatically pick a schedule in the future
+
+        nbSchedule = *(new SingleNodeNBSchedule());
+
+        nbSchedule.init(fplog, cr, ir, nrnb, wcycle, top, groups, state, &f,
+                        &force_vir, mdatoms, enerd, fcd, graph, fr, vsite, &mu_tot, ed, &sp);
+    }
+#endif SCHEDULERPATH
 
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
@@ -1215,6 +1232,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 ir->awh->updateHistory(state_global->awhHistory.get());
             }
 
+#ifdef SCHEDULERPATH
+
+            nbSchedule.computeNextStep((bNS ? GMX_FORCE_NS : 0) | force_flags);
+
+#elseif
+
             /* The coordinates (x) are shifted (to get whole molecules)
              * in do_force.
              * This is parallellized as well, and does communication too.
@@ -1227,6 +1250,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                      fr, vsite, mu_tot, t, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
+#endif SCHEDULERPATH
+
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
@@ -2021,4 +2046,99 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     return 0;
+}
+/*
+ * Base class default constructor
+ */
+gmx::AbstractNBSchedule::AbstractNBSchedule() :
+    log_(nullptr), cr_(nullptr), inputrec_(nullptr), nrnb_(nullptr), wcycle_(nullptr),
+    top_(nullptr), groups_(nullptr), state_(nullptr), force_(nullptr), vir_force_(nullptr),
+    mdatoms_(nullptr), enerd_(nullptr), fcd_(nullptr), graph_(nullptr), fr_(nullptr),
+    vsite_(nullptr), mu_tot_(nullptr), ed_(nullptr), sp_(nullptr)
+{
+    // NULL Declaration
+}
+
+/*
+ * Base class destructor
+ */
+gmx::AbstractNBSchedule::~AbstractNBSchedule()
+{
+    delete log_;
+    delete cr_;
+    delete inputrec_;
+    delete nrnb_;
+    delete wcycle_;
+    delete top_;
+    delete groups_;
+    delete state_;
+    delete force_;
+    delete vir_force_;
+    delete mdatoms_;
+    delete enerd_;
+    delete fcd_;
+    delete graph_;
+    delete fr_;
+    delete vsite_;
+    delete mu_tot_;
+    delete ed_;
+    delete sp_;
+}
+
+void gmx::AbstractNBSchedule::init(FILE *fplog, t_commrec *cr, t_inputrec *inputrec, t_nrnb *nrnb,
+                                   gmx_wallcycle_t wcycle, gmx_localtop_t *top, gmx_groups_t *groups,
+                                   t_state *state, gmx::PaddedArrayRef<gmx::RVec> *force, tensor *vir_force,
+                                   t_mdatoms *mdatoms, gmx_enerdata_t *enerd, t_fcdata *fcd, t_graph *graph, t_forcerec *fr,
+                                   gmx_vsite_t *vsite, rvec *mu_tot, gmx_edsam_t ed, MDLoopSharedPrimitives *sp)
+
+{
+    log_       = fplog;
+    cr_        = cr;
+    inputrec_  = inputrec;
+    nrnb_      = nrnb;
+    wcycle_    = wcycle;
+    top_       = top;
+    groups_    = groups;
+    state_     = state;
+    force_     = force;
+    vir_force_ = vir_force;
+    mdatoms_   = mdatoms;
+    enerd_     = enerd;
+    fcd_       = fcd;
+    graph_     = graph;
+    fr_        = fr;
+    vsite_     = vsite;
+    mu_tot_    = mu_tot;
+    ed_        = ed;
+    sp_        = sp;
+}
+
+void gmx::SingleNodeNBSchedule::computeStep(int flags)
+{
+    GMX_ASSERT(state_->x.size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "coordinates should be padded");
+    GMX_ASSERT(force_->size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "force should be padded");
+
+    do_force_cutsVERLET(log_, cr_, inputrec_,
+                        *(sp_->step_), nrnb_, wcycle_,
+                        top_, groups_,
+                        state_->box, state_->x, &(state_->hist),
+                        *force_, *vir_force_,
+                        mdatoms_, enerd_, fcd_,
+                        state_->lambda.data(), graph_,
+                        fr_, fr_->ic, vsite_, *mu_tot_,
+                        *(sp_->t_), ed_,
+                        *(sp_->bBornRadii_), flags,
+                        *(sp_->ddOpenBalanceRegion_),
+                        *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
 }
