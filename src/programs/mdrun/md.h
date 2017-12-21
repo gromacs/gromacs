@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,10 @@
 #ifndef GMX_MDLIB_MD_H
 #define GMX_MDLIB_MD_H
 
+#include <gromacs/essentialdynamics/edsam.h>
+#include <curses.h>
+#include "gromacs/domdec/dlbtiming.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/mdlib/integrator.h"
 
 namespace gmx
@@ -49,6 +53,88 @@ namespace gmx
 
 //! MD simulations
 integrator_t do_md;
+
+struct MDLoopSharedPrimitives
+{
+    gmx_int64_t                               *step_;
+    double                                    *t_; //time
+
+    gmx_bool                                  *bBornRadii_;
+
+    DdOpenBalanceRegionBeforeForceComputation *ddOpenBalanceRegion_;
+    DdCloseBalanceRegionAfterForceComputation *ddCloseBalanceRegion_;
+
+    MDLoopSharedPrimitives(gmx_int64_t *step, double *t, gmx_bool *bBornRadii,
+                           DdOpenBalanceRegionBeforeForceComputation *ddOpenBalanceRegion,
+                           DdCloseBalanceRegionAfterForceComputation *ddCloseBalanceRegion) :
+
+        step_(step), t_(t), bBornRadii_(bBornRadii), ddOpenBalanceRegion_(ddOpenBalanceRegion),
+        ddCloseBalanceRegion_(ddCloseBalanceRegion)
+    {
+        // Initialize the struct with the values that can change during the simulation
+    }
+
+};
+
+class AbstractNBSchedule
+{
+    protected:
+        // Members
+        FILE                           *log_;
+        t_commrec                      *cr_;
+        t_inputrec                     *inputrec_;
+
+        struct t_nrnb                  *nrnb_;
+        gmx_wallcycle_t                 wcycle_;
+        gmx_localtop_t                 *top_;
+        gmx_groups_t                   *groups_;
+        t_state                        *state_;
+
+        gmx::PaddedArrayRef<gmx::RVec> *force_;
+        tensor                         *vir_force_;
+        t_mdatoms                      *mdatoms_;
+        gmx_enerdata_t                 *enerd_;
+        t_fcdata                       *fcd_;
+
+        t_graph                        *graph_;
+        t_forcerec                     *fr_;
+        gmx_vsite_t                    *vsite_;
+        rvec                           *mu_tot_;
+
+        struct gmx_edsam               *ed_;
+        struct MDLoopSharedPrimitives  *sp_;
+
+    public:
+
+        AbstractNBSchedule();                                             // Null initialization
+
+        ~AbstractNBSchedule();                                            // Default destructor
+
+        AbstractNBSchedule(const AbstractNBSchedule &abstractNBSchedule); //copy constructor
+
+        void init( FILE *fplog, t_commrec *cr, t_inputrec *inputrec, t_nrnb *nrnb,
+                   gmx_wallcycle_t wcycle, gmx_localtop_t *top, gmx_groups_t *groups,
+                   t_state *state, gmx::PaddedArrayRef<gmx::RVec> *force, tensor *vir_force,
+                   t_mdatoms *mdatoms, gmx_enerdata_t *enerd, t_fcdata *fcd, t_graph *graph, t_forcerec *fr,
+                   gmx_vsite_t *vsite, rvec *mu_tot, gmx_edsam_t ed, MDLoopSharedPrimitives *sp);
+
+        virtual void computeStep(int flags) = 0;
+};
+
+
+
+class SingleNodeNBSchedule : public AbstractNBSchedule
+{
+
+    public:
+
+        void computeStep(int flags);
+
+};
+
+// TODO: Implement a schedule selector function. Also find a way to wrap the execution context
+//       and problem details into nice, readable objects
+// static AbstractNBSchedule selectSchedule(/* execution context and problem definition */);
 
 }      // namespace gmx
 

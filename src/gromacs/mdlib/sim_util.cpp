@@ -1039,24 +1039,24 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     }
 }
 
-static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
-                                t_inputrec *inputrec,
-                                gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                                gmx_localtop_t *top,
-                                gmx_groups_t gmx_unused *groups,
-                                matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
-                                gmx::PaddedArrayRef<gmx::RVec> force,
-                                tensor vir_force,
-                                t_mdatoms *mdatoms,
-                                gmx_enerdata_t *enerd, t_fcdata *fcd,
-                                real *lambda, t_graph *graph,
-                                t_forcerec *fr, interaction_const_t *ic,
-                                gmx_vsite_t *vsite, rvec mu_tot,
-                                double t, gmx_edsam_t ed,
-                                gmx_bool bBornRadii,
-                                int flags,
-                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+                         t_inputrec *inputrec,
+                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         gmx_localtop_t *top,
+                         gmx_groups_t gmx_unused *groups,
+                         matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
+                         gmx::PaddedArrayRef<gmx::RVec> force,
+                         tensor vir_force,
+                         t_mdatoms *mdatoms,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         real *lambda, t_graph *graph,
+                         t_forcerec *fr, interaction_const_t *ic,
+                         gmx_vsite_t *vsite, rvec mu_tot,
+                         double t, gmx_edsam_t ed,
+                         gmx_bool bBornRadii,
+                         int flags,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int                 cg1, i, j;
     double              mu[2*DIM];
