@@ -58,22 +58,10 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-/*! \brief Helper macro for error handling */
-#define CALLOCLFUNC_LOGERROR(func, err_str, retval) { \
-        cl_int opencl_ret = func; \
-        if (CL_SUCCESS != opencl_ret) \
-        { \
-            sprintf(err_str, "OpenCL error %d", opencl_ret); \
-            retval = -1; \
-        } \
-        else{ \
-            retval = 0; } \
-}
-
 
 /*! \brief Return true if executing on compatible OS for AMD OpenCL.
  *
@@ -163,7 +151,7 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 
 
 //! This function is documented in the header file
-bool canDetectGpus()
+bool canDetectGpus(std::string *errorMessage)
 {
     cl_uint numPlatforms = -1;
     cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);
@@ -171,24 +159,30 @@ bool canDetectGpus()
     if (status == CL_PLATFORM_NOT_FOUND_KHR)
     {
         // No valid ICDs found
+        if (errorMessage != nullptr)
+        {
+            errorMessage->assign("No valid OpenCL driver found");
+        }
         return false;
     }
     GMX_RELEASE_ASSERT(status == CL_SUCCESS,
                        gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
                                          status, ocl_get_error_string(status).c_str()).c_str());
     bool foundPlatform = (numPlatforms > 0);
+    if (!foundPlatform && errorMessage != nullptr)
+    {
+        errorMessage->assign("No OpenCL platforms found even though the driver was valid");
+    }
     return foundPlatform;
 }
 
 //! This function is documented in the header file
-int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+void findGpus(gmx_gpu_info_t *gpu_info)
 {
-    int             retval;
     cl_uint         ocl_platform_count;
     cl_platform_id *ocl_platform_ids;
     cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
 
-    retval           = 0;
     ocl_platform_ids = NULL;
 
     if (getenv("GMX_OCL_FORCE_CPU") != NULL)
@@ -198,23 +192,26 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
     while (1)
     {
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(0, NULL, &ocl_platform_count), err_str, retval)
-        if (0 != retval)
+        cl_int status = clGetPlatformIDs(0, NULL, &ocl_platform_count);
+        if (CL_SUCCESS != status)
         {
-            break;
+            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
+                                                           status, ocl_get_error_string(status).c_str()).c_str()));
         }
 
         if (1 > ocl_platform_count)
         {
+            // TODO this should have a descriptive error message that we only support one OpenCL platform
             break;
         }
 
         snew(ocl_platform_ids, ocl_platform_count);
 
-        CALLOCLFUNC_LOGERROR(clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL), err_str, retval)
-        if (0 != retval)
+        status = clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, NULL);
+        if (CL_SUCCESS != status)
         {
-            break;
+            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
+                                                           status, ocl_get_error_string(status).c_str()).c_str()));
         }
 
         for (unsigned int i = 0; i < ocl_platform_count; i++)
@@ -346,8 +343,6 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     }
 
     sfree(ocl_platform_ids);
-
-    return retval;
 }
 
 //! This function is documented in the header file
