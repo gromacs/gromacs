@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -232,7 +232,7 @@ set(GMX_VERSION_SUFFIX "")
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
 set(LIBRARY_SOVERSION_MAJOR 1)
-set(LIBRARY_SOVERSION_MINOR 4)
+set(LIBRARY_SOVERSION_MINOR 5)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
 #####################################################################
@@ -256,7 +256,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "8902358ab19343f17997d1bf85f8e69c" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "50faec31eb083ba852edcc09a917dbe6" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
