@@ -809,7 +809,8 @@ std::string getCoolQuote()
         { "A computer once beat me at chess, but it was no match for me at kick boxing.", "Emo Philips" },
         { "Home computers are being called upon to perform many new functions, including the consumption of homework formerly eaten by the dog.", "Doug Larson" },
         { "Forcefields are like dating; things go fine for a while and then sometimes it goes really bad.", "Alex MacKerell" },
-        { "This type of advanced sampling techniques... which are not so advanced, really.", "Viveca Lindahl, on AWH, at her thesis defense." }
+        { "This type of advanced sampling techniques... which are not so advanced, really.", "Viveca Lindahl, on AWH, at her thesis defense." },
+        { "C++ is tricky. You can do everything. You can even make every mistake.", "Nicolai Josuttis, CppCon2017" },
     };
 
     if (beCool())
