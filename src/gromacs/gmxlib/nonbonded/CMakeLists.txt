@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Sources that should always be built
-file(GLOB NONBONDED_SOURCES *.cpp nb_kernel_c/*.c)
+file(GLOB NONBONDED_SOURCES *.cpp nb_kernel_c/*.c nb_kernel_c/*.cpp)
 
 if("${GMX_SIMD_ACTIVE}" STREQUAL "SSE2" AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_SSE2_SINGLE_SOURCES nb_kernel_sse2_single/*.c)
