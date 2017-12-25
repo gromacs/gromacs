@@ -72,7 +72,11 @@ class SimdFInt32
 
         SimdFInt32(std::int32_t i)
         {
-            GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
+            std::int32_t   unalignedMem[GMX_SIMD_FINT32_WIDTH*2];
+            // Float and double are the same width for QPX, so simdAlign() will
+            // work with integers no matter what the current precision is
+            std::int32_t * idata = simdAlign(unalignedMem);
+
             idata[0]      = i;
             simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
         }
@@ -329,8 +333,12 @@ trunc(SimdFloat x)
 static inline SimdFloat
 frexp(SimdFloat value, SimdFInt32 * exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    float          unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    float *        rdata = simdAlign(unalignedMem);
+    std::int32_t   unalignedMemI[GMX_SIMD_FLOAT_WIDTH*2];
+    // Float and double are the same width for QPX, so simdAlign() will
+    // work with integers no matter what the current precision is
+    std::int32_t * idata = simdAlign(unalignedMemI);
 
     vec_st(value.simdInternal_, 0, rdata);
 
@@ -349,8 +357,13 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    float          unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    float *        rdata = simdAlign(unalignedMem);
+
+    std::int32_t   unalignedMemI[GMX_SIMD_FLOAT_WIDTH*2];
+    // Float and double are the same width for QPX, so simdAlign() will
+    // work with integers no matter what the current precision is
+    std::int32_t * idata = simdAlign(unalignedMemI);
 
     vec_st(value.simdInternal_,    0, rdata);
     vec_st(exponent.simdInternal_, 0, idata);

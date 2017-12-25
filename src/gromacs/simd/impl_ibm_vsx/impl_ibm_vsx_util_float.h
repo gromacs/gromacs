@@ -330,7 +330,10 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -343,7 +346,10 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
@@ -356,7 +362,10 @@ gatherLoadUBySimdIntTranspose(const float *  base,
                               SimdFloat *    v0,
                               SimdFloat *    v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);

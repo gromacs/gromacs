@@ -131,8 +131,10 @@ TEST_F(SimdIntegerTest, xor)
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, extract)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  idata[GMX_SIMD_REAL_WIDTH];
-    SimdInt32 simd;
+    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    std::int32_t * idata = simdAlign(unalignedMem);
+
+    SimdInt32      simd;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {

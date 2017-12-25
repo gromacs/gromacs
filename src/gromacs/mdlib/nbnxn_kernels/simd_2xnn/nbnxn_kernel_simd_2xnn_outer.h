@@ -138,8 +138,9 @@
     SimdReal          hsig_i_S2, seps_i_S2;
 #else
 #ifdef FIX_LJ_C
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
-    real  *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+    real              unalignedMem[2*UNROLLI*UNROLLJ + GMX_SIMD_REAL_WIDTH];
+    real *            pvdw_c6  = simdAlign(unalignedMem);
+    real *            pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 #endif
 
 #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM

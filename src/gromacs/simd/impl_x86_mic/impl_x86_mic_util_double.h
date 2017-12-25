@@ -235,9 +235,10 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    double    unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
+    double *  rdata0 = simdAlign(unalignedMem);
+    double *  rdata1 = rdata0 + GMX_SIMD_DOUBLE_WIDTH;
+    double *  rdata2 = rdata0 + GMX_SIMD_DOUBLE_WIDTH*2;
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -259,9 +260,10 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    double    unalignedMem[GMX_SIMD_DOUBLE_WIDTH*4];
+    double *  rdata0 = simdAlign(unalignedMem);
+    double *  rdata1 = rdata0 + GMX_SIMD_DOUBLE_WIDTH;
+    double *  rdata2 = rdata0 + GMX_SIMD_DOUBLE_WIDTH*2;
 
     store(rdata0, v0);
     store(rdata1, v1);
