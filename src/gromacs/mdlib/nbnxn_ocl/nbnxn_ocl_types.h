@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,10 +97,6 @@ static inline int getOclPruneKernelJ4Concurrency(int vendorId)
     }
 }
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Electrostatic OpenCL kernel flavors.
  *
@@ -347,9 +343,5 @@ struct gmx_nbnxn_ocl_t
     cl_timers_t                      *timers;   /**< OpenCL event-based timers.                                 */
     struct gmx_wallclock_gpu_nbnxn_t *timings;  /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* NBNXN_OPENCL_TYPES_H */

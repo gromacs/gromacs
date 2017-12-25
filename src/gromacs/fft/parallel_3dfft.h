@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct gmx_parallel_3dfft *
     gmx_parallel_3dfft_t;
@@ -131,9 +127,5 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  */
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

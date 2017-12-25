@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* the block structure points into an array (usually of ints).
    It is a list of starting indices for objects of consecutive ids, such
@@ -100,9 +96,5 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
 
 void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers);
 void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

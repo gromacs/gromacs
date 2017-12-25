@@ -63,7 +63,9 @@
 #ifndef GMX_UTILITY_SMALLOC_H
 #define GMX_UTILITY_SMALLOC_H
 
-#include <stddef.h>
+#include <cstddef>
+
+#include <type_traits>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -178,10 +180,6 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
  */
 void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 
-#if GMX_CXX11_COMPILATION
-#include <type_traits>
-#endif
-
 /*! \cond internal */
 /*! \name Implementation templates for C++ memory allocation macros
  *
@@ -209,9 +207,7 @@ template <typename T> static inline
 void gmx_snew_impl(const char *name, const char *file, int line,
                    T * &ptr, size_t nelem)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew() called on C++ type");
-#endif
     ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
 }
 /** C++ helper for srenew(). */
@@ -219,9 +215,7 @@ template <typename T> static inline
 void gmx_srenew_impl(const char *name, const char *file, int line,
                      T * &ptr, size_t nelem)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
-#endif
     ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
 }
 /** C++ helper for smalloc(). */
@@ -229,9 +223,7 @@ template <typename T> static inline
 void gmx_smalloc_impl(const char *name, const char *file, int line,
                       T * &ptr, size_t size)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "smalloc() called on C++ type");
-#endif
     ptr = (T *)save_malloc(name, file, line, size);
 }
 /** C++ helper for snew_aligned(). */
@@ -239,29 +231,23 @@ template <typename T> static inline
 void gmx_snew_aligned_impl(const char *name, const char *file, int line,
                            T * &ptr, size_t nelem, size_t alignment)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value, "snew_aligned() called on C++ type");
-#endif
     ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
 }
 /** C++ helper for sfree(). */
 template <typename T> static inline
 void gmx_sfree_impl(const char *name, const char *file, int line, T *ptr)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value || std::is_void<T>::value,
                   "sfree() called on C++ type");
-#endif
     save_free(name, file, line, ptr);
 }
 /** C++ helper for sfree_aligned(). */
 template <typename T> static inline
 void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr)
 {
-#if GMX_CXX11_COMPILATION
     static_assert(std::is_pod<T>::value || std::is_void<T>::value,
                   "sfree_aligned() called on C++ type");
-#endif
     save_free_aligned(name, file, line, ptr);
 }
 /*! \} */

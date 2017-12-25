@@ -45,9 +45,6 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 #if 0
 } /* fixes auto-indentation problems */
 #endif
@@ -167,9 +164,5 @@ nb_kernel_list_findkernel(FILE *              log,
                           const char *        vf);
 
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _nb_kernel_h_ */
