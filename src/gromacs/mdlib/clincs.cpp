@@ -441,7 +441,10 @@ calc_dr_x_f_simd(int                       b0,
 {
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH) offset2[GMX_SIMD_REAL_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*4];
+    std::int32_t * offset0 = simdAlign(unalignedMem);
+    std::int32_t * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
+    std::int32_t * offset2 = offset0 + GMX_SIMD_REAL_WIDTH*2;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -454,8 +457,6 @@ calc_dr_x_f_simd(int                       b0,
         SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
         SimdReal fx_S, fy_S, fz_S, ip_S, rhs_S;
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
 
         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
@@ -537,7 +538,8 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      * The only difference is that we always call pbc code, as with SIMD
      * the overhead of pbc computation (when not needed) is small.
      */
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
+    real * pbc_simd = simdAlign(unalignedMem);
 
     /* Convert the pbc struct for SIMD */
     set_pbc_simd(pbc, pbc_simd);
@@ -695,7 +697,10 @@ calc_dr_x_xp_simd(int                       b0,
                   real * gmx_restrict       sol)
 {
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH) offset2[GMX_SIMD_REAL_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*4];
+    std::int32_t * offset0 = simdAlign(unalignedMem);
+    std::int32_t * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
+    std::int32_t * offset2 = offset0 + GMX_SIMD_REAL_WIDTH*2;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -708,8 +713,6 @@ calc_dr_x_xp_simd(int                       b0,
         SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
         SimdReal rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
 
         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
@@ -824,6 +827,10 @@ calc_dist_iter_simd(int                       b0,
 
     int             bs;
 
+    std::int32_t    unalignedMem[GMX_SIMD_REAL_WIDTH*3];
+    std::int32_t  * offset0 = simdAlign(unalignedMem);
+    std::int32_t  * offset1 = offset0 + GMX_SIMD_REAL_WIDTH;
+
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
     /* Initialize all to FALSE */
@@ -835,8 +842,6 @@ calc_dist_iter_simd(int                       b0,
         SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S;
         SimdReal len_S, len2_S, dlen2_S, lc_S, blc_S;
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset0[GMX_SIMD_REAL_WIDTH];
-        GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)      offset1[GMX_SIMD_REAL_WIDTH];
 
         for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
@@ -923,7 +928,8 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
      * The only difference is that we always call pbc code, as with SIMD
      * the overhead of pbc computation (when not needed) is small.
      */
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    real   unalignedMem[GMX_SIMD_REAL_WIDTH*10];
+    real * pbc_simd = simdAlign(unalignedMem);
 
     /* Convert the pbc struct for SIMD */
     set_pbc_simd(pbc, pbc_simd);

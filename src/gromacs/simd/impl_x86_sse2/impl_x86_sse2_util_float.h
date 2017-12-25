@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -334,8 +334,12 @@ gatherLoadBySimdIntTranspose(const float *  base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
+    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
 }
 
@@ -351,8 +355,12 @@ gatherLoadBySimdIntTranspose(const float *   base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
+    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 
@@ -370,8 +378,12 @@ gatherLoadUBySimdIntTranspose(const float *  base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
+    _mm_store_si128(reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 

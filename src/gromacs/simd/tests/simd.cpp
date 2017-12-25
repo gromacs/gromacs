@@ -124,7 +124,8 @@ const SimdInt32 iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 ::std::vector<real>
 simdReal2Vector(const SimdReal simd)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real * mem = simdAlign(unalignedMem);
 
     store(mem, simd);
     std::vector<real>   v(mem, mem+GMX_SIMD_REAL_WIDTH);
@@ -135,7 +136,8 @@ simdReal2Vector(const SimdReal simd)
 SimdReal
 vector2SimdReal(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real * mem = simdAlign(unalignedMem);
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -182,7 +184,8 @@ SimdTest::compareSimdEq(const char * refExpr, const char * tstExpr,
 std::vector<int>
 simdInt2Vector(const SimdInt32 simd)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    std::int32_t * mem = simdAlign(unalignedMem);
 
     store(mem, simd);
     std::vector<int>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
@@ -193,7 +196,8 @@ simdInt2Vector(const SimdInt32 simd)
 SimdInt32
 vector2SimdInt(const std::vector<int> &v)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    std::int32_t * mem = simdAlign(unalignedMem);
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -228,6 +232,59 @@ SimdTest::compareSimdEq(const char *  refExpr,      const char *  tstExpr,
                         const SimdInt32 ref, const SimdInt32 tst)
 {
     return compareVectorEq(refExpr, tstExpr, simdInt2Vector(ref), simdInt2Vector(tst));
+}
+
+TEST(SimdTest, Align)
+{
+    // real is always available
+    real          mem1[GMX_SIMD_REAL_WIDTH*2];
+    real        * r1 = simdAlign(mem1);
+
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(r1);
+    EXPECT_EQ(0, addr1 % (GMX_SIMD_REAL_WIDTH*sizeof(real)));
+
+    // Try another offset (either mem1 or mem1+1 must be unaligned)
+    r1    = simdAlign(mem1+1);
+    addr1 = reinterpret_cast<std::uint64_t>(r1);
+    EXPECT_EQ(0, addr1 % (GMX_SIMD_REAL_WIDTH*sizeof(real)));
+
+    // int is always available
+    std::int32_t   mem2[GMX_SIMD_REAL_WIDTH*2];
+    std::int32_t * r2 = simdAlign(mem2);
+
+    std::uint64_t  addr2 = reinterpret_cast<std::uint64_t>(r2);
+    EXPECT_EQ(0, addr2 % (GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)));
+
+    // another offset
+    r2    = simdAlign(mem2+1);
+    addr2 = reinterpret_cast<std::uint64_t>(r2);
+    EXPECT_EQ(0, addr2 % (GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)));
+
+#if GMX_SIMD_HAVE_FLOAT
+    float         mem3[GMX_SIMD_FLOAT_WIDTH*2];
+    float       * r3 = simdAlign(mem3);
+
+    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(r3);
+    EXPECT_EQ(0, addr3 % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)));
+
+    // another offset
+    r3    = simdAlign(mem3+1);
+    addr3 = reinterpret_cast<std::uint64_t>(r3);
+    EXPECT_EQ(0, addr3 % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)));
+#endif
+
+#if GMX_SIMD_HAVE_DOUBLE
+    double        mem4[GMX_SIMD_DOUBLE_WIDTH*2];
+    double      * r4 = simdAlign(mem4);
+
+    std::uint64_t addr4 = reinterpret_cast<std::uint64_t>(r4);
+    EXPECT_EQ(0, addr4 % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)));
+
+    // another offset
+    r4    = simdAlign(mem4+1);
+    addr4 = reinterpret_cast<std::uint64_t>(r4);
+    EXPECT_EQ(0, addr4 % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)));
+#endif
 }
 
 #endif  // GMX_SIMD_HAVE_REAL

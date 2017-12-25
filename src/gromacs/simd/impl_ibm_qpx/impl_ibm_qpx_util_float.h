@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,9 +143,10 @@ transposeScatterStoreU(float *              base,
                        SimdFloat            v1,
                        SimdFloat            v2)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
+    float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
+    float * m0 = simdAlign(unalignedMem);
+    float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
+    float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
 
     store(m0, v0);
     store(m1, v1);
@@ -193,9 +194,10 @@ transposeScatterIncrU(float *              base,
     }
     else
     {
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
+        float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
+        float * m0 = simdAlign(unalignedMem);
+        float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
+        float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
 
         store(m0, v0);
         store(m1, v1);
@@ -244,9 +246,10 @@ transposeScatterDecrU(float *              base,
     }
     else
     {
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m0[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m1[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   m2[GMX_SIMD_FLOAT_WIDTH];
+        float   unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
+        float * m0 = simdAlign(unalignedMem);
+        float * m1 = m0 + GMX_SIMD_FLOAT_WIDTH;
+        float * m2 = m0 + GMX_SIMD_FLOAT_WIDTH*2;
 
         store(m0, v0);
         store(m1, v1);
@@ -287,7 +290,10 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)   ioffset[GMX_SIMD_FLOAT_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // Float and double are the same width for QPX, so simdAlign() will
+    // work with integers no matter what the current precision is
+    std::int32_t * ioffset = simdAlign(unalignedMem);
 
     store(ioffset, simdoffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -300,7 +306,10 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)   ioffset[GMX_SIMD_FLOAT_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // Float and double are the same width for QPX, so simdAlign() will
+    // work with integers no matter what the current precision is
+    std::int32_t * ioffset = simdAlign(unalignedMem);
 
     store(ioffset, simdoffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);

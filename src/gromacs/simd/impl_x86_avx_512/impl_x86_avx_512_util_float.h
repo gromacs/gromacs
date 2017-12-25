@@ -152,9 +152,13 @@ transposeScatterIncrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    __m512 t[4], t5, t6, t7, t8;
-    int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    __m512         t[4], t5, t6, t7, t8;
+    int            i;
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * o = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                        ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {
@@ -224,9 +228,13 @@ transposeScatterDecrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    __m512 t[4], t5, t6, t7, t8;
-    int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    __m512         t[4], t5, t6, t7, t8;
+    int            i;
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * o = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                        ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {

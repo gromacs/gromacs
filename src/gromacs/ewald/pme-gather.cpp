@@ -195,9 +195,11 @@ struct do_fspline
     {
 #ifdef PME_SIMD4_UNALIGNED
         *S0 = load4U(data-offset);
-        *S1 = load4U(data-offset+4);
+              *S1 = load4U(data-offset+4);
 #else
-        GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  buf_aligned[GMX_SIMD4_WIDTH*2];
+        real   unalignedMem[GMX_SIMD4_WIDTH*3];        // GMX_SIMD4_WIDTH*2 and padding
+        real * buf_aligned = simd4Align(unalignedMem); // size is GMX_SIMD4_WIDTH*2
+
         /* Copy data to an aligned buffer */
         for (int i = 0; i < order; i++)
         {
