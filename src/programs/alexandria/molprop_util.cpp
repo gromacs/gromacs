@@ -213,7 +213,6 @@ int merge_xml(int nfile, char **filens,
     std::vector<alexandria::MolProp> mp;
     alexandria::MolPropIterator      mpi;
     int       i, npout = 0, tmp;
-    int       nwarn = 0;
 
     for (i = 0; (i < nfile); i++)
     {
@@ -242,10 +241,15 @@ int merge_xml(int nfile, char **filens,
     }
     MolSelect gms;
     MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
-    nwarn += merge_doubles(mpout, doubles, bForceMerge);
+    int nwarn = merge_doubles(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout.size());
-
+    if (nwarn > 0)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "Too many (%d) warnings.", nwarn);
+        GMX_RELEASE_ASSERT(nwarn > 0, buf);
+    }
     if (outf)
     {
         printf("There are %d entries to store in output file %s\n", npout, outf);
