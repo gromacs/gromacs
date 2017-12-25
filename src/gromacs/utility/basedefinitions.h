@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,28 +152,6 @@ typedef uint64_t gmx_uint64_t;
  * compilers.
  */
 #define gmx_restrict __restrict
-
-/*! \def GMX_CXX11_COMPILATION
- * \brief
- * Defined to 1 when compiling as C++11.
- *
- * While \Gromacs only supports C++11 compilation, there are some parts of the
- * code that are compiled with other tools than the actual C++ compiler, and
- * these may not support C++11.  Most notable such case is all of CUDA code
- * (with CUDA versions older than 6.5), but other types of kernels might also
- * have similar limitations in the future.
- *
- * The define is intended for conditional compilation in low-level headers that
- * need to support inclusion from such non-C++11 files, but get significant
- * benefit (e.g., for correctness checking or more convenient use) from C++11.
- * It should only be used for features that do not influence the ABI of the
- * header; e.g., static_asserts or additional helper methods.
- */
-#if defined __cplusplus && __cplusplus >= 201103L
-#    define GMX_CXX11_COMPILATION 1
-#else
-#    define GMX_CXX11_COMPILATION 0
-#endif
 
 /*! \def gmx_unused
  * \brief

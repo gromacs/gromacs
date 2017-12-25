@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,10 +62,6 @@ struct t_filenm;
 struct t_inputrec;
 struct t_rot;
 class t_state;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 /*! \brief Initializes the enforced rotation groups.
@@ -146,10 +142,6 @@ extern real add_rot_forces(t_rot *rot, rvec f[], struct t_commrec *cr, gmx_int64
  */
 extern void finish_rot(t_rot *rot);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 
 #endif
