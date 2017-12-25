@@ -220,29 +220,6 @@ struct SimdDInt32Tag {};
 namespace gmx
 {
 
-template<class T, size_t N>
-struct AlignedArray;
-
-#if GMX_SIMD_HAVE_FLOAT
-/*! \libinternal \brief Identical to std::array with GMX_SIMD_FLOAT_WIDTH alignment.
- *  Should not be deleted through base pointer (destructor is non-virtual).
- */
-template<size_t N>
-struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : public std::array<float, N>
-{
-};
-#endif
-
-#if GMX_SIMD_HAVE_DOUBLE
-/*! \libinternal \brief  Identical to std::array with GMX_SIMD_DOUBLE_WIDTH alignment.
- *  Should not be deleted through base pointer (destructor is non-virtual).
- */
-template<size_t N>
-struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : public std::array<double, N>
-{
-};
-#endif
-
 #if GMX_SIMD_HAVE_REAL
 
 /*! \name SIMD data types
@@ -398,6 +375,100 @@ typedef Simd4FBool                Simd4Bool;
 
 //! \}  end of name-group describing SIMD data types
 
+/*! \name SIMD memory alignment operations
+ *  \{
+ */
+
+/*! \brief
+ * Align a pointer for usage with SIMD instructions.
+ *
+ * The C++ standard does not require compilers to support alignas() with
+ * over-alignments larger than the size of native data types.
+ * Thus, there is no portable way of directly defining variables on the
+ * stack with alignment large enough to guarantee it will work with SIMD
+ * aligned load/store instructions.
+ *
+ * Instead, you should declare an array with enough extra space so we can create
+ * an aligned pointer inside the array. For instance, if you use real and
+ * need an array corresponding to the SIMD width, you should make the size of
+ * the array GMX_SIMD_REAL_WIDTH*2, and then use this routine to derive an
+ * aligned pointer to at least GMX_SIMD_REAL_WIDTH elements inside that array.
+ *
+ * \param  p Pointer to memory, allocate with at least enough extra elements
+ *           to correspond to the SIMD data type size.
+ *
+ * \return Aligned pointer (>=p) suitable for loading/storing aligned SIMD data.
+ *         If no SIMD data type is available we do not know the register width,
+ *         and will return the original (unaligned) pointer instead.
+ *
+ * \note   For std::int32_t pointers we always assume the storage is for the
+ *         SimdInt32 type rather than the specific float/double types, since
+ *         we cannot determine it automatically from the argument type.
+ */
+template <class T>
+static gmx_inline T *
+simdAlign(T *p)
+{
+    static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value || std::is_same<T, std::int32_t>::value, "Illegal type for simdAlign");
+
+    if (std::is_same<T, float>::value)
+    {
+#if GMX_SIMD_HAVE_FLOAT
+        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_FLOAT_WIDTH-1) &
+                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(float)-1)));
+#else
+        return p;
+#endif
+    }
+    else if (std::is_same<T, double>::value)
+    {
+#if GMX_SIMD_HAVE_DOUBLE
+        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_DOUBLE_WIDTH-1) &
+                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(double)-1)));
+#else
+        return p;
+#endif
+    }
+    else
+    {
+        // If we get here, the only possible remaining type allowed by the static_assert is std::int_32
+#if GMX_SIMD_HAVE_REAL
+        return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD_REAL_WIDTH-1) &
+                                     ~(reinterpret_cast<std::size_t>(GMX_SIMD_REAL_WIDTH*sizeof(std::int32_t)-1)));
+#else
+        return p;
+#endif
+    }
+}
+
+/*! \brief
+ * Align a pointer for usage with SIMD4 instructions.
+ *
+ * This is similar to simdAlign, but for the SIMD4 data typ.e
+ *
+ * \param  p Pointer to memory, allocate with at least enough extra elements
+ *           to correspond to the SIMD4 data type size.
+ *
+ * \return Aligned pointer (>=p) suitable for loading/storing aligned SIMD4 data.
+ */
+template <class T>
+static gmx_inline T *
+simd4Align(T *p)
+{
+    static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value, "Illegal type for simd4Align");
+
+#if GMX_SIMD4_HAVE_FLOAT || GMX_SIMD4_HAVE_DOUBLE
+    return reinterpret_cast<T *>(reinterpret_cast<std::size_t>(p+GMX_SIMD4_WIDTH-1) &
+                                 ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(T)-1)));
+#else
+    return p;
+#endif
+}
+
+
+//! \}  end of name-group describing SIMD memory alignment operations
+
+
 /*! \name High-level SIMD proxy objects to disambiguate load/set operations
  * \{
  */
@@ -487,13 +558,6 @@ load(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
     return *m;
 }
 
-template <typename T, size_t N>
-static inline T gmx_simdcall
-load(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
-{
-    return simdLoad(m.data(), typename internal::SimdTraits<T>::tag());
-}
-
 /*! \brief Load function that returns SIMD or scalar based on template argument
  *
  * \tparam T Type to load (type is always mandatory)
@@ -512,13 +576,6 @@ static inline T
 loadU(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
 {
     return *m;
-}
-
-template <typename T, size_t N>
-static inline T gmx_simdcall
-loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
-{
-    return simdLoadU(m.data(), typename internal::SimdTraits<T>::tag());
 }
 
 class SimdSetZeroProxyInternal;

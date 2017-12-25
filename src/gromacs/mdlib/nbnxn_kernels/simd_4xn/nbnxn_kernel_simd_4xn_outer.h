@@ -334,8 +334,9 @@
     x                   = nbat->x;
 
 #ifdef FIX_LJ_C
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
-    real *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+    real   unalignedMem[2*UNROLLI*UNROLLJ + GMX_SIMD_REAL_WIDTH];
+    real * pvdw_c6  = simdAlign(unalignedMem);
+    real * pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 
     for (int jp = 0; jp < UNROLLJ; jp++)
     {

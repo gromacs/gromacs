@@ -484,7 +484,11 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
     gatherLoadTranspose<align>(base, offset, v0, v1, v2, v3);
 }
@@ -496,7 +500,11 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
     gatherLoadTranspose<align>(base, offset, v0, v1);
 }
@@ -509,10 +517,14 @@ gatherLoadUBySimdIntTranspose(const float *  base,
                               SimdFloat *    v0,
                               SimdFloat *    v1)
 {
-    __m128 t1, t2, t3, t4, t5, t6, t7, t8;
-    __m256 tA, tB, tC, tD;
+    __m128         t1, t2, t3, t4, t5, t6, t7, t8;
+    __m256         tA, tB, tC, tD;
 
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH) offset[GMX_SIMD_FLOAT_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_FLOAT_WIDTH*2];
+    // We cannot use simdAlign(), since SimdFInt32 might not be identical to SimdInt32
+    std::int32_t * offset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_FLOAT_WIDTH-1) &
+                                                             ~(reinterpret_cast<std::size_t>(GMX_SIMD_FLOAT_WIDTH*sizeof(std::int32_t)-1)));
+
     _mm256_store_si256( reinterpret_cast<__m256i *>(offset), simdoffset.simdInternal_);
 
     t1  = _mm_loadl_pi(_mm_setzero_ps(), reinterpret_cast<const __m64 *>( base + align * offset[0] ) );

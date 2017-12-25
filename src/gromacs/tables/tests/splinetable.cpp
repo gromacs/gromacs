@@ -679,7 +679,8 @@ TYPED_TEST(SplineTableTest, Simd)
     real     refDer  = lj12Derivative(x);
     SimdReal tstFunc, tstDer;
     real     funcErr, derErr;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real   * alignedMem = simdAlign(unalignedMem);
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc, &tstDer);
 
@@ -712,7 +713,8 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
     SimdReal tstFunc1, tstDer1;
     real     funcErr0, derErr0;
     real     funcErr1, derErr1;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real   * alignedMem = simdAlign(unalignedMem);
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc0, &tstDer0, &tstFunc1, &tstDer1);
 
@@ -742,9 +744,13 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
     TypeParam                               table( {{"LJ12", lj12Function, lj12Derivative}}, range);
     SimdReal                                x, func, der;
 
-    AlignedArray<real, GMX_SIMD_REAL_WIDTH> alignedMem;
+    real     unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real   * alignedMem = simdAlign(unalignedMem);
 
-    alignedMem.fill(range.first);
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        alignedMem[i] = range.first;
+    }
     // Make position 1 incorrect if width>=2, otherwise position 0
     // range.first-GMX_REAL_EPS is not invalid. See comment in table.
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
@@ -765,7 +771,8 @@ TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
     TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
     SimdReal               x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    real                   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+    real                 * alignedMem = simdAlign(unalignedMem);
 
     // Test all values between 0 and range.second
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)

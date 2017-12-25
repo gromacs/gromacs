@@ -329,7 +329,8 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t                 
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
+    real   unalignedMem[GMX_SIMD4_WIDTH*3];        // GMX_SIMD4_WIDTH*2 and padding
+    real * thz_aligned = simd4Align(unalignedMem); // size is GMX_SIMD4_WIDTH*2
 #endif
 
     pnx = pmegrid->s[XX];

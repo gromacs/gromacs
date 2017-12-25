@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -249,7 +249,10 @@ gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDouble *    v2,
                              SimdDouble *    v3)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
+    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -262,7 +265,10 @@ gatherLoadBySimdIntTranspose(const double *    base,
                              SimdDouble *      v0,
                              SimdDouble *      v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
+    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
@@ -276,7 +282,10 @@ gatherLoadUBySimdIntTranspose(const double *  base,
                               SimdDouble *    v0,
                               SimdDouble *    v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    std::int32_t   unalignedMem[GMX_SIMD_DOUBLE_WIDTH*2];
+    // We cannot use simdAlign(), since SimdDInt32 might not be identical to SimdInt32
+    std::int32_t * ioffset = reinterpret_cast<std::int32_t *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD_DOUBLE_WIDTH-1) &
+                                                              ~(reinterpret_cast<std::size_t>(GMX_SIMD_DOUBLE_WIDTH*sizeof(std::int32_t)-1)));
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);

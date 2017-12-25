@@ -278,8 +278,9 @@
 
 #ifdef COUNT_PAIRS
     {
-        int  i, j;
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[GMX_SIMD_REAL_WIDTH];
+        int    i, j;
+        real   unalignedMem[GMX_SIMD_REAL_WIDTH*2];
+        real * tmp = simdAlign(unalignedMem);
 
         for (i = 0; i < UNROLLI; i += 2)
         {
