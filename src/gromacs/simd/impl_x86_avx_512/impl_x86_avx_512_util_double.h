@@ -150,8 +150,11 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    __m512d        t[4], t5, t6, t7, t8;
+    std::int64_t   unalignedMem[8*2]; // 8*64-bit integers in AVX-512 SIMD register + padding
+    std::int64_t * o = reinterpret_cast<std::int64_t *>(reinterpret_cast<std::size_t>(unalignedMem+8-1) &
+                                                        ~(reinterpret_cast<std::size_t>(8*sizeof(std::int64_t)-1)));
+
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
@@ -205,8 +208,11 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    __m512d        t[4], t5, t6, t7, t8;
+    std::int64_t   unalignedMem[8*2]; // 8*64-bit integers in AVX-512 SIMD register + padding
+    std::int64_t * o = reinterpret_cast<std::int64_t *>(reinterpret_cast<std::size_t>(unalignedMem+8-1) &
+                                                        ~(reinterpret_cast<std::size_t>(8*sizeof(std::int64_t)-1)));
+
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);

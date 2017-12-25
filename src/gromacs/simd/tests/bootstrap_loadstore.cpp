@@ -92,11 +92,14 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
      * to test we are not polluting memory there either. Sum=4*simdWidth.
      */
 #if GMX_SIMD4_WIDTH > GMX_SIMD_REAL_WIDTH
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth*4];
+    T     unalignedMem[GMX_SIMD4_WIDTH*9];
+    T *   src = reinterpret_cast<T *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
+                                      ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(T)-1)));
+    T *   dst = src + GMX_SIMD4_WIDTH*4;
 #else
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth*4];
+    T     unalignedMem[GMX_SIMD_REAL_WIDTH*9];
+    T *   src = simdAlign(unalignedMem);
+    T *   dst = src + GMX_SIMD_REAL_WIDTH*4;
 #endif
 
     // Make sure we have memory to check both before and after the test pointers

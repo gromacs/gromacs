@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,7 +225,8 @@ gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDouble *    v2,
                              SimdDouble *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    // Arm does not mind unaligned memory
+    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -242,7 +243,8 @@ gatherLoadBySimdIntTranspose(const double *  base,
                              SimdDouble *    v0,
                              SimdDouble *    v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    // Arm does not mind unaligned memory
+    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -258,7 +260,8 @@ gatherLoadUBySimdIntTranspose(const double *  base,
                               SimdDouble *    v0,
                               SimdDouble *    v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    // Arm does not mind unaligned memory
+    std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
     vst1_s32(ioffset, offset.simdInternal_);
 

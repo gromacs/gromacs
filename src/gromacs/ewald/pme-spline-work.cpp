@@ -54,7 +54,9 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
     pme_spline_work *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
+    real             unalignedMem[GMX_SIMD4_WIDTH*3]; // GMX_SIMD4_WIDTH*2 and padding
+    real           * tmp = simd4Align(unalignedMem);  // size is GMX_SIMD4_WIDTH*2
+
     Simd4Real        zero_S;
     Simd4Real        real_mask_S0, real_mask_S1;
     int              of, i;
