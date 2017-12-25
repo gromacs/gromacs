@@ -239,9 +239,10 @@ transposeScatterIncrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
+    float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
+    float *  rdata0 = simdAlign(unalignedMem);
+    float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
+    float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -263,9 +264,10 @@ transposeScatterDecrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
+    float    unalignedMem[GMX_SIMD_FLOAT_WIDTH*4];
+    float *  rdata0 = simdAlign(unalignedMem);
+    float *  rdata1 = rdata0 + GMX_SIMD_FLOAT_WIDTH;
+    float *  rdata2 = rdata0 + GMX_SIMD_FLOAT_WIDTH*2;
 
     store(rdata0, v0);
     store(rdata1, v1);

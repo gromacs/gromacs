@@ -312,7 +312,9 @@ TEST_F(Simd4FloatingpointTest, transpose)
     Simd4Real        v0, v1, v2, v3;
     int              i;
     // aligned pointers
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4*GMX_SIMD4_WIDTH];
+    real             unalignedMem[GMX_SIMD4_WIDTH*5];
+    real *           p0 = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
+                                                   ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
     real          *  p1 = p0 + GMX_SIMD4_WIDTH;
     real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
     real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;

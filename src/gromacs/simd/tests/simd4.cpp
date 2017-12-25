@@ -86,7 +86,9 @@ const Simd4Real rSimd4_logicalResultOr  = setSimd4RealFrom1R(1.8666534423828125)
 ::std::vector<real>
 simd4Real2Vector(const Simd4Real simd4)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    real     unalignedMem[GMX_SIMD4_WIDTH*2];
+    real *   mem = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
+                                            ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
 
     store4(mem, simd4);
     std::vector<real>   v(mem, mem+GMX_SIMD4_WIDTH);
@@ -97,7 +99,9 @@ simd4Real2Vector(const Simd4Real simd4)
 Simd4Real
 vector2Simd4Real(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    real     unalignedMem[GMX_SIMD4_WIDTH*2];
+    real *   mem = reinterpret_cast<real *>(reinterpret_cast<std::size_t>(unalignedMem+GMX_SIMD4_WIDTH-1) &
+                                            ~(reinterpret_cast<std::size_t>(GMX_SIMD4_WIDTH*sizeof(real)-1)));
 
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
     {
@@ -139,6 +143,35 @@ Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
                               const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorEq(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
+}
+
+TEST(Simd4Test, Align)
+{
+ #if GMX_SIMD4_HAVE_FLOAT
+    float         mem1[GMX_SIMD4_WIDTH*2];
+    float       * r1 = simd4Align(mem1);
+
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(r1);
+    EXPECT_EQ(0, addr1 % (GMX_SIMD4_WIDTH*sizeof(float)));
+
+    // another offset
+    r1    = simd4Align(mem1+1);
+    addr1 = reinterpret_cast<std::uint64_t>(r1);
+    EXPECT_EQ(0, addr1 % (GMX_SIMD4_WIDTH*sizeof(float)));
+#endif
+
+#if GMX_SIMD4_HAVE_DOUBLE
+    double        mem2[GMX_SIMD4_WIDTH*2];
+    double      * r2 = simd4Align(mem2);
+
+    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(r2);
+    EXPECT_EQ(0, addr2 % (GMX_SIMD4_WIDTH*sizeof(double)));
+
+    // another offset
+    r2    = simd4Align(mem2+1);
+    addr2 = reinterpret_cast<std::uint64_t>(r2);
+    EXPECT_EQ(0, addr2 % (GMX_SIMD4_WIDTH*sizeof(double)));
+#endif
 }
 
 #endif  // GMX_SIMD4_HAVE_REAL

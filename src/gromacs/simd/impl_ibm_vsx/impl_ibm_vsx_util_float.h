@@ -330,7 +330,8 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    // Our VSX SimdFInt32 load/store routines do not require aligned memory
+    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -343,7 +344,8 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    // Our VSX SimdFInt32 load/store routines do not require aligned memory
+    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
@@ -356,7 +358,8 @@ gatherLoadUBySimdIntTranspose(const float *  base,
                               SimdFloat *    v0,
                               SimdFloat *    v1)
 {
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    // Our VSX SimdFInt32 load/store routines do not require aligned memory
+    std::int32_t   ioffset[GMX_SIMD_FLOAT_WIDTH];
 
     store(ioffset, offset );
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
