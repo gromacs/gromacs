@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,11 +36,6 @@
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 typedef struct gmx_residuetype_t gmx_residuetype_t;
 
@@ -78,9 +73,5 @@ gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
 
 const char *
 gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,10 +39,6 @@
 #define GMX_TIMING_WALLTIME_ACCOUNTING_H
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if 0
 }
@@ -117,9 +113,5 @@ walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_ac
  * Resolution is implementation-dependent, but typically nanoseconds
  * or microseconds. */
 double gmx_gettime();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* GMX_TIMING_WALLTIME_ACCOUNTING_H */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,6 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Normal correlation f(t)*f(t+dt) */
 #define eacNormal (1<<0)
@@ -181,9 +177,5 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv,
                      int nrestart, gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
                      int nfitparm);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

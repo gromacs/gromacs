@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,10 +42,6 @@
 
 #ifndef GMX_TIMING_GPU_TIMING_H
 #define GMX_TIMING_GPU_TIMING_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \internal \brief GPU kernel time and call count. */
 struct gmx_kernel_timing_data_t
@@ -94,9 +90,5 @@ struct gmx_wallclock_gpu_nbnxn_t
     double                   pl_h2d_t;         /**< pair search step host to device transfer time */
     int                      pl_h2d_c;         /**< pair search step  host to device transfer call count */
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

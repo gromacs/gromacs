@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,6 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Write a full or sparse matrix to a file.
  *
  * You should provide the filename, dimensions (nrow/ncol), and
@@ -81,9 +77,5 @@ gmx_mtxio_read (const char *            filename,
                 int *                   ncol,
                 real **                 full_matrix,
                 gmx_sparsematrix_t **   sparse_matrix);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
