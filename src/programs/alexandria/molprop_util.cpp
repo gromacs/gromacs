@@ -248,7 +248,7 @@ int merge_xml(int nfile, char **filens,
     {
         char buf[256];
         snprintf(buf, sizeof(buf), "Too many (%d) warnings.", nwarn);
-        GMX_RELEASE_ASSERT(nwarn > 0, buf);
+        GMX_RELEASE_ASSERT(nwarn == 0, buf);
     }
     if (outf)
     {
