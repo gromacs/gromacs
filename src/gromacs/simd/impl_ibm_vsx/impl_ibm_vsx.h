@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,11 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
 
+// At high optimization levels, gcc 7.2 gives false
+// positives.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+
 // While we do our best to also test VSX with Power7, that depends on having
 // access to big-endian hardware, so for the long term our focus will be
 // little-endian Power8.
@@ -47,5 +52,7 @@
 #include "impl_ibm_vsx_simd_float.h"
 #include "impl_ibm_vsx_util_double.h"
 #include "impl_ibm_vsx_util_float.h"
+
+#pragma GCC diagnostic pop
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
