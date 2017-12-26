@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+#include <cstddef>
 #include <cstdint>
 
 #include <gtest/gtest.h>
@@ -54,29 +55,29 @@ namespace gmx
 
 TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
 {
+    //Extended alignment is not required to be supported.
+    //Do not test larger than max_align_t. Larger are
+    //tested by SIMD tests.
+
+    constexpr int max_real_align = sizeof(std::max_align_t)/sizeof(real);
     GMX_ALIGNED(real, 2)  r1;
-    GMX_ALIGNED(real, 4)  r2;
-    GMX_ALIGNED(real, 8)  r3;
+    GMX_ALIGNED(real, max_real_align)  r2;
 
     std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
     std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
-    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
 
     EXPECT_EQ(0, addr1 % 2);
-    EXPECT_EQ(0, addr2 % 4);
-    EXPECT_EQ(0, addr3 % 8);
+    EXPECT_EQ(0, addr2 % max_real_align);
 
+    constexpr int max_int_align = sizeof(std::max_align_t)/sizeof(int);
     GMX_ALIGNED(int, 2)   i1;
-    GMX_ALIGNED(int, 4)   i2;
-    GMX_ALIGNED(int, 8)   i3;
+    GMX_ALIGNED(int, max_int_align)   i2;
 
     addr1 = reinterpret_cast<std::uint64_t>(&i1);
     addr2 = reinterpret_cast<std::uint64_t>(&i2);
-    addr3 = reinterpret_cast<std::uint64_t>(&i3);
 
     EXPECT_EQ(0, addr1 % 2);
-    EXPECT_EQ(0, addr2 % 4);
-    EXPECT_EQ(0, addr3 % 8);
+    EXPECT_EQ(0, addr2 % max_int_align);
 }
 
 }
