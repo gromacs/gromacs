@@ -221,12 +221,15 @@ void print_dipole(FILE              *fp,
     {
         ebuf[0] = '\0';
     }
+    fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f",
+            qTypeName(qt), mol->muQM(qt)[XX], mol->muQM(qt)[YY], mol->muQM(qt)[ZZ],
+            mol->dipQM(qt));
     if (qt != qtElec)
     {
-        fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                qTypeName(qt), mol->muQM(qt)[XX], mol->muQM(qt)[YY], mol->muQM(qt)[ZZ],
-                mol->dipQM(qt), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+        fprintf(fp, " Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s",
+                dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
     }
+    fprintf(fp, "\n");
 }
 
 void print_electric_props(FILE                           *fp,
