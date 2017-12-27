@@ -221,9 +221,12 @@ void print_dipole(FILE              *fp,
     {
         ebuf[0] = '\0';
     }
-    fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-            qTypeName(qt), mol->muQM(qtCalc)[XX], mol->muQM(qtCalc)[YY], mol->muQM(qtCalc)[ZZ],
-            mol->dipQM(qtCalc), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+    if (qt != qtElec)
+    {
+        fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
+                qTypeName(qt), mol->muQM(qt)[XX], mol->muQM(qt)[YY], mol->muQM(qt)[ZZ],
+                mol->dipQM(qt), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+    }
 }
 
 void print_electric_props(FILE                           *fp,
@@ -295,8 +298,9 @@ void print_electric_props(FILE                           *fp,
                     mol.molProp()->getMolname().c_str(),
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
-
+                    
             mol.CalcDipole();
+            print_dipole(fp, &mol, qtElec, dip_toler);
             for (int j = 0; j < qtElec; j++)
             {
                 qType qt = static_cast<qType>(j);
