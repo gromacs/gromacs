@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,7 @@
 #define GMX_SIMD_FINT32_WIDTH                   4
 #undef  GMX_SIMD_DINT32_WIDTH
 #define GMX_SIMD4_WIDTH                         4
+#define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single)
 #define GMX_SIMD_RSQRT_BITS                    14
 #define GMX_SIMD_RCP_BITS                      14
 

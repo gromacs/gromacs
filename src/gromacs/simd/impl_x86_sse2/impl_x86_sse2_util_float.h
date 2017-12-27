@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -334,7 +334,7 @@ gatherLoadBySimdIntTranspose(const float *  base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
     _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
 }
@@ -351,7 +351,7 @@ gatherLoadBySimdIntTranspose(const float *   base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
     _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
@@ -370,7 +370,7 @@ gatherLoadUBySimdIntTranspose(const float *  base,
     // This is likely because (a) the extract function is expensive, and (b)
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
-    GMX_ALIGNED(std::int32_t, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
     _mm_store_si128( (__m128i *)ioffset, offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }

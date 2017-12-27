@@ -86,7 +86,7 @@ const Simd4Real rSimd4_logicalResultOr  = setSimd4RealFrom1R(1.8666534423828125)
 ::std::vector<real>
 simd4Real2Vector(const Simd4Real simd4)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real  mem[GMX_SIMD4_WIDTH];
 
     store4(mem, simd4);
     std::vector<real>   v(mem, mem+GMX_SIMD4_WIDTH);
@@ -97,7 +97,7 @@ simd4Real2Vector(const Simd4Real simd4)
 Simd4Real
 vector2Simd4Real(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real  mem[GMX_SIMD4_WIDTH];
 
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
     {

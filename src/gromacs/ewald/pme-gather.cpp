@@ -197,7 +197,7 @@ struct do_fspline
         *S0 = load4U(data-offset);
         *S1 = load4U(data-offset+4);
 #else
-        GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  buf_aligned[GMX_SIMD4_WIDTH*2];
+        alignas(GMX_SIMD_ALIGNMENT) real  buf_aligned[GMX_SIMD4_WIDTH*2];
         /* Copy data to an aligned buffer */
         for (int i = 0; i < order; i++)
         {
