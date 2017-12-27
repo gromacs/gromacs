@@ -121,10 +121,42 @@ const SimdInt32 iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 #endif
 
 #if GMX_SIMD_HAVE_REAL
+TEST(SimdTest, GmxAligned)
+{
+    // Test alignment with two variables that must be aligned, and one that
+    // doesn't have to be. The order of variables is up to the compiler, but
+    // if it ignores alignment it is highly unlikely that both r1/r3 still end
+    // up being aligned by mistake.
+    alignas(GMX_SIMD_ALIGNMENT) real        r1;
+    real                                    r2;
+    alignas(GMX_SIMD_ALIGNMENT) real        r3;
+
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
+    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
+    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so r2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t         i1;
+    std::int32_t                                     i2;
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t         i3;
+
+    addr1 = reinterpret_cast<std::uint64_t>(&i1);
+    addr2 = reinterpret_cast<std::uint64_t>(&i2);
+    addr3 = reinterpret_cast<std::uint64_t>(&i3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so i2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+}
+
+
 ::std::vector<real>
 simdReal2Vector(const SimdReal simd)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real        mem[GMX_SIMD_REAL_WIDTH];
 
     store(mem, simd);
     std::vector<real>   v(mem, mem+GMX_SIMD_REAL_WIDTH);
@@ -135,7 +167,7 @@ simdReal2Vector(const SimdReal simd)
 SimdReal
 vector2SimdReal(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real        mem[GMX_SIMD_REAL_WIDTH];
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -179,21 +211,21 @@ SimdTest::compareSimdEq(const char * refExpr, const char * tstExpr,
     return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref), simdReal2Vector(tst));
 }
 
-std::vector<int>
+std::vector<std::int32_t>
 simdInt2Vector(const SimdInt32 simd)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  mem[GMX_SIMD_REAL_WIDTH];
 
     store(mem, simd);
-    std::vector<int>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
+    std::vector<std::int32_t>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
 
     return v;
 }
 
 SimdInt32
-vector2SimdInt(const std::vector<int> &v)
+vector2SimdInt(const std::vector<std::int32_t> &v)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t   mem[GMX_SIMD_REAL_WIDTH];
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {

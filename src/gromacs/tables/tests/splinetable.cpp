@@ -679,7 +679,7 @@ TYPED_TEST(SplineTableTest, Simd)
     real     refDer  = lj12Derivative(x);
     SimdReal tstFunc, tstDer;
     real     funcErr, derErr;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real alignedMem[GMX_SIMD_REAL_WIDTH];
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc, &tstDer);
 
@@ -712,7 +712,7 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
     SimdReal tstFunc1, tstDer1;
     real     funcErr0, derErr0;
     real     funcErr1, derErr1;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real alignedMem[GMX_SIMD_REAL_WIDTH];
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc0, &tstDer0, &tstFunc1, &tstDer1);
 
@@ -765,7 +765,7 @@ TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
     TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
     SimdReal               x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real alignedMem[GMX_SIMD_REAL_WIDTH];
 
     // Test all values between 0 and range.second
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)

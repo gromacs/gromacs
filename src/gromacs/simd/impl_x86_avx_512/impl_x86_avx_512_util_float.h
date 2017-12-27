@@ -154,7 +154,7 @@ transposeScatterIncrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    o[16];
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {
@@ -226,7 +226,7 @@ transposeScatterDecrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    o[16];
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {

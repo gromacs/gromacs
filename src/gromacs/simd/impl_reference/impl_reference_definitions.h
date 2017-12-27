@@ -232,6 +232,9 @@ namespace gmx
 //! \brief The SIMD4 type is always four units wide, but this makes code more explicit
 #define GMX_SIMD4_WIDTH                                          4
 
+//! \brief Required alignment in bytes for aligned load/store (always defined, even without SIMD)
+#define GMX_SIMD_ALIGNMENT                                       8 // 8 (1*double)
+
 //! \brief Accuracy of SIMD 1/sqrt(x) lookup. Used to determine number of iterations.
 #define GMX_SIMD_RSQRT_BITS                                      23
 
