@@ -121,6 +121,34 @@ const SimdInt32 iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 #endif
 
 #if GMX_SIMD_HAVE_REAL
+TEST(SimdTest, GmxAligned)
+{
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  r1;
+    real                                    r2;
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  r3;
+
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
+    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
+    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so r2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+
+    GMX_ALIGNED(std::int32_t, GMX_SIMD_REAL_WIDTH)   i1;
+    std::int32_t                                     i2;
+    GMX_ALIGNED(std::int32_t, GMX_SIMD_REAL_WIDTH)   i3;
+
+    addr1 = reinterpret_cast<std::uint64_t>(&i1);
+    addr2 = reinterpret_cast<std::uint64_t>(&i2);
+    addr3 = reinterpret_cast<std::uint64_t>(&i3);
+
+    EXPECT_EQ(0, addr1 % GMX_SIMD_ALIGNMENT);
+    EXPECT_NE(0, addr2); // Just so i2 is not optimized away
+    EXPECT_EQ(0, addr3 % GMX_SIMD_ALIGNMENT);
+}
+
+
 ::std::vector<real>
 simdReal2Vector(const SimdReal simd)
 {
