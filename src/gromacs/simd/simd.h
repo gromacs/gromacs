@@ -99,6 +99,24 @@ struct SimdFInt32Tag {};
 struct SimdDInt32Tag {};
 }
 
+/*! \def GMX_ALIGNED(type, alignment)
+ * \brief
+ * Declare variable with data alignment
+ *
+ * \param[in] type       Type of variable
+ * \param[in] alignment  Alignment in multiples of type
+ *
+ * Typical usage:
+ * \code
+   GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf[...];
+   \endcode
+ */
+
+// We rely on C++11. This will for instance work for MSVC2015 and later.
+// If you get an error here, find out what attribute to use to get your compiler to align
+// data properly and add it as a case.
+#define GMX_ALIGNED(type, alignment) alignas(alignment*sizeof(type)) type
+
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
  *  These macros are used to describe the features available in default
