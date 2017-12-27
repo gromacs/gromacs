@@ -550,11 +550,17 @@ do_pairs_simple(int nbonds,
     T         twelve(12);
     T         ef(scale_factor);
 
-    const int align = 16;
-    GMX_ASSERT(pack_size <= align, "align should be increased");
-    GMX_ALIGNED(int,  align)  ai[pack_size];
-    GMX_ALIGNED(int,  align)  aj[pack_size];
-    GMX_ALIGNED(real, align)  coeff[3*pack_size];
+#if GMX_SIMD_HAVE_REAL
+    // No matter what the pack_size is, we only need temporary storage to be
+    // aligned to match the SIMD load/store requirements.
+    GMX_ALIGNED(std::int32_t,  GMX_SIMD_REAL_WIDTH)  ai[pack_size];
+    GMX_ALIGNED(std::int32_t,  GMX_SIMD_REAL_WIDTH)  aj[pack_size];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  coeff[3*pack_size];
+#else
+    std::int32_t   ai[pack_size];
+    std::int32_t   aj[pack_size];
+    real           coeff[3*pack_size];
+#endif
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size*nfa1)
