@@ -72,7 +72,7 @@ class SimdFInt32
 
         SimdFInt32(std::int32_t i)
         {
-            GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
+            alignas(GMX_SIMD_ALIGNMENT) std::int32_t idata[GMX_SIMD_FINT32_WIDTH];
             idata[0]      = i;
             simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
         }
@@ -329,8 +329,8 @@ trunc(SimdFloat x)
 static inline SimdFloat
 frexp(SimdFloat value, SimdFInt32 * exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float         rdata[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_FLOAT_WIDTH];
 
     vec_st(value.simdInternal_, 0, rdata);
 
@@ -349,8 +349,8 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat
 ldexp(SimdFloat value, SimdFInt32 exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float         rdata[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_FLOAT_WIDTH];
 
     vec_st(value.simdInternal_,    0, rdata);
     vec_st(exponent.simdInternal_, 0, idata);

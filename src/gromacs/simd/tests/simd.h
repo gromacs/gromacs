@@ -268,14 +268,14 @@ SimdReal   setSimdRealFrom1R(real value);
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<int>   simdInt2Vector(const SimdInt32 simd);
+std::vector<std::int32_t>   simdInt2Vector(const SimdInt32 simd);
 
 /*! \brief Return 32-bit integer SIMD value from std::vector<int>.
  *
  * If the vector is longer than SIMD width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD register.
  */
-SimdInt32   vector2SimdInt(const std::vector<int> &v);
+SimdInt32   vector2SimdInt(const std::vector<std::int32_t> &v);
 
 /*! \brief Set SIMD register contents from three int values.
  *

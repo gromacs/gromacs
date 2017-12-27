@@ -550,11 +550,15 @@ do_pairs_simple(int nbonds,
     T         twelve(12);
     T         ef(scale_factor);
 
-    const int align = 16;
-    GMX_ASSERT(pack_size <= align, "align should be increased");
-    GMX_ALIGNED(int,  align)  ai[pack_size];
-    GMX_ALIGNED(int,  align)  aj[pack_size];
-    GMX_ALIGNED(real, align)  coeff[3*pack_size];
+#if GMX_SIMD_HAVE_REAL
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  ai[pack_size];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  aj[pack_size];
+    alignas(GMX_SIMD_ALIGNMENT) real          coeff[3*pack_size];
+#else
+    std::int32_t   ai[pack_size];
+    std::int32_t   aj[pack_size];
+    real           coeff[3*pack_size];
+#endif
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size*nfa1)
@@ -658,7 +662,7 @@ do_pairs(int ftype, int nbonds,
          * at once for the angles and dihedrals as well.
          */
 #if GMX_SIMD
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real pbc_simd[9*GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbc_simd);
 
         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,

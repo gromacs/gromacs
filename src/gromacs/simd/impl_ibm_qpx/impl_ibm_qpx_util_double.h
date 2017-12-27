@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,9 +143,9 @@ transposeScatterStoreU(double  *             base,
                        SimdDouble            v1,
                        SimdDouble            v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double   m0[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double   m1[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double   m2[GMX_SIMD_DOUBLE_WIDTH];
 
     store(m0, v0);
     store(m1, v1);
@@ -193,9 +193,9 @@ transposeScatterIncrU(double  *             base,
     }
     else
     {
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m0[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m1[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m2[GMX_SIMD_DOUBLE_WIDTH];
 
         store(m0, v0);
         store(m1, v1);
@@ -244,9 +244,9 @@ transposeScatterDecrU(double  *             base,
     }
     else
     {
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
-        GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m2[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m0[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m1[GMX_SIMD_DOUBLE_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) double   m2[GMX_SIMD_DOUBLE_WIDTH];
 
         store(m0, v0);
         store(m1, v1);
@@ -287,7 +287,7 @@ gatherLoadBySimdIntTranspose(const double  *  base,
                              SimdDouble *     v2,
                              SimdDouble *     v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
     store(ioffset, simdoffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -300,7 +300,7 @@ gatherLoadBySimdIntTranspose(const double  *  base,
                              SimdDouble *     v0,
                              SimdDouble *     v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
     store(ioffset, simdoffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);

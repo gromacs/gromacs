@@ -453,8 +453,8 @@ TEST_F(SimdFloatingpointTest, reduce)
 #if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    alignas(GMX_SIMD_ALIGNMENT) float   f[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
 
     int                               i;
     SimdFloat                         vf;
@@ -488,8 +488,8 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 
 TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    alignas(GMX_SIMD_ALIGNMENT) float     f[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double    d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
     int                               i;
     SimdFloat                         vf;
     SimdDouble                        vd0;

@@ -239,9 +239,9 @@ transposeScatterIncrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata0[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata1[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata2[GMX_SIMD_FLOAT_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -263,9 +263,9 @@ transposeScatterDecrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata0[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata1[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  rdata2[GMX_SIMD_FLOAT_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);

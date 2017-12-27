@@ -982,10 +982,10 @@ angles_noener_simd(int nbonds,
     const int            nfa1 = 4;
     int                  i, iu, s;
     int                  type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[2*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ai[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    aj[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ak[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real            coeff[2*GMX_SIMD_REAL_WIDTH];
     SimdReal             deg2rad_S(DEG2RAD);
     SimdReal             xi_S, yi_S, zi_S;
     SimdReal             xj_S, yj_S, zj_S;
@@ -1005,7 +1005,7 @@ angles_noener_simd(int nbonds,
     SimdReal             cik_S, cii_S, ckk_S;
     SimdReal             f_ix_S, f_iy_S, f_iz_S;
     SimdReal             f_kx_S, f_ky_S, f_kz_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
 
     set_pbc_simd(pbc, pbc_simd);
 
@@ -1309,11 +1309,11 @@ void urey_bradley_noener_simd(int nbonds,
                               int gmx_unused *global_atom_index)
 {
     constexpr int            nfa1 = 4;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[4*GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ai[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    aj[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ak[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real            coeff[4*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real            pbc_simd[9*GMX_SIMD_REAL_WIDTH];
 
     set_pbc_simd(pbc, pbc_simd);
 
@@ -1995,11 +1995,11 @@ pdihs_noener_simd(int nbonds,
     const int             nfa1 = 5;
     int                   i, iu, s;
     int                   type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  buf[3*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ai[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    aj[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    ak[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    al[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real            buf[3*GMX_SIMD_REAL_WIDTH];
     real                 *cp, *phi0, *mult;
     SimdReal              deg2rad_S(DEG2RAD);
     SimdReal              p_S, q_S;
@@ -2011,7 +2011,7 @@ pdihs_noener_simd(int nbonds,
     SimdReal              sin_S, cos_S;
     SimdReal              mddphi_S;
     SimdReal              sf_i_S, msf_l_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real            pbc_simd[9*GMX_SIMD_REAL_WIDTH];
 
     /* Extract aligned pointer for parameters and variables */
     cp    = buf + 0*GMX_SIMD_REAL_WIDTH;
@@ -2110,11 +2110,11 @@ rbdihs_noener_simd(int nbonds,
     const int             nfa1 = 5;
     int                   i, iu, s, j;
     int                   type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) parm[NR_RBDIHS*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  ai[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  aj[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  ak[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  al[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real          parm[NR_RBDIHS*GMX_SIMD_REAL_WIDTH];
 
     SimdReal              p_S, q_S;
     SimdReal              phi_S;
@@ -2125,7 +2125,7 @@ rbdihs_noener_simd(int nbonds,
     SimdReal              parm_S, c_S;
     SimdReal              sin_S, cos_S;
     SimdReal              sf_i_S, msf_l_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real          pbc_simd[9*GMX_SIMD_REAL_WIDTH];
 
     SimdReal              pi_S(M_PI);
     SimdReal              one_S(1.0);

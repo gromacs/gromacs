@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,9 +273,9 @@ transposeScatterIncrU(float *              base,
     }
     else
     {
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata0[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata1[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata2[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata0[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata1[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata2[GMX_SIMD_FLOAT_WIDTH];
 
         vec_st(v0.simdInternal_, 0, rdata0);
         vec_st(v1.simdInternal_, 0, rdata1);
@@ -323,9 +323,9 @@ transposeScatterDecrU(float *              base,
     }
     else
     {
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata0[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata1[GMX_SIMD_FLOAT_WIDTH];
-        GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH) rdata2[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata0[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata1[GMX_SIMD_FLOAT_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) float rdata2[GMX_SIMD_FLOAT_WIDTH];
 
         vec_st(v0.simdInternal_, 0, rdata0);
         vec_st(v1.simdInternal_, 0, rdata1);
@@ -371,7 +371,7 @@ gatherLoadBySimdIntTranspose(const float *  base,
                              SimdFloat *    v2,
                              SimdFloat *    v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
 
     vec_st( offset.simdInternal_, 0, ioffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -384,7 +384,7 @@ gatherLoadBySimdIntTranspose(const float *   base,
                              SimdFloat *     v0,
                              SimdFloat *     v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) ioffset[GMX_SIMD_FINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
 
     vec_st( offset.simdInternal_, 0, ioffset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
