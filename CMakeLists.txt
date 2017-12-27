@@ -857,13 +857,18 @@ else()
     # RPATHs), and makes the binaries in the build tree relocatable.
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+        if(${CMAKE_VERSION} VERSION_GREATER "3.8.2")
+            cmake_policy(SET CMP0068 NEW) # From CMake-3.9
+            set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
+        endif()
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
-        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
-    else()
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
         set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+        set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_RPATH})
+    else()
+        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
