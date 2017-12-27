@@ -71,9 +71,9 @@
 
 // Implementation details
 #define GMX_SIMD_FLOAT_WIDTH                    4
-#undef  GMX_SIMD_DOUBLE_WIDTH
+#define GMX_SIMD_DOUBLE_WIDTH                   0
 #define GMX_SIMD_FINT32_WIDTH                   4
-#undef  GMX_SIMD_DINT32_WIDTH
+#define GMX_SIMD_DINT32_WIDTH                   0
 #define GMX_SIMD4_WIDTH                         4
 #define GMX_SIMD_RSQRT_BITS                     8
 #define GMX_SIMD_RCP_BITS                       8
