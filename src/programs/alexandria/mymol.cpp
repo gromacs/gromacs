@@ -100,12 +100,12 @@ const char *qTypeName(qType qt)
 {
     switch(qt)
     {
-    case qtESP: return "ESP";
-    case qtMulliken: return "Mulliken";
+    case qtESP:       return "ESP";
+    case qtMulliken:  return "Mulliken";
     case qtHirshfeld: return "Hirshfeld";
-    case qtCM5: return "CM5";
-    case qtCalc: return "Calculated";
-    case qtElec: return "Electronic";
+    case qtCM5:       return "CM5";
+    case qtCalc:      return "Calculated";
+    case qtElec:      return "Electronic";
     default:
         return "Unknown charge type";
     }

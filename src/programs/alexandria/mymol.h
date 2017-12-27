@@ -88,8 +88,13 @@ namespace alexandria
 {
 /*! \brief Enumerated type to differentiate the charge types */
 enum qType {
-    qtCalc = 0, qtESP = 1, qtMulliken = 2, qtHirshfeld = 3,
-    qtCM5  = 4, qtElec = 5, qtNR = 6
+    qtCalc      = 0, 
+    qtESP       = 1, 
+    qtMulliken  = 2, 
+    qtHirshfeld = 3,
+    qtCM5       = 4, 
+    qtElec      = 5, 
+    qtNR        = 6
 };
 
 /*! \brief return string corresponding to charge type */

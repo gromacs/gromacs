@@ -125,7 +125,7 @@ void print_polarizability(FILE              *fp,
 
     if (nullptr != calc_name)
     {
-        if (strcmp(calc_name, (char *)"Calc") == 0)
+        if (strcmp(calc_name, (char *)"Calculated") == 0)
         {
             m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
@@ -308,7 +308,6 @@ void print_electric_props(FILE                           *fp,
             {
                 qType qt = static_cast<qType>(j);
                 print_dipole(fp, &mol, qt,   dip_toler);
-
                 gmx_stats_add_point(lsq_dip[j], mol.dipQM(qtElec), mol.dipQM(qt), 0, 0);
             }
 
@@ -317,14 +316,13 @@ void print_electric_props(FILE                           *fp,
             mol.CalcQuadrupole();
             print_quadrapole(fp, &mol, qtElec, quad_toler);
 
-            for (int j = 0; j <= qtCalc; j++)
+            for (int j = 0; j < qtElec; j++)
             {
                 qType qt = static_cast<qType>(j);
                 print_quadrapole(fp, &mol, qt, quad_toler);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_mu[j], mol.muQM(qtElec)[mm], mol.muQM(qt)[mm], 0, 0);
-
                     for (nn = 0; nn < DIM; nn++)
                     {
                         if (bfullTensor || (mm == nn))
@@ -334,14 +332,13 @@ void print_electric_props(FILE                           *fp,
                     }
                 }
             }
-
             if (bPolar)
             {
                 mol.CalcPolarizability(efield, cr, nullptr);
                 if (check_polarizability(mol.alpha_calc_))
                 {
                     print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler);
-                    print_polarizability(fp, &mol, (char *)"Calc",       alpha_toler);
+                    print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler);
                     gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
                     gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
                     for (mm = 0; mm < DIM; mm++)
@@ -409,26 +406,23 @@ void print_electric_props(FILE                           *fp,
 
     fprintf(fp, "Dipoles are %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
     fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
+    fprintf(fp, "\n"); 
+    
+    print_stats(fp, "ESP  (Hartree/e)",  lsq_esp, true,  "Electronic", "Calculated");
     fprintf(fp, "\n");
-
-    print_stats(fp, "ESP           (Hartree/e)",  lsq_esp,          true,  "Electronic", "Calc");
-    print_stats(fp, "Dipoles       (Debye)",      lsq_mu[qtCalc],   false, "Electronic", "Calc");
-    print_stats(fp, "Dipole Moment (Debye)",      lsq_dip[qtCalc],  false, "Electronic", "Calc");
-    print_stats(fp, "Quadrupoles   (Buckingham)", lsq_quad[qtCalc], false, "Electronic", "Calc");
-    if (bPolar)
-    {
-        print_stats(fp, "Principal Components of Polarizability (A^3)",  lsq_alpha, false,  "Electronic", "Calc");
-        print_stats(fp, "Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  "Electronic", "Calc");
-        print_stats(fp, "Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  "Electronic", "Calc");
-    }
-    fprintf(fp, "\n");
-
+    
     for (int i = 0; i < qtElec; i++)
     {
         const char *name = qTypeName(static_cast<qType>(i));
         print_stats(fp, "Dipoles",       lsq_mu[i],   true,  "Electronic", name);
         print_stats(fp, "Dipole Moment", lsq_dip[i],  false, "Electronic", name);
-        print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name);
+        print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name);        
+        if (bPolar && i == qtCalc)
+        {
+            print_stats(fp, "Principal Components of Polarizability (A^3)",  lsq_alpha, false,  "Electronic", name);
+            print_stats(fp, "Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  "Electronic", name);
+            print_stats(fp, "Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  "Electronic", name);
+        }    
         fprintf(fp, "\n");
     }
 
