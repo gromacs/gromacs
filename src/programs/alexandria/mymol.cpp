@@ -1689,7 +1689,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         }        
     }
           
-    print_top_header(fp, pd, aps, bHaveShells_, commercials, bITP);
+    print_top_header(fp, pd, aps, bHaveShells_, iChargeDistributionModel, commercials, bITP);
     write_top(fp, printmol.name, &topology_->atoms, false,
               plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)

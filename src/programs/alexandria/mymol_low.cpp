@@ -60,6 +60,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+#include "poldata.h"
+
 namespace alexandria
 {
 
@@ -1131,6 +1133,7 @@ void print_top_header(FILE                    *fp,
                       const Poldata           &pd,
                       gmx_atomprop_t           aps, 
                       bool                     bPol,
+                      ChargeDistributionModel  iChargeDistributionModel,
                       std::vector<std::string> commercials,
                       bool                     bItp)
 {
@@ -1205,6 +1208,33 @@ void print_top_header(FILE                    *fp,
             gt_old = gt_type;
         }
         fprintf(fp, "\n");
+        if (iChargeDistributionModel == eqdAXpg ||
+            iChargeDistributionModel == eqdAXps)
+        {
+            fprintf(fp, "[ distributed_charges ]\n");
+            for (auto atype = pd.getAtypeBegin(); atype != pd.getAtypeEnd(); atype++)
+            {
+                auto eem = pd.findEem(iChargeDistributionModel, atype->getType());
+                switch(iChargeDistributionModel)
+                {
+                case eqdAXpg:
+                    {
+                        fprintf(fp, "%-5s  1  %g\n",  atype->getType().c_str(),
+                                eem->getZeta(0));
+                        break;
+                    }
+                case eqdAXps:
+                    {
+                        fprintf(fp, "%-5s  2  %d  %g\n",  atype->getType().c_str(), 
+                                eem->getRow(0), eem->getZeta(0));
+                        break;
+                    }
+                default:
+                    GMX_RELEASE_ASSERT(false, "Death horror");
+                }
+            }
+            fprintf(fp, "\n");
+        }
     }
 }
 
