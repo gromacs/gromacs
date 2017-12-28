@@ -1485,9 +1485,10 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
 
     fr->step  = frameNumber;
     fr->bStep = TRUE;
+
     // Convert the time to ps
     fr->time  = frameTime / PICO;
-    fr->bTime = TRUE;
+    fr->bTime = (frameTime > 0);
 
     // TODO This does not leak, but is not exception safe.
     /* values must be freed before leaving this function */

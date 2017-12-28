@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -383,6 +383,13 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
             fr->time  = 0;
             fr->bTime = FALSE;
         }
+    }
+
+    if ((p = std::strstr(title, "step=")) != nullptr)
+    {
+        p        += 5;
+        fr->step  = 0; // Default value if fr-bStep is false
+        fr->bStep = (sscanf(p, "%" GMX_SCNd64, &fr->step) == 1);
     }
 
     if (atoms.nr != fr->natoms)
