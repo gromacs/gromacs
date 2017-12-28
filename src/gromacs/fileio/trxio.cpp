@@ -725,7 +725,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
     int       ePBC, model_nr = -1, na;
-    char      title[STRLEN], *time;
+    char      title[STRLEN], *time, *step;
     double    dbl;
 
     atoms.nr      = fr->natoms;
@@ -751,32 +751,32 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         copy_mat(boxpdb, fr->box);
     }
 
-    if (model_nr != -1)
+    step = std::strstr(title, " step= ");
+    if (step && sscanf(step+7, "%" GMX_SCNd64, &fr->step) == 1)
     {
         fr->bStep = TRUE;
-        fr->step  = model_nr;
-    }
-    time = std::strstr(title, " t= ");
-    if (time)
-    {
-        fr->bTime = TRUE;
-        sscanf(time+4, "%lf", &dbl);
-        fr->time = (real)dbl;
     }
     else
     {
-        fr->bTime = FALSE;
-        /* this is a bit dirty, but it will work: if no time is read from
-           comment line in pdb file, set time to current frame number */
-        if (fr->bStep)
-        {
-            fr->time = (real)fr->step;
-        }
-        else
-        {
-            fr->time = (real)nframes_read(status);
-        }
+        fr->step  = 0;
+        fr->bStep = FALSE;
     }
+
+    // Default time values - only assign a time if we really found one!
+    fr->time  = 0;
+    fr->bTime = FALSE;
+    time      = std::strstr(title, " t= ");
+    if (time && sscanf(time+4, "%lf", &dbl) == 1)
+    {
+        fr->time  = dbl;
+        fr->bTime = TRUE;
+    }
+    else
+    {
+        fr->time  = 0;
+        fr->bTime = FALSE;
+    }
+
     if (na == 0)
     {
         return FALSE;
