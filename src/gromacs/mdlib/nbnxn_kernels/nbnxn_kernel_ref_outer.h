@@ -111,11 +111,12 @@ NBK_FUNC_NAME(_VgrpF)
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp;
+    const real         *zeta_matrix;
     real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
     real                rvdw2;
 #endif
-    int                 ntype2;
+    int                 ntype, ntype2;
     real                facel;
     int                 n, ci, ci_sh;
     int                 ish, ishf;
@@ -218,8 +219,10 @@ NBK_FUNC_NAME(_VgrpF)
     rvdw2               = ic->rvdw*ic->rvdw;
 #endif
 
+    ntype               = nbat->ntype;
     ntype2              = nbat->ntype*2;
     nbfp                = nbat->nbfp;
+    zeta_matrix         = nbat->zeta_matrix;
     q                   = nbat->q;
     type                = nbat->type;
     facel               = ic->epsfac;
