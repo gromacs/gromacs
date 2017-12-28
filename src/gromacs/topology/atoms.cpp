@@ -79,6 +79,7 @@ void init_atomtypes(t_atomtypes *at)
     at->atomnumber = nullptr;
     at->gb_radius  = nullptr;
     at->S_hct      = nullptr;
+    at->zeta       = nullptr;
 }
 
 void done_atom(t_atoms *at)
@@ -101,6 +102,7 @@ void done_atomtypes(t_atomtypes *atype)
     sfree(atype->atomnumber);
     sfree(atype->gb_radius);
     sfree(atype->S_hct);
+    sfree(atype->zeta);
 }
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
@@ -332,10 +334,11 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
         {
             pr_indent(fp, indent);
             fprintf(fp,
-                    "atomtype[%3d]={radius=%12.5e, volume=%12.5e, gb_radius=%12.5e, surftens=%12.5e, atomnumber=%4d, S_hct=%12.5e)}\n",
+                    "atomtype[%3d]={radius=%12.5e, volume=%12.5e, gb_radius=%12.5e, surftens=%12.5e, atomnumber=%4d, S_hct=%12.5e, zeta=%12.5e)}\n",
                     bShowNumbers ? i : -1, atomtypes->radius[i], atomtypes->vol[i],
                     atomtypes->gb_radius[i],
-                    atomtypes->surftens[i], atomtypes->atomnumber[i], atomtypes->S_hct[i]);
+                    atomtypes->surftens[i], atomtypes->atomnumber[i], atomtypes->S_hct[i],
+                    atomtypes->zeta[i]);
         }
     }
 }

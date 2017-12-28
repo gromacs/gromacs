@@ -55,6 +55,7 @@ static const char *directive_names[d_maxdir+1] = {
     "angletypes",
     "dihedraltypes",
     "nonbond_params",
+    "distributed_charges",
     "implicit_genborn_params",
     "implicit_surface_params",
     "cmaptypes",
@@ -360,6 +361,7 @@ void DS_Init(DirStack **DS)
         snew(necessary, d_maxdir);
         set_nec(&(necessary[d_defaults]), d_none);
         set_nec(&(necessary[d_atomtypes]), d_defaults, d_none);
+        set_nec(&(necessary[d_distributed_charges]), d_atomtypes, d_none);
         set_nec(&(necessary[d_bondtypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_constrainttypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_pairtypes]), d_atomtypes, d_none);
