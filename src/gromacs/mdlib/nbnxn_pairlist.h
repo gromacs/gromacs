@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -277,6 +277,10 @@ typedef struct nbnxn_atomdata_t {
     nbnxn_free_t            *free;
     int                      ntype;           /* The number of different atom types                 */
     real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
+    real                    *zeta_matrix;     /* Screening constant matrix for distributed
+                                                 charges. Size of the matrix is ntype x ntype.
+                                                 If the variable is a nullptr no zetas are used. */
+
     int                      comb_rule;       /* Combination rule, see enum above                   */
     real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
     real                    *nbfp_aligned;    /* As nbfp, but with an alignment (stride) suitable
