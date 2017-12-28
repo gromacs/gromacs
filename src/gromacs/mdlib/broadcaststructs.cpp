@@ -780,12 +780,14 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
     snew_bc(cr, atomtypes->surftens, nr);
     snew_bc(cr, atomtypes->gb_radius, nr);
     snew_bc(cr, atomtypes->S_hct, nr);
+    snew_bc(cr, atomtypes->zeta, nr);
 
     nblock_bc(cr, nr, atomtypes->radius);
     nblock_bc(cr, nr, atomtypes->vol);
     nblock_bc(cr, nr, atomtypes->surftens);
     nblock_bc(cr, nr, atomtypes->gb_radius);
     nblock_bc(cr, nr, atomtypes->S_hct);
+    nblock_bc(cr, nr, atomtypes->zeta);
 }
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in

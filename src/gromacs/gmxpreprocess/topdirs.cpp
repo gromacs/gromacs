@@ -49,6 +49,7 @@
 static const char *directive_names[d_maxdir+1] = {
     "defaults",
     "atomtypes",
+    "atomtype_properties",
     "bondtypes",
     "constrainttypes",
     "pairtypes",
@@ -360,6 +361,7 @@ void DS_Init(DirStack **DS)
         snew(necessary, d_maxdir);
         set_nec(&(necessary[d_defaults]), d_none);
         set_nec(&(necessary[d_atomtypes]), d_defaults, d_none);
+        set_nec(&(necessary[d_atomtype_properties]), d_atomtypes, d_none);
         set_nec(&(necessary[d_bondtypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_constrainttypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_pairtypes]), d_atomtypes, d_none);

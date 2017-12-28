@@ -118,6 +118,7 @@ enum tpxv {
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
+    tpxv_DistributedChargeInverseWidth,                      /**< New atomtype property */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -2637,6 +2638,7 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
         snew(atomtypes->atomnumber, j);
         snew(atomtypes->gb_radius, j);
         snew(atomtypes->S_hct, j);
+        snew(atomtypes->zeta, j);
     }
     gmx_fio_ndo_real(fio, atomtypes->radius, j);
     gmx_fio_ndo_real(fio, atomtypes->vol, j);
@@ -2649,6 +2651,10 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
     {
         gmx_fio_ndo_real(fio, atomtypes->gb_radius, j);
         gmx_fio_ndo_real(fio, atomtypes->S_hct, j);
+    }
+    if (file_version >=  tpxv_DistributedChargeInverseWidth)
+    {
+        gmx_fio_ndo_real(fio, atomtypes->zeta, j);
     }
 }
 
