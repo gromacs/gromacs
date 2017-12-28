@@ -385,6 +385,13 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
         }
     }
 
+    if ((p = std::strstr(title, "step=")) != nullptr)
+    {
+        p        += 5;
+        fr->step  = 0; // Default value if fr-bStep is false
+        fr->bStep = (sscanf(p, "%" GMX_SCNd64, &fr->step) == 1);
+    }
+
     if (atoms.nr != fr->natoms)
     {
         gmx_fatal(FARGS, "Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)", atoms.nr, fr->natoms);
