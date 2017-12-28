@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     real                  tf, dx2, cut2, *t_x = nullptr, *t_y, cmid, cmax, cav, ekin;
     int                   i, j, k, ai, aj, ci, cj, nframe, nclust, n_x, max_size = 0;
     int                  *clust_index, *clust_size, max_clust_size, max_clust_ind, nav, nhisto;
-    t_rgb                 rlo = { 1.0, 1.0, 1.0 };
+    t_rgb                 rlo          = { 1.0, 1.0, 1.0 };
+    int                   frameCounter = 0;
+    real                  frameTime;
 
     clear_trxframe(&fr, TRUE);
     auto timeLabel = output_env_get_time_label(oenv);
@@ -265,7 +267,19 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             }
             n_x++;
             srenew(t_x, n_x);
-            t_x[n_x-1] = fr.time*tf;
+            if (fr.bTime)
+            {
+                frameTime = fr.time;
+            }
+            else if (fr.bStep)
+            {
+                frameTime = fr.step;
+            }
+            else
+            {
+                frameTime = ++frameCounter;
+            }
+            t_x[n_x-1] = frameTime*tf;
             srenew(cs_dist, n_x);
             snew(cs_dist[n_x-1], nindex);
             nclust = 0;
@@ -291,12 +305,12 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                     }
                 }
             }
-            fprintf(fp, "%14.6e  %10d\n", fr.time, nclust);
+            fprintf(fp, "%14.6e  %10d\n", frameTime, nclust);
             if (nav > 0)
             {
-                fprintf(gp, "%14.6e  %10.3f\n", fr.time, cav/nav);
+                fprintf(gp, "%14.6e  %10.3f\n", frameTime, cav/nav);
             }
-            fprintf(hp, "%14.6e  %10d\n", fr.time, max_clust_size);
+            fprintf(hp, "%14.6e  %10d\n", frameTime, max_clust_size);
         }
         /* Analyse velocities, if present */
         if (fr.bV)
@@ -326,7 +340,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         }
                     }
                     temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
-                    fprintf(tp, "%10.3f  %10.3f\n", fr.time, temp);
+                    fprintf(tp, "%10.3f  %10.3f\n", frameTime, temp);
                 }
             }
         }
