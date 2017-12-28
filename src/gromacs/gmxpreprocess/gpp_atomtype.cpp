@@ -64,6 +64,7 @@ typedef struct gpp_atomtype {
     real            *surftens;     /* Surface tension with water, for GBSA */
     real            *gb_radius;    /* Radius for Still model               */
     real            *S_hct;        /* Overlap factor for HCT model         */
+    real            *zeta;         /* Inverse width for distributed charges*/
     int             *atomnumber;   /* Atomic number, used for QM/MM        */
 } t_gpp_atomtype;
 
@@ -218,6 +219,16 @@ real get_atomtype_S_hct(int nt, gpp_atomtype_t ga)
     return ga->S_hct[nt];
 }
 
+real get_atomtype_zeta(int nt, gpp_atomtype_t ga)
+{
+    if ((nt < 0) || (nt >= ga->nr))
+    {
+        return NOTSET;
+    }
+
+    return ga->zeta[nt];
+}
+
 real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
@@ -248,6 +259,7 @@ gpp_atomtype_t init_atomtype(void)
     ga->atomnumber   = nullptr;
     ga->gb_radius    = nullptr;
     ga->S_hct        = nullptr;
+    ga->zeta         = nullptr;
 
     return ga;
 }
@@ -271,12 +283,23 @@ set_atomtype_gbparam(gpp_atomtype_t ga, int i,
     return i;
 }
 
+int set_atomtype_zeta(int i, gpp_atomtype_t ga, real zeta)
+{
+    if ( (i < 0) || (i >= ga->nr))
+    {
+        return NOTSET;
+    }
+    ga->zeta[i] = zeta;
+
+    return i;
+}
+
 
 int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
-                 real gb_radius, real S_hct)
+                 real gb_radius, real S_hct, real zeta)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
@@ -293,6 +316,7 @@ int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
     ga->atomnumber[nt]   = atomnumber;
     ga->gb_radius[nt]    = gb_radius;
     ga->S_hct[nt]        = S_hct;
+    ga->zeta[nt]         = zeta;
 
     return nt;
 }
@@ -301,7 +325,7 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
                  int bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
-                 real gb_radius, real S_hct)
+                 real gb_radius, real S_hct, real zeta)
 {
     int i;
 
@@ -329,9 +353,10 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
         srenew(ga->atomnumber, ga->nr);
         srenew(ga->gb_radius, ga->nr);
         srenew(ga->S_hct, ga->nr);
+        srenew(ga->zeta, ga->nr);
 
         return set_atomtype(ga->nr-1, ga, tab, a, name, nb, bondatomtype, radius,
-                            vol, surftens, atomnumber, gb_radius, S_hct);
+                            vol, surftens, atomnumber, gb_radius, S_hct, zeta);
     }
     else
     {
@@ -368,6 +393,7 @@ void done_atomtype(gpp_atomtype_t ga)
     sfree(ga->vol);
     sfree(ga->gb_radius);
     sfree(ga->S_hct);
+    sfree(ga->zeta);
     sfree(ga->surftens);
     sfree(ga->atomnumber);
     ga->nr = 0;
@@ -412,7 +438,8 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
                 (get_atomtype_surftens(tli, ga) == get_atomtype_surftens(thistype, ga)) &&
                 (get_atomtype_atomnumber(tli, ga) == get_atomtype_atomnumber(thistype, ga)) &&
                 (get_atomtype_gb_radius(tli, ga) == get_atomtype_gb_radius(thistype, ga)) &&
-                (get_atomtype_S_hct(tli, ga) == get_atomtype_S_hct(thistype, ga));
+                (get_atomtype_S_hct(tli, ga) == get_atomtype_S_hct(thistype, ga)) &&
+                (get_atomtype_zeta(tli, ga) == get_atomtype_zeta(thistype, ga));
         }
         if (bFound)
         {
@@ -451,6 +478,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     real       *new_surftens;
     real       *new_gb_radius;
     real       *new_S_hct;
+    real       *new_zeta;
     int        *new_atomnumber;
     char     ***new_atomname;
 
@@ -518,6 +546,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     snew(new_atomnumber, nat);
     snew(new_gb_radius, nat);
     snew(new_S_hct, nat);
+    snew(new_zeta, nat);
     snew(new_atomname, nat);
 
     /* We now have a list of unique atomtypes in typelist */
@@ -550,6 +579,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
         new_atomnumber[i] = get_atomtype_atomnumber(mi, ga);
         new_gb_radius[i]  = get_atomtype_gb_radius(mi, ga);
         new_S_hct[i]      = get_atomtype_S_hct(mi, ga);
+        new_zeta[i]       = get_atomtype_zeta(mi, ga);
         new_atomname[i]   = ga->atomname[mi];
     }
 
@@ -569,6 +599,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     sfree(ga->atomnumber);
     sfree(ga->gb_radius);
     sfree(ga->S_hct);
+    sfree(ga->zeta);
     /* Dangling atomname pointers ? */
     sfree(ga->atomname);
 
@@ -578,6 +609,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     ga->atomnumber = new_atomnumber;
     ga->gb_radius  = new_gb_radius;
     ga->S_hct      = new_S_hct;
+    ga->zeta       = new_zeta;
     ga->atomname   = new_atomname;
 
     ga->nr = nat;
@@ -599,6 +631,7 @@ void copy_atomtype_atomtypes(gpp_atomtype_t ga, t_atomtypes *atomtypes)
     snew(atomtypes->atomnumber, ntype);
     snew(atomtypes->gb_radius, ntype);
     snew(atomtypes->S_hct, ntype);
+    snew(atomtypes->zeta, ntype);
 
     for (i = 0; i < ntype; i++)
     {
@@ -608,5 +641,6 @@ void copy_atomtype_atomtypes(gpp_atomtype_t ga, t_atomtypes *atomtypes)
         atomtypes->atomnumber[i] = ga->atomnumber[i];
         atomtypes->gb_radius[i]  = ga->gb_radius[i];
         atomtypes->S_hct[i]      = ga->S_hct[i];
+        atomtypes->zeta[i]       = ga->zeta[i];
     }
 }
