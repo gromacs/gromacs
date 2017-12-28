@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -486,6 +486,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
                          int nb_kernel_type,
                          int enbnxninitcombrule,
                          int ntype, const real *nbfp,
+                         const real *zeta_matrix,
                          int n_energygroups,
                          int nout,
                          nbnxn_alloc_t *alloc,
@@ -521,7 +522,6 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     nbat->alloc((void **)&nbat->nbfp,
                 nbat->ntype*nbat->ntype*2*sizeof(*nbat->nbfp));
     nbat->alloc((void **)&nbat->nbfp_comb, nbat->ntype*2*sizeof(*nbat->nbfp_comb));
-
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
      * force-field floating point parameters.
      */
@@ -604,7 +604,17 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
         fprintf(debug, "Combination rules: geometric %d Lorentz-Berthelot %d\n",
                 bCombGeom, bCombLB);
     }
+    /* Now copy the zeta_matrix */
+    nbat->alloc((void **)&nbat->zeta_matrix,
+                nbat->ntype*nbat->ntype*sizeof(*nbat->zeta_matrix));
 
+    if (zeta_matrix)
+    {
+        for (int i = 0; i < nbat->ntype*nbat->ntype; i++)
+        {
+            nbat->zeta_matrix[i] = zeta_matrix[i];
+        }
+    }
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
     switch (enbnxninitcombrule)
