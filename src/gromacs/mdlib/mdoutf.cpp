@@ -61,8 +61,8 @@
 struct gmx_mdoutf {
     t_fileio               *fp_trn;
     t_fileio               *fp_xtc;
-    tng_trajectory_t        tng;
-    tng_trajectory_t        tng_low_prec;
+    gmx_tng_trajectory_t    tng;
+    gmx_tng_trajectory_t    tng_low_prec;
     int                     x_compression_precision; /* only used by XTC output */
     ener_file_t             fp_ene;
     const char             *fn_cpt;

@@ -88,7 +88,7 @@ struct t_trxstatus
     real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
     t_fileio               *fio;
-    tng_trajectory_t        tng;
+    gmx_tng_trajectory_t    tng;
     int                     natoms;
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
@@ -266,7 +266,7 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
     }
     else if (filetype == efTNG)
     {
-        tng_trajectory_t tng = status->tng;
+        gmx_tng_trajectory_t tng = status->tng;
         if (!tng)
         {
             gmx_fatal(FARGS, "Error opening TNG file.");
@@ -497,7 +497,7 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
     }
     else if (efTNG == fn2ftp(infile))
     {
-        tng_trajectory_t tng_in;
+        gmx_tng_trajectory_t tng_in;
         gmx_tng_open(infile, 'r', &tng_in);
 
         gmx_prepare_tng_writing(filename,
