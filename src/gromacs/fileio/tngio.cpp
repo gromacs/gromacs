@@ -65,6 +65,13 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/unique_cptr.h"
 
+struct gmx_tng_trajectory
+{
+    tng_trajectory_t   lowlevel;
+    std::int64_t       last_frame;
+    double             last_time;
+};
+
 static const char *modeToVerb(char mode)
 {
     const char *p;
@@ -87,9 +94,9 @@ static const char *modeToVerb(char mode)
     return p;
 }
 
-void gmx_tng_open(const char       *filename,
-                  char              mode,
-                  tng_trajectory_t *tng)
+void gmx_tng_open(const char           *filename,
+                  char                  mode,
+                  gmx_tng_trajectory_t *tng)
 {
 #if GMX_USE_TNG
     /* First check whether we have to make a backup,
@@ -100,10 +107,14 @@ void gmx_tng_open(const char       *filename,
         make_backup(filename);
     }
 
+    *tng               = new gmx_tng_trajectory;
+    (*tng)->last_frame = -1;
+    (*tng)->last_time  = -1;
+
     /* tng must not be pointing at already allocated memory.
      * Memory will be allocated by tng_util_trajectory_open() and must
      * later on be freed by tng_util_trajectory_close(). */
-    if (TNG_SUCCESS != tng_util_trajectory_open(filename, mode, tng))
+    if (TNG_SUCCESS != tng_util_trajectory_open(filename, mode, &(*tng)->lowlevel))
     {
         /* TNG does return more than one degree of error, but there is
            no use case for GROMACS handling the non-fatal errors
@@ -120,11 +131,11 @@ void gmx_tng_open(const char       *filename,
         gmx_gethostname(hostname, 256);
         if (mode == 'w')
         {
-            tng_first_computer_name_set(*tng, hostname);
+            tng_first_computer_name_set((*tng)->lowlevel, hostname);
         }
         else
         {
-            tng_last_computer_name_set(*tng, hostname);
+            tng_last_computer_name_set((*tng)->lowlevel, hostname);
         }
 
         char        programInfo[256];
@@ -137,11 +148,11 @@ void gmx_tng_open(const char       *filename,
                 gmx_version(), precisionString);
         if (mode == 'w')
         {
-            tng_first_program_name_set(*tng, programInfo);
+            tng_first_program_name_set((*tng)->lowlevel, programInfo);
         }
         else
         {
-            tng_last_program_name_set(*tng, programInfo);
+            tng_last_program_name_set((*tng)->lowlevel, programInfo);
         }
 
         char username[256];
@@ -149,12 +160,12 @@ void gmx_tng_open(const char       *filename,
         {
             if (mode == 'w')
             {
-                tng_first_user_name_set(*tng, username);
+                tng_first_user_name_set((*tng)->lowlevel, username);
             }
             else
             {
-                tng_last_user_name_set(*tng, username);
-                tng_file_headers_write(*tng, TNG_USE_HASH);
+                tng_last_user_name_set((*tng)->lowlevel, username);
+                tng_file_headers_write((*tng)->lowlevel, TNG_USE_HASH);
             }
         }
     }
@@ -166,15 +177,17 @@ void gmx_tng_open(const char       *filename,
 #endif
 }
 
-void gmx_tng_close(tng_trajectory_t *tng)
+void gmx_tng_close(gmx_tng_trajectory_t *tng)
 {
     /* We have to check that tng is set because
      * tng_util_trajectory_close wants to return a NULL in it, and
      * gives a fatal error if it is NULL. */
 #if GMX_USE_TNG
-    if (tng)
+    if (tng && *tng)
     {
-        tng_util_trajectory_close(tng);
+        tng_util_trajectory_close(&(*tng)->lowlevel);
+        delete *tng;
+        *tng = nullptr;
     }
 #else
     GMX_UNUSED_VALUE(tng);
@@ -182,7 +195,7 @@ void gmx_tng_close(tng_trajectory_t *tng)
 }
 
 #if GMX_USE_TNG
-static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
+static void addTngMoleculeFromTopology(gmx_tng_trajectory_t tng,
                                        const char          *moleculeName,
                                        const t_atoms       *atoms,
                                        gmx_int64_t          numMolecules,
@@ -191,7 +204,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
     tng_chain_t      tngChain = nullptr;
     tng_residue_t    tngRes   = nullptr;
 
-    if (tng_molecule_add(tng, moleculeName, tngMol) != TNG_SUCCESS)
+    if (tng_molecule_add(tng->lowlevel, moleculeName, tngMol) != TNG_SUCCESS)
     {
         gmx_file("Cannot add molecule to TNG molecular system.");
     }
@@ -226,21 +239,21 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                 if (!prevAtom || resInfo->chainid !=
                     atoms->resinfo[prevAtom->resind].chainid)
                 {
-                    tng_molecule_chain_add(tng, *tngMol, chainName,
+                    tng_molecule_chain_add(tng->lowlevel, *tngMol, chainName,
                                            &tngChain);
                 }
                 /* FIXME: When TNG supports both residue index and residue
                  * number the latter should be used. Wait for TNG 2.0*/
-                tng_chain_residue_add(tng, tngChain, *resInfo->name, &tngRes);
+                tng_chain_residue_add(tng->lowlevel, tngChain, *resInfo->name, &tngRes);
             }
-            tng_residue_atom_add(tng, tngRes, *(atoms->atomname[atomIndex]), *(atoms->atomtype[atomIndex]), &tngAtom);
+            tng_residue_atom_add(tng->lowlevel, tngRes, *(atoms->atomname[atomIndex]), *(atoms->atomtype[atomIndex]), &tngAtom);
         }
     }
-    tng_molecule_cnt_set(tng, *tngMol, numMolecules);
+    tng_molecule_cnt_set(tng->lowlevel, *tngMol, numMolecules);
 }
 
-void gmx_tng_add_mtop(tng_trajectory_t  tng,
-                      const gmx_mtop_t *mtop)
+void gmx_tng_add_mtop(gmx_tng_trajectory_t  tng,
+                      const gmx_mtop_t     *mtop)
 {
     int                i;
     int                j;
@@ -291,7 +304,7 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
                     j = 1;
                     while (j < ilist->nr)
                     {
-                        tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
+                        tng_molecule_bond_add(tng->lowlevel, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
                         j += 3;
                     }
                 }
@@ -304,8 +317,8 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
             j = 1;
             while (j < ilist->nr)
             {
-                tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
-                tng_molecule_bond_add(tng, tngMol, ilist->iatoms[j], ilist->iatoms[j+2], &tngBond);
+                tng_molecule_bond_add(tng->lowlevel, tngMol, ilist->iatoms[j], ilist->iatoms[j+1], &tngBond);
+                tng_molecule_bond_add(tng->lowlevel, tngMol, ilist->iatoms[j], ilist->iatoms[j+2], &tngBond);
                 j += 4;
             }
         }
@@ -323,11 +336,11 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
         }
     }
     /* Write the TNG data blocks. */
-    tng_particle_data_block_add(tng, TNG_TRAJ_PARTIAL_CHARGES, "PARTIAL CHARGES",
+    tng_particle_data_block_add(tng->lowlevel, TNG_TRAJ_PARTIAL_CHARGES, "PARTIAL CHARGES",
                                 datatype, TNG_NON_TRAJECTORY_BLOCK,
                                 1, 1, 1, 0, mtop->natoms,
                                 TNG_GZIP_COMPRESSION, atomCharges.data());
-    tng_particle_data_block_add(tng, TNG_TRAJ_MASSES, "ATOM MASSES",
+    tng_particle_data_block_add(tng->lowlevel, TNG_TRAJ_MASSES, "ATOM MASSES",
                                 datatype, TNG_NON_TRAJECTORY_BLOCK,
                                 1, 1, 1, 0, mtop->natoms,
                                 TNG_GZIP_COMPRESSION, atomMasses.data());
@@ -366,9 +379,9 @@ const int defaultFramesPerFrameSet = 100;
  * set according to output intervals.
  * The default is that 100 frames are written of the data
  * that is written most often. */
-static void tng_set_frames_per_frame_set(tng_trajectory_t  tng,
-                                         const gmx_bool    bUseLossyCompression,
-                                         const t_inputrec *ir)
+static void tng_set_frames_per_frame_set(gmx_tng_trajectory_t  tng,
+                                         const gmx_bool        bUseLossyCompression,
+                                         const t_inputrec     *ir)
 {
     int     gcd = -1;
 
@@ -390,14 +403,14 @@ static void tng_set_frames_per_frame_set(tng_trajectory_t  tng,
         return;
     }
 
-    tng_num_frames_per_frame_set_set(tng, gcd * defaultFramesPerFrameSet);
+    tng_num_frames_per_frame_set_set(tng->lowlevel, gcd * defaultFramesPerFrameSet);
 }
 
 /*! \libinternal \brief Set the data-writing intervals, and number of
  * frames per frame set */
-static void set_writing_intervals(tng_trajectory_t  tng,
-                                  const gmx_bool    bUseLossyCompression,
-                                  const t_inputrec *ir)
+static void set_writing_intervals(gmx_tng_trajectory_t  tng,
+                                  const gmx_bool        bUseLossyCompression,
+                                  const t_inputrec     *ir)
 {
     /* Define pointers to specific writing functions depending on if we
      * write float or double data */
@@ -446,7 +459,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (xout)
     {
-        set_writing_interval(tng, xout, 3, TNG_TRAJ_POSITIONS,
+        set_writing_interval(tng->lowlevel, xout, 3, TNG_TRAJ_POSITIONS,
                              "POSITIONS", TNG_PARTICLE_BLOCK_DATA,
                              compression);
         /* TODO: if/when we write energies to TNG also, reconsider how
@@ -463,7 +476,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (vout)
     {
-        set_writing_interval(tng, vout, 3, TNG_TRAJ_VELOCITIES,
+        set_writing_interval(tng->lowlevel, vout, 3, TNG_TRAJ_VELOCITIES,
                              "VELOCITIES", TNG_PARTICLE_BLOCK_DATA,
                              compression);
 
@@ -475,7 +488,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (fout)
     {
-        set_writing_interval(tng, fout, 3, TNG_TRAJ_FORCES,
+        set_writing_interval(tng->lowlevel, fout, 3, TNG_TRAJ_FORCES,
                              "FORCES", TNG_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 
@@ -489,11 +502,11 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     {
         /* Lambdas and box shape written at an interval of the lowest common
            denominator of other output */
-        set_writing_interval(tng, gcd, 1, TNG_GMX_LAMBDA,
+        set_writing_interval(tng->lowlevel, gcd, 1, TNG_GMX_LAMBDA,
                              "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 
-        set_writing_interval(tng, gcd, 9, TNG_TRAJ_BOX_SHAPE,
+        set_writing_interval(tng->lowlevel, gcd, 9, TNG_TRAJ_BOX_SHAPE,
                              "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
         if (gcd < lowest / 10)
@@ -506,14 +519,14 @@ static void set_writing_intervals(tng_trajectory_t  tng,
 }
 #endif
 
-void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
-                                const gmx_mtop_t *mtop,
-                                const t_inputrec *ir)
+void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t  tng,
+                                const gmx_mtop_t     *mtop,
+                                const t_inputrec     *ir)
 {
 #if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     set_writing_intervals(tng, FALSE, ir);
-    tng_time_per_frame_set(tng, ir->delta_t * PICO);
+    tng_time_per_frame_set(tng->lowlevel, ir->delta_t * PICO);
 #else
     GMX_UNUSED_VALUE(tng);
     GMX_UNUSED_VALUE(mtop);
@@ -560,8 +573,8 @@ static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
  * is egcCompressedX, but other selections should be added when
  * e.g. writing energies is implemented.
  */
-static void add_selection_groups(tng_trajectory_t  tng,
-                                 const gmx_mtop_t *mtop)
+static void add_selection_groups(gmx_tng_trajectory_t  tng,
+                                 const gmx_mtop_t     *mtop)
 {
     const gmx_moltype_t     *molType;
     const t_atoms           *atoms;
@@ -602,9 +615,9 @@ static void add_selection_groups(tng_trajectory_t  tng,
     nameIndex = *mtop->groups.grps[egcCompressedX].nm_ind;
     groupName = *mtop->groups.grpname[nameIndex];
 
-    tng_molecule_alloc(tng, &mol);
-    tng_molecule_name_set(tng, mol, groupName);
-    tng_molecule_chain_add(tng, mol, "", &chain);
+    tng_molecule_alloc(tng->lowlevel, &mol);
+    tng_molecule_name_set(tng->lowlevel, mol, groupName);
+    tng_molecule_chain_add(tng->lowlevel, mol, "", &chain);
     for (int molIndex = 0, i = 0; molIndex < mtop->nmoltype; molIndex++)
     {
         molType = &mtop->moltype[mtop->molblock[molIndex].type];
@@ -637,14 +650,14 @@ static void add_selection_groups(tng_trajectory_t  tng,
                     res_name = (char *)"";
                     res_id   = 0;
                 }
-                if (tng_chain_residue_find(tng, chain, res_name, res_id, &res)
+                if (tng_chain_residue_find(tng->lowlevel, chain, res_name, res_id, &res)
                     != TNG_SUCCESS)
                 {
                     /* Since there is ONE chain for selection groups do not keep the
                      * original residue IDs - otherwise there might be conflicts. */
-                    tng_chain_residue_add(tng, chain, res_name, &res);
+                    tng_chain_residue_add(tng->lowlevel, chain, res_name, &res);
                 }
-                tng_residue_atom_w_id_add(tng, res, *(atoms->atomname[atomIndex]),
+                tng_residue_atom_w_id_add(tng->lowlevel, res, *(atoms->atomname[atomIndex]),
                                           *(atoms->atomtype[atomIndex]),
                                           atom_offset + atomIndex, &atom);
                 bAtomsAdded = TRUE;
@@ -668,7 +681,7 @@ static void add_selection_groups(tng_trajectory_t  tng,
                                 if (ggrpnr(&mtop->groups, egcCompressedX, atom1) == 0 &&
                                     ggrpnr(&mtop->groups, egcCompressedX, atom2) == 0)
                                 {
-                                    tng_molecule_bond_add(tng, mol, ilist->iatoms[l],
+                                    tng_molecule_bond_add(tng->lowlevel, mol, ilist->iatoms[l],
                                                           ilist->iatoms[l+1], &tngBond);
                                 }
                                 l += 3;
@@ -691,12 +704,12 @@ static void add_selection_groups(tng_trajectory_t  tng,
                         {
                             if (ggrpnr(&mtop->groups, egcCompressedX, atom2) == 0)
                             {
-                                tng_molecule_bond_add(tng, mol, atom1,
+                                tng_molecule_bond_add(tng->lowlevel, mol, atom1,
                                                       atom2, &tngBond);
                             }
                             if (ggrpnr(&mtop->groups, egcCompressedX, atom3) == 0)
                             {
-                                tng_molecule_bond_add(tng, mol, atom1,
+                                tng_molecule_bond_add(tng->lowlevel, mol, atom1,
                                                       atom3, &tngBond);
                             }
                         }
@@ -707,41 +720,41 @@ static void add_selection_groups(tng_trajectory_t  tng,
             atom_offset += atoms->nr;
         }
     }
-    tng_molecule_existing_add(tng, &mol);
-    tng_molecule_cnt_set(tng, mol, 1);
-    tng_num_molecule_types_get(tng, &nMols);
+    tng_molecule_existing_add(tng->lowlevel, &mol);
+    tng_molecule_cnt_set(tng->lowlevel, mol, 1);
+    tng_num_molecule_types_get(tng->lowlevel, &nMols);
     for (gmx_int64_t k = 0; k < nMols; k++)
     {
-        tng_molecule_of_index_get(tng, k, &iterMol);
+        tng_molecule_of_index_get(tng->lowlevel, k, &iterMol);
         if (iterMol == mol)
         {
             continue;
         }
-        tng_molecule_cnt_set(tng, iterMol, 0);
+        tng_molecule_cnt_set(tng->lowlevel, iterMol, 0);
     }
 }
 #endif
 
-void gmx_tng_set_compression_precision(tng_trajectory_t tng,
-                                       real             prec)
+void gmx_tng_set_compression_precision(gmx_tng_trajectory_t tng,
+                                       real                 prec)
 {
 #if GMX_USE_TNG
-    tng_compression_precision_set(tng, prec);
+    tng_compression_precision_set(tng->lowlevel, prec);
 #else
     GMX_UNUSED_VALUE(tng);
     GMX_UNUSED_VALUE(prec);
 #endif
 }
 
-void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
-                                      const gmx_mtop_t *mtop,
-                                      const t_inputrec *ir)
+void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t  tng,
+                                      const gmx_mtop_t     *mtop,
+                                      const t_inputrec     *ir)
 {
 #if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     add_selection_groups(tng, mtop);
     set_writing_intervals(tng, TRUE, ir);
-    tng_time_per_frame_set(tng, ir->delta_t * PICO);
+    tng_time_per_frame_set(tng->lowlevel, ir->delta_t * PICO);
     gmx_tng_set_compression_precision(tng, ir->x_compression_precision);
 #else
     GMX_UNUSED_VALUE(tng);
@@ -750,16 +763,16 @@ void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
 #endif
 }
 
-void gmx_fwrite_tng(tng_trajectory_t tng,
-                    const gmx_bool   bUseLossyCompression,
-                    gmx_int64_t      step,
-                    real             elapsedPicoSeconds,
-                    real             lambda,
-                    const rvec      *box,
-                    int              nAtoms,
-                    const rvec      *x,
-                    const rvec      *v,
-                    const rvec      *f)
+void gmx_fwrite_tng(gmx_tng_trajectory_t tng,
+                    const gmx_bool       bUseLossyCompression,
+                    gmx_int64_t          step,
+                    real                 elapsedPicoSeconds,
+                    real                 lambda,
+                    const rvec          *box,
+                    int                  nAtoms,
+                    const rvec          *x,
+                    const rvec          *v,
+                    const rvec          *f)
 {
 #if GMX_USE_TNG
     typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
@@ -789,10 +802,19 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
         return;
     }
 
-    tng_num_particles_get(tng, &nParticles);
+    // If we get called with the same frame multiple times things will go very
+    // wrong (overwritten data), so catch this and auto-increment the frame
+    // counter instead. This will also catch any initial step that is negative
+    // so we start at frame 0 instead.
+    if (step <= tng->last_frame)
+    {
+        step = tng->last_frame + 1;
+    }
+
+    tng_num_particles_get(tng->lowlevel, &nParticles);
     if (nAtoms != (int)nParticles)
     {
-        tng_implicit_num_particles_set(tng, nAtoms);
+        tng_implicit_num_particles_set(tng->lowlevel, nAtoms);
     }
 
     if (bUseLossyCompression)
@@ -810,7 +832,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     {
         GMX_ASSERT(box, "Need a non-NULL box if positions are written");
 
-        if (write_data(tng, step, elapsedSeconds,
+        if (write_data(tng->lowlevel, step, elapsedSeconds,
                        reinterpret_cast<const real *>(x),
                        3, TNG_TRAJ_POSITIONS, "POSITIONS",
                        TNG_PARTICLE_BLOCK_DATA,
@@ -822,7 +844,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 
     if (v)
     {
-        if (write_data(tng, step, elapsedSeconds,
+        if (write_data(tng->lowlevel, step, elapsedSeconds,
                        reinterpret_cast<const real *>(v),
                        3, TNG_TRAJ_VELOCITIES, "VELOCITIES",
                        TNG_PARTICLE_BLOCK_DATA,
@@ -836,7 +858,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     {
         /* TNG-MF1 compression only compresses positions and velocities. Use lossless
          * compression for forces regardless of output mode */
-        if (write_data(tng, step, elapsedSeconds,
+        if (write_data(tng->lowlevel, step, elapsedSeconds,
                        reinterpret_cast<const real *>(f),
                        3, TNG_TRAJ_FORCES, "FORCES",
                        TNG_PARTICLE_BLOCK_DATA,
@@ -848,7 +870,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 
     /* TNG-MF1 compression only compresses positions and velocities. Use lossless
      * compression for lambdas and box shape regardless of output mode */
-    if (write_data(tng, step, elapsedSeconds,
+    if (write_data(tng->lowlevel, step, elapsedSeconds,
                    reinterpret_cast<const real *>(box),
                    9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
                    TNG_NON_PARTICLE_BLOCK_DATA,
@@ -857,7 +879,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
         gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
     }
 
-    if (write_data(tng, step, elapsedSeconds,
+    if (write_data(tng->lowlevel, step, elapsedSeconds,
                    reinterpret_cast<const real *>(&lambda),
                    1, TNG_GMX_LAMBDA, "LAMBDAS",
                    TNG_NON_PARTICLE_BLOCK_DATA,
@@ -865,6 +887,9 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     {
         gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
     }
+
+    tng->last_frame = step;
+    tng->last_time  = elapsedPicoSeconds;
 #else
     GMX_UNUSED_VALUE(tng);
     GMX_UNUSED_VALUE(bUseLossyCompression);
@@ -879,28 +904,28 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 #endif
 }
 
-void fflush_tng(tng_trajectory_t tng)
+void fflush_tng(gmx_tng_trajectory_t tng)
 {
 #if GMX_USE_TNG
     if (!tng)
     {
         return;
     }
-    tng_frame_set_premature_write(tng, TNG_USE_HASH);
+    tng_frame_set_premature_write(tng->lowlevel, TNG_USE_HASH);
 #else
     GMX_UNUSED_VALUE(tng);
 #endif
 }
 
-float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng)
+float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t tng)
 {
 #if GMX_USE_TNG
     gmx_int64_t nFrames;
     double      time;
     float       fTime;
 
-    tng_num_frames_get(tng, &nFrames);
-    tng_util_time_of_frame_get(tng, nFrames - 1, &time);
+    tng_num_frames_get(tng->lowlevel, &nFrames);
+    tng_util_time_of_frame_get(tng->lowlevel, nFrames - 1, &time);
 
     fTime = time / PICO;
     return fTime;
@@ -912,8 +937,8 @@ float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng)
 
 void gmx_prepare_tng_writing(const char              *filename,
                              char                     mode,
-                             tng_trajectory_t        *input,
-                             tng_trajectory_t        *output,
+                             gmx_tng_trajectory_t    *input,
+                             gmx_tng_trajectory_t    *output,
                              int                      nAtoms,
                              const gmx_mtop_t        *mtop,
                              const int               *index,
@@ -961,44 +986,44 @@ void gmx_prepare_tng_writing(const char              *filename,
         double      time, compression_precision;
         gmx_int64_t n_frames_per_frame_set, interval = -1;
 
-        tng_compression_precision_get(*input, &compression_precision);
-        tng_compression_precision_set(*output, compression_precision);
+        tng_compression_precision_get((*input)->lowlevel, &compression_precision);
+        tng_compression_precision_set((*output)->lowlevel, compression_precision);
         // TODO make this configurable in a future version
         char compression_type = TNG_TNG_COMPRESSION;
 
-        tng_molecule_system_copy(*input, *output);
+        tng_molecule_system_copy((*input)->lowlevel, (*output)->lowlevel);
 
-        tng_time_per_frame_get(*input, &time);
-        tng_time_per_frame_set(*output, time);
+        tng_time_per_frame_get((*input)->lowlevel, &time);
+        tng_time_per_frame_set((*output)->lowlevel, time);
 
-        tng_num_frames_per_frame_set_get(*input, &n_frames_per_frame_set);
-        tng_num_frames_per_frame_set_set(*output, n_frames_per_frame_set);
+        tng_num_frames_per_frame_set_get((*input)->lowlevel, &n_frames_per_frame_set);
+        tng_num_frames_per_frame_set_set((*output)->lowlevel, n_frames_per_frame_set);
 
         for (int i = 0; i < defaultNumIds; i++)
         {
-            if (tng_data_get_stride_length(*input, fallbackIds[i], -1, &interval)
+            if (tng_data_get_stride_length((*input)->lowlevel, fallbackIds[i], -1, &interval)
                 == TNG_SUCCESS)
             {
                 switch (fallbackIds[i])
                 {
                     case TNG_TRAJ_POSITIONS:
                     case TNG_TRAJ_VELOCITIES:
-                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                        set_writing_interval((*output)->lowlevel, interval, 3, fallbackIds[i],
                                              fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
                                              compression_type);
                         break;
                     case TNG_TRAJ_FORCES:
-                        set_writing_interval(*output, interval, 3, fallbackIds[i],
+                        set_writing_interval((*output)->lowlevel, interval, 3, fallbackIds[i],
                                              fallbackNames[i], TNG_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_TRAJ_BOX_SHAPE:
-                        set_writing_interval(*output, interval, 9, fallbackIds[i],
+                        set_writing_interval((*output)->lowlevel, interval, 9, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
                         break;
                     case TNG_GMX_LAMBDA:
-                        set_writing_interval(*output, interval, 1, fallbackIds[i],
+                        set_writing_interval((*output)->lowlevel, interval, 1, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
                         break;
@@ -1019,7 +1044,7 @@ void gmx_prepare_tng_writing(const char              *filename,
            gmx_tng_set_compression_precision(*output, ndec2prec(nDecimalsOfPrecision));
          */
         gmx_tng_add_mtop(*output, mtop);
-        tng_num_frames_per_frame_set_set(*output, 1);
+        tng_num_frames_per_frame_set_set((*output)->lowlevel, 1);
     }
 
     if (index && nAtoms > 0)
@@ -1032,7 +1057,7 @@ void gmx_prepare_tng_writing(const char              *filename,
      * compensate for that. */
     if (nAtoms >= 0)
     {
-        tng_implicit_num_particles_set(*output, nAtoms);
+        tng_implicit_num_particles_set((*output)->lowlevel, nAtoms);
     }
 #else
     GMX_UNUSED_VALUE(filename);
@@ -1046,16 +1071,25 @@ void gmx_prepare_tng_writing(const char              *filename,
 #endif
 }
 
-void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
+void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t    output,
                                  const t_trxframe       *frame,
                                  int                     natoms)
 {
 #if GMX_USE_TNG
-    if (frame->step > 0)
+    // Only set the time per frame if it was not already done, and we
+    // have enough information to do it based on two output frames
+    double timePerFrame;
+    tng_time_per_frame_get(output->lowlevel, &timePerFrame);
+    if (timePerFrame < 0 && output->last_time >= 0 && output->last_frame >= 0)
     {
-        double timePerFrame = frame->time * PICO / frame->step;
-        tng_time_per_frame_set(output, timePerFrame);
+        double       deltaTime  = frame->time - output->last_time;
+        // If all frames have the same (or decreasing) steps, TNG will adjust
+        // the output frame counter so it always increases by 1
+        std::int64_t deltaFrame = std::max<std::int64_t>(frame->step - output->last_frame, 1);
+        timePerFrame = deltaTime / deltaFrame * PICO;
+        tng_time_per_frame_set(output->lowlevel, timePerFrame);
     }
+
     if (natoms < 0)
     {
         natoms = frame->natoms;
@@ -1168,13 +1202,13 @@ convert_array_to_real_array(void       *from,
     return;
 }
 
-real getDistanceScaleFactor(tng_trajectory_t in)
+real getDistanceScaleFactor(gmx_tng_trajectory_t in)
 {
     gmx_int64_t exp = -1;
     real        distanceScaleFactor;
 
     // TODO Hopefully, TNG 2.0 will do this kind of thing for us
-    tng_distance_unit_exponential_get(in, &exp);
+    tng_distance_unit_exponential_get(in->lowlevel, &exp);
 
     // GROMACS expects distances in nm
     switch (exp)
@@ -1195,10 +1229,10 @@ real getDistanceScaleFactor(tng_trajectory_t in)
 
 } // namespace
 
-void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
-                                 const int        nind,
-                                 const int       *ind,
-                                 const char      *name)
+void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng,
+                                 const int            nind,
+                                 const int           *ind,
+                                 const char          *name)
 {
 #if GMX_USE_TNG
     gmx_int64_t              nAtoms, cnt, nMols;
@@ -1208,18 +1242,18 @@ void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
     tng_atom_t               atom;
     tng_function_status      stat;
 
-    tng_num_particles_get(tng, &nAtoms);
+    tng_num_particles_get(tng->lowlevel, &nAtoms);
 
     if (nAtoms == nind)
     {
         return;
     }
 
-    stat = tng_molecule_find(tng, name, -1, &mol);
+    stat = tng_molecule_find(tng->lowlevel, name, -1, &mol);
     if (stat == TNG_SUCCESS)
     {
-        tng_molecule_num_atoms_get(tng, mol, &nAtoms);
-        tng_molecule_cnt_get(tng, mol, &cnt);
+        tng_molecule_num_atoms_get(tng->lowlevel, mol, &nAtoms);
+        tng_molecule_cnt_get(tng->lowlevel, mol, &cnt);
         if (nAtoms == nind)
         {
             stat = TNG_SUCCESS;
@@ -1232,53 +1266,53 @@ void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
     if (stat == TNG_FAILURE)
     {
         /* The indexed atoms are added to one separate molecule. */
-        tng_molecule_alloc(tng, &mol);
-        tng_molecule_name_set(tng, mol, name);
-        tng_molecule_chain_add(tng, mol, "", &chain);
+        tng_molecule_alloc(tng->lowlevel, &mol);
+        tng_molecule_name_set(tng->lowlevel, mol, name);
+        tng_molecule_chain_add(tng->lowlevel, mol, "", &chain);
 
         for (int i = 0; i < nind; i++)
         {
             char        temp_name[256], temp_type[256];
 
             /* Try to retrieve the residue name of the atom */
-            stat = tng_residue_name_of_particle_nr_get(tng, ind[i], temp_name, 256);
+            stat = tng_residue_name_of_particle_nr_get(tng->lowlevel, ind[i], temp_name, 256);
             if (stat != TNG_SUCCESS)
             {
                 temp_name[0] = '\0';
             }
             /* Check if the molecule of the selection already contains this residue */
-            if (tng_chain_residue_find(tng, chain, temp_name, -1, &res)
+            if (tng_chain_residue_find(tng->lowlevel, chain, temp_name, -1, &res)
                 != TNG_SUCCESS)
             {
-                tng_chain_residue_add(tng, chain, temp_name, &res);
+                tng_chain_residue_add(tng->lowlevel, chain, temp_name, &res);
             }
             /* Try to find the original name and type of the atom */
-            stat = tng_atom_name_of_particle_nr_get(tng, ind[i], temp_name, 256);
+            stat = tng_atom_name_of_particle_nr_get(tng->lowlevel, ind[i], temp_name, 256);
             if (stat != TNG_SUCCESS)
             {
                 temp_name[0] = '\0';
             }
-            stat = tng_atom_type_of_particle_nr_get(tng, ind[i], temp_type, 256);
+            stat = tng_atom_type_of_particle_nr_get(tng->lowlevel, ind[i], temp_type, 256);
             if (stat != TNG_SUCCESS)
             {
                 temp_type[0] = '\0';
             }
-            tng_residue_atom_w_id_add(tng, res, temp_name, temp_type, ind[i], &atom);
+            tng_residue_atom_w_id_add(tng->lowlevel, res, temp_name, temp_type, ind[i], &atom);
         }
-        tng_molecule_existing_add(tng, &mol);
+        tng_molecule_existing_add(tng->lowlevel, &mol);
     }
     /* Set the count of the molecule containing the selected atoms to 1 and all
      * other molecules to 0 */
-    tng_molecule_cnt_set(tng, mol, 1);
-    tng_num_molecule_types_get(tng, &nMols);
+    tng_molecule_cnt_set(tng->lowlevel, mol, 1);
+    tng_num_molecule_types_get(tng->lowlevel, &nMols);
     for (gmx_int64_t k = 0; k < nMols; k++)
     {
-        tng_molecule_of_index_get(tng, k, &iterMol);
+        tng_molecule_of_index_get(tng->lowlevel, k, &iterMol);
         if (iterMol == mol)
         {
             continue;
         }
-        tng_molecule_cnt_set(tng, iterMol, 0);
+        tng_molecule_cnt_set(tng->lowlevel, iterMol, 0);
     }
 #else
     GMX_UNUSED_VALUE(tng);
@@ -1292,7 +1326,7 @@ void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
  * uncompressing them, then this implemenation should be reconsidered.
  * Ideally, gmx trjconv -f a.tng -o b.tng -b 10 -e 20 would be fast
  * and lose no information. */
-gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
+gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        input,
                                  t_trxframe                 *fr,
                                  gmx_int64_t                *requestedIds,
                                  int                         numRequestedIds)
@@ -1334,7 +1368,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
         requestedIds    = fallbackRequestedIds;
     }
 
-    stat = tng_num_particles_get(input, &numberOfAtoms);
+    stat = tng_num_particles_get(input->lowlevel, &numberOfAtoms);
     if (stat != TNG_SUCCESS)
     {
         gmx_file("Cannot determine number of atoms from TNG file.");
@@ -1362,10 +1396,10 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     for (gmx_int64_t i = 0; i < nBlocks; i++)
     {
         blockId = blockIds[i];
-        tng_data_block_dependency_get(input, blockId, &blockDependency);
+        tng_data_block_dependency_get(input->lowlevel, blockId, &blockDependency);
         if (blockDependency & TNG_PARTICLE_DEPENDENT)
         {
-            stat = tng_util_particle_data_next_frame_read(input,
+            stat = tng_util_particle_data_next_frame_read(input->lowlevel,
                                                           blockId,
                                                           &values,
                                                           &datatype,
@@ -1374,7 +1408,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
         }
         else
         {
-            stat = tng_util_non_particle_data_next_frame_read(input,
+            stat = tng_util_non_particle_data_next_frame_read(input->lowlevel,
                                                               blockId,
                                                               &values,
                                                               &datatype,
@@ -1427,7 +1461,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                                             DIM,
                                             datatype);
                 fr->bX = TRUE;
-                tng_util_frame_current_compression_get(input, blockId, &codecId, &prec);
+                tng_util_frame_current_compression_get(input->lowlevel, blockId, &codecId, &prec);
                 /* This must be updated if/when more lossy compression methods are added */
                 if (codecId == TNG_TNG_COMPRESSION)
                 {
@@ -1444,7 +1478,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                                             DIM,
                                             datatype);
                 fr->bV = TRUE;
-                tng_util_frame_current_compression_get(input, blockId, &codecId, &prec);
+                tng_util_frame_current_compression_get(input->lowlevel, blockId, &codecId, &prec);
                 /* This must be updated if/when more lossy compression methods are added */
                 if (codecId == TNG_TNG_COMPRESSION)
                 {
@@ -1503,8 +1537,8 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
 #endif
 }
 
-void gmx_print_tng_molecule_system(tng_trajectory_t input,
-                                   FILE            *stream)
+void gmx_print_tng_molecule_system(gmx_tng_trajectory_t input,
+                                   FILE                *stream)
 {
 #if GMX_USE_TNG
     gmx_int64_t         nMolecules, nChains, nResidues, nAtoms, nFramesRead;
@@ -1521,15 +1555,15 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
     std::vector<real>   atomCharges;
     std::vector<real>   atomMasses;
 
-    tng_num_molecule_types_get(input, &nMolecules);
-    tng_molecule_cnt_list_get(input, &molCntList);
+    tng_num_molecule_types_get(input->lowlevel, &nMolecules);
+    tng_molecule_cnt_list_get(input->lowlevel, &molCntList);
     /* Can the number of particles change in the trajectory or is it constant? */
-    tng_num_particles_variable_get(input, &varNAtoms);
+    tng_num_particles_variable_get(input->lowlevel, &varNAtoms);
 
     for (gmx_int64_t i = 0; i < nMolecules; i++)
     {
-        tng_molecule_of_index_get(input, i, &molecule);
-        tng_molecule_name_get(input, molecule, str, 256);
+        tng_molecule_of_index_get(input->lowlevel, i, &molecule);
+        tng_molecule_name_get(input->lowlevel, molecule, str, 256);
         if (varNAtoms == TNG_CONSTANT_N_ATOMS)
         {
             if ((int)molCntList[i] == 0)
@@ -1542,27 +1576,27 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
         {
             fprintf(stream, "Molecule: %s\n", str);
         }
-        tng_molecule_num_chains_get(input, molecule, &nChains);
+        tng_molecule_num_chains_get(input->lowlevel, molecule, &nChains);
         if (nChains > 0)
         {
             for (gmx_int64_t j = 0; j < nChains; j++)
             {
-                tng_molecule_chain_of_index_get(input, molecule, j, &chain);
-                tng_chain_name_get(input, chain, str, 256);
+                tng_molecule_chain_of_index_get(input->lowlevel, molecule, j, &chain);
+                tng_chain_name_get(input->lowlevel, chain, str, 256);
                 fprintf(stream, "\tChain: %s\n", str);
-                tng_chain_num_residues_get(input, chain, &nResidues);
+                tng_chain_num_residues_get(input->lowlevel, chain, &nResidues);
                 for (gmx_int64_t k = 0; k < nResidues; k++)
                 {
-                    tng_chain_residue_of_index_get(input, chain, k, &residue);
-                    tng_residue_name_get(input, residue, str, 256);
+                    tng_chain_residue_of_index_get(input->lowlevel, chain, k, &residue);
+                    tng_residue_name_get(input->lowlevel, residue, str, 256);
                     fprintf(stream, "\t\tResidue: %s\n", str);
-                    tng_residue_num_atoms_get(input, residue, &nAtoms);
+                    tng_residue_num_atoms_get(input->lowlevel, residue, &nAtoms);
                     for (gmx_int64_t l = 0; l < nAtoms; l++)
                     {
-                        tng_residue_atom_of_index_get(input, residue, l, &atom);
-                        tng_atom_name_get(input, atom, str, 256);
+                        tng_residue_atom_of_index_get(input->lowlevel, residue, l, &atom);
+                        tng_atom_name_get(input->lowlevel, atom, str, 256);
                         fprintf(stream, "\t\t\tAtom: %s", str);
-                        tng_atom_type_get(input, atom, str, 256);
+                        tng_atom_type_get(input->lowlevel, atom, str, 256);
                         fprintf(stream, " (%s)\n", str);
                     }
                 }
@@ -1573,42 +1607,42 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
          * through chains. */
         else
         {
-            tng_molecule_num_residues_get(input, molecule, &nResidues);
+            tng_molecule_num_residues_get(input->lowlevel, molecule, &nResidues);
             if (nResidues > 0)
             {
                 for (gmx_int64_t k = 0; k < nResidues; k++)
                 {
-                    tng_molecule_residue_of_index_get(input, molecule, k, &residue);
-                    tng_residue_name_get(input, residue, str, 256);
+                    tng_molecule_residue_of_index_get(input->lowlevel, molecule, k, &residue);
+                    tng_residue_name_get(input->lowlevel, residue, str, 256);
                     fprintf(stream, "\t\tResidue: %s\n", str);
-                    tng_residue_num_atoms_get(input, residue, &nAtoms);
+                    tng_residue_num_atoms_get(input->lowlevel, residue, &nAtoms);
                     for (gmx_int64_t l = 0; l < nAtoms; l++)
                     {
-                        tng_residue_atom_of_index_get(input, residue, l, &atom);
-                        tng_atom_name_get(input, atom, str, 256);
+                        tng_residue_atom_of_index_get(input->lowlevel, residue, l, &atom);
+                        tng_atom_name_get(input->lowlevel, atom, str, 256);
                         fprintf(stream, "\t\t\tAtom: %s", str);
-                        tng_atom_type_get(input, atom, str, 256);
+                        tng_atom_type_get(input->lowlevel, atom, str, 256);
                         fprintf(stream, " (%s)\n", str);
                     }
                 }
             }
             else
             {
-                tng_molecule_num_atoms_get(input, molecule, &nAtoms);
+                tng_molecule_num_atoms_get(input->lowlevel, molecule, &nAtoms);
                 for (gmx_int64_t l = 0; l < nAtoms; l++)
                 {
-                    tng_molecule_atom_of_index_get(input, molecule, l, &atom);
-                    tng_atom_name_get(input, atom, str, 256);
+                    tng_molecule_atom_of_index_get(input->lowlevel, molecule, l, &atom);
+                    tng_atom_name_get(input->lowlevel, atom, str, 256);
                     fprintf(stream, "\t\t\tAtom: %s", str);
-                    tng_atom_type_get(input, atom, str, 256);
+                    tng_atom_type_get(input->lowlevel, atom, str, 256);
                     fprintf(stream, " (%s)\n", str);
                 }
             }
         }
     }
 
-    tng_num_particles_get(input, &nAtoms);
-    stat = tng_particle_data_vector_get(input, TNG_TRAJ_PARTIAL_CHARGES, &data, &nFramesRead,
+    tng_num_particles_get(input->lowlevel, &nAtoms);
+    stat = tng_particle_data_vector_get(input->lowlevel, TNG_TRAJ_PARTIAL_CHARGES, &data, &nFramesRead,
                                         &strideLength, &nParticlesRead,
                                         &nValuesPerFrameRead, &datatype);
     if (stat == TNG_SUCCESS)
@@ -1633,7 +1667,7 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
         }
     }
 
-    stat = tng_particle_data_vector_get(input, TNG_TRAJ_MASSES, &data, &nFramesRead,
+    stat = tng_particle_data_vector_get(input->lowlevel, TNG_TRAJ_MASSES, &data, &nFramesRead,
                                         &strideLength, &nParticlesRead,
                                         &nValuesPerFrameRead, &datatype);
     if (stat == TNG_SUCCESS)
@@ -1665,7 +1699,7 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
 #endif
 }
 
-gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
+gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t input,
                                                     int                  frame,
                                                     int                  nRequestedIds,
                                                     gmx_int64_t         *requestedIds,
@@ -1676,7 +1710,7 @@ gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
 #if GMX_USE_TNG
     tng_function_status stat;
 
-    stat = tng_util_trajectory_next_frame_present_data_blocks_find(input, frame,
+    stat = tng_util_trajectory_next_frame_present_data_blocks_find(input->lowlevel, frame,
                                                                    nRequestedIds, requestedIds,
                                                                    nextFrame,
                                                                    nBlocks, blockIds);
@@ -1702,7 +1736,7 @@ gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
 #endif
 }
 
-gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
+gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t input,
                                                    gmx_int64_t          blockId,
                                                    real               **values,
                                                    gmx_int64_t         *frameNumber,
@@ -1722,20 +1756,20 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     void               *data = nullptr;
     double              localPrec;
 
-    stat = tng_data_block_name_get(input, blockId, name, maxLen);
+    stat = tng_data_block_name_get(input->lowlevel, blockId, name, maxLen);
     if (stat != TNG_SUCCESS)
     {
         gmx_file("Cannot read next frame of TNG file");
     }
-    stat = tng_data_block_dependency_get(input, blockId, &blockDependency);
+    stat = tng_data_block_dependency_get(input->lowlevel, blockId, &blockDependency);
     if (stat != TNG_SUCCESS)
     {
         gmx_file("Cannot read next frame of TNG file");
     }
     if (blockDependency & TNG_PARTICLE_DEPENDENT)
     {
-        tng_num_particles_get(input, nAtoms);
-        stat = tng_util_particle_data_next_frame_read(input,
+        tng_num_particles_get(input->lowlevel, nAtoms);
+        stat = tng_util_particle_data_next_frame_read(input->lowlevel,
                                                       blockId,
                                                       &data,
                                                       &datatype,
@@ -1746,7 +1780,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     {
         *nAtoms = 1; /* There are not actually any atoms, but it is used for
                         allocating memory */
-        stat    = tng_util_non_particle_data_next_frame_read(input,
+        stat    = tng_util_non_particle_data_next_frame_read(input->lowlevel,
                                                              blockId,
                                                              &data,
                                                              &datatype,
@@ -1763,7 +1797,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
         return FALSE;
     }
 
-    stat = tng_data_block_num_values_per_frame_get(input, blockId, nValuesPerFrame);
+    stat = tng_data_block_num_values_per_frame_get(input->lowlevel, blockId, nValuesPerFrame);
     if (stat != TNG_SUCCESS)
     {
         gmx_file("Cannot read next frame of TNG file");
@@ -1776,7 +1810,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
                                 *nValuesPerFrame,
                                 datatype);
 
-    tng_util_frame_current_compression_get(input, blockId, &codecId, &localPrec);
+    tng_util_frame_current_compression_get(input->lowlevel, blockId, &codecId, &localPrec);
 
     /* This must be updated if/when more lossy compression methods are added */
     if (codecId != TNG_TNG_COMPRESSION)

@@ -65,7 +65,7 @@ class TngTest : public ::testing::Test
 
 TEST_F(TngTest, CanOpenTngFile)
 {
-    tng_trajectory_t tng;
+    gmx_tng_trajectory_t tng;
     gmx_tng_open(fileManager_.getInputFilePath("spc2-traj.tng").c_str(),
                  'r',
                  &tng);
@@ -74,7 +74,7 @@ TEST_F(TngTest, CanOpenTngFile)
 
 TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 {
-    tng_trajectory_t tng = nullptr;
+    gmx_tng_trajectory_t tng = nullptr;
     gmx_tng_close(&tng);
 }
 

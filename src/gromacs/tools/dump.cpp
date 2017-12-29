@@ -350,7 +350,7 @@ static void list_tng_inner(const char *fn,
 static void list_tng(const char gmx_unused *fn)
 {
 #ifdef GMX_USE_TNG
-    tng_trajectory_t     tng;
+    gmx_tng_trajectory_t tng;
     gmx_int64_t          nframe = 0;
     gmx_int64_t          i, *block_ids = nullptr, step, ndatablocks;
     gmx_bool             bOK;
