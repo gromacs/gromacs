@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -68,63 +67,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
-{
-    int    i;
-    double hwkT, dS, S = 0;
-    double hbar, lambda;
-
-    hbar = PLANCK1/(2*M_PI);
-    for (i = 0; (i < n-nskip); i++)
-    {
-        if (eigval[i] > 0)
-        {
-            double w;
-            lambda = eigval[i]*AMU;
-            w      = std::sqrt(BOLTZMANN*temp/lambda)/NANO;
-            hwkT   = (hbar*w)/(BOLTZMANN*temp);
-            dS     = (hwkT/std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
-            S     += dS;
-            if (debug)
-            {
-                fprintf(debug, "i = %5d w = %10g lam = %10g hwkT = %10g dS = %10g\n",
-                        i, w, lambda, hwkT, dS);
-            }
-        }
-        else
-        {
-            fprintf(stderr, "eigval[%d] = %g\n", i, eigval[i]);
-        }
-    }
-    fprintf(fp, "The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
-            S*RGAS);
-}
-
-static void calc_entropy_schlitter(FILE *fp, int n, int nskip,
-                                   real *eigval, real temp)
-{
-    double  dd, deter;
-    int     i;
-    double  hbar, kt, kteh, S;
-
-    hbar = PLANCK1/(2*M_PI);
-    kt   = BOLTZMANN*temp;
-    kteh = kt*std::exp(2.0)/(hbar*hbar)*AMU*(NANO*NANO);
-    if (debug)
-    {
-        fprintf(debug, "n = %d, nskip = %d kteh = %g\n", n, nskip, kteh);
-    }
-
-    deter = 0;
-    for (i = 0; (i < n-nskip); i++)
-    {
-        dd     = 1+kteh*eigval[i];
-        deter += std::log(dd);
-    }
-    S = 0.5*RGAS*deter;
-
-    fprintf(fp, "The Entropy due to the Schlitter formula is %g J/mol K\n", S);
-}
+#include "entropy.h"
 
 const char *proj_unit;
 
@@ -1200,8 +1143,11 @@ int gmx_anaeig(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Can not calculate entropies from mass-weighted eigenvalues, redo the analysis without mass-weighting");
         }
-        calc_entropy_qh(stdout, neig1, eigval1, temp, nskip);
-        calc_entropy_schlitter(stdout, neig1, nskip, eigval1, temp);
+        printf("The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
+               calc_entropy(eaQuasiHarmonic, neig1, eigval1, temp, nskip));
+
+        printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
+               calc_entropy(eaSchlitter, neig1, eigval1, temp, nskip));
     }
 
     if (bVec2)
