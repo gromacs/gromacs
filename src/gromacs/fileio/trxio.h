@@ -125,7 +125,7 @@ void trjtools_gmx_prepare_tng_writing(const char               *filename,
 /*! \brief Write a trxframe to the TNG file in status.
  *
  * This function is needed because both t_trxstatus and
- * tng_trajectory_t are encapsulated, so client trajectory-writing
+ * gmx_tng_trajectory_t are encapsulated, so client trajectory-writing
  * code with a t_trxstatus can't just call the TNG writing
  * function. */
 void write_tng_frame(t_trxstatus        *status,
