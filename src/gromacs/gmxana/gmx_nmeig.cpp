@@ -47,6 +47,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/entropy.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/linearalgebra/eigensolver.h"
@@ -633,6 +634,11 @@ int gmx_nmeig(int argc, char *argv[])
     }
     write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
                        eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
+
+    printf("The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
+           calc_entropy(eaQuasiHarmonic, atom_index.size(),
+                        eigenvalues, T, begin));
+
 
     return 0;
 }
