@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 
 #include <cstdio>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -363,6 +364,22 @@ static std::string makeKernelIncludePathOption(const std::string &unescapedKerne
     return includePathOption;
 }
 
+/*! \brief Replace duplicated spaces with a single one in string
+ *
+ * Only the first character will be kept for multiple adjacent characters that
+ * are both identical and where the first one returns true for isspace().
+ *
+ * \param str String that will be modified.
+ */
+static void
+removeExtraSpaces(std::string *str)
+{
+    GMX_RELEASE_ASSERT(str != nullptr, "A pointer to an actual string must be provided");
+    std::string::iterator newEnd =
+        std::unique( str->begin(), str->end(), [ = ](char a, char b){ return isspace(a) && (a == b); } );
+    str->erase(newEnd, str->end());
+}
+
 /*! \brief Builds a string with build options for the OpenCL kernels
  *
  * \throws std::bad_alloc  if out of memory. */
@@ -384,6 +401,9 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
     preprocessorOptions += selectCompilerOptions(deviceVendorId);
     preprocessorOptions += ' ';
     preprocessorOptions += makeKernelIncludePathOption(kernelRootPath);
+
+    // Mac OS (and maybe some other implementations) does not accept double spaces in options
+    removeExtraSpaces(&preprocessorOptions);
 
     return preprocessorOptions;
 }

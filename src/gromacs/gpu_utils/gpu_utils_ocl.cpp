@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,11 +168,13 @@ bool canDetectGpus()
     cl_uint numPlatforms;
     cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);
     GMX_ASSERT(status != CL_INVALID_VALUE, "Incorrect call of clGetPlatformIDs detected");
+#ifdef cl_khr_icd
     if (status == CL_PLATFORM_NOT_FOUND_KHR)
     {
         // No valid ICDs found
         return false;
     }
+#endif
     GMX_RELEASE_ASSERT(status == CL_SUCCESS,
                        gmx::formatString("An unexpected value was returned from clGetPlatformIDs %u: %s",
                                          status, ocl_get_error_string(status).c_str()).c_str());
