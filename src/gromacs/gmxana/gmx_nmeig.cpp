@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "entropy.h"
 
 static double cv_corr(double nu, double T)
 {
@@ -633,6 +635,11 @@ int gmx_nmeig(int argc, char *argv[])
     }
     write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
                        eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
+
+    printf("The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
+           calc_entropy(eaQuasiHarmonic, atom_index.size(),
+                        eigenvalues, T, begin));
+
 
     return 0;
 }
