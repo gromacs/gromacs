@@ -373,17 +373,32 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
                         const std::string   &extraDefines)
 {
     std::string preprocessorOptions;
+    std::string tmp;
 
-    /* Compose the complete build options */
+    // Compose the complete build options
+    // At least on Mac OS, the compiler is very picky and will not accept
+    // double spaces, so we need to check that each part has non-zero length
+    // before adding it with a space.
     preprocessorOptions  = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
-    preprocessorOptions += ' ';
-    preprocessorOptions += makeVendorFlavorChoice(deviceVendorId);
-    preprocessorOptions += ' ';
-    preprocessorOptions += extraDefines;
-    preprocessorOptions += ' ';
-    preprocessorOptions += selectCompilerOptions(deviceVendorId);
-    preprocessorOptions += ' ';
-    preprocessorOptions += makeKernelIncludePathOption(kernelRootPath);
+    tmp                  = makeVendorFlavorChoice(deviceVendorId);
+    if (tmp.size() > 0)
+    {
+        preprocessorOptions += " " + tmp;
+    }
+    if (extraDefines.size() > 0)
+    {
+        preprocessorOptions += " " + extraDefines;
+    }
+    tmp                  = selectCompilerOptions(deviceVendorId);
+    if (tmp.size() > 0)
+    {
+        preprocessorOptions += " " + tmp;
+    }
+    tmp                  = makeKernelIncludePathOption(kernelRootPath);
+    if (tmp.size() > 0)
+    {
+        preprocessorOptions += " " + tmp;
+    }
 
     return preprocessorOptions;
 }

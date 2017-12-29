@@ -75,6 +75,9 @@
  * The twin-cutoff entries are not normally used, because those setups are
  * not available to the user. FastGen takes care of generating both
  * single- and twin-cutoff versions because PME tuning might need both.
+ *
+ * \note It is important that these strings do not contain any double spaces,
+ *       or the OpenCL compile will fail on Mac OS X.
  */
 static const char * kernel_electrostatic_family_definitions[] =
 {
@@ -92,7 +95,7 @@ static const char * kernel_VdW_family_definitions[] =
 {
     " -DVDWNAME=_VdwLJ",
     " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
-    " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
+    " -DLJ_COMB_LB -DVDWNAME=_VdwLJCombLB",
     " -DLJ_FORCE_SWITCH -DVDWNAME=_VdwLJFsw",
     " -DLJ_POT_SWITCH -DVDWNAME=_VdwLJPsw",
     " -DLJ_EWALD_COMB_GEOM -DVDWNAME=_VdwLJEwCombGeom",
