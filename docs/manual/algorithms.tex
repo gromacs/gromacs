@@ -1550,7 +1550,24 @@ The equations of motion for the atoms, obtained from the Hamiltonian are:
 \bea \frac {\de^2\ve{r}_i}{\de t^2} & = & \frac{\ve{F}_i}{m_i} -
 \ve{M} \frac{\de \ve{r}_i}{\de t} , \\ \ve{M} & = & \ve{b}^{-1} \left[
   \ve{b} \frac{\de \ve{b}'}{\de t} + \frac{\de \ve{b}}{\de t} \ve{b}'
-  \right] \ve{b}'^{-1}.  \eea The (inverse) mass parameter matrix
+  \right] \ve{b}'^{-1}.
+  \eea 
+This extra term has the appearance of a friction, but it should be 
+noted that it is ficticious, and rather an effect of the
+Parrinello-Rahman equations of motion being defined with all
+particle coordinates represented relative to the box vectors, while
+{\gromacs] uses normal Cartesian coordinates for positions, 
+velocities and forces. It is worth noting that the kinetic energy too
+should formally be calculated based on velocities relative to the
+box vectors. This can have an effect e.g. for external constant stress,
+but for now we only support coupling to constant external 
+pressures, and for any normal simulation the velocities of box
+vectors should be extremely small compared to particle velocities.
+Gang Liu has done some work on deriving this for Cartesian
+coordinates\cite{Liu2015} that we will try to implement at
+some point in the future together with support for external stress.
+
+The (inverse) mass parameter matrix
 $\ve{W}^{-1}$ determines the strength of the coupling, and how the box
 can be deformed.  The box restriction (\ref{eqn:box_rot}) will be
 fulfilled automatically if the corresponding elements of $\ve{W}^{-1}$
