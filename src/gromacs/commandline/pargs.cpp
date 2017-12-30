@@ -512,21 +512,21 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             options.addOption(
                     gmx::DoubleOption("b")
                         .store(&tbegin).storeIsSet(&bBeginTimeSet).timeValue()
-                        .description("First frame (%t) to read from trajectory"));
+                        .description("Time of first frame to read from trajectory (default unit %t)"));
         }
         if (isFlagSet(PCA_CAN_END))
         {
             options.addOption(
                     gmx::DoubleOption("e")
                         .store(&tend).storeIsSet(&bEndTimeSet).timeValue()
-                        .description("Last frame (%t) to read from trajectory"));
+                        .description("Time of last frame to read from trajectory (default unit %t)"));
         }
         if (isFlagSet(PCA_CAN_DT))
         {
             options.addOption(
                     gmx::DoubleOption("dt")
                         .store(&tdelta).storeIsSet(&bDtSet).timeValue()
-                        .description("Only use frame when t MOD dt = first time (%t)"));
+                        .description("Only use frame when t MOD dt = first time (default unit %t)"));
         }
         gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
         if (isFlagSet(PCA_TIME_UNIT))
