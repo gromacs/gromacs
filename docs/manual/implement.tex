@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -75,20 +75,55 @@ octahedron is used, there are 15 possible images.
 
 \subsection{Virial from non-bonded forces}
 Here the derivation for the single sum virial in the {\em non-bonded force} 
-routine is given. $i \neq j$ in all formulae below.
+routine is given. There are a couple of considerations that are special
+to {\gromacs} that we take into account:
+\begin{itemize}
+\item When calculating short-range interactions, we apply the 
+{\em minimum image convention} and only consider the closest 
+image of each neighbor - and in particular we never allow interactions
+between a particle and any of its periodic images. For all the 
+equations below, this means $i \neq j$.
+\item In general, either the $i$ or $j$ particle might be shifted to a neighbor
+cell to get the closest interaction (shift $\delta_{ij}$). However, with minimum image
+convention there can be at most 27 different shifts for particles in the central cell,
+and for typical (very short-ranged) biomolecular interactions there are typically only a few
+different shifts involved for each particle, not to mention that each interaction can
+only be present for one shift. 
+\item For the {\gromacs} nonbonded interactions
+we use this to split the neighborlist of each $i$ particle into multiple 
+separate lists, where each list has a constant shift $\delta_i$ for the $i$ partlcle. We
+can represent this as a sum over shifts (for which we use index $s$), with the constraint that
+each particle interaction can only contribute to one of the terms in this sum, and the
+shift is no longer dependent on the $j$ particles. For any sum that does not contain
+complex dependence on $s$, this means the sum trivially reduces to just the sum
+over $i$ and/or $j$.
+\item To simplify some of the sums, we replace sums over $j<i$ with double sums over
+all particles (remember, $i \neq j$) and divide by 2.
+\end{itemize}
+
+Starting from the above definition of the virial, we then get
 \newcommand{\di}{\delta_{i}}
 \newcommand{\qrt}{\frac{1}{4}}
 \bea
-\Xi	
-&~=~&-\half~\sum_{i < j}^{N}~\rnij\otimes\Fvij				\\
-&~=~&-\qrt\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di-\rvj)\otimes\Fvij	\\
-&~=~&-\qrt\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di)\otimes\Fvij-\rvj\otimes\Fvij	\\
-&~=~&-\qrt\left(\sum_{i=1}^N~\sum_{j=1}^N ~(\rvi+\di)\otimes\Fvij~-~\sum_{i=1}^N~\sum_{j=1}^N ~\rvj\otimes\Fvij\right)	\\
-&~=~&-\qrt\left(\sum_{i=1}^N~(\rvi+\di)\otimes\sum_{j=1}^N~\Fvij~-~\sum_{j=1}^N ~\rvj\otimes\sum_{i=1}^N~\Fvij\right)	\\
-&~=~&-\qrt\left(\sum_{i=1}^N~(\rvi+\di)\otimes\Fvi~+~\sum_{j=1}^N ~\rvj\otimes\Fvj\right)	\\
-&~=~&-\qrt\left(2~\sum_{i=1}^N~\rvi\otimes\Fvi+\sum_{i=1}^N~\di\otimes\Fvi\right)
+\Xi
+&~=~&-\half~\sum_{i < j}^{N}~{\mathbf r}^n_{ij} \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\half~\sum_{i < j}^{N}~\left( {\mathbf r}_i + \delta_{ij} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{j=1}^{N}~\left( {\mathbf r}_i + \delta_{ij} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} - {\mathbf r}_j \right) \otimes {\mathbf F}_{ij,s} \nonumber \\
+&~=~&-\qrt~\sum_{i=}^{N}~\sum_{s}~\sum_{j=1}^{N}~\left( \left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} -{\mathbf r}_j \otimes {\mathbf F}_{ij,s} \right) \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^N ~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} + \qrt \sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^{N} {\mathbf r}_j \otimes {\mathbf F}_{ij,s} \nonumber \\
+&~=~&-\qrt~\sum_{i=1}^{N}~\sum_{s}~\sum_{j=1}^N ~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{ij,s} + \qrt \sum_{i=1}^{N}~\sum_{j=1}^{N} {\mathbf r}_j \otimes {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes ~\sum_{j=1}^N {\mathbf F}_{ij,s} + \qrt \sum_{j=1}^N {\mathbf r}_j \otimes \sum_{i=1}^{N} {\mathbf F}_{ij} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes ~\sum_{j=1}^N {\mathbf F}_{ij,s} - \qrt \sum_{j=1}^N {\mathbf r}_j \otimes \sum_{i=1}^{N} {\mathbf F}_{ji} \nonumber \\
+&~=~&-\qrt~\sum_{s}~\sum_{i=1}^{N}~\left( {\mathbf r}_i + \delta_{i,s} \right) \otimes {\mathbf F}_{i,s} - \qrt \sum_{j=1}^N~{\mathbf r}_j \otimes {\mathbf F}_{j}  \nonumber \\
+&~=~&-\qrt~\left(\sum_{i=1}^{N}~{\mathbf r}_i  \otimes {\mathbf F}_{i} + \sum_{j=1}^N~{\mathbf r}_j \otimes {\mathbf F}_{j} \right) - \qrt \sum_{s}~\sum_{i=1}^{N} \delta_{i,s} \otimes {\mathbf F}_{i,s}  \nonumber \\
+&~=~&-\half \sum_{i=1}^{N}~{\mathbf r}_i \otimes {\mathbf F}_{i} -\qrt \sum_{s}~\sum_{i=1}^{N}~\delta_{i,s} \otimes {\mathbf F}_{i,s} \nonumber \\
+&~=~&-\half \sum_{i=1}^{N}~{\mathbf r}_i \otimes {\mathbf F}_{i} -\qrt \sum_{s}~\delta_{s} \otimes {\mathbf F}_{s} \nonumber \\
+&~=~&\Xi_0 + \Xi_1
 \eea
-In these formulae we introduced:
+In the second-last stage, we have used the property that each shift vector itself does not depend on the coordinates of particle $i$, so it is possible to sum
+up all forces corresponding to each shift vector (in the nonbonded kernels), and then just use a sum over the different shift vectors outside the kernels.
+We have also used
 \bea
 \Fvi&~=~&\sum_{j=1}^N~\Fvij					\\
 \Fvj&~=~&\sum_{i=1}^N~\Fvji
@@ -97,7 +132,11 @@ which is the total force on $i$ with respect to $j$. Because we use Newton's Thi
 \beq
 \Fvij~=~-\Fvji
 \eeq
-we must, in the implementation, double the term containing the shift $\delta_i$.
+we must, in the implementation, double the term containing the shift $\delta_i$. Similarly, in a few places we have summed the shift-dependent force
+over all shifts to come up with the total force per interaction or particle.
+
+This separates the total virial $\Xi$ into a component $\Xi_0$ that is a single sum over particles, and a second component $\Xi_1$ that describes the influence of
+the particle shifts, and that is only a sum over the different shift vectors.
 
 \subsection{The intra-molecular shift (mol-shift)}
 For the bonded forces and SHAKE it is possible to make a {\em mol-shift}
