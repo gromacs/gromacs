@@ -49,6 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Number of control atoms for each 'add' type.
  *
@@ -150,6 +151,11 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     aah = *ah;
     while (fgets2(line, STRLEN-1, in))
     {
+        // Skip lines that are only whitespace
+        if (gmx::countWords(line) == 0)
+        {
+            continue;
+        }
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
             fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n",
