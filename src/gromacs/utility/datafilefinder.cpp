@@ -101,6 +101,7 @@ DataFileFinder::~DataFileFinder()
 {
 }
 
+
 void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
 {
     if (!impl_.get())
@@ -111,8 +112,24 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     const char *const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
+        std::vector<std::string>   &path        = impl_->searchPath_; // convenience
+        const std::string           defaultPath = impl_->getDefaultPath();
+        std::vector<std::string>    tmpPath;
+        Path::splitPathEnvironment(lib, &tmpPath);
+        for (auto &d : tmpPath)
+        {
+            // Don't create extra copies of the default path
+            if (d == defaultPath)
+            {
+                continue;
+            }
+            // Only add non-duplicated entries
+            if (std::find(path.begin(), path.end(), d) == path.end())
+            {
+                path.push_back(d);
+            }
+        }
         impl_->bEnvIsSet_ = true;
-        Path::splitPathEnvironment(lib, &impl_->searchPath_);
     }
 }
 
