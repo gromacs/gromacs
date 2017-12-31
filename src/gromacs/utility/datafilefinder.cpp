@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <cstdlib>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -111,8 +112,21 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     const char *const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
+        std::vector<std::string>   &path        = impl_->searchPath_; // convenience
+        const std::string           defaultPath = impl_->getDefaultPath();
+        std::vector<std::string>    tmpPath;
+        Path::splitPathEnvironment(lib, &tmpPath);
+        std::set<std::string>       pathsSeen;
+        pathsSeen.insert(defaultPath);
+        for (auto &d : tmpPath)
+        {
+            if (!pathsSeen.count(d))
+            {
+                path.push_back(d);
+                pathsSeen.insert(d);
+            }
+        }
         impl_->bEnvIsSet_ = true;
-        Path::splitPathEnvironment(lib, &impl_->searchPath_);
     }
 }
 
