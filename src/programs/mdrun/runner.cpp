@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -316,27 +316,26 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
 namespace gmx
 {
 
-/*! \brief Return whether GPU acceleration of nonbondeds is useful with the given settings.
+/*! \brief Return whether GPU acceleration of nonbondeds is supported with the given settings.
  *
- * If not, logs a message about falling back to CPU code. */
-static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
-                                               const t_inputrec *ir,
-                                               bool              doRerun)
+ * If not, logs a message about falling back to CPU code.
+ *
+ * This might be called both before and after thread initialization by master
+ * and non-master ranks, so we have an extra variable to
+ */
+static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger     &mdlog,
+                                               const t_inputrec *  ir)
 {
-    if (doRerun && ir->opts.ngener > 1)
+    if (ir->opts.ngener > 1)
     {
-        /* Rerun execution time is dominated by I/O and pair search,
-         * so GPUs are not very useful, plus they do not support more
-         * than one energy group. If the user requested GPUs
-         * explicitly, a fatal error is given later.  With non-reruns,
-         * we fall back to a single whole-of system energy group
-         * (which runs much faster than a multiple-energy-groups
-         * implementation would), and issue a note in the .log
-         * file. Users can re-run if they want the information. */
-        GMX_LOG(mdlog.warning).asParagraph().appendText("Multiple energy groups is not implemented for GPUs, so is not useful for this rerun, so falling back to the CPU");
+        /* The GPU code does not support more than one energy group.
+         * If the user requested GPUs explicitly, a fatal error is given later.
+         */
+        GMX_LOG(mdlog.warning).asParagraph().appendText("Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
+                                                        "For better performance, run on the GPU without energy groups and then do "
+                                                        "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.");
         return false;
     }
-
     return true;
 }
 
@@ -594,15 +593,17 @@ int Mdrunner::mdrunner()
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
                     (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec),
                     hw_opt.nthreads_tmpi);
             auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
             auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
                     (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
                     canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
+
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
         /* Determine how many thread-MPI ranks to start.
          *
          * TODO Over-writing the user-supplied value here does
@@ -654,13 +655,14 @@ int Mdrunner::mdrunner()
         bool gpusWereDetected = hwinfo->ngpu_compatible_tot > 0;
         useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
                                                                 emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
-                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec),
                                                                 gpusWereDetected);
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
         useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
+
         pmeRunMode   = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
         if (pmeRunMode == PmeRunMode::GPU)
         {
