@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 
 #include <cstdlib>
 
+#include <algorithm>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -111,8 +113,17 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     const char *const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
+        // We want an ordered container of unique elements - a set.
+        std::set<std::string>       searchPathSet;
+        // First, add the default path.
+        searchPathSet.insert(impl_->getDefaultPath());
+        // Then all the unique paths from the environment.
+        std::vector<std::string>    tmpPath;
+        Path::splitPathEnvironment(lib, &tmpPath);
+        searchPathSet.insert(tmpPath.begin(), tmpPath.end());
+        // Turn the set into the vector that we store permanently.
+        impl_->searchPath_.assign(searchPathSet.begin(), searchPathSet.end());
         impl_->bEnvIsSet_ = true;
-        Path::splitPathEnvironment(lib, &impl_->searchPath_);
     }
 }
 
