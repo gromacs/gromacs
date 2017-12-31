@@ -701,12 +701,13 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     nbat->nenergrp = n_energygroups;
     if (!simple)
     {
-        /* Energy groups not supported yet for super-sub lists */
+        /* Energy groups not supported yet for super-sub lists (GPU) */
         if (n_energygroups > 1)
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: With GPUs, reporting energy group contributions is not supported");
+            gmx_fatal(FARGS,
+                      "Multiple energy groups are not supported with GPUs. Remove energy groups "
+                      "from your mdp file, or use -nb cpu to run only on the CPU (slower).");
         }
-        nbat->nenergrp = 1;
     }
     /* Temporary storage goes as #grp^3*simd_width^2/2, so limit to 64 */
     if (nbat->nenergrp > 64)
