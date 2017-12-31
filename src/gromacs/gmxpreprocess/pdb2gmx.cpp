@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1871,9 +1871,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
             /* First the N terminus */
             if (nNtdb > 0)
             {
-                tdblist = filter_ter(nrtp, restp, nNtdb, ntdb,
+                tdblist = filter_ter(nNtdb, ntdb,
                                      *pdba->resinfo[cc->r_start[i]].name,
-                                     *pdba->resinfo[cc->r_start[i]].rtp,
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
@@ -1910,9 +1909,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
             /* And the C terminus */
             if (nCtdb > 0)
             {
-                tdblist = filter_ter(nrtp, restp, nCtdb, ctdb,
+                tdblist = filter_ter(nCtdb, ctdb,
                                      *pdba->resinfo[cc->r_end[i]].name,
-                                     *pdba->resinfo[cc->r_end[i]].rtp,
                                      &ntdblist);
                 if (ntdblist == 0)
                 {
