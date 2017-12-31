@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -701,12 +701,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     nbat->nenergrp = n_energygroups;
     if (!simple)
     {
-        /* Energy groups not supported yet for super-sub lists */
-        if (n_energygroups > 1)
-        {
-            GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: With GPUs, reporting energy group contributions is not supported");
-        }
-        nbat->nenergrp = 1;
+        // We now check for energy groups already when starting mdrun
+        GMX_RELEASE_ASSERT(n_energygroups == 1, "GPU kernels do not support energy groups");
     }
     /* Temporary storage goes as #grp^3*simd_width^2/2, so limit to 64 */
     if (nbat->nenergrp > 64)
