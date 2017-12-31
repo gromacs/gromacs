@@ -113,6 +113,14 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     {
         impl_->bEnvIsSet_ = true;
         Path::splitPathEnvironment(lib, &impl_->searchPath_);
+        // To avoid problems with dual listings e.g. of force fields, we sort
+        // and erase extra identical entries, or ones identical to the default path.
+        // We introduce a reference to avoid repeating the long variable name.
+        std::vector<std::string> &path = impl_->searchPath_;
+        std::sort(path.begin(), path.end());
+        path.erase(std::unique(path.begin(), path.end()), path.end());
+        // There can now be at most one entry identical to defaultPath
+        path.erase(std::remove(path.begin(), path.end(), impl_->getDefaultPath()), path.end());
     }
 }
 
