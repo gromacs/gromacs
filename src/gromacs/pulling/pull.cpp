@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2318,15 +2318,18 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             fprintf(fplog, "Will apply constraint COM pulling\n");
         }
+        // Don't include the reference group 0 in output, so we report ngroup-1
+        GMX_RELEASE_ASSERT(pull->ngroup - 1 > 0, "The reference absolute position pull group should always be present");
         fprintf(fplog, "with %d pull coordinate%s and %d group%s\n",
                 pull->ncoord, pull->ncoord == 1 ? "" : "s",
-                pull->ngroup, pull->ngroup == 1 ? "" : "s");
+                (pull->ngroup - 1), (pull->ngroup - 1) == 1 ? "" : "s");
         if (bAbs)
         {
             fprintf(fplog, "with an absolute reference\n");
         }
         bCos = FALSE;
-        for (g = 0; g < pull->ngroup; g++)
+        // Don't include the reference group 0 in loop
+        for (g = 1; g < pull->ngroup; g++)
         {
             if (pull->group[g].params.nat > 1 &&
                 pull->group[g].params.pbcatom < 0)
