@@ -1,0 +1,7 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: David van der Spoel <spoel@xray.bmc.uu.se>
+Submitted-by: David van der Spoel <spoel@xray.bmc.uu.se>
+Submitted-at: Mon, 01 Jan 2018 21:46:01 +0100
+Reviewed-on: https://gerrit.gromacs.org/7409
+Project: gromacs
+Branch: refs/heads/release-2018
