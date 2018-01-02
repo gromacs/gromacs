@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1213,8 +1213,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
     {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NONBONDED);
 
         if (bNS)
         {
@@ -1223,8 +1222,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
 
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NONBONDED);
     }
 
     /* do local pair search */
@@ -1273,13 +1271,11 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             ddOpenBalanceRegionGpu(cr->dd);
         }
 
-        wallcycle_start(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_start(wcycle, ewcLAUNCH_GPU_NONBONDED);
         /* launch local nonbonded work on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NONBONDED);
     }
 
     if (useGpuPme)
@@ -1340,21 +1336,18 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         if (bUseGPU)
         {
-            wallcycle_start(wcycle, ewcLAUNCH_GPU);
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_start(wcycle, ewcLAUNCH_GPU_NONBONDED);
             /* launch non-local nonbonded tasks on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NONBONDED);
         }
     }
 
     if (bUseGPU)
     {
         /* launch D2H copy-back F */
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NONBONDED);
         if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
@@ -1362,8 +1355,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
                                  flags, eatLocal);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NONBONDED);
     }
 
     if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1668,8 +1660,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     if (bUseGPU)
     {
         /* now clear the GPU outputs while we finish the step on the CPU */
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NONBONDED);
         nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
 
         /* Is dynamic pair-list pruning activated? */
@@ -1677,8 +1668,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             launchGpuRollingPruning(cr, nbv, inputrec, step);
         }
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NONBONDED);
 
         // TODO: move here the PME buffer clearing call pme_gpu_reinit_computation()
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,8 @@ typedef struct gmx_wallcycle
 static const char *wcn[ewcNR] =
 {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
-    "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
+    "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search",
+    "Launch NB GPU ops.", "Launch PME GPU ops.",
     "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
     "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F",
@@ -125,8 +126,6 @@ static const char *wcsn[ewcsNR] =
     "Listed buffer ops.",
     "Nonbonded pruning",
     "Nonbonded F",
-    "Launch NB GPU tasks",
-    "Launch PME GPU tasks",
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",

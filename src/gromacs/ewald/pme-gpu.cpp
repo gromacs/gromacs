@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,11 +146,9 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t              *pme,
     GMX_ASSERT(gridIndex == 0, "Only single grid supported");
     if (pme_gpu_performs_FFT(pme->gpu))
     {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);
         pme_gpu_3dfft(pme->gpu, dir, gridIndex);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
     }
     else
     {
@@ -192,11 +190,9 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
 
     if (needToUpdateBox || shouldUpdateBox) // || is to make the first computation always update
     {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);
         pme_gpu_update_input_box(pmeGpu, box);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
 
         if (!pme_gpu_performs_solve(pmeGpu))
         {
@@ -219,11 +215,9 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
     PmeGpu *pmeGpu = pme->gpu;
 
     // The only spot of PME GPU where LAUNCH_GPU (sub)counter increases call-count
-    wallcycle_start(wcycle, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
+    wallcycle_start(wcycle, ewcLAUNCH_GPU_PME);
     pme_gpu_copy_input_coordinates(pmeGpu, x);
-    wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-    wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
 
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
@@ -232,11 +226,9 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
         /* Spread the coefficients on a grid */
         const bool computeSplines = true;
         const bool spreadCharges  = true;
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);
         pme_gpu_spread(pmeGpu, gridIndex, fftgrid, computeSplines, spreadCharges);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
     }
 }
 
@@ -270,11 +262,9 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
             if (pme_gpu_performs_solve(pmeGpu))
             {
                 const auto gridOrdering = pme_gpu_uses_dd(pmeGpu) ? GridOrdering::YZX : GridOrdering::XYZ;
-                wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-                wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME); //FIXME nocount
+                wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);
                 pme_gpu_solve(pmeGpu, cfftgrid, gridOrdering, computeEnergyAndVirial);
-                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-                wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+                wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
             }
             else
             {
@@ -307,13 +297,11 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
         return;
     }
 
-    wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-    wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+    wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);
     const unsigned int gridIndex  = 0;
     real              *fftgrid    = pme->fftgrid[gridIndex];
     pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float *>(fftgrid));
-    wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
-    wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    wallcycle_stop(wcycle, ewcLAUNCH_GPU_PME);
 }
 
 /*! \brief Reduce staged virial and energy outputs.
