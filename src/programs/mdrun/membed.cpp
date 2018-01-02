@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1317,6 +1317,10 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless,\n"
                       "you can increase the maxwarn setting in the membed input file.");
         }
+
+        // Re-establish the invariants of the derived values within
+        // mtop.
+        gmx_mtop_finalize(mtop);
 
         if (ftp2bSet(efTOP, nfile, fnm))
         {
