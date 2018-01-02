@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -613,8 +613,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             walltime_accounting_start(walltime_accounting);
         }
 
-        wallcycle_start(wcycle, ewcPMEMESH);
-
         dvdlambda_q  = 0;
         dvdlambda_lj = 0;
         clear_mat(vir_q);
@@ -641,6 +639,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         }
         else
         {
+            wallcycle_start(wcycle, ewcPMEMESH);
             gmx_pme_do(pme, 0, natoms, as_rvec_array(pme_pp->x.data()), as_rvec_array(pme_pp->f.data()),
                        pme_pp->chargeA.data(), pme_pp->chargeB.data(),
                        pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(),
@@ -650,9 +649,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                        &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
                        pmeFlags);
             forces = pme_pp->f;
+            cycles = wallcycle_stop(wcycle, ewcPMEMESH);
         }
-
-        cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
         gmx_pme_send_force_vir_ener(pme_pp.get(), as_rvec_array(forces.data()),
                                     vir_q, energy_q, vir_lj, energy_lj,
