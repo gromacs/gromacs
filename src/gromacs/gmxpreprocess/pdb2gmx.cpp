@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -886,7 +886,9 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         {
             if (nstartwarn < 5)
             {
-                printf("Warning: Starting residue %s%d in chain not identified as Protein/RNA/DNA.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                printf("Warning: Starting residue %s%d in chain not identified as Protein/RNA/DNA.\n"
+                       "If you modify residue names, they must also be added to residuetypes.dat.\n",
+                       *pdba->resinfo[i].name, pdba->resinfo[i].nr);
             }
             if (nstartwarn == 5)
             {
@@ -910,7 +912,8 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
             {
                 if (nendwarn < 5)
                 {
-                    printf("Warning: Residue %s%d in chain has different type (%s) from starting residue %s%d (%s).\n",
+                    printf("Warning: Residue %s%d in chain has different type (%s) from starting residue %s%d (%s).\n"
+                           "If you modify residue names, they must also be added to residuetypes.dat.\n",
                            *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype,
                            *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype);
                 }
