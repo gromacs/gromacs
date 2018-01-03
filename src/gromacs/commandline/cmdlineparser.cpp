@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,10 +84,15 @@ class CommandLineParser::Impl
         OptionsAssigner         assigner_;
         //! Whether to allow and skip unknown options.
         bool                    bSkipUnknown_;
+        /*! \brief Whether to allow positional arguments
+         *
+         * These are not options (no leading hyphen), and come before
+         * all options. */
+        bool                    bAllowPositionalArguments_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options), bSkipUnknown_(false)
+    : assigner_(options), bSkipUnknown_(false), bAllowPositionalArguments_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
 }
@@ -134,15 +139,50 @@ CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
     return *this;
 }
 
+CommandLineParser &CommandLineParser::allowPositionalArguments(bool bEnabled)
+{
+    impl_->bAllowPositionalArguments_ = bEnabled;
+    return *this;
+}
+
 void CommandLineParser::parse(int *argc, char *argv[])
 {
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
     bool                 bInOption = false;
 
+    // Note that this function gets called multiple times in typical
+    // cases of calling gmx. Command lines like "gmx -hidden mdrun -h"
+    // work because the first call has argv[0] == "gmx" and skips
+    // unknown things, and the second has argv[0] == "mdrun".
+    int i = 1, newi = 1;
+
+    // First, process any permitted leading positional arguments.
+    for (; i < *argc; ++i)
+    {
+        const char *const arg        = argv[i];
+        if (impl_->toOptionName(arg) != nullptr)
+        {
+            // If we find an option, no more positional arguments
+            // can be handled.
+            break;
+        }
+
+        if (!impl_->bAllowPositionalArguments_)
+        {
+            GMX_THROW(InvalidInputError
+                          ("Positional argument '" + std::string(arg) + "' cannot be accepted. "
+                          "Perhaps you forgot to put a hyphen before an option name."));
+        }
+        // argv[i] is not an option, so preserve it in the argument list
+        // by incrementing newi. There's no need to copy argv contents
+        // because they cannot have changed yet.
+        ++newi;
+    }
+
+    // Now handle the option arguments.
     impl_->assigner_.start();
-    int newi = 1;
-    for (int i = 1; i < *argc; ++i)
+    for (; i < *argc; ++i)
     {
         const char *const arg        = argv[i];
         const char *const optionName = impl_->toOptionName(arg);
@@ -202,19 +242,20 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
-        // Remove recognized options if applicable.
+        // Retain unrecognized options if applicable.
         if (!bInOption && impl_->bSkipUnknown_)
         {
             argv[newi] = argv[i];
             ++newi;
         }
     }
-    // Update the argc count if argv was modified.
+    // Update the args if argv was modified.
     if (impl_->bSkipUnknown_)
     {
         *argc      = newi;
         argv[newi] = nullptr;
     }
+
     // Finish the last option.
     if (bInOption)
     {

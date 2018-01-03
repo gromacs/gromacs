@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,6 @@ class DhdlTest : public CommandLineTestBase
         void runTest()
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-s", "dhdl.tpr");
             setInputFile("-f", "dhdl.edr");
@@ -92,7 +91,6 @@ class OriresTest : public CommandLineTestBase
         void runTest(const char *stringForStdin)
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-s", "orires.tpr");
             setInputFile("-f", "orires.edr");
@@ -124,7 +122,6 @@ class EnergyTest : public CommandLineTestBase
         void runTest(const char *stringForStdin)
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-f", "ener.edr");
             setOutputFile("-o", "energy.xvg", XvgMatch());
