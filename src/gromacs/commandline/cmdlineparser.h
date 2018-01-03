@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,6 +99,23 @@ class CommandLineParser
         CommandLineParser &skipUnknown(bool bEnabled);
 
         /*! \brief
+         * Makes the parser accept positional arguments
+         *
+         * \param[in] bEnabled  Whether to skip and keep positional arguments.
+         * \returns   *this
+         *
+         * Arguments that are not options (ie. no leading hyphen), and
+         * which come before all options are acceptable if this has
+         * been enabled. If so, these arguments are left in \c argc
+         * and \c argv in parse().
+         *
+         * The default is false: unknown leading arguments result in
+         * exceptions and \c argc and \c argv are not modified.
+         *
+         * Does not throw.
+         */
+        CommandLineParser &allowPositionalArguments(bool bEnabled);
+        /*! \brief
          * Parses the command line.
          *
          * \throws  std::bad_alloc if out of memory.
@@ -107,9 +124,15 @@ class CommandLineParser
          * All command-line arguments are parsed, and an aggregate exception
          * with all the detected errors is thrown in the end.
          *
-         * If skipUnknown() is false, the input parameters are not modified.
-         * If skipUnknown() is true, recognized options and their values are
-         * removed from the argument list.  \c argv[0] is never modified.
+         * All options and their values are retained in the argument
+         * list, unless skipUnknown() was last called with true value,
+         * which causes only unknown options to be retained.
+         *
+         * All positional arguments are retained in the argument list,
+         * but such arguments must precede all options.
+         *
+         * \c argv[0] is never modified.
+         *
          */
         void parse(int *argc, char *argv[]);
 
