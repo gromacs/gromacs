@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,10 +84,12 @@ class CommandLineParser::Impl
         OptionsAssigner         assigner_;
         //! Whether to allow and skip unknown options.
         bool                    bSkipUnknown_;
+        //! Whether to allow positional arguments (ie. those that are not options).
+        bool                    bAllowPositionalArguments_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options), bSkipUnknown_(false)
+    : assigner_(options), bSkipUnknown_(false), bAllowPositionalArguments_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
 }
@@ -134,20 +136,35 @@ CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
     return *this;
 }
 
+CommandLineParser &CommandLineParser::allowPositionalArguments(bool bEnabled)
+{
+    impl_->bAllowPositionalArguments_ = bEnabled;
+    return *this;
+}
+
 void CommandLineParser::parse(int *argc, char *argv[])
 {
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
     bool                 bInOption = false;
+    bool                 bSkippingArgumentsOfUnknownOption = false;
 
     impl_->assigner_.start();
     int newi = 1;
     for (int i = 1; i < *argc; ++i)
     {
-        const char *const arg        = argv[i];
-        const char *const optionName = impl_->toOptionName(arg);
-        if (optionName != nullptr)
+        const char *const arg           = argv[i];
+        const char *const optionName    = impl_->toOptionName(arg);
+        bool              argIsAnOption = (optionName != nullptr);
+        if (argIsAnOption)
         {
+            if (bSkippingArgumentsOfUnknownOption)
+            {
+                // If there were any arguments following the unknown
+                // option, we have skipped them also, and should now
+                // stop skipping.
+                bSkippingArgumentsOfUnknownOption = false;
+            }
             if (bInOption)
             {
                 try
@@ -188,6 +205,12 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 currentContext.clear();
             }
         }
+        else if (bSkippingArgumentsOfUnknownOption)
+        {
+            // Skip any arguments following the unknown option
+            argv[newi] = argv[i];
+            ++newi;
+        }
         else if (bInOption)
         {
             try
@@ -202,11 +225,32 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
-        // Remove recognized options if applicable.
-        if (!bInOption && impl_->bSkipUnknown_)
+        if (!bInOption && !bSkippingArgumentsOfUnknownOption)
         {
-            argv[newi] = argv[i];
-            ++newi;
+            if (argIsAnOption)
+            {
+                // Remove unrecognized options if applicable.
+                if (impl_->bSkipUnknown_)
+                {
+                    bSkippingArgumentsOfUnknownOption = true;
+                    argv[newi] = argv[i];
+                    ++newi;
+                }
+            }
+            else
+            {
+                if (impl_->bAllowPositionalArguments_)
+                {
+                    argv[newi] = argv[i];
+                    ++newi;
+                }
+                else
+                {
+                    std::string message =
+                        "Positional argument '" + std::string(arg) + "' cannot be accepted. Perhaps you gave an extra argument to the previous option, or forgot to put a hyphen before an option name.";
+                    GMX_THROW(InvalidInputError(message));
+                }
+            }
         }
     }
     // Update the argc count if argv was modified.
