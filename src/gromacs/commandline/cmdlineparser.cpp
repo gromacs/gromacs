@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,10 +84,15 @@ class CommandLineParser::Impl
         OptionsAssigner         assigner_;
         //! Whether to allow and skip unknown options.
         bool                    bSkipUnknown_;
+        /*! \brief Whether to allow positional arguments
+         *
+         * These are not options (no leading hyphen), and come before
+         * all options. */
+        bool                    bAllowPositionalArguments_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options), bSkipUnknown_(false)
+    : assigner_(options), bSkipUnknown_(false), bAllowPositionalArguments_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
 }
@@ -131,6 +136,12 @@ CommandLineParser::~CommandLineParser()
 CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
 {
     impl_->bSkipUnknown_ = bEnabled;
+    return *this;
+}
+
+CommandLineParser &CommandLineParser::allowPositionalArguments(bool bEnabled)
+{
+    impl_->bAllowPositionalArguments_ = bEnabled;
     return *this;
 }
 
@@ -202,19 +213,28 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
-        // Remove recognized options if applicable.
-        if (!bInOption && impl_->bSkipUnknown_)
+        // Retain unrecognized options if applicable. Positional
+        // arguments are always retained (but may cause an exception).
+        if (!bInOption)
         {
-            argv[newi] = argv[i];
-            ++newi;
+            if (impl_->bSkipUnknown_ || impl_->bAllowPositionalArguments_)
+            {
+                argv[newi] = argv[i];
+                ++newi;
+            }
+            else
+            {
+                std::string message =
+                    "Positional argument '" + std::string(arg) + "' cannot be accepted. Perhaps you gave an extra argument to the previous option, or forgot to put a hyphen before an option name.";
+                GMX_THROW(InvalidInputError(message));
+            }
         }
     }
-    // Update the argc count if argv was modified.
-    if (impl_->bSkipUnknown_)
-    {
-        *argc      = newi;
-        argv[newi] = nullptr;
-    }
+    // Update the argv and argc for the arguments that have been
+    // retained by the above logic.
+    *argc      = newi;
+    argv[newi] = nullptr;
+
     // Finish the last option.
     if (bInOption)
     {
