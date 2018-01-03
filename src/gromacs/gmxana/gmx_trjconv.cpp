@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -890,7 +890,7 @@ int gmx_trjconv(int argc, char *argv[])
     int              *nfwritten       = nullptr;
     int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
     double          **dropval;
-    real              tshift = 0, t0 = -1, dt = 0.001, prec;
+    real              tshift = 0, dt = -1, prec;
     gmx_bool          bFit, bPFit, bReset;
     int               nfitdim;
     gmx_rmpbc_t       gpbc = nullptr;
@@ -1297,8 +1297,29 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bHaveFirstFrame)
         {
-            set_trxframe_ePBC(&fr, ePBC);
+            if (bTDump)
+            {
+                // Determine timestep (assuming constant spacing for now) if we
+                // need to dump frames based on time. This is required so we do not
+                // skip the first frame if that was the one that should have been dumped
+                double firstFrameTime = fr.time;
+                if (read_next_frame(oenv, trxin, &fr))
+                {
+                    dt     = fr.time - firstFrameTime;
+                    bDTset = TRUE;
+                    if (dt <= 0)
+                    {
+                        fprintf(stderr, "Warning: Frame times are not incrementing - will dump first frame.\n");
+                    }
+                }
+                // Now close and reopen so we are at first frame again
+                close_trx(trxin);
+                done_frame(&fr);
+                // Reopen at first frame (We already know it exists if we got here)
+                read_first_frame(oenv, &trxin, in_file, &fr, flags);
+            }
 
+            set_trxframe_ePBC(&fr, ePBC);
             natoms = fr.natoms;
 
             if (bSetTime)
@@ -1380,7 +1401,6 @@ int gmx_trjconv(int argc, char *argv[])
             frame    =  0;
             outframe =  0;
             model_nr =  0;
-            bDTset   = FALSE;
 
             /* Main loop over frames */
             do
@@ -1443,22 +1463,23 @@ int gmx_trjconv(int argc, char *argv[])
 
                 if (bTDump)
                 {
-                    /* determine timestep */
-                    if (t0 == -1)
+                    // If we could not read two frames or times are not incrementing
+                    // we have almost no idea what to do,
+                    // but dump the first frame so output is not broken.
+                    if (dt <= 0 || !bDTset)
                     {
-                        t0 = fr.time;
+                        bDumpFrame = true;
                     }
                     else
                     {
-                        if (!bDTset)
-                        {
-                            dt     = fr.time-t0;
-                            bDTset = TRUE;
-                        }
+                        // Dump the frame if we are less than half a frame time
+                        // below it. This will also ensure we at least dump a
+                        // somewhat reasonable frame if the spacing is unequal
+                        // and we have overrun the frame time. Once we dump one
+                        // frame based on time we quit, so it does not matter
+                        // that this might be true for all subsequent frames too.
+                        bDumpFrame = (fr.time > tdump-0.5*dt);
                     }
-                    /* This is not very elegant, as one can not dump a frame after
-                     * a timestep with is more than twice as small as the first one. */
-                    bDumpFrame = (fr.time > tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
                 }
                 else
                 {
