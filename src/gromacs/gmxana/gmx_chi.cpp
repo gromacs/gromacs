@@ -179,7 +179,7 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
             id[n++] = dl[i].atm.O;
         }
     }
-    for (i = 1; (i < nl); i++)
+    for (i = 0; (i < nl); i++)
     {
         /* Omega */
         if (has_dihedral(edOmega, &(dl[i])))
@@ -1434,7 +1434,7 @@ int gmx_chi(int argc, char *argv[])
     if (maxchi > MAXCHI)
     {
         fprintf(stderr,
-                "Will only calculate first %d Chi dihedrals in stead of %d.\n",
+                "Will only calculate first %d Chi dihedrals instead of %d.\n",
                 MAXCHI, maxchi);
         maxchi = MAXCHI;
     }
