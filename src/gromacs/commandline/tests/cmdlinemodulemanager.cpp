@@ -96,6 +96,23 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     ASSERT_EQ(0, rc);
 }
 
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
+{
+    const char *const cmdline[] = {
+        "test", "-quiet", "help", "module"
+    };
+    CommandLine       args(cmdline);
+    initManager(args, "test");
+    MockModule       &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    EXPECT_CALL(mod1, writeHelp(_));
+    mod1.setExpectedDisplayName("test module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 {
     const char *const cmdline[] = {
