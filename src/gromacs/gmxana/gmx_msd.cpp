@@ -663,7 +663,9 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 
     snew(x[prev], natoms);
 
-    if (bMol)
+    // if com is requested, the data structure needs to be large enough to do this
+    // to prevent overflow
+    if (bMol && !gnx_com)
     {
         curr->ncoords = curr->nmol;
         snew(xa[0], curr->ncoords);
@@ -771,13 +773,6 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         /* set the time */
         curr->time[curr->nframes] = t - curr->t0;
 
-        /* for the first frame, the previous frame is a copy of the first frame */
-        if (bFirst)
-        {
-            std::memcpy(xa[prev], xa[cur], curr->ncoords*sizeof(xa[prev][0]));
-            bFirst = FALSE;
-        }
-
         /* make the molecules whole */
         if (bMol)
         {
@@ -790,6 +785,13 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
             calc_mol_com(gnx[0], index[0], &top->mols, &top->atoms, x[cur], xa[cur]);
         }
 
+        /* for the first frame, the previous frame is a copy of the first frame */
+        if (bFirst)
+        {
+            std::memcpy(xa[prev], xa[cur], curr->ncoords*sizeof(xa[prev][0]));
+            bFirst = FALSE;
+        }
+
         /* first remove the periodic boundary condition crossings */
         for (i = 0; i < curr->ngrp; i++)
         {
@@ -799,7 +801,6 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         /* calculate the center of mass */
         if (gnx_com)
         {
-            prep_data(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box);
             calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
                      &top->atoms, com);
         }
