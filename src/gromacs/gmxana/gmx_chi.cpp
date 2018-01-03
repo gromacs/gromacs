@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,7 +179,7 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
             id[n++] = dl[i].atm.O;
         }
     }
-    for (i = 1; (i < nl); i++)
+    for (i = 0; (i < nl); i++)
     {
         /* Omega */
         if (has_dihedral(edOmega, &(dl[i])))
@@ -1434,7 +1434,7 @@ int gmx_chi(int argc, char *argv[])
     if (maxchi > MAXCHI)
     {
         fprintf(stderr,
-                "Will only calculate first %d Chi dihedrals in stead of %d.\n",
+                "Will only calculate first %d Chi dihedrals instead of %d.\n",
                 MAXCHI, maxchi);
         maxchi = MAXCHI;
     }
