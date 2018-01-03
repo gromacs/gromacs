@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,6 +104,39 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
     EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
 }
 
+TEST_F(CommandLineParserTest, HandlesBooleanWithoutArgument)
+{
+    const char *const cmdline[] = {
+        "test", "-flag"
+    };
+    CommandLine       args(cmdline);
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_TRUE(flag_);
+}
+
+TEST_F(CommandLineParserTest, HandlesBooleanAsNoWithoutArgument)
+{
+    const char *const cmdline[] = {
+        "test", "-noflag"
+    };
+    CommandLine       args(cmdline);
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_FALSE(flag_);
+}
+
+TEST_F(CommandLineParserTest, ThrowsWithBooleanAsNoWithArgument)
+{
+    const char *const cmdline[] = {
+        "test", "-noflag", "no"
+    };
+    CommandLine       args(cmdline);
+    EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
+}
+
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 {
     const char *const cmdline[] = {
@@ -172,6 +205,42 @@ TEST_F(CommandLineParserTest, HandlesSkipUnknown)
     EXPECT_EQ(2, ivalues_[0]);
     ASSERT_EQ(1U, dvalues_.size());
     EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
+}
+
+TEST_F(CommandLineParserTest, RejectsPositionalArgumentsByDefault)
+{
+    // Ensures that "gmx trjconv f" gets rejected.
+    const char *const cmdline[] = {
+        "test", "module", "positional"
+    };
+    CommandLine       args(cmdline);
+    EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
+}
+
+TEST_F(CommandLineParserTest, CanAllowPositionalArguments)
+{
+    // Ensures that "gmx help trjconv" works
+    const char *const cmdline[] = {
+        "test", "module", "positional", "-flag"
+    };
+    CommandLine       args(cmdline);
+    parser_.allowPositionalArguments(true);
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+}
+
+TEST_F(CommandLineParserTest, CannotHavePositionalArgumentsAfterOptions)
+{
+    // Even for the options that can't have arbitrary numbers of
+    // values, there's no way to check whether there's been enough
+    // values provided, so we can't have positional arguments after
+    // any options.
+    const char *const cmdline[] = {
+        "test", "module", "-1p", "2", "positional"
+    };
+    CommandLine       args(cmdline);
+    parser_.allowPositionalArguments(true);
+    EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
 }
 
 } // namespace
