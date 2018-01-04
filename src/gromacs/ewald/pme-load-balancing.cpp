@@ -138,13 +138,13 @@ struct pme_load_balancing_t {
     enum class   State
     {
         Disabled,                    /**< PME tuning is disabled. */
-        Waiting,                     /**< PME tuning is enabled but is not actively searching
-                                          because it's waiting for some trigger, e.g. DLB imbalance.
-                                          TODO: this should clarify and replace bTriggerOnDLB. */
+        WaitingOnForceImbalance,     /**< PME tuning is enabled but is not actively searching
+                                          because it's waiting for PME/PP force imbalance. */
+        WaitingOnDlb,                /**< PME tuning is enabled but is not actively searching
+                                          because it's waiting for DLB to turn on. */
         Searching                    /**< Trying different grid setups. */
     }            state;
     gmx_int64_t  step_rel_stop;      /**< stop the tuning after this value of step_rel */
-    gmx_bool     bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
     int          nstage;             /**< the current maximum number of stages */
 
     real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
@@ -204,9 +204,6 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     snew(pme_lb, 1);
 
     pme_lb->bSepPMERanks      = !thisRankHasDuty(cr, DUTY_PME);
-
-    /* Initially we turn on balancing directly on based on PP/PME imbalance */
-    pme_lb->bTriggerOnDLB     = FALSE;
 
     /* Any number of stages >= 2 is supported */
     pme_lb->nstage            = 2;
@@ -298,7 +295,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
         }
         else
         {
-            pme_lb->state = pme_load_balancing_t::State::Waiting;
+            /* Initially we turn on balancing directly on based on PP/PME imbalance */
+            pme_lb->state = pme_load_balancing_t::State::WaitingOnForceImbalance;
         }
     }
     else
@@ -981,30 +979,38 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         gmx_incons("pme_loadbal_do called at an interval != nstlist");
     }
 
-    /* PME grid + cut-off optimization with GPUs or PME ranks */
-    if ((pme_lb->state != pme_load_balancing_t::State::Searching) && pme_lb->bSepPMERanks)
+    /* PME grid + cut-off optimization with GPUs or PME ranks - conditional grid search activation */
+    if (pme_lb->bSepPMERanks)
     {
-        if (pme_lb->bTriggerOnDLB)
+        switch (pme_lb->state)
         {
-            if (dd_dlb_is_on(cr->dd))
-            {
-                pme_lb->state = pme_load_balancing_t::State::Searching;
-            }
-        }
-        /* We should ignore the first timing to avoid timing allocation
-         * overhead. And since the PME load balancing is called just
-         * before DD repartitioning, the ratio returned by dd_pme_f_ratio
-         * is not over the last nstlist steps, but the nstlist steps before
-         * that. So the first useful ratio is available at step_rel=3*nstlist.
-         */
-        else if (step_rel >= 3*ir->nstlist)
-        {
-            /* If PME rank load is too high, start tuning */
-            if (DDMASTER(cr->dd) && (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor))
-            {
-                pme_lb->state = pme_load_balancing_t::State::Searching;
-            }
-            dd_bcast(cr->dd, sizeof(pme_lb->state), &pme_lb->state);
+            case pme_load_balancing_t::State::WaitingOnDlb:
+                if (dd_dlb_is_on(cr->dd))
+                {
+                    pme_lb->state = pme_load_balancing_t::State::Searching;
+                }
+                break;
+
+            case pme_load_balancing_t::State::WaitingOnForceImbalance:
+                /* We should ignore the first timing to avoid timing allocation
+                 * overhead. And since the PME load balancing is called just
+                 * before DD repartitioning, the ratio returned by dd_pme_f_ratio
+                 * is not over the last nstlist steps, but the nstlist steps before
+                 * that. So the first useful ratio is available at step_rel=3*nstlist.
+                 */
+                if (step_rel >= 3*ir->nstlist)
+                {
+                    /* If PME rank load is too high, start tuning */
+                    if (DDMASTER(cr->dd) && (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor))
+                    {
+                        pme_lb->state = pme_load_balancing_t::State::Searching;
+                    }
+                    dd_bcast(cr->dd, sizeof(pme_lb->state), &pme_lb->state);
+                }
+                break;
+
+            default:
+                break;
         }
 
         /* Have not started searching, and have also exceeded the potential DLB activation period => switch off forever */
@@ -1027,7 +1033,6 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     {
         if (DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
         {
-            pme_lb->state = pme_load_balancing_t::State::Waiting;
             /* Unlock the DLB=auto, DLB is allowed to activate */
             dd_dlb_unlock(cr->dd);
             GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB can now turn on, when beneficial");
@@ -1036,7 +1041,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              * after DLB gets turned on, if it does within PMETune_period.
              */
             continue_pme_loadbal(pme_lb, TRUE);
-            pme_lb->bTriggerOnDLB = TRUE;
+            pme_lb->state         = pme_load_balancing_t::State::WaitingOnDlb;
             pme_lb->step_rel_stop = step_rel + PMETunePeriod*ir->nstlist;
         }
         else
