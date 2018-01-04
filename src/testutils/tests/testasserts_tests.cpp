@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,6 +231,40 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsUlp)
     EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(dsmall));
     EXPECT_FALSE(relativeToleranceAsUlp(0.1, 4).isWithin(dsmall));
     EXPECT_FALSE(relativeToleranceAsUlp(1.0, 4).isWithin(dsmall2));
+}
+
+TEST(FloatingPointToleranceTest, DefaultFloatTolerance)
+{
+    using gmx::test::defaultFloatTolerance;
+
+    // Differences within 4 single-precision ULPs are within the tolerance
+    FloatingPointDifference fequal(1.0f, 1.0f);
+    FloatingPointDifference fulp4(1.0f, addUlps(1.0f, 4));
+    FloatingPointDifference fulp8(1.0f, addUlps(1.0f, 8));
+    FloatingPointDifference fsmall(0.1f, addUlps(1.0f, 2) - 0.9f);
+    FloatingPointDifference fsmall2(0.1f, addUlps(1.0f, 6) - 0.9f);
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(fequal));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(fulp4));
+    EXPECT_FALSE(defaultFloatTolerance().isWithin(fulp8));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(fsmall));
+    EXPECT_FALSE(defaultFloatTolerance().isWithin(fsmall2));
+
+    // Differences within 4 single-precision ULPs are still within the
+    // tolerance, even when expressed as double-precision values.
+    FloatingPointDifference dequal(1.0, 1.0);
+    FloatingPointDifference dulp4(1.0, addUlps(1.0, 4));
+    FloatingPointDifference dulp8(1.0, addUlps(1.0, 8));
+    FloatingPointDifference dulp4f(1.0, static_cast<double>(addUlps(1.0f, 4)));
+    FloatingPointDifference dulp8f(1.0, static_cast<double>(addUlps(1.0f, 8)));
+    FloatingPointDifference dsmallf(0.1, static_cast<double>(addUlps(1.0f, 2) - 0.9f));
+    FloatingPointDifference dsmall2f(0.1, static_cast<double>(addUlps(1.0f, 6) - 0.9f));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(dequal));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(dulp4));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(dulp8));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(dulp4f));
+    EXPECT_FALSE(defaultFloatTolerance().isWithin(dulp8f));
+    EXPECT_TRUE(defaultFloatTolerance().isWithin(dsmallf));
+    EXPECT_FALSE(defaultFloatTolerance().isWithin(dsmall2f));
 }
 
 } // namespace

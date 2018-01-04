@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -331,7 +331,7 @@ gatherLoadBySimdIntTranspose(const double *  base,
     assert(std::size_t(base) % 32 == 0);
     assert(align % 4 == 0);
 
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_DINT32_WIDTH];
     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
 
     v0->simdInternal_ = _mm256_load_pd(base + align * ioffset[0]);
@@ -355,7 +355,7 @@ gatherLoadBySimdIntTranspose(const double *    base,
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
 
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  ioffset[GMX_SIMD_DINT32_WIDTH];
     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
 
     t1  = _mm_load_pd(base + align * ioffset[0]);
@@ -379,7 +379,7 @@ gatherLoadUBySimdIntTranspose(const double *  base,
     __m128d t1, t2, t3, t4;
     __m256d tA, tB;
 
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) ioffset[GMX_SIMD_DINT32_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_DINT32_WIDTH];
     _mm_store_si128( reinterpret_cast<__m128i *>(ioffset), offset.simdInternal_);
 
     t1   = _mm_loadu_pd(base + align * ioffset[0]);

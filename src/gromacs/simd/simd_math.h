@@ -742,7 +742,7 @@ erfc(SimdFloat x)
     const SimdFloat         sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
 #else
     const int               isieve   = 0xFFFFF000;
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  mem[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) float  mem[GMX_SIMD_FLOAT_WIDTH];
 
     union {
         float f; int i;

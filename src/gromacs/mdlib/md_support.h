@@ -64,6 +64,8 @@ class SimulationSignaller;
  * passed to compute_globals in md.c and global_stat.
  */
 
+/* we are initializing and not yet in the actual MD loop */
+#define CGLO_INITIALIZATION (1<<1)
 /* we are computing the kinetic energy from average velocities */
 #define CGLO_EKINAVEVEL     (1<<2)
 /* we are removing the center of mass momenta */

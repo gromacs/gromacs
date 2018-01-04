@@ -279,7 +279,7 @@
 #ifdef COUNT_PAIRS
     {
         int  i, j;
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real  tmp[GMX_SIMD_REAL_WIDTH];
 
         for (i = 0; i < UNROLLI; i += 2)
         {

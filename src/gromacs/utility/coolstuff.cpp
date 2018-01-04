@@ -805,7 +805,7 @@ std::string getCoolQuote()
         { "An intellectual is someone who has found something more interesting than sex.", "Edgar Wallace" },
         { "Base eight is just like base ten really, if you’re missing two fingers.", "Tom Lehrer" },
         { "If 10 years from now, when you are doing something quick and dirty, you suddenly visualize that I am looking over your shoulders and say to yourself: ‘Dijkstra would not have liked this’, well that would be enough immortality for me.", "Edsger Dijkstra" },
-        { "Memory is like an orgasm. It’s a lot better of you don’t have to fake it.", "Seymour Cray, on virtual memory" },
+        { "Memory is like an orgasm. It’s a lot better if you don’t have to fake it.", "Seymour Cray, on virtual memory" },
         { "A computer once beat me at chess, but it was no match for me at kick boxing.", "Emo Philips" },
         { "Home computers are being called upon to perform many new functions, including the consumption of homework formerly eaten by the dog.", "Doug Larson" },
         { "Forcefields are like dating; things go fine for a while and then sometimes it goes really bad.", "Alex MacKerell" },

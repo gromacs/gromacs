@@ -455,6 +455,11 @@ TestReferenceChecker CommandLineTestBase::rootChecker()
     return impl_->data_.rootChecker();
 }
 
+void CommandLineTestBase::setDefaultTolerance(const FloatingPointTolerance &tolerance)
+{
+    impl_->data_.rootChecker().setDefaultTolerance(tolerance);
+}
+
 void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
 {
     StringOutputStream     stream;

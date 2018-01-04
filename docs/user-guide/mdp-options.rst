@@ -2977,6 +2977,8 @@ Non-equilibrium MD
 
 
 Electric fields
+^^^^^^^^^^^^^^^
+
 .. mdp:: electric-field-x ; electric-field-y ; electric-field-z
 
    Here you can specify an electric field that optionally can be

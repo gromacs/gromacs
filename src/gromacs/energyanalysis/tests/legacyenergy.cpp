@@ -133,6 +133,11 @@ class EnergyTest : public CommandLineTestBase
             stdioHelper.redirectStringToStdin(stringForStdin);
             ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
+            // All the .edr files used in the tests contain only
+            // single-precision values, so even from a
+            // double-precision build they should conform to
+            // tolerances suitable for single-precision values.
+            setDefaultTolerance(defaultFloatTolerance());
             checkOutputFiles();
         }
 };

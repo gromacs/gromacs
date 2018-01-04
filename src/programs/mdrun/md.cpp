@@ -704,7 +704,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
 
-    cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+    cglo_flags = (CGLO_INITIALIZATION | CGLO_TEMPERATURE | CGLO_GSTAT
                   | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                   | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
                   | (continuationOptions.haveReadEkin ? CGLO_READEKIN : 0));

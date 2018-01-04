@@ -75,7 +75,7 @@ class SimdDInt32
 
         SimdDInt32(std::int32_t i)
         {
-            GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) idata[GMX_SIMD_DINT32_WIDTH];
+            alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_DINT32_WIDTH];
             idata[0]      = i;
             simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
         }
@@ -332,8 +332,8 @@ trunc(SimdDouble x)
 static inline SimdDouble
 frexp(SimdDouble value, SimdDInt32 * exponent)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) rdata[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)    idata[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double        rdata[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_DOUBLE_WIDTH];
 
     vec_st(value.simdInternal_, 0, rdata);
 
@@ -352,8 +352,8 @@ template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble
 ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) rdata[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)    idata[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double        rdata[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_DOUBLE_WIDTH];
 
     vec_st(value.simdInternal_,    0, rdata);
     vec_st(exponent.simdInternal_, 0, idata);

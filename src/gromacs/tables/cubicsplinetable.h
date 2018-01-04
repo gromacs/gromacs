@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,6 @@ namespace gmx
  * \note There will be a small additional accuracy loss from the internal
  *       operation where we calculate the epsilon offset from the nearest table
  *       point, since the integer part we subtract can get large in those cases.
- *
  *       While this is technically possible to solve with extended precision
  *       arithmetics, that would introduce extra instructions in some highly
  *       performance-sensitive code parts. For typical GROMACS interaction

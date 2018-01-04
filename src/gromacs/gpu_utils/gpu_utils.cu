@@ -55,6 +55,7 @@
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
@@ -113,12 +114,12 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     if (cudaErrorInvalidDeviceFunction == stat)
     {
         gmx_fatal(FARGS,
-                  "The %s binary was not compiled for the selected GPU "
-                  "(device ID #%d, compute capability %d.%d).\n"
-                  "When selecting target GPU architectures with GMX_CUDA_TARGET_SM, "
-                  "make sure to pass the appropriate architecture(s) corresponding to the "
-                  "device(s) intended to be used (see in the GPU info listing) or alternatively "
-                  "pass in GMX_CUDA_TARGET_COMPUTE an appropriate virtual architecture. ",
+                  "The %s binary does not include support for the CUDA architecture "
+                  "of the selected GPU (device ID #%d, compute capability %d.%d). "
+                  "By default, GROMACS supports all common architectures, so your GPU "
+                  "might be rare, or some architectures were disabled in the build. ",
+                  "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and ",
+                  "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
                   gmx::getProgramContext().displayName(), devInfo->id,
                   devInfo->prop.major, devInfo->prop.minor);
     }
@@ -644,7 +645,7 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     }
 }
 
-bool canDetectGpus()
+bool canDetectGpus(std::string *errorMessage)
 {
     cudaError_t        stat;
     int                driverVersion = -1;
@@ -654,18 +655,56 @@ bool canDetectGpus()
                        gmx::formatString("An unexpected value was returned from cudaDriverGetVersion %s: %s",
                                          cudaGetErrorName(stat), cudaGetErrorString(stat)).c_str());
     bool foundDriver = (driverVersion > 0);
-    return foundDriver;
+    if (!foundDriver)
+    {
+        // Can't detect GPUs if there is no driver
+        if (errorMessage != nullptr)
+        {
+            errorMessage->assign("No valid CUDA driver found");
+        }
+        return false;
+    }
+
+    int numDevices;
+    stat = cudaGetDeviceCount(&numDevices);
+    if (stat != cudaSuccess)
+    {
+        if (errorMessage != nullptr)
+        {
+            /* cudaGetDeviceCount failed which means that there is
+             * something wrong with the machine: driver-runtime
+             * mismatch, all GPUs being busy in exclusive mode,
+             * invalid CUDA_VISIBLE_DEVICES, or some other condition
+             * which should result in GROMACS issuing a warning a
+             * falling back to CPUs. */
+            errorMessage->assign(cudaGetErrorString(stat));
+        }
+
+        // Consume the error now that we have prepared to handle
+        // it. This stops it reappearing next time we check for
+        // errors. Note that if CUDA_VISIBLE_DEVICES does not contain
+        // valid devices, then cudaGetLastError returns the
+        // (undocumented) cudaErrorNoDevice, but this should not be a
+        // problem as there should be no future CUDA API calls.
+        // NVIDIA bug report #2038718 has been filed.
+        cudaGetLastError();
+        // Can't detect GPUs
+        return false;
+    }
+
+    // We don't actually use numDevices here, that's not the job of
+    // this function.
+    return true;
 }
 
-int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
+void findGpus(gmx_gpu_info_t *gpu_info)
 {
-    int                i, ndev, checkres, retval;
+    int                i, ndev, checkres;
     cudaError_t        stat;
     cudaDeviceProp     prop;
     gmx_device_info_t *devs;
 
     assert(gpu_info);
-    assert(err_str);
 
     gpu_info->n_dev_compatible = 0;
 
@@ -675,43 +714,28 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     stat = cudaGetDeviceCount(&ndev);
     if (stat != cudaSuccess)
     {
-        const char *s;
-
-        /* cudaGetDeviceCount failed which means that there is something
-         * wrong with the machine: driver-runtime mismatch, all GPUs being
-         * busy in exclusive mode, or some other condition which should
-         * result in us issuing a warning a falling back to CPUs. */
-        retval = -1;
-        s      = cudaGetErrorString(stat);
-        strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
-
-        // Consume the error now that we have prepared to handle
-        // it. This stops it reappearing next time we check for errors.
-        cudaGetLastError();
+        GMX_THROW(gmx::InternalError("Invalid call of findGpus() when CUDA API returned an error, perhaps "
+                                     "canDetectGpus() was not called appropriately beforehand."));
     }
-    else
+
+    snew(devs, ndev);
+    for (i = 0; i < ndev; i++)
     {
-        snew(devs, ndev);
-        for (i = 0; i < ndev; i++)
+        checkres = is_gmx_supported_gpu_id(i, &prop);
+
+        devs[i].id   = i;
+        devs[i].prop = prop;
+        devs[i].stat = checkres;
+
+        if (checkres == egpuCompatible)
         {
-            checkres = is_gmx_supported_gpu_id(i, &prop);
-
-            devs[i].id   = i;
-            devs[i].prop = prop;
-            devs[i].stat = checkres;
-
-            if (checkres == egpuCompatible)
-            {
-                gpu_info->n_dev_compatible++;
-            }
+            gpu_info->n_dev_compatible++;
         }
-        retval = 0;
     }
+    GMX_RELEASE_ASSERT(cudaSuccess == cudaPeekAtLastError(), "Should be cudaSuccess");
 
     gpu_info->n_dev   = ndev;
     gpu_info->gpu_dev = devs;
-
-    return retval;
 }
 
 std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)

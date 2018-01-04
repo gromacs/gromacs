@@ -1,11 +1,13 @@
 from __future__ import print_function, division, absolute_import
 
+
 import sys
 import os
 import shutil
 import json
 import argparse
 import re
+import math
 from collections import OrderedDict
 
 from physical_validation import integrator, ensemble, kinetic_energy
@@ -54,8 +56,7 @@ def basic_run_cmds(directory, grompp_args=None, mdrun_args=None):
     return [
         'oldpath=$PWD',
         'cd ' + directory,
-        grompp,
-        mdrun,
+        grompp + ' && ' + mdrun,
         'cd $oldpath'
     ]
 
@@ -74,7 +75,7 @@ class Test(object):
         raise NotImplementedError
 
     @classmethod
-    def prepare(cls, input_dir, target_dir, system_name):
+    def prepare(cls, input_dir, target_dir, system_name, nobackup):
         raise NotImplementedError
 
     @classmethod
@@ -368,9 +369,9 @@ class EnsembleTest(Test):
         message = ''
         max_quantiles = -1
         for result, dt, dp in zip(results, dtemp, dpress):
-            quantiles = ensemble.check(base_result, result, quiet=(verbosity == 0))
+            quantiles = ensemble.check(base_result, result, verbosity=verbosity)
             # filename=os.path.join(system_dir, system_name + '_ens'))
-            if any(q > tolerance for q in quantiles):
+            if any(q > tolerance or math.isnan(q) for q in quantiles):
                 passed = False
                 if len(quantiles) == 1:
                     message += '\n    --dtemp={:.1f} --dpress={:.1f} : FAILED ({:.1f} quantiles off)'.format(
@@ -420,7 +421,7 @@ class MaxwellBoltzmannTest(Test):
 
     @classmethod
     def prepare_parser(cls, input_dir, target_dir, system_name, nobackup, args):
-        return cls.prepare(input_dir, target_dir, system_name)
+        return cls.prepare(input_dir, target_dir, system_name, nobackup)
 
     @classmethod
     def analyze_parser(cls, gmx_parser, system_dir, system_name, base_data, verbosity, args):
@@ -429,7 +430,7 @@ class MaxwellBoltzmannTest(Test):
                            alpha=args.tolerance)
 
     @classmethod
-    def prepare(cls, input_dir, target_dir, system_name):
+    def prepare(cls, input_dir, target_dir, system_name, nobackup):
         # no additional sims needed, base is enough
         # could check energy writing settings
         return []
@@ -451,7 +452,7 @@ class MaxwellBoltzmannTest(Test):
             )
         base_result = base_data['reduced']
 
-        p = kinetic_energy.mb_ensemble(base_result, verbose=(verbosity > 0))
+        p = kinetic_energy.mb_ensemble(base_result, verbosity=verbosity)
         # filename=os.path.join(system_dir, system_name + '_mb'))
 
         if p >= alpha:
@@ -504,14 +505,14 @@ class EquipartitionTest(Test):
         return parser
 
     @classmethod
-    def prepare(cls, input_dir, target_dir, system_name):
+    def prepare(cls, input_dir, target_dir, system_name, nobackup):
         # no additional sims needed, base is enough
         # could check position, velocity & energy writing settings
         return []
 
     @classmethod
     def prepare_parser(cls, input_dir, target_dir, system_name, nobackup, args):
-        return cls.prepare(input_dir, target_dir, system_name)
+        return cls.prepare(input_dir, target_dir, system_name, nobackup)
 
     @classmethod
     def analyze_parser(cls, gmx_parser, system_dir, system_name, base_data, verbosity, args):
@@ -596,14 +597,14 @@ class KinConstraintsTest(Test):
         return parser
 
     @classmethod
-    def prepare(cls, input_dir, target_dir, system_name):
+    def prepare(cls, input_dir, target_dir, system_name, nobackup):
         # no additional sims needed, base is enough
         # could check if there are any constraints in the system
         return []
 
     @classmethod
     def prepare_parser(cls, input_dir, target_dir, system_name, nobackup, args):
-        return cls.prepare(input_dir, target_dir, system_name)
+        return cls.prepare(input_dir, target_dir, system_name, nobackup)
 
     @classmethod
     def analyze_parser(cls, gmx_parser, system_dir, system_name, base_data, verbosity, args):
@@ -623,22 +624,25 @@ all_tests = OrderedDict([
 ])
 
 
-def parse_systems(systems_json, systems_user, source_path):
+def parse_systems(systems_json, systems_user, source_path,
+                  analyze_only):
     # Parse json
     # As the order of the systems and the tests
     # might be meaningful, we need ordered dicts!
     system_list = json.load(systems_json)
     system_dict = OrderedDict()
     for system in system_list:
-        system_name = system['dir']
-        # do the input files exist?
-        input_dir = os.path.join(source_path, system_name, 'input')
-        if not (os.path.isdir(input_dir) and
-                os.path.exists(os.path.join(input_dir, 'system.mdp')) and
-                os.path.exists(os.path.join(input_dir, 'system.top')) and
-                os.path.exists(os.path.join(input_dir, 'system.gro'))):
-            raise ValueError('System ' + system_name + ' in ' +
-                             systems_json.name + ': Input files not found')
+        system_name = system['name']
+        system_dir = system['dir']
+        # do the input files exist? (only relevant if we're not only analyzing)
+        if not analyze_only:
+            input_dir = os.path.join(source_path, system_dir, 'input')
+            if not (os.path.isdir(input_dir) and
+                    os.path.exists(os.path.join(input_dir, 'system.mdp')) and
+                    os.path.exists(os.path.join(input_dir, 'system.top')) and
+                    os.path.exists(os.path.join(input_dir, 'system.gro'))):
+                raise ValueError('System ' + system_name + ' in ' +
+                                 systems_json.name + ': Input files not found')
         # no need to run systems that we don't test
         if 'tests' not in system:
             raise ValueError('System ' + system_name + ' in ' +
@@ -691,7 +695,6 @@ def parse_systems(systems_json, systems_user, source_path):
         # delete systems not selected by user
         for user_system in systems_user:
             if re.match(user_system + '$', system):
-                user_key = user_system
                 break
         else:
             system_dict.pop(system)
@@ -799,15 +802,15 @@ def main(args):
             os.makedirs(args.wd)
         target_path = args.wd
 
-    # get ordered dict of systems from combination of json file and user choices
-    systems = parse_systems(args.json, args.systems, source_path)
-
     # parse simulation stage to perform
     do_all = not (args.prepare or args.run or args.analyze)
     do_prepare = do_all or args.prepare or args.run
     write_script = args.prepare
     do_run = do_all or args.run
     do_analysis = do_all or args.analyze
+
+    # get ordered dict of systems from combination of json file and user choices
+    systems = parse_systems(args.json, args.systems, source_path, args.analyze)
 
     # prepare GROMACS interface
     if args.gmx:
@@ -825,12 +828,18 @@ def main(args):
         gmx_parser = GromacsParser(exe=gmx)
 
     if do_prepare:
+        nsystems = len(systems)
+        n = 0
         runs = []  # this will contain all information needed to run the system
         for system_name, system in systems.items():
+            n += 1
+            print('\rPreparing run files for systems... [{:d}/{:d}] '.format(n, nsystems), end='')
+            sys.stdout.flush()  # py2 compatibility
+            system_dir = system['dir']
             system_dirs = []  # list of directories with subsystems
             # prepare the base system
-            input_dir = os.path.join(source_path, system_name, 'input')
-            target_dir = os.path.join(target_path, system_name)
+            input_dir = os.path.join(source_path, system_dir, 'input')
+            target_dir = os.path.join(target_path, system_dir)
             mkdir_bk(target_dir, nobackup=args.nobackup)
             basedir = os.path.join(target_dir, 'base')
             mkdir_bk(basedir, nobackup=args.nobackup)
@@ -854,33 +863,45 @@ def main(args):
                     'mdrun_args': system['mdrun_args']
                 })
         # end of loop over systems
+        print('-- done.')
 
         if write_script:
+            print('Writing run script... ', end='')
+            sys.stdout.flush()  # py2 compatibility
             script_file = os.path.join(target_path, 'run_simulations.sh')
             if not args.nobackup:
                 file_bk(script_file)
             with open(script_file, 'w') as f:
                 f.write('# This file was created by the physical validation suite for GROMACS.\n')
                 f.write('\n# Define run variables\n')
-                f.write('WORKDIR=' + target_path + '\n')
-                f.write('GROMPPCMD="' + gmx + ' grompp"\n')
-                f.write('MDRUNCMD="' + gmx + ' mdrun"\n')
+                f.write('WORKDIR=' + os.path.abspath(target_path) + '\n')
+                f.write('GROMPPCMD="' + os.path.abspath(gmx) + ' grompp"\n')
+                f.write('MDRUNCMD="' + os.path.abspath(gmx) + ' mdrun"\n')
                 f.write('\n# Run systems\n')
                 f.write('startpath=$PWD\n')
                 f.write('cd $WORKDIR\n')
                 for run in runs:
-                    for cmd in basic_run_cmds(directory=run['dir'],
+                    for cmd in basic_run_cmds(directory=os.path.relpath(os.path.abspath(run['dir']),
+                                                                        os.path.abspath(target_path)),
                                               grompp_args=run['grompp_args'],
                                               mdrun_args=run['mdrun_args']):
                         f.write(cmd + '\n')
                     f.write('\n')
                 f.write('cd $startpath\n')
+            print('-- done.')
+            print('Run script written to ' + script_file)
+            print('Adapt script as necessary and run simulations. Make sure to preserve the folder structure!')
+            print('Once all simulations have ran, analyze the results using `make check-phys-analyze` or '
+                  'using the `-a` flag of `gmx_physicalvalidation.py`.')
         # end if write_script
 
         if do_run:
+            nruns = len(runs)
             # send messages from GROMACS to log
             gmx_log = open(os.path.join(target_path, 'physicalvalidation_gmx.log'), 'w')
-            for run in runs:
+            for n, run in enumerate(runs):
+                print('\rRunning (sub)systems... [{:d}/{:d}] '.format(n+1, nruns), end='')
+                sys.stdout.flush()  # py2 compatibility
                 gmx_interface.grompp(mdp='system.mdp',
                                      top='system.top',
                                      gro='system.gro',
@@ -897,6 +918,7 @@ def main(args):
                                     stderr=gmx_log,
                                     mpicmd=args.mpicmd)
             gmx_log.close()
+            print('-- done.')
         # end if do_run
     # end if do_prepare
 
@@ -911,6 +933,7 @@ def main(args):
         print()
         passed = True
         for system_name, system in systems.items():
+            system_dir = system['dir']
             # save system data if re-used for different test
             # massively reduces run time of multiple tests
             system_data = {
@@ -918,7 +941,7 @@ def main(args):
                 'full': None
             }
             # system directory
-            target_dir = os.path.join(target_path, system_name)
+            target_dir = os.path.join(target_path, system_dir)
 
             print('Analyzing system ' + system_name)
 
@@ -932,6 +955,7 @@ def main(args):
                     except Exception as err:
                         print('    ' + all_tests[test_name].__name__ + ' FAILED (Exception in evaluation)')
                         print('    '*2 + type(err).__name__ + ': ' + str(err))
+                        passed = False
                     else:
                         for line in result['message'].split('\n'):
                             print('    ' + line)

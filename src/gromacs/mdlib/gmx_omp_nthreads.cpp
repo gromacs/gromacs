@@ -465,50 +465,6 @@ reportOpenmpSettings(const gmx::MDLogger &mdlog,
     GMX_LOG(mdlog.warning);
 }
 
-/*! \brief Detect and warn about oversubscription of cores.
- *
- * \todo This could probably live elsewhere, since it is not specifc
- * to OpenMP, and only needs modth.gnth.
- *
- * \todo Enable this for separate PME nodes as well! */
-static void
-issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
-                             const t_commrec     *cr,
-                             int                  nthreads_hw_avail,
-                             int                  nppn,
-                             gmx_bool             bSepPME)
-{
-    char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
-
-    if (bSepPME || 0 != cr->rank_pp_intranode)
-    {
-        return;
-    }
-
-    if (modth.gnth*nppn > nthreads_hw_avail)
-    {
-        sprintf(sbuf, "threads");
-        sbuf1[0] = '\0';
-        sprintf(sbuf2, "O");
-#if GMX_MPI
-        if (modth.gnth == 1)
-        {
-#if GMX_THREAD_MPI
-            sprintf(sbuf, "thread-MPI threads");
-#else
-            sprintf(sbuf, "MPI processes");
-            sprintf(sbuf1, " per rank");
-            sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
-#endif
-        }
-#endif
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                "         This will cause considerable performance loss!",
-                sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
-    }
-}
-
 void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
@@ -542,7 +498,6 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
 #endif
 
     reportOpenmpSettings(mdlog, cr, bOMP, bFullOmpSupport, bSepPME);
-    issueOversubscriptionWarning(mdlog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
 int gmx_omp_nthreads_get(int mod)

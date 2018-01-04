@@ -850,7 +850,7 @@ void csettle(gmx_settledata_t settled,
     if (settled->bUseSimd)
     {
         /* Convert the pbc struct for SIMD */
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbcSimd[9*GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real    pbcSimd[9*GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbcSimd);
 
         settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,

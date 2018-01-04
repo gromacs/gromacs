@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,7 +330,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
                          double ***slDensity, int *nslices, t_topology *top, int ePBC,
                          int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                          int *index_center, int ncenter,
-                         gmx_bool bRelative, const gmx_output_env_t *oenv)
+                         gmx_bool bRelative, const gmx_output_env_t *oenv, const char **dens_opt)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -343,6 +343,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
     real         t,
                  z;
     real         boxSz, aveBox;
+    real        *den_val; /* values from which the density is calculated */
     gmx_rmpbc_t  gpbc = nullptr;
 
     if (axis < 0 || axis >= DIM)
@@ -371,6 +372,30 @@ static void calc_density(const char *fn, int **index, int gnx[],
 
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
     /*********** Start processing trajectory ***********/
+
+    snew(den_val, top->atoms.nr);
+    if (dens_opt[0][0] == 'n')
+    {
+        for (i = 0; (i < top->atoms.nr); i++)
+        {
+            den_val[i] = 1;
+        }
+    }
+    else if (dens_opt[0][0] == 'c')
+    {
+        for (i = 0; (i < top->atoms.nr); i++)
+        {
+            den_val[i] = top->atoms.atom[i].q;
+        }
+    }
+    else
+    {
+        for (i = 0; (i < top->atoms.nr); i++)
+        {
+            den_val[i] = top->atoms.atom[i].m;
+        }
+    }
+
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x0);
@@ -440,7 +465,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
                     slice -= *nslices;
                 }
 
-                (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
+                (*slDensity)[n][slice] += den_val[index[n][i]]*invvol;
             }
         }
         nr_frames++;
@@ -473,6 +498,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
     }
 
     sfree(x0); /* free memory used by coordinate array */
+    sfree(den_val);
 }
 
 static void plot_density(double *slDensity[], const char *afile, int nslices,
@@ -663,9 +689,8 @@ int gmx_density(int argc, char *argv[])
     int                ePBC;
     int               *index_center;   /* index for centering group  */
     int              **index;          /* indices for all groups     */
-    int                i;
 
-    t_filenm           fnm[] = { /* files for g_density       */
+    t_filenm           fnm[] = {       /* files for g_density       */
         { efTRX, "-f", nullptr,  ffREAD },
         { efNDX, nullptr, nullptr,  ffOPTRD },
         { efTPR, nullptr, nullptr,  ffREAD },
@@ -693,20 +718,6 @@ int gmx_density(int argc, char *argv[])
     axis = toupper(axtitle[0]) - 'X';
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
-    if (dens_opt[0][0] == 'n')
-    {
-        for (i = 0; (i < top->atoms.nr); i++)
-        {
-            top->atoms.atom[i].m = 1;
-        }
-    }
-    else if (dens_opt[0][0] == 'c')
-    {
-        for (i = 0; (i < top->atoms.nr); i++)
-        {
-            top->atoms.atom[i].m = top->atoms.atom[i].q;
-        }
-    }
 
     snew(grpname, ngrps);
     snew(index, ngrps);
@@ -745,7 +756,7 @@ int gmx_density(int argc, char *argv[])
     {
         calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top,
                      ePBC, axis, ngrps, &slWidth, bCenter, index_center, ncenter,
-                     bRelative, oenv);
+                     bRelative, oenv, dens_opt);
     }
 
     plot_density(density, opt2fn("-o", NFILE, fnm),

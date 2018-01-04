@@ -62,7 +62,7 @@ class GromacsInterface(object):
             self.exe = exe
 
         if includepath is not None:
-            self._includepath = includepath
+            self.includepath = includepath
 
     @property
     def exe(self):
@@ -93,6 +93,12 @@ class GromacsInterface(object):
 
     @includepath.setter
     def includepath(self, path):
+        try:  # py2/3 compatibility
+            basestring
+        except NameError:
+            basestring = str
+        if isinstance(path, basestring):
+            path = [path]
         self._includepath = path
 
     def get_quantities(self, edr, quantities, cwd=None,
@@ -231,8 +237,12 @@ class GromacsInterface(object):
                 if not line:
                     continue
                 line = line.split('=')
-                option = line[0].strip()
-                value = line[1].strip()
+                # unify mdp options - all lower case, only dashes
+                option = line[0].strip().replace('_', '-').lower()
+                if option not in ['include', 'define']:
+                    value = line[1].strip().replace('_', '-').lower()
+                else:
+                    value = line[1].strip()
                 result[option] = value
         return result
 
@@ -427,7 +437,7 @@ class GromacsInterface(object):
 
     def _run(self, cmd, args, cwd=None, stdin=None, stdout=None, stderr=None, mpicmd=None):
         if self.exe is None:
-            print('ERROR: No gmx executable defined. Set before attempting to run!')
+            raise RuntimeError('Tried to use GromacsParser before setting gmx executable.')
         if mpicmd:
             command = [mpicmd, self.exe, cmd]
         else:
@@ -478,9 +488,10 @@ class GromacsInterface(object):
         content = []
         include_dirs = include
         if self.includepath:
-            include_dirs += [self.includepath]
+            include_dirs += self.includepath
         for line in filehandler:
             line = line.split(';')[0].strip()
+            line = line.split('*')[0].strip()
             if not line:
                 continue
             if line[0] == '#':

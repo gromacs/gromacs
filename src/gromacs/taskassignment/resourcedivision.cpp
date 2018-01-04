@@ -216,6 +216,14 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
      */
     if (ngpu > 0)
     {
+        if (hw_opt.nthreads_omp > 0)
+        {
+            /* In this case it is unclear if we should use 1 rank per GPU
+             * or more or less, so we require also setting the number of ranks.
+             */
+            gmx_fatal(FARGS, "When using GPUs, setting the number of OpenMP threads without specifying the number of ranks can lead to conflicting demands. Please specify the number of thread-MPI ranks as well (option -ntmpi).");
+        }
+
         nrank = ngpu;
 
         /* When the user sets nthreads_omp, we can end up oversubscribing CPU cores
@@ -864,5 +872,69 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
     if (debug)
     {
         print_hw_opt(debug, hw_opt);
+    }
+}
+
+void checkHardwareOversubscription(int                          numThreadsOnThisRank,
+                                   const gmx::HardwareTopology &hwTop,
+                                   const t_commrec             *cr,
+                                   const gmx::MDLogger         &mdlog)
+{
+    if (hwTop.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        /* There is nothing we can check */
+        return;
+    }
+
+    int numRanksOnThisNode   = 1;
+    int numThreadsOnThisNode = numThreadsOnThisRank;
+#if GMX_MPI
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        /* Count the threads within this physical node */
+        MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);
+        MPI_Allreduce(&numThreadsOnThisRank, &numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, cr->mpi_comm_physicalnode);
+    }
+#endif
+
+    if (numThreadsOnThisNode > hwTop.machine().logicalProcessorCount)
+    {
+        std::string mesg = "WARNING: ";
+        if (GMX_LIB_MPI)
+        {
+            mesg += gmx::formatString("On rank %d: o", cr->sim_nodeid);
+        }
+        else
+        {
+            mesg += "O";
+        }
+        mesg     += gmx::formatString("versubscribing the available %d logical CPU cores", hwTop.machine().logicalProcessorCount);
+        if (GMX_LIB_MPI)
+        {
+            mesg += " per node";
+        }
+        mesg     += gmx::formatString(" with %d ", numThreadsOnThisNode);
+        if (numRanksOnThisNode == numThreadsOnThisNode)
+        {
+            if (GMX_THREAD_MPI)
+            {
+                mesg += "thread-MPI threads.";
+            }
+            else
+            {
+                mesg += "MPI processes.";
+            }
+        }
+        else
+        {
+            mesg += "threads.";
+        }
+        mesg     += "\n         This will cause considerable performance loss.";
+        /* Note that only the master rank logs to stderr and only ranks
+         * with an open log file write to log.
+         * TODO: When we have a proper parallel logging framework,
+         *       the framework should add the rank and node numbers.
+         */
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(mesg.c_str());
     }
 }

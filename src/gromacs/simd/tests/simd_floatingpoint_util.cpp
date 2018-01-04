@@ -929,7 +929,7 @@ TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
     real            data[GMX_SIMD_REAL_WIDTH/4];
     std::iota(data, data+GMX_SIMD_REAL_WIDTH/4, 1);
 
-#if defined _ICC && __ICC == 1800 || defined __ICL && __ICL == 1800
+#if defined __ICC && __ICC == 1800 || defined __ICL && __ICL == 1800
 #pragma novector /* Work-around for incorrect vectorization for AVX_512(_KNL) */
 #endif
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)

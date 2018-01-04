@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -191,7 +191,7 @@ set(GMX_VERSION_PATCH 0)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-beta2")
+set(GMX_VERSION_SUFFIX "-rc1")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -226,7 +226,7 @@ endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
 set(REGRESSIONTEST_BRANCH "refs/heads/release-2018")
-set(REGRESSIONTEST_MD5SUM "ebfdb7f7b0c70a03038655ee12b18300" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "d4c535a06fd8f34c9fd21e7ee5a30808" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")

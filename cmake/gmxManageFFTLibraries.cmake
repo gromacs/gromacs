@@ -68,8 +68,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     if(GMX_BUILD_OWN_FFTW)
 
-        if(WIN32)
-            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) on Windows")
+        if(MSVC)
+            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) in Visual Studio")
+        endif()
+        if(CMAKE_GENERATOR STREQUAL "Ninja")
+            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) with ninja")
         endif()
 
         add_subdirectory(src/contrib/fftw)

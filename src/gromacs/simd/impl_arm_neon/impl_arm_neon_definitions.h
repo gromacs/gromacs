@@ -75,6 +75,7 @@
 #define GMX_SIMD_FINT32_WIDTH                   4
 #undef  GMX_SIMD_DINT32_WIDTH
 #define GMX_SIMD4_WIDTH                         4
+#define GMX_SIMD_ALIGNMENT                     16 // Bytes (4*single)
 #define GMX_SIMD_RSQRT_BITS                     8
 #define GMX_SIMD_RCP_BITS                       8
 

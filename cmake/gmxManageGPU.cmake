@@ -39,6 +39,8 @@
 # - if CUDA is not found but GPUs were detected issue a warning
 if (NOT DEFINED GMX_GPU)
     set(GMX_GPU_AUTO TRUE CACHE INTERNAL "GPU acceleration will be selected automatically")
+else()
+    set(GMX_GPU_AUTO FALSE CACHE INTERNAL "GPU acceleration will be selected automatically")
 endif()
 option(GMX_GPU "Enable GPU acceleration" OFF)
 
