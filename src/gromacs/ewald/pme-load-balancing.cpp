@@ -133,10 +133,16 @@ const char *pmelblim_str[epmelblimNR] =
 
 struct pme_load_balancing_t {
     gmx_bool     bSepPMERanks;       /**< do we have separate PME ranks? */
-    gmx_bool     bActive;            /**< is PME tuning active? */
+    enum class   State
+    {
+        Disabled,                    /**< PME tuning is disabled. */
+        Waiting,                     /**< PME tuning is enabled but is not actively searching
+                                          because it's waiting for some trigger, e.g. DLB imbalance.
+                                          TODO: this should clarify and replace bTriggerOnDLB. */
+        Searching                    /**< Trying different grid setups. */
+    }            state;
     gmx_int64_t  step_rel_stop;      /**< stop the tuning after this value of step_rel */
     gmx_bool     bTriggerOnDLB;      /**< trigger balancing only on DD DLB */
-    gmx_bool     bBalance;           /**< are we in the balancing phase, i.e. trying different setups? */
     int          nstage;             /**< the current maximum number of stages */
 
     real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
@@ -164,10 +170,10 @@ struct pme_load_balancing_t {
 };
 
 /* TODO The code in this file should call this getter, rather than
- * read bActive anywhere */
+ * read state anywhere */
 bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
 {
-    return pme_lb != nullptr && pme_lb->bActive;
+    return pme_lb != nullptr && (pme_lb->state != pme_load_balancing_t::State::Disabled);
 }
 
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
@@ -278,19 +284,30 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
      * When running only on a CPU without PME ranks, PME tuning will only help
      * with small numbers of atoms in the cut-off sphere.
      */
-    pme_lb->bActive  = (wallcycle_have_counter() && (bUseGPU ||
-                                                     pme_lb->bSepPMERanks));
-
-    /* With GPUs and no separate PME ranks we can't measure the PP/PME
-     * imbalance, so we start balancing right away.
-     * Otherwise we only start balancing after we observe imbalance.
-     */
-    pme_lb->bBalance = (pme_lb->bActive && (bUseGPU && !pme_lb->bSepPMERanks));
+    if (wallcycle_have_counter() && (bUseGPU || pme_lb->bSepPMERanks))
+    {
+        /* With GPUs and no separate PME ranks we can't measure the PP/PME
+         * imbalance, so we start balancing right away.
+         * Otherwise we only start balancing after we observe imbalance.
+         */
+        if (bUseGPU && !pme_lb->bSepPMERanks)
+        {
+            pme_lb->state = pme_load_balancing_t::State::Searching;
+        }
+        else
+        {
+            pme_lb->state = pme_load_balancing_t::State::Waiting;
+        }
+    }
+    else
+    {
+        pme_lb->state = pme_load_balancing_t::State::Disabled;
+    }
 
     pme_lb->step_rel_stop = PMETunePeriod*ir->nstlist;
 
     /* Delay DD load balancing when GPUs are used */
-    if (pme_lb->bActive && DOMAINDECOMP(cr) && cr->dd->nnodes > 1 && bUseGPU)
+    if (pme_loadbal_is_active(pme_lb) && DOMAINDECOMP(cr) && cr->dd->nnodes > 1 && bUseGPU)
     {
         /* Lock DLB=auto to off (does nothing when DLB=yes/no.
          * With GPUs and separate PME nodes, we want to first
@@ -307,7 +324,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     *pme_lb_p = pme_lb;
 
-    *bPrinting = pme_lb->bBalance;
+    *bPrinting = (pme_lb->state == pme_load_balancing_t::State::Searching);
 }
 
 /*! \brief Try to increase the cutoff during load balancing */
@@ -920,7 +937,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
 
     assert(pme_lb != nullptr);
 
-    if (!pme_lb->bActive)
+    if (pme_lb->state == pme_load_balancing_t::State::Disabled)
     {
         return;
     }
@@ -944,11 +961,14 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     }
 
     /* PME grid + cut-off optimization with GPUs or PME ranks */
-    if (!pme_lb->bBalance && pme_lb->bSepPMERanks)
+    if ((pme_lb->state != pme_load_balancing_t::State::Searching) && pme_lb->bSepPMERanks)
     {
         if (pme_lb->bTriggerOnDLB)
         {
-            pme_lb->bBalance = dd_dlb_is_on(cr->dd);
+            if (dd_dlb_is_on(cr->dd))
+            {
+                pme_lb->state = pme_load_balancing_t::State::Searching;
+            }
         }
         /* We should ignore the first timing to avoid timing allocation
          * overhead. And since the PME load balancing is called just
@@ -958,17 +978,19 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
          */
         else if (step_rel >= 3*ir->nstlist)
         {
-            if (DDMASTER(cr->dd))
+            /* If PME rank load is too high, start tuning */
+            if (DDMASTER(cr->dd) && (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor))
             {
-                /* If PME rank load is too high, start tuning */
-                pme_lb->bBalance =
-                    (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
+                pme_lb->state = pme_load_balancing_t::State::Searching;
             }
-            dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
+            dd_bcast(cr->dd, sizeof(pme_lb->state), &pme_lb->state);
         }
 
-        pme_lb->bActive = (pme_lb->bBalance ||
-                           step_rel <= pme_lb->step_rel_stop);
+        /* Have not started searching, and have also exceeded the potential DLB activation period => switch off forever */
+        if ((pme_lb->state != pme_load_balancing_t::State::Searching) && (step_rel > pme_lb->step_rel_stop))
+        {
+            pme_lb->state = pme_load_balancing_t::State::Disabled;
+        }
     }
 
     /* The location in the code of this balancing termination is strange.
@@ -980,12 +1002,11 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
      * to allow for another nstlist steps with DLB locked to stabilize
      * the performance.
      */
-    if (pme_lb->bBalance && pme_lb->stage == pme_lb->nstage)
+    if ((pme_lb->state == pme_load_balancing_t::State::Searching) && pme_lb->stage == pme_lb->nstage)
     {
-        pme_lb->bBalance = FALSE;
-
         if (DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
         {
+            pme_lb->state = pme_load_balancing_t::State::Waiting;
             /* Unlock the DLB=auto, DLB is allowed to activate */
             dd_dlb_unlock(cr->dd);
             GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB can now turn on, when beneficial");
@@ -1000,7 +1021,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         else
         {
             /* We're completely done with PME tuning */
-            pme_lb->bActive = FALSE;
+            pme_lb->state = pme_load_balancing_t::State::Disabled;
         }
 
         if (DOMAINDECOMP(cr))
@@ -1014,7 +1035,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         }
     }
 
-    if (pme_lb->bBalance)
+    if (pme_lb->state == pme_load_balancing_t::State::Searching)
     {
         /* We might not have collected nstlist steps in cycles yet,
          * since init_step might not be a multiple of nstlist,
@@ -1035,23 +1056,23 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         }
     }
 
-    if (!pme_lb->bBalance &&
+    if ((pme_lb->state != pme_load_balancing_t::State::Searching) &&
         (!pme_lb->bSepPMERanks || step_rel > pme_lb->step_rel_stop))
     {
         /* We have just deactivated the balancing and we're not measuring PP/PME
          * imbalance during the first steps of the run: deactivate the tuning.
          */
-        pme_lb->bActive = FALSE;
+        pme_lb->state = pme_load_balancing_t::State::Disabled;
     }
 
-    if (!(pme_lb->bActive) && DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
+    if ((pme_lb->state == pme_load_balancing_t::State::Disabled) && DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
     {
         /* Make sure DLB is allowed when we deactivate PME tuning */
         dd_dlb_unlock(cr->dd);
         GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB can now turn on, when beneficial");
     }
 
-    *bPrinting = pme_lb->bBalance;
+    *bPrinting = (pme_lb->state == pme_load_balancing_t::State::Searching);
 }
 
 /*! \brief Return product of the number of PME grid points in each dimension */
