@@ -109,6 +109,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
 #include <openbabel/math/vector3.h>
+#include <openbabel/elements.h>
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
 #define HAVE_SYS_TIME_H KOKO
@@ -182,8 +183,7 @@ void ReadGauss(const char          *g09,
     OpenBabel::OBMatrixData   *quadrupole;
     OpenBabel::OBMatrixData   *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
-    OpenBabel::OBPcharges     *OBpc;
-    OpenBabel::OBElementTable *OBet;
+    //OpenBabel::OBPcharge      *OBpc;
     alexandria::jobType        jobtype = alexandria::string2jobType(jobType);
 
     std::vector<alexandria::ElectrostaticPotential> espv;
@@ -406,7 +406,6 @@ void ReadGauss(const char          *g09,
     mpt.LastExperiment()->AddEnergy(mes);
 
     // Atoms
-    OBet = new OpenBabel::OBElementTable();
     OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {
@@ -423,22 +422,21 @@ void ReadGauss(const char          *g09,
                 fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n",
                         atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
-            alexandria::CalcAtom ca(OBet->GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
+            alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-            for (const auto& cs : charge_scheme)
+            /*for (const auto& cs : charge_scheme)
             {
                 OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
                 if (nullptr != OBpd)
                 {
-                    double q = 0;
                     charge_model = strdup(OBpd->GetValue().c_str());
-                    OBpc = (OpenBabel::OBPcharges *) mol.GetData(charge_model);
-                    OBpc->FindPcharge(atom->GetIdx(), &q);
-                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, q);                
+                    OBpc = (OpenBabel::OBPcharge *) mol.GetData(charge_model);
+                    auto PartialCharge = OBpc->GetPartialCharge();
+                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);                
                     ca.AddCharge(aq);
                 }                  
-            }
+                }*/
             if (nullptr == charge_model)
             {
                 printf("\n"
@@ -456,7 +454,6 @@ void ReadGauss(const char          *g09,
     {
         gmx_fatal(FARGS, "Cannot read %s force field", forcefield);
     }
-    delete OBet;
 
     // Bonds
     OBbi   = mol.BeginBonds();
