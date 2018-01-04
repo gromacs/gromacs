@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -57,8 +56,11 @@ namespace test
 GpuTest::GpuTest()
 {
     snew(gpuInfo_, 1);
-    char errorString[STRLEN];
-    detect_gpus(gpuInfo_, errorString);
+    if (canDetectGpus(nullptr))
+    {
+        findGpus(gpuInfo_);
+    }
+    // Failing to find valid GPUs does not require further action
 }
 
 GpuTest::~GpuTest()

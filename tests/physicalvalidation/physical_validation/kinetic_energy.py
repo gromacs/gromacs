@@ -37,7 +37,7 @@ from .util import kinetic_energy as util_kin
 from .data import SimulationData
 
 
-def mb_ensemble(data, alpha=None, verbose=False,
+def mb_ensemble(data, alpha=None, verbosity=1,
                 screen=False, filename=None):
     r"""Checks if a kinetic energy trajectory is Maxwell-Boltzmann distributed.
 
@@ -48,8 +48,8 @@ def mb_ensemble(data, alpha=None, verbose=False,
     alpha : float, optional
         If a confidence interval is given and verbose=True, the test outputs
         a passed / failed message.
-    verbose : bool, optional
-        Print result details. Default: False.
+    verbosity : int, optional
+        Verbosity level, where 0 is quiet and 3 very chatty. Default: 1.
     screen : bool, optional
         Plot distributions on screen. Default: False.
     filename : string, optional
@@ -94,10 +94,11 @@ def mb_ensemble(data, alpha=None, verbose=False,
             data.system.nconstraints -
             data.system.ndof_reduction_tra -
             data.system.ndof_reduction_rot)
-    return util_kin.check_mb_ensemble(kin=data.observables['kinetic_energy'],
+
+    return util_kin.check_mb_ensemble(kin=data.observables.kinetic_energy,
                                       temp=data.ensemble.temperature,
                                       ndof=ndof, alpha=alpha,
-                                      kb=data.units.kb, verbose=verbose,
+                                      kb=data.units.kb, verbosity=verbosity,
                                       screen=screen, filename=filename,
                                       ene_unit=data.units.energy_str)
 
@@ -125,9 +126,10 @@ def equipartition(data, dtemp=0.1, distribution=False, alpha=0.05,
         List of 1d arrays containing molecule indeces defining groups. Useful to pre-define
         groups of molecules (e.g. solute / solvent, liquid mixture species, ...). If None,
         no pre-defined molecule groups will be tested. Default: None.
-        Note: If an empty 1d array is found as last element in the list, the remaining
-              molecules are collected in this array. This allows, for example, to only
-              specify the solute, and indicate the solvent by giving an empty array.
+
+        *Note:* If an empty 1d array is found as last element in the list, the remaining
+        molecules are collected in this array. This allows, for example, to only
+        specify the solute, and indicate the solvent by giving an empty array.
     random_divisions : int, optional
         Number of random division tests attempted. Default: 0 (random division tests off).
     random_groups : int, optional

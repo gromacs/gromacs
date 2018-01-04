@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -235,9 +235,9 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata2[GMX_SIMD_DOUBLE_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);
@@ -259,9 +259,9 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata0[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata1[GMX_SIMD_DOUBLE_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double  rdata2[GMX_SIMD_DOUBLE_WIDTH];
 
     store(rdata0, v0);
     store(rdata1, v1);

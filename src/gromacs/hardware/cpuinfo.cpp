@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -778,6 +778,11 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
     {
         *brand = cpuInfo.at("Processor");
     }
+    else if (cpuInfo.count("model name"))
+    {
+        *brand = cpuInfo.at("model name");
+    }
+
     if (cpuInfo.count("CPU architecture"))
     {
         *family = std::strtol(cpuInfo.at("CPU architecture").c_str(), nullptr, 10);

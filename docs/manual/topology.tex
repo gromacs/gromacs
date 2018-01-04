@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -1426,9 +1426,9 @@ Urea         3
    3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
 
 [ dihedral_restraints ]
-; ai   aj    ak    al  type  label  phi  dphi  kfac  power
-    3    6     1    2     1      1  180     0     1      2
-    1    4     3    5     1      1  180     0     1      2
+; ai   aj    ak    al  type  phi  dphi  fc
+    3    6     1    2     1  180     0  10
+    1    4     3    5     1  180     0  10
 
 ; Include TIP3P water topology
 #include "amber99/tip3p.itp"
@@ -1545,11 +1545,9 @@ The implementation of dihedral restraints is described in section \ssecref{dihed
 The parameters specified in the [dihedral_restraints] directive are as follows:
 \begin{itemize}
 \item {\tt type} has only one possible value which is 1
-\item {\tt label} is unused and has been removed from the code.
 \item {\tt phi} is the value of $\phi_0$ in \eqnref{dphi} and \eqnref{dihre} of the manual.
 \item {\tt dphi} is the value of $\Delta\phi$ in \eqnref{dihre} of the manual.
-\item {\tt kfac} is analogous to {\tt fac} in the implementation of distance restraints. It is the factor by which the force constant is multiplied. By doing so, different restraints can be maintained with different force constants.
-\item {\tt power} is unused and has been removed from the code.
+\item {\tt fc} is the force constant $k_{dihr}$ in \eqnref{dihre} of the manual.
 \end{itemize}
 
 {\bf {\tt \#include "tip3p.itp"} :} includes a topology file that was already

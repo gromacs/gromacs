@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -453,6 +453,11 @@ TestFileManager &CommandLineTestBase::fileManager()
 TestReferenceChecker CommandLineTestBase::rootChecker()
 {
     return impl_->data_.rootChecker();
+}
+
+void CommandLineTestBase::setDefaultTolerance(const FloatingPointTolerance &tolerance)
+{
+    impl_->data_.rootChecker().setDefaultTolerance(tolerance);
 }
 
 void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)

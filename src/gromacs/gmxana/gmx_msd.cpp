@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -663,7 +663,9 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 
     snew(x[prev], natoms);
 
-    if (bMol)
+    // if com is requested, the data structure needs to be large enough to do this
+    // to prevent overflow
+    if (bMol && !gnx_com)
     {
         curr->ncoords = curr->nmol;
         snew(xa[0], curr->ncoords);
@@ -771,13 +773,6 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         /* set the time */
         curr->time[curr->nframes] = t - curr->t0;
 
-        /* for the first frame, the previous frame is a copy of the first frame */
-        if (bFirst)
-        {
-            std::memcpy(xa[prev], xa[cur], curr->ncoords*sizeof(xa[prev][0]));
-            bFirst = FALSE;
-        }
-
         /* make the molecules whole */
         if (bMol)
         {
@@ -785,9 +780,19 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         }
 
         /* calculate the molecules' centers of masses and put them into xa */
+        // NOTE and WARNING! If above both COM removal and individual molecules have been
+        // requested, x and xa point to the same memory, and the coordinate
+        // data becomes overwritten by the molecule data.
         if (bMol)
         {
             calc_mol_com(gnx[0], index[0], &top->mols, &top->atoms, x[cur], xa[cur]);
+        }
+
+        /* for the first frame, the previous frame is a copy of the first frame */
+        if (bFirst)
+        {
+            std::memcpy(xa[prev], xa[cur], curr->ncoords*sizeof(xa[prev][0]));
+            bFirst = FALSE;
         }
 
         /* first remove the periodic boundary condition crossings */
@@ -799,7 +804,6 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
         /* calculate the center of mass */
         if (gnx_com)
         {
-            prep_data(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box);
             calc_com(bMol, gnx_com[0], index_com[0], xa[cur], xa[prev], box,
                      &top->atoms, com);
         }

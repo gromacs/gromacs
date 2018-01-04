@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ enum class Architecture
 static constexpr Architecture c_architecture =
 #if GMX_IS_X86_32 || GMX_IS_X86_64
     Architecture::X86;
-#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
+#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
     Architecture::Arm;
 #elif defined __powerpc__ || defined __ppc__ || defined __PPC__
     Architecture::PowerPC;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,12 +66,22 @@ using PinnedMemoryCheckerTest = GpuTest;
 
 TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 {
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
     std::vector<real> dummy(3, 1.5);
     EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
 }
 
 TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 {
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
     EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
@@ -79,6 +89,11 @@ TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::CanBePinned);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
@@ -86,6 +101,11 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
     real *dummy;
     snew(dummy, 3);
     EXPECT_FALSE(isHostMemoryPinned(dummy));
@@ -94,6 +114,11 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 {
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
     real *dummy = nullptr;
     pmalloc((void **)&dummy, 3 * sizeof(real));
     EXPECT_TRUE(isHostMemoryPinned(dummy));

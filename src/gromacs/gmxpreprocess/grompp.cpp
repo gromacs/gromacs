@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2003,9 +2003,26 @@ int gmx_grompp(int argc, char *argv[])
         const char *fn = opt2fn("-r", NFILE, fnm);
         const char *fnB;
 
+        if (!gmx_fexist(fn))
+        {
+            gmx_fatal(FARGS,
+                      "Cannot find position restraint file %s (option -r).\n"
+                      "From GROMACS-2018, you need to specify the position restraint "
+                      "coordinate files explicitly to avoid mistakes, although you can "
+                      "still use the same file as you specify for the -c option.", fn);
+        }
+
         if (opt2bSet("-rb", NFILE, fnm))
         {
             fnB = opt2fn("-rb", NFILE, fnm);
+            if (!gmx_fexist(fnB))
+            {
+                gmx_fatal(FARGS,
+                          "Cannot find B-state position restraint file %s (option -rb).\n"
+                          "From GROMACS-2018, you need to specify the position restraint "
+                          "coordinate files explicitly to avoid mistakes, although you can "
+                          "still use the same file as you specify for the -c option.", fn);
+            }
         }
         else
         {

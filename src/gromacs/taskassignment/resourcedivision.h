@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+class HardwareTopology;
 class MDLogger;
 }
 
@@ -112,5 +113,12 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
                                              const t_commrec     *cr,
                                              PmeRunMode           pmeRunMode,
                                              const gmx_mtop_t    &mtop);
+
+/*! \brief Warns for oversubscribing the hardware threads, when that is the case
+ */
+void checkHardwareOversubscription(int                          numThreadsOnThisRank,
+                                   const gmx::HardwareTopology &hwTop,
+                                   const t_commrec             *cr,
+                                   const gmx::MDLogger         &mdlog);
 
 #endif

@@ -36,7 +36,9 @@ from __future__ import division
 
 import scipy.stats as stats
 import numpy as np
+import multiprocessing as mproc
 
+from ..util import trajectory
 from . import plot
 
 
@@ -71,7 +73,7 @@ def temperature(kin, ndof, kb=8.314e-3):
     return 2 * float(kin) / (float(ndof) * float(kb))
 
 
-def check_mb_ensemble(kin, temp, ndof, alpha, kb=8.314e-3, verbose=False,
+def check_mb_ensemble(kin, temp, ndof, alpha, kb=8.314e-3, verbosity=1,
                       screen=False, filename=None, ene_unit=None):
     r"""
     Checks if a kinetic energy trajectory is Maxwell-Boltzmann distributed.
@@ -97,8 +99,11 @@ def check_mb_ensemble(kin, temp, ndof, alpha, kb=8.314e-3, verbose=False,
         Confidence. TODO: Check proper statistical definition.
     kb : float
         Boltzmann constant :math:`k_B`. Default: 8.314e-3 (kJ/mol).
-    verbose : bool
-        Print result details. Default: False.
+    verbosity : int
+        0: Silent.
+        1: Print result details.
+        2: Print additional information.
+        Default: False.
     screen : bool
         Plot distributions on screen. Default: False.
     filename : string
@@ -115,6 +120,9 @@ def check_mb_ensemble(kin, temp, ndof, alpha, kb=8.314e-3, verbose=False,
     --------
     physical_validation.kinetic_energy.check_mb_ensemble : High-level version
     """
+
+    # Discard burn-in period and time-correlated frames
+    kin = trajectory.prepare(kin, verbosity=verbosity, name='Kinetic energy')
 
     kt = kb * temp
     d, p = stats.kstest(kin, 'chi2', (ndof, 0, kt/2))
@@ -146,10 +154,11 @@ def check_mb_ensemble(kin, temp, ndof, alpha, kb=8.314e-3, verbose=False,
                   title='Simulation vs. Maxwell-Boltzmann',
                   xlabel='Kinetic energy' + unit,
                   ylabel='Probability [%]',
+                  sci_x=True,
                   filename=filename,
                   screen=screen)
 
-    if verbose:
+    if verbosity > 0:
         message = ('Kolmogorov-Smirnov test result: p = {:g}\n'
                    'Null hypothesis: Kinetic energy is Maxwell-Boltzmann distributed'.format(p))
         if alpha is not None:
@@ -220,9 +229,10 @@ def check_equipartition(positions, velocities, masses,
         Useful to pre-define groups of molecules (e.g. solute / solvent,
         liquid mixture species, ...). If None, no pre-defined molecule
         groups will be tested. Default: None.
-        Note: If an empty 1d array is found as last element in the list, the remaining
-              molecules are collected in this array. This allows, for example, to only
-              specify the solute, and indicate the solvent by giving an empty array.
+
+        *Note:* If an empty 1d array is found as last element in the list, the remaining
+        molecules are collected in this array. This allows, for example, to only
+        specify the solute, and indicate the solvent by giving an empty array.
     random_divisions : int, optional
         Number of random division tests attempted. Default: 0 (random
         division tests off).
@@ -270,10 +280,18 @@ def check_equipartition(positions, velocities, masses,
     # for each frame, calculate total / translational / rotational & internal /
     #   rotational / internal kinetic energy for each molecule
     if kin_molec is None:
-        kin_molec = []
-        for r, v in zip(positions, velocities):
-            kin_molec.append(calc_molec_kinetic_energy(r, v, masses,
-                                                       molec_idx, natoms, nmolecs))
+        try:
+            with mproc.Pool() as p:
+                kin_molec = p.starmap(calc_molec_kinetic_energy,
+                                      [(r, v, masses, molec_idx, natoms, nmolecs)
+                                       for r, v in zip(positions, velocities)])
+        except AttributeError:
+            # Parallel execution doesn't work in py2.7 for quite a number of reasons.
+            # Attribute error when opening the `with` region is the first error (and
+            # an easy one), but by far not the last. So let's just resort to non-parallel
+            # execution:
+            kin_molec = [calc_molec_kinetic_energy(r, v, masses, molec_idx, natoms, nmolecs)
+                         for r, v in zip(positions, velocities)]
 
     result = []
 
@@ -777,7 +795,7 @@ def test_mb_dist(kin_molec, ndof_molec, nmolecs,
 
     for key in dict_keys:
         p = check_mb_ensemble(kin=group_kin[key], temp=temp, ndof=ndof[key],
-                              alpha=alpha, verbose=(verbosity > 2),
+                              alpha=alpha, verbosity=verbosity > 2,
                               screen=screen, filename=filename+'_'+key,
                               ene_unit=ene_unit)
         result.append(p)
@@ -897,6 +915,7 @@ def test_temp_diff(kin_molec, ndof_molec, nmolecs,
                   title='Temperature trajectories',
                   xlabel='Frames',
                   ylabel='Temperature' + unit,
+                  sci_x=True,
                   filename=filename,
                   screen=screen)
 

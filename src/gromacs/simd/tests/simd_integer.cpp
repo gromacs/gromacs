@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,7 +131,7 @@ TEST_F(SimdIntegerTest, xor)
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, extract)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  idata[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t  idata[GMX_SIMD_REAL_WIDTH];
     SimdInt32 simd;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,7 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v2)
 {
     __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    alignas(GMX_SIMD_ALIGNMENT) std::int64_t    o[8];
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
@@ -206,7 +206,7 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v2)
 {
     __m512d t[4], t5, t6, t7, t8;
-    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    alignas(GMX_SIMD_ALIGNMENT) std::int64_t    o[8];
     //TODO: should use fastMultiply
     _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);

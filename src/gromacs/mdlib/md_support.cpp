@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -247,12 +247,16 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        /* Don't pass x with linear modes to avoid correction of the initial
-         * coordinates for the initial COM velocity.
+        /* At initialization, do not pass x with acceleration-correction mode
+         * to avoid (incorrect) correction of the initial coordinates.
          */
+        rvec *xPtr = nullptr;
+        if (vcm->mode == ecmANGULAR || (vcm->mode == ecmLINEAR_ACCELERATION_CORRECTION && !(flags & CGLO_INITIALIZATION)))
+        {
+            xPtr = as_rvec_array(state->x.data());
+        }
         do_stopcm_grp(mdatoms->homenr, mdatoms->cVCM,
-                      vcm->mode == ecmANGULAR ? as_rvec_array(state->x.data()) : nullptr,
-                      as_rvec_array(state->v.data()), *vcm);
+                      xPtr, as_rvec_array(state->v.data()), *vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
 

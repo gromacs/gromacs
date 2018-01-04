@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -422,10 +422,25 @@ TEST_F(SimdMathTest, exp)
 
     // First test the range where we get normalized (non-denormal) results,
     // since we don't require denormal results to be reproduced correctly.
+    //
+    // For very small arguments that would produce results close to the
+    // smallest representable value, some of the intermediate values might
+    // trigger flush-to-zero denormals without FMA operations,
+    // e.g. for the icc compiler. Since we never use such values in Gromacs, we
+    // shrink the range a bit in that case instead of requiring the compiler to
+    // handle denormals (which might reduce performance).
 #if GMX_DOUBLE
+#if GMX_SIMD_HAVE_FMA
     setRange(-708.3, 709.1);
 #else
+    setRange(-690, 709.1);
+#endif
+#else
+#if GMX_SIMD_HAVE_FMA
     setRange(-87.3, 88.0);
+#else
+    setRange(-80, 88.0);
+#endif
 #endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp);
 
@@ -435,7 +450,7 @@ TEST_F(SimdMathTest, exp)
     // Then multiply with ln(2) to get our limit for exp().
     // In this range we allow the value to be either correct (denormal) or 0.0
 #if GMX_DOUBLE
-    setRange(-746.0, -708.3);
+    setRange(-746.0, -708.4);
 #else
     setRange(-104.0, -87.3);
 #endif
@@ -459,9 +474,17 @@ TEST_F(SimdMathTest, exp)
 TEST_F(SimdMathTest, expUnsafe)
 {
 #if GMX_DOUBLE
+#if GMX_SIMD_HAVE_FMA
     setRange(-708.3, 709.1);
 #else
+    setRange(-690, 709.1);
+#endif
+#else
+#if GMX_SIMD_HAVE_FMA
     setRange(-87.3, 88.0);
+#else
+    setRange(-80, 88.0);
+#endif
 #endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp<MathOptimization::Unsafe>);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,7 +312,7 @@ TEST_F(Simd4FloatingpointTest, transpose)
     Simd4Real        v0, v1, v2, v3;
     int              i;
     // aligned pointers
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4*GMX_SIMD4_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real p0[4*GMX_SIMD4_WIDTH];
     real          *  p1 = p0 + GMX_SIMD4_WIDTH;
     real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
     real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;

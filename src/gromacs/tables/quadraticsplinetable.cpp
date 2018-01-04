@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -404,6 +404,9 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<NumericalSpline
         // of the derivative will be described by the third-derivative correction term.
         // This means we can compute the required spacing as h = sqrt(12*tolerance*min(f'/f''')),
         // where f'/f''' is the first and third derivative of the function, respectively.
+        // Since we already have an analytical form of the derivative, we reduce the numerical
+        // errors by calculating the quotient of the function and second derivative of the
+        // input-derivative-analytical function instead.
 
         double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndSecondDerivative(thisFuncInput.derivative, thisFuncInput.spacing, range_);
 

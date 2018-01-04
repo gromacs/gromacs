@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -811,7 +811,10 @@ real dd_choose_grid(FILE *fplog,
                 cr->npmenodes = nPmeRanks;
                 if (fplog)
                 {
-                    fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
+                    fprintf(fplog, "Using %d separate PME ranks\n", cr->npmenodes);
+                    // TODO: there was a ", per user request" note here, but it's not correct anymore,
+                    // as with GPUs decision about nPmeRanks can be made in runner() as well.
+                    // Consider a single spot for setting nPmeRanks.
                 }
             }
         }

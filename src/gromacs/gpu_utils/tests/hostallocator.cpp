@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,6 +226,11 @@ TYPED_TEST(HostAllocatorTest, FillInputAlsoWorksAfterCallingReserve)
 
 TYPED_TEST(HostAllocatorTest, TransfersWithPinningWorkWithCuda)
 {
+    if (!this->haveValidGpus())
+    {
+        return;
+    }
+
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::CanBePinned);
     this->fillInput(&input);
@@ -246,6 +251,11 @@ bool isPinned(const VectorType &v)
 
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 {
+    if (!this->haveValidGpus())
+    {
+        return;
+    }
+
     typename TestFixture::VectorType input;
     changePinningPolicy(&input, PinningPolicy::CanBePinned);
     EXPECT_FALSE(isPinned(input));

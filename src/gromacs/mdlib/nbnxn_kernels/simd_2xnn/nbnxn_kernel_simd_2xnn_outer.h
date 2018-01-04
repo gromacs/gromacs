@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,7 +138,7 @@
     SimdReal          hsig_i_S2, seps_i_S2;
 #else
 #ifdef FIX_LJ_C
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
+    alignas(GMX_SIMD_ALIGNMENT) real  pvdw_c6[2*UNROLLI*UNROLLJ];
     real  *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 #endif
 

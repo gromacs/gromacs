@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,13 +91,8 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
      * simdWidth elements at the beginning and end
      * to test we are not polluting memory there either. Sum=4*simdWidth.
      */
-#if GMX_SIMD4_WIDTH > GMX_SIMD_REAL_WIDTH
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth*4];
-#else
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth*4];
-#endif
+    alignas(GMX_SIMD_ALIGNMENT) T        src[simdWidth*4];
+    alignas(GMX_SIMD_ALIGNMENT) T        dst[simdWidth*4];
 
     // Make sure we have memory to check both before and after the test pointers
     T *              pCopySrc = src + simdWidth + loadOffset;

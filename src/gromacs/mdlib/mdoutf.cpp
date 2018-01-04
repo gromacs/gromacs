@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -369,7 +369,10 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             if (write_xtc(of->fp_xtc, of->natoms_x_compressed, step, t,
                           state_local->box, xxtc, of->x_compression_precision) == 0)
             {
-                gmx_fatal(FARGS, "XTC error - maybe you are out of disk space?");
+                gmx_fatal(FARGS,
+                          "XTC error. This indicates you are out of disk space, or a "
+                          "simulation with major instabilities resulting in coordinates "
+                          "that are NaN or too large to be represented in the XTC format.\n");
             }
             gmx_fwrite_tng(of->tng_low_prec,
                            TRUE,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ transposeScatterIncrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    o[16];
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {
@@ -226,7 +226,7 @@ transposeScatterDecrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t    o[16];
     store(o, fastMultiply<align>(simdLoad(offset, SimdFInt32Tag())));
     if (align < 4)
     {

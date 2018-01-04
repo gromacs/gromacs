@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -56,14 +56,19 @@ externally applied forces, see \chref{special}.
 \end{enumerate}
 
 \section{Non-bonded interactions}
-Non-bonded interactions in {\gromacs} are pair-additive and centro-symmetric:
+Non-bonded interactions in {\gromacs} are pair-additive:
 \beq
 V(\ve{r}_1,\ldots \ve{r}_N) = \sum_{i<j}V_{ij}(\rvij);
 \eeq
 \beq
-\ve{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\rvij}{r_{ij}} = -\ve{F}_j
+\ve{F}_i = -\sum_j \frac{dV_{ij}(r_{ij})}{dr_{ij}} \frac{\rvij}{r_{ij}}
 \eeq
-The non-bonded interactions contain a \normindex{repulsion} term, 
+Since the potential only depends on the scalar distance, interactions
+will be centro-symmetric, i.e.\ the vectorial partial force on particle $i$ from
+the pairwise interaction $V_{ij}(r_{ij})$ has the opposite direction of the partial force on
+particle $j$. For efficiency reasons, interactions are calculated by loops over interactions and
+updating both partial forces rather than summing one complete nonbonded force at 
+a time. The non-bonded interactions contain a \normindex{repulsion} term, 
 a \normindex{dispersion}
 term, and a Coulomb term. The repulsion and dispersion term are
 combined in either the Lennard-Jones (or 6-12 interaction), or the

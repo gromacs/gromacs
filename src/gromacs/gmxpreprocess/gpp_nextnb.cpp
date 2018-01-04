@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* #define DEBUG_NNB */
@@ -253,6 +254,44 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
     }
 }
 
+/*! \brief Return true of neighbor is already present in some exclusion level
+ *
+ * To avoid exploding complexity when processing exclusions for highly
+ * connected molecules with lots of exclusions, this routine is used to
+ * check whether a particular neighbor has already been excluded at any lower
+ * bond distance, in which case we should not add it to avoid creating loops.
+ *
+ * \param nnb            Valid initialized next-neighbor structure
+ * \param atom           The host atom whose neighbors we are searching
+ * \param highest_order  The highest-rank neighbor list to search.
+ * \param query          Atom index to look for
+ *
+ * \return True if query is present as an exclusion of up to highest_order
+ *         (inclusive) from atom. For instance, if highest_order is 2,
+ *         the routine will return true if the query atom is already listed as
+ *         first or second neighbor (exclusion) in nnb.
+ */
+static bool
+atom_is_present_in_nnb(const t_nextnb *   nnb,
+                       int                atom,
+                       int                highest_order,
+                       int                query)
+{
+    GMX_RELEASE_ASSERT(highest_order < nnb->nrex, "Inconsistent nnb seach parameters");
+
+    for (int order = 0; order <= highest_order; order++)
+    {
+        for (int m = 0; m < nnb->nrexcl[atom][order]; m++)
+        {
+            if (nnb->a[atom][order][m] == query)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void do_gen(int       nrbonds, /* total number of bonds in s	*/
                    sortable *s,       /* bidirectional list of bonds    */
                    t_nextnb *nnb)     /* the tmp storage for excl     */
@@ -293,7 +332,10 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
                 /* store all atoms in nb's n-th list into i's n+1-th list */
                 for (k = 0; (k < nnb->nrexcl[nb][n]); k++)
                 {
-                    if (i != nnb->a[nb][n][k])
+                    // Only add if it is not already present as a closer neighbor
+                    // to avoid exploding complexity for highly connected molecules
+                    // with high exclusion order
+                    if (!atom_is_present_in_nnb(nnb, i, n, nnb->a[nb][n][k]))
                     {
                         add_nnb(nnb, n+1, i, nnb->a[nb][n][k]);
                     }

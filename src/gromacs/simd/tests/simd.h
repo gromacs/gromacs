@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -268,14 +268,14 @@ SimdReal   setSimdRealFrom1R(real value);
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<int>   simdInt2Vector(const SimdInt32 simd);
+std::vector<std::int32_t>   simdInt2Vector(const SimdInt32 simd);
 
 /*! \brief Return 32-bit integer SIMD value from std::vector<int>.
  *
  * If the vector is longer than SIMD width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD register.
  */
-SimdInt32   vector2SimdInt(const std::vector<int> &v);
+SimdInt32   vector2SimdInt(const std::vector<std::int32_t> &v);
 
 /*! \brief Set SIMD register contents from three int values.
  *

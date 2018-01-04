@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -315,6 +315,13 @@
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
+#  ifdef __APPLE__
+// Mac OS 13.x has a bug where dispatch.h generates an error for OpenCL builds if
+// HAVE_UNISTD_H is merely defined, but not set to 1. Since unistd.h should always
+// be available on this platform we simply undefine and redefine it to 1 for now
+#    undef  HAVE_UNISTD_H
+#    define HAVE_UNISTD_H 1
+#endif
 
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine01 HAVE_PWD_H

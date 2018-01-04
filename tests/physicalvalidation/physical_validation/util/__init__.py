@@ -25,3 +25,14 @@
 #    Boston, MA 02110-1301 USA                                            #
 #                                                                         #
 ###########################################################################
+
+# low-level implementations
+from . import kinetic_energy
+from . import ensemble
+from . import integrator
+
+# helper modules
+from . import trajectory
+from . import plot
+from . import error
+from . import gromacs_interface
