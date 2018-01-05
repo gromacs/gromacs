@@ -200,6 +200,9 @@ gmx_dependent_option(
     ON
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
+
+option(GMX_MIMIC "Enable MiMiC QM/MM interface (CPMD is required)" OFF)
+
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
