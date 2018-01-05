@@ -31,24 +31,9 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-
 gmx_add_libgromacs_sources(
-    integrator.cpp
-    logging.cpp
-    md.cpp
-    minimize.cpp
-    multisim.cpp
-    replicaexchange.cpp
-    rerun.cpp
-    mimic.cpp
-    runner.cpp
-    simulationcontext.cpp
-    tpi.cpp
-    )
+        MimicCommunicator.cpp
+        MimicUtils.cpp
+)
 
 gmx_install_headers()
-
-if (BUILD_TESTING)
-# TODO import this from src/programs/mdrun/tests
-#    add_subdirectory(tests)
-endif()
