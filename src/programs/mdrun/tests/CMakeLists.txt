@@ -58,6 +58,7 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     interactiveMD.cpp
     termination.cpp
+    mimic_test.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
@@ -71,6 +72,7 @@ set(exename "mdrun-mpi-test")
 gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
+    mimic_test.cpp
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
