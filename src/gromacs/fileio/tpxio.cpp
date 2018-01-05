@@ -119,6 +119,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1779,7 +1780,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             snew(ir->opts.SAoff,       ir->opts.ngQM);
             snew(ir->opts.SAsteps,     ir->opts.ngQM);
         }
-        if (ir->opts.ngQM > 0)
+        if (ir->opts.ngQM > 0 && ir->bQMMM)
         {
             gmx_fio_ndo_int(fio, ir->opts.QMmethod, ir->opts.ngQM);
             gmx_fio_ndo_int(fio, ir->opts.QMbasis, ir->opts.ngQM);
