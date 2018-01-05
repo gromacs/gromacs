@@ -32,16 +32,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \internal \file
  *
- * \brief Implements the loop for simulation reruns
+ * \brief Declares the loop for MiMiC QM/MM
  *
- * \author Pascal Merz <pascal.merz@colorado.edu>
+ * \author Viacheslav Bolnykh <v.bolnykh@hpc-leap.eu>
  * \ingroup module_mdrun
  */
 #include "gmxpre.h"
-
-#include "config.h"
 
 #include <cinttypes>
 #include <cmath>
@@ -115,6 +114,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mimic/MimicCommunicator.h"
 #include "gromacs/mimic/MimicUtils.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -139,83 +139,28 @@
 
 using gmx::SimulationSignaller;
 
-/*! \brief Copy the state from \p rerunFrame to \p globalState and, if requested, construct vsites
- *
- * \param[in]     rerunFrame      The trajectory frame to compute energy/forces for
- * \param[in,out] globalState     The global state container
- * \param[in]     constructVsites When true, vsite coordinates are constructed
- * \param[in]     vsite           Vsite setup, can be nullptr when \p constructVsites = false
- * \param[in]     idef            Topology parameters, used for constructing vsites
- * \param[in]     timeStep        Time step, used for constructing vsites
- * \param[in]     forceRec        Force record, used for constructing vsites
- * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
- */
-static void prepareRerunState(const t_trxframe  &rerunFrame,
-                              t_state           *globalState,
-                              bool               constructVsites,
-                              const gmx_vsite_t *vsite,
-                              const t_idef      &idef,
-                              double             timeStep,
-                              const t_forcerec  &forceRec,
-                              t_graph           *graph)
+void gmx::Integrator::do_mimic()
 {
-    auto x      = makeArrayRef(globalState->x);
-    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec *>(rerunFrame.x), globalState->natoms);
-    std::copy(rerunX.begin(), rerunX.end(), x.begin());
-    copy_mat(rerunFrame.box, globalState->box);
+    t_inputrec              *ir   = inputrec;
+    gmx_mdoutf              *outf = nullptr;
+    int64_t                  step, step_rel;
+    double                   t, lam0[efptNR];
+    bool                     isLastStep               = false;
+    bool                     doFreeEnergyPerturbation = false;
+    int                      force_flags;
+    tensor                   force_vir, shake_vir, total_vir, pres;
+    rvec                     mu_tot;
+    gmx_localtop_t          *top;
+    t_mdebin                *mdebin   = nullptr;
+    gmx_enerdata_t          *enerd;
+    PaddedVector<gmx::RVec>  f {};
+    gmx_global_stat_t        gstat;
+    t_graph                 *graph = nullptr;
+    gmx_groups_t            *groups;
+    gmx_ekindata_t          *ekind;
+    gmx_shellfc_t           *shellfc;
 
-    if (constructVsites)
-    {
-        GMX_ASSERT(vsite, "Need valid vsite for constructing vsites");
-
-        if (graph)
-        {
-            /* Following is necessary because the graph may get out of sync
-             * with the coordinates if we only have every N'th coordinate set
-             */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
-            shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
-        }
-        construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
-                         idef.iparams, idef.il,
-                         forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
-        if (graph)
-        {
-            unshift_self(graph, globalState->box, globalState->x.rvec_array());
-        }
-    }
-}
-
-void gmx::Integrator::do_rerun()
-{
-    // TODO Historically, the EM and MD "integrators" used different
-    // names for the t_inputrec *parameter, but these must have the
-    // same name, now that it's a member of a struct. We use this ir
-    // alias to avoid a large ripple of nearly useless changes.
-    // t_inputrec is being replaced by IMdpOptionsProvider, so this
-    // will go away eventually.
-    t_inputrec             *ir   = inputrec;
-    gmx_mdoutf             *outf = nullptr;
-    int64_t                 step, step_rel;
-    double                  t, lam0[efptNR];
-    bool                    isLastStep               = false;
-    bool                    doFreeEnergyPerturbation = false;
-    int                     force_flags;
-    tensor                  force_vir, shake_vir, total_vir, pres;
-    t_trxstatus            *status;
-    rvec                    mu_tot;
-    t_trxframe              rerun_fr;
-    gmx_localtop_t         *top;
-    t_mdebin               *mdebin   = nullptr;
-    gmx_enerdata_t         *enerd;
-    PaddedVector<gmx::RVec> f {};
-    gmx_global_stat_t       gstat;
-    t_graph                *graph = nullptr;
-    gmx_groups_t           *groups;
-    gmx_ekindata_t         *ekind;
-    gmx_shellfc_t          *shellfc;
-
-    double                  cycles;
+    double                   cycles;
 
     /* Domain decomposition could incorrectly miss a bonded
        interaction, but checking for that requires a global
@@ -233,36 +178,36 @@ void gmx::Integrator::do_rerun()
 
     if (ir->bExpanded)
     {
-        gmx_fatal(FARGS, "Expanded ensemble not supported by rerun.");
+        gmx_fatal(FARGS, "Expanded ensemble not supported by MiMiC.");
     }
     if (ir->bSimTemp)
     {
-        gmx_fatal(FARGS, "Simulated tempering not supported by rerun.");
+        gmx_fatal(FARGS, "Simulated tempering not supported by MiMiC.");
     }
     if (ir->bDoAwh)
     {
-        gmx_fatal(FARGS, "AWH not supported by rerun.");
+        gmx_fatal(FARGS, "AWH not supported by MiMiC.");
     }
     if (replExParams.exchangeInterval > 0)
     {
-        gmx_fatal(FARGS, "Replica exchange not supported by rerun.");
+        gmx_fatal(FARGS, "Replica exchange not supported by MiMiC.");
     }
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
     {
-        gmx_fatal(FARGS, "Essential dynamics not supported by rerun.");
+        gmx_fatal(FARGS, "Essential dynamics not supported by MiMiC.");
     }
     if (ir->bIMD)
     {
-        gmx_fatal(FARGS, "Interactive MD not supported by rerun.");
+        gmx_fatal(FARGS, "Interactive MD not supported by MiMiC.");
     }
     if (isMultiSim(ms))
     {
-        gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
+        gmx_fatal(FARGS, "Multiple simulations not supported by MiMiC.");
     }
     if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc,
                     [](int i){return i != eannNO; }))
     {
-        gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
+        gmx_fatal(FARGS, "Simulated annealing not supported by MiMiC.");
     }
 
     /* Settings for rerun */
@@ -271,12 +216,18 @@ void gmx::Integrator::do_rerun()
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
-    ir->nstxout_compressed = 0;
-    groups                 = &top_global->groups;
-    if (ir->eI == eiMimic)
+    // Communicator to interact with MiMiC
+    MimicCommunicator mimicCommunicator {};
+    if (MASTER(cr))
     {
-        top_global->intermolecularExclusions = genQmmmIndices(*top_global);
+        mimicCommunicator.init();
+        mimicCommunicator.sendInitData(top_global, state_global->x);
+        ir->nsteps = mimicCommunicator.getStepNumber();
     }
+
+    ir->nstxout_compressed               = 0;
+    groups                               = &top_global->groups;
+    top_global->intermolecularExclusions = genQmmmIndices(*top_global);
 
     /* Initial values */
     init_rerun(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
@@ -330,6 +281,7 @@ void gmx::Integrator::do_rerun()
                             vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
+        gmx_bcast(sizeof(ir->nsteps), &ir->nsteps, cr);
     }
     else
     {
@@ -362,7 +314,8 @@ void gmx::Integrator::do_rerun()
 
     {
         int    cglo_flags = (CGLO_INITIALIZATION | CGLO_GSTAT |
-                             (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+                             (shouldCheckNumberOfBondedInteractions ?
+                              CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
         bool   bSumEkinhOld = false;
         t_vcm *vcm          = nullptr;
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
@@ -376,9 +329,8 @@ void gmx::Integrator::do_rerun()
 
     if (MASTER(cr))
     {
-        fprintf(stderr, "starting md rerun '%s', reading coordinates from"
-                " input trajectory '%s'\n\n",
-                *(top_global->name), opt2fn("-rerun", nfile, fnm));
+        fprintf(stderr, "starting MiMiC MD run '%s'\n\n",
+                *(top_global->name));
         if (mdrunOptions.verbose)
         {
             fprintf(stderr, "Calculated time to finish depends on nsteps from "
@@ -401,54 +353,12 @@ void gmx::Integrator::do_rerun()
     if (constr)
     {
         GMX_LOG(mdlog.info).asParagraph().
-            appendText("Simulations has constraints. Rerun does not recalculate constraints.");
-    }
-
-    rerun_fr.natoms = 0;
-    if (MASTER(cr))
-    {
-        isLastStep = !read_first_frame(oenv, &status,
-                                       opt2fn("-rerun", nfile, fnm),
-                                       &rerun_fr, TRX_NEED_X);
-        if (rerun_fr.natoms != top_global->natoms)
-        {
-            gmx_fatal(FARGS,
-                      "Number of atoms in trajectory (%d) does not match the "
-                      "run input file (%d)\n",
-                      rerun_fr.natoms, top_global->natoms);
-        }
-
-        if (ir->ePBC != epbcNONE)
-        {
-            if (!rerun_fr.bBox)
-            {
-                gmx_fatal(FARGS, "Rerun trajectory frame step %" PRId64 " time %f "
-                          "does not contain a box, while pbc is used",
-                          rerun_fr.step, rerun_fr.time);
-            }
-            if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
-            {
-                gmx_fatal(FARGS, "Rerun trajectory frame step %" PRId64 " time %f "
-                          "has too small box dimensions", rerun_fr.step, rerun_fr.time);
-            }
-        }
+            appendText("Simulations has constraints. Constraints will "
+                       "be handled by CPMD.");
     }
 
     GMX_LOG(mdlog.info).asParagraph().
-        appendText("Rerun does not report kinetic energy, total energy, temperature, virial and pressure.");
-
-    if (PAR(cr))
-    {
-        rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
-    }
-
-    if (ir->ePBC != epbcNONE)
-    {
-        /* Set the shift vectors.
-         * Necessary here when have a static box different from the tpr box.
-         */
-        calc_shifts(rerun_fr.box, fr->shift_vec);
-    }
+        appendText("MiMiC does not report kinetic energy, total energy, temperature, virial and pressure.");
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
                 compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false,
@@ -458,8 +368,14 @@ void gmx::Integrator::do_rerun()
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
 
-    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   =
+        (DOMAINDECOMP(cr) ?
+         DdOpenBalanceRegionBeforeForceComputation::yes :
+         DdOpenBalanceRegionBeforeForceComputation::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  =
+        (DOMAINDECOMP(cr) ?
+         DdCloseBalanceRegionAfterForceComputation::yes :
+         DdCloseBalanceRegionAfterForceComputation::no);
 
     step     = ir->init_step;
     step_rel = 0;
@@ -468,25 +384,23 @@ void gmx::Integrator::do_rerun()
     isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!isLastStep)
     {
+        isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel == ir->nsteps));
         wallcycle_start(wcycle, ewcSTEP);
 
-        if (rerun_fr.bStep)
+        t = step;
+
+        if (MASTER(cr))
         {
-            step     = rerun_fr.step;
-            step_rel = step - ir->init_step;
-        }
-        if (rerun_fr.bTime)
-        {
-            t = rerun_fr.time;
-        }
-        else
-        {
-            t = step;
+            mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
+            for (int i = 0; i < state_global->natoms; i++)
+            {
+                copy_rvec(state_global->x[i], state->x[i]);
+            }
         }
 
-        if (ir->efep != efepNO && MASTER(cr))
+        if (ir->efep != efepNO)
         {
-            setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+            setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
         }
 
         if (MASTER(cr))
@@ -497,10 +411,7 @@ void gmx::Integrator::do_rerun()
                 gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph);
         }
-
-        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
         if (DOMAINDECOMP(cr))
         {
@@ -529,7 +440,7 @@ void gmx::Integrator::do_rerun()
         force_flags = (GMX_FORCE_STATECHANGED |
                        GMX_FORCE_DYNAMICBOX |
                        GMX_FORCE_ALLFORCES |
-                       (GMX_GPU ? GMX_FORCE_VIRIAL : 0) |  // TODO: Get rid of this once #2649 is solved
+                       GMX_FORCE_VIRIAL |  // TODO: Get rid of this once #2649 is solved
                        GMX_FORCE_ENERGY |
                        (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
 
@@ -570,7 +481,7 @@ void gmx::Integrator::do_rerun()
          */
         {
             const bool isCheckpointingStep = false;
-            const bool doRerun             = true;
+            const bool doRerun             = false;
             const bool bSumEkinhOld        = false;
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                      ir, state, state_global, observablesHistory,
@@ -615,7 +526,7 @@ void gmx::Integrator::do_rerun()
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                            wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                            wcycle, enerd, nullptr, nullptr, nullptr, nullptr, mu_tot,
                             constr, &signaller,
                             state->box,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
@@ -626,6 +537,29 @@ void gmx::Integrator::do_rerun()
                                             top_global, top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
+
+        {
+            gmx::HostVector<gmx::RVec>     fglobal(top_global->natoms);
+            gmx::ArrayRef<gmx::RVec>       ftemp;
+            gmx::ArrayRef<const gmx::RVec> flocal = gmx::makeArrayRef(f);
+            if (DOMAINDECOMP(cr))
+            {
+                ftemp = gmx::makeArrayRef(fglobal);
+                dd_collect_vec(cr->dd, state, flocal, ftemp);
+            }
+            else
+            {
+                ftemp = gmx::makeArrayRef(f);
+            }
+
+            if (MASTER(cr))
+            {
+                mimicCommunicator.sendEnergies(enerd->term[F_EPOT]);
+                mimicCommunicator.sendForces(ftemp, state_global->natoms);
+            }
+        }
+
+
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
            the virial that should probably be addressed eventually. state->veta has better properies,
@@ -645,7 +579,7 @@ void gmx::Integrator::do_rerun()
             const bool bCalcEnerStep = true;
             upd_mdebin(mdebin, doFreeEnergyPerturbation, bCalcEnerStep,
                        t, mdatoms->tmass, enerd, state,
-                       ir->fepvals, ir->expandedvals, rerun_fr.box,
+                       ir->fepvals, ir->expandedvals, state->box,
                        shake_vir, force_vir, total_vir, pres,
                        ekind, mu_tot, constr);
 
@@ -679,43 +613,15 @@ void gmx::Integrator::do_rerun()
             print_time(stderr, walltime_accounting, step, ir, cr);
         }
 
-        /* Ion/water position swapping.
-         * Not done in last step since trajectory writing happens before this call
-         * in the MD loop and exchanges would be lost anyway. */
-        if ((ir->eSwapCoords != eswapNO) && (step > 0) && !isLastStep &&
-            do_per_step(step, ir->swap->nstswap))
-        {
-            const bool doRerun = true;
-            do_swapcoords(cr, step, t, ir, wcycle,
-                          rerun_fr.x,
-                          rerun_fr.box,
-                          MASTER(cr) && mdrunOptions.verbose,
-                          doRerun);
-        }
-
-        if (MASTER(cr))
-        {
-            /* read next frame from input trajectory */
-            isLastStep = !read_next_frame(oenv, status, &rerun_fr);
-        }
-
-        if (PAR(cr))
-        {
-            rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
-        }
-
         cycles = wallcycle_stop(wcycle, ewcSTEP);
         if (DOMAINDECOMP(cr) && wcycle)
         {
             dd_cycles_add(cr->dd, cycles, ddCyclStep);
         }
 
-        if (!rerun_fr.bStep)
-        {
-            /* increase the MD step number */
-            step++;
-            step_rel++;
-        }
+        /* increase the MD step number */
+        step++;
+        step_rel++;
     }
     /* End of main MD loop */
 
@@ -728,7 +634,7 @@ void gmx::Integrator::do_rerun()
 
     if (MASTER(cr))
     {
-        close_trx(status);
+        mimicCommunicator.finalize();
     }
 
     if (!thisRankHasDuty(cr, DUTY_PME))

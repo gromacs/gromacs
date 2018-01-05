@@ -180,6 +180,16 @@ Run control
       :mdp-value:`integrator=tpic` gives identical results to
       single-rank :mdp-value:`integrator=tpic`.
 
+   .. mdp-value:: mimic
+
+      Enable MiMiC QM/MM coupling to run hybrid molecular dynamics.
+      Keey in mind that its required to launch CPMD compiled with MiMiC as well.
+      In this mode all options regarding integration (T-coupling, P-coupling,
+      timestep and number of steps) are ignored as CPMD will do the integration
+      instead. Options related to forces computation (cutoffs, PME parameters,
+      etc.) are working as usual. Atom selection to define QM atoms is read
+      from :mdp:`QMMM-grps`
+
 .. mdp:: tinit
 
         (0) [ps]
@@ -3047,7 +3057,7 @@ Mixed quantum/classical molecular dynamics
 
 .. mdp:: QMMM-grps
 
-   groups to be descibed at the QM level
+   groups to be descibed at the QM level (works also in case of MiMiC QM/MM)
 
 .. mdp:: QMMMscheme
 

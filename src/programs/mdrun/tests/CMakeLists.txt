@@ -59,6 +59,7 @@ gmx_add_gtest_executable(
     tabulated_bonded_interactions.cpp
     termination.cpp
     trajectory_writing.cpp
+    mimic.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
@@ -111,6 +112,7 @@ gmx_add_gtest_executable(
     # files with code for tests
     domain_decomposition.cpp
     minimize.cpp
+    mimic.cpp
     multisim.cpp
     multisimtest.cpp
     pmetest.cpp
