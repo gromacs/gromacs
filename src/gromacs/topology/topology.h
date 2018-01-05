@@ -160,6 +160,8 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     t_symtab                          symtab;
     //! Tells whether we have valid molecule indices
     bool                              haveMoleculeIndices = false;
+    //! List of global atom IDs non-bonded interactions between which have to be excluded
+    std::vector<int>                  intermolecularExclusions;
 
     /* Derived data  below */
     //! Indices for each molblock entry for fast lookup of atom properties

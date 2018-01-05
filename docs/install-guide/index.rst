@@ -83,6 +83,18 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
+Building with MiMiC QM/MM support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MiMiC QM/MM interface integration will require linking against MiMiC
+communication library, that establishes the communication channel between
+|Gromacs| and CPMD. Check that the installation folder of the library
+is added to CMAKE_PREFIX_PATH if it is installed in non-standard location.
+Building QM/MM-capable version requires double-precision version of |Gromacs|
+compiled with MPI support:
+
+* ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
+
 Building older versions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
