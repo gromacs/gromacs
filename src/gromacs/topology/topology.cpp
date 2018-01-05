@@ -629,3 +629,16 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
      * so we can skip the grpname list comparison.
      */
 }
+
+void copy_mtype(const gmx_moltype_t *src, gmx_moltype_t *dst)
+{
+    dst->name = src->name;
+    copy_blocka(&src->excls, &dst->excls);
+    copy_block(&src->cgs, &dst->cgs);
+    copy_t_atoms(&src->atoms, &dst->atoms);
+
+    for (int i = 0; i < F_NRE; ++i)
+    {
+        copy_ilist(&src->ilist[i], &dst->ilist[i]);
+    }
+}
