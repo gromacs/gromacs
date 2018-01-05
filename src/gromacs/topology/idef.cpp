@@ -488,3 +488,16 @@ void done_idef(t_idef *idef)
     delete idef->cmap_grid;
     init_idef(idef);
 }
+
+void copy_ilist(const t_ilist *src, t_ilist *dst)
+{
+    dst->nr              = src->nr;
+    dst->nr_nonperturbed = src->nr_nonperturbed;
+    dst->nalloc          = src->nalloc;
+
+    snew(dst->iatoms, dst->nr);
+    for (int i = 0; i < dst->nr; ++i)
+    {
+        dst->iatoms[i] = src->iatoms[i];
+    }
+}
