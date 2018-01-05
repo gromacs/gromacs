@@ -99,8 +99,8 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
          * We should implement a more elegant solution.
          */
         gmx_localtop_t *tmpTop;
-
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
+        GmxQmmmMode     qmmmMode = ir->eI == eiMimic ? GMX_QMMM_MIMIC : GMX_QMMM_ORIGINAL;
+        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO, qmmmMode);
         *top   = *tmpTop;
         sfree(tmpTop);
     }
