@@ -220,6 +220,11 @@ t_atoms *copy_t_atoms(const t_atoms *src)
             dst->atomtypeB[i] = src->atomtypeB[i];
         }
     }
+    dst->haveBState = src->haveBState;
+    dst->haveCharge = src->haveCharge;
+    dst->haveMass = src->haveMass;
+    dst->havePdbInfo = src->havePdbInfo;
+    dst->haveType = src->haveType;
     dst->nres = src->nres;
     for (i = 0; (i < src->nres); i++)
     {
