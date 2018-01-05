@@ -92,14 +92,12 @@
 // but there double precision seems to work fine.
 #if defined(__ibmxl__) || defined(__xlC__) || !(defined(__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ < 9))))
 #    define GMX_SIMD_HAVE_DOUBLE                1
-#    define GMX_SIMD_HAVE_DINT32                1
 #    define GMX_SIMD_HAVE_DINT32_EXTRACT        1
 #    define GMX_SIMD_HAVE_DINT32_LOGICAL        1
 #    define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
 #    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE   1
 #else
 #    define GMX_SIMD_HAVE_DOUBLE                0
-#    define GMX_SIMD_HAVE_DINT32                0
 #    define GMX_SIMD_HAVE_DINT32_EXTRACT        0
 #    define GMX_SIMD_HAVE_DINT32_LOGICAL        0
 #    define GMX_SIMD_HAVE_DINT32_ARITHMETICS    0

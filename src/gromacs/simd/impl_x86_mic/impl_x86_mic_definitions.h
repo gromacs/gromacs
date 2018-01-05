@@ -43,12 +43,9 @@
 #define GMX_SIMD_HAVE_STOREU                       1
 #define GMX_SIMD_HAVE_LOGICAL                      1
 #define GMX_SIMD_HAVE_FMA                          1
-#define GMX_SIMD_HAVE_FRACTION                     0
-#define GMX_SIMD_HAVE_FINT32                       1
 #define GMX_SIMD_HAVE_FINT32_EXTRACT               1
 #define GMX_SIMD_HAVE_FINT32_LOGICAL               1
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS           1
-#define GMX_SIMD_HAVE_DINT32                       1
 #define GMX_SIMD_HAVE_DINT32_EXTRACT               1
 #define GMX_SIMD_HAVE_DINT32_LOGICAL               1
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS           1

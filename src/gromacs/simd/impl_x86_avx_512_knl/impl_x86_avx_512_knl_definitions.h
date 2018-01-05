@@ -45,12 +45,9 @@
 #define GMX_SIMD_HAVE_STOREU                       1
 #define GMX_SIMD_HAVE_LOGICAL                      1
 #define GMX_SIMD_HAVE_FMA                          1
-#define GMX_SIMD_HAVE_FRACTION                     0
-#define GMX_SIMD_HAVE_FINT32                       1
 #define GMX_SIMD_HAVE_FINT32_EXTRACT               0
 #define GMX_SIMD_HAVE_FINT32_LOGICAL               1
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS           1
-#define GMX_SIMD_HAVE_DINT32                       1
 // Technically it is straightforward to emulate extract on AVX-512F through
 // memory operations, but when applied to 16 elements as part of a table lookup
 // it will be faster to just store the entire vector once, so we avoid setting it.
