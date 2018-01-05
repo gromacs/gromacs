@@ -216,7 +216,7 @@ static int get_bounds(const char *topnm,
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
     snew(*ltop, 1);
-    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
+    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO, GMX_QMMM_ORIGINAL);
     *ltop = top;
 
     functype = top->idef.functype;

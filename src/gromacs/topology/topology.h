@@ -113,6 +113,13 @@ typedef struct gmx_groups_t
  */
 #define ggrpnr(groups, egc, i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
 
+/**
+ * Mimic related topology information
+ */
+struct GmxMimicTop {
+    std::vector<int> qmAtoms; /**< List of global IDs of QM atoms */
+};
+
 /* The global, complete system topology struct, based on molecule types.
  * This structure should contain no data that is O(natoms) in memory.
  *
@@ -146,6 +153,7 @@ struct gmx_mtop_t
 
     /* Derived data */
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;  /* Indices for each molblock entry for fast lookup of atom properties */
+    GmxMimicTop                      *mimicTop;
 };
 
 /* The mdrun node-local topology struct, completely written out */

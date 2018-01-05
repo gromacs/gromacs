@@ -1405,15 +1405,26 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode 
                     }
 
                     /* Add a moltype for the QMMM molecule */
-                    sys->moltype.push_back(sys->moltype[molb->type]);
+                    std::vector<gmx_moltype_t> temp(sys->moltype.size());
+                    for (int i = 0; i < sys->moltype.size(); ++i)
+                    {
+                        copy_moltype(&sys->moltype[i], &temp[i]);
+                    }
+                    sys->moltype.resize(sys->moltype.size() + 1);
+                    for (int i = 0; i < temp.size(); ++i)
+                    {
+                        copy_moltype(&temp[i], &sys->moltype[i]);
+                    }
+                    copy_moltype(&sys->moltype[molb->type], &sys->moltype.back());
                     /* Copy the exclusions to a new array, since this is the only
                      * thing that needs to be modified for QMMM.
                      */
-                    copy_blocka(&sys->moltype[molb->type     ].excls,
+                    copy_blocka(&sys->moltype[molb->type].excls,
                                 &sys->moltype.back().excls);
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->moltype.size() - 1;
                 }
+
                 generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi, qmmmMode);
             }
             if (grpnr)

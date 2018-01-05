@@ -177,7 +177,7 @@ Integrator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
+    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO, GMX_QMMM_ORIGINAL);
 
     groups = &top_global->groups;
 

@@ -1,0 +1,211 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+ * \brief
+ * Tests for MiMiC forces computation
+ *
+ * \author Viacheslav Bolnykh <v.bolnykh@hpc-leap.eu>
+ * \ingroup module_mdrun_integration_tests
+ */
+#include "gmxpre.h"
+
+#include <gtest/gtest.h>
+
+#include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
+
+#include "energyreader.h"
+#include "moduletest.h"
+
+namespace gmx
+{
+namespace test
+{
+
+//! Test fixture for bonded interactions
+class MimicTest : public gmx::test::MdrunTestFixture
+{
+    public:
+        //! Execute the trajectory writing test
+        void setupGrompp(const char *index_file, const char *top_file, const char *gro_file)
+        {
+            runner_.topFileName_ = fileManager_.getInputFilePath(top_file);
+            runner_.groFileName_ = fileManager_.getInputFilePath(gro_file);
+            runner_.ndxFileName_ = fileManager_.getInputFilePath(index_file);
+            runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
+            runner_.useStringAsMdpFile("integrator                = mimic\n"
+                                       "QMMM-grps                 = QMatoms");
+        }
+        //! Prepare an mdrun caller
+        CommandLine setupMdrun()
+        {
+            CommandLine rerunCaller;
+            rerunCaller.append("mdrun");
+            rerunCaller.addOption("-rerun", runner_.groFileName_);
+            return rerunCaller;
+        }
+        //! Check the output of mdrun
+        void checkMdrun(const char *edr)
+        {
+            std::string              ref_edr    = fileManager_.getInputFilePath(edr);
+            std::vector<std::string> fileds     = {"Potential"};
+            EnergyFrameReaderPtr     ref_reader = openEnergyFileToReadFields(ref_edr, fileds);
+            EnergyFrameReaderPtr     reader     = openEnergyFileToReadFields(runner_.edrFileName_, fileds);
+            while (reader->readNextFrame() && ref_reader->readNextFrame())
+            {
+                gmx::EnergyFrame frame     = reader->frame();
+                gmx::EnergyFrame ref_frame = ref_reader->frame();
+                compareFrames(std::make_pair(frame, ref_frame),
+                              relativeToleranceAsFloatingPoint(-20.1, 1e-4));
+            }
+        }
+};
+
+// This test checks if the energies produced with one quantum molecule are reasonable
+TEST_F(MimicTest, OneQuatumMol)
+{
+    setupGrompp("1quantum.ndx", "4water.top", "4water.gro");
+    if (gmx_node_rank() == 0)
+    {
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
+
+    test::CommandLine rerunCaller = setupMdrun();
+
+    int               dummy  = 0;
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    if (gmx_node_rank() == 0)
+    {
+        checkMdrun("1quantum.edr");
+    }
+    // Stupid way of synchronizining ranks but simplest API does not allow us to have any other
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+}
+
+// This test checks if the energies produced with all quantum molecules are reasonable (0)
+TEST_F(MimicTest, AllQuantumMol)
+{
+    setupGrompp("allquantum.ndx", "4water.top", "4water.gro");
+    if (gmx_node_rank() == 0)
+    {
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
+
+    test::CommandLine rerunCaller = setupMdrun();
+    int               dummy       = 0;
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    if (gmx_node_rank() == 0)
+    {
+        checkMdrun("allquantum.edr");
+    }
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+}
+
+// This test checks if the energies produced with two quantum molecules are reasonable
+// Needed to check the LJ intermolecular exclusions
+TEST_F(MimicTest, TwoQuantumMol)
+{
+    setupGrompp("2quantum.ndx", "4water.top", "4water.gro");
+    if (gmx_node_rank() == 0)
+    {
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
+
+    test::CommandLine rerunCaller = setupMdrun();
+    int               dummy       = 0;
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    if (gmx_node_rank() == 0)
+    {
+        checkMdrun("2quantum.edr");
+    }
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+}
+
+// This test checks if the energies produced with QM/MM boundary cutting the bond are ok
+TEST_F(MimicTest, BondCuts)
+{
+    setupGrompp("ala.ndx", "ala.top", "ala.gro");
+    if (gmx_node_rank() == 0)
+    {
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
+
+    test::CommandLine rerunCaller = setupMdrun();
+    int               dummy       = 0;
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    if (gmx_node_rank() == 0)
+    {
+        checkMdrun("ala.edr");
+    }
+    if (gmx_mpi_initialized())
+    {
+        gmx_broadcast_world(sizeof(int), &dummy);
+    }
+}
+
+
+} // namespace
+
+} // namespace
