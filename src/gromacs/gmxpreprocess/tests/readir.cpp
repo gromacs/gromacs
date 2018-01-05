@@ -72,7 +72,7 @@ class GetIrTest : public ::testing::Test
 {
     public:
         GetIrTest() : fileManager_(), ir_(), mdModules_(), opts_(),
-                      wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
+            wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
 
         {
             snew(opts_.include, STRLEN);
@@ -207,6 +207,12 @@ TEST_F(GetIrTest, ImplicitSolventYesWorks)
 {
     const char *inputMdpFile = "implicit-solvent = yes";
     EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
+}
+
+TEST_F(GetIrTest, HandlesMimic)
+{
+    const char *inputMdpFile[] = {"integrator = mimic", "QMMM-grps = QMatoms"};
+    runTest(joinStrings(inputMdpFile, "\n"));
 }
 
 } // namespace

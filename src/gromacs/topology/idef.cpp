@@ -42,6 +42,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
@@ -324,7 +325,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             pr_indent(fp, indent);
             fprintf(fp, "iatoms:\n");
             iatoms = ilist->iatoms;
-            for (i = j = 0; i < ilist->nr; )
+            for (i = j = 0; i < ilist->nr;)
             {
                 pr_indent(fp, indent+INDENT);
                 type  = *(iatoms++);
@@ -442,5 +443,18 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
                      idef->functype, &idef->il[j], bShowNumbers,
                      bShowParameters, idef->iparams);
         }
+    }
+}
+
+void copy_ilist(const t_ilist *src, t_ilist *dst)
+{
+    dst->nr              = src->nr;
+    dst->nr_nonperturbed = src->nr_nonperturbed;
+    dst->nalloc          = src->nalloc;
+
+    snew(dst->iatoms, dst->nr);
+    for (int i = 0; i < dst->nr; ++i)
+    {
+        dst->iatoms[i] = src->iatoms[i];
     }
 }
