@@ -1708,13 +1708,11 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 }
 
 /*! \brief Set the exclusion data for i-zone \p iz */
-static void make_exclusions_zone(gmx_domdec_t *dd,
-                                 gmx_domdec_zones_t *zones,
+static void make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                  const std::vector<gmx_moltype_t> &moltype,
-                                 const int *cginfo,
-                                 t_blocka *lexcls,
-                                 int iz,
-                                 int at_start, int at_end)
+                                 const int *cginfo, t_blocka *lexcls, int iz,
+                                 int at_start, int at_end,
+                                 const gmx::ArrayRef<const int> intermolecularExclusionGroup)
 {
     int                n_excl_at_max, n, at;
 
@@ -1737,6 +1735,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
             lexcls->nalloc_a = over_alloc_large(n + 1000);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
+
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
             int             a_gl, mb, mt, mol, a_mol, j;
@@ -1775,6 +1774,29 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
         {
             /* We don't need exclusions for this atom */
             lexcls->index[at] = n;
+        }
+
+        bool isExcludedAtom = !intermolecularExclusionGroup.empty() &&
+            std::find(intermolecularExclusionGroup.begin(),
+                      intermolecularExclusionGroup.end(),
+                      dd->globalAtomIndices[at]) !=
+            intermolecularExclusionGroup.end();
+
+        if (isExcludedAtom)
+        {
+            if (n + intermolecularExclusionGroup.size() > lexcls->nalloc_a)
+            {
+                lexcls->nalloc_a =
+                    over_alloc_large(n + intermolecularExclusionGroup.size());
+                srenew(lexcls->a, lexcls->nalloc_a);
+            }
+            for (int qmAtomGlobalIndex : intermolecularExclusionGroup)
+            {
+                if (const auto *entry = dd->ga2la->find(qmAtomGlobalIndex))
+                {
+                    lexcls->a[n++] = entry->la;
+                }
+            }
         }
     }
 
@@ -1970,11 +1992,10 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
-                        make_exclusions_zone(dd, zones,
-                                             mtop->moltype, cginfo,
-                                             excl_t,
-                                             izone,
-                                             cg0t, cg1t);
+                        make_exclusions_zone(dd, zones, mtop->moltype, cginfo,
+                                             excl_t, izone, cg0t,
+                                             cg1t,
+                                             mtop->intermolecularExclusions);
                     }
                     else
                     {
