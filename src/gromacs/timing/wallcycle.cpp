@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include <cstdlib>
 
 #include <array>
+#include <set>
 
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -865,18 +866,29 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
 
     if (wc->wcc[ewcPMEMESH].n > 0)
     {
-        fprintf(fplog, " Breakdown of PME mesh computation\n");
-        fprintf(fplog, "%s\n", hline);
+        // A workaround to not print breakdown when no subcounters were recorded.
+        // TODO: figure out and record PME GPU counters (what to do with the waiting ones?)
+        std::set<int> validPmeSubcounterIndices;
         for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
         {
-            if (is_pme_subcounter(i))
+            if (is_pme_subcounter(i) && (cyc_sum[i] != 0.0))
+            {
+                validPmeSubcounterIndices.insert(i);
+            }
+        }
+
+        if (!validPmeSubcounterIndices.empty())
+        {
+            fprintf(fplog, " Breakdown of PME mesh computation\n");
+            fprintf(fplog, "%s\n", hline);
+            for (auto i : validPmeSubcounterIndices)
             {
                 print_cycles(fplog, npme > 0 ? c2t_pme : c2t_pp, wcn[i],
                              npme > 0 ? npme : npp, nth_pme,
                              wc->wcc[i].n, cyc_sum[i], tot);
             }
+            fprintf(fplog, "%s\n", hline);
         }
-        fprintf(fplog, "%s\n", hline);
     }
 
     if (useCycleSubcounters && wc->wcsc)
