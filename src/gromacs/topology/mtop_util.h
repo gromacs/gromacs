@@ -50,6 +50,7 @@ struct t_atom;
 struct t_atoms;
 struct t_block;
 struct t_symtab;
+enum struct GmxQmmmMode;
 
 // TODO All of the functions taking a const gmx_mtop * are deprecated
 // and should be replaced by versions taking const gmx_mtop & when
