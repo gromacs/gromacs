@@ -165,6 +165,8 @@ struct Integrator
     IntegratorFunctionType           do_nm;
     //! Implements test particle insertion
     IntegratorFunctionType           do_tpi;
+    //! Implements MiMiC QM/MM workflow
+    IntegratorFunctionType           do_mimic;
     /*! \brief Function to run the correct IntegratorFunctionType,
      * based on the .mdp integrator field. */
     void run(unsigned int ei);

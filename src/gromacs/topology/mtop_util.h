@@ -41,6 +41,7 @@
 
 #include <vector>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -62,6 +63,13 @@ struct t_symtab;
  */
 void
 gmx_mtop_finalize(gmx_mtop_t *mtop);
+
+/**
+ * Generates the list of QM atoms for QM/MM simulations
+ * @param mtop global topology object
+ */
+std::vector<int>
+gmx_mtop_gen_qmmm(const gmx_mtop_t *mtop);
 
 /* Counts the number of atoms of each type. State should be 0 for
  * state A and 1 for state B types.  typecount should have at
@@ -223,7 +231,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * be sorted to the end.
  */
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd, GmxQmmmMode qmmmMode);
 
 
 /*!\brief Creates and returns a struct with begin/end atom indices of all molecules
