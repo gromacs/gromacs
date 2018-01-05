@@ -312,3 +312,18 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
         }
     }
 }
+
+void copy_block(const t_block *src, t_block *dst)
+{
+    dst->nr           = src->nr;
+    /* Workaround for inconsistent handling of nalloc_index in
+     * other parts of the code. Often nalloc_index and nalloc_a
+     * are not set.
+     */
+    dst->nalloc_index = std::max(src->nalloc_index, dst->nr + 1);
+    snew(dst->index, dst->nalloc_index);
+    for (int i = 0; i < dst->nr+1; ++i)
+    {
+        dst->index[i] = src->index[i];
+    }
+}
