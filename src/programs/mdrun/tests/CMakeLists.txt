@@ -56,6 +56,7 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     interactiveMD.cpp
     termination.cpp
+    mimic_test.cpp
     # PME tests; FIXME: move this back into mdrun_test_objlib above and figure out the MPI race issue
     pmetest.cpp
     # pseudo-library for code for testing mdrun
@@ -71,6 +72,7 @@ set(exename "mdrun-mpi-test")
 gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
+    mimic_test.cpp
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp

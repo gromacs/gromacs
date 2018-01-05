@@ -207,7 +207,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
+    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO, false);
 
     groups = &top_global->groups;
 
