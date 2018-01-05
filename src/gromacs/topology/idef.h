@@ -395,4 +395,6 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
 void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
              gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
+void copy_ilist(const t_ilist *src, t_ilist *dst);
+
 #endif

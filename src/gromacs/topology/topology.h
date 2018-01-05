@@ -193,4 +193,6 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
 
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
+
 #endif
