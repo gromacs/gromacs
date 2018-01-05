@@ -189,51 +189,57 @@ void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
     std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
 }
 
-t_atoms *copy_t_atoms(const t_atoms *src)
+t_atoms copy_t_atoms(const t_atoms *src)
 {
-    t_atoms *dst;
     int      i;
+    t_atoms dst;
 
-    snew(dst, 1);
-    init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
-    dst->nr = src->nr;
+    init_t_atoms(&dst, src->nr, (nullptr != src->pdbinfo));
+    dst.nr          = src->nr;
+    dst.haveBState  = src->haveBState;
+    dst.haveCharge  = src->haveCharge;
+    dst.haveMass    = src->haveMass;
+    dst.haveType    = src->haveType;
+    dst.havePdbInfo = src->havePdbInfo;
+
     if (nullptr != src->atomname)
     {
-        snew(dst->atomname, src->nr);
+        snew(dst.atomname, src->nr);
     }
     if (nullptr != src->atomtype)
     {
-        snew(dst->atomtype, src->nr);
+        snew(dst.atomtype, src->nr);
     }
     if (nullptr != src->atomtypeB)
     {
-        snew(dst->atomtypeB, src->nr);
+        snew(dst.atomtypeB, src->nr);
     }
     for (i = 0; (i < src->nr); i++)
     {
-        dst->atom[i] = src->atom[i];
+        dst.atom[i] = src->atom[i];
         if (nullptr != src->pdbinfo)
         {
-            dst->pdbinfo[i] = src->pdbinfo[i];
+            dst.pdbinfo[i] = src->pdbinfo[i];
         }
         if (nullptr != src->atomname)
         {
-            dst->atomname[i]  = src->atomname[i];
+            dst.atomname[i]  = src->atomname[i];
         }
         if (nullptr != src->atomtype)
         {
-            dst->atomtype[i] = src->atomtype[i];
+            dst.atomtype[i] = src->atomtype[i];
         }
         if (nullptr != src->atomtypeB)
         {
-            dst->atomtypeB[i] = src->atomtypeB[i];
+            dst.atomtypeB[i] = src->atomtypeB[i];
         }
     }
-    dst->nres = src->nres;
+    dst.nres = src->nres;
     for (i = 0; (i < src->nres); i++)
     {
-        dst->resinfo[i] = src->resinfo[i];
+        dst.resinfo[i] = src->resinfo[i];
     }
+
     return dst;
 }
 
