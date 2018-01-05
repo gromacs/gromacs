@@ -1785,6 +1785,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 /*! \brief Set the exclusion data for i-zone \p iz */
 static void make_exclusions_zone(gmx_domdec_t *dd,
                                  gmx_domdec_zones_t *zones,
+                                 std::vector<int> *qm_atoms,
                                  const gmx_moltype_t *moltype,
                                  const int *cginfo,
                                  t_blocka *lexcls,
@@ -1813,9 +1814,25 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
             lexcls->nalloc_a = over_alloc_large(n + 1000);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
+
+        int  a_gl    = dd->gatindex[at];
+        bool qm_atom = false;
+
+        if (qm_atoms && qm_atoms->size() > 0)
+        {
+            for (int index : qm_atoms[0])
+            {
+                if (index == a_gl)
+                {
+                    qm_atom = true;
+                    break;
+                }
+            }
+        }
+
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
-            int             a_gl, mb, mt, mol, a_mol, j;
+            int             mb, mt, mol, a_mol, j;
             const t_blocka *excls;
 
             if (n + n_excl_at_max > lexcls->nalloc_a)
@@ -1853,6 +1870,22 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
         {
             /* We don't need exclusions for this atom */
             lexcls->index[at] = n;
+        }
+
+        if (qm_atom)
+        {
+            for (int qm_ind : qm_atoms[0])
+            {
+                // TODO: there should be a better way of restoring local indices
+                for (int i = 0; i < dd->gatindex_nalloc; ++i)
+                {
+                    if (dd->gatindex[i] == qm_ind)
+                    {
+                        lexcls->a[n++] = i;
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -2057,6 +2090,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     {
                         /* No charge groups and no distance check required */
                         make_exclusions_zone(dd, zones,
+                                             mtop->mimicTop == nullptr ? nullptr : &mtop->mimicTop->qmAtoms,
                                              mtop->moltype, cginfo,
                                              excl_t,
                                              izone,

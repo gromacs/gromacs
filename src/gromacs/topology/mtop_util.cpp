@@ -42,7 +42,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -735,6 +737,8 @@ static void blockacat(t_blocka *dest, t_blocka *src, int copies,
         dest->nr += src->nr;
     }
     dest->index[dest->nr] = dest->nra;
+    dest->nalloc_index    = dest->nr;
+    dest->nalloc_a        = dest->nra;
 }
 
 static void ilistcat(int ftype, t_ilist *dest, t_ilist *src, int copies,
@@ -837,9 +841,10 @@ static void set_fbposres_params(t_idef *idef, gmx_molblock_t *molb,
 static void gen_local_top(const gmx_mtop_t *mtop,
                           bool              freeEnergyInteractionsAtEnd,
                           bool              bMergeConstr,
-                          gmx_localtop_t   *top)
+                          gmx_localtop_t   *top,
+                          GmxQmmmMode       qmmmMode)
 {
-    int                     mb, srcnr, destnr, ftype, natoms, mol, nposre_old, nfbposre_old;
+    int                     mb, srcnr, destnr, ftype, natoms, nposre_old, nfbposre_old;
     gmx_molblock_t         *molb;
     gmx_moltype_t          *molt;
     const gmx_ffparams_t   *ffp;
@@ -897,7 +902,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,
                 /* Merge all constrains into one ilist.
                  * This simplifies the constraint code.
                  */
-                for (mol = 0; mol < molb->nmol; mol++)
+                for (int mol = 0; mol < molb->nmol; mol++)
                 {
                     ilistcat(ftype, &idef->il[F_CONSTR], &molt->ilist[F_CONSTR],
                              1, destnr+mol*srcnr, srcnr);
@@ -923,6 +928,55 @@ static void gen_local_top(const gmx_mtop_t *mtop,
         }
 
         natoms += molb->nmol*srcnr;
+    }
+
+    if (qmmmMode == GMX_QMMM_MIMIC && !mtop->mimicTop->qmAtoms.empty())
+    {
+        t_blocka inter_excl;
+        init_blocka(&inter_excl);
+        int      n_q = mtop->mimicTop->qmAtoms.size();
+
+        inter_excl.nr  = top->excls.nr;
+        inter_excl.nra = n_q * n_q;
+
+        int total_nra = n_q * n_q;
+
+        snew(inter_excl.index, top->excls.nr + 1);
+        snew(inter_excl.a, total_nra);
+
+        for (int i = 0; i < top->excls.nr; ++i)
+        {
+            inter_excl.index[i] = 0;
+        }
+
+        int prev_index = 0;
+        for (int k = 0; k < inter_excl.nr; ++k)
+        {
+            inter_excl.index[k] = prev_index;
+            for (int i = 0; i < n_q; ++i)
+            {
+                if (k != mtop->mimicTop->qmAtoms[i])
+                {
+                    continue;
+                }
+                int index = n_q * i;
+                inter_excl.index[mtop->mimicTop->qmAtoms[i]] = index;
+                prev_index = index + n_q;
+                for (int j = 0; j < n_q; ++j)
+                {
+                    inter_excl.a[n_q * i + j] = mtop->mimicTop->qmAtoms[j];
+                }
+            }
+        }
+        inter_excl.index[mtop->mimicTop->qmAtoms[n_q - 1] + 1] = n_q * n_q;
+
+        inter_excl.index[inter_excl.nr] = n_q * n_q;
+
+        t_block2  qmexcl2;
+        init_block2(&qmexcl2, top->excls.nr);
+        b_to_b2(&inter_excl, &qmexcl2);
+        merge_excl(&top->excls, &qmexcl2, nullptr);
+        done_block2(&qmexcl2);
     }
 
     if (mtop->bIntermolecularInteractions)
@@ -956,14 +1010,13 @@ static void gen_local_top(const gmx_mtop_t *mtop,
 }
 
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
-                            bool              freeEnergyInteractionsAtEnd)
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd, GmxQmmmMode qmmmMode)
 {
     gmx_localtop_t *top;
 
     snew(top, 1);
 
-    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
+    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top, qmmmMode);
 
     return top;
 }
@@ -974,7 +1027,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
     gmx_localtop_t ltop;
     t_topology     top;
 
-    gen_local_top(mtop, false, FALSE, &ltop);
+    gen_local_top(mtop, false, FALSE, &ltop, GMX_QMMM_ORIGINAL);
     ltop.idef.ilsort = ilsortUNKNOWN;
 
     top.name                        = mtop->name;
@@ -1054,4 +1107,29 @@ void convertAtomsToMtop(t_symtab    *symtab,
     mtop->natoms                 = atoms->nr;
 
     gmx_mtop_finalize(mtop);
+}
+
+std::vector<int> gmx_mtop_gen_qmmm(const gmx_mtop_t *mtop)
+{
+    std::vector<int> output;
+    int            global_at = 0;
+    unsigned char *grpnr     = mtop->groups.grpnr[egcQMMM];
+    for (int mb = 0; mb < mtop->nmolblock; mb++)
+    {
+        gmx_molblock_t *molb = &mtop->molblock[mb];
+        gmx_moltype_t  *molt = &mtop->moltype[molb->type];
+
+        for (int mol = 0; mol < molb->nmol; ++mol)
+        {
+            for (int n_atom = 0; n_atom < molt->atoms.nr; ++n_atom)
+            {
+                if (!grpnr || !grpnr[global_at])
+                {
+                    output.push_back(global_at);
+                }
+                ++global_at;
+            }
+        }
+    }
+    return output;
 }
