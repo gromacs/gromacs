@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 
 #include <vector>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -58,6 +59,13 @@ struct t_symtab;
  */
 void
 gmx_mtop_finalize(gmx_mtop_t *mtop);
+
+/**
+ * Generates the list of QM atoms for QM/MM simulations
+ * @param mtop global topology object
+ */
+std::vector<int>
+gmx_mtop_gen_qmmm(const gmx_mtop_t *mtop);
 
 /* Counts the number of atoms of each type. State should be 0 for
  * state A and 1 for state B types.  typecount should have at
@@ -207,7 +215,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * be sorted to the end.
  */
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd, GmxQmmmMode qmmmMode);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
