@@ -118,6 +118,7 @@ enum tpxv {
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
+    tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1785,7 +1786,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             snew(ir->opts.SAoff,       ir->opts.ngQM);
             snew(ir->opts.SAsteps,     ir->opts.ngQM);
         }
-        if (ir->opts.ngQM > 0)
+        if (ir->opts.ngQM > 0 && ir->bQMMM)
         {
             gmx_fio_ndo_int(fio, ir->opts.QMmethod, ir->opts.ngQM);
             gmx_fio_ndo_int(fio, ir->opts.QMbasis, ir->opts.ngQM);
@@ -2431,7 +2432,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
 
     if (file_version < 57)
     {
-        unsigned char uchar[egcNR];
+        unsigned char uchar[egcNR - 1];
         gmx_fio_ndo_uchar(fio, uchar, myngrp);
         for (i = myngrp; (i < ngrp); i++)
         {
@@ -2537,7 +2538,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     if (file_version < 57)
     {
         gmx_fio_do_int(fio, groups->ngrpname);
-        for (i = 0; i < egcNR; i++)
+        for (i = 0; i < egcNR - 1; i++)
         {
             groups->ngrpnr[i] = atoms->nr;
             snew(groups->grpnr[i], groups->ngrpnr[i]);
@@ -2584,7 +2585,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     {
         do_strstr(fio, groups->ngrpname, groups->grpname, bRead, symtab);
 
-        do_grps(fio, egcNR, groups->grps, bRead, file_version);
+        do_grps(fio, egcNR - 1, groups->grps, bRead, file_version);
     }
 }
 

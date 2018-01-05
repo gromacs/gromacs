@@ -2248,8 +2248,13 @@ int gmx_grompp(int argc, char *argv[])
         }
         else
         {
-            generate_qmexcl(sys, ir, wi);
+            generate_qmexcl(sys, ir, wi, FALSE);
         }
+    }
+
+    if (ir->eI == eiMimic)
+    {
+        generate_qmexcl(sys, ir, wi, TRUE);
     }
 
     if (ftp2bSet(efTRN, NFILE, fnm))
