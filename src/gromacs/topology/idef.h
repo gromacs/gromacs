@@ -392,4 +392,6 @@ void init_idef(t_idef *idef);
  */
 void done_idef(t_idef *idef);
 
+void copy_ilist(const t_ilist *src, t_ilist *dst);
+
 #endif

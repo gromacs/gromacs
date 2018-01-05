@@ -639,3 +639,18 @@ int getGroupType(const gmx_groups_t *group, int type, int atom)
 {
     return (group->grpnr[type] ? group->grpnr[type][atom] : 0);
 }
+
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
+{
+    dst->name = src->name;
+    copy_blocka(&src->excls, &dst->excls);
+    copy_block(&src->cgs, &dst->cgs);
+    t_atoms *atomsCopy = copy_t_atoms(&src->atoms);
+    dst->atoms = *atomsCopy;
+    sfree(atomsCopy);
+
+    for (int i = 0; i < F_NRE; ++i)
+    {
+        dst->ilist[i] = src->ilist[i];
+    }
+}
