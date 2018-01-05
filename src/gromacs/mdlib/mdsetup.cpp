@@ -100,7 +100,7 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
          */
         gmx_localtop_t *tmpTop;
 
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
+        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO, ir->eI == eiMimic);
         *top   = *tmpTop;
         sfree(tmpTop);
     }
