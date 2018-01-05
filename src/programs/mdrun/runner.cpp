@@ -125,6 +125,7 @@
 #include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
+#include "mimic.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -374,6 +375,8 @@ static integrator_t *my_integrator(unsigned int ei)
             return do_tpi;
         case eiSD2_REMOVED:
             GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
+        case eiMimic:
+            return do_mimic;
         default:
             GMX_THROW(APIError("Non existing integrator selected"));
     }
