@@ -53,7 +53,10 @@ On a cluster where users are expected to be running across multiple
 nodes using MPI, make one installation similar to the above, and
 another using an MPI wrapper compiler and which is `building only
 mdrun`_, because that is the only component of |Gromacs| that uses
-MPI.
+MPI. As the latter will install a single binary, the simulation engine
+with the MPI suffix, i.e. ``mdrun_mpi`` (unless the default suffix is
+changed), it is safe (and common practice) to install this into the same
+location where the non-MPI build is located.
 
 Typical installation
 --------------------
@@ -172,37 +175,36 @@ generally built into your compiler and detected automatically.
 GPU support
 ^^^^^^^^^^^
 |Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
-On Linux with gcc, NVIDIA's CUDA_ version |REQUIRED_CUDA_VERSION|
-software development kit is required, and the latest
-version is strongly encouraged. Using Intel or Microsoft compilers
+On Linux, NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
+is required, and the latest
+version is strongly encouraged. Using Intel or Microsoft MSVC compilers
 requires version 7.0 and 8.0, respectively. NVIDIA GPUs with at
 least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
-required, e.g. Fermi, Kepler, Maxwell or Pascal cards. You are strongly recommended to
-get the latest CUDA version and driver supported by your hardware, but
+required. You are strongly recommended to
+get the latest CUDA version and driver that supports your hardware, but
 beware of possible performance regressions in newer CUDA versions on
-older hardware. Note that while some CUDA compilers (nvcc) might not
+older hardware. Note that compute capability 2.0 (Fermi)
+devices are no longer supported from CUDA 9.0 and later.
+While some CUDA compilers (nvcc) might not
 officially support recent versions of gcc as the back-end compiler, we
 still recommend that you at least use a gcc version recent enough to
 get the best SIMD support for your CPU, since |Gromacs| always runs some
 code on the CPU. It is most reliable to use the same C++ compiler
-version for |Gromacs| code as used as the back-end compiler for nvcc,
-but it could be faster to mix compiler versions to suit particular
-contexts.
+version for |Gromacs| code as used as the host compiler for nvcc;
+performance-wise it can be advantageous to mix compiler versions to suit particular
+contexts (e.g. new CPU architecture with better support in recent gcc not supported
+by the most recent CUDA), but this is in general discouraged.
 
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION|. The current version is recommended for
-use with GCN-based AMD GPUs. It does work with NVIDIA GPUs, but using
+|REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
+use with GCN-based AMD GPUs, on Linux we recommend the ROCm runtime.
+It is also supported with NVIDIA GPUs, but using
 the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
-recommended. Additionally, there are known limitations when using
-recent versions of the AMD APPSDK (details are found in the |Gromacs|
-user guide). It is not possible to configure both CUDA and OpenCL
+recommended. Also note that there are performance limitations (inherent
+to the NVIDIA OpenCL runtime).
+It is not possible to configure both CUDA and OpenCL
 support in the same version of |Gromacs|.
-
-Please note that MSVC 2015 is the earliest version of MSVC supported
-by |Gromacs|, but that requires at least CUDA 8 for an officially
-supported CUDA build. This will likely not occur before |Gromacs| 2016
-is released.
 
 .. _mpi-support:
 
@@ -255,6 +257,10 @@ fallback, and is acceptable if simulation performance is not a
 priority. When choosing MKL, |Gromacs| will also use MKL for BLAS and
 LAPACK (see `linear algebra libraries`_). Generally, there is no
 advantage in using MKL with |Gromacs|, and FFTW is often faster.
+With PME GPU offload support using CUDA, a GPU-based FFT library
+is required. The CUDA-based GPU FFT library cuFFT is part of the
+CUDA toolkit (required for all CUDA builds) and therefore no additional
+software component is needed when building with CUDA GPU acceleration.
 
 Using FFTW
 ^^^^^^^^^^
@@ -280,11 +286,13 @@ use mixed or double precision for |Gromacs|. There is no need to
 compile FFTW with threading or MPI support, but it does no harm. On
 x86 hardware, compile with *both* ``--enable-sse2`` and
 ``--enable-avx`` for FFTW-3.3.4 and earlier. From FFTW-3.3.5, you
-should also add ``--enable-avx2`` also. On Intel chipsets supporting
-512-wide AVX, including KNL, add ``--enable-avx512`` also. FFTW will
-create a fat library with codelets for all different instruction sets,
-and pick the fastest supported one at runtime. On IBM Power8, you
-definitely want FFTW-3.3.5 and to compile it with ``--enable-vsx`` for
+should also add ``--enable-avx2`` also. On Intel processors supporting
+512-wide AVX, including KNL, add ``--enable-avx512`` also.
+FFTW will create a fat library with codelets for all different instruction sets,
+and pick the fastest supported one at runtime.
+On ARM architectures with NEON SIMD support and IBM Power8 and later, you
+definitely want version 3.3.5 or later,
+and to compile it with ``--enable-neon`` and ``--enable-vsx``, respectively, for
 SIMD support. If you are using a Cray, there is a special modified
 (commercial) version of FFTs using the FFTW interface which can be
 slightly faster.
@@ -494,14 +502,16 @@ to compiling a binary that will not run.
    code will work on recent AMD processors, it is significantly less
    efficient than the ``AVX_128_FMA`` choice above - do not be fooled
    to assume that 256 is better than 128 in this case.
+6. ``AVX2_128`` AMD Zen microarchitecture processors (2017); note that
+   ``AVX2_256`` is also supported, but it will often not be better.
 6. ``AVX2_256`` Present on Intel Haswell (and later) processors (2013),
    and it will also enable Intel 3-way fused multiply-add instructions.
-7. ``AVX_512`` Skylake-EP Xeon processors (2017)
+7. ``AVX_512`` Skylake-X desktop and Skylake-SP Xeon processors (2017)
 8. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
 9. ``IBM_QPX`` BlueGene/Q A2 cores have this.
 10. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 11. ``IBM_VMX`` Power6 and similar Altivec processors have this.
-12. ``IBM_VSX`` Power7 and Power8 have this.
+12. ``IBM_VSX`` Power7, Power8 and later have this.
 13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
 
@@ -1192,9 +1202,9 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with a number of gcc versions ranging from 4.8.1
-through 6.1, versions 16 of the Intel compiler, and Clang
-versions 3.4 through 3.8. For this, we use a variety of GNU/Linux
+is currently tested on x86 with a number of gcc versions ranging from 4.8
+through 7, versions 16 and 18 of the Intel compiler, and Clang
+versions 3.4 through 5. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
 Windows, we test both MSVC 2015 and version 16 of the Intel compiler.
 For details, you can
