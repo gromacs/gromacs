@@ -227,6 +227,8 @@ void done_blocka(t_blocka *block);
 
 void copy_blocka(const t_blocka *src, t_blocka *dest);
 
+void copy_block(const t_block *src, t_block *dst);
+
 void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
