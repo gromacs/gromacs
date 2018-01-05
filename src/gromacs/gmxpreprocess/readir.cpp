@@ -39,7 +39,6 @@
 #include "readir.h"
 
 #include <ctype.h>
-#include <limits.h>
 #include <stdlib.h>
 
 #include <cmath>
@@ -48,10 +47,8 @@
 #include <string>
 
 #include "gromacs/awh/read-params.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/keyvaluetreemdpwriter.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
@@ -60,22 +57,17 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/filestream.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -3701,97 +3693,120 @@ void do_index(const char* mdparin, const char *ndx,
 
     /* QMMM input processing */
     nQMg          = str_nelem(is->QMMM, MAXPTR, ptr1);
-    nQMmethod     = str_nelem(is->QMmethod, MAXPTR, ptr2);
-    nQMbasis      = str_nelem(is->QMbasis, MAXPTR, ptr3);
-    if ((nQMmethod != nQMg) || (nQMbasis != nQMg))
+    if (ir->eI != eiMimic)
     {
-        gmx_fatal(FARGS, "Invalid QMMM input: %d groups %d basissets"
-                  " and %d methods\n", nQMg, nQMbasis, nQMmethod);
+        nQMmethod = str_nelem(is->QMmethod, MAXPTR, ptr2);
+        nQMbasis  = str_nelem(is->QMbasis, MAXPTR, ptr3);
+        if ((nQMmethod != nQMg) || (nQMbasis != nQMg))
+        {
+            gmx_fatal(FARGS, "Invalid QMMM input: %d groups %d basissets"
+                      " and %d methods\n", nQMg, nQMbasis, nQMmethod);
+        }
+        /* group rest, if any, is always MM! */
+        do_numbering(natoms, groups, nQMg, ptr1, grps, gnames, egcQMMM,
+                     restnm, egrptpALL_GENREST, bVerbose, wi);
+        nr            = nQMg; /*atoms->grps[egcQMMM].nr;*/
+        ir->opts.ngQM = nQMg;
+        snew(ir->opts.QMmethod, nr);
+        snew(ir->opts.QMbasis, nr);
+        for (i = 0; i < nr; i++)
+        {
+            /* input consists of strings: RHF CASSCF PM3 .. These need to be
+             * converted to the corresponding enum in names.c
+             */
+            ir->opts.QMmethod[i] = search_QMstring(ptr2[i], eQMmethodNR,
+                                                   eQMmethod_names);
+            ir->opts.QMbasis[i] = search_QMstring(ptr3[i], eQMbasisNR,
+                                                  eQMbasis_names);
+
+        }
+        str_nelem(is->QMmult, MAXPTR, ptr1);
+        str_nelem(is->QMcharge, MAXPTR, ptr2);
+        str_nelem(is->bSH, MAXPTR, ptr3);
+        snew(ir->opts.QMmult, nr);
+        snew(ir->opts.QMcharge, nr);
+        snew(ir->opts.bSH, nr);
+
+        for (i = 0; i < nr; i++)
+        {
+            ir->opts.QMmult[i] = strtol(ptr1[i], &endptr, 10);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option QMmult. QMmult should only consist of integers separated by spaces.");
+            }
+            ir->opts.QMcharge[i] = strtol(ptr2[i], &endptr, 10);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option QMcharge. QMcharge should only consist of integers separated by spaces.");
+            }
+            ir->opts.bSH[i] = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
+        }
+
+        str_nelem(is->CASelectrons, MAXPTR, ptr1);
+        str_nelem(is->CASorbitals, MAXPTR, ptr2);
+        snew(ir->opts.CASelectrons, nr);
+        snew(ir->opts.CASorbitals, nr);
+        for (i = 0; i < nr; i++)
+        {
+            ir->opts.CASelectrons[i] = strtol(ptr1[i], &endptr, 10);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option CASelectrons. CASelectrons should only consist of integers separated by spaces.");
+            }
+            ir->opts.CASorbitals[i] = strtol(ptr2[i], &endptr, 10);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
+            }
+        }
+
+        str_nelem(is->SAon, MAXPTR, ptr1);
+        str_nelem(is->SAoff, MAXPTR, ptr2);
+        str_nelem(is->SAsteps, MAXPTR, ptr3);
+        snew(ir->opts.SAon, nr);
+        snew(ir->opts.SAoff, nr);
+        snew(ir->opts.SAsteps, nr);
+
+        for (i = 0; i < nr; i++)
+        {
+            ir->opts.SAon[i] = strtod(ptr1[i], &endptr);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option SAon. SAon should only consist of real numbers separated by spaces.");
+            }
+            ir->opts.SAoff[i] = strtod(ptr2[i], &endptr);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option SAoff. SAoff should only consist of real numbers separated by spaces.");
+            }
+            ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
+            if (*endptr != 0)
+            {
+                warning_error(wi,
+                              "Invalid value for mdp option SAsteps. SAsteps should only consist of integers separated by spaces.");
+            }
+        }
+        /* end of QMMM input */
     }
-    /* group rest, if any, is always MM! */
-    do_numbering(natoms, groups, nQMg, ptr1, grps, gnames, egcQMMM,
-                 restnm, egrptpALL_GENREST, bVerbose, wi);
-    nr            = nQMg; /*atoms->grps[egcQMMM].nr;*/
-    ir->opts.ngQM = nQMg;
-    snew(ir->opts.QMmethod, nr);
-    snew(ir->opts.QMbasis, nr);
-    for (i = 0; i < nr; i++)
+    else
     {
-        /* input consists of strings: RHF CASSCF PM3 .. These need to be
-         * converted to the corresponding enum in names.c
-         */
-        ir->opts.QMmethod[i] = search_QMstring(ptr2[i], eQMmethodNR,
-                                               eQMmethod_names);
-        ir->opts.QMbasis[i]  = search_QMstring(ptr3[i], eQMbasisNR,
-                                               eQMbasis_names);
+        /* MiMiC */
+        if (nQMg > 1)
+        {
+            gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
+        }
+        /* group rest, if any, is always MM! */
+        do_numbering(natoms, groups, nQMg, ptr1, grps, gnames, egcQMMM,
+                     restnm, egrptpALL_GENREST, bVerbose, wi);
 
+        ir->opts.ngQM = nQMg;
     }
-    str_nelem(is->QMmult, MAXPTR, ptr1);
-    str_nelem(is->QMcharge, MAXPTR, ptr2);
-    str_nelem(is->bSH, MAXPTR, ptr3);
-    snew(ir->opts.QMmult, nr);
-    snew(ir->opts.QMcharge, nr);
-    snew(ir->opts.bSH, nr);
-
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.QMmult[i]   = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMmult. QMmult should only consist of integers separated by spaces.");
-        }
-        ir->opts.QMcharge[i] = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option QMcharge. QMcharge should only consist of integers separated by spaces.");
-        }
-        ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
-    }
-
-    str_nelem(is->CASelectrons, MAXPTR, ptr1);
-    str_nelem(is->CASorbitals, MAXPTR, ptr2);
-    snew(ir->opts.CASelectrons, nr);
-    snew(ir->opts.CASorbitals, nr);
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.CASelectrons[i] = strtol(ptr1[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASelectrons. CASelectrons should only consist of integers separated by spaces.");
-        }
-        ir->opts.CASorbitals[i]  = strtol(ptr2[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
-        }
-    }
-
-    str_nelem(is->SAon, MAXPTR, ptr1);
-    str_nelem(is->SAoff, MAXPTR, ptr2);
-    str_nelem(is->SAsteps, MAXPTR, ptr3);
-    snew(ir->opts.SAon, nr);
-    snew(ir->opts.SAoff, nr);
-    snew(ir->opts.SAsteps, nr);
-
-    for (i = 0; i < nr; i++)
-    {
-        ir->opts.SAon[i]    = strtod(ptr1[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAon. SAon should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAoff[i]   = strtod(ptr2[i], &endptr);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAoff. SAoff should only consist of real numbers separated by spaces.");
-        }
-        ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
-        if (*endptr != 0)
-        {
-            warning_error(wi, "Invalid value for mdp option SAsteps. SAsteps should only consist of integers separated by spaces.");
-        }
-    }
-    /* end of QMMM input */
 
     if (bVerbose)
     {
