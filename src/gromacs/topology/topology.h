@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 #define GMX_TOPOLOGY_TOPOLOGY_H
 
 #include <cstdio>
+
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
@@ -111,13 +113,14 @@ typedef struct gmx_mtop_t
     t_ilist         *intermolecular_ilist;        /* List of intermolecular interactions
                                                    * using system wide atom indices,
                                                    * either NULL or size F_NRE           */
-    int              natoms;
-    int              maxres_renum;                /* Parameter for residue numbering      */
-    int              maxresnr;                    /* The maximum residue number in moltype */
-    t_atomtypes      atomtypes;                   /* Atomtype properties                  */
-    t_block          mols;                        /* The molecules                        */
-    gmx_groups_t     groups;
-    t_symtab         symtab;                      /* The symbol table                     */
+    int               natoms;
+    int               maxres_renum;               /* Parameter for residue numbering      */
+    int               maxresnr;                   /* The maximum residue number in moltype */
+    t_atomtypes       atomtypes;                  /* Atomtype properties                  */
+    t_block           mols;                       /* The molecules                        */
+    gmx_groups_t      groups;
+    t_symtab          symtab;                     /* The symbol table                     */
+    std::vector<int> *qm_atoms;                   /* List of indices of quantum atoms */
 } gmx_mtop_t;
 
 /* The mdrun node-local topology struct, completely written out */
@@ -167,5 +170,7 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
 void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                 int natoms0, int natoms1);
+
+void copy_mtype(const gmx_moltype_t *src, gmx_moltype_t *dst);
 
 #endif

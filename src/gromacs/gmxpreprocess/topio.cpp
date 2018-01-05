@@ -39,8 +39,6 @@
 #include "topio.h"
 
 #include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,35 +46,27 @@
 #include <cmath>
 
 #include <algorithm>
-
-#include <sys/types.h>
+#include <iostream>
+#include <set>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/gmxpreprocess/topshake.h"
-#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -1223,6 +1213,142 @@ char **do_top(gmx_bool          bVerbose,
     return title;
 }
 
+/**
+ * Generate exclusion list for MiMiC QM/MM. This routine updates
+ * the exclusion lists for QM atoms in order to include all other QM atoms of this molecule.
+ * In addition, this routine replaces bonds between QM atoms with CONNBOND
+ * @param molt molecule type with QM atoms
+ * @param qm_atoms mapping of qm atoms indices
+ * @param ind_offset index offset of this molecule
+ */
+static void generate_mimic_excl(gmx_moltype_t *molt,
+                                std::set<int> qm_atoms,
+                                int ind_offset)
+{
+    int ftype_connbond = 0;
+    int ind_connbond   = 0;
+    if (molt->ilist[F_CONNBONDS].nr != 0)
+    {
+        fprintf(stderr, "nr. of CONNBONDS present already: %d\n",
+                molt->ilist[F_CONNBONDS].nr/3);
+        ftype_connbond = molt->ilist[F_CONNBONDS].iatoms[0];
+        ind_connbond   = molt->ilist[F_CONNBONDS].nr;
+    }
+    /* now we delete all bonded interactions, except the ones describing
+     * a chemical bond. These are converted to CONNBONDS
+     */
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (ftype != F_SETTLE && (!(interaction_function[ftype].flags & IF_BOND) ||
+                                  ftype == F_CONNBONDS))
+        {
+            continue;
+        }
+        int nratoms = interaction_function[ftype].nratoms;
+        int j       = 0;
+        while (j < molt->ilist[ftype].nr)
+        {
+            bool bexcl;
+            if (nratoms == 2)
+            {
+                /* Remove an interaction between two atoms when both are
+                 * in the QM region. Note that we don't have to worry about
+                 * link atoms here, as they won't have 2-atom interactions.
+                 */
+                int a1 = molt->ilist[ftype].iatoms[1 + j + 0];
+                int a2 = molt->ilist[ftype].iatoms[1 + j + 1];
+                bool qmBond = qm_atoms.find(a1 + ind_offset) != qm_atoms.end() &&
+                              qm_atoms.find(a2 + ind_offset) != qm_atoms.end();
+                bexcl  = qmBond;
+                /* A chemical bond between two QM atoms will be copied to
+                 * the F_CONNBONDS list, for reasons mentioned above.
+                 */
+                if (bexcl && IS_CHEMBOND(ftype))
+                {
+                    srenew(molt->ilist[F_CONNBONDS].iatoms, ind_connbond + 3);
+                    molt->ilist[F_CONNBONDS].nr                     += 3;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = ftype_connbond;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a1;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a2;
+                }
+            }
+            else
+            {
+                /* MM interactions have to be excluded if they are included
+                 * in the QM already. Because we use a link atom (H atom)
+                 * when the QM/MM boundary runs through a chemical bond, this
+                 * means that as long as one atom is MM, we still exclude,
+                 * as the interaction is included in the QM via:
+                 * QMatom1-QMatom2-QMatom-3-Linkatom.
+                 */
+                int numQmAtoms = 0;
+                for (int jj = j + 1; jj < j + 1 + nratoms; jj++)
+                {
+                    int index = molt->ilist[ftype].iatoms[jj] + ind_offset;
+                    if (qm_atoms.find(index) != qm_atoms.end())
+                    {
+                        numQmAtoms++;
+                    }
+                }
+                bexcl = (numQmAtoms == nratoms);
+            }
+            if (bexcl)
+            {
+                /* since the interaction involves QM atoms, these should be
+                 * removed from the MM ilist
+                 */
+                molt->ilist[ftype].nr -= (nratoms+1);
+                for (int l = j; l < molt->ilist[ftype].nr; l++)
+                {
+                    molt->ilist[ftype].iatoms[l] = molt->ilist[ftype].iatoms[l+(nratoms+1)];
+                }
+            }
+            else
+            {
+                j += nratoms+1; /* the +1 is for the functype */
+            }
+        }
+    }
+
+    t_blocka  qmexcl;
+    int      qm_nr = 0;
+
+    for (int i = 0; i < molt->atoms.nr; ++i)
+    {
+        if (qm_atoms.find(i + ind_offset) != qm_atoms.end())
+        {
+            molt->atoms.atom[i].q  = 0.0;
+            molt->atoms.atom[i].qB = 0.0;
+            qm_nr++;
+        }
+    }
+
+    qmexcl.nr  = molt->atoms.nr;
+    qmexcl.nra = qm_atoms.size() * qm_atoms.size();
+    snew(qmexcl.index, qmexcl.nr+1);
+    snew(qmexcl.a, qmexcl.nra);
+    int j = 0;
+    for (int i = 0; i < qmexcl.nr; i++)
+    {
+        qmexcl.index[i] = j;
+        if (qm_atoms.find(i + ind_offset) != qm_atoms.end())
+        {
+            int k      = 0;
+            int  search = 0;
+            while (k < qm_nr)
+            {
+                if (qm_atoms.find(search + ind_offset) != qm_atoms.end())
+                {
+                    qmexcl.a[k+j] = search;
+                    k++;
+                }
+                search++;
+            }
+            j += qm_nr;
+        }
+    }
+    qmexcl.index[qmexcl.nr] = j;
+}
 
 static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
                                     t_inputrec *ir, warninp_t wi)
@@ -1502,21 +1628,24 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         }
     }
 
-    free(qm_arr);
-    free(bQMMM);
     free(link_arr);
     free(blink);
 } /* generate_qmexcl */
 
-void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
+void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, gmx_bool mimic)
 {
-    /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
+    /*
+     * This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
      */
 
-    unsigned char  *grpnr;
-    int             mb, mol, nat_mol, i, nr_mol_with_qm_atoms = 0;
-    gmx_molblock_t *molb;
-    gmx_bool        bQMMM;
+    unsigned char                 *grpnr;
+    int                            mb, mol, nat_mol, i, nr_mol_with_qm_atoms = 0;
+    int                           *qm_arr       = nullptr;
+    int                            qm_nr        = 0;
+    int                            index_offset = 0;
+    gmx_molblock_t                *molb;
+    gmx_bool                       bQMMM;
+    std::set<int> qm_map;
 
     grpnr = sys->groups.grpnr[egcQMMM];
 
@@ -1529,11 +1658,16 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
             bQMMM = FALSE;
             for (i = 0; i < nat_mol; i++)
             {
-                if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM)
+                if ((grpnr ? grpnr[i] : 0) < (ir->opts.ngQM))
                 {
-                    bQMMM = TRUE;
+                    bQMMM                    = TRUE;
+                    qm_map.insert(index_offset + i);
+                    qm_nr++;
+                    srenew(qm_arr, qm_nr);
+                    qm_arr[qm_nr - 1] = index_offset + i;
                 }
             }
+
             if (bQMMM)
             {
                 nr_mol_with_qm_atoms++;
@@ -1572,24 +1706,28 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     sys->nmoltype++;
                     srenew(sys->moltype, sys->nmoltype);
                     /* Copy the moltype struct */
-                    sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
-                    /* Copy the exclusions to a new array, since this is the only
-                     * thing that needs to be modified for QMMM.
-                     */
-                    copy_blocka(&sys->moltype[molb->type     ].excls,
-                                &sys->moltype[sys->nmoltype-1].excls);
+                    copy_mtype(&sys->moltype[molb->type], &sys->moltype[sys->nmoltype-1]);
+
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->nmoltype - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
+                if (mimic)
+                {
+                    generate_mimic_excl(&sys->moltype[molb->type], qm_map, index_offset);
+                }
+                else
+                {
+                    generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
+                }
             }
             if (grpnr)
             {
                 grpnr += nat_mol;
             }
+            index_offset += nat_mol;
         }
     }
-    if (nr_mol_with_qm_atoms > 1)
+    if (!mimic && nr_mol_with_qm_atoms > 1)
     {
         /* generate a warning is there are QM atoms in different
          * topologies. In this case it is not possible at this stage to

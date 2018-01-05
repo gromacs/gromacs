@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,9 @@
 
 #include "idef.h"
 
-#include <cstdio>
-
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
@@ -438,5 +437,18 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
                      idef->functype, &idef->il[j], bShowNumbers,
                      bShowParameters, idef->iparams);
         }
+    }
+}
+
+void copy_ilist(const t_ilist *src, t_ilist *dst)
+{
+    dst->nr              = src->nr;
+    dst->nr_nonperturbed = src->nr_nonperturbed;
+    dst->nalloc          = src->nalloc;
+
+    snew(dst->iatoms, dst->nr);
+    for (int i = 0; i < dst->nr; ++i)
+    {
+        dst->iatoms[i] = src->iatoms[i];
     }
 }
