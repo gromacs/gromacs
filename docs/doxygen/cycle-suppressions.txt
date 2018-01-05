@@ -17,3 +17,6 @@ simd -> hardware
 gpu_utils -> hardware
 topology -> listed-forces
 listed-forces -> mdlib
+topology -> gmxpreprocess
+topology -> mdtypes
+topology -> mimic

@@ -207,6 +207,9 @@ struct gmx_domdec_t { //NOLINT(clang-analyzer-optin.performance.Padding)
     /* Index from the local atoms to the global atoms, covers home and received zones */
     std::vector<int> globalAtomIndices;
 
+    /* Global indices of QM atoms for MiMiC QM/MM */
+    std::vector<int> qmRegionGlobalAtomIndices;
+
     /* Global atom number to local atom number list */
     gmx_ga2la_t  *ga2la = nullptr;
 

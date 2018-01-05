@@ -42,7 +42,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mimic/MimicUtils.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -740,6 +743,8 @@ static void blockacat(t_blocka *dest, const t_blocka *src, int copies,
         dest->nr += src->nr;
     }
     dest->index[dest->nr] = dest->nra;
+    dest->nalloc_index    = dest->nr;
+    dest->nalloc_a        = dest->nra;
 }
 
 static void ilistcat(int                    ftype,
@@ -1045,26 +1050,31 @@ static void copyExclsFromMtop(const gmx_mtop_t &mtop,
     }
 }
 
-static void gen_local_top(const gmx_mtop_t &mtop,
-                          bool              freeEnergyInteractionsAtEnd,
-                          bool              bMergeConstr,
-                          gmx_localtop_t   *top)
+static void gen_local_top(const gmx_mtop_t  &mtop,
+                          bool               freeEnergyInteractionsAtEnd,
+                          bool               bMergeConstr,
+                          gmx_localtop_t    *top,
+                          const GmxQmmmMode &qmmmMode)
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
     copyCgsFromMtop(mtop, &top->cgs);
     copyExclsFromMtop(mtop, &top->excls);
+    if (qmmmMode == GmxQmmmMode::GMX_QMMM_MIMIC)
+    {
+        std::vector<int> qmAtomIds = genQmmmIndices(mtop);
+        addExclusions(&top->excls, qmAtomIds);
+    }
 }
 
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
-                            bool              freeEnergyInteractionsAtEnd)
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd, GmxQmmmMode qmmmMode)
 {
     gmx_localtop_t *top;
 
     snew(top, 1);
 
-    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top);
+    gen_local_top(*mtop, freeEnergyInteractionsAtEnd, true, top, qmmmMode);
 
     return top;
 }

@@ -46,6 +46,7 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -107,7 +108,9 @@ const gmx_localtop_t *TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(), false));
+        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(),
+                                                            false,
+                                                            GmxQmmmMode::GMX_QMMM_ORIGINAL));
     }
 
     return expandedTopology_.get();
