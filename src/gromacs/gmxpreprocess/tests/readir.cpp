@@ -182,5 +182,11 @@ TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
     runTest(inputMdpFile);
 }
 
+TEST_F(GetIrTest, HandlesMimic)
+{
+    const char *inputMdpFile[] = {"integrator = mimic", "QMMM-grps = QMatoms"};
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
 } // namespace
 } // namespace

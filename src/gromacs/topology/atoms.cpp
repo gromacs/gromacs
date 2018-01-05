@@ -189,14 +189,18 @@ void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
     std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
 }
 
-t_atoms *copy_t_atoms(const t_atoms *src)
+void copy_t_atoms(const t_atoms *src, t_atoms *dst)
 {
-    t_atoms *dst;
     int      i;
 
-    snew(dst, 1);
     init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
-    dst->nr = src->nr;
+    dst->nr          = src->nr;
+    dst->haveBState  = src->haveBState;
+    dst->haveCharge  = src->haveCharge;
+    dst->haveMass    = src->haveMass;
+    dst->haveType    = src->haveType;
+    dst->havePdbInfo = src->havePdbInfo;
+
     if (nullptr != src->atomname)
     {
         snew(dst->atomname, src->nr);
@@ -234,7 +238,6 @@ t_atoms *copy_t_atoms(const t_atoms *src)
     {
         dst->resinfo[i] = src->resinfo[i];
     }
-    return dst;
 }
 
 void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,

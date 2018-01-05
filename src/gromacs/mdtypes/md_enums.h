@@ -141,6 +141,7 @@ extern const char *epcoupltype_names[epctNR+1];
 enum {
     ecutsVERLET, ecutsGROUP, ecutsNR
 };
+
 //! String corresponding to cutoff scheme
 extern const char *ecutscheme_names[ecutsNR+1];
 //! Macro to select the right string for cutoff scheme
@@ -234,16 +235,17 @@ extern const char *ens_names[ensNR+1];
  * and the half step kinetic energy for temperature control
  */
 enum {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiMimic, eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR+1];
 //! Macro returning integrator string
 #define EI(e)          enum_name(e, eiNR, ei_names)
+#define EI_MIMIC(e) ((e) == eiMimic)
 //! Do we use velocity Verlet
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
 //! Do we use molecular dynamics
-#define EI_MD(e) ((e) == eiMD || EI_VV(e))
+#define EI_MD(e) ((e) == eiMD || EI_VV(e) || EI_MIMIC(e))
 //! Do we use stochastic dynamics
 #define EI_SD(e) ((e) == eiSD1)
 //! Do we use any stochastic integrator
