@@ -43,6 +43,7 @@
 #include <cstdlib>
 
 #include <array>
+#include <vector>
 
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -865,18 +866,29 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
 
     if (wc->wcc[ewcPMEMESH].n > 0)
     {
-        fprintf(fplog, " Breakdown of PME mesh computation\n");
-        fprintf(fplog, "%s\n", hline);
+        // A workaround to not print breakdown when no subcounters were recorded.
+        // TODO: figure out and record PME GPU counters (what to do with the waiting ones?)
+        std::vector<int> validPmeSubcounterIndices;
         for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
         {
-            if (is_pme_subcounter(i))
+            if (is_pme_subcounter(i) && wc->wcc[i].n > 0)
+            {
+                validPmeSubcounterIndices.push_back(i);
+            }
+        }
+
+        if (!validPmeSubcounterIndices.empty())
+        {
+            fprintf(fplog, " Breakdown of PME mesh computation\n");
+            fprintf(fplog, "%s\n", hline);
+            for (auto i : validPmeSubcounterIndices)
             {
                 print_cycles(fplog, npme > 0 ? c2t_pme : c2t_pp, wcn[i],
                              npme > 0 ? npme : npp, nth_pme,
                              wc->wcc[i].n, cyc_sum[i], tot);
             }
+            fprintf(fplog, "%s\n", hline);
         }
-        fprintf(fplog, "%s\n", hline);
     }
 
     if (useCycleSubcounters && wc->wcsc)
