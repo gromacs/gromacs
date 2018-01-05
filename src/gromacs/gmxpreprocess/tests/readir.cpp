@@ -209,5 +209,11 @@ TEST_F(GetIrTest, ImplicitSolventYesWorks)
     EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
+TEST_F(GetIrTest, HandlesMimic)
+{
+    const char *inputMdpFile[] = {"integrator = mimic", "QMMM-grps = QMatoms"};
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
 }  // namespace test
 }  // namespace gmx

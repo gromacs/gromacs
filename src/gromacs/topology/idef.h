@@ -286,7 +286,7 @@ struct gmx_cmapdata_t
     /* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
 };
 
-struct gmx_cmap_t
+typedef struct gmx_cmap_t
 {
     int                         grid_spacing = 0; /* Grid spacing */
     std::vector<gmx_cmapdata_t> cmapdata;         /* Lists of grids with actual, pre-interpolated data */
@@ -391,5 +391,7 @@ void init_idef(t_idef *idef);
  * \param[in] idef Pointer to idef struct to clean up.
  */
 void done_idef(t_idef *idef);
+
+void copy_ilist(const t_ilist *src, t_ilist *dst);
 
 #endif
