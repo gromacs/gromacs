@@ -743,7 +743,10 @@ int gmx_disre(int argc, char *argv[])
         atoms->havePdbInfo = TRUE;
     }
 
-    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
+    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO,
+                                      ir->eI == eiMimic ?
+                                      GmxQmmmMode::GMX_QMMM_MIMIC :
+                                      GmxQmmmMode::GMX_QMMM_ORIGINAL);
 
     g        = nullptr;
     pbc_null = nullptr;
