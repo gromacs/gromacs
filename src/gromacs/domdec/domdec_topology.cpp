@@ -1710,6 +1710,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 /*! \brief Set the exclusion data for i-zone \p iz */
 static void make_exclusions_zone(gmx_domdec_t *dd,
                                  gmx_domdec_zones_t *zones,
+                                 const gmx_groups_t groups,
                                  const std::vector<gmx_moltype_t> &moltype,
                                  const int *cginfo,
                                  t_blocka *lexcls,
@@ -1737,9 +1738,12 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
             lexcls->nalloc_a = over_alloc_large(n + 1000);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
+
+        int  a_gl    = dd->globalAtomIndices[at];
+
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
-            int             a_gl, mb, mt, mol, a_mol, j;
+            int             mb, mt, mol, a_mol, j;
             const t_blocka *excls;
 
             if (n + n_excl_at_max > lexcls->nalloc_a)
@@ -1775,6 +1779,28 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
         {
             /* We don't need exclusions for this atom */
             lexcls->index[at] = n;
+        }
+
+        bool isQmAtom = !dd->qmRegionGlobalAtomIndices.empty() &&
+            std::find(dd->qmRegionGlobalAtomIndices.begin(),
+                      dd->qmRegionGlobalAtomIndices.end(),
+                      a_gl) != dd->qmRegionGlobalAtomIndices.end();
+
+        if (!dd->qmRegionGlobalAtomIndices.empty() && isQmAtom)
+        {
+            if (n + dd->qmRegionGlobalAtomIndices.size() >
+                static_cast<size_t>(lexcls->nalloc_a))
+            {
+                lexcls->nalloc_a = over_alloc_large(n + dd->qmRegionGlobalAtomIndices.size());
+                srenew(lexcls->a, lexcls->nalloc_a);
+            }
+            for (int qmAtomGlobalIndex : dd->qmRegionGlobalAtomIndices)
+            {
+                if (const auto *entry = dd->ga2la->find(qmAtomGlobalIndex))
+                {
+                    lexcls->a[n++] = entry->la;
+                }
+            }
         }
     }
 
@@ -1971,6 +1997,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     {
                         /* No charge groups and no distance check required */
                         make_exclusions_zone(dd, zones,
+                                             mtop->groups,
                                              mtop->moltype, cginfo,
                                              excl_t,
                                              izone,

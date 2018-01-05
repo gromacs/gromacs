@@ -39,6 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
+#include <gromacs/mdtypes/md_enums.h>
 #include "gmxpre.h"
 
 #include "topologyinformation.h"
@@ -107,7 +108,9 @@ const gmx_localtop_t *TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(), false));
+        expandedTopology_.reset(gmx_mtop_generate_local_top(mtop_.get(),
+                                                            false,
+                                                            GmxQmmmMode::GMX_QMMM_ORIGINAL));
     }
 
     return expandedTopology_.get();
