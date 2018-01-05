@@ -101,7 +101,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
          * We should implement a more elegant solution.
          */
         gmx_localtop_t *tmpTop;
-
         tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
         *top   = *tmpTop;
         sfree(tmpTop);
