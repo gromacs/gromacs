@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,8 +99,8 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
          * We should implement a more elegant solution.
          */
         gmx_localtop_t *tmpTop;
-
-        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
+        GmxQmmmMode     qmmmMode = ir->eI == eiMimic ? GMX_QMMM_MIMIC : GMX_QMMM_ORIGINAL;
+        tmpTop = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO, qmmmMode);
         *top   = *tmpTop;
         sfree(tmpTop);
     }
