@@ -227,4 +227,6 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
 //! Deleter for gmx_localtop_t, needed until it has a proper destructor.
 using ExpandedTopologyPtr = gmx::unique_cptr<gmx_localtop_t, done_and_sfree_localtop>;
 
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst);
+
 #endif

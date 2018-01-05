@@ -48,6 +48,7 @@ struct gmx_mtop_t;
 struct t_gromppopts;
 struct t_inputrec;
 struct warninp;
+enum struct GmxQmmmMode;
 typedef warninp *warninp_t;
 
 double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
@@ -73,6 +74,6 @@ char **do_top(bool                          bVerbose,
               warninp_t                     wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
+void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode);
 
 #endif
