@@ -40,6 +40,7 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/mdtypes/md_enums.h"
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
@@ -71,6 +72,6 @@ char **do_top(gmx_bool          bVerbose,
               warninp_t         wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
+void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t wi, GmxQmmmMode qmmmMode);
 
 #endif

@@ -371,6 +371,9 @@
 /* Define if we have feenableexcept */
 #cmakedefine01 HAVE_FEENABLEEXCEPT
 
+/* Use MiMiC QM/MM interface */
+#cmakedefine01 GMX_MIMIC
+
 /*! \endcond */
 
 #endif

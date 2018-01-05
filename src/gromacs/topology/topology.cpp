@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -628,4 +628,17 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
     /* We have compared the names in the groups lists,
      * so we can skip the grpname list comparison.
      */
+}
+
+void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
+{
+    dst->name = src->name;
+    copy_blocka(&src->excls, &dst->excls);
+    copy_block(&src->cgs, &dst->cgs);
+    dst->atoms = copy_t_atoms(&src->atoms);
+
+    for (int i = 0; i < F_NRE; ++i)
+    {
+        copy_ilist(&src->ilist[i], &dst->ilist[i]);
+    }
 }

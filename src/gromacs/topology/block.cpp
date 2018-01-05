@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -290,5 +290,20 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
             fprintf(fp, "tables inconsistent, dumping complete tables:\n");
             low_pr_blocka(fp, indent, title, block, bShowNumbers);
         }
+    }
+}
+
+void copy_block(const t_block *src, t_block *dst)
+{
+    dst->nr           = src->nr;
+    /* Workaround for inconsistent handling of nalloc_index in
+     * other parts of the code. Often nalloc_index and nalloc_a
+     * are not set.
+     */
+    dst->nalloc_index = std::max(src->nalloc_index, dst->nr + 1);
+    snew(dst->index, dst->nalloc_index);
+    for (int i = 0; i < dst->nr+1; ++i)
+    {
+        dst->index[i] = src->index[i];
     }
 }
