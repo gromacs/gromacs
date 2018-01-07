@@ -1638,6 +1638,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                               &T, myref, mylot, vec, myQ))
     {
         set_muQM(qtElec, vec);
+        rotateDipole(mu_qm_[qtElec], mu);
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "; (%.2f %6.2f %6.2f) Total= %.2f\n", 
                  lot, 
@@ -1819,6 +1820,15 @@ void rotateQuadrupole(tensor Q, tensor Qreference)
     }
 }
 
+void MyMol::rotateDipole(rvec mu, rvec muReference)
+{
+    matrix rotmatrix;
+    rvec   tmpvec;
+    calc_rotmatrix(mu, muReference, rotmatrix);
+    mvmul(rotmatrix, mu, tmpvec);
+    copy_rvec(tmpvec, mu);
+}
+
 void MyMol::setQandMoments(qType qt, int natom, double q[])
 {
     int i, j;
@@ -1976,7 +1986,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     {       
         dip_exp_  = value;
         dip_err_  = error;
-        copy_rvec(vec, mu_qm_[qtElec]);
+        set_muQM(qtElec, vec);
         
         if (error <= 0)
         {
@@ -1993,6 +2003,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         if (!bZero && dipQM(qtElec) == 0.0)
         {
           imm = immZeroDip;
+        }
+        if (immOK == imm && esp_dipole_found)
+        {
+            rotateDipole(mu_qm_[qtElec], mu_qm_[qtESP]);
         }
     }
     else

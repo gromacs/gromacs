@@ -243,6 +243,8 @@ class MyMol
          * \param[in] mu The dipole to be stored
          */
         void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
+        
+        void rotateDipole(rvec mu, rvec muReference);
 
         /*! \brief Store quadrupole in appropriate tensor
          *
