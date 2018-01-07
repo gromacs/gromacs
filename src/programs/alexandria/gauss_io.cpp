@@ -425,7 +425,7 @@ void ReadGauss(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-            /*for (const auto& cs : charge_scheme)
+            for (const auto& cs : charge_scheme)
             {
                 OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
                 if (nullptr != OBpd)
@@ -436,7 +436,7 @@ void ReadGauss(const char          *g09,
                     alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);                
                     ca.AddCharge(aq);
                 }                  
-                }*/
+            }
             if (nullptr == charge_model)
             {
                 printf("\n"
