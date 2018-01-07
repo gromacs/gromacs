@@ -179,6 +179,7 @@ void ReadGauss(const char          *g09,
     OpenBabel::OBBondIterator  OBbi;
     OpenBabel::OBBond         *OBb;
     OpenBabel::OBPairData     *OBpd;
+    OpenBabel::OBPcharge      *OBpc;
     OpenBabel::OBVectorData   *dipole;
     OpenBabel::OBMatrixData   *quadrupole;
     OpenBabel::OBMatrixData   *pol_tensor;
