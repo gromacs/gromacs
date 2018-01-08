@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -200,10 +200,14 @@ int gmx_rmsf(int argc, char *argv[])
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
         "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
-        "values, which are written to a [REF].pdb[ref] file with the coordinates, of the",
-        "structure file, or of a [REF].pdb[ref] file when [TT]-q[tt] is specified.",
+        "values, which are written to a [REF].pdb[ref] file. By default, the coordinates",
+        "in this output file are taken from the structure file provided with [TT]-s[tt],"
+        "although you can also use coordinates read from a different [REF].pdb[ref] file"
+        "provided with [TT]-q[tt]. There is very little error checking, so in this case"
+        "it is your responsibility to make sure all atoms in the structure file"
+        "and [REF].pdb[ref] file correspond exactly to each other.[PAR]",
         "Option [TT]-ox[tt] writes the B-factors to a file with the average",
-        "coordinates.[PAR]",
+        "coordinates in the trajectory.[PAR]",
         "With the option [TT]-od[tt] the root mean square deviation with",
         "respect to the reference structure is calculated.[PAR]",
         "With the option [TT]-aniso[tt], [THISMODULE] will compute anisotropic",
