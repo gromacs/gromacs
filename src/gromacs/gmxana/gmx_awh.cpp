@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -182,11 +182,9 @@ class BiasReader
     public:
         //! Constructor.
         BiasReader(int                         subblockStart,
-                   int                         numSubBlocks,
                    std::unique_ptr<OutputFile> awhOutputFile,
                    std::unique_ptr<OutputFile> frictionOutputFile) :
             subblockStart_(subblockStart),
-            numSubBlocks_(numSubBlocks),
             awhOutputFile_(std::move(awhOutputFile)),
             frictionOutputFile_(std::move(frictionOutputFile))
         {
@@ -214,7 +212,6 @@ class BiasReader
 
     private:
         const int                   subblockStart_;      /**< The start index of the subblocks to read. */
-        const int                   numSubBlocks_;       /**< Number of subblocks to read. */
         std::unique_ptr<OutputFile> awhOutputFile_;      /**< The standard AWH output file data. */
         std::unique_ptr<OutputFile> frictionOutputFile_; /**< The friction/metric tensor output file data */
 };
@@ -452,7 +449,7 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
             frictionOutputFile->initializeFrictionOutputFile(subblockStart, numSubBlocks, awhBiasParams, energyUnit, kT);
         }
 
-        biasReader_.emplace_back(BiasReader(subblockStart, numSubBlocks,
+        biasReader_.emplace_back(BiasReader(subblockStart,
                                             std::move(awhOutputFile),
                                             std::move(frictionOutputFile)));
 
