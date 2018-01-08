@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -7382,6 +7382,16 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
         /* We ignore the first nstlist steps at the start of the run
          * or after PME load balancing or after turning DLB off, since
          * these often have extra allocation or cache miss overhead.
+         */
+        return FALSE;
+    }
+
+    if (dd->comm->cycl_n[ddCyclStep] == 0)
+    {
+        /* We can have zero timed steps when dd_partition_system is called
+         * more than once at the same step, e.g. with replica exchange.
+         * Turning on DLB would trigger an assertion failure later, but is
+         * also useless right after exchanging replicas.
          */
         return FALSE;
     }
