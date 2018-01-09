@@ -1,9 +1,9 @@
 Release notes
 =============
 
-This version was released on TODO. These release notes document the
-functionality changes in |Gromacs| |version| that have taken place in
-|Gromacs| since version 2016.
+This version was released on January 10, 2018. These release notes
+document the functionality changes in |Gromacs| |version| that have
+taken place in |Gromacs| since version 2016.
 
 Some bug fixes are mentioned here, but those fixed in 5.1 or 2016
 branches are (or will be) documented there. If the same functionality
@@ -44,19 +44,6 @@ There are some new features available also:
   test that the code correctly samples the expected ensemble.
 * Conserved quantities are computed and reported for more integration
   schemes - now including all Berendsen and Parrinello-Rahman schemes.
-
-.. TODO remove before final release
-
-Beta phase
-----------
-
-During the beta phase, numerous fixes will occur, many of which will
-be fixes of fixes, or fixes of new features. Those will be temporarily
-documented in the release notes, but will not appear in the final 2018
-release notes because they were never bugs that formally affected
-users. If you want to find whether a beta-phase issue has been fixed,
-you can find them by searching for the text "beta-phase fix" in the
-relevant subsection.
 
 Details
 -------
