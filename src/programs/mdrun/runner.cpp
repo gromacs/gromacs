@@ -758,15 +758,7 @@ int Mdrunner::mdrunner()
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        if (useGpuForPme && (hw_opt.nthreads_tmpi > 1))
-        {
-            domdecOptions.numPmeRanks = 1;
-            //TODO print appropriate notice on why asking for multiple threads and -pme gpu causes a separate PME rank to start
-        }
-        else
-        {
-            domdecOptions.numPmeRanks = 0;
-        }
+        domdecOptions.numPmeRanks = 0;
     }
     if (useGpuForPme)
     {
