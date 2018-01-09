@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,23 +179,6 @@ size_t countGpuTasksOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode)
     return numGpuTasksOnThisNode;
 }
 
-//! Finds whether there is any task of \c queryTask in the tasks on the ranks of this node.
-bool hasAnyTaskOfTypeOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode,
-                                const GpuTask          queryTask)
-{
-    for (const auto &gpuTasksOnRank : gpuTasksOnRanksOfThisNode)
-    {
-        for (const auto &gpuTask : gpuTasksOnRank)
-        {
-            if (queryTask == gpuTask)
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 }   // namespace
 
 GpuTaskAssignments::value_type
@@ -237,17 +220,36 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         if (userGpuTaskAssignment.empty())
         {
             ArrayRef<const int> compatibleGpusToUse = gpuIdsToUse;
-            if (hasAnyTaskOfTypeOnThisNode(gpuTasksOnRanksOfThisNode, GpuTask::Pme))
+
+            // enforce the single device/rank restriction
+            if (cr->nrank_intranode == 1 && !compatibleGpusToUse.empty())
             {
-                // PP and PME tasks must run on the same device, so
-                // restrict the assignment to the first device. If
-                // there aren't any, then that error is handled later.
-                if (!compatibleGpusToUse.empty())
-                {
-                    compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
-                }
+                compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
             }
+
+            // When doing automated assignment of GPU tasks to GPU
+            // IDs, even if we have more than one kind of GPU task, we
+            // do a simple round-robin assignment. That's not ideal,
+            // but we don't have any way to do a better job reliably.
             generatedGpuIds         = makeGpuIds(compatibleGpusToUse, numGpuTasksOnThisNode);
+
+            if ((numGpuTasksOnThisNode > gpuIdsToUse.size()) &&
+                (numGpuTasksOnThisNode % gpuIdsToUse.size() != 0))
+            {
+                // TODO Decorating the message with hostname should be
+                // the job of an error-reporting module.
+                char host[STRLEN];
+                gmx_gethostname(host, STRLEN);
+
+                GMX_THROW(InconsistentInputError
+                              (formatString("There were %zu GPU tasks found on node %s, but %zu GPUs were "
+                                            "available. If the GPUs are equivalent, then it is usually best "
+                                            "to have a number of tasks that is a multiple of the number of GPUs. "
+                                            "You should reconsider your GPU task assignment, "
+                                            "number of ranks, or your use of the -nb, -pme, and -npme options, "
+                                            "perhaps after measuring the performance you can get.", numGpuTasksOnThisNode,
+                                            host, gpuIdsToUse.size())));
+            }
             gpuIdsForTaskAssignment = generatedGpuIds;
         }
         else
