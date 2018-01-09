@@ -36,8 +36,8 @@ Questions concerning system preparation and preprocessing
    Suitable equilibrated boxes of solvent :ref:`structure files <gmx-structure-files>` can be found 
    in the ``$GMXDIR/share/gromacs/top`` directory. That location will be searched by default
    by :ref:`solvate <gmx solvate>`, for example by using ``-cs spc216.gro`` as an argument.
-   Other solvent boxes can be prepared by the user as described in
-   :ref:`Non-Water Solvation <gmx-solvate-other>` and on the manual page for :ref:`solvate <gmx solvate>`.
+   Other solvent boxes can be prepared by the user as described
+   on the manual page for :ref:`solvate <gmx solvate>` and elsewhere.
    Note that suitable topology files will be needed for the solvent boxes to be useful in
    :ref:`grompp <gmx grompp>`. These are available for some force fields, and may be
    found in the respective subfolder of ``$GMXDIR/share/gromacs/top``.
@@ -45,12 +45,12 @@ Questions concerning system preparation and preprocessing
 #. How to prevent :ref:`solvate <gmx solvate>` from placing waters in undesired places?
 
    Water placement is generally well behaved when solvating proteins, but can be difficult when setting up
-   :ref:`membrane <gmx-membrane>` or micelle simulations. In those cases, waters may be placed in between the
+   membrane or micelle simulations. In those cases, waters may be placed in between the
    alkyl chains of the lipids, leading to problems later :ref:`during the simulation <blowing-up>`.
    You can either remove those waters by hand (and do the accounting for molecule types in the
    :ref:`topology <top>` file), or set up a local copy of the ``vdwradii.dat`` file from the ``$GMXLIB``
    directory, specific for your project and located in your working directory. In it, you can
-   increase the :ref:`vdW radius<gmx-vdw>` of the atoms, to suppress such interstitial insertions.
+   increase the vdW radius of the atoms, to suppress such interstitial insertions.
    Recommended e.g. at a common `tutorial`_ is the use of 0.375 instead of 0.15.
 
 .. _tutorial: http://www.bevanlab.biochem.vt.edu/Pages/Personal/justin/gmx-tutorials/membrane_protein/03_solvate.html
@@ -111,7 +111,7 @@ Questions regarding simulation methodology
 
     You can choose different values for :mdp:`tinit` and :mdp:`init-step`.
 
-.. TODO make links work :ref:`Continuing simulations <gmx-cont-simulation>`.
+    .. TODO make links work :ref:`Continuing simulations <gmx-cont-simulation>`.
 
 #.  Why can't I do conjugate gradient minimization with constraints?
 
@@ -128,20 +128,20 @@ Questions regarding simulation methodology
 
 #.  How do I extend a completed a simulation to longer times?
 
-    Please see the section on `Managing long simulations`.
+    Please see the section on `managing long simulations`.
     You can either prepare a new :ref:`mdp` file, or extend the simulation time
     in the original :ref:`tpr` file using :ref:`convert-tpr`<gmx convert-tpr>`.
 
-.. TODO #.  How do I complete a crashed simulation?
+    .. TODO #.  How do I complete a crashed simulation?
 
-..    This can be easily achieved using the checkpoint reading
-    :ref:`available <gmx-cont-crash>` in |Gromacs| versions newer than 4.
+    .. This can be easily achieved using the checkpoint reading
+       :ref:`available <gmx-cont-crash>` in |Gromacs| versions newer than 4.
 
-.. TODO #.  How can I do a simulation at constant pH?
+    .. TODO #.  How can I do a simulation at constant pH?
 
-..    This is a rather large topic, and you should at least read the short
-    :ref:`Constant pH How-To <gmx-howto-cph>` and all of the literature
-    included there to get an overview over the topic.
+    .. This is a rather large topic, and you should at least read the short
+       :ref:`Constant pH How-To <gmx-howto-cph>` and all of the literature
+       included there to get an overview over the topic.
 
 #.  How should I compute a single-point energy?
 
@@ -176,10 +176,10 @@ Parameterization and Force Fields
 Analysis and Visualization
 --------------------------
 
-.. TODO #.  How do I visualize a trajectory?
+    .. TODO #.  How do I visualize a trajectory?
 
-..    Use one of the number of different programs that can visualize
-    coordinate :ref:`files and trajectories <gmx-howto-visualize>`.
+    .. Use one of the number of different programs that can visualize
+       coordinate :ref:`files and trajectories <gmx-howto-visualize>`.
 
 #.  Why am I seeing bonds being created when I watch the trajectory?
 

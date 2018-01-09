@@ -1,3 +1,5 @@
+.. _managing long simulations:
+
 Managing long simulations
 =========================
 
