@@ -21,6 +21,28 @@ tensor defines a metric on the coordinate space and the local volume
 element of this metric is a useful measure for determining which
 regions need more or less sampling.
 
+Dual pair-list buffer with dynamic pruning
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The |Gromacs| simulation engine uses a new dual pair-list algorithm with
+dynamic pruning in cases where the Verlet buffer is determined
+automatically (which is the default). This allows further reducing the
+frequency of pair search (and domain decomposition) while avoiding
+large Verlet buffers and the previously inherent increased
+computational cost in the short-ranged nonbonded kernels.  This is
+achieved by constructing an "outer" pair-list built infrequently,
+which includes many pairs in the list that are outside the cut-off
+range for most of the lifetime of the list. Such pairs can be pruned
+out very efficiently every few steps and with that building a smaller, "inner"
+pair-list with a shorter life-time, and importantly a correspondingly
+shorter Verlet buffer (still adhering to the specified tolerance),
+which is then used in the nonbonded kernels. Thanks to this,
+simulations runs are significantly less sensitive to tuning the search
+frequency parameter ("nstlist").
+When short-ranged interactions are running on the GPU, the dynamic pruning is overlapped
+with the integration on the CPU, so is usually free. This feature
+improves all of simulation rate, hardware utilization, and power
+consumption.
+
 Added physical validation suite
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 These tests run series of short simulations and verify the expected
