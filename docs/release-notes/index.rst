@@ -6,11 +6,12 @@ functionality changes in |Gromacs| |version| that have taken place in
 |Gromacs| since version 2016.
 
 Some bug fixes are mentioned here, but those fixed in 5.1 or 2016
-branches are (or will be) documented there. If the same functionality
-is supported in both branches, bugs fixed on older branches can
-generally be assumed to be fixed in patch releases of subsequent
-major/minor versions. Where issue numbers are reported, more details
-can be found at https://redmine.gromacs.org at that issue number.
+branches are (or will be) documented for those `previous versions`_.
+If the same functionality is supported in both branches, bugs fixed on
+older branches can generally be assumed to be fixed in patch releases
+of subsequent major/minor versions. Where issue numbers are reported,
+more details can be found at https://redmine.gromacs.org at that issue
+number.
 
 Highlights
 ----------
@@ -66,3 +67,15 @@ Details
    removed-features
    portability
    miscellaneous
+
+Previous versions
+-----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   2016.4/index
+   2016.3/index
+   2016.2/index
+   2016.1/index
+   2016/index
