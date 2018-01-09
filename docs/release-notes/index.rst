@@ -23,11 +23,10 @@ without GPUs, and all enabled and automated by default. We are
 extremely interested in your feedback on how well this worked on your
 simulations and hardware. They are:
 
-* A new dual-list dynamic-pruning algorithm for the short-ranged
-  interactions, that uses an inner and outer list to permit a longer-lived
-  outer list, while doing less work overall.
 * PME long-ranged interactions can now run on a single GPU, which
   means many fewer CPU cores are needed for good performance.
+* Optimized SIMD support for recent CPU architectures:
+  AMD Zen, Intel Skylake-X and Skylake Xeon-SP.
 
 There are some new features available also:
 
@@ -35,6 +34,10 @@ There are some new features available also:
   which is an adaptive biasing method used for overcoming free energy
   barriers and calculating free energies (see
   http://dx.doi.org/10.1063/1.4890371).
+* A new dual-list dynamic-pruning algorithm for the short-ranged
+  interactions, that uses an inner and outer list to permit a longer-lived
+  outer list, while doing less work overall and making runs
+  less sensitive to the choice of the "nslist" parameter.
 * A physical validation suite is added, which runs a series of short
   simulations, to verify the expected statistical properties,
   e.g. of energy distributions between the simulations, as a sensitive
