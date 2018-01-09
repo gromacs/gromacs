@@ -267,7 +267,7 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
           return idata[0]*(int)(_mm512_cmp_ps_mask(x,y,_CMP_LT_OS));}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS
-        "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet. ICC should use ZMM if code anyhow uses ZMM
+        "-xCORE-AVX512" "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet. ICC should use ZMM if code anyhow uses ZMM
 
     if(${SIMD_AVX_512_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 instructions")

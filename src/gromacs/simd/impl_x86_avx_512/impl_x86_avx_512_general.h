@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
-#define GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_256_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX_256_GENERAL_H
 
 #include <immintrin.h>
 
@@ -47,30 +47,30 @@ simdPrefetch(const void * m)
     _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
 
-/*! \brief Return integer from AVX-512 mask
+/*! \brief Return integer from AVX-256 mask
  *
- *  \param m  Mask suitable for use with AVX-512 instructions
+ *  \param m  Mask suitable for use with AVX-256 instructions
  *
  *  \return Short integer representation of mask
  */
 static inline short
-avx512Mask2Int(__mmask16 m)
+avx256Mask2Int(__mmask16 m)
 {
     return static_cast<short>(m);
 }
 
-/*! \brief Return AVX-512 mask from integer
+/*! \brief Return AVX-256 mask from integer
  *
  *  \param m  Short integer
  *
- *  \return Mask suitable for use with AVX-512 instructions.
+ *  \return Mask suitable for use with AVX-256 instructions.
  */
 static inline __mmask16
-avx512Int2Mask(short i)
+avx256Int2Mask(short i)
 {
     return static_cast<__mmask16>(i);
 }
 
 }
 
-#endif // GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
+#endif // GMX_SIMD_IMPL_X86_AVX_256_GENERAL_H

@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512_SIMD4_FLOAT_H
-#define GMX_SIMD_IMPL_X86_AVX_512_SIMD4_FLOAT_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H
+#define GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H
 
 #include "config.h"
 
@@ -207,16 +207,13 @@ fnms(Simd4Float a, Simd4Float b, Simd4Float c)
     };
 }
 
-// Override for AVX-512-KNL
-#if GMX_SIMD_X86_AVX_512
 static inline Simd4Float gmx_simdcall
 rsqrt(Simd4Float x)
 {
     return {
-               _mm512_castps512_ps128(_mm512_rsqrt14_ps(_mm512_castps128_ps512(x.simdInternal_)))
+               _mm_rsqrt14_ps(x.simdInternal_)
     };
 }
-#endif
 
 static inline Simd4Float gmx_simdcall
 abs(Simd4Float x)
@@ -288,7 +285,7 @@ static inline Simd4FBool gmx_simdcall
 operator==(Simd4Float a, Simd4Float b)
 {
     return {
-               _mm512_mask_cmp_ps_mask(avx512Int2Mask(0xF), _mm512_castps128_ps512(a.simdInternal_), _mm512_castps128_ps512(b.simdInternal_), _CMP_EQ_OQ)
+               _mm_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_EQ_OQ)
     };
 }
 
@@ -296,7 +293,7 @@ static inline Simd4FBool gmx_simdcall
 operator!=(Simd4Float a, Simd4Float b)
 {
     return {
-               _mm512_mask_cmp_ps_mask(avx512Int2Mask(0xF), _mm512_castps128_ps512(a.simdInternal_), _mm512_castps128_ps512(b.simdInternal_), _CMP_NEQ_OQ)
+                       _mm_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_NEQ_OQ)
     };
 }
 
@@ -304,7 +301,7 @@ static inline Simd4FBool gmx_simdcall
 operator<(Simd4Float a, Simd4Float b)
 {
     return {
-               _mm512_mask_cmp_ps_mask(avx512Int2Mask(0xF), _mm512_castps128_ps512(a.simdInternal_), _mm512_castps128_ps512(b.simdInternal_), _CMP_LT_OQ)
+                       _mm_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_LT_OQ)
     };
 }
 
@@ -312,7 +309,7 @@ static inline Simd4FBool gmx_simdcall
 operator<=(Simd4Float a, Simd4Float b)
 {
     return {
-               _mm512_mask_cmp_ps_mask(avx512Int2Mask(0xF), _mm512_castps128_ps512(a.simdInternal_), _mm512_castps128_ps512(b.simdInternal_), _CMP_LE_OQ)
+                       _mm_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_LE_OQ)
     };
 }
 
@@ -335,14 +332,14 @@ operator||(Simd4FBool a, Simd4FBool b)
 static inline bool gmx_simdcall
 anyTrue(Simd4FBool a)
 {
-    return ( avx512Mask2Int(a.simdInternal_) & 0xF ) != 0;
+    return ( avx256Mask2Int(a.simdInternal_) & 0xF ) != 0;
 }
 
 static inline Simd4Float gmx_simdcall
 selectByMask(Simd4Float a, Simd4FBool m)
 {
     return {
-               _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_setzero_ps(), m.simdInternal_, _mm512_castps128_ps512(a.simdInternal_)))
+               _mm_mask_mov_ps(_mm_setzero_ps(), m.simdInternal_, a.simdInternal_)
     };
 }
 
@@ -350,7 +347,7 @@ static inline Simd4Float gmx_simdcall
 selectByNotMask(Simd4Float a, Simd4FBool m)
 {
     return {
-               _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_castps128_ps512(a.simdInternal_), m.simdInternal_, _mm512_setzero_ps()))
+        _mm_mask_mov_ps(a.simdInternal_, m.simdInternal_, _mm_setzero_ps())
     };
 }
 
@@ -358,7 +355,7 @@ static inline Simd4Float gmx_simdcall
 blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 {
     return {
-               _mm512_castps512_ps128(_mm512_mask_blend_ps(sel.simdInternal_, _mm512_castps128_ps512(a.simdInternal_), _mm512_castps128_ps512(b.simdInternal_)))
+               _mm_mask_blend_ps(sel.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
@@ -373,4 +370,4 @@ reduce(Simd4Float a)
 
 }      // namespace gmx
 
-#endif // GMX_SIMD_IMPL_X86_AVX_512_SIMD4_FLOAT_H
+#endif // GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H

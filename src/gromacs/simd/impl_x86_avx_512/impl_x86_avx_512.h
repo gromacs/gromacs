@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512_H
-#define GMX_SIMD_IMPL_X86_AVX_512_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_256_H
+#define GMX_SIMD_IMPL_X86_AVX_256_H
 
 #include "impl_x86_avx_512_definitions.h"
 #include "impl_x86_avx_512_general.h"
@@ -47,4 +47,4 @@
 
 
 
-#endif // GMX_SIMD_IMPL_X86_AVX_512_H
+#endif // GMX_SIMD_IMPL_X86_AVX_256_H
