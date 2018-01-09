@@ -1,0 +1,173 @@
+GROMACS 2016.1 Release Notes
+----------------------------------------
+
+This version was released on October 28, 2016. These release notes
+document the changes that have taken place in GROMACS since the
+initial version 2016 to fix known issues. It also incorporates all
+fixes made in version 5.1.4.
+
+Made distance restraints work with threads and DD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The NMR distance restraints use several buffers for summing distances
+that were indexed based on the index of the thread+domain local ilist
+force atoms. This gives incorrect results with OpenMP and/or domain
+decomposition. Using the type index for the restraint and a domain-
+local, but not thread-local index for the pair resolves these issues.
+The are now only two limitations left:
+
+* Time-averaged restraint don't work with DD.
+* Multiple copies of molecules in the same system without ensemble
+  averaging does not work with DD.
+
+Note that these fixes have not been made in any 5.1.x release.
+
+:issue:`1117`
+:issue:`1989`
+:issue:`2029`
+
+Fixed Ewald surface+3DC corrections
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Ewald surface and 3DC correction forces were only applied up to,
+but not including, the last atom with exclusions. With water at
+the end of the system only the last H would not be corrected.
+With ions at the end all ions would be missing.
+In addition, with the Verlet scheme and domain decomposition
+no force correction was applied at all.
+
+:issue:`2040`
+
+Fixed opening of wall table files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2033`
+
+Fixed bug in gmx insert-molecules.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With option -ip, and if all trials were unsuccessful, a molecule was
+eventually incorrectly placed at 0/0/0 due to a memory error
+when referencing to rpos[XX][mol].
+
+Made virial reproducible
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+OpenMP reduction was used to reduce virial contributions over threads,
+which does not have a defined order. This leads to different rounding,
+which makes runs non-reproducible (but still fully correct).
+Now thread local buffers are used.
+Also removed OpenMP parallezation for small count (e.g. shift forces).
+
+Updated to support FFTW 3.3.5
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The auto-download of FFTW now gets FFTW 3.3.5 and builds it properly,
+including with ``--enable-vsx`` when GMX_SIMD is set to VSX, i.e. for
+Power8, and ``--enable-avx512`` when GMX_SIMD is any of the AVX flavours
+(which is safe on non-512 now, works on KNL, and is presumed useful
+for future AVX512 architectures).
+
+Permitted automatic load balancing to disable itself when it makes the run slower
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Under certain conditions, especially with (shared) GPUs, DLB can
+decrease the performance. We now measure the cycles per step before
+turning on DLB. When the running average of cycles per step with DLB
+gets above the average without DLB, we turn off DLB. We then measure
+again without DLB. If without DLB the cycle count is still lower,
+we keep DLB off for the remainder of the run. Otherwise is can turn
+on again as before. This procedure ensures that the performance will
+never deteriorate due to DLB.
+
+Improved the accuracy of timing for dynamic load balancing with GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With OpenCL, the time for the local non-bonded to finish on the GPU
+was ignored in the dynamic load balancing. This change lets OpenCL
+take the same code path as CUDA.
+
+One internal heuristic parameter was far too small for both CUDA and
+OpenCL, which is now fixed.
+
+Corrected kernel launch bounds for Tesla P100 GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This corrects our initial guess of kernel tuning parameters that resulted
+in reduced occupancy on sm_60 GPU, and thus improves performance.
+
+Improved logic handling if/when the run is terminated for SETTLE warnings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The code now honours that when the environment variable
+GMX_MAXCONSTRWARN is set to -1, there is no maximum number of warnings.
+
+:issue:`2058`
+
+Fixed bug in gmx wham for reading pullx files.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Because the order of columns in the pullx files has changed recently,
+``gmx wham`` did not pick the reaction coordinate from ``pullx.xvg``
+if the COM of the pull groups were written. ``gmx wham`` was tested
+with various pull options and geometries.
+
+Fixed ouput bug in gmx wham
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed deadlock with thread-MPI
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With thread-MPI mdrun could deadlock while pinning threads.
+
+:issue:`2025`
+
+Made error reporting in grompp more user friendly
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This tool now always reports the file and line in user input files
+that lead to a condition such that subsequent parsing cannot continue.
+
+Fixed SIMD suggestion for VMX
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed script xplor2gmx.pl to work with GMXDATA
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed default nice level in mdrun-only build
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Now an mdrun-only build should default to zero nice level, the same as
+``gmx mdrun`` in a normal build.
+
+Fixed math-test false positive
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Depending on the accuracy of the floating point division, the
+input of the test function could be 1ulp too large or too small.
+If it was too large the result of the test function wasn't
+within 4ulp and the test failed.
+
+Improved documentation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Approaches for reducing overhead for GPU runs are now documented.
+
+The available wallcycle counters and subcounters reported in the
+md.log files are now listed and and explained in the user guide, along
+with how to enable reporting of the subcounters.
+
+Several install-guide sections have been improved, including those for
+OpenCL, mdrun-only, and "make check". A "quick and dirty" cluster
+installation section was added.
+
+OpenCL error string are now written, instead of cryptic error codes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed build with GMX_USE_TNG=off
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed variable-precision .gro writing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The precision used when writing .gro files is now fixed to 3, 4 and 5
+decimal places for x, v and box respectively to ensure compatibility with
+other software. Variable-precision reading is still supported.
+
+:issue:`2037`
+
+Fixed BG/Q platform files and install guide
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Renamed the platform file to reflect normal practice
+and the install guide.
+
+Reduced the memory required for free-energy simulations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Pair lists with atoms whose short-ranged parameters are perturbed
+now use less memory.
+
+:issue:`2014`
