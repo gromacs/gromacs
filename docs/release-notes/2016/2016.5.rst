@@ -1,0 +1,153 @@
+GROMACS 2016.5 Release Notes
+----------------------------
+
+This version was released on February 16, 2018. These release notes
+document the changes that have taken place in GROMACS since version
+2016.4 to fix known issues. It also incorporates all fixes made in
+version 5.1.5 (which was the last planned release in that series).
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed triclinic domain decomposition bug
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With triclinic unit-cells with vectors a,b,c, the domain decomposition
+would communicate an incorrect halo along dimension x when b[x]!=0
+and vector c not parallel to the z-axis. The halo cut-off bound plane
+was tilted incorrect along x/z with an error approximately
+proportional to b[x]*(c[x] - b[x]*c[y]/b[y]).
+When c[x] > b[x]*c[y]/b[y], the communicated halo was too small, which
+could cause instabilities or silent errors.
+When c[x] < b[x]*c[y]/b[y], the communicated halo was too large, which
+could cause some communication overhead.
+
+:issue:`2125`
+
+Required -ntmpi with setting -ntomp with GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With GPUs and thread-MPI, setting only ``-ntomp`` could lead to
+oversubscription of the hardware threads.
+Now with GPUs and thread-MPI the user is required to set ``-ntmpi`` when
+using ``-ntomp``. Here we chose that to also require ``-ntmpi`` when the user
+specified both ``-nt`` and ``-ntomp``; here we could infer the number of
+ranks, but it's safer to ask the user to explicity set ``-ntmpi``.
+Note that specifying both ``-ntmpi`` and ``-nt`` has always worked correctly.
+
+:issue:`2348`
+
+Prevented dynamic load balancing activating immediately after exchange
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Turning on DLB right after exchanging replicas caused an assertion
+failure and is also useless.
+
+:issue:`2298`
+
+Avoided confusing message at end of non-dynamical runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+EM, TPI, NM, etc. are not targets for performance optimization
+so we will not write performance reports. This commit fixes
+and oversight whereby we would warn a user when the lack of
+performance report is normal and expected.
+
+:issue:`2172`
+
+Changed to issue fewer messages when ``-cpi`` checkpoint file is not present
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Removed duplicated message.
+
+:issue:`2173`
+
+Disallowed combination of PME-user and Verlet cutoff
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2332`
+
+Added missing Ewald correction for pme-user
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With ``coulomb-type = pme-user``, the Ewald mesh energy was not subtracted
+leading to (very) incorrect Coulomb energies and forces.
+
+:issue:`2286`
+
+Fixed thread-MPI rank choice for orientation restraints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Only a single rank is supported, so that must be what the thread-MPI
+code will choose. There's another check later on that catches the
+multi-rank MPI case.
+
+Fixed nstlist increase warning print
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The log file warning message had a buggy conditional which this commit
+fixes.
+
+Removed incorrect comment for CHARMM tips3p
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed incorrect dV/dlambda for walls
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The free-energy derivative dV/dlambda for walls, which can
+be perturbed by changing atom types of non-wall atoms, only
+contained the B-state contribution.
+
+:issue:`2267`
+
+Fixed warning for confout with periodic molecules
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With periodic molecules, ``gmx mdrun`` would incorrectly attempt to make
+molecules whole for writing the final state to confout.
+
+:issue:`2275`
+
+Fixed wrong megaflop accounting
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Some nrnb index entries were missing in the interaction_function
+array, leading to that wrong megaflops accounting printed.
+
+:issue:`2274`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed ``gmx grompp`` net charge check
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The grompp check for the net charge would ignore molecule blocks
+at the end when molecule types are used in multiple, non consecutive
+molecule blocks.
+
+:issue:`2407`
+
+Extended ``gmx grompp`` missing energy term message
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2301`
+
+Fixed ``gmx genion`` charge summation accuracy
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+``gmx genion`` accumulated the charge is a float, which could cause
+underestimation of the net charge for highly charged systems.
+
+:issue:`2290`
+
+Fixed ``gmx check`` for tprs with different #atoms
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:issue:`2279`
+
+Fixed ``gmx grompp`` with Andersen massive and no COM removal
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Fixed a floating point exception leading to a crash.
+Also fixed possible different rounding for the interval for
+Andersen massive in ``gmx grompp`` from ``gmx mdrun`` for
+the common case where ``tau_t`` is a multiple of ``delta_t``.
+
+:issue:`2256`
+
+Improved documentation
+^^^^^^^^^^^^^^^^^^^^^^
+
+Updated documention of Nose-Hoover output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The documentation of Nose-Hoover chain variable printing was
+(long) outdated.
+
+:issue:`2301`
+
+Clarified docs for Fmax in EM
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

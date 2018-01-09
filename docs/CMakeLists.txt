@@ -134,6 +134,19 @@ if (SPHINX_FOUND)
         release-notes/2018/major/removed-features.rst
         release-notes/2018/major/portability.rst
         release-notes/2018/major/miscellaneous.rst
+        release-notes/2016/2016.5.rst
+        release-notes/2016/2016.4.rst
+        release-notes/2016/2016.3.rst
+        release-notes/2016/2016.2.rst
+        release-notes/2016/2016.1.rst
+        release-notes/2016/major/highlights.rst
+        release-notes/2016/major/new-features.rst
+        release-notes/2016/major/performance.rst
+        release-notes/2016/major/tools.rst
+        release-notes/2016/major/bugs-fixed.rst
+        release-notes/2016/major/removed-features.rst
+        release-notes/2016/major/miscellaneous.rst
+        release-notes/older/index.rst
         user-guide/index.rst
         user-guide/cutoff-schemes.rst
         user-guide/getting-started.rst
