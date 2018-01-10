@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -323,7 +323,7 @@ endif()
 # breaks something. The actual test source file is built if
 # SIMD_AVX_512_CXX_SUPPORTED is set, so it will always be included if we have
 # GMX_SIMD=AVX_512.
-set(GMX_ENABLE_AVX512_TESTS ON CACHE INTERNAL "Compile AVX512 code to test FMA units, even when not using AVX512 SIMD")
+set(GMX_ENABLE_AVX512_TESTS ON CACHE BOOL "Compile AVX512 code to test FMA units, even when not using AVX512 SIMD")
 mark_as_advanced(GMX_ENABLE_AVX512_TESTS)
 
 if(GMX_ENABLE_AVX512_TESTS AND
