@@ -323,7 +323,7 @@ endif()
 # breaks something. The actual test source file is built if
 # SIMD_AVX_512_CXX_SUPPORTED is set, so it will always be included if we have
 # GMX_SIMD=AVX_512.
-set(GMX_ENABLE_AVX512_TESTS ON CACHE INTERNAL "Compile AVX512 code to test FMA units, even when not using AVX512 SIMD")
+set(GMX_ENABLE_AVX512_TESTS ON CACHE BOOL "Compile AVX512 code to test FMA units, even when not using AVX512 SIMD")
 mark_as_advanced(GMX_ENABLE_AVX512_TESTS)
 
 if(GMX_ENABLE_AVX512_TESTS AND
