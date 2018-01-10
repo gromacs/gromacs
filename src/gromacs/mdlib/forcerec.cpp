@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2489,6 +2489,9 @@ void init_forcerec(FILE                    *fp,
      * See Redmine #1249. */
     if (fr->bAllvsAll)
     {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The implementation of the all-vs-all kernels is deprecated, and may be "
+                       "removed or replaced in a future version.");
         fr->bAllvsAll            = FALSE;
         if (fp != nullptr)
         {
@@ -2526,6 +2529,12 @@ void init_forcerec(FILE                    *fp,
                             "BlueGene/Q. You will observe better performance from using the "
                             "Verlet cut-off scheme.");
         }
+    }
+    if (GMX_TARGET_BGQ)
+    {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The support for the BlueGene/Q platform is deprecated, and may be removed "
+                       "in a future version.");
     }
 
     /* Determine if we will do PBC for distances in bonded interactions */
@@ -2913,6 +2922,9 @@ void init_forcerec(FILE                    *fp,
     /* Generate the GB table if needed */
     if (fr->bGB)
     {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The support for implicit solvent is deprecated, and may be removed "
+                       "in a future version.");
 #if GMX_DOUBLE
         fr->gbtabscale = 2000;
 #else
