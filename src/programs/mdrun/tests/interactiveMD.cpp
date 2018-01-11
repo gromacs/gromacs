@@ -86,7 +86,6 @@ TEST_F(ImdTest, ImdCanRun)
             -tau-t                    = 0.5\
             -ref-t                    = 300\
             -constraints              = all-bonds\
-            -cutoff-scheme            = Verlet\
             -IMD-group                = SecondWaterMolecule\
     ";
     runner_.useStringAsMdpFile(mdpContents);

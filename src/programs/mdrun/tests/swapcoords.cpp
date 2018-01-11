@@ -87,7 +87,6 @@ TEST_F(CompelTest, SwapCanRun)
     tau-t                    = 0.5\
     ref-t                    = 300\
     constraints              = all-bonds\
-    cutoff-scheme            = Verlet\
     swapcoords               = Z\
     swap_frequency           = 1\
     split_group0             = Ch0\
