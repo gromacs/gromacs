@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,18 @@ TEST_F(ImdTest, ImdCanRun)
 {
     std::string name = "spc2";
     runner_.useTopGroAndNdxFromDatabase(name.c_str());
-    runner_.mdpInputFileName_ = fileManager_.getInputFilePath((name + "-IMD.mdp").c_str());
+    std::string mdpContents = "\
+            -dt                       = 0.004\
+            -nsteps                   = 2\
+            -tcoupl                   = Berendsen\
+            -tc-grps                  = System\
+            -tau-t                    = 0.5\
+            -ref-t                    = 300\
+            -constraints              = all-bonds\
+            -cutoff-scheme            = Verlet\
+            -IMD-group                = SecondWaterMolecule\
+    ";
+    runner_.useStringAsMdpFile(mdpContents);
 
     EXPECT_EQ(0, runner_.callGrompp());
 
