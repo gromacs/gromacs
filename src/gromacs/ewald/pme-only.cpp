@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,7 +158,8 @@ static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(t_commrec *cr)
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
-                                   gmx_int64_t step)
+                                   gmx_int64_t step,
+                                   bool useGpuForPme)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
@@ -172,6 +173,11 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
     ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
     walltime_accounting_start(walltime_accounting);
+
+    if (useGpuForPme)
+    {
+        resetGpuProfiler();
+    }
 }
 
 static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
@@ -596,7 +602,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, step);
+                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, step, useGpuForPme);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
