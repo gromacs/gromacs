@@ -1,0 +1,9 @@
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Thu, 11 Jan 2018 13:55:45 +0100
+Reviewed-on: https://gerrit.gromacs.org/7367
+Project: gromacs
+Branch: refs/heads/master
