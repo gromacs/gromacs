@@ -758,15 +758,7 @@ int Mdrunner::mdrunner()
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        if (useGpuForPme && (hw_opt.nthreads_tmpi > 1))
-        {
-            domdecOptions.numPmeRanks = 1;
-            //TODO print appropriate notice on why asking for multiple threads and -pme gpu causes a separate PME rank to start
-        }
-        else
-        {
-            domdecOptions.numPmeRanks = 0;
-        }
+        domdecOptions.numPmeRanks = 0;
     }
     if (useGpuForPme)
     {
@@ -858,6 +850,12 @@ int Mdrunner::mdrunner()
         mdlog    = logOwner.logger();
     }
 
+    if (mdrunOptions.numStepsCommandline > -2)
+    {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -nsteps functionality is deprecated, and may be removed in a future version. "
+                       "Consider using gmx convert-tpr -nsteps or changing the appropriate .mdp file field.");
+    }
     /* override nsteps with value set on the commamdline */
     override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
 
@@ -915,6 +913,12 @@ int Mdrunner::mdrunner()
 
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
+    if (opt2bSet("-multi", nfile, fnm))
+    {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -multi flag is deprecated, and may be removed in a future version. Please "
+                       "update your workflows to use -multidir instead.");
+    }
 #if GMX_MPI
     if (MULTISIM(cr))
     {
@@ -1112,6 +1116,11 @@ int Mdrunner::mdrunner()
                                 numThreadsOnThisRank, nullptr);
     }
 
+    if (mdrunOptions.timingOptions.resetStep > -1)
+    {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -resetstep functionality is deprecated, and may be removed in a future version.");
+    }
     wcycle = wallcycle_init(fplog, mdrunOptions.timingOptions.resetStep, cr);
 
     if (PAR(cr))
@@ -1156,6 +1165,10 @@ int Mdrunner::mdrunner()
         /* Initialize QM-MM */
         if (fr->bQMMM)
         {
+            GMX_LOG(mdlog.info).asParagraph().
+                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
+                           "version. Please get in touch with the developers if you find the support useful, "
+                           "as help is needed if the functionality is to continue to be available.");
             init_QMMMrec(cr, mtop, inputrec, fr);
         }
 

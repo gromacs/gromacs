@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ struct t_trxstatus
     real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
     t_fileio               *fio;
-    tng_trajectory_t        tng;
+    gmx_tng_trajectory_t    tng;
     int                     natoms;
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
@@ -266,7 +266,7 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
     }
     else if (filetype == efTNG)
     {
-        tng_trajectory_t tng = status->tng;
+        gmx_tng_trajectory_t tng = status->tng;
         if (!tng)
         {
             gmx_fatal(FARGS, "Error opening TNG file.");
@@ -497,7 +497,7 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
     }
     else if (efTNG == fn2ftp(infile))
     {
-        tng_trajectory_t tng_in;
+        gmx_tng_trajectory_t tng_in;
         gmx_tng_open(infile, 'r', &tng_in);
 
         gmx_prepare_tng_writing(filename,
@@ -725,7 +725,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
     int       ePBC, model_nr = -1, na;
-    char      title[STRLEN], *time;
+    char      title[STRLEN], *time, *step;
     double    dbl;
 
     atoms.nr      = fr->natoms;
@@ -751,32 +751,15 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         copy_mat(boxpdb, fr->box);
     }
 
-    if (model_nr != -1)
-    {
-        fr->bStep = TRUE;
-        fr->step  = model_nr;
-    }
-    time = std::strstr(title, " t= ");
-    if (time)
-    {
-        fr->bTime = TRUE;
-        sscanf(time+4, "%lf", &dbl);
-        fr->time = (real)dbl;
-    }
-    else
-    {
-        fr->bTime = FALSE;
-        /* this is a bit dirty, but it will work: if no time is read from
-           comment line in pdb file, set time to current frame number */
-        if (fr->bStep)
-        {
-            fr->time = (real)fr->step;
-        }
-        else
-        {
-            fr->time = (real)nframes_read(status);
-        }
-    }
+    fr->step  = 0;
+    step      = std::strstr(title, " step= ");
+    fr->bStep = (step && sscanf(step+7, "%" GMX_SCNd64, &fr->step) == 1);
+
+    dbl       = 0.0;
+    time      = std::strstr(title, " t= ");
+    fr->bTime = (time && sscanf(time+4, "%lf", &dbl) == 1);
+    fr->time  = dbl;
+
     if (na == 0)
     {
         return FALSE;

@@ -69,7 +69,6 @@ class DhdlTest : public CommandLineTestBase
         void runTest()
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-s", "dhdl.tpr");
             setInputFile("-f", "dhdl.edr");
@@ -92,7 +91,6 @@ class OriresTest : public CommandLineTestBase
         void runTest(const char *stringForStdin)
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-s", "orires.tpr");
             setInputFile("-f", "orires.edr");
@@ -124,7 +122,6 @@ class EnergyTest : public CommandLineTestBase
         void runTest(const char *stringForStdin)
         {
             auto &cmdline = commandLine();
-            cmdline.append("energy");
 
             setInputFile("-f", "ener.edr");
             setOutputFile("-o", "energy.xvg", XvgMatch());
