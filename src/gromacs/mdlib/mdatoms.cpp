@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,14 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     mdAtoms->mdatoms_.reset(md);
 
     md->nenergrp = mtop.groups.grps[egcENER].nr;
-    md->bVCMgrps = (mtop.groups.grps[egcVCM].nr > 1);
+    md->bVCMgrps = FALSE;
+    for (int i = 0; i < mtop.natoms; i++)
+    {
+        if (ggrpnr(&mtop.groups, egcVCM, i) > 0)
+        {
+            md->bVCMgrps = TRUE;
+        }
+    }
 
     /* Determine the total system mass and perturbed atom counts */
     double                     totalMassA = 0.0;

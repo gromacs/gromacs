@@ -907,7 +907,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR)
     {
-        warning_note(wi, "Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
+        sprintf(warn_buf, "Tumbling and flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR or use integrator = %s.", ei_names[eiSD1]);
+        warning_note(wi, warn_buf);
     }
 
     /* TEMPERATURE COUPLING */
