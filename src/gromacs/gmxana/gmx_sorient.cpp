@@ -205,10 +205,14 @@ int gmx_sorient(int argc, char *argv[])
     }
 
     bTPS = (opt2bSet("-s", NFILE, fnm) || !opt2bSet("-n", NFILE, fnm) || bCom);
+
+    gmx_bool periodicMolecules = false;
+
     if (bTPS)
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xtop, nullptr, box,
                       bCom);
+
     }
 
     /* get index groups */
@@ -279,7 +283,7 @@ int gmx_sorient(int argc, char *argv[])
     if (bTPS)
     {
         /* make molecules whole again */
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
     }
     /* start analysis of trajectory */
     do

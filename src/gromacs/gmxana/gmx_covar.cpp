@@ -170,7 +170,9 @@ int gmx_covar(int argc, char *argv[])
     xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
     xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
 
-    read_tps_conf(fitfile, &top, &ePBC, &xref, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(fitfile, &top, &ePBC, &periodicMolecules, &xref, nullptr, box, TRUE);
     atoms = &top.atoms;
 
     if (bFit)
@@ -243,7 +245,7 @@ int gmx_covar(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr, periodicMolecules);
         gmx_rmpbc(gpbc, atoms->nr, box, xref);
     }
     if (bFit)

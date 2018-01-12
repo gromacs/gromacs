@@ -217,7 +217,7 @@ int gmx_dyndom(int argc, char *argv[])
 
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, &x, &v, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, nullptr, &x, &v, box, FALSE);
     t_atoms  &atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)
     {

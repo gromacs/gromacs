@@ -197,7 +197,7 @@ int gmx_densmap(int argc, char *argv[])
 
     if (ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm))
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, &x, nullptr, box,
                       bRadial);
     }
     if (!bRadial)

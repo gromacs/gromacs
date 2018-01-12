@@ -57,7 +57,8 @@
 
 static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,
-                     gmx_bool bMW, const t_topology *top, int ePBC, rvec *x_ref)
+                     gmx_bool bMW, const t_topology *top, int ePBC, rvec *x_ref,
+                     gmx_bool periodicMolecules)
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
     t_trxstatus *status;
@@ -87,7 +88,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
         w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
 
     do
     {
@@ -247,9 +248,11 @@ int gmx_rotmat(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, nullptr, box, bMW);
+    gmx_bool periodicMolecules = false;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &x_ref, nullptr, box, bMW);
+
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, periodicMolecules);
 
     gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
 
@@ -259,7 +262,7 @@ int gmx_rotmat(int argc, char *argv[])
     if (reffit[0][0] != 'n')
     {
         get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip,
-                 gnx, index, bMW, &top, ePBC, x_ref);
+                 gnx, index, bMW, &top, ePBC, x_ref, periodicMolecules);
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);

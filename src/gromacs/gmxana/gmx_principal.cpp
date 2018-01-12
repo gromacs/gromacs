@@ -156,13 +156,15 @@ int gmx_principal(int argc, char *argv[])
     }
     sfree(legend);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, nullptr, nullptr, box, TRUE);
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
 
     do
     {

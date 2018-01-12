@@ -268,7 +268,9 @@ int gmx_bundle(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xtop, nullptr, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
         || opt2bSet("-okl", NFILE, fnm);
@@ -353,7 +355,7 @@ int gmx_bundle(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, TRX_NEED_X);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, periodicMolecules);
 
     do
     {

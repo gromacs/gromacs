@@ -1601,12 +1601,17 @@ int gmx_cluster(int argc, char *argv[])
     /* get input */
     if (bReadTraj)
     {
+
+        gmx_bool periodicMolecules = false;
+
         /* don't read mass-database as masses (and top) are not used */
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtps, nullptr, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xtps, nullptr, box,
                       TRUE);
+
+
         if (bPBC)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, periodicMolecules);
         }
 
         fprintf(stderr, "\nSelect group for least squares fit%s:\n",

@@ -421,7 +421,7 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, &x, &v, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */

@@ -241,7 +241,9 @@ int gmx_mdmat(int argc, char *argv[])
         fprintf(stderr, "Will calculate number of different contacts\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &x, nullptr, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
@@ -308,7 +310,7 @@ int gmx_mdmat(int argc, char *argv[])
     rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
     rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat, periodicMolecules);
 
     if (bFrames)
     {

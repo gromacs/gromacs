@@ -538,7 +538,10 @@ int gmx_do_dssp(int argc, char *argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = (fnArea || fnTArea || fnAArea);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xp, nullptr, box, FALSE);
+
     atoms = &(top.atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);
@@ -645,7 +648,7 @@ int gmx_do_dssp(int argc, char *argv[])
     accr  = nullptr;
     naccr = 0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
     do
     {
         t = output_env_conv_time(oenv, t);

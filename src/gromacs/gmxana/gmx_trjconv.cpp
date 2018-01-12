@@ -1093,7 +1093,10 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            read_tps_conf(top_file, &top, &ePBC, &xp, nullptr, top_box,
+
+            gmx_bool periodicMolecules = false;
+
+            read_tps_conf(top_file, &top, &ePBC, &periodicMolecules, &xp, nullptr, top_box,
                           bReset || bPBCcomRes);
             std::strncpy(top_title, *top.name, 255);
             top_title[255] = '\0';
@@ -1119,7 +1122,7 @@ int gmx_trjconv(int argc, char *argv[])
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, periodicMolecules);
             }
         }
 

@@ -38,6 +38,7 @@
 #define GMX_PBCUTIL_RMPBC_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +50,7 @@ struct t_trxframe;
 
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
-gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms);
+gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms, gmx_bool periodicMolecules);
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 

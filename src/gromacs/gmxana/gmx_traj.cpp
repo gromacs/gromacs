@@ -737,9 +737,12 @@ int gmx_traj(int argc, char *argv[])
     }
     sprintf(sffmt6, "%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
+    gmx_bool periodicMolecules = false;
+
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
-                         &xtop, nullptr, topbox,
+                         &periodicMolecules, &xtop, nullptr, topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
+
     sfree(xtop);
     if ((bMol || bCV || bCF) && !bTop)
     {
@@ -919,7 +922,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bCom && bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, periodicMolecules);
     }
 
     do

@@ -846,7 +846,7 @@ int gmx_disre(int argc, char *argv[])
     init_nrnb(&nrnb);
     if (ir->ePBC != epbcNONE)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms, ir->bPeriodicMols);
     }
 
     j = 0;

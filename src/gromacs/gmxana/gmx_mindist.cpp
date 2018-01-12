@@ -143,7 +143,8 @@ static void periodic_dist(int ePBC,
 static void periodic_mindist_plot(const char *trxfn, const char *outfn,
                                   const t_topology *top, int ePBC,
                                   int n, int index[], gmx_bool bSplit,
-                                  const gmx_output_env_t *oenv)
+                                  const gmx_output_env_t *oenv,
+                                  gmx_bool periodicMolecules)
 {
     FILE        *out;
     const char  *leg[5] = { "min per.", "max int.", "box1", "box2", "box3" };
@@ -173,7 +174,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
 
     if (nullptr != top)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
     }
 
     bFirst = TRUE;
@@ -760,10 +761,12 @@ int gmx_mindist(int argc, char *argv[])
     snew(index, ng);
     snew(grpname, ng);
 
+    gmx_bool periodicMolecules = false;
+
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &ePBC, &periodicMolecules, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
@@ -802,7 +805,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (bPI)
     {
-        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv);
+        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv, periodicMolecules);
     }
     else
     {

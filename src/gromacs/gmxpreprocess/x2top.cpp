@@ -531,7 +531,7 @@ int gmx_x2top(int argc, char *argv[])
     /* Read coordinates */
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, nullptr, &x, nullptr, box, FALSE);
     t_atoms  *atoms = &top->atoms;
     natoms = atoms->nr;
     if (atoms->pdbinfo == nullptr)

@@ -113,7 +113,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             snew(testTop_, 1);
             int  ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
-                          &ePBC, &testX_, nullptr, testBox_, FALSE);
+                          &ePBC, nullptr, &testX_, nullptr, testBox_, FALSE);
         }
 
         void testTopologies()

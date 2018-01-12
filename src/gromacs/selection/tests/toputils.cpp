@@ -137,7 +137,7 @@ void TopologyManager::loadTopology(const char *filename)
     snew(mtop_, 1);
     readConfAndTopology(
             gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-            &fullTopology, mtop_, &ePBC, frame_ != nullptr ? &xtop : nullptr,
+            &fullTopology, mtop_, &ePBC, nullptr, frame_ != nullptr ? &xtop : nullptr,
             nullptr, box);
 
     if (frame_ != nullptr)

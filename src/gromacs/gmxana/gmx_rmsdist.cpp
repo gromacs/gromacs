@@ -736,7 +736,7 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /* get topology and index */
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, &x, nullptr, box, FALSE);
 
     if (!bPBC)
     {

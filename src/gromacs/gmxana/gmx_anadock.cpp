@@ -73,7 +73,7 @@ static t_pdbfile *read_pdbf(const char *fn)
 
     snew(pdbf, 1);
     t_topology top;
-    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, nullptr, pdbf->box, FALSE);
+    read_tps_conf(fn, &top, &pdbf->ePBC, nullptr, &pdbf->x, nullptr, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
     fp          = gmx_ffopen(fn, "r");
     char       buf[256], *ptr;

@@ -153,7 +153,10 @@ int gmx_trjorder(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &x, nullptr, box, TRUE);
+
     sfree(x);
 
     /* get index groups */
@@ -237,7 +240,7 @@ int gmx_trjorder(int argc, char *argv[])
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x);

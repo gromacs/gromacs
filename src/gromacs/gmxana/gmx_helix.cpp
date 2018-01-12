@@ -51,7 +51,9 @@
 #include "gromacs/gmxana/hxprops.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -171,7 +173,23 @@ int gmx_helix(int argc, char *argv[])
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
               opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    top = nullptr;
+
+    *top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir->ePBC;
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
@@ -217,7 +235,7 @@ int gmx_helix(int argc, char *argv[])
         pr_bb(stdout, nres, bb);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, ir->bPeriodicMols);
 
     teller = 0;
     do

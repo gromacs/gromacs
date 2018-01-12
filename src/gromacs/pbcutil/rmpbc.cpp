@@ -109,7 +109,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     return gr->gr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
+gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms, gmx_bool periodicMolecules)
 {
     gmx_rmpbc_t gpbc;
 
@@ -117,7 +117,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
 
     gpbc->natoms_init = natoms;
 
-    /* This sets pbc when we now it,
+    /* This sets pbc when we know it,
      * otherwise we guess it from the instantaneous box in the trajectory.
      */
     gpbc->ePBC = ePBC;
@@ -131,6 +131,11 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
                 "         that are broken across periodic boundaries, they\n"
                 "         cannot be made whole (or treated as whole) without\n"
                 "         you providing a run input file.\n\n");
+    }
+
+    if (periodicMolecules)
+    {
+        gmx_fatal(FARGS, "Can not remove PBC with periodic molecules");
     }
 
     return gpbc;

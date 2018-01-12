@@ -183,7 +183,7 @@ int gmx_genconf(int argc, char *argv[])
     t_topology *top;
     snew(top, 1);
     atoms = &top->atoms;
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, nullptr, &x, &v, box, FALSE);
     natoms = atoms->nr;
     nres   = atoms->nres;          /* nr of residues in one element? */
     /* make space for all the atoms */

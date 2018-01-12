@@ -181,7 +181,7 @@ int gmx_vanhove(int argc, char *argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, &xtop, nullptr, boxtop,
                   FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 

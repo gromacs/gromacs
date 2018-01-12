@@ -339,7 +339,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);

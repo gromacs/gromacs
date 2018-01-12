@@ -140,7 +140,7 @@ int gmx_nmtraj(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, &xtop, nullptr, box, bDMA);
 
     /* Find vectors and phases */
 

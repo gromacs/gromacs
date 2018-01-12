@@ -41,13 +41,16 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -67,7 +70,7 @@ static void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                          real **slOrder, real *slWidth, int *nslices,
                          const t_topology *top, int ePBC,
                          int axis, gmx_bool bMicel, int micel[], int nmic,
-                         const gmx_output_env_t *oenv)
+                         const gmx_output_env_t *oenv, gmx_bool periodicMolecules)
 {
     rvec *x0,            /* coordinates with pbc */
           dipole,        /* dipole moment due to one molecules */
@@ -125,7 +128,7 @@ static void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -294,7 +297,7 @@ int gmx_h2order(int argc, char *argv[])
     *micname;
     int                ngx,                   /* nr. of atomsin sol group   */
                        nmic = 0;              /* nr. of atoms in micelle    */
-    t_topology        *top;                   /* topology           */
+    t_topology         top;                   /* topology           */
     int                ePBC;
     int               *index,                 /* indices for solvent group  */
     *micelle                  = nullptr;
@@ -317,7 +320,22 @@ int gmx_h2order(int argc, char *argv[])
     }
     bMicel = opt2bSet("-nm", NFILE, fnm);
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    matrix          box;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir->ePBC;
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &ngx, &index, &grpname);
 
@@ -327,8 +345,8 @@ int gmx_h2order(int argc, char *argv[])
     }
 
     calc_h2order(ftp2fn(efTRX, NFILE, fnm), index, ngx, &slDipole, &slOrder,
-                 &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic,
-                 oenv);
+                 &slWidth, &nslices, &top, ePBC, axis, bMicel, micelle, nmic,
+                 oenv, ir->bPeriodicMols);
 
     h2order_plot(slDipole, slOrder, opt2fn("-o", NFILE, fnm), nslices,
                  slWidth, oenv);

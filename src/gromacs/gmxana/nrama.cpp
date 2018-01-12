@@ -43,8 +43,11 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -70,14 +73,14 @@ static bool d_comp(const t_dih &a, const t_dih &b)
 }
 
 
-static void calc_dihs(t_xrama *xr)
+static void calc_dihs(t_xrama *xr, gmx_bool periodicMolecules)
 {
     int          i, t1, t2, t3;
     rvec         r_ij, r_kj, r_kl, m, n;
     t_dih       *dd;
     gmx_rmpbc_t  gpbc = nullptr;
 
-    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
+    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms, periodicMolecules);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
     gmx_rmpbc_done(gpbc);
 
@@ -98,7 +101,7 @@ gmx_bool new_data(t_xrama *xr)
         return FALSE;
     }
 
-    calc_dihs(xr);
+    calc_dihs(xr, false);
 
     return TRUE;
 }
@@ -242,10 +245,27 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
                       const char *topfile, t_xrama *xr, int mult)
 {
-    t_topology *top;
-    real        t;
+    t_topology     *top;
+    real            t;
 
-    top = read_top(topfile, &xr->ePBC);
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    matrix          box;
+    int             ntopatoms;
+
+    read_tpxheader(topfile, &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(topfile, ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    top = nullptr;
+
+    *top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    xr->ePBC = ir->ePBC;
 
     /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
     get_dih(xr, &(top->atoms));
@@ -255,7 +275,7 @@ t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
     xr->oenv   = oenv;
 
     min_max(xr);
-    calc_dihs(xr);
+    calc_dihs(xr, ir->bPeriodicMols);
 
     return top;
 }

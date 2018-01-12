@@ -137,13 +137,17 @@ int gmx_filter(int argc, char *argv[])
         topfile = ftp2fn_null(efTPS, NFILE, fnm);
         lowfile = opt2fn("-ol", NFILE, fnm);
     }
+
+    gmx_bool periodicMolecules = false;
+
     if (topfile)
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
-                             &xtop, nullptr, topbox, TRUE);
+                             &periodicMolecules, &xtop, nullptr, topbox, TRUE);
+
         if (bTop)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, periodicMolecules);
             gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
         }
     }

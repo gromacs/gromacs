@@ -171,7 +171,10 @@ int gmx_spatial(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xtop, nullptr, box, TRUE);
+
     sfree(xtop);
 
     atoms = &(top.atoms);
@@ -237,7 +240,7 @@ int gmx_spatial(int argc, char *argv[])
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
     }
     /* This is the main loop over frames */
     do

@@ -57,11 +57,13 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/binaryinformation.h"
@@ -741,7 +743,8 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                    int  *gkatom,  int skip,
                    gmx_bool bSlab,    int nslices,
                    const char *axtitle, const char *slabfn,
-                   const gmx_output_env_t *oenv)
+                   const gmx_output_env_t *oenv,
+                   gmx_bool periodicMolecules)
 {
     const char *leg_mtot[] = {
         "M\\sx \\N",
@@ -1025,7 +1028,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom, periodicMolecules);
 
     /* Start while loop over frames */
     t0     = t;
@@ -1667,7 +1670,11 @@ int gmx_dipoles(int argc, char *argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box,
+
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
+
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box,
                         &natoms, nullptr, nullptr, top);
 
     snew(gnx, ncos);
@@ -1695,7 +1702,8 @@ int gmx_dipoles(int argc, char *argv[])
            opt2fn("-cmap", NFILE, fnm), rcmax,
            bQuad, bMU,     opt2fn("-en", NFILE, fnm),
            gnx, grpindex, mu_max, mu_aver, epsilonRF, temp, nFF, skip,
-           bSlab, nslices, axtitle, opt2fn("-slab", NFILE, fnm), oenv);
+           bSlab, nslices, axtitle, opt2fn("-slab", NFILE, fnm), oenv,
+           ir->bPeriodicMols);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-autoscale xy -nxy");
     do_view(oenv, opt2fn("-eps", NFILE, fnm), "-autoscale xy -nxy");

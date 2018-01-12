@@ -39,6 +39,7 @@
 #include <cmath>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -46,9 +47,11 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -166,7 +169,21 @@ int gmx_helixorient(int argc, char *argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    *top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir->ePBC;
 
     for (i = 0; i < 3; i++)
     {
@@ -251,7 +268,7 @@ int gmx_helixorient(int argc, char *argv[])
     unitaxes[1][1] = 1;
     unitaxes[2][2] = 1;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, ir->bPeriodicMols);
 
     do
     {

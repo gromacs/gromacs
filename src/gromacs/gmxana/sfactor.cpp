@@ -475,7 +475,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
+    read_tps_conf (fnTPS, &top, &ePBC, nullptr, &xtop, nullptr, box, TRUE);
     sfree (xtop);
 
     /* groups stuff... */

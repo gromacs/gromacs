@@ -358,8 +358,11 @@ int gmx_rms(int argc, char *argv[])
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
+    gmx_bool periodicMolecules = false;
+
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xp,
                          nullptr, box, TRUE);
+
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
 
@@ -472,7 +475,7 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, periodicMolecules);
         gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
     }
     if (bReset)

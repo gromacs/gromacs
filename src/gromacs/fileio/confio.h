@@ -77,13 +77,14 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
  * \param[out]    haveTopology  true when a topology was read and stored in mtop
  * \param[out]    mtop          The topology, either complete or only atom data
  * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[out]    periodicMolecules Bool that contains information concerning periodicity of system
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
  */
 void readConfAndTopology(const char *infile,
                          bool *haveTopology, gmx_mtop_t *mtop,
-                         int *ePBC,
+                         int *ePBC, gmx_bool *periodicMolecules,
                          rvec **x, rvec **v, matrix box);
 
 /*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
@@ -99,6 +100,7 @@ void readConfAndTopology(const char *infile,
  * \param[in]     infile        Input file name
  * \param[out]    top           The topology, either complete or only atom data. Caller is responsible for calling done_top().
  * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[out]    periodicMolecules Bool reporting if periodic molecules are present in the system.
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
@@ -106,7 +108,7 @@ void readConfAndTopology(const char *infile,
  * \returns if a topology is available
  */
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
-                       int *ePBC, rvec **x, rvec **v, matrix box,
+                       int *ePBC, gmx_bool *periodicMolecules, rvec **x, rvec **v, matrix box,
                        gmx_bool requireMasses);
 
 #ifdef __cplusplus
