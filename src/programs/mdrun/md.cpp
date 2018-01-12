@@ -94,6 +94,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/repl_ex.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -127,7 +128,6 @@
 
 #include "deform.h"
 #include "membed.h"
-#include "repl_ex.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
