@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@
 
 #include <cmath>
 
+#include <array>
 #include <limits>
-#include <vector>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -163,14 +163,14 @@ class TabulatedNormalDistribution
 
         /*! \brief Fill the table with values for the normal distribution
          *
-         *  This routine returns a new a std::vector with the table data.
+         *  This routine returns a new a std::array with the table data.
          *
          *  This routine is used to help construct objects of this class,
          *  and is exposed only to permit testing. Normal code should not
          *  need to call this function.
          */
         static const
-        std::vector<RealType>
+        std::array<RealType, 1<<tableBits>
         // cppcheck-suppress unusedPrivateFunction
         makeTable()
         {
@@ -179,11 +179,11 @@ class TabulatedNormalDistribution
              * We avoid integrating a gaussian numerically, since that leads to
              * some loss-of-precision which also accumulates so it is worse for
              * larger indices in the table. */
-            std::size_t            tableSize        = 1 << tableBits;
-            std::size_t            halfSize         = tableSize/2;
-            double                 invHalfSize      = 1.0/halfSize;
+            constexpr std::size_t            tableSize        = 1 << tableBits;
+            constexpr std::size_t            halfSize         = tableSize/2;
+            constexpr double                 invHalfSize      = 1.0/halfSize;
 
-            std::vector<RealType>  table(tableSize);
+            std::array<RealType, tableSize>  table;
 
             // Fill in all but the extremal entries of the table
             for (std::size_t i = 0; i < halfSize-1; i++)
@@ -360,7 +360,7 @@ class TabulatedNormalDistribution
         /*! \brief Parameters of normal distribution (mean and stddev) */
         param_type                                                   param_;
         /*! \brief Array with tabluated values of normal distribution */
-        static const std::vector<RealType>                           c_table_;
+        static const std::array<RealType, 1 << tableBits>            c_table_;
         /*! \brief Saved output from random engine, shifted tableBits right each time */
         gmx_uint64_t                                                 savedRandomBits_;
         /*! \brief Number of valid bits remaining i savedRandomBits_ */
@@ -376,15 +376,15 @@ class TabulatedNormalDistribution
 #if !defined(_MSC_VER) && !defined(DOXYGEN)
 // Declaration of template specialization
 template<>
-const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
+const std::array<real, 1<<c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 
 extern template
-const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
+const std::array<real, 1<<c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 #endif
 
 // Instantiation for all tables without specialization
 template<class RealType, unsigned int tableBits>
-const std::vector<RealType> TabulatedNormalDistribution<RealType, tableBits>::c_table_ = TabulatedNormalDistribution<RealType, tableBits>::makeTable();
+const std::array<RealType, 1<<tableBits> TabulatedNormalDistribution<RealType, tableBits>::c_table_ = TabulatedNormalDistribution<RealType, tableBits>::makeTable();
 
 }      // namespace gmx
 

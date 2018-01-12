@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,9 @@ namespace gmx
 // so we use this as an extern template specialization to avoid instantiating
 // the table in all files using it, unless the user has requested a different
 // precision or resolution.
-template<>
-const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_ = TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::makeTable();
+template<> const auto
+TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_ =
+    TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::makeTable();
 #else
 // Avoid compiler warnings about no public symbols
 void TabulatedNormalDistributionDummy(){}
