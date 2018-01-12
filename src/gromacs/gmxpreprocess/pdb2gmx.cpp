@@ -538,7 +538,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     printf("Reading %s...\n", inf);
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(inf, top, ePBC, x, nullptr, box, FALSE);
+    read_tps_conf(inf, top, ePBC, nullptr, x, nullptr, box, FALSE);
     strncpy(title, *top->name, STRLEN);
     title[STRLEN-1] = '\0';
     *atoms          = top->atoms;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,11 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -70,14 +73,14 @@ static bool d_comp(const t_dih &a, const t_dih &b)
 }
 
 
-static void calc_dihs(t_xrama *xr)
+static void calc_dihs(t_xrama *xr, bool periodicMolecules)
 {
     int          i, t1, t2, t3;
     rvec         r_ij, r_kj, r_kl, m, n;
     t_dih       *dd;
     gmx_rmpbc_t  gpbc = nullptr;
 
-    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
+    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms, periodicMolecules);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
     gmx_rmpbc_done(gpbc);
 
@@ -98,7 +101,7 @@ gmx_bool new_data(t_xrama *xr)
         return FALSE;
     }
 
-    calc_dihs(xr);
+    calc_dihs(xr, false);
 
     return TRUE;
 }
@@ -239,23 +242,36 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
 
 
-t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
-                      const char *topfile, t_xrama *xr, int mult)
+t_topology init_rama(gmx_output_env_t *oenv, const char *infile,
+                     const char *topfile, t_xrama *xr, int mult)
 {
-    t_topology *top;
-    real        t;
+    real            t;
 
-    top = read_top(topfile, &xr->ePBC);
+    t_inputrec      ir;
 
-    /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
-    get_dih(xr, &(top->atoms));
-    get_dih_props(xr, &(top->idef), mult);
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    matrix          box;
+    int             ntopatoms;
+
+    read_tpxheader(topfile, &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(topfile, &ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    t_topology top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    xr->ePBC = ir.ePBC;
+
+    /*get_dih2(xr,top.idef.functype,&(top.idef.bondeds),&(top.atoms));*/
+    get_dih(xr, &(top.atoms));
+    get_dih_props(xr, &(top.idef), mult);
     xr->natoms = read_first_x(oenv, &xr->traj, infile, &t, &(xr->x), xr->box);
-    xr->idef   = &(top->idef);
+    xr->idef   = &(top.idef);
     xr->oenv   = oenv;
 
     min_max(xr);
-    calc_dihs(xr);
+    calc_dihs(xr, ir.bPeriodicMols);
 
     return top;
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -256,7 +256,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                                   const char *skfn,
                                   int nslice, int slice_dim,
                                   const char *sgslfn, const char *skslfn,
-                                  const gmx_output_env_t *oenv)
+                                  const gmx_output_env_t *oenv, bool *periodicMolecules)
 {
     FILE        *fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
@@ -274,7 +274,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     gmx_rmpbc_t  gpbc = nullptr;
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
+    read_tps_conf(fnTPS, &top, &ePBC, periodicMolecules, &xtop, nullptr, box, FALSE);
 
     snew(sg_slice, nslice);
     snew(sk_slice, nslice);
@@ -303,7 +303,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                     oenv);
 
     /* loop over frames */
-    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms, *periodicMolecules);
     nframes = 0;
     do
     {
@@ -377,7 +377,7 @@ static void calc_order(const char *fn, int *index, int *a, rvec **order,
                        gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
                        gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
                        real ***distvals,
-                       const gmx_output_env_t *oenv)
+                       const gmx_output_env_t *oenv, bool periodicMolecules)
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
@@ -489,7 +489,7 @@ static void calc_order(const char *fn, int *index, int *a, rvec **order,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -1018,6 +1018,8 @@ int gmx_order(int argc, char *argv[])
             break;
     }
 
+    bool periodicMolecules = false;
+
     /* tetraheder order parameter */
     if (skfnm || sgfnm)
     {
@@ -1026,7 +1028,7 @@ int gmx_order(int argc, char *argv[])
         skfnm = opt2fn("-Sk", NFILE, fnm);
         calc_tetra_order_parm(ndxfnm, tpsfnm, trxfnm, sgfnm, skfnm, nslices, axis,
                               opt2fn("-Sgsl", NFILE, fnm), opt2fn("-Sksl", NFILE, fnm),
-                              oenv);
+                              oenv, &periodicMolecules);
         /* view xvgr files */
         do_view(oenv, opt2fn("-Sg", NFILE, fnm), nullptr);
         do_view(oenv, opt2fn("-Sk", NFILE, fnm), nullptr);
@@ -1082,7 +1084,7 @@ int gmx_order(int argc, char *argv[])
 
         calc_order(ftp2fn(efTRX, NFILE, fnm), index, a, &order,
                    &slOrder, &slWidth, nslices, bSliced, bUnsat,
-                   top, ePBC, ngrps, axis, permolecule, radial, distcalc, opt2fn_null("-nr", NFILE, fnm), &distvals, oenv);
+                   top, ePBC, ngrps, axis, permolecule, radial, distcalc, opt2fn_null("-nr", NFILE, fnm), &distvals, oenv, periodicMolecules);
 
         if (radial)
         {
