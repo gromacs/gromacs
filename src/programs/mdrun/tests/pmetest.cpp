@@ -85,6 +85,10 @@ class PmeTest : public MdrunTestFixture
         static void SetUpTestCase();
         //! Store whether any compatible GPUs exist.
         static bool s_hasCompatibleCudaGpus;
+        //! Convenience typedef
+        using RunModesList = std::map < std::string, std::vector < const char *>>;
+        //! Runs the test with the given inputs and given number of steps
+        void runTest(const RunModesList &runModes, const int nsteps);
 };
 
 bool PmeTest::s_hasCompatibleCudaGpus = false;
@@ -106,18 +110,8 @@ void PmeTest::SetUpTestCase()
     free_gpu_info(&gpuInfo);
 }
 
-TEST_F(PmeTest, ReproducesEnergies)
+void PmeTest::runTest(const RunModesList &runModes, const int nsteps)
 {
-    const int   nsteps     = 20;
-    std::string theMdpFile = formatString("coulombtype     = PME\n"
-                                          "nstcalcenergy   = 1\n"
-                                          "nstenergy       = 1\n"
-                                          "pme-order       = 4\n"
-                                          "nsteps          = %d\n",
-                                          nsteps);
-
-    runner_.useStringAsMdpFile(theMdpFile);
-
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
 
@@ -128,17 +122,6 @@ TEST_F(PmeTest, ReproducesEnergies)
 
     EXPECT_EQ(0, runner_.callGrompp());
 
-    //TODO test all proper/improper combinations in more thorough way?
-    std::map < std::string, std::vector < const char *>> runModes;
-    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
-    runModes["PmeAuto"]          = {"-pme", "auto"};
-    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
-    runModes["PmeOnGpuFftAuto"]  = {"-pme", "gpu", "-pmefft", "auto"};
-    // same manual modes but marked for PME tuning
-    runModes["PmeOnCpuTune"]         = {"-pme", "cpu"};
-    runModes["PmeOnGpuFftOnCpuTune"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    runModes["PmeOnGpuFftOnGpuTune"] = {"-pme", "gpu", "-pmefft", "gpu"};
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
     const bool           thisRankChecks = (gmx_node_rank() == 0);
@@ -175,6 +158,8 @@ TEST_F(PmeTest, ReproducesEnergies)
         {
             commandLine.addOption("-npme", 1);
         }
+        commandLine.addOption("-nsteps", nsteps);
+
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
         if (thisRankChecks)
@@ -214,6 +199,30 @@ TEST_F(PmeTest, ReproducesEnergies)
         MPI_Barrier(MPI_COMM_WORLD);
     }
 #endif
+}
+
+TEST_F(PmeTest, ReproducesEnergies)
+{
+    const std::string theMdpFile ("coulombtype     = PME\n"
+                                  "nstcalcenergy   = 1\n"
+                                  "nstenergy       = 1\n"
+                                  "pme-order       = 4\n");
+
+    runner_.useStringAsMdpFile(theMdpFile);
+
+    //TODO test all proper/improper combinations in more thorough way?
+    RunModesList runModes;
+    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
+    runModes["PmeAuto"]          = {"-pme", "auto"};
+    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
+    runModes["PmeOnGpuFftAuto"]  = {"-pme", "gpu", "-pmefft", "auto"};
+    // same manual modes but marked for PME tuning
+    runModes["PmeOnCpuTune"]         = {"-pme", "cpu"};
+    runModes["PmeOnGpuFftOnCpuTune"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnGpuTune"] = {"-pme", "gpu", "-pmefft", "gpu"};
+
+    runTest(runModes, 20);
 }
 
 }
