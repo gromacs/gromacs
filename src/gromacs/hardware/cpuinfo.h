@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,11 +190,7 @@ class CpuInfo
          *          map of vendor names. This can only happen if we extend the enum
          *          type but forget to add the string with the vendor name.
          */
-        const std::string &
-        vendorString() const
-        {
-            return s_vendorStrings_.at(vendor_);
-        }
+        const std::string &vendorString() const;
 
         /*! \brief String description of processor */
         const std::string &
@@ -231,11 +227,7 @@ class CpuInfo
          *          map of feature names. This can only happen if we extend the enum
          *          type but forget to add the string with the feature name.
          */
-        static const std::string &
-        featureString(Feature f)
-        {
-            return s_featureStrings_.at(f);
-        }
+        static const std::string &featureString(Feature f);
 
         /*! \brief Set of all supported features on this processor
          *
@@ -279,8 +271,6 @@ class CpuInfo
         int                                          stepping_;          //!<  Minor version of current cpu
         std::set<Feature>                            features_;          //!< Set of features supported on this cpu
         std::vector<LogicalProcessor>                logicalProcessors_; //!< Simple logical processor topology
-        static const std::map<Vendor, std::string>   s_vendorStrings_;   //!< Text description of each vendor
-        static const std::map<Feature, std::string>  s_featureStrings_;  //!< Text description of each feature
 };                                                                       // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem
