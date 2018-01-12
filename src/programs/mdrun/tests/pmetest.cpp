@@ -205,15 +205,6 @@ TEST_F(PmeTest, ReproducesEnergies)
             }
         }
     }
-
-    // This is a workaround for the output files to not be deleted in a parallel run.
-    // TODO: consider moving the barrier into the file manager destructor.
-#if GMX_LIB_MPI
-    if (parallelRun)
-    {
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-#endif
 }
 
 }
