@@ -444,8 +444,7 @@ void ReadGauss(const char          *g09,
                        "WARNING: None of the charge schemes known to Alexandria found in %s\n"
                        "         Partial charge is assigned to zero for atom %d\n\n",
                        g09, atom->GetIdx());
-                charge_model = strdup(unknown);
-                alexandria::AtomicCharge aq(charge_model, "e", 0.0, 0.0);
+                alexandria::AtomicCharge aq(unknown, "e", 0.0, 0.0);
                 ca.AddCharge(aq);
             }
             mpt.LastExperiment()->AddAtom(ca);
