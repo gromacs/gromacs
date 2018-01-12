@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
@@ -229,8 +230,10 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->szLab, sh.natoms);
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
-    read_tpx_top(status, nullptr, man->box, &man->natom, nullptr, nullptr, &man->top);
-    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
+    read_tpx_top(status, ir, man->box, &man->natom, nullptr, nullptr, &man->top);
+    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom, ir->bPeriodicMols);
 
     man->natom =
         read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),

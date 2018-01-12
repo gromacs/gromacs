@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 #include <cmath>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -46,9 +47,11 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -76,7 +79,6 @@ int gmx_helixorient(int argc, char *argv[])
         "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
 
-    t_topology       *top = nullptr;
     real              t;
     rvec             *x = nullptr;
     matrix            box;
@@ -166,7 +168,20 @@ int gmx_helixorient(int argc, char *argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    t_inputrec      ir;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    t_topology top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir.ePBC;
 
     for (i = 0; i < 3; i++)
     {
@@ -175,7 +190,7 @@ int gmx_helixorient(int argc, char *argv[])
 
     /* read index files */
     printf("Select a group of Calpha atoms corresponding to a single continuous helix:\n");
-    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, &gn_CA);
+    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iCA, &ind_CA, &gn_CA);
     snew(x_CA, iCA);
     snew(x_SC, iCA); /* sic! */
 
@@ -207,7 +222,7 @@ int gmx_helixorient(int argc, char *argv[])
     if (bSC)
     {
         printf("Select a group of atoms defining the sidechain direction (1/residue):\n");
-        get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, &gn_SC);
+        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &iSC, &ind_SC, &gn_SC);
         if (iSC != iCA)
         {
             gmx_fatal(FARGS, "Number of sidechain atoms (%d) != number of CA atoms (%d)", iSC, iCA);
@@ -251,7 +266,7 @@ int gmx_helixorient(int argc, char *argv[])
     unitaxes[1][1] = 1;
     unitaxes[2][2] = 1;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, ir.bPeriodicMols);
 
     do
     {

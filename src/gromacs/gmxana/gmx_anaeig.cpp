@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
@@ -510,7 +509,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
-                    const gmx_output_env_t *oenv)
+                    const gmx_output_env_t *oenv, bool periodicMolecules)
 {
     FILE        *xvgrout = nullptr;
     int          nat, i, j, d, v, vec, nfr, nframes = 0, snew_size, frame;
@@ -565,7 +564,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
         if (top)
         {
-            gpbc = gmx_rmpbc_init(&top->idef, ePBC, nat);
+            gpbc = gmx_rmpbc_init(&top->idef, ePBC, nat, periodicMolecules);
         }
 
         for (i = 0; i < nat; i++)
@@ -1256,6 +1255,8 @@ int gmx_anaeig(int argc, char *argv[])
     ifit  = nullptr;
     w_rls = nullptr;
 
+    bool periodicMolecules = false;
+
     if (!bTPS)
     {
         bTop = FALSE;
@@ -1263,9 +1264,10 @@ int gmx_anaeig(int argc, char *argv[])
     else
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                             &top, &ePBC, &xtop, nullptr, topbox, bM);
+                             &top, &ePBC, &periodicMolecules, &xtop, nullptr, topbox, bM);
+
         atoms = &top.atoms;
-        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
+        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr, periodicMolecules);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)
@@ -1467,7 +1469,7 @@ int gmx_anaeig(int argc, char *argv[])
                 ExtremeFile, bFirstLastSet, max, nextr, atoms, natoms, index,
                 bFit1, xrefp, nfit, ifit, w_rls,
                 sqrtm, xav1, eignr1, eigvec1, noutvec, outvec, bSplit,
-                oenv);
+                oenv, periodicMolecules);
     }
 
     if (OverlapFile)

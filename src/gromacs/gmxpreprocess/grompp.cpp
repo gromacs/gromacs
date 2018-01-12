@@ -612,7 +612,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     rvec       *x = nullptr;
     rvec       *v = nullptr;
     snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
+    read_tps_conf(confin, conftop, nullptr, nullptr, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -860,7 +860,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     t_atom         *atom;
 
     snew(top, 1);
-    read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
+    read_tps_conf(fn, top, nullptr, nullptr, &x, &v, box, FALSE);
     natoms = top->atoms.nr;
     done_top(top);
     sfree(top);

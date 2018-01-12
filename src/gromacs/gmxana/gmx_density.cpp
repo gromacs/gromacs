@@ -43,15 +43,18 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -173,7 +176,8 @@ static void calc_electron_density(const char *fn, int **index, int gnx[],
                                   int axis, int nr_grps, real *slWidth,
                                   t_electron eltab[], int nr, gmx_bool bCenter,
                                   int *index_center, int ncenter,
-                                  gmx_bool bRelative, const gmx_output_env_t *oenv)
+                                  gmx_bool bRelative, const gmx_output_env_t *oenv,
+                                  bool periodicMolecules)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -215,17 +219,20 @@ static void calc_electron_density(const char *fn, int **index, int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    // only use rmpbc when bCenter is true
+    if (bCenter)
+    {
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, periodicMolecules);
+    }
     /*********** Start processing trajectory ***********/
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x0);
-
         /* Translate atoms so the com of the center-group is in the
          * box geometrical center.
          */
         if (bCenter)
         {
+            gmx_rmpbc(gpbc, natoms, box, x0);
             center_coords(&top->atoms, index_center, ncenter, box, x0);
         }
 
@@ -297,7 +304,10 @@ static void calc_electron_density(const char *fn, int **index, int gnx[],
         nr_frames++;
     }
     while (read_next_x(oenv, status, &t, x0, box));
-    gmx_rmpbc_done(gpbc);
+    if (gpbc != nullptr)
+    {
+        gmx_rmpbc_done(gpbc);
+    }
 
     /*********** done with status file **********/
     close_trx(status);
@@ -330,7 +340,8 @@ static void calc_density(const char *fn, int **index, int gnx[],
                          double ***slDensity, int *nslices, t_topology *top, int ePBC,
                          int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                          int *index_center, int ncenter,
-                         gmx_bool bRelative, const gmx_output_env_t *oenv, const char **dens_opt)
+                         gmx_bool bRelative, const gmx_output_env_t *oenv, const char **dens_opt,
+                         bool periodicMolecules)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -370,7 +381,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, periodicMolecules);
     /*********** Start processing trajectory ***********/
 
     snew(den_val, top->atoms.nr);
@@ -685,7 +696,6 @@ int gmx_density(int argc, char *argv[])
     int                ncenter;        /* size of centering group    */
     int               *ngx;            /* sizes of groups            */
     t_electron        *el_tab;         /* tabel with nr. of electrons*/
-    t_topology        *top;            /* topology               */
     int                ePBC;
     int               *index_center;   /* index for centering group  */
     int              **index;          /* indices for all groups     */
@@ -717,7 +727,22 @@ int gmx_density(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    matrix          box;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    t_topology top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir->ePBC;
 
     snew(grpname, ngrps);
     snew(index, ngrps);
@@ -730,7 +755,7 @@ int gmx_density(int argc, char *argv[])
                 "any special periodicity. If necessary, it is your responsibility to first use\n"
                 "trjconv to make sure atoms in this group are placed in the right periodicity.\n\n"
                 "Select the group to center density profiles around:\n");
-        get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ncenter,
+        get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ncenter,
                   &index_center, &grpname_center);
     }
     else
@@ -740,7 +765,7 @@ int gmx_density(int argc, char *argv[])
     }
 
     fprintf(stderr, "\nSelect %d group%s to calculate density for:\n", ngrps, (ngrps > 1) ? "s" : "");
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
 
     if (dens_opt[0][0] == 'e')
     {
@@ -748,15 +773,15 @@ int gmx_density(int argc, char *argv[])
         fprintf(stderr, "Read %d atomtypes from datafile\n", nr_electrons);
 
         calc_electron_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density,
-                              &nslices, top, ePBC, axis, ngrps, &slWidth, el_tab,
+                              &nslices, &top, ePBC, axis, ngrps, &slWidth, el_tab,
                               nr_electrons, bCenter, index_center, ncenter,
-                              bRelative, oenv);
+                              bRelative, oenv, ir->bPeriodicMols);
     }
     else
     {
-        calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top,
+        calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, &top,
                      ePBC, axis, ngrps, &slWidth, bCenter, index_center, ncenter,
-                     bRelative, oenv, dens_opt);
+                     bRelative, oenv, dens_opt, ir->bPeriodicMols);
     }
 
     plot_density(density, opt2fn("-o", NFILE, fnm),

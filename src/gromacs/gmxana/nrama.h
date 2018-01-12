@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,8 +77,8 @@ typedef struct {
     gmx_output_env_t *oenv;
 } t_xrama;
 
-t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
-                      const char *topfile, t_xrama *xr, int mult);
+t_topology init_rama(gmx_output_env_t *oenv, const char *infile,
+                     const char *topfile, t_xrama *xr, int mult);
 
 gmx_bool new_data(t_xrama *xr);
 

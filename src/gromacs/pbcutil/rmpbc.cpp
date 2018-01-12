@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     return gr->gr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
+gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms, gmx_bool periodicMolecules)
 {
     gmx_rmpbc_t gpbc;
 
@@ -117,7 +117,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
 
     gpbc->natoms_init = natoms;
 
-    /* This sets pbc when we now it,
+    /* This sets pbc when we know it,
      * otherwise we guess it from the instantaneous box in the trajectory.
      */
     gpbc->ePBC = ePBC;
@@ -131,6 +131,11 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms)
                 "         that are broken across periodic boundaries, they\n"
                 "         cannot be made whole (or treated as whole) without\n"
                 "         you providing a run input file.\n\n");
+    }
+
+    if (periodicMolecules)
+    {
+        gmx_fatal(FARGS, "Can not remove PBC with periodic molecules");
     }
 
     return gpbc;

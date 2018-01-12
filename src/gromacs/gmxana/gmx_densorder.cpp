@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,11 @@
 #include "gromacs/gmxana/powerspect.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/binaryinformation.h"
@@ -101,7 +103,7 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, const t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
+static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, const t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv, bool periodicMolecules)
 
 {
 /*
@@ -171,7 +173,7 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
     /****Start trajectory processing***/
 
     /*Initialize Densdevel and PBC-remove*/
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, periodicMolecules);
 
     *Densdevel = nullptr;
 
@@ -666,7 +668,6 @@ int gmx_densorder(int argc, char *argv[])
      */
 
     gmx_output_env_t  *oenv;
-    t_topology        *top;
     char             **grpname;
     int                ePBC, *ngx;
     static real        binw      = 0.2;
@@ -747,7 +748,23 @@ int gmx_densorder(int argc, char *argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+
+    t_inputrec      ir;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    matrix          box;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    t_topology top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir.ePBC;
+
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);
@@ -755,9 +772,9 @@ int gmx_densorder(int argc, char *argv[])
 /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 
-    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
+    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, &top, ePBC, axis, bCenter, b1d, oenv, ir.bPeriodicMols);
 
     if (ftorder > 0)
     {

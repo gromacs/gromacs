@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,9 @@
 #include "gromacs/gmxana/hxprops.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -146,7 +148,6 @@ int gmx_helix(int argc, char *argv[])
     t_bb             *bb;
     int               i, j, nall, nbb, nca, teller;
     int              *bbindex, *caindex, *allindex;
-    t_topology       *top;
     int               ePBC;
     rvec             *x, *xref;
     real              t;
@@ -171,18 +172,31 @@ int gmx_helix(int argc, char *argv[])
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
               opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    t_inputrec      ir;
+
+    rvec           *xtop;
+    t_tpxheader     header;
+    gmx_mtop_t      mtop;
+    int             ntopatoms;
+
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
+    snew(xtop, header.natoms);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, nullptr, &mtop);
+
+    t_topology top = gmx_mtop_t_to_t_topology(&mtop, false);
+
+    ePBC = ir.ePBC;
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
-    if (natoms != top->atoms.nr)
+    if (natoms != top.atoms.nr)
     {
         gmx_fatal(FARGS, "Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
-                  top->atoms.nr, natoms);
+                  top.atoms.nr, natoms);
     }
 
     bb = mkbbind(ftp2fn(efNDX, NFILE, fnm), &nres, &nbb, r0, &nall, &allindex,
-                 top->atoms.atomname, top->atoms.atom, top->atoms.resinfo);
+                 top.atoms.atomname, top.atoms.atom, top.atoms.resinfo);
     snew(bbindex, natoms);
     snew(caindex, nres);
 
@@ -205,7 +219,7 @@ int gmx_helix(int argc, char *argv[])
     }
 
     /* Read reference frame from tpx file to compute helix length */
-    snew(xref, top->atoms.nr);
+    snew(xref, top.atoms.nr);
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
              nullptr, nullptr, &natoms, xref, nullptr, nullptr);
     calc_hxprops(nres, bb, xref);
@@ -217,7 +231,7 @@ int gmx_helix(int argc, char *argv[])
         pr_bb(stdout, nres, bb);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, ir.bPeriodicMols);
 
     teller = 0;
     do
@@ -243,7 +257,7 @@ int gmx_helix(int argc, char *argv[])
             if (teller == 1)
             {
                 write_sto_conf(opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis",
-                               &(top->atoms), x, nullptr, ePBC, box);
+                               &(top.atoms), x, nullptr, ePBC, box);
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);
@@ -251,7 +265,7 @@ int gmx_helix(int argc, char *argv[])
             xf[efhRISE].val  = rise(nca, caindex, x);
             xf[efhLEN].val   = ahx_len(nca, caindex, x);
             xf[efhCD222].val = ellipticity(nres, bb);
-            xf[efhDIP].val   = dip(nbb, bbindex, x, top->atoms.atom);
+            xf[efhDIP].val   = dip(nbb, bbindex, x, top.atoms.atom);
             xf[efhRMS].val   = rms;
             xf[efhCPHI].val  = ca_phi(nca, caindex, x);
             xf[efhPPRMS].val = pprms(xf[efhPPRMS].fp2, nres, bb);

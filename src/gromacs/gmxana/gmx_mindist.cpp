@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,9 +141,10 @@ static void periodic_dist(int ePBC,
 }
 
 static void periodic_mindist_plot(const char *trxfn, const char *outfn,
-                                  const t_topology *top, int ePBC,
+                                  const t_topology *top, gmx_bool bPBC, int ePBC,
                                   int n, int index[], gmx_bool bSplit,
-                                  const gmx_output_env_t *oenv)
+                                  const gmx_output_env_t *oenv,
+                                  bool periodicMolecules)
 {
     FILE        *out;
     const char  *leg[5] = { "min per.", "max int.", "box1", "box2", "box3" };
@@ -171,15 +172,15 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     rmint = box[XX][XX];
     tmint = 0;
 
-    if (nullptr != top)
+    if (nullptr != top && (!bPBC && ePBC != epbcNONE))
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
     }
 
     bFirst = TRUE;
     do
     {
-        if (nullptr != top)
+        if (nullptr != top && (!bPBC && ePBC != epbcNONE))
         {
             gmx_rmpbc(gpbc, natoms, box, x);
         }
@@ -202,7 +203,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     }
     while (read_next_x(oenv, status, &t, x, box));
 
-    if (nullptr != top)
+    if (nullptr != gpbc)
     {
         gmx_rmpbc_done(gpbc);
     }
@@ -760,10 +761,12 @@ int gmx_mindist(int argc, char *argv[])
     snew(index, ng);
     snew(grpname, ng);
 
+    bool periodicMolecules = false;
+
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &ePBC, &periodicMolecules, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
@@ -802,7 +805,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (bPI)
     {
-        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv);
+        periodic_mindist_plot(trxfnm, distfnm, top, bPBC, ePBC, gnx[0], index[0], bSplit, oenv, periodicMolecules);
     }
     else
     {
