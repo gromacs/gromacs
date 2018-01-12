@@ -272,6 +272,10 @@ MdrunTestFixture::MdrunTestFixture() : runner_(&fileManager_)
 
 MdrunTestFixture::~MdrunTestFixture()
 {
+#if GMX_LIB_MPI
+    // fileManager_ should only clean up after all the ranks are done.
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
 }
 
 } // namespace test
