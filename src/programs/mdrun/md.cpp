@@ -107,6 +107,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdrunutility/repl_ex.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -127,7 +128,6 @@
 
 #include "deform.h"
 #include "membed.h"
-#include "repl_ex.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
