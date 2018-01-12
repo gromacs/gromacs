@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -366,20 +366,25 @@ CommandLineModuleManager::Impl::processCommonOptions(
     {
         // If not in single-module mode, process options to the wrapper binary.
         // TODO: Ideally, this could be done by CommandLineParser.
-        int argcForWrapper = 1;
-        while (argcForWrapper < *argc && (*argv)[argcForWrapper][0] == '-')
+
+        // Find the module name (if any) in the arg list
+        int indexOfModuleName = 1;
+        while (indexOfModuleName < *argc && (*argv)[indexOfModuleName][0] == '-')
         {
-            ++argcForWrapper;
+            ++indexOfModuleName;
         }
-        if (argcForWrapper > 1)
+        if (indexOfModuleName > 1)
         {
+            // Process options that are provided to the wrapper
+            // binary. These precede the module name, if one exists.
+            int argcForWrapper = indexOfModuleName;
             CommandLineParser(optionsHolder->options())
                 .parse(&argcForWrapper, *argv);
         }
         // If no action requested and there is a module specified, process it.
-        if (argcForWrapper < *argc && !optionsHolder->shouldIgnoreActualModule())
+        if (indexOfModuleName < *argc && !optionsHolder->shouldIgnoreActualModule())
         {
-            const char *moduleName = (*argv)[argcForWrapper];
+            const char *moduleName = (*argv)[indexOfModuleName];
             CommandLineModuleMap::const_iterator moduleIter
                 = findModuleByName(moduleName);
             if (moduleIter == modules_.end())
@@ -389,8 +394,8 @@ CommandLineModuleManager::Impl::processCommonOptions(
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();
-            *argc -= argcForWrapper;
-            *argv += argcForWrapper;
+            *argc -= indexOfModuleName;
+            *argv += indexOfModuleName;
             // After this point, argc and argv are the same independent of
             // which path is taken: (*argv)[0] is the module name.
         }
@@ -405,6 +410,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
         // null.
         CommandLineParser(optionsHolder->options())
+            .allowPositionalArguments(true)
             .skipUnknown(true).parse(argc, *argv);
     }
     if (!optionsHolder->finishOptions())

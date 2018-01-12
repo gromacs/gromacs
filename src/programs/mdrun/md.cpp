@@ -391,8 +391,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, false, false);
 
+    if (!mdrunOptions.writeConfout)
+    {
+        // This is on by default, and the main known use case for
+        // turning it off is for convenience in benchmarking, which is
+        // something that should not show up in the general user
+        // interface.
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -noconfout functionality is deprecated, and may be removed in a future version.");
+    }
     if (mdrunOptions.timingOptions.resetHalfway)
     {
+        GMX_LOG(mdlog.info).asParagraph().
+            appendText("The -resethway functionality is deprecated, and may be removed in a future version.");
         if (ir->nsteps > 0)
         {
             /* Signal to reset the counters half the simulation steps. */

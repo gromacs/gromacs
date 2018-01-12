@@ -585,7 +585,9 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
 
         /* Now parse all the command-line options */
-        gmx::CommandLineParser(&options).skipUnknown(isFlagSet(PCA_NOEXIT_ON_ARGS))
+        gmx::CommandLineParser(&options)
+            .skipUnknown(isFlagSet(PCA_NOEXIT_ON_ARGS))
+            .allowPositionalArguments(isFlagSet(PCA_NOEXIT_ON_ARGS))
             .parse(argc, argv);
         behaviors.optionsFinishing();
         options.finish();

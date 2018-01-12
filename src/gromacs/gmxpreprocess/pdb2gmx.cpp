@@ -73,6 +73,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 #define RTP_MAXCHAR 5
 typedef struct {
@@ -859,19 +860,104 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
     return pdba->nr;
 }
 
+static void
+checkResidueTypeSanity(t_atoms *            pdba,
+                       int                  r0,
+                       int                  r1,
+                       gmx_residuetype_t *  rt)
+{
+    std::string startResidueString = gmx::formatString("%s%d", *pdba->resinfo[r0].name, pdba->resinfo[r0].nr);
+    std::string endResidueString   = gmx::formatString("%s%d", *pdba->resinfo[r1-1].name, pdba->resinfo[r1-1].nr);
+
+    // Check whether all residues in chain have the same chain ID.
+    bool         allResiduesHaveSameChainID = true;
+    char         chainID0                   = pdba->resinfo[r0].chainid;
+    char         chainID;
+    std::string  residueString;
+
+    for (int i = r0 + 1; i < r1; i++)
+    {
+        chainID = pdba->resinfo[i].chainid;
+        if (chainID != chainID0)
+        {
+            allResiduesHaveSameChainID  = false;
+            residueString               = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+            break;
+        }
+    }
+
+    if (!allResiduesHaveSameChainID)
+    {
+        gmx_fatal(FARGS,
+                  "The chain covering the range %s--%s does not have a consistent chain ID. "
+                  "The first residue has ID '%c', while residue %s has ID '%c'.",
+                  startResidueString.c_str(), endResidueString.c_str(),
+                  chainID0, residueString.c_str(), chainID);
+    }
+
+    // At this point all residues have the same ID. If they are also non-blank
+    // we can be a bit more aggressive and require the types match too.
+    if (chainID0 != ' ')
+    {
+        bool        allResiduesHaveSameType = true;
+        const char *restype0;
+        const char *restype;
+        gmx_residuetype_get_type(rt, *pdba->resinfo[r0].name, &restype0);
+
+        for (int i = r0 + 1; i < r1; i++)
+        {
+            gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &restype);
+            if (gmx_strcasecmp(restype, restype0))
+            {
+                allResiduesHaveSameType = false;
+                residueString           = gmx::formatString("%s%d", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                break;
+            }
+        }
+
+        if (!allResiduesHaveSameType)
+        {
+            gmx_fatal(FARGS,
+                      "The residues in the chain %s--%s do not have a consistent type. "
+                      "The first residue has type '%s', while residue %s is of type '%s'. "
+                      "Either there is a mistake in your chain, or it includes nonstandard "
+                      "residue names that have not yet been added to the residuetypes.dat "
+                      "file in the GROMACS library directory. If there are other molecules "
+                      "such as ligands, they should not have the same chain ID as the "
+                      "adjacent protein chain since it's a separate molecule.",
+                      startResidueString.c_str(), endResidueString.c_str(),
+                      restype0, residueString.c_str(), restype);
+        }
+    }
+}
+
 static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
                         gmx_residuetype_t *rt)
 {
     int         i;
     const char *p_startrestype;
     const char *p_restype;
-    int         nstartwarn, nendwarn;
 
     *r_start = -1;
     *r_end   = -1;
 
-    nstartwarn = 0;
-    nendwarn   = 0;
+    int startWarnings = 0;
+    int endWarnings   = 0;
+    int ionNotes      = 0;
+
+    // Check that all residues have the same chain identifier, and if it is
+    // non-blank we also require the residue types to match.
+    checkResidueTypeSanity(pdba, r0, r1, rt);
+
+    // If we return correctly from checkResidueTypeSanity(), the only
+    // remaining cases where we can have non-matching residue types is if
+    // the chain ID was blank, which could be the case e.g. for a structure
+    // read from a GRO file or other file types without chain information.
+    // In that case we need to be a bit more liberal and detect chains based
+    // on the residue type.
+
+    // If we get here, the chain ID must be identical for all residues
+    char chainID = pdba->resinfo[r0].chainid;
 
     /* Find the starting terminus (typially N or 5') */
     for (i = r0; i < r1 && *r_start == -1; i++)
@@ -882,17 +968,46 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
             printf("Identified residue %s%d as a starting terminus.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
             *r_start = i;
         }
+        else if (!gmx_strcasecmp(p_startrestype, "Ion"))
+        {
+            if (ionNotes < 5)
+            {
+                printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+            }
+            if (ionNotes == 4)
+            {
+                printf("Disabling further notes about ions.\n");
+            }
+            ionNotes++;
+        }
         else
         {
-            if (nstartwarn < 5)
+            if (startWarnings < 5)
             {
-                printf("Warning: Starting residue %s%d in chain not identified as Protein/RNA/DNA.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                if (chainID == ' ')
+                {
+                    printf("\nWarning: Starting residue %s%d in chain not identified as Protein/RNA/DNA.\n"
+                           "This chain lacks identifiers, which makes it impossible to do strict\n"
+                           "classification of the start/end residues. Here we need to guess this residue\n"
+                           "should not be part of the chain and instead introduce a break, but that will\n"
+                           "be catastrophic if they should in fact be linked. Please check your structure,\n"
+                           "and add %s to residuetypes.dat if this was not correct.\n\n",
+                           *pdba->resinfo[i].name, pdba->resinfo[i].nr, *pdba->resinfo[i].name);
+                }
+                else
+                {
+                    printf("\nWarning: No residues in chain starting at %s%d identified as Protein/RNA/DNA.\n"
+                           "This makes it impossible to link them into a molecule, which could either be\n"
+                           "correct or a catastrophic error. Please check your structure, and add all\n"
+                           "necessary residue names to residuetypes.dat if this was not correct.\n\n",
+                           *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                }
             }
-            if (nstartwarn == 5)
+            if (startWarnings == 4)
             {
-                printf("More than 5 unidentified residues at start of chain - disabling further warnings.\n");
+                printf("Disabling further warnings about unidentified residues at start of chain.\n");
             }
-            nstartwarn++;
+            startWarnings++;
         }
     }
 
@@ -902,23 +1017,43 @@ static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
         for (i = *r_start; i < r1; i++)
         {
             gmx_residuetype_get_type(rt, *pdba->resinfo[i].name, &p_restype);
-            if (!gmx_strcasecmp(p_restype, p_startrestype) && nendwarn == 0)
+            if (!gmx_strcasecmp(p_restype, p_startrestype) && endWarnings == 0)
             {
                 *r_end = i;
             }
+            else if (!gmx_strcasecmp(p_startrestype, "Ion"))
+            {
+                if (ionNotes < 5)
+                {
+                    printf("Residue %s%d has type 'Ion', assuming it is not linked into a chain.\n", *pdba->resinfo[i].name, pdba->resinfo[i].nr);
+                }
+                if (ionNotes == 4)
+                {
+                    printf("Disabling further notes about ions.\n");
+                }
+                ionNotes++;
+            }
             else
             {
-                if (nendwarn < 5)
+                // This can only trigger if the chain ID is blank - otherwise the
+                // call to checkResidueTypeSanity() will have caught the problem.
+                if (endWarnings < 5)
                 {
-                    printf("Warning: Residue %s%d in chain has different type (%s) from starting residue %s%d (%s).\n",
+                    printf("\nWarning: Residue %s%d in chain has different type ('%s') from\n"
+                           "residue %s%d ('%s'). This chain lacks identifiers, which makes\n"
+                           "it impossible to do strict classification of the start/end residues. Here we\n"
+                           "need to guess this residue should not be part of the chain and instead\n"
+                           "introduce a break, but that will be catastrophic if they should in fact be\n"
+                           "linked. Please check your structure, and add %s to residuetypes.dat\n"
+                           "if this was not correct.\n\n",
                            *pdba->resinfo[i].name, pdba->resinfo[i].nr, p_restype,
-                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype);
+                           *pdba->resinfo[*r_start].name, pdba->resinfo[*r_start].nr, p_startrestype, *pdba->resinfo[i].name);
                 }
-                if (nendwarn == 5)
+                if (endWarnings == 4)
                 {
-                    printf("More than 5 unidentified residues at end of chain - disabling further warnings.\n");
+                    printf("Disabling further warnings about unidentified residues at end of chain.\n");
                 }
-                nendwarn++;
+                endWarnings++;
             }
         }
     }
@@ -1577,11 +1712,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
         this_chainnumber   = ri->chainnum;
 
         bWat = gmx_strcasecmp(*ri->name, watres) == 0;
+
         if ((i == 0) || (this_chainnumber != prev_chainnumber) || (bWat != bPrevWat))
         {
             this_chainstart = pdba_all.atom[i].resind;
-
-            bMerged = FALSE;
+            bMerged         = FALSE;
             if (i > 0 && !bWat)
             {
                 if (!strncmp(merge[0], "int", 3))

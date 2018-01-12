@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,8 +155,11 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
             }
         }
 
-        /* Convert box vectors to orthogonal vectors for this dimension,
-         * for use in distance calculations.
+        /* Construct vectors v for dimension d that are perpendicular
+         * to the triclinic plane of dimension d. Each vector v[i] has
+         * v[i][i]=1 and v[i][d]!=0 for triclinic dimensions, while the third
+         * component is zero. These are used for computing the distance
+         * to a triclinic plane given the distance along dimension d.
          * Set the trilinic skewing factor that translates
          * the thickness of a slab perpendicular to this dimension
          * into the real thickness of the slab.
@@ -178,14 +181,8 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
                 {
                     /* Normalize such that the "diagonal" is 1 */
                     svmul(1/box[d+2][d+2], box[d+2], v[d+2]);
-                    for (i = 0; i < d; i++)
-                    {
-                        v[d+2][i] = 0;
-                    }
-                    /* Make vector [d+2] perpendicular to vector [d+1],
-                     * this does not affect the normalization.
-                     */
-                    dep = iprod(v[d+1], v[d+2])/norm2(v[d+1]);
+                    /* Set v[d+2][d+1] to zero by shifting along v[d+1] */
+                    dep = v[d+2][d+1]/v[d+1][d+1];
                     for (i = 0; i < DIM; i++)
                     {
                         v[d+2][i] -= dep*v[d+1][i];
