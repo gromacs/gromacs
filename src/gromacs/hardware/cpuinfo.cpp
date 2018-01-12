@@ -945,82 +945,87 @@ CpuInfo CpuInfo::detect()
     return result;
 }
 
-
 CpuInfo::CpuInfo()
     : vendor_(CpuInfo::Vendor::Unknown), brandString_("Unknown CPU brand"),
       family_(0), model_(0), stepping_(0)
 {
 }
 
-
-const std::map<CpuInfo::Vendor, std::string>
-CpuInfo::s_vendorStrings_ =
+const std::string &CpuInfo::vendorString() const
 {
-    { CpuInfo::Vendor::Unknown, "Unknown vendor"                  },
-    { CpuInfo::Vendor::Intel, "Intel"                             },
-    { CpuInfo::Vendor::Amd, "AMD"                                 },
-    { CpuInfo::Vendor::Fujitsu, "Fujitsu"                         },
-    { CpuInfo::Vendor::Ibm, "IBM"                                 },
-    { CpuInfo::Vendor::Arm, "ARM"                                 },
-    { CpuInfo::Vendor::Oracle, "Oracle"                           },
-};
+    static const std::map<Vendor, std::string> vendorStrings =
+    {
+        { Vendor::Unknown, "Unknown vendor"                  },
+        { Vendor::Intel, "Intel"                             },
+        { Vendor::Amd, "AMD"                                 },
+        { Vendor::Fujitsu, "Fujitsu"                         },
+        { Vendor::Ibm, "IBM"                                 },
+        { Vendor::Arm, "ARM"                                 },
+        { Vendor::Oracle, "Oracle"                           },
+    };
+
+    return vendorStrings.at(vendor_);
+}
 
 
-const std::map<CpuInfo::Feature, std::string>
-CpuInfo::s_featureStrings_ =
+const std::string &CpuInfo::featureString(Feature f)
 {
-    { CpuInfo::Feature::X86_Aes, "aes"                            },
-    { CpuInfo::Feature::X86_Amd, "amd"                            },
-    { CpuInfo::Feature::X86_Apic, "apic"                          },
-    { CpuInfo::Feature::X86_Avx, "avx"                            },
-    { CpuInfo::Feature::X86_Avx2, "avx2"                          },
-    { CpuInfo::Feature::X86_Avx512F, "avx512f"                    },
-    { CpuInfo::Feature::X86_Avx512PF, "avx512pf"                  },
-    { CpuInfo::Feature::X86_Avx512ER, "avx512er"                  },
-    { CpuInfo::Feature::X86_Avx512CD, "avx512cd"                  },
-    { CpuInfo::Feature::X86_Avx512BW, "avx512bw"                  },
-    { CpuInfo::Feature::X86_Avx512VL, "avx512vl"                  },
-    { CpuInfo::Feature::X86_Clfsh, "clfsh"                        },
-    { CpuInfo::Feature::X86_Cmov, "cmov"                          },
-    { CpuInfo::Feature::X86_Cx8, "cx8"                            },
-    { CpuInfo::Feature::X86_Cx16, "cx16"                          },
-    { CpuInfo::Feature::X86_F16C, "f16c"                          },
-    { CpuInfo::Feature::X86_Fma, "fma"                            },
-    { CpuInfo::Feature::X86_Fma4, "fma4"                          },
-    { CpuInfo::Feature::X86_Hle, "hle"                            },
-    { CpuInfo::Feature::X86_Htt, "htt"                            },
-    { CpuInfo::Feature::X86_Intel, "intel"                        },
-    { CpuInfo::Feature::X86_Lahf, "lahf"                          },
-    { CpuInfo::Feature::X86_MisalignSse, "misalignsse"            },
-    { CpuInfo::Feature::X86_Mmx, "mmx"                            },
-    { CpuInfo::Feature::X86_Msr, "msr"                            },
-    { CpuInfo::Feature::X86_NonstopTsc, "nonstop_tsc"             },
-    { CpuInfo::Feature::X86_Pcid, "pcid"                          },
-    { CpuInfo::Feature::X86_Pclmuldq, "pclmuldq"                  },
-    { CpuInfo::Feature::X86_Pdcm, "pdcm"                          },
-    { CpuInfo::Feature::X86_PDPE1GB, "pdpe1gb"                    },
-    { CpuInfo::Feature::X86_Popcnt, "popcnt"                      },
-    { CpuInfo::Feature::X86_Pse, "pse"                            },
-    { CpuInfo::Feature::X86_Rdrnd, "rdrnd"                        },
-    { CpuInfo::Feature::X86_Rdtscp, "rdtscp"                      },
-    { CpuInfo::Feature::X86_Rtm, "rtm"                            },
-    { CpuInfo::Feature::X86_Sha, "sha"                            },
-    { CpuInfo::Feature::X86_Sse2, "sse2"                          },
-    { CpuInfo::Feature::X86_Sse3, "sse3"                          },
-    { CpuInfo::Feature::X86_Sse4A, "sse4a"                        },
-    { CpuInfo::Feature::X86_Sse4_1, "sse4.1"                      },
-    { CpuInfo::Feature::X86_Sse4_2, "sse4.2"                      },
-    { CpuInfo::Feature::X86_Ssse3, "ssse3"                        },
-    { CpuInfo::Feature::X86_Tdt, "tdt"                            },
-    { CpuInfo::Feature::X86_X2Apic, "x2apic"                      },
-    { CpuInfo::Feature::X86_Xop, "xop"                            },
-    { CpuInfo::Feature::Arm_Neon, "neon"                          },
-    { CpuInfo::Feature::Arm_NeonAsimd, "neon_asimd"               },
-    { CpuInfo::Feature::Ibm_Qpx, "qpx"                            },
-    { CpuInfo::Feature::Ibm_Vmx, "vmx"                            },
-    { CpuInfo::Feature::Ibm_Vsx, "vsx"                            },
-    { CpuInfo::Feature::Fujitsu_HpcAce, "hpc-ace"                 }
-};
+    static const std::map<Feature, std::string> featureStrings =
+    {
+        { Feature::X86_Aes, "aes"                            },
+        { Feature::X86_Amd, "amd"                            },
+        { Feature::X86_Apic, "apic"                          },
+        { Feature::X86_Avx, "avx"                            },
+        { Feature::X86_Avx2, "avx2"                          },
+        { Feature::X86_Avx512F, "avx512f"                    },
+        { Feature::X86_Avx512PF, "avx512pf"                  },
+        { Feature::X86_Avx512ER, "avx512er"                  },
+        { Feature::X86_Avx512CD, "avx512cd"                  },
+        { Feature::X86_Avx512BW, "avx512bw"                  },
+        { Feature::X86_Avx512VL, "avx512vl"                  },
+        { Feature::X86_Clfsh, "clfsh"                        },
+        { Feature::X86_Cmov, "cmov"                          },
+        { Feature::X86_Cx8, "cx8"                            },
+        { Feature::X86_Cx16, "cx16"                          },
+        { Feature::X86_F16C, "f16c"                          },
+        { Feature::X86_Fma, "fma"                            },
+        { Feature::X86_Fma4, "fma4"                          },
+        { Feature::X86_Hle, "hle"                            },
+        { Feature::X86_Htt, "htt"                            },
+        { Feature::X86_Intel, "intel"                        },
+        { Feature::X86_Lahf, "lahf"                          },
+        { Feature::X86_MisalignSse, "misalignsse"            },
+        { Feature::X86_Mmx, "mmx"                            },
+        { Feature::X86_Msr, "msr"                            },
+        { Feature::X86_NonstopTsc, "nonstop_tsc"             },
+        { Feature::X86_Pcid, "pcid"                          },
+        { Feature::X86_Pclmuldq, "pclmuldq"                  },
+        { Feature::X86_Pdcm, "pdcm"                          },
+        { Feature::X86_PDPE1GB, "pdpe1gb"                    },
+        { Feature::X86_Popcnt, "popcnt"                      },
+        { Feature::X86_Pse, "pse"                            },
+        { Feature::X86_Rdrnd, "rdrnd"                        },
+        { Feature::X86_Rdtscp, "rdtscp"                      },
+        { Feature::X86_Rtm, "rtm"                            },
+        { Feature::X86_Sha, "sha"                            },
+        { Feature::X86_Sse2, "sse2"                          },
+        { Feature::X86_Sse3, "sse3"                          },
+        { Feature::X86_Sse4A, "sse4a"                        },
+        { Feature::X86_Sse4_1, "sse4.1"                      },
+        { Feature::X86_Sse4_2, "sse4.2"                      },
+        { Feature::X86_Ssse3, "ssse3"                        },
+        { Feature::X86_Tdt, "tdt"                            },
+        { Feature::X86_X2Apic, "x2apic"                      },
+        { Feature::X86_Xop, "xop"                            },
+        { Feature::Arm_Neon, "neon"                          },
+        { Feature::Arm_NeonAsimd, "neon_asimd"               },
+        { Feature::Ibm_Qpx, "qpx"                            },
+        { Feature::Ibm_Vmx, "vmx"                            },
+        { Feature::Ibm_Vsx, "vsx"                            },
+        { Feature::Fujitsu_HpcAce, "hpc-ace"                 }
+    };
+    return featureStrings.at(f);
+}
 
 
 bool
