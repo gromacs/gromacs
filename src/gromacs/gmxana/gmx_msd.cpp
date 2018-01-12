@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -639,7 +639,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
                      gmx_bool bMol, int gnx[], int *index[],
                      t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
                      real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
-                     const gmx_output_env_t *oenv)
+                     const gmx_output_env_t *oenv, gmx_bool periodicMolecules)
 {
     rvec            *x[2];  /* the coordinates to read */
     rvec            *xa[2]; /* the coordinates to calculate displacements for */
@@ -685,7 +685,7 @@ static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int eP
 
     if (bMol)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, periodicMolecules);
     }
 
     /* the loop over all frames */
@@ -872,7 +872,8 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
                     int nrgrp, t_topology *top, int ePBC,
                     gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
                     int type, real dim_factor, int axis,
-                    real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
+                    real dt, real beginfit, real endfit, const gmx_output_env_t *oenv,
+                    gmx_bool periodicMolecules)
 {
     t_corr        *msd;
     int           *gnx;   /* the selected groups' sizes */
@@ -916,7 +917,7 @@ static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_
         corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : 0, gnx, index,
                   (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
-                  pdb_file ? &x : nullptr, box, oenv);
+                  pdb_file ? &x : nullptr, box, oenv, periodicMolecules);
 
     /* Correct for the number of points */
     for (j = 0; (j < msd->ngrp); j++)
@@ -1188,7 +1189,10 @@ int gmx_msd(int argc, char *argv[])
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
 
-    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
+    gmx_bool periodicMolecules = false;
+
+    bTop = read_tps_conf(tps_file, &top, &ePBC, &periodicMolecules, &xdum, nullptr, box, bMW || bRmCOMM);
+
     if (mol_file && !bTop)
     {
         gmx_fatal(FARGS,
@@ -1198,7 +1202,7 @@ int gmx_msd(int argc, char *argv[])
 
     do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup,
             &top, ePBC, bTen, bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit,
-            oenv);
+            oenv, periodicMolecules);
 
     view_all(oenv, NFILE, fnm);
 

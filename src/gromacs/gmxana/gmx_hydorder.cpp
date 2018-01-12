@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,8 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
                                   rvec x[], int maxidx, int index[],
                                   real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
-                                  real ***sggrid, real ***skgrid)
+                                  real ***sggrid, real ***skgrid,
+                                  gmx_bool periodicMolecules)
 {
     int         ix, jx, i, j, k, l, n, *nn[4];
     rvec        dx, rj, rk, urk, urj;
@@ -107,7 +108,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc, ePBC, box);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, periodicMolecules);
     gmx_rmpbc(gpbc, natoms, box, x);
 
     *sgmean = 0.0;
@@ -272,7 +273,9 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
      * i.e 1D Row-major order in (t,x,y) */
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(fnTPS, &top, &ePBC, &periodicMolecules, &xtop, nullptr, box, FALSE);
 
     *nslicex = static_cast<int>(box[XX][XX]/binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY]/binw + onehalf);
@@ -340,7 +343,8 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
         }
 
         find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0],
-                              &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
+                              &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid,
+                              periodicMolecules);
         GMX_RELEASE_ASSERT(sk_fravg != nullptr, "Trying to dereference NULL sk_fravg pointer");
         for (i = 0; i < *nslicex; i++)
         {

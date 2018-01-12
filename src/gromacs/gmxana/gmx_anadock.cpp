@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ static t_pdbfile *read_pdbf(const char *fn)
 
     snew(pdbf, 1);
     t_topology top;
-    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, nullptr, pdbf->box, FALSE);
+    read_tps_conf(fn, &top, &pdbf->ePBC, nullptr, &pdbf->x, nullptr, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
     fp          = gmx_ffopen(fn, "r");
     char       buf[256], *ptr;

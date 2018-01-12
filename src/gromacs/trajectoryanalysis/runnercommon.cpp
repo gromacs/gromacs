@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,6 +133,8 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         //! Used to store the status variable from read_first_frame().
         t_trxstatus                *status_;
         gmx_output_env_t           *oenv_;
+        //! Needed to know if periodic molecules are present to abort handling.
+        gmx_bool                    periodicMolecules_;
 };
 
 
@@ -140,7 +142,7 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
-      bTrajOpen_(false), fr(nullptr), gpbc_(nullptr), status_(nullptr), oenv_(nullptr)
+      bTrajOpen_(false), fr(nullptr), gpbc_(nullptr), status_(nullptr), oenv_(nullptr), periodicMolecules_(false)
 {
 }
 
@@ -182,7 +184,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     {
         snew(topInfo_.mtop_, 1);
         readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
-                            &topInfo_.ePBC_, &topInfo_.xtop_, nullptr,
+                            &topInfo_.ePBC_, &periodicMolecules_, &topInfo_.xtop_, nullptr,
                             topInfo_.boxtop_);
         // TODO: Only load this here if the tool actually needs it; selections
         // take care of themselves.
@@ -266,7 +268,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     if (topInfo_.hasTopology() && settings_.hasRmPBC())
     {
         gpbc_ = gmx_rmpbc_init(&topInfo_.topology()->idef, topInfo_.ePBC(),
-                               fr->natoms);
+                               fr->natoms, periodicMolecules_);
     }
 }
 

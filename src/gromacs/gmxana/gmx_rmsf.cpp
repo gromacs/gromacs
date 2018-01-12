@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -290,7 +290,10 @@ int gmx_rmsf(int argc, char *argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, &xref, nullptr, box, TRUE);
+
     const char *title = *top.name;
     snew(w_rls, top.atoms.nr);
 
@@ -321,10 +324,10 @@ int gmx_rmsf(int argc, char *argv[])
         t_topology *top_pdb;
         snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, nullptr, pdbbox, FALSE);
         snew(pdbatoms, 1);
         *pdbatoms = top_pdb->atoms;
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, &pdbx, nullptr, pdbbox, FALSE);
         /* TODO Should this assert that top_pdb->atoms.nr == top.atoms.nr?
          * See discussion at https://gerrit.gromacs.org/#/c/6430/1 */
         title = *top_pdb->name;
@@ -351,7 +354,7 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bFit)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natom);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natom, periodicMolecules);
     }
 
     /* Now read the trj again to compute fluctuations */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,7 +226,9 @@ int gmx_sans(int argc, char *argv[])
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(fnTPX, top, &ePBC, &periodicMolecules, &x, nullptr, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
@@ -236,7 +238,7 @@ int gmx_sans(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, periodicMolecules);
         gmx_rmpbc(gpbc, top->atoms.nr, box, x);
     }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -186,8 +187,12 @@ int gmx_polystat(int argc, char *argv[])
     }
 
     snew(top, 1);
+
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
+
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
-                        nullptr, box, &natoms, nullptr, nullptr, top);
+                        ir, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
@@ -288,7 +293,7 @@ int gmx_polystat(int argc, char *argv[])
     sum_gyro_tot = 0;
     sum_pers_tot = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, ir->bPeriodicMols);
 
     do
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -351,7 +351,8 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
                        int *index0, int indexm[], real mass2[],
-                       real qmol[], real eps_rf, const gmx_output_env_t *oenv)
+                       real qmol[], real eps_rf, const gmx_output_env_t *oenv,
+                       gmx_bool periodicMolecules)
 {
     int       i, j;
     int       valloc, nalloc, nfr, nvfr;
@@ -434,7 +435,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     clear_rvec(mjd_tmp);
     clear_rvec(mdvec);
     clear_rvec(tmp);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, periodicMolecules);
 
     do
     {
@@ -888,7 +889,9 @@ int gmx_current(int argc, char *argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    gmx_bool periodicMolecules = false;
+
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &periodicMolecules, nullptr, nullptr, box, TRUE);
 
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
@@ -960,7 +963,7 @@ int gmx_current(int argc, char *argv[])
 
     dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, top, fr,
                temp, bfit, efit, bvit, evit, status, isize, nmols, nshift,
-               index0, indexm, mass2, qmol, eps_rf, oenv);
+               index0, indexm, mass2, qmol, eps_rf, oenv, periodicMolecules);
 
     xvgrclose(fmj);
     xvgrclose(fmd);

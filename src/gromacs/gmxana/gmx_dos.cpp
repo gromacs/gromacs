@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -339,7 +339,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
