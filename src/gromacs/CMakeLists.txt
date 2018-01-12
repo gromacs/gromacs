@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,6 +31,9 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
+#set(GMX_EXTRA_SIMD AVX_256 AVX2_256 AVX_512) #TODO: just for testing. Should be proper cachae variable
+set(GMX_EXTRA_SIMD AVX2_256) #TODO: just for testing. Should be proper cachae variable
 
 set(LIBGROMACS_SOURCES)
 
@@ -199,23 +202,54 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
-target_link_libraries(libgromacs
-                      PRIVATE
-                      ${EXTRAE_LIBRARIES}
+set(GMX_PRIVATE_LIBRARIES ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${LMFIT_LIBRARIES_TO_LINK}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES}
-                      ${GMX_STDLIB_LIBRARIES}
-                      PUBLIC
-                      ${GMX_PUBLIC_LIBRARIES}
-                      )
+                      ${GMX_STDLIB_LIBRARIES})
+
+target_link_libraries(libgromacs PRIVATE ${GMX_PRIVATE_LIBRARIES}
+                      PUBLIC ${GMX_PUBLIC_LIBRARIES})		      
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+if (GMX_DOUBLE)
+    file(GLOB NONBONDED_AVX_256_SOURCES gmxlib/nonbonded/nb_kernel_avx_256_double/*.c)
+else()
+    file(GLOB NONBONDED_AVX_256_SOURCES gmxlib/nonbonded/nb_kernel_avx_256_single/*.c)
+endif()
+set(NONBONDED_AVX2_256_SOURCES ${NONBONDED_AVX_256_SOURCES})
+set(NONBONDED_AVX_512_SOURCES ${NONBONDED_AVX_256_SOURCES})
+
+foreach(EXTRA_SIMD ${GMX_EXTRA_SIMD})
+    add_library(libgromacs_${EXTRA_SIMD} ${LIBGROMACS_SOURCES} ${NONBONDED_${EXTRA_SIMD}_SOURCES}) #Currently doesn't work with GPU
+    if (GMX_USE_TNG)
+	if (GMX_EXTERNAL_TNG)
+	    target_link_libraries(libgromacs_${EXTRA_SIMD} PRIVATE tng_io::tng_io)
+	else()
+	    target_link_libraries(libgromacs_${EXTRA_SIMD} PRIVATE $<BUILD_INTERFACE:tng_io::tng_io>)
+	endif()
+    endif()
+
+    target_link_libraries(libgromacs_${EXTRA_SIMD} PRIVATE ${GMX_PRIVATE_LIBRARIES} PUBLIC ${GMX_PUBLIC_LIBRARIES})
+
+    gmx_find_simd_flags(${EXTRA_SIMD} ${EXTRA_SIMD}_C_SUPPORTED ${EXTRA_SIMD}_CXX_SUPPORTED ${EXTRA_SIMD}_C_FLAGS ${EXTRA_SIMD}_CXX_FLAGS)
+
+    if (NOT "${${EXTRA_SIMD}_C_SUPPORTED}" OR NOT "${${EXTRA_SIMD}_CXX_SUPPORTED}" OR NOT "${${EXTRA_SIMD}_C_FLAGS}" STREQUAL "${${EXTRA_SIMD}_CXX_FLAGS}")
+	message(FATAL_ERROR "Extra SIMD not working for ${EXTRA_SIMD}. C_SUPPORTED: ${${EXTRA_SIMD}_C_SUPPORTED}, CXX_SUPPORTED: ${${EXTRA_SIMD}_CXX_SUPPORTED}, C_FLAGS: ${${EXTRA_SIMD}_C_FLAGS}, CXX_FLAGS: ${${EXTRA_SIMD}_CXX_FLAGS}")
+    endif()
+
+    set_target_properties(libgromacs_${EXTRA_SIMD} PROPERTIES
+			  OUTPUT_NAME "gromacs_${EXTRA_SIMD}${GMX_LIBS_SUFFIX}"
+			  SOVERSION ${LIBRARY_SOVERSION_MAJOR}
+			  VERSION ${LIBRARY_VERSION}
+			  COMPILE_FLAGS "${OpenMP_C_FLAGS} -DGMX_X86_DISPATCH -DGMX_SIMD_X86_${EXTRA_SIMD} ${${EXTRA_SIMD}_C_FLAGS}")
+endforeach()
 
 gmx_write_installed_header_list()
 

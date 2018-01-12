@@ -68,10 +68,6 @@ namespace gmx
 namespace internal
 {
 
-IExceptionInfo::~IExceptionInfo()
-{
-}
-
 class ExceptionData
 {
     public:
@@ -80,70 +76,10 @@ class ExceptionData
 
 }    // namespace internal
 
-namespace
-{
+//namespace
+//{
 
-/********************************************************************
- * ErrorMessage
- */
 
-/*! \brief
- * Error message or error context text item.
- *
- * Error messages for an exception are represented as a chain of ErrorMessage
- * objects: the elements at the bottom of the chain (with no children) is the
- * error message, and other elements are the context strings added.
- *
- * \ingroup module_utility
- */
-class ErrorMessage
-{
-    public:
-        /*! \brief
-         * Creates an error message object with the specified text.
-         *
-         * \param[in] text  Text for the message.
-         */
-        explicit ErrorMessage(const std::string &text);
-
-        //! Whether this object is a context string.
-        bool isContext() const { return static_cast<bool>(child_); }
-        //! Returns the text for this object.
-        const std::string &text() const { return text_; }
-        /*! \brief
-         * Returns the child object for a context object.
-         *
-         * Must not be called if isContext() returns false.
-         */
-        const ErrorMessage &child() const
-        {
-            GMX_ASSERT(isContext(),
-                       "Attempting to access nonexistent message object");
-            return *child_;
-        }
-
-        /*! \brief
-         * Creates a new message object with context prepended.
-         *
-         * \param[in] context  Context string to add.
-         * \returns   New error message object that has \p context as its text
-         *      and \c this as its child.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        ErrorMessage prependContext(const std::string &context) const;
-
-    private:
-        std::string                     text_;
-        std::shared_ptr<ErrorMessage>   child_;
-};
-
-/*! \internal \brief
- * Stores a reason or the top-most context string of an exception.
- *
- * \ingroup module_utility
- */
-typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage>
-    ExceptionInfoMessage;
 
 ErrorMessage::ErrorMessage(const std::string &text)
     : text_(text)
@@ -164,15 +100,10 @@ ErrorMessage::prependContext(const std::string &context) const
     return newMessage;
 }
 
-/*! \brief
- * Stores list of nested exceptions for Gromacs exceptions.
- *
- * \ingroup module_utility
- */
 typedef ExceptionInfo<struct ExceptionInfoNestedExceptions_, internal::NestedExceptionList>
     ExceptionInfoNestedExceptions;
 
-}   // namespace
+//}   // namespace
 
 /********************************************************************
  * GromacsException
@@ -188,19 +119,6 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
     }
 }
 
-const char *GromacsException::what() const noexcept
-{
-    const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
-    if (msg == nullptr)
-    {
-        return "No reason provided";
-    }
-    while (msg->isContext())
-    {
-        msg = &msg->child();
-    }
-    return msg->text().c_str();
-}
 
 void GromacsException::prependContext(const std::string &context)
 {
@@ -225,56 +143,6 @@ void GromacsException::setInfo(
 {
     data_->infos_[index] = std::move(item);
 }
-
-/********************************************************************
- * Derived exception classes
- */
-
-int FileIOError::errorCode() const
-{
-    return eeFileIO;
-}
-
-int InvalidInputError::errorCode() const
-{
-    return eeInvalidInput;
-}
-
-int InconsistentInputError::errorCode() const
-{
-    return eeInconsistentInput;
-}
-
-int ToleranceError::errorCode() const
-{
-    return eeTolerance;
-}
-
-int SimulationInstabilityError::errorCode() const
-{
-    return eeInstability;
-}
-
-int InternalError::errorCode() const
-{
-    return eeInternalError;
-}
-
-int APIError::errorCode() const
-{
-    return eeAPIError;
-}
-
-int RangeError::errorCode() const
-{
-    return eeRange;
-}
-
-int NotImplementedError::errorCode() const
-{
-    return eeNotImplemented;
-}
-
 
 /********************************************************************
  * Global functions

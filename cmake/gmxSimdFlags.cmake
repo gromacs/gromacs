@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017, by the GROMACS development team, led by
+# Copyright (c) 2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -380,4 +380,17 @@ function(gmx_find_simd_ibm_vsx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
     endif()
     set(${C_FLAGS_RESULT} ${SIMD_IBM_VSX_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VSX C flags" FORCE)
     set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VSX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VSX C++ flags" FORCE)
+endfunction()
+
+# Wrapper which takes SIMD name
+function(gmx_find_simd_flags SIMD_TYPE C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
+    if ("${SIMD_TYPE}" STREQUAL "AVX_256")
+        gmx_find_simd_avx_flags(${C_FLAGS_RESULT} ${CXX_FLAGS_RESULT} ${C_FLAGS_VARIABLE} ${CXX_FLAGS_VARIABLE})
+    elseif ("${SIMD_TYPE}" STREQUAL "AVX2_256")
+        gmx_find_simd_avx2_flags(${C_FLAGS_RESULT} ${CXX_FLAGS_RESULT} ${C_FLAGS_VARIABLE} ${CXX_FLAGS_VARIABLE})
+    elseif ("${SIMD_TYPE}" STREQUAL "AVX_512")
+        gmx_find_simd_avx_512_flags(${C_FLAGS_RESULT} ${CXX_FLAGS_RESULT} ${C_FLAGS_VARIABLE} ${CXX_FLAGS_VARIABLE})
+    else()
+        message(FATAL_ERROR "Unsupported SIMD name")
+    endif()
 endfunction()

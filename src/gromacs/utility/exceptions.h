@@ -60,6 +60,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/current_function.h"
+#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -85,7 +86,7 @@ typedef std::vector<std::exception_ptr> NestedExceptionList;
 class IExceptionInfo
 {
     public:
-        virtual ~IExceptionInfo();
+        virtual ~IExceptionInfo() {}
         GMX_DEFAULT_CONSTRUCTORS(IExceptionInfo);
 };
 
@@ -255,6 +256,64 @@ class ExceptionInitializer
 };
 
 /*! \brief
+ * Error message or error context text item.
+ *
+ * Error messages for an exception are represented as a chain of ErrorMessage
+ * objects: the elements at the bottom of the chain (with no children) is the
+ * error message, and other elements are the context strings added.
+ *
+ * \ingroup module_utility
+ */
+class ErrorMessage
+{
+    public:
+        /*! \brief
+         * Creates an error message object with the specified text.
+         *
+         * \param[in] text  Text for the message.
+         */
+        explicit ErrorMessage(const std::string &text);
+
+        //! Whether this object is a context string.
+        bool isContext() const { return static_cast<bool>(child_); }
+        //! Returns the text for this object.
+        const std::string &text() const { return text_; }
+        /*! \brief
+         * Returns the child object for a context object.
+         *
+         * Must not be called if isContext() returns false.
+         */
+        const ErrorMessage &child() const
+        {
+            GMX_ASSERT(isContext(),
+                       "Attempting to access nonexistent message object");
+            return *child_;
+        }
+
+        /*! \brief
+         * Creates a new message object with context prepended.
+         *
+         * \param[in] context  Context string to add.
+         * \returns   New error message object that has \p context as its text
+         *      and \c this as its child.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        ErrorMessage prependContext(const std::string &context) const;
+
+    private:
+        std::string                     text_;
+        std::shared_ptr<ErrorMessage>   child_;
+};
+
+/*! \internal \brief
+ * Stores a reason or the top-most context string of an exception.
+ *
+ * \ingroup module_utility
+ */
+typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage>
+    ExceptionInfoMessage;
+
+/*! \brief
  * Base class for all exception objects in Gromacs.
  *
  * \inpublicapi
@@ -273,7 +332,18 @@ class GromacsException : public std::exception
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const noexcept;
+        virtual const char *what() const noexcept {
+                const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
+                if (msg == nullptr)
+                {
+                    return "No reason provided";
+                }
+                while (msg->isContext())
+                {
+                    msg = &msg->child();
+                }
+                return msg->text().c_str();
+        }
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */
@@ -413,7 +483,7 @@ class FileIOError : public GromacsException
         explicit FileIOError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeFileIO; }
 };
 
 /*! \brief
@@ -444,7 +514,7 @@ class InvalidInputError : public UserInputError
         explicit InvalidInputError(const ExceptionInitializer &details)
             : UserInputError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeInvalidInput; }
 };
 
 /*! \brief
@@ -459,7 +529,7 @@ class InconsistentInputError : public UserInputError
         explicit InconsistentInputError(const ExceptionInitializer &details)
             : UserInputError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeInconsistentInput; }
 };
 
 /*! \brief
@@ -483,7 +553,7 @@ class ToleranceError : public GromacsException
         explicit ToleranceError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeTolerance; }
 };
 
 /*! \brief
@@ -498,7 +568,7 @@ class SimulationInstabilityError : public GromacsException
         explicit SimulationInstabilityError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeInstability; }
 };
 
 /*! \brief
@@ -513,7 +583,7 @@ class InternalError : public GromacsException
         explicit InternalError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const {  return eeInternalError; }
 };
 
 /*! \brief
@@ -528,7 +598,7 @@ class APIError : public GromacsException
         explicit APIError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeAPIError; }
 };
 
 /*! \brief
@@ -543,7 +613,7 @@ class RangeError : public GromacsException
         explicit RangeError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeRange; }
 };
 
 /*! \brief
@@ -558,7 +628,7 @@ class NotImplementedError : public APIError
         explicit NotImplementedError(const ExceptionInitializer &details)
             : APIError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const { return eeNotImplemented; }
 };
 
 /*! \brief
