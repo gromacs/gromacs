@@ -204,13 +204,6 @@ TEST_F(PmeTest, ReproducesEnergies)
                 }
             }
         }
-        // FIXME: without this barrier, one of the mdruns was somehow having a non-PME inputrec (!)
-#if GMX_LIB_MPI
-        if (parallelRun)
-        {
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
-#endif
     }
 
     // This is a workaround for the output files to not be deleted in a parallel run.
