@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ SimulationRunner::useStringAsMdpFile(const char *mdpString)
 void
 SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
 {
-    gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpString);
+    mdpInputContents_ = mdpString;
 }
 
 void
@@ -158,6 +158,8 @@ SimulationRunner::useGroFromDatabase(const char *name)
 int
 SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
+    gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpInputContents_);
+
     CommandLine caller;
     caller.append("grompp");
     caller.merge(callerRef);
