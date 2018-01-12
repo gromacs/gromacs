@@ -595,9 +595,20 @@ int InsertMolecules::run()
 
 }   // namespace
 
-const char InsertMoleculesInfo::name[]             = "insert-molecules";
-const char InsertMoleculesInfo::shortDescription[] =
-    "Insert molecules into existing vacancies";
+
+const char* InsertMoleculesInfo::name()
+{
+    static const char* name = "insert-molecules";
+    return name;
+}
+
+const char* InsertMoleculesInfo::shortDescription()
+{
+    static const char* shortDescription =
+        "Insert molecules into existing vacancies";
+    return shortDescription;
+}
+
 ICommandLineOptionsModulePointer InsertMoleculesInfo::create()
 {
     return ICommandLineOptionsModulePointer(new InsertMolecules());

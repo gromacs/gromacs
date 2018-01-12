@@ -233,6 +233,10 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     *low_up_rm        = get_eint(&inp, "ndiff", 0, wi);
     *maxwarn          = get_eint(&inp, "maxwarn", 0, wi);
     *pieces           = get_eint(&inp, "pieces", 1, wi);
+    const char *yesno_names[BOOL_NR+1] =
+    {
+        "no", "yes", nullptr
+    };
     *bALLOW_ASYMMETRY = get_eeenum(&inp, "asymmetry", yesno_names, wi);
 
     check_warning_error(wi, FARGS);

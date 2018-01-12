@@ -837,8 +837,7 @@ int Mdrunner::mdrunner()
         if (inputrec->ePBC == epbcSCREW)
         {
             gmx_fatal(FARGS,
-                      "pbc=%s is only implemented with domain decomposition",
-                      epbc_names[inputrec->ePBC]);
+                      "pbc=screw is only implemented with domain decomposition");
         }
     }
 
