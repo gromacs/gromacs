@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -193,6 +193,18 @@ class CpuInfo
         const std::string &
         vendorString() const
         {
+            static const std::map<CpuInfo::Vendor, std::string>
+            s_vendorStrings_ =
+            {
+                { CpuInfo::Vendor::Unknown, "Unknown vendor"                  },
+                { CpuInfo::Vendor::Intel, "Intel"                             },
+                { CpuInfo::Vendor::Amd, "AMD"                                 },
+                { CpuInfo::Vendor::Fujitsu, "Fujitsu"                         },
+                { CpuInfo::Vendor::Ibm, "IBM"                                 },
+                { CpuInfo::Vendor::Arm, "ARM"                                 },
+                { CpuInfo::Vendor::Oracle, "Oracle"                           },
+            };
+
             return s_vendorStrings_.at(vendor_);
         }
 
@@ -234,6 +246,62 @@ class CpuInfo
         static const std::string &
         featureString(Feature f)
         {
+            static const std::map<CpuInfo::Feature, std::string>
+            s_featureStrings_ =
+            {
+                { CpuInfo::Feature::X86_Aes, "aes"                            },
+                { CpuInfo::Feature::X86_Amd, "amd"                            },
+                { CpuInfo::Feature::X86_Apic, "apic"                          },
+                { CpuInfo::Feature::X86_Avx, "avx"                            },
+                { CpuInfo::Feature::X86_Avx2, "avx2"                          },
+                { CpuInfo::Feature::X86_Avx512F, "avx512f"                    },
+                { CpuInfo::Feature::X86_Avx512PF, "avx512pf"                  },
+                { CpuInfo::Feature::X86_Avx512ER, "avx512er"                  },
+                { CpuInfo::Feature::X86_Avx512CD, "avx512cd"                  },
+                { CpuInfo::Feature::X86_Avx512BW, "avx512bw"                  },
+                { CpuInfo::Feature::X86_Avx512VL, "avx512vl"                  },
+                { CpuInfo::Feature::X86_Clfsh, "clfsh"                        },
+                { CpuInfo::Feature::X86_Cmov, "cmov"                          },
+                { CpuInfo::Feature::X86_Cx8, "cx8"                            },
+                { CpuInfo::Feature::X86_Cx16, "cx16"                          },
+                { CpuInfo::Feature::X86_F16C, "f16c"                          },
+                { CpuInfo::Feature::X86_Fma, "fma"                            },
+                { CpuInfo::Feature::X86_Fma4, "fma4"                          },
+                { CpuInfo::Feature::X86_Hle, "hle"                            },
+                { CpuInfo::Feature::X86_Htt, "htt"                            },
+                { CpuInfo::Feature::X86_Intel, "intel"                        },
+                { CpuInfo::Feature::X86_Lahf, "lahf"                          },
+                { CpuInfo::Feature::X86_MisalignSse, "misalignsse"            },
+                { CpuInfo::Feature::X86_Mmx, "mmx"                            },
+                { CpuInfo::Feature::X86_Msr, "msr"                            },
+                { CpuInfo::Feature::X86_NonstopTsc, "nonstop_tsc"             },
+                { CpuInfo::Feature::X86_Pcid, "pcid"                          },
+                { CpuInfo::Feature::X86_Pclmuldq, "pclmuldq"                  },
+                { CpuInfo::Feature::X86_Pdcm, "pdcm"                          },
+                { CpuInfo::Feature::X86_PDPE1GB, "pdpe1gb"                    },
+                { CpuInfo::Feature::X86_Popcnt, "popcnt"                      },
+                { CpuInfo::Feature::X86_Pse, "pse"                            },
+                { CpuInfo::Feature::X86_Rdrnd, "rdrnd"                        },
+                { CpuInfo::Feature::X86_Rdtscp, "rdtscp"                      },
+                { CpuInfo::Feature::X86_Rtm, "rtm"                            },
+                { CpuInfo::Feature::X86_Sha, "sha"                            },
+                { CpuInfo::Feature::X86_Sse2, "sse2"                          },
+                { CpuInfo::Feature::X86_Sse3, "sse3"                          },
+                { CpuInfo::Feature::X86_Sse4A, "sse4a"                        },
+                { CpuInfo::Feature::X86_Sse4_1, "sse4.1"                      },
+                { CpuInfo::Feature::X86_Sse4_2, "sse4.2"                      },
+                { CpuInfo::Feature::X86_Ssse3, "ssse3"                        },
+                { CpuInfo::Feature::X86_Tdt, "tdt"                            },
+                { CpuInfo::Feature::X86_X2Apic, "x2apic"                      },
+                { CpuInfo::Feature::X86_Xop, "xop"                            },
+                { CpuInfo::Feature::Arm_Neon, "neon"                          },
+                { CpuInfo::Feature::Arm_NeonAsimd, "neon_asimd"               },
+                { CpuInfo::Feature::Ibm_Qpx, "qpx"                            },
+                { CpuInfo::Feature::Ibm_Vmx, "vmx"                            },
+                { CpuInfo::Feature::Ibm_Vsx, "vsx"                            },
+                { CpuInfo::Feature::Fujitsu_HpcAce, "hpc-ace"                 }
+            };
+
             return s_featureStrings_.at(f);
         }
 
@@ -279,8 +347,6 @@ class CpuInfo
         int                                          stepping_;          //!<  Minor version of current cpu
         std::set<Feature>                            features_;          //!< Set of features supported on this cpu
         std::vector<LogicalProcessor>                logicalProcessors_; //!< Simple logical processor topology
-        static const std::map<Vendor, std::string>   s_vendorStrings_;   //!< Text description of each vendor
-        static const std::map<Feature, std::string>  s_featureStrings_;  //!< Text description of each feature
 };                                                                       // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem
