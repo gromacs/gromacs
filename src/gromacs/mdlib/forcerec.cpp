@@ -1539,10 +1539,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
             ir->vdwtype == evdwCUT    &&
             ir->coulombtype == eelCUT &&
             ir->efep == efepNO        &&
-            (ir->implicit_solvent == eisNO ||
-             (ir->implicit_solvent == eisGBSA && (ir->gb_algorithm == egbSTILL ||
-                                                  ir->gb_algorithm == egbHCT   ||
-                                                  ir->gb_algorithm == egbOBC))) &&
             getenv("GMX_NO_ALLVSALL") == nullptr
         );
 
@@ -2338,7 +2334,7 @@ void init_forcerec(FILE                    *fp,
                    gmx_bool                 bNoSolvOpt,
                    real                     print_force)
 {
-    int            i, m, negp_pp, negptable, egi, egj;
+    int            m, negp_pp, negptable, egi, egj;
     real           rtab;
     char          *env;
     double         dbl;
@@ -2483,7 +2479,6 @@ void init_forcerec(FILE                    *fp,
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir, FALSE, nullptr, nullptr);
     fr->AllvsAll_work   = nullptr;
-    fr->AllvsAll_workgb = nullptr;
 
     /* All-vs-all kernels have not been implemented in 4.6 and later.
      * See Redmine #1249. */
@@ -2598,7 +2593,6 @@ void init_forcerec(FILE                    *fp,
             fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->ePBC);
         }
     }
-    fr->bGB = (ir->implicit_solvent == eisGBSA);
 
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com, fr->posres_com);
@@ -2625,7 +2619,7 @@ void init_forcerec(FILE                    *fp,
     switch (ic->eeltype)
     {
         case eelCUT:
-            fr->nbkernel_elec_interaction = (fr->bGB) ? GMX_NBKERNEL_ELEC_GENERALIZEDBORN : GMX_NBKERNEL_ELEC_COULOMB;
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_COULOMB;
             break;
 
         case eelRF:
@@ -2881,63 +2875,9 @@ void init_forcerec(FILE                    *fp,
         set_avcsixtwelve(fp, fr, mtop);
     }
 
-    fr->gb_epsilon_solvent = ir->gb_epsilon_solvent;
-
-    /* Copy the GBSA data (radius, volume and surftens for each
-     * atomtype) from the topology atomtype section to forcerec.
-     */
-    snew(fr->atype_radius, fr->ntype);
-    snew(fr->atype_vol, fr->ntype);
-    snew(fr->atype_surftens, fr->ntype);
-    snew(fr->atype_gb_radius, fr->ntype);
-    snew(fr->atype_S_hct, fr->ntype);
-
-    if (mtop->atomtypes.nr > 0)
+    if (ir->implicit_solvent)
     {
-        for (i = 0; i < fr->ntype; i++)
-        {
-            fr->atype_radius[i] = mtop->atomtypes.radius[i];
-        }
-        for (i = 0; i < fr->ntype; i++)
-        {
-            fr->atype_vol[i] = mtop->atomtypes.vol[i];
-        }
-        for (i = 0; i < fr->ntype; i++)
-        {
-            fr->atype_surftens[i] = mtop->atomtypes.surftens[i];
-        }
-        for (i = 0; i < fr->ntype; i++)
-        {
-            fr->atype_gb_radius[i] = mtop->atomtypes.gb_radius[i];
-        }
-        for (i = 0; i < fr->ntype; i++)
-        {
-            fr->atype_S_hct[i] = mtop->atomtypes.S_hct[i];
-        }
-    }
-
-    /* Generate the GB table if needed */
-    if (fr->bGB)
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The support for implicit solvent is deprecated, and may be removed "
-                       "in a future version.");
-#if GMX_DOUBLE
-        fr->gbtabscale = 2000;
-#else
-        fr->gbtabscale = 500;
-#endif
-
-        fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(fr);
-
-        init_gb(&fr->born, fr, ir, mtop, ir->gb_algorithm);
-
-        /* Copy local gb data (for dd, this is done in dd_partition_system) */
-        if (!DOMAINDECOMP(cr))
-        {
-            make_local_gb(cr, fr->born, ir->gb_algorithm);
-        }
+        gmx_fatal(FARGS, "Implict solvation is no longer supported.");
     }
 
     /* Construct tables for the group scheme. A little unnecessary to

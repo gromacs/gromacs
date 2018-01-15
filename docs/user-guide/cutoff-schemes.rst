@@ -57,7 +57,6 @@ force-switch interactions             yes          yes
 switched potential                    yes          yes
 switched forces                       yes          yes
 non-periodic systems                  yes          Z + walls
-implicit solvent                      yes          no
 free energy perturbed non-bondeds     yes          yes
 energy group contributions            yes          only on CPU
 energy group exclusions               yes          no

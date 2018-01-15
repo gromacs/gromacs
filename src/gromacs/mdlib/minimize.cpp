@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -769,7 +769,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
              ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
-             ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
+             ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
@@ -2832,7 +2832,6 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
         {
-            gmx_bool    bBornRadii  = FALSE;
             gmx_int64_t step        = 0;
             int         force_flags = GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES;
             double      t           = 0;
@@ -2861,7 +2860,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                                constr, enerd, fcd,
                                                &state_work.s, &state_work.f, vir, mdatoms,
                                                nrnb, wcycle, graph, &top_global->groups,
-                                               shellfc, fr, bBornRadii, t, mu_tot,
+                                               shellfc, fr, t, mu_tot,
                                                vsite,
                                                DdOpenBalanceRegionBeforeForceComputation::no,
                                                DdCloseBalanceRegionAfterForceComputation::no);

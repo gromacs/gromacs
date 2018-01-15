@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1444,74 +1444,6 @@ t_forcetable *make_tables(FILE *out,
     sfree(td);
 
     return table;
-}
-
-t_forcetable *make_gb_table(const t_forcerec              *fr)
-{
-    t_tabledata    *td;
-    int             nx0;
-    double          r, r2, Vtab, Ftab, expterm;
-
-    t_forcetable   *table;
-
-    /* Set the table dimensions for GB, not really necessary to
-     * use etiNR (since we only have one table, but ...)
-     */
-    snew(table, 1);
-    snew(td, 1);
-    table->interaction   = GMX_TABLE_INTERACTION_ELEC;
-    table->format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table->r             = fr->gbtabr;
-    table->scale         = fr->gbtabscale;
-    table->n             = static_cast<int>(table->scale*table->r);
-    table->formatsize    = 4;
-    table->ninteractions = 1;
-    table->stride        = table->formatsize*table->ninteractions;
-    nx0                  = 0;
-
-    /* Each table type (e.g. coul,lj6,lj12) requires four numbers per
-     * datapoint. For performance reasons we want the table data to be
-     * aligned on a 32-byte boundary. This new pointer must not be
-     * used in a free() call, but thankfully we're sloppy enough not
-     * to do this :-)
-     */
-
-    snew_aligned(table->data, table->stride*table->n, 32);
-
-    init_table(table->n, nx0, table->scale, &(td[0]), TRUE);
-
-    /* Local implementation so we don't have to use the etabGB
-     * enum above, which will cause problems later when
-     * making the other tables (right now even though we are using
-     * GB, the normal Coulomb tables will be created, but this
-     * will cause a problem since fr->eeltype==etabGB which will not
-     * be defined in fill_table and set_table_type
-     */
-
-    for (int i = nx0; i < table->n; i++)
-    {
-        r       = td->x[i];
-        r2      = r*r;
-        expterm = exp(-0.25*r2);
-
-        Vtab = 1/sqrt(r2+expterm);
-        Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
-
-        /* Convert to single precision when we store to mem */
-        td->x[i]  = i/table->scale;
-        td->v[i]  = Vtab;
-        td->f[i]  = Ftab;
-
-    }
-
-    copy2table(table->n, 0, table->stride, td[0].x, td[0].v, td[0].f, 1.0, table->data);
-
-    done_tabledata(&(td[0]));
-    sfree(td);
-
-    return table;
-
-
 }
 
 bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)

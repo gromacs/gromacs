@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -927,22 +927,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PR("ewald-geometry", ir->ewald_geometry);
         PR("epsilon-surface", ir->epsilon_surface);
 
-        /* Implicit solvent */
-        PS("implicit-solvent", EIMPLICITSOL(ir->implicit_solvent));
-
-        /* Generalized born electrostatics */
-        PS("gb-algorithm", EGBALGORITHM(ir->gb_algorithm));
-        PI("nstgbradii", ir->nstgbradii);
-        PR("rgbradii", ir->rgbradii);
-        PR("gb-epsilon-solvent", ir->gb_epsilon_solvent);
-        PR("gb-saltconc", ir->gb_saltconc);
-        PR("gb-obc-alpha", ir->gb_obc_alpha);
-        PR("gb-obc-beta", ir->gb_obc_beta);
-        PR("gb-obc-gamma", ir->gb_obc_gamma);
-        PR("gb-dielectric-offset", ir->gb_dielectric_offset);
-        PS("sa-algorithm", ESAALGORITHM(ir->sa_algorithm));
-        PR("sa-surface-tension", ir->sa_surface_tension);
-
         /* Options for weak coupling algorithms */
         PS("tcoupl", ETCOUPLTYPE(ir->etc));
         PI("nsttcouple", ir->nsttcouple);
@@ -1343,18 +1327,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->epsilon_r", -1, ir1->epsilon_r, ir2->epsilon_r, ftol, abstol);
     cmp_real(fp, "inputrec->epsilon_rf", -1, ir1->epsilon_rf, ir2->epsilon_rf, ftol, abstol);
     cmp_real(fp, "inputrec->tabext", -1, ir1->tabext, ir2->tabext, ftol, abstol);
-    cmp_int(fp, "inputrec->implicit_solvent", -1, ir1->implicit_solvent, ir2->implicit_solvent);
-    cmp_int(fp, "inputrec->gb_algorithm", -1, ir1->gb_algorithm, ir2->gb_algorithm);
-    cmp_int(fp, "inputrec->nstgbradii", -1, ir1->nstgbradii, ir2->nstgbradii);
-    cmp_real(fp, "inputrec->rgbradii", -1, ir1->rgbradii, ir2->rgbradii, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_saltconc", -1, ir1->gb_saltconc, ir2->gb_saltconc, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_epsilon_solvent", -1, ir1->gb_epsilon_solvent, ir2->gb_epsilon_solvent, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_obc_alpha", -1, ir1->gb_obc_alpha, ir2->gb_obc_alpha, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_obc_beta", -1, ir1->gb_obc_beta, ir2->gb_obc_beta, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_obc_gamma", -1, ir1->gb_obc_gamma, ir2->gb_obc_gamma, ftol, abstol);
-    cmp_real(fp, "inputrec->gb_dielectric_offset", -1, ir1->gb_dielectric_offset, ir2->gb_dielectric_offset, ftol, abstol);
-    cmp_int(fp, "inputrec->sa_algorithm", -1, ir1->sa_algorithm, ir2->sa_algorithm);
-    cmp_real(fp, "inputrec->sa_surface_tension", -1, ir1->sa_surface_tension, ir2->sa_surface_tension, ftol, abstol);
 
     cmp_int(fp, "inputrec->eDispCorr", -1, ir1->eDispCorr, ir2->eDispCorr);
     cmp_real(fp, "inputrec->shake_tol", -1, ir1->shake_tol, ir2->shake_tol, ftol, abstol);
@@ -1466,8 +1438,7 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)
 {
-    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)) ||
-            ir->implicit_solvent != eisNO);
+    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)));
 }
 
 gmx_bool inputrecNptTrotter(const t_inputrec *ir)

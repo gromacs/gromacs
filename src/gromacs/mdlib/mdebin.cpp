@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -240,18 +240,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i == F_EQM))
         {
             md->bEner[i] = TRUE;
-        }
-        else if ((i == F_GBPOL) && ir->implicit_solvent == eisGBSA)
-        {
-            md->bEner[i] = TRUE;
-        }
-        else if ((i == F_NPSOLVATION) && ir->implicit_solvent == eisGBSA && (ir->sa_algorithm != esaNO))
-        {
-            md->bEner[i] = TRUE;
-        }
-        else if ((i == F_GB12) || (i == F_GB13) || (i == F_GB14))
-        {
-            md->bEner[i] = FALSE;
         }
         else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
         {
