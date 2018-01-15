@@ -577,7 +577,6 @@ The performance counters are:
 * Neighbor search
 * Launch GPU operations
 * Communication of coordinates
-* Born radii
 * Force
 * Waiting + Communication of force
 * Particle mesh Ewald

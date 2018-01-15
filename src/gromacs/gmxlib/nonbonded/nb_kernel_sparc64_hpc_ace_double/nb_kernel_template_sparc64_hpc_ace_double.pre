@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,11 +128,6 @@ void
     _fjsp_v2r8       velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
     /* #endif */
-    /* #if 'GeneralizedBorn' in KERNEL_ELEC */
-    _fjsp_v2r8       vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,twogbeps,dvdatmp;
-    _fjsp_v2r8       minushalf = gmx_fjsp_set1_v2r8(-0.5);
-    real             *invsqrta,*dvda,*gbtab;
-    /* #endif */
     /* #if KERNEL_VDW != 'None' */
     int              nvdwtype;
     _fjsp_v2r8       rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,sh_vdw_invrcut6;
@@ -141,7 +136,7 @@ void
     _fjsp_v2r8       one_sixth   = gmx_fjsp_set1_v2r8(1.0/6.0);
     _fjsp_v2r8       one_twelfth = gmx_fjsp_set1_v2r8(1.0/12.0);
     /* #endif */
-    /* #if 'Table' in KERNEL_ELEC or 'GeneralizedBorn' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
+    /* #if 'Table' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
     _fjsp_v2r8       rt,vfeps,vftabscale,Y,F,G,H,Heps,Fp,VV,FF,twovfeps;
     real             *vftab;
     /* #endif */
@@ -222,14 +217,6 @@ void
     ewtabscale       = gmx_fjsp_set1_v2r8(fr->ic->tabq_scale);
     ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
      /*     #endif */
-    /* #endif */
-
-    /* #if KERNEL_ELEC=='GeneralizedBorn' */
-    invsqrta         = fr->invsqrta;
-    dvda             = fr->dvda;
-    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
-    gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -358,9 +345,6 @@ void
         /*     #for I in PARTICLES_ELEC_I */
         iq{I}              = _fjsp_mul_v2r8(facel,gmx_fjsp_load1_v2r8(charge+inr+{I}));
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-        isai{I}            = gmx_fjsp_load1_v2r8(invsqrta+inr+{I});
-        /*         #endif */
         /*     #endfor */
         /*     #for I in PARTICLES_VDW_I */
         vdwioffset{I}      = 2*nvdwtype*vdwtype[inr+{I}];
@@ -372,16 +356,10 @@ void
         /*     #if KERNEL_ELEC != 'None' */
         velecsum         = _fjsp_setzero_v2r8();
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        vgbsum           = _fjsp_setzero_v2r8();
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         vvdwsum          = _fjsp_setzero_v2r8();
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvdasum          = _fjsp_setzero_v2r8();
-        /*     #endif */
 
         /* #for ROUND in ['Loop','Epilogue'] */
 
@@ -488,13 +466,6 @@ void
             /*         #else */
             jq{J}              = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(),charge+jnrA+{J});
             /*         #endif */
-            /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-            /*             #if ROUND =='Loop' */
-            isaj{J}            = gmx_fjsp_load_2real_swizzle_v2r8(invsqrta+jnrA+{J},invsqrta+jnrB+{J});
-            /*             #else */
-            isaj{J}            = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(),invsqrta+jnrA+{J});
-            /*             #endif */
-            /*         #endif */
             /*     #endfor */
             /*     #for J in PARTICLES_VDW_J */
             vdwjidx{J}A        = 2*vdwtype[jnrA+{J}];
@@ -597,61 +568,6 @@ void
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
             felec            = _fjsp_mul_v2r8(qq{I}{J},_fjsp_msub_v2r8(rinv{I}{J},rinvsq{I}{J},krf2));
-            /*                 #define INNERFLOPS INNERFLOPS+3 */
-            /*             #endif */
-
-            /*         #elif KERNEL_ELEC=='GeneralizedBorn' */
-
-            /* GENERALIZED BORN AND COULOMB ELECTROSTATICS */
-            isaprod          = _fjsp_mul_v2r8(isai{I},isaj{J});
-            gbqqfactor       = _fjsp_neg_v2r8(_fjsp_mul_v2r8(qq{I}{J},_fjsp_mul_v2r8(isaprod,gbinvepsdiff)));
-            gbscale          = _fjsp_mul_v2r8(isaprod,gbtabscale);
-            /*             #define INNERFLOPS INNERFLOPS+5 */
-
-            /* Calculate generalized born table index - this is a separate table from the normal one,
-             * but we use the same procedure by multiplying r with scale and truncating to integer.
-             */
-            rt               = _fjsp_mul_v2r8(r{I}{J},gbscale);
-            itab_tmp         = _fjsp_dtox_v2r8(rt);
-            gbeps            = _fjsp_sub_v2r8(rt,_fjsp_xtod_v2r8(itab_tmp));
-            _fjsp_store_v2r8(&gbconv.simd,itab_tmp);
-
-            Y                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[0] );
-            /*             #if ROUND == 'Loop' */
-            F                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[1] );
-            /*             #else */
-            F                = _fjsp_setzero_v2r8();
-            /*             #endif */
-            GMX_FJSP_TRANSPOSE2_V2R8(Y,F);
-            G                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[0] +2);
-            /*             #if ROUND == 'Loop' */
-            H                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[1] +2);
-            /*             #else */
-            H                = _fjsp_setzero_v2r8();
-            /*             #endif */
-            GMX_FJSP_TRANSPOSE2_V2R8(G,H);
-            Fp               = _fjsp_madd_v2r8(gbeps,_fjsp_madd_v2r8(gbeps,H,G),F);
-            VV               = _fjsp_madd_v2r8(gbeps,Fp,Y);
-            vgb              = _fjsp_mul_v2r8(gbqqfactor,VV);
-            /*             #define INNERFLOPS INNERFLOPS+10 */
-
-            /*             #if 'Force' in KERNEL_VF */
-            twogbeps         = _fjsp_add_v2r8(gbeps,gbeps);
-            FF               = _fjsp_madd_v2r8(_fjsp_madd_v2r8(twogbeps,H,G),gbeps,Fp);
-            fgb              = _fjsp_mul_v2r8(gbqqfactor,_fjsp_mul_v2r8(FF,gbscale));
-            dvdatmp          = _fjsp_mul_v2r8(minushalf,_fjsp_madd_v2r8(fgb,r{I}{J},vgb));
-            dvdasum          = _fjsp_add_v2r8(dvdasum,dvdatmp);
-            /*             #if ROUND == 'Loop' */
-            gmx_fjsp_increment_2real_swizzle_v2r8(dvda+jnrA,dvda+jnrB,_fjsp_mul_v2r8(dvdatmp,_fjsp_mul_v2r8(isaj{J},isaj{J})));
-            /*             #else */
-            gmx_fjsp_increment_1real_v2r8(dvda+jnrA,_fjsp_mul_v2r8(dvdatmp,_fjsp_mul_v2r8(isaj{J},isaj{J})));
-            /*             #endif */
-            /*                 #define INNERFLOPS INNERFLOPS+13 */
-            /*             #endif */
-            velec            = _fjsp_mul_v2r8(qq{I}{J},rinv{I}{J});
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if 'Force' in KERNEL_VF */
-            felec            = _fjsp_mul_v2r8(_fjsp_msub_v2r8(velec,rinv{I}{J},fgb),rinv{I}{J});
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
 
@@ -937,17 +853,6 @@ void
             /*             #endif */
             velecsum         = _fjsp_add_v2r8(velecsum,velec);
             /*             #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if KERNEL_ELEC=='GeneralizedBorn' */
-            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
-            vgb              = _fjsp_and_v2r8(vgb,cutoff_mask);
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif                                       */
-            /*             #if ROUND == 'Epilogue' */
-            vgb              = _fjsp_unpacklo_v2r8(vgb,_fjsp_setzero_v2r8());
-            /*             #endif */
-            vgbsum           = _fjsp_add_v2r8(vgbsum,vgb);
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif */
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
             /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
@@ -1086,19 +991,11 @@ void
         gmx_fjsp_update_1pot_v2r8(velecsum,kernel_data->energygrp_elec+ggid);
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        gmx_fjsp_update_1pot_v2r8(vgbsum,kernel_data->energygrp_polarization+ggid);
-        /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         gmx_fjsp_update_1pot_v2r8(vvdwsum,kernel_data->energygrp_vdw+ggid);
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvdasum = _fjsp_mul_v2r8(dvdasum, _fjsp_mul_v2r8(isai{I},isai{I}));
-        gmx_fjsp_update_1pot_v2r8(dvdasum,dvda+inr);
-        /*     #endif */
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;

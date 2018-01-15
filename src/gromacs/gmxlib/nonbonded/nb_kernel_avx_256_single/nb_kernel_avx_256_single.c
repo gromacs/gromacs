@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,36 @@ nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_256_single;
@@ -141,72 +171,6 @@ nb_kernel_t nb_kernel_ElecEwSw_VdwNone_GeomW4P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_256_single;
-nb_kernel_t nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecRFCut_VdwLJSh_GeomW3P1_VF_avx_256_single;
@@ -277,6 +241,36 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4P1_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4P1_F_avx_256_single;
 nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_VF_avx_256_single;
 nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single;
+nb_kernel_t nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single;
 
 
 nb_kernel_info_t
@@ -294,6 +288,36 @@ nb_kernel_info_t
     { nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_256_single, "nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_256_single", "avx_256_single", "None", "None", "LennardJones", "PotentialSwitch", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
     { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_256_single", "avx_256_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_256_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_256_single", "avx_256_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_256_single", "avx_256_single", "Ewald", "None", "LJEwald", "None", "Water3Particle", "", "PotentialAndForce" },
@@ -384,72 +408,6 @@ nb_kernel_info_t
     { nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_avx_256_single, "nb_kernel_ElecEwSw_VdwNone_GeomW4P1_F_avx_256_single", "avx_256_single", "Ewald", "PotentialSwitch", "None", "None", "Water4Particle", "", "Force" },
     { nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_avx_256_single", "avx_256_single", "Ewald", "PotentialSwitch", "None", "None", "Water4Water4", "", "PotentialAndForce" },
     { nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_avx_256_single, "nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_avx_256_single", "avx_256_single", "Ewald", "PotentialSwitch", "None", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwLJ_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "LennardJones", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwNone_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "None", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Water3", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water3Water3", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4P1_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "CubicSplineTable", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
-    { nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_256_single, "nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "None", "None", "ParticleParticle", "", "Force" },
-    { nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
-    { nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "GeneralizedBorn", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_avx_256_single", "avx_256_single", "ReactionField", "ExactCutoff", "LennardJones", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_avx_256_single, "nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_avx_256_single", "avx_256_single", "ReactionField", "ExactCutoff", "LennardJones", "PotentialShift", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecRFCut_VdwLJSh_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecRFCut_VdwLJSh_GeomW3P1_VF_avx_256_single", "avx_256_single", "ReactionField", "ExactCutoff", "LennardJones", "PotentialShift", "Water3Particle", "", "PotentialAndForce" },
@@ -519,7 +477,37 @@ nb_kernel_info_t
     { nb_kernel_ElecRF_VdwCSTab_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecRF_VdwCSTab_GeomW4P1_VF_avx_256_single", "avx_256_single", "ReactionField", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
     { nb_kernel_ElecRF_VdwCSTab_GeomW4P1_F_avx_256_single, "nb_kernel_ElecRF_VdwCSTab_GeomW4P1_F_avx_256_single", "avx_256_single", "ReactionField", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
     { nb_kernel_ElecRF_VdwCSTab_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecRF_VdwCSTab_GeomW4W4_VF_avx_256_single", "avx_256_single", "ReactionField", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
-    { nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "ReactionField", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" }
+    { nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "ReactionField", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwLJ_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "LennardJones", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "None", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomP1P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW3W3_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4P1_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_VF_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single, "nb_kernel_ElecCoul_VdwCSTab_GeomW4W4_F_avx_256_single", "avx_256_single", "Coulomb", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" }
 };
 
 int

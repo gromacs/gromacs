@@ -3102,100 +3102,6 @@ Mixed quantum/classical molecular dynamics
       CASSCF method.
 
 
-Implicit solvent
-^^^^^^^^^^^^^^^^
-
-.. mdp:: implicit-solvent
-
-   .. mdp-value:: no
-
-      No implicit solvent
-
-   .. mdp-value:: GBSA
-
-      Do a simulation with implicit solvent using the Generalized Born
-      formalism. Three different methods for calculating the Born
-      radii are available, Still, HCT and OBC. These are specified
-      with the :mdp:`gb-algorithm` field. The non-polar solvation is
-      specified with the :mdp:`sa-algorithm` field.
-
-.. mdp:: gb-algorithm
-
-   .. mdp-value:: Still
-
-      Use the Still method to calculate the Born radii
-
-   .. mdp-value:: HCT
-
-      Use the Hawkins-Cramer-Truhlar method to calculate the Born
-      radii
-
-   .. mdp-value:: OBC
-
-      Use the Onufriev-Bashford-Case method to calculate the Born
-      radii
-
-.. mdp:: nstgbradii
-
-   (1) \[steps\]
-   Frequency to (re)-calculate the Born radii. For most practial
-   purposes, setting a value larger than 1 violates energy
-   conservation and leads to unstable trajectories.
-
-.. mdp:: rgbradii
-
-   (1.0) \[nm\]
-   Cut-off for the calculation of the Born radii. Currently must be
-   equal to rlist
-
-.. mdp:: gb-epsilon-solvent
-
-   (80)
-   Dielectric constant for the implicit solvent
-
-.. mdp:: gb-saltconc
-
-   (0) \[M\]
-   Salt concentration for implicit solvent models, currently not used
-
-.. mdp:: gb-obc-alpha
-.. mdp:: gb-obc-beta
-.. mdp:: gb-obc-gamma
-
-   Scale factors for the OBC model. Default values of 1, 0.78 and 4.85
-   respectively are for OBC(II). Values for OBC(I) are 0.8, 0 and 2.91
-   respectively
-
-.. mdp:: gb-dielectric-offset
-
-   (0.009) \[nm\]
-   Distance for the di-electric offset when calculating the Born
-   radii. This is the offset between the center of each atom the
-   center of the polarization energy for the corresponding atom
-
-.. mdp:: sa-algorithm
-
-   .. mdp-value:: Ace-approximation
-
-      Use an Ace-type approximation
-
-   .. mdp-value:: None
-
-      No non-polar solvation calculation done. For GBSA only the polar
-      part gets calculated
-
-.. mdp:: sa-surface-tension
-
-   \[kJ mol-1 nm-2\]
-   Default value for surface tension with SA algorithms. The default
-   value is -1; Note that if this default value is not changed it will
-   be overridden by :ref:`gmx grompp` using values that are specific
-   for the choice of radii algorithm (0.0049 kcal/mol/Angstrom^2 for
-   Still, 0.0054 kcal/mol/Angstrom2 for HCT/OBC) Setting it to 0 will
-   while using an sa-algorithm other than None means no non-polar
-   calculations are done.
-
-
 Computational Electrophysiology
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Use these options to switch on and control ion/water position exchanges in "Computational
@@ -3344,12 +3250,16 @@ User defined thingies
 Removed features
 ^^^^^^^^^^^^^^^^
 
-This feature has been removed from |Gromacs|, but so that old
+These features have been removed from |Gromacs|, but so that old
 :ref:`mdp` and :ref:`tpr` files cannot be mistakenly misused, we still
 parse this option. :ref:`gmx grompp` and :ref:`gmx mdrun` will issue a
 fatal error if this is set.
 
 .. mdp:: adress
+
+   (no)
+
+.. mdp:: implicit-solvent
 
    (no)
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/forcerec-threading.h"
-#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -144,9 +143,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        gmx::ForceWithVirial *forceWithVirial,
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
-                       gmx_localtop_t *top,
-                       gmx_genborn_t *born,
-                       gmx_bool       bBornRadii,
                        matrix     box,
                        t_lambda   *fepvals,
                        real       *lambda,
@@ -201,24 +197,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
-    /* If doing GB, reset dvda and calculate the Born radii */
-    if (ir->implicit_solvent)
-    {
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-
-        for (i = 0; i < born->nr; i++)
-        {
-            fr->dvda[i] = 0;
-        }
-
-        if (bBornRadii)
-        {
-            calc_gb_rad(cr, fr, ir, top, x, fr->gblist, born, md, nrnb);
-        }
-
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
-
     where();
     /* We only do non-bonded calculation with group scheme here, the verlet
      * calls are done from do_force_cutsVERLET(). */
@@ -271,17 +249,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
         where();
-    }
-
-    /* If we are doing GB, calculate bonded forces and apply corrections
-     * to the solvation forces */
-    /* MRS: Eventually, many need to include free energy contribution here! */
-    if (ir->implicit_solvent)
-    {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
-        calc_gb_forces(cr, md, born, top, x, forceForUseWithShiftForces, fr, idef,
-                       ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
     }
 
 #if GMX_MPI
@@ -703,8 +670,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
     epot[F_LJ14]     = sum_v(grpp->nener, grpp->ener[egLJ14]);
     epot[F_COUL14]   = sum_v(grpp->nener, grpp->ener[egCOUL14]);
-    /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
-    epot[F_GBPOL]   += sum_v(grpp->nener, grpp->ener[egGB]);
 
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier

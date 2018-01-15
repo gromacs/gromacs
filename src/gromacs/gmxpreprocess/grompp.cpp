@@ -77,7 +77,6 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -520,23 +519,16 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     gmx_molblock_t *molblock, *molbs;
     int             mb, i, nrmols, nmismatch;
     char            buf[STRLEN];
-    gmx_bool        bGB = FALSE;
     char            warn_buf[STRLEN];
 
     init_mtop(sys);
-
-    /* Set gmx_boolean for GB */
-    if (ir->implicit_solvent)
-    {
-        bGB = TRUE;
-    }
 
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
                        atype, &nrmols, &molinfo, intermolecular_interactions,
                        ir,
-                       &nmolblock, &molblock, bGB,
+                       &nmolblock, &molblock,
                        wi);
 
     sys->nmolblock = 0;
@@ -1270,73 +1262,6 @@ static int count_constraints(gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
     return count;
 }
 
-static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
-{
-    int            i, nmiss, natoms, mt;
-    real           q;
-    const t_atoms *atoms;
-
-    nmiss = 0;
-    for (mt = 0; mt < sys->nmoltype; mt++)
-    {
-        atoms  = &sys->moltype[mt].atoms;
-        natoms = atoms->nr;
-
-        for (i = 0; i < natoms; i++)
-        {
-            q = atoms->atom[i].q;
-            if ((get_atomtype_radius(atoms->atom[i].type, atype)    == 0  ||
-                 get_atomtype_vol(atoms->atom[i].type, atype)       == 0  ||
-                 get_atomtype_surftens(atoms->atom[i].type, atype)  == 0  ||
-                 get_atomtype_gb_radius(atoms->atom[i].type, atype) == 0  ||
-                 get_atomtype_S_hct(atoms->atom[i].type, atype)     == 0) &&
-                q != 0)
-            {
-                fprintf(stderr, "\nGB parameter(s) zero for atom type '%s' while charge is %g\n",
-                        get_atomtype_name(atoms->atom[i].type, atype), q);
-                nmiss++;
-            }
-        }
-    }
-
-    if (nmiss > 0)
-    {
-        gmx_fatal(FARGS, "Can't do GB electrostatics; the implicit_genborn_params section of the forcefield has parameters with value zero for %d atomtypes that occur as charged atoms.", nmiss);
-    }
-}
-
-
-static void check_gbsa_params(gpp_atomtype_t atype)
-{
-    int  nmiss, i;
-
-    /* If we are doing GBSA, check that we got the parameters we need
-     * This checking is to see if there are GBSA paratmeters for all
-     * atoms in the force field. To go around this for testing purposes
-     * comment out the nerror++ counter temporarily
-     */
-    nmiss = 0;
-    for (i = 0; i < get_atomtype_ntypes(atype); i++)
-    {
-        if (get_atomtype_radius(i, atype)    < 0 ||
-            get_atomtype_vol(i, atype)       < 0 ||
-            get_atomtype_surftens(i, atype)  < 0 ||
-            get_atomtype_gb_radius(i, atype) < 0 ||
-            get_atomtype_S_hct(i, atype)     < 0)
-        {
-            fprintf(stderr, "\nGB parameter(s) missing or negative for atom type '%s'\n",
-                    get_atomtype_name(i, atype));
-            nmiss++;
-        }
-    }
-
-    if (nmiss > 0)
-    {
-        gmx_fatal(FARGS, "Can't do GB electrostatics; the implicit_genborn_params section of the forcefield is missing parameters for %d atomtypes or they might be negative.", nmiss);
-    }
-
-}
-
 static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
@@ -2061,15 +1986,9 @@ int gmx_grompp(int argc, char *argv[])
         get_atomtype_ntypes(atype);
     }
 
-    if (ir->implicit_solvent != eisNO)
+    if (ir->implicit_solvent)
     {
-        /* Now we have renumbered the atom types, we can check the GBSA params */
-        check_gbsa_params(atype);
-
-        /* Check that all atoms that have charge and/or LJ-parameters also have
-         * sensible GB-parameters
-         */
-        check_gbsa_params_charged(sys, atype);
+        gmx_fatal(FARGS, "Implicit solvation is no longer supported");
     }
 
     /* PELA: Copy the atomtype data to the topology atomtype list */

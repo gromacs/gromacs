@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,6 @@ ElectrostaticsList = {
     'None'                    : [],
     'Coulomb'                 : ['rinv','rinvsq'],
     'ReactionField'           : ['rinv','rinvsq'],
-    'GeneralizedBorn'         : ['rinv','r'],
     'CubicSplineTable'        : ['rinv','r','table'],
     'Ewald'                   : ['rinv','rinvsq','r'],
 }
@@ -190,7 +189,6 @@ Abbreviation = {
     'Coulomb'                 : 'Coul',
     'Ewald'                   : 'Ew',
     'ReactionField'           : 'RF',
-    'GeneralizedBorn'         : 'GB',
     'CubicSplineTable'        : 'CSTab',
     'LennardJones'            : 'LJ',
     'Buckingham'              : 'Bham',
@@ -269,7 +267,7 @@ def KeepKernel(KernelElec,KernelElecMod,KernelVdw,KernelVdwMod,KernelGeom,Kernel
         return 0
 
     # No need for LJ-only water optimization, or water optimization with implicit solvent.
-    if('Water' in KernelGeom[0] and (KernelElec=='None' or 'GeneralizedBorn' in KernelElec)):
+    if('Water' in KernelGeom[0] and KernelElec=='None'):
         return 0
 
     # Non-matching table settings are pointless

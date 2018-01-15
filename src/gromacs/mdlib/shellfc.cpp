@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -987,7 +987,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          gmx_groups_t *groups,
                          gmx_shellfc_t *shfc,
                          t_forcerec *fr,
-                         gmx_bool bBornRadii,
                          double t, rvec mu_tot,
                          gmx_vsite_t *vsite,
                          DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
@@ -1121,7 +1120,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              state->box, state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
-             fr, vsite, mu_tot, t, nullptr, bBornRadii,
+             fr, vsite, mu_tot, t, nullptr,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
              ddOpenBalanceRegion, ddCloseBalanceRegion);
 
@@ -1224,7 +1223,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
-                 fr, vsite, mu_tot, t, nullptr, bBornRadii,
+                 fr, vsite, mu_tot, t, nullptr,
                  force_flags,
                  ddOpenBalanceRegion, ddCloseBalanceRegion);
 

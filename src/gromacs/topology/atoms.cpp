@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,11 +74,7 @@ void init_atom(t_atoms *at)
 void init_atomtypes(t_atomtypes *at)
 {
     at->nr         = 0;
-    at->radius     = nullptr;
-    at->vol        = nullptr;
     at->atomnumber = nullptr;
-    at->gb_radius  = nullptr;
-    at->S_hct      = nullptr;
 }
 
 void done_atom(t_atoms *at)
@@ -95,12 +91,7 @@ void done_atom(t_atoms *at)
 void done_atomtypes(t_atomtypes *atype)
 {
     atype->nr = 0;
-    sfree(atype->radius);
-    sfree(atype->vol);
-    sfree(atype->surftens);
     sfree(atype->atomnumber);
-    sfree(atype->gb_radius);
-    sfree(atype->S_hct);
 }
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
@@ -332,10 +323,8 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
         {
             pr_indent(fp, indent);
             fprintf(fp,
-                    "atomtype[%3d]={radius=%12.5e, volume=%12.5e, gb_radius=%12.5e, surftens=%12.5e, atomnumber=%4d, S_hct=%12.5e)}\n",
-                    bShowNumbers ? i : -1, atomtypes->radius[i], atomtypes->vol[i],
-                    atomtypes->gb_radius[i],
-                    atomtypes->surftens[i], atomtypes->atomnumber[i], atomtypes->S_hct[i]);
+                    "atomtype[%3d]={atomnumber=%4d}\n",
+                    bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
         }
     }
 }
