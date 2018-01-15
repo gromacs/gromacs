@@ -14,7 +14,6 @@
 
 #include "ffnonbonded.itp"
 #include "ffbonded.itp"
-#include "gb.itp"
 #include "cmap.itp"
 ; Nucleic acids nonbonded and bonded parameters"
 #include "ffnanonbonded.itp"
