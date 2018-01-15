@@ -333,7 +333,7 @@ when addressing such a scenario:
    to a breakdown in the model physics, even if the starting configuration of
    the system is reasonable.
 
-If using implicit solvation, starting your equilibration with a smaller time
+When using no explict solvent, starting your equilibration with a smaller time
 step than your production run can help energy equipartition more stably.
 
 There are several common situations in which instability frequently arises,

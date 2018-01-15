@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NB Generic charge grp kernel",    1 },
     { "NB Free energy kernel",           1 },
     { "NB All-vs-all",                   1 },
-    { "NB All-vs-all, GB",               1 },
 
     { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
     /* nbnxn kernel flops are based on inner-loops without exclusion checks.
@@ -120,12 +119,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NxN LJ add LJ Ewald [F]",        36 }, /* extra cost for LJ Ewald */
     { "NxN LJ add LJ Ewald [V&F]",      33 },
     { "1,4 nonbonded interactions",     90 },
-    { "Born radii (Still)",             47 },
-    { "Born radii (HCT/OBC)",          183 },
-    { "Born force chain rule",          15 },
-    { "All-vs-All Still radii",          1 },
-    { "All-vs-All HCT/OBC radii",        1 },
-    { "All-vs-All Born chain rule",      1 },
     { "Calc Weights",                   36 },
     { "Spread Q",                        6 },
     { "Spread Q Bspline",                2 },
@@ -189,7 +182,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 4fd",              110 },
     { "Virtual Site 4fdn",             254 },
     { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 },
     { "CMAP",                         1700 }, // Estimate!
     { "Urey-Bradley",                  183 },
     { "Cross-Bond-Bond",               163 },
@@ -334,7 +326,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     const char   *myline = "-----------------------------------------------------------------------------";
 
     *nbfs = 0.0;
-    for (i = 0; (i < eNR_NBKERNEL_ALLVSALLGB); i++)
+    for (i = 0; (i < eNR_NBKERNEL_TOTAL_NR); i++)
     {
         if (std::strstr(nbdata[i].name, "W3-W3") != nullptr)
         {
@@ -574,7 +566,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
     {
         add_nrnb(av, av, &(nrnb[i]));
         /* Cost due to forces */
-        for (j = 0; (j < eNR_NBKERNEL_ALLVSALLGB); j++)
+        for (j = 0; (j < eNR_NBKERNEL_TOTAL_NR); j++)
         {
             ftot[i] += nrnb[i].n[j]*cost_nrnb(j);
         }

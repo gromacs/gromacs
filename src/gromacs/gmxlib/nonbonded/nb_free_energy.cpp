@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -566,10 +566,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     FF         = Fp+Geps+two*Heps2;
                                     Vcoul[i]   = qq[i]*VV;
                                     FscalC[i]  = -qq[i]*tabscale*FF*rC;
-                                    break;
-
-                                case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
-                                    gmx_fatal(FARGS, "Free energy and GB not implemented.\n");
                                     break;
 
                                 case GMX_NBKERNEL_ELEC_EWALD:

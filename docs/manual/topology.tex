@@ -557,37 +557,6 @@ to be excluded, is it more convenient and much more efficient to use
 energy monitor group exclusions (see \secref{groupconcept}).
 
 
-\section{Implicit solvation parameters\index{implicit solvation parameters}}
-Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
-topology has been introduced to list those parameters:
-
-{\small
-\begin{verbatim}
-[ implicit_genborn_params ]
-; Atomtype  sar     st   pi      gbr      hct
-NH1         0.155   1    1.028   0.17063  0.79 ; N
-N           0.155   1    1       0.155    0.79 ; Proline backbone N
-H           0.1     1    1       0.115    0.85 ; H
-CT1         0.180   1    1.276   0.190    0.72 ; C
-\end{verbatim}}
-
-In this example the atom type is listed first, followed by five
-numbers, and a comment (following a semicolon).
-
-Values in columns 1-3 are not currently used. They pertain to more
-elaborate surface area algorithms, the one from Qiu {\em et al.}~\cite{Still97} in
-particular.  Column 4 contains the atomic van der Waals radii, which are used
-in computing the Born radii. The dielectric offset is specified in
-the {\tt *.mdp} file, and gets subtracted from the input van der Waals radii for the different
-Born radii methods, as described by Onufriev {\em et al.}~\cite{Case04}.  Column 5 is the 
-scale factor for the HCT and OBC models. The values are taken from the Tinker implementation of 
-the HCT pairwise scaling method~\cite{Truhlar96}.  This method has been modified such that the
-scaling factors have been adjusted to minimize differences between analytical surface areas and
-GB using the HCT algorithm.  The scaling is further modified in that it is not applied pairwise
-as proposed by Hawkins {\em et al.}~\cite{Truhlar96}, but on a per-atom (rather than a per-pair) 
-basis.
-
-
 \section{Constraint algorithms\index{constraint algorithms}}
 \label{sec:constraints}
 Constraints are defined in the {\tt [~constraints~]} section.
@@ -1463,7 +1432,6 @@ its content. That content can be seen in
 
 #include "ffnonbonded.itp"
 #include "ffbonded.itp"
-#include "gbsa.itp"
 \end{verbatim}}
 
 The two {\tt \#define} statements set up the conditions so that

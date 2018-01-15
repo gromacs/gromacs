@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 struct ForceProviders;
 
 /* Abstract type for PME that is defined only in the routine that use them. */
-struct gmx_genborn_t;
 struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
@@ -110,14 +109,10 @@ extern "C" {
 enum {
     enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
 };
-/* OOR is "one over r" -- standard coul */
-enum {
-    enbcoulNONE, enbcoulOOR, enbcoulRF, enbcoulTAB, enbcoulGB, enbcoulFEWALD, enbcoulNR
-};
 
 enum {
     egCOULSR, egLJSR, egBHAMSR,
-    egCOUL14, egLJ14, egGB, egNR
+    egCOUL14, egLJ14, egNR
 };
 extern const char *egrp_nm[egNR+1];
 
@@ -192,7 +187,6 @@ struct t_forcerec {
     gmx_bool bAllvsAll;
     /* Private work data */
     void    *AllvsAll_work;
-    void    *AllvsAll_workgb;
 
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
@@ -319,46 +313,6 @@ struct t_forcerec {
 
     /* Shell molecular dynamics flexible constraints */
     real fc_stepsize;
-
-    /* Generalized born implicit solvent */
-    gmx_bool              bGB;
-    /* Generalized born stuff */
-    real                  gb_epsilon_solvent;
-    /* Table data for GB */
-    struct t_forcetable  *gbtab;
-    /* VdW radius for each atomtype (dim is thus ntype) */
-    real                 *atype_radius;
-    /* Effective radius (derived from effective volume) for each type */
-    real                 *atype_vol;
-    /* Implicit solvent - surface tension for each atomtype */
-    real                 *atype_surftens;
-    /* Implicit solvent - radius for GB calculation */
-    real                 *atype_gb_radius;
-    /* Implicit solvent - overlap for HCT model */
-    real                 *atype_S_hct;
-    /* Generalized born interaction data */
-    struct gmx_genborn_t *born;
-
-    /* Table scale for GB */
-    real gbtabscale;
-    /* Table range for GB */
-    real gbtabr;
-    /* GB neighborlists (the sr list will contain for each atom all other atoms
-     * (for use in the SA calculation) and the lr list will contain
-     * for each atom all atoms 1-4 or greater (for use in the GB calculation)
-     */
-    struct t_nblist *gblist_sr;
-    struct t_nblist *gblist_lr;
-    struct t_nblist *gblist;
-
-    /* Inverse square root of the Born radii for implicit solvent */
-    real *invsqrta;
-    /* Derivatives of the potential with respect to the Born radii */
-    real *dvda;
-    /* Derivatives of the Born radii with respect to coordinates */
-    real *dadx;
-    real *dadx_rawptr;
-    int   nalloc_dadx; /* Allocated size of dadx */
 
     /* If > 0 signals Test Particle Insertion,
      * the value is the number of atoms of the molecule to insert

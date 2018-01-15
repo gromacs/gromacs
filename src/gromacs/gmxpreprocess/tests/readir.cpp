@@ -189,5 +189,17 @@ TEST_F(GetIrTest, TerminatesOnDuplicateOldAndNewKeys)
     EXPECT_DEATH(runTest(joinStrings(inputMdpFile, "\n")), "A parameter is present with both");
 }
 
+TEST_F(GetIrTest, ImplicitSolventNoWorks)
+{
+    const char *inputMdpFile = "implicit-solvent = no";
+    runTest(inputMdpFile);
+}
+
+TEST_F(GetIrTest, ImplicitSolventYesWorks)
+{
+    const char *inputMdpFile = "implicit-solvent = yes";
+    EXPECT_DEATH(runTest(inputMdpFile), "Invalid enum");
+}
+
 } // namespace
 } // namespace

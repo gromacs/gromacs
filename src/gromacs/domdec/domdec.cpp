@@ -67,7 +67,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -9754,11 +9753,6 @@ void dd_partition_system(FILE                *fplog,
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
                               nullptr, mdAtoms, vsite, nullptr);
-
-    if (ir->implicit_solvent)
-    {
-        make_local_gb(cr, fr->born, ir->gb_algorithm);
-    }
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))

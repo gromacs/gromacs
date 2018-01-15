@@ -70,7 +70,6 @@ typedef struct
     /* potentials */
     real *             energygrp_elec;
     real *             energygrp_vdw;
-    real *             energygrp_polarization;
 }
 nb_kernel_data_t;
 

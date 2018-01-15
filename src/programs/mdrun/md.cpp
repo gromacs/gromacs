@@ -321,7 +321,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM,
                     bFirstStep, bInitStep, bLastStep = FALSE,
-                    bBornRadii, bUsingEnsembleRestraints;
+                    bUsingEnsembleRestraints;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
                       bForceUpdate = FALSE, bCPT;
@@ -1060,13 +1060,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             bLastStep = TRUE;
         }
 
-        /* Determine whether or not to update the Born radii if doing GB */
-        bBornRadii = bFirstStep;
-        if (ir->implicit_solvent && (step % ir->nstgbradii == 0))
-        {
-            bBornRadii = TRUE;
-        }
-
         /* do_log triggers energy and virial calculation. Because this leads
          * to different code paths, forces can be different. Thus for exact
          * continuation we should avoid extra log output.
@@ -1207,7 +1200,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                 constr, enerd, fcd,
                                 state, &f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
-                                shellfc, fr, bBornRadii, t, mu_tot,
+                                shellfc, fr, t, mu_tot,
                                 vsite,
                                 ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
@@ -1235,7 +1228,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, ed, bBornRadii,
+                     fr, vsite, mu_tot, t, ed,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
         }

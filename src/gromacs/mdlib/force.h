@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -164,7 +164,6 @@ void do_force(FILE *log, t_commrec *cr,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, struct gmx_edsam *ed,
-              gmx_bool bBornRadii,
               int flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
@@ -202,9 +201,6 @@ void do_force_lowlevel(t_forcerec   *fr,
                        gmx::ForceWithVirial *forceWithVirial,
                        gmx_enerdata_t *enerd,
                        t_fcdata     *fcd,
-                       gmx_localtop_t *top,
-                       gmx_genborn_t *born,
-                       gmx_bool         bBornRadii,
                        matrix       box,
                        t_lambda     *fepvals,
                        real         *lambda,

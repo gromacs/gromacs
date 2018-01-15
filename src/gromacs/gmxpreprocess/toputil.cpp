@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -532,7 +532,7 @@ void print_bondeds(FILE *out, int natoms, directive d,
     {
         char buf[12];
         sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0, 0, 0, 0, 0, 0);
+        add_atomtype(atype, &stab, a, buf, param, 0, 0);
     }
     print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
 

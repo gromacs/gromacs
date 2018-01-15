@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,13 +140,6 @@ void
     __m256           velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
     /* #endif */
-    /* #if 'GeneralizedBorn' in KERNEL_ELEC */
-    __m256i          gbitab;
-    __m128i          gbitab_lo,gbitab_hi;
-    __m256           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,gbeps,dvdatmp;
-    __m256           minushalf = _mm256_set1_ps(-0.5);
-    real             *invsqrta,*dvda,*gbtab;
-    /* #endif */
     /* #if KERNEL_VDW != 'None' */
     int              nvdwtype;
     __m256           rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,sh_vdw_invrcut6;
@@ -155,7 +148,7 @@ void
     __m256           one_sixth   = _mm256_set1_ps(1.0/6.0);
     __m256           one_twelfth = _mm256_set1_ps(1.0/12.0);
     /* #endif */
-    /* #if 'Table' in KERNEL_ELEC or 'GeneralizedBorn' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
+    /* #if 'Table' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
     __m256i          vfitab;
     __m128i          vfitab_lo,vfitab_hi;
     __m128i          ifour       = _mm_set1_epi32(4);
@@ -244,14 +237,6 @@ void
     ewtabscale       = _mm256_set1_ps(fr->ic->tabq_scale);
     ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
      /*     #endif */
-    /* #endif */
-
-    /* #if KERNEL_ELEC=='GeneralizedBorn' */
-    invsqrta         = fr->invsqrta;
-    dvda             = fr->dvda;
-    gbtabscale       = _mm256_set1_ps(fr->gbtab->scale);
-    gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -394,9 +379,6 @@ void
         /*     #for I in PARTICLES_ELEC_I */
         iq{I}              = _mm256_mul_ps(facel,_mm256_set1_ps(charge[inr+{I}]));
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-        isai{I}            = _mm256_set1_ps(invsqrta[inr+{I}]);
-        /*         #endif */
         /*     #endfor */
         /*     #for I in PARTICLES_VDW_I */
         vdwioffsetptr{I}   = vdwparam+2*nvdwtype*vdwtype[inr+{I}];
@@ -411,16 +393,10 @@ void
         /*     #if KERNEL_ELEC != 'None' */
         velecsum         = _mm256_setzero_ps();
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        vgbsum           = _mm256_setzero_ps();
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         vvdwsum          = _mm256_setzero_ps();
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvdasum          = _mm256_setzero_ps();
-        /*     #endif */
 
         /* #for ROUND in ['Loop','Epilogue'] */
 
@@ -553,12 +529,6 @@ void
                                                                  charge+jnrC+{J},charge+jnrD+{J},
                                                                  charge+jnrE+{J},charge+jnrF+{J},
                                                                  charge+jnrG+{J},charge+jnrH+{J});
-            /*         #if KERNEL_ELEC=='GeneralizedBorn' */
-            isaj{J}            = gmx_mm256_load_8real_swizzle_ps(invsqrta+jnrA+{J},invsqrta+jnrB+{J},
-                                                                 invsqrta+jnrC+{J},invsqrta+jnrD+{J},
-                                                                 invsqrta+jnrE+{J},invsqrta+jnrF+{J},
-                                                                 invsqrta+jnrG+{J},invsqrta+jnrH+{J});
-            /*         #endif */
             /*     #endfor */
             /*     #for J in PARTICLES_VDW_J */
             vdwjidx{J}A        = 2*vdwtype[jnrA+{J}];
@@ -683,79 +653,6 @@ void
             /*             #endif */
             /*             #if 'Force' in KERNEL_VF */
             felec            = _mm256_mul_ps(qq{I}{J},_mm256_sub_ps(_mm256_mul_ps(rinv{I}{J},rinvsq{I}{J}),krf2));
-            /*                 #define INNERFLOPS INNERFLOPS+3 */
-            /*             #endif */
-
-            /*         #elif KERNEL_ELEC=='GeneralizedBorn' */
-
-            /* GENERALIZED BORN AND COULOMB ELECTROSTATICS */
-            isaprod          = _mm256_mul_ps(isai{I},isaj{J});
-            gbqqfactor       = _mm256_xor_ps(signbit,_mm256_mul_ps(qq{I}{J},_mm256_mul_ps(isaprod,gbinvepsdiff)));
-            gbscale          = _mm256_mul_ps(isaprod,gbtabscale);
-            /*             #define INNERFLOPS INNERFLOPS+5 */
-
-            /* Calculate generalized born table index - this is a separate table from the normal one,
-             * but we use the same procedure by multiplying r with scale and truncating to integer.
-             */
-            rt               = _mm256_mul_ps(r{I}{J},gbscale);
-            gbitab           = _mm256_cvttps_epi32(rt);
-            gbeps            = _mm256_sub_ps(rt,_mm256_round_ps(rt, _MM_FROUND_FLOOR));
-            /*         AVX1 does not support 256-bit integer operations, so now we go to 128-bit mode... */
-            gbitab_lo        = _mm256_extractf128_si256(gbitab,0x0);
-            gbitab_hi        = _mm256_extractf128_si256(gbitab,0x1);
-            gbitab_lo        = _mm_slli_epi32(gbitab_lo,2);
-            gbitab_hi        = _mm_slli_epi32(gbitab_hi,2);
-            Y                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,0)),
-                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,0)));
-            F                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,1)),
-                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,1)));
-            G                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,2)),
-                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,2)));
-            H                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,3)),
-                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,3)));
-            GMX_MM256_HALFTRANSPOSE4_PS(Y,F,G,H);
-            Heps             = _mm256_mul_ps(gbeps,H);
-            Fp               = _mm256_add_ps(F,_mm256_mul_ps(gbeps,_mm256_add_ps(G,Heps)));
-            VV               = _mm256_add_ps(Y,_mm256_mul_ps(gbeps,Fp));
-            vgb              = _mm256_mul_ps(gbqqfactor,VV);
-            /*             #define INNERFLOPS INNERFLOPS+10 */
-
-            /*             #if 'Force' in KERNEL_VF */
-            FF               = _mm256_add_ps(Fp,_mm256_mul_ps(gbeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
-            fgb              = _mm256_mul_ps(gbqqfactor,_mm256_mul_ps(FF,gbscale));
-            dvdatmp          = _mm256_mul_ps(minushalf,_mm256_add_ps(vgb,_mm256_mul_ps(fgb,r{I}{J})));
-            /*                 #if ROUND == 'Epilogue' */
-            dvdatmp          = _mm256_andnot_ps(dummy_mask,dvdatmp);
-            /*                 #endif */
-            dvdasum          = _mm256_add_ps(dvdasum,dvdatmp);
-            /*                 #if ROUND == 'Loop' */
-            fjptrA           = dvda+jnrA;
-            fjptrB           = dvda+jnrB;
-            fjptrC           = dvda+jnrC;
-            fjptrD           = dvda+jnrD;
-            fjptrE           = dvda+jnrE;
-            fjptrF           = dvda+jnrF;
-            fjptrG           = dvda+jnrG;
-            fjptrH           = dvda+jnrH;
-            /*                 #else */
-            /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
-            fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
-            fjptrB             = (jnrlistB>=0) ? dvda+jnrB : scratch;
-            fjptrC             = (jnrlistC>=0) ? dvda+jnrC : scratch;
-            fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
-            fjptrE             = (jnrlistE>=0) ? dvda+jnrE : scratch;
-            fjptrF             = (jnrlistF>=0) ? dvda+jnrF : scratch;
-            fjptrG             = (jnrlistG>=0) ? dvda+jnrG : scratch;
-            fjptrH             = (jnrlistH>=0) ? dvda+jnrH : scratch;
-            /*                 #endif */
-            gmx_mm256_increment_8real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,
-                                                 _mm256_mul_ps(dvdatmp,_mm256_mul_ps(isaj{J},isaj{J})));
-            /*                 #define INNERFLOPS INNERFLOPS+12 */
-            /*             #endif */
-            velec            = _mm256_mul_ps(qq{I}{J},rinv{I}{J});
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if 'Force' in KERNEL_VF */
-            felec            = _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(velec,rinv{I}{J}),fgb),rinv{I}{J});
             /*                 #define INNERFLOPS INNERFLOPS+3 */
             /*             #endif */
 
@@ -1005,17 +902,6 @@ void
             /*             #endif */
             velecsum         = _mm256_add_ps(velecsum,velec);
             /*             #define INNERFLOPS INNERFLOPS+1 */
-            /*             #if KERNEL_ELEC=='GeneralizedBorn' */
-            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
-            vgb              = _mm256_and_ps(vgb,cutoff_mask);
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif                                       */
-            /*             #if ROUND == 'Epilogue' */
-            vgb              = _mm256_andnot_ps(dummy_mask,vgb);
-            /*             #endif */
-            vgbsum           = _mm256_add_ps(vgbsum,vgb);
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif */
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
             /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
@@ -1185,19 +1071,11 @@ void
         gmx_mm256_update_1pot_ps(velecsum,kernel_data->energygrp_elec+ggid);
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
-        gmx_mm256_update_1pot_ps(vgbsum,kernel_data->energygrp_polarization+ggid);
-        /*         #define OUTERFLOPS OUTERFLOPS+1 */
-        /*     #endif */
         /*     #if KERNEL_VDW != 'None' */
         gmx_mm256_update_1pot_ps(vvdwsum,kernel_data->energygrp_vdw+ggid);
         /*         #define OUTERFLOPS OUTERFLOPS+1 */
         /*     #endif */
         /* #endif */
-        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
-        dvdasum = _mm256_mul_ps(dvdasum, _mm256_mul_ps(isai{I},isai{I}));
-        gmx_mm256_update_1pot_ps(dvdasum,dvda+inr);
-        /*     #endif */
 
         /* Increment number of inner iterations */
         inneriter                  += j_index_end - j_index_start;

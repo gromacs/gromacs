@@ -73,7 +73,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -1053,7 +1052,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 t_forcerec *fr, interaction_const_t *ic,
                                 gmx_vsite_t *vsite, rvec mu_tot,
                                 double t, gmx_edsam_t ed,
-                                gmx_bool bBornRadii,
                                 int flags,
                                 DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                 DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -1538,9 +1536,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd, top, fr->born,
-                      bBornRadii, box,
-                      inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
+                      box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
     wallcycle_stop(wcycle, ewcFORCE);
@@ -1762,7 +1759,6 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                                real *lambda, t_graph *graph,
                                t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
                                double t, gmx_edsam_t ed,
-                               gmx_bool bBornRadii,
                                int flags,
                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -1930,12 +1926,6 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNS);
     }
 
-    if (inputrec->implicit_solvent && bNS)
-    {
-        make_gb_nblist(cr, inputrec->gb_algorithm,
-                       as_rvec_array(x.data()), box, fr, &top->idef, graph, fr->born);
-    }
-
     if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
         wallcycle_start(wcycle, ewcPPDURINGPME);
@@ -1992,9 +1982,8 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd, top, fr->born,
-                      bBornRadii, box,
-                      inputrec->fepvals, lambda,
+                      as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
+                      box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
                       &cycles_pme);
@@ -2100,7 +2089,6 @@ void do_force(FILE *fplog, t_commrec *cr,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, gmx_edsam_t ed,
-              gmx_bool bBornRadii,
               int flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -2129,7 +2117,6 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 fr, fr->ic,
                                 vsite, mu_tot,
                                 t, ed,
-                                bBornRadii,
                                 flags,
                                 ddOpenBalanceRegion,
                                 ddCloseBalanceRegion);
@@ -2146,7 +2133,6 @@ void do_force(FILE *fplog, t_commrec *cr,
                                lambda.data(), graph,
                                fr, vsite, mu_tot,
                                t, ed,
-                               bBornRadii,
                                flags,
                                ddOpenBalanceRegion,
                                ddCloseBalanceRegion);

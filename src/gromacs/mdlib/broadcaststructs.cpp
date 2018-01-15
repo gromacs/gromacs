@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -769,23 +769,7 @@ static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 
 static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 {
-    int nr;
-
     block_bc(cr, atomtypes->nr);
-
-    nr = atomtypes->nr;
-
-    snew_bc(cr, atomtypes->radius, nr);
-    snew_bc(cr, atomtypes->vol, nr);
-    snew_bc(cr, atomtypes->surftens, nr);
-    snew_bc(cr, atomtypes->gb_radius, nr);
-    snew_bc(cr, atomtypes->S_hct, nr);
-
-    nblock_bc(cr, nr, atomtypes->radius);
-    nblock_bc(cr, nr, atomtypes->vol);
-    nblock_bc(cr, nr, atomtypes->surftens);
-    nblock_bc(cr, nr, atomtypes->gb_radius);
-    nblock_bc(cr, nr, atomtypes->S_hct);
 }
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
