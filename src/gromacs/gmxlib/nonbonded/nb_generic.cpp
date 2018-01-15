@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -291,11 +291,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         FF               = Fp+Geps+2.0*Heps2;
                         velec            = qq*VV;
                         felec            = -qq*FF*tabscale*rinv;
-                        break;
-
-                    case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
-                        /* GB */
-                        gmx_fatal(FARGS, "Death & horror! GB generic interaction not implemented.\n");
                         break;
 
                     case GMX_NBKERNEL_ELEC_EWALD:

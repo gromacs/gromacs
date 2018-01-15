@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,11 +75,6 @@ void push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               char *plines, int nb_funct,
               warninp_t wi);
-
-void
-push_gb_params(gpp_atomtype_t atype,
-               char          *line,
-               warninp_t      wi);
 
 void push_atom(struct t_symtab *symtab,
                t_block         *cgs,

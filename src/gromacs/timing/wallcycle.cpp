@@ -104,7 +104,7 @@ static const char *wcn[ewcNR] =
 {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
     "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
-    "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
+    "Comm. coord.", "Force", "Wait + Comm. F", "PME mesh",
     "PME redist. X/F", "PME spread", "PME gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
     "PME wait for PP", "Wait + Recv. PME F",
     "Wait PME GPU spread", "PME 3D-FFT", "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */

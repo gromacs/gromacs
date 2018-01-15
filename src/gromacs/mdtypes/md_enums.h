@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,12 +159,7 @@ extern const char *eintmod_names[eintmodNR+1];
 //! Macro to select the correct string for modifiers
 #define INTMODIFIER(e) enum_name(e, eintmodNR, eintmod_names)
 
-/*! \brief Cut-off treatment for Coulomb
- *
- * eelNOTUSED1 used to be GB, but to enable generalized born with different
- * forms of electrostatics (RF, switch, etc.) in the future it is now selected
- * separately (through the implicit_solvent option).
- */
+/*! \brief Cut-off treatment for Coulomb */
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
@@ -469,33 +464,6 @@ extern const char *eann_names[eannNR+1];
 //! And macro for simulated annealing string
 #define EANNEAL(e)      enum_name(e, eannNR, eann_names)
 
-//! Implicit solvent algorithms.
-enum {
-    eisNO, eisGBSA, eisNR
-};
-//! String corresponding to implicit solvent.
-extern const char *eis_names[eisNR+1];
-//! Macro for implicit solvent string.
-#define EIMPLICITSOL(e) enum_name(e, eisNR, eis_names)
-
-//! Algorithms for calculating GB radii.
-enum {
-    egbSTILL, egbHCT, egbOBC, egbNR
-};
-//! String for GB algorithm name.
-extern const char *egb_names[egbNR+1];
-//! Macro for GB string.
-#define EGBALGORITHM(e) enum_name(e, egbNR, egb_names)
-
-//! Surface area algorithm for implicit solvent.
-enum {
-    esaAPPROX, esaNO, esaSTILL, esaNR
-};
-//! String corresponding to surface area algorithm.
-extern const char *esa_names[esaNR+1];
-//! brief Macro for SA algorithm string.
-#define ESAALGORITHM(e) enum_name(e, esaNR, esa_names)
-
 //! Wall types.
 enum {
     ewt93, ewt104, ewtTABLE, ewt126, ewtNR
@@ -636,7 +604,6 @@ enum gmx_nbkernel_elec
     GMX_NBKERNEL_ELEC_COULOMB,
     GMX_NBKERNEL_ELEC_REACTIONFIELD,
     GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
-    GMX_NBKERNEL_ELEC_GENERALIZEDBORN,
     GMX_NBKERNEL_ELEC_EWALD,
     GMX_NBKERNEL_ELEC_NR
 };

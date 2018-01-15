@@ -182,5 +182,17 @@ TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
     runTest(inputMdpFile);
 }
 
+TEST_F(GetIrTest, ImplicitSolventNoWorks)
+{
+    const char *inputMdpFile = "implicit-solvent = no";
+    runTest(inputMdpFile);
+}
+
+TEST_F(GetIrTest, ImplicitSolventYesWorks)
+{
+    const char *inputMdpFile = "implicit-solvent = yes";
+    EXPECT_DEATH(runTest(inputMdpFile), "Invalid enum");
+}
+
 } // namespace
 } // namespace

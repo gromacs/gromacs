@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ const char *erefscaling_names[erscNR+1] = {
 const char *eel_names[eelNR+1] = {
     "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
-    "Generalized-Born", "Reaction-Field-nec", "Encad-shift",
+    "Generalized-Born (unused)", "Reaction-Field-nec", "Encad-shift",
     "PME-User", "PME-Switch", "PME-User-Switch",
     "Reaction-Field-zero", nullptr
 };
@@ -189,18 +189,6 @@ const char *eann_names[eannNR+1] = {
     "No", "Single", "Periodic", nullptr
 };
 
-const char *eis_names[eisNR+1] = {
-    "No", "GBSA", nullptr
-};
-
-const char *egb_names[egbNR+1] = {
-    "Still", "HCT", "OBC", nullptr
-};
-
-const char *esa_names[esaNR+1] = {
-    "Ace-approximation", "None", "Still", nullptr
-};
-
 const char *ewt_names[ewtNR+1] = {
     "9-3", "10-4", "table", "12-6", nullptr
 };
@@ -257,7 +245,7 @@ const char *gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR+1] = {
 
 const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
 {
-    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", nullptr
+    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Ewald", nullptr
 };
 
 const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =

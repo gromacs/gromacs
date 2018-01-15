@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,6 +118,7 @@ enum tpxv {
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
+    tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -164,9 +165,18 @@ typedef struct {
 } t_ftupd;
 
 /*
+ * TODO The following three lines make little sense, please clarify if
+ * you've had to work out how ftupd works.
+ *
  * The entries should be ordered in:
  * 1. ascending function type number
  * 2. ascending file version number
+ *
+ * Because we support reading of old .tpr file versions (even when
+ * mdrun can no longer run the simulation), we need to be able to read
+ * obsolete t_interaction_function types. Any data read from such
+ * fields is discarded. Their names have _NOLONGERUSED appended to
+ * them to make things clear.
  */
 static const t_ftupd ftupd[] = {
     { 34, F_FENEBONDS         },
@@ -181,11 +191,11 @@ static const t_ftupd ftupd[] = {
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
     { 43, F_TABDIHS           },
     { 65, F_CMAP              },
-    { 60, F_GB12              },
-    { 61, F_GB13              },
-    { 61, F_GB14              },
-    { 72, F_GBPOL             },
-    { 72, F_NPSOLVATION       },
+    { 60, F_GB12_NOLONGERUSED },
+    { 61, F_GB13_NOLONGERUSED },
+    { 61, F_GB14_NOLONGERUSED },
+    { 72, F_GBPOL_NOLONGERUSED },
+    { 72, F_NPSOLVATION_NOLONGERUSED },
     { 41, F_LJC14_Q           },
     { 41, F_LJC_PAIRS_NB      },
     { 32, F_BHAM_LR_NOLONGERUSED },
@@ -1268,53 +1278,37 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_real(fio, ir->tabext);
 
-    gmx_fio_do_int(fio, ir->gb_algorithm);
-    gmx_fio_do_int(fio, ir->nstgbradii);
-    gmx_fio_do_real(fio, ir->rgbradii);
-    gmx_fio_do_real(fio, ir->gb_saltconc);
-    gmx_fio_do_int(fio, ir->implicit_solvent);
-    if (file_version >= 55)
+    // This permits reading a .tpr file that used implicit solvent,
+    // and later permitting mdrun to refuse to run it.
+    if (bRead)
     {
-        gmx_fio_do_real(fio, ir->gb_epsilon_solvent);
-        gmx_fio_do_real(fio, ir->gb_obc_alpha);
-        gmx_fio_do_real(fio, ir->gb_obc_beta);
-        gmx_fio_do_real(fio, ir->gb_obc_gamma);
-        if (file_version >= 60)
+        if (file_version < tpxv_RemoveImplicitSolvation)
         {
-            gmx_fio_do_real(fio, ir->gb_dielectric_offset);
-            gmx_fio_do_int(fio, ir->sa_algorithm);
+            gmx_fio_do_int(fio, idum);
+            gmx_fio_do_int(fio, idum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_int(fio, idum);
+            ir->implicit_solvent = (idum > 0);
         }
         else
         {
-            ir->gb_dielectric_offset = 0.009;
-            ir->sa_algorithm         = esaAPPROX;
+            ir->implicit_solvent = false;
         }
-        gmx_fio_do_real(fio, ir->sa_surface_tension);
-
-        /* Override sa_surface_tension if it is not changed in the mpd-file */
-        if (ir->sa_surface_tension < 0)
+        if (file_version >= 55 && file_version < tpxv_RemoveImplicitSolvation)
         {
-            if (ir->gb_algorithm == egbSTILL)
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            if (file_version >= 60)
             {
-                ir->sa_surface_tension = 0.0049 * 100 * CAL2JOULE;
+                gmx_fio_do_real(fio, rdum);
+                gmx_fio_do_int(fio, idum);
             }
-            else if (ir->gb_algorithm == egbHCT || ir->gb_algorithm == egbOBC)
-            {
-                ir->sa_surface_tension = 0.0054 * 100 * CAL2JOULE;
-            }
+            gmx_fio_do_real(fio, rdum);
         }
-
     }
-    else
-    {
-        /* Better use sensible values than insane (0.0) ones... */
-        ir->gb_epsilon_solvent = 80;
-        ir->gb_obc_alpha       = 1.0;
-        ir->gb_obc_beta        = 0.8;
-        ir->gb_obc_gamma       = 4.85;
-        ir->sa_surface_tension = 2.092;
-    }
-
 
     if (file_version >= 81)
     {
@@ -2119,22 +2113,28 @@ static void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_int(fio, iparams->vsiten.n);
             gmx_fio_do_real(fio, iparams->vsiten.a);
             break;
-        case F_GB12:
-        case F_GB13:
-        case F_GB14:
-            /* We got rid of some parameters in version 68 */
-            if (bRead && file_version < 68)
+        case F_GB12_NOLONGERUSED:
+        case F_GB13_NOLONGERUSED:
+        case F_GB14_NOLONGERUSED:
+            // Implicit solvent parameters can still be read, but never used
+            if (bRead)
             {
-                gmx_fio_do_real(fio, rdum);
-                gmx_fio_do_real(fio, rdum);
-                gmx_fio_do_real(fio, rdum);
-                gmx_fio_do_real(fio, rdum);
+                if (file_version < 68)
+                {
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                }
+                if (file_version < tpxv_RemoveImplicitSolvation)
+                {
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                    gmx_fio_do_real(fio, rdum);
+                }
             }
-            gmx_fio_do_real(fio, iparams->gb.sar);
-            gmx_fio_do_real(fio, iparams->gb.st);
-            gmx_fio_do_real(fio, iparams->gb.pi);
-            gmx_fio_do_real(fio, iparams->gb.gbr);
-            gmx_fio_do_real(fio, iparams->gb.bmlt);
             break;
         case F_CMAP:
             gmx_fio_do_int(fio, iparams->cmap.cmapA);
@@ -2631,24 +2631,24 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
     j = atomtypes->nr;
     if (bRead)
     {
-        snew(atomtypes->radius, j);
-        snew(atomtypes->vol, j);
-        snew(atomtypes->surftens, j);
         snew(atomtypes->atomnumber, j);
-        snew(atomtypes->gb_radius, j);
-        snew(atomtypes->S_hct, j);
     }
-    gmx_fio_ndo_real(fio, atomtypes->radius, j);
-    gmx_fio_ndo_real(fio, atomtypes->vol, j);
-    gmx_fio_ndo_real(fio, atomtypes->surftens, j);
+    if (bRead && file_version < tpxv_RemoveImplicitSolvation)
+    {
+        std::vector<real> dummy(atomtypes->nr, 0);
+        gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+        gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+        gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+    }
     if (file_version >= 40)
     {
         gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
     }
-    if (file_version >= 60)
+    if (bRead && file_version >= 60 && file_version < tpxv_RemoveImplicitSolvation)
     {
-        gmx_fio_ndo_real(fio, atomtypes->gb_radius, j);
-        gmx_fio_ndo_real(fio, atomtypes->S_hct, j);
+        std::vector<real> dummy(atomtypes->nr, 0);
+        gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
+        gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
     }
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -297,18 +297,7 @@ struct t_inputrec
     real            rcoulomb;                /* Coulomb cutoff (nm)		                */
     real            epsilon_r;               /* relative dielectric constant                 */
     real            epsilon_rf;              /* relative dielectric constant of the RF       */
-    int             implicit_solvent;        /* No (=explicit water), or GBSA solvent models */
-    int             gb_algorithm;            /* Algorithm to use for calculation Born radii  */
-    int             nstgbradii;              /* Frequency of updating Generalized Born radii */
-    real            rgbradii;                /* Cutoff for GB radii calculation              */
-    real            gb_saltconc;             /* Salt concentration (M) for GBSA models       */
-    real            gb_epsilon_solvent;      /* dielectric coeff. of implicit solvent     */
-    real            gb_obc_alpha;            /* 1st scaling factor for Bashford-Case GB      */
-    real            gb_obc_beta;             /* 2nd scaling factor for Bashford-Case GB      */
-    real            gb_obc_gamma;            /* 3rd scaling factor for Bashford-Case GB      */
-    real            gb_dielectric_offset;    /* Dielectric offset for Still/HCT/OBC     */
-    int             sa_algorithm;            /* Algorithm for SA part of GBSA                */
-    real            sa_surface_tension;      /* Energy factor for SA part of GBSA */
+    bool            implicit_solvent;        /* Always false (no longer supported            */
     int             vdwtype;                 /* Type of Van der Waals treatment              */
     int             vdw_modifier;            /* Modify the VdW interaction                   */
     real            rvdw_switch;             /* Van der Waals switch range start (nm)        */
