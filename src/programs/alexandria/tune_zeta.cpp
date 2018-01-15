@@ -80,19 +80,26 @@ class OptZeta : public MolDip
     using param_type = std::vector<double>;
 
     private:
-        Bayes <double> TuneZeta_;
         gmx_bool       bDipole_;
         gmx_bool       bQuadrupole_;
         gmx_bool       bFullTensor_;
         gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
+        
+        Bayes <double> TuneZeta_;
         param_type     param_, lower_, upper_, best_;
         param_type     orig_, psigma_, pmean_;
 
     public:
 
-        OptZeta() : bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE)
-        {}
+        OptZeta() 
+            : 
+                bDipole_(false), 
+                bQuadrupole_(false), 
+                bFullTensor_(false), 
+                bCharge_(false), 
+                bFitAlpha_(false)
+            {}
 
         ~OptZeta() {}
 
@@ -117,7 +124,7 @@ class OptZeta : public MolDip
                 { "-charge", FALSE, etBOOL, {&bCharge_},
                   "Calibrate parameters to keep reasonable charges (do not use with ESP)." },
             };
-            for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+            for (size_t i = 0; i < asize(pa); i++)
             {
                 pargs->push_back(pa[i]);
             }
@@ -561,6 +568,7 @@ int alex_tune_zeta(int argc, char *argv[])
     gmx_bool                    bZPE          = false;
     gmx_bool                    bZero         = true;
     gmx_bool                    bPrintTable   = false;
+    gmx_bool                    bOptimize     = true;
 
     t_pargs                     pa[]          = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -593,6 +601,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
           "The magnitude of the external electric field to calculate polarizability tensor." },
+        { "-optimize",     FALSE, etBOOL, {&bOptimize},
+          "Optimize zeta values" },
     };
 
     FILE                       *fp;
@@ -601,7 +611,7 @@ int alex_tune_zeta(int argc, char *argv[])
     MolSelect                   gms;
 
     std::vector<t_pargs>        pargs;
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    for (size_t i = 0; i < asize(pa); i++)
     {
         pargs.push_back(pa[i]);
     }
@@ -655,17 +665,22 @@ int alex_tune_zeta(int argc, char *argv[])
         fprintf(fp, "In the total data set of %zu molecules we have:\n",
                 opt.mymols().size());
     }
-    if (MASTER(opt.commrec()))
+    
+    if (bOptimize)
     {
-        opt.InitOpt(factor);
-    }
+        if (MASTER(opt.commrec()))
+        {
+            opt.InitOpt(factor);
+        }
 
-    opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
-               fp,
-               nrun,
-               oenv,
-               opt2fn("-conv", NFILE, fnm),
-               opt2fn("-epot", NFILE, fnm));
+        opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
+                   fp,
+                   nrun,
+                   oenv,
+                   opt2fn("-conv", NFILE, fnm),
+                   opt2fn("-epot", NFILE, fnm));
+    }
+    
     if (MASTER(opt.commrec()))
     {
         auto *ic = opt.indexCount();

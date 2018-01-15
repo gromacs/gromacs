@@ -43,7 +43,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <functional>
 #include <string>
 #include <vector>
@@ -54,6 +53,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -76,7 +76,7 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
         { "-step",  FALSE, etREAL, {&step_},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
     };
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    for (size_t i = 0; i < asize(pa); i++)
     {
         pargs->push_back(pa[i]);
     }

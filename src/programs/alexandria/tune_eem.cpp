@@ -80,20 +80,32 @@ class OptEEM : public MolDip
     using param_type = std::vector<double>;
 
     private:
-        gmx_bool       bESP_, bDipole_, bQuadrupole_, bFullTensor_, bCharge_;
+        gmx_bool       bESP_;
+        gmx_bool       bDipole_;
+        gmx_bool       bQuadrupole_;
+        gmx_bool       bFullTensor_;
+        gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bFitZeta_;
-
+        
         Bayes <double> TuneEEM_;
+        param_type     param_, lower_, upper_, best_;
+        param_type     orig_, psigma_, pmean_;
 
     public:
 
-        OptEEM() : bESP_(TRUE), bDipole_(FALSE), bQuadrupole_(FALSE), bFullTensor_(FALSE), bCharge_(FALSE), bFitAlpha_(FALSE), bFitZeta_(FALSE) {}
+        OptEEM() 
+            : 
+                bESP_(true), 
+                bDipole_(false), 
+                bQuadrupole_(false), 
+                bFullTensor_(false), 
+                bCharge_(false), 
+                bFitAlpha_(false), 
+                bFitZeta_(false) 
+            {}
 
         ~OptEEM() {}
-
-        param_type    param_, lower_, upper_, best_;
-        param_type    orig_, psigma_, pmean_;
 
         gmx_bool bESP() const { return bESP_; }
 
@@ -129,11 +141,11 @@ class OptEEM : public MolDip
 
         }
 
-        double harmonic (double x,
-                         double min,
-                         double max)
+        double l2_regularizer (double x,
+                               double min,
+                               double max)
         {
-            return (x < min) ? (gmx::square(x-min)) : ((x > max) ? (gmx::square(x-max)) : 0);
+            return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
         }
 
         void addEspPoint();
@@ -423,8 +435,7 @@ void OptEEM::TuneEEM2PolData()
     {
         if (!ai->isConst())
         {
-            auto        ei = pd.findEem(iChargeDistributionModel(), ai->name());
-
+            auto        ei     = pd.findEem(iChargeDistributionModel(), ai->name());
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
 
@@ -492,7 +503,7 @@ void OptEEM::InitOpt(real  factor)
     {
         factor = 1/factor;
     }
-    for (size_t i = 0; (i < param_.size()); i++)
+    for (size_t i = 0; i < param_.size(); i++)
     {
         best_[i]  = orig_[i] = param_[i];
         lower_[i] = orig_[i]/factor;
@@ -573,12 +584,12 @@ double OptEEM::objFunction(const double v[])
         {
             auto name = ai->name();
             auto J00  = param_[n++];
-            bound   += harmonic(J00, J0Min(), J0Max());
+            bound    += l2_regularizer(J00, J0Min(), J0Max());
 
             if (strcasecmp(name.c_str(), fixchi()) != 0)
             {
                 auto Chi0 = param_[n++];
-                bound   += harmonic(Chi0, chi0Min(), chi0Max());
+                bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
             }
 
             if (bFitZeta_)
@@ -587,7 +598,7 @@ double OptEEM::objFunction(const double v[])
                 for (auto zz = 0; zz < nzeta; zz++)
                 {
                     auto zeta = param_[n++];
-                    bound += harmonic(zeta, zetaMin(), zetaMax());
+                    bound += l2_regularizer(zeta, zetaMin(), zetaMax());
                 }
             }
             penalty += calcPenalty(ai);
@@ -824,7 +835,7 @@ int alex_tune_eem(int argc, char *argv[])
     MolSelect                   gms;
 
     std::vector<t_pargs>        pargs;
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    for (size_t i = 0; i < asize(pa); i++)
     {
         pargs.push_back(pa[i]);
     }

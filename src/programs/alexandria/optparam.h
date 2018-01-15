@@ -76,10 +76,21 @@ class OptParam
         real                    step_;
         real                    temperature_;
         bool                    anneal_;
+        
     public:
 
-        OptParam() : maxiter_(100), oenv_(nullptr), xvgconv_(nullptr), xvgepot_(nullptr), bBound_(false), seed_(1993), step_(0.02), temperature_(5), anneal_(true)
-        {}
+        OptParam() 
+            : 
+                maxiter_(100), 
+                oenv_(nullptr), 
+                xvgconv_(nullptr), 
+                xvgepot_(nullptr), 
+                bBound_(false), 
+                seed_(1993), 
+                step_(0.02), 
+                temperature_(5), 
+                anneal_(true)
+            {}
 
         ~OptParam() {};
 
