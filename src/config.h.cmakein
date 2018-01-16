@@ -65,9 +65,6 @@
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 
-/* Target platform is BlueGene/Q */
-#cmakedefine01 GMX_TARGET_BGQ
-
 /** Define if we are building natively on Windows */
 #cmakedefine01 GMX_NATIVE_WINDOWS
 
@@ -106,9 +103,6 @@
 
 /* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_ARM_NEON_ASIMD
-
-/* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
-#cmakedefine01 GMX_SIMD_IBM_QPX
 
 /* IBM VMX was selected as SIMD instructions (Power 6 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VMX

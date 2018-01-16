@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,6 @@ simdString(SimdType s)
         { SimdType::X86_Mic,        "X86_MIC"         },
         { SimdType::Arm_Neon,       "ARM_NEON"        },
         { SimdType::Arm_NeonAsimd,  "ARM_NEON_ASIMD"  },
-        { SimdType::Ibm_Qpx,        "IBM_QPX"         },
         { SimdType::Ibm_Vmx,        "IBM_VMX"         },
         { SimdType::Ibm_Vsx,        "IBM_VSX"         },
         { SimdType::Fujitsu_HpcAce, "Fujitsu HPC-ACE" }
@@ -176,10 +175,6 @@ simdSuggested(const CpuInfo &c)
                 {
                     suggested = SimdType::Ibm_Vmx;
                 }
-                else if (c.feature(CpuInfo::Feature::Ibm_Qpx))
-                {
-                    suggested = SimdType::Ibm_Qpx;
-                }
                 break;
             case CpuInfo::Vendor::Fujitsu:
                 if (c.feature(CpuInfo::Feature::Fujitsu_HpcAce))
@@ -219,8 +214,6 @@ simdCompiled()
     return SimdType::Arm_Neon;
 #elif GMX_SIMD_ARM_NEON_ASIMD
     return SimdType::Arm_NeonAsimd;
-#elif GMX_SIMD_IBM_QPX
-    return SimdType::Ibm_Qpx;
 #elif GMX_SIMD_IBM_VMX
     return SimdType::Ibm_Vmx;
 #elif GMX_SIMD_IBM_VSX
