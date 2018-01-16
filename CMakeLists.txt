@@ -240,7 +240,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "AUTO"
-    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 if(GMX_TARGET_MIC)
     set(GMX_FFT_LIBRARY_DEFAULT "mkl")
@@ -445,10 +445,6 @@ gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
 # GROMACS defaults or user settings will make sense. Also, any
 # toolchain-related reasons for choosing whether to detect various
 # things can be sorted out now, before the detection takes place.
-if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
-    include(gmxManageBlueGene)
-endif()
-
 if(GMX_TARGET_FUJITSU_SPARC64)
     include(gmxManageFujitsuSparc64)
 endif()

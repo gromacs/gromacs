@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -390,10 +390,10 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
      * want to support. */
     if (!affinityAccess->isThreadAffinitySupported())
     {
-        /* we know Mac OS & BlueGene do not support setting thread affinity, so there's
+        /* we know Mac OS does not support setting thread affinity, so there's
            no point in warning the user in that case. In any other case
            the user might be able to do something about it. */
-#if !defined(__APPLE__) && !defined(__bg__)
+#if !defined(__APPLE__)
         GMX_LOG(mdlog.warning).asParagraph().appendText(
                 "NOTE: Cannot set thread affinities on the current platform.");
 #endif  /* __APPLE__ */

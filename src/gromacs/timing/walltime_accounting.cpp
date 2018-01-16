@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,10 +201,8 @@ gmx_gettime()
     /* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
-       Windows), and it isn't BG/Q (whose compute node kernel only
-       supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime). */
-#if HAVE_CLOCK_GETTIME && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0 && !(defined __bgq__ && defined __clang__)
+       Windows). */
+#if HAVE_CLOCK_GETTIME && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
     struct timespec t;
     double          seconds;
 
@@ -215,7 +213,6 @@ gmx_gettime()
 #elif HAVE_GETTIMEOFDAY
     // Note that gettimeofday() is deprecated by POSIX, but since Mac
     // and Windows do not yet support POSIX, we are still stuck.
-    // Also, this is the only supported API call on Bluegene/Q.
     struct timeval t;
     double         seconds;
 
@@ -251,10 +248,8 @@ gmx_gettime_per_thread()
     /* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
-       Windows), and it isn't BG/Q (whose compute node kernel only
-       supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime). */
-#if HAVE_CLOCK_GETTIME && defined(_POSIX_THREAD_CPUTIME) && _POSIX_THREAD_CPUTIME > 0 && !(defined __bgq__ && defined __clang__)
+       Windows). */
+#if HAVE_CLOCK_GETTIME && defined(_POSIX_THREAD_CPUTIME) && _POSIX_THREAD_CPUTIME > 0
     struct timespec t;
     double          seconds;
 

@@ -73,11 +73,6 @@ Just to give a few examples:
   values, and it could get very complex for higher-level code if all these
   decisions were exposed. Instead, we want to keep integers 32-bit since
   all algorithms anyway need to work in single precision (w. 32-bit ints).
-- IBM QPX uses 4-wide SIMD both for single and double precision. Integer
-  support is highly limited, and the storage format means QPX does not
-  use x86-style all-ones masks (which have different widths in single/double)
-  but it uses the sign bit to denote the _false_ value. In particular, this
-  means we cannot use the bit contents for any fancy mask operations.
 - AVX1 only supports 4-wide 128-bit integer SIMD arithmetics, but the integer
   _conversions_ can still be done 8-wide which corresponds to the single
   precision floating-point width. Similarly, with AVX1 conversions between
@@ -90,9 +85,6 @@ Just to give a few examples:
   to integers they will be put in the first two elements of a 4-wide integer
   type. This means we cannot assume that floating-point SIMD registers and
   corresponding integer registers (after conversion) have the same width.
-- The 2-wide SIMD instructions on BlueGene/L and BlueGene/P cannot do any
-  floating-point logical operations (and/andnot/or/xor) whatsoever, which
-  can be a pain when implementing approximations for math functions.
 - Since boolean values can have different width for float/double and the
   integers corresponding to float/double, we need to use separate boolean
   types for all these values and convert between them if we e.g. want to use

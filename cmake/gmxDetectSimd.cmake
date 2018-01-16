@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -117,8 +117,6 @@ function(gmx_suggest_simd _suggested_simd)
                 set(OUTPUT_SIMD "IBM_VSX")
             elseif(CPU_DETECTION_FEATURES MATCHES " vmx ")
                 set(OUTPUT_SIMD "IBM_VMX")
-            elseif(CPU_DETECTION_FEATURES MATCHES " qpx ")
-                set(OUTPUT_SIMD "IBM_QPX")
             elseif(CPU_DETECTION_FEATURES MATCHES " neon_asimd ")
                 set(OUTPUT_SIMD "ARM_NEON_ASIMD")
             elseif(CPU_DETECTION_FEATURES MATCHES " neon " AND NOT GMX_DOUBLE)
@@ -140,12 +138,7 @@ endfunction()
 
 function(gmx_detect_simd _suggested_simd)
     if(GMX_SIMD STREQUAL "AUTO")
-        if(GMX_TARGET_BGQ)
-            # BG/Q requires cross-compilation, so needs this
-            # logic. While the qpx feature flag in cpuinfo works, it
-            # can't be returned by cpuinfo running on the build host.
-            set(${_suggested_simd} "IBM_QPX")
-        elseif(GMX_TARGET_FUJITSU_SPARC64)
+        if(GMX_TARGET_FUJITSU_SPARC64)
             # HPC-ACE is always present. In the future we
             # should add detection for HPC-ACE2 here.
             set(${_suggested_simd} "Sparc64_HPC_ACE")

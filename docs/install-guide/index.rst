@@ -524,7 +524,6 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
-10. ``IBM_QPX`` BlueGene/Q A2 cores have this.
 11. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 12. ``IBM_VMX`` Power6 and similar Altivec processors have this.
 13. ``IBM_VSX`` Power7, Power8 and later have this.
@@ -707,7 +706,7 @@ platforms where we believe it has been tested repeatedly and found to work.
 In general, this includes Linux, Windows, Mac OS X and BSD systems.
 Static binaries take more space, but on some hardware and/or under
 some conditions they are necessary, most commonly when you are running a parallel
-simulation using MPI libraries (e.g. BlueGene, Cray).
+simulation using MPI libraries (e.g. Cray).
 
 * To link |Gromacs| binaries statically against the internal |Gromacs|
   libraries, set ``-DBUILD_SHARED_LIBS=OFF``.
@@ -775,7 +774,7 @@ is found, and otherwise fall back on a version of BLAS internal to
 accordingly. The internal versions are fine for normal use. If you
 need to specify a non-standard path to search, use
 ``-DCMAKE_PREFIX_PATH=/path/to/search``. If you need to specify a
-library with a non-standard name (e.g. ESSL on AIX or BlueGene), then
+library with a non-standard name (e.g. ESSL on Power machines), then
 set ``-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a``.
 
 If you are using Intel MKL_ for FFT, then the BLAS and
@@ -1106,66 +1105,6 @@ Oracle Developer Studio is not a currently supported compiler (and
 does not currently compile |Gromacs| correctly, perhaps because the
 thread-MPI atomics are incorrectly implemented in |Gromacs|).
 
-Building on BlueGene
---------------------
-
-BlueGene/Q
-^^^^^^^^^^
-There is currently native acceleration on this platform for the Verlet
-cut-off scheme. There are no plans to provide accelerated kernels for
-the group cut-off scheme, but the default plain C kernels will work
-(slowly).
-
-Only the bgclang compiler is supported, because it is the only
-availble C++11 compiler. Only static linking is supported.
-
-Computation on BlueGene floating-point units is always done in
-double-precision. However, mixed-precision builds of |Gromacs| are still
-normal and encouraged since they use cache more efficiently.
-
-You need to arrange for FFTW to be installed correctly, following the
-above instructions. You may prefer to configure FFTW with
-``--disable-fortran`` to avoid complications.
-
-MPI wrapper compilers should be used for compiling and linking. The
-MPI wrapper compilers can make it awkward to
-attempt to use IBM's optimized BLAS/LAPACK called ESSL (see the
-section on `linear algebra libraries`_. Since mdrun is the only part
-of |Gromacs| that should normally run on the compute nodes, and there is
-nearly no need for linear algebra support for mdrun, it is recommended
-to use the |Gromacs| built-in linear algebra routines - this is never
-a problem for normal simulations.
-
-The recommended configuration is to use
-
-::
-
-    cmake .. -DCMAKE_C_COMPILER=mpicc \
-             -DCMAKE_CXX_COMPILER=mpicxx \
-             -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX.cmake \
-             -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
-             -DGMX_MPI=ON \
-             -DGMX_BUILD_MDRUN_ONLY=ON
-    make
-    make install
-
-which will build a statically-linked MPI-enabled mdrun for the compute
-nodes. Otherwise, |Gromacs| default configuration
-behaviour applies.
-
-It is possible to configure and make the remaining |Gromacs| tools with
-the compute-node toolchain, but as none of those tools are MPI-aware,
-this would not normally
-be useful. Instead, users should plan to run these on the login node,
-and perform a separate |Gromacs| installation for that, using the login
-node's toolchain - not the above platform file, or any other
-compute-node toolchain. This may require requesting an up-to-date
-gcc or clang toolchain for the front end.
-
-Note that only the MPI build is available for the compute-node
-toolchains. The |Gromacs| thread-MPI or no-MPI builds are not useful at
-all on BlueGene/Q.
-
 Fujitsu PRIMEHPC
 ^^^^^^^^^^^^^^^^
 This is the architecture of the K computer, which uses Fujitsu
@@ -1239,6 +1178,6 @@ For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
 
-We test irregularly on ARM v7, ARM v8, BlueGene/Q, Cray, Fujitsu
+We test irregularly on ARM v7, ARM v8, Cray, Fujitsu
 PRIMEHPC, Power8, Google Native Client and other environments, and
 with other compilers and compiler versions, too.

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU") AND NOT GMX_BUILD_MDRUN_ONLY)
     # Maybe Solaris should be here? Patch this if you know!
     SET(SHARED_LIBS_DEFAULT ON)
-elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+elseif(WIN32)
     # Support for shared libs on native Windows is a bit new. Its
     # default might change later if/when we sort things out. Also,
     # Cray should go here. What variable value can detect it?
