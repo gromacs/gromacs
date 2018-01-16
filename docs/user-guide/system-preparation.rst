@@ -71,7 +71,7 @@ simulations. Some stages are optional for some kinds of simulations.
    need to edit your topology file to stay current with your
    coordinate file.
 
-7. Run an :ref:`energy minimization <gmx-energy-min>` 
+7. Run an energy minimization
    on the system (using :ref:`gmx grompp`
    and :ref:`gmx mdrun`). This is required to sort out any bad
    starting structures caused during generation of the system, which

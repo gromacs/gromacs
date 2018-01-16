@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,6 +83,23 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 {
     const char *const cmdline[] = {
         "test", "help", "module"
+    };
+    CommandLine       args(cmdline);
+    initManager(args, "test");
+    MockModule       &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    EXPECT_CALL(mod1, writeHelp(_));
+    mod1.setExpectedDisplayName("test module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
+{
+    const char *const cmdline[] = {
+        "test", "-quiet", "help", "module"
     };
     CommandLine       args(cmdline);
     initManager(args, "test");

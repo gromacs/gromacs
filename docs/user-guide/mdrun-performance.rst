@@ -861,7 +861,7 @@ A separate GPU driver thread can require CPU resources
 which may clash with the concurrently running non-offloaded tasks,
 potentially degrading the performance of PME or bonded force computation.
 This effect is most pronounced when using AMD GPUs with OpenCL with
-all stable driver releases to date (up to and including fglrx 12.15).
+older driver releases (e.g. fglrx 12.15).
 To minimize the overhead it is recommended to
 leave a CPU hardware thread unused when launching :ref:`gmx mdrun`,
 especially on CPUs with high core count and/or HyperThreading enabled.
@@ -880,16 +880,20 @@ Running the OpenCL version of mdrun
 
 The current version works with GCN-based AMD GPUs, and NVIDIA CUDA
 GPUs. Make sure that you have the latest drivers installed. For AMD GPUs,
-Mesa version 17.0 or newer with LLVM 4.0 or newer is supported in addition
-to the proprietary driver. For NVIDIA GPUs, using the proprietary driver is
+the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
+alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
+and unsupported `fglrx` proprietary driver and runtime is not recommended (but
+for certain older hardware that may be the only way to obtain support).
+In addition Mesa version 17.0 or newer with LLVM 4.0 or newer is also supported.
+For NVIDIA GPUs, using the proprietary driver is
 required as the open source nouveau driver (available in Mesa) does not
 provide the OpenCL support.
 The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
-Devices from the AMD GCN architectures (all series) and NVIDIA Fermi
-and later (compute capability 2.0) are known to work, but before
-doing production runs always make sure that the |Gromacs| tests
+Devices from the AMD GCN architectures (all series) are compatible
+and regularly tested; NVIDIA Fermi and later (compute capability 2.0)
+are known to work, but before doing production runs always make sure that the |Gromacs| tests
 pass successfully on the hardware.
 
 The OpenCL GPU kernels are compiled at run time. Hence,
@@ -912,6 +916,7 @@ Known limitations of the OpenCL support
 
 Limitations in the current OpenCL support of interest to |Gromacs| users:
 
+- PME GPU offload is not supported with OpenCL.
 - No Intel devices (CPUs, GPUs or Xeon Phi) are supported
 - Due to blocking behavior of some asynchronous task enqueuing functions
   in the NVIDIA OpenCL runtime, with the affected driver versions there is
@@ -921,22 +926,12 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
 - On NVIDIA GPUs the OpenCL kernels achieve much lower performance
   than the equivalent CUDA kernels due to limitations of the NVIDIA OpenCL
   compiler.
-- The AMD APPSDK version 3.0 ships with OpenCL compiler/runtime components,
-  libamdocl12cl64.so and libamdocl64.so (only in earlier releases),
-  that conflict with newer fglrx GPU drivers which provide the same libraries.
-  This conflict manifests in kernel launch failures as, due to the library path
-  setup, the OpenCL runtime loads the APPSDK version of the aforementioned
-  libraries instead of the ones provided by the driver installer.
-  The recommended workaround is to remove or rename the APPSDK versions of the
-  offending libraries.
 
 Limitations of interest to |Gromacs| developers:
 
 - The current implementation is not compatible with OpenCL devices that are
   not using warp/wavefronts or for which the warp/wavefront size is not a
   multiple of 32
-- Some Ewald tabulated kernels are known to produce incorrect results, so
-  (correct) analytical kernels are used instead.
 
 Performance checklist
 ---------------------

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,8 +155,8 @@ struct PmeGpuCuda
     /*! \brief A boolean which tells whether the complex and real grids for cuFFT are different or same. Currenty true. */
     bool performOutOfPlaceFFT;
     /*! \brief A boolean which tells if the CUDA timing events are enabled.
-     * True by default, disabled by setting the environment variable GMX_DISABLE_CUDA_TIMING.
-     * FIXME: this should also be disabled if any other GPU task is running concurrently on the same device,
+     *  False by default, can be enabled by setting the environment variable GMX_ENABLE_GPU_TIMING.
+     *  Note: will not be reliable when multiple GPU tasks are running concurrently on the same device context,
      * as CUDA events on multiple streams are untrustworthy.
      */
     bool                                             useTiming;

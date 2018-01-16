@@ -191,7 +191,7 @@ set(GMX_VERSION_PATCH 0)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-rc1")
+set(GMX_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -226,7 +226,7 @@ endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
 set(REGRESSIONTEST_BRANCH "refs/heads/release-2018")
-set(REGRESSIONTEST_MD5SUM "d4c535a06fd8f34c9fd21e7ee5a30808" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "5a609bea6b6777072063be9e665121ef" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")

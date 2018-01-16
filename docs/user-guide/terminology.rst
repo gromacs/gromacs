@@ -379,31 +379,3 @@ guide, and the user is asked to consult either the relevant literature or
 try to start at the relevant `Wikipedia page`_.
 
 .. _Wikipedia page: https://en.wikipedia.org/wiki/Force_field_(chemistry)
-
-.. _gmx-vdw:
-
-van der Waals radius
---------------------
-
-Add what this means here.
-
-.. _gmx-residue:
-
-Residue
--------
-
-Add definition of a residue here.
-
-.. _gmx-energy-min:
-
-Energy minimisation
--------------------
-
-Add short explanation of energy minimization here.
-
-.. _gmx-PME:
-
-Particle Mesh Ewald
--------------------
-
-Add info here for PME in |Gromacs|

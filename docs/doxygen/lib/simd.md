@@ -17,7 +17,7 @@ these vectors often need to be aligned on cache boundaries.
 
 We have supported a number of different SIMD instruction sets in
 the group kernels for ages, and it is now also present in the
-verlet kernels and a few other places. However, with the increased
+Verlet kernels and a few other places. However, with the increased
 usage and several architectures with different capabilities we now
 use a vendor-agnostic \Gromacs SIMD module, as documented in
 \ref module_simd.
@@ -63,7 +63,7 @@ Unfortunately there is no standard for SIMD architectures. The available
 features vary a lot, but we still need to use quite a few of them to
 get the best performance possible. This means some features will only
 be available on certain platforms, and it is critical that we do NOT make
-to many assumptions about the storage formats, their size or SIMD width.
+too many assumptions about the storage formats, their size or SIMD width.
 Just to give a few examples:
 
 - On x86, double precision (64-bit) floating-point values always convert
@@ -96,14 +96,14 @@ Just to give a few examples:
 - Since boolean values can have different width for float/double and the
   integers corresponding to float/double, we need to use separate boolean
   types for all these values and convert between them if we e.g. want to use
-  result of an integer compare to select floating-point values.
+  the result of an integer compare to select floating-point values.
 
 While this might sound complicated, it is actually far easier than writing
 separate SIMD code for 10 architectures in both single & double. The point
 is not that you need to remember the limitations above, but it is critical
 that you *never assume anything about the SIMD implementation*. We
 typically implement SIMD support for a new architecture in days with this
-new module, and the extensions required for verlet kernels
+new module, and the extensions required for Verlet kernels
 are also very straightforward (group kernels can be more complex, but those
 are gradually on their way out). For the higher-level
 code, the only important thing is to never _assume_ anything about the SIMD
@@ -125,7 +125,7 @@ group and Verlet kernels do insane amounts of floating-point operations,
 and since we spend 85-90% of the time in these kernels it is critical that
 we can optimize them as much as possible. Here, our strategy is first to
 define larger high-level functions that e.g. take a number of distances
-and loads the table interactions for this interaction. This way we can
+and load the table interactions for this interaction. This way we can
 move this architecture-specific implementation to the SIMD module, and
 both achieve a reasonably clean kernel but still optimize a lot. This
 is what we have done for the approximately 10 functions for the nonbonded
@@ -261,7 +261,7 @@ converted to single precision floating-point. These are normal integers
 (not a special conversion type), but since some SIMD architectures such as
 SSE or AVX use different registers for integer SIMD variables having the
 same width as float and double, respectively, we need to separate these
-two types of integers. The actual operations you perform on the are normal
+two types of integers. The actual operations you perform on them are normal
 ones such as addition or multiplication.
 This will also be the widest integer data type if you want to do pure
 integer SIMD operations, but that will not be supported on all platforms.
@@ -398,7 +398,7 @@ the operations the SIMD4 type supports.
 Predefined SIMD preprocessor macros
 ===================================
 
-Functionality-wise, we have a small set of core set of features that we
+Functionality-wise, we have a small set of core features that we
 require to be present on all platforms, while more avanced features can be
 used in the code when defines like e.g. \ref GMX_SIMD_HAVE_LOADU have the
 value 1.
