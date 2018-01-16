@@ -240,8 +240,7 @@ TEST_F(PmeTest, ScalesTheBox)
 
     RunModesList runModes;
     runModes["PmeOnCpu"]         = {"-pme", "cpu"};
-    //FIXME mixed mode scaling is broken
-    //runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
     runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
 
     runTest(runModes, nsteps);
