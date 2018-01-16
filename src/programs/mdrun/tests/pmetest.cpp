@@ -225,6 +225,30 @@ TEST_F(PmeTest, ReproducesEnergies)
     runTest(runModes, 20);
 }
 
+TEST_F(PmeTest, ScalesTheBox)
+{
+    const std::string theMdpFile ("coulombtype     = PME\n"
+                                  "nstcalcenergy   = 1\n"
+                                  "nstenergy       = 1\n"
+                                  "pme-order       = 4\n"
+                                  "pbc             = xy\n"
+                                  "nwall           = 2\n"
+                                  "ewald-geometry  = 3dc\n"
+                                  "wall_atomtype   = OMet CMet\n"
+                                  "wall_density    = 9-3 9-3\n"
+                                  "wall-ewald-zfac = 5\n");
+
+    runner_.useStringAsMdpFile(theMdpFile);
+
+    RunModesList runModes;
+    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
+    //FIXME mixed mode scaling is broken
+    //runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
+    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
+
+    runTest(runModes, 0);
+}
+
 }
 }
 }
