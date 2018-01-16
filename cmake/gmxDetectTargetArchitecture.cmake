@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,18 +36,13 @@
 # - architecture is one for which GROMACS has special treatment
 #   (e.g. SIMD instructions)
 #
-# Sets GMX_TARGET_X86 or GMX_TARGET_BGQ if targetting that
-# architecture. May set other such variables if/when there is future
-# need.
+# Sets GMX_TARGET_X86 etc. if targetting that architecture. May set
+# other such variables if/when there is future need.
 
 function(gmx_detect_target_architecture)
     if (NOT DEFINED GMX_TARGET_X86)
         try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestX86.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_BGQ)
-        try_compile(GMX_TARGET_BGQ ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestBlueGeneQ.c")
     endif()
     if (NOT DEFINED GMX_TARGET_MIC)
         try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}

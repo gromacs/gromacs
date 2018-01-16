@@ -24,7 +24,6 @@ cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
 cmake/ThreadMPI.cmake                   !filter
-cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               -filter -gmx-doxygen
 cmake/*.cpp                             -filter -gmx-doxygen
 cmake/*.c.cmakein                       !filter

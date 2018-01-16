@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,75 +95,11 @@ int gmx_node_rank()
 #endif
 }
 
-#if GMX_LIB_MPI && GMX_TARGET_BGQ
-#ifdef __clang__
-/* IBM's declaration of this function in
- * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
- * erroneously fails to specify __INLINE__, despite
- * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk/process_impl.h
- * specifiying __INLINE__, so bgclang thinks they are different enough
- * to complain about. */
-static uint64_t Kernel_GetJobID();
-#endif
-#include <spi/include/kernel/location.h>
-
-static int bgq_nodenum()
-{
-    int           hostnum;
-    Personality_t personality;
-    Kernel_GetPersonality(&personality, sizeof(personality));
-    /* Each MPI rank has a unique coordinate in a 6-dimensional space
-       (A,B,C,D,E,T), with dimensions A-E corresponding to different
-       physical nodes, and T within each node. Each node has sixteen
-       physical cores, each of which can have up to four hardware
-       threads, so 0 <= T <= 63 (but the maximum value of T depends on
-       the confituration of ranks and OpenMP threads per
-       node). However, T is irrelevant for computing a suitable return
-       value for gmx_physicalnode_id_hash().
-     */
-    hostnum  = personality.Network_Config.Acoord;
-    hostnum *= personality.Network_Config.Bnodes;
-    hostnum += personality.Network_Config.Bcoord;
-    hostnum *= personality.Network_Config.Cnodes;
-    hostnum += personality.Network_Config.Ccoord;
-    hostnum *= personality.Network_Config.Dnodes;
-    hostnum += personality.Network_Config.Dcoord;
-    hostnum *= personality.Network_Config.Enodes;
-    hostnum += personality.Network_Config.Ecoord;
-
-    if (debug)
-    {
-        std::fprintf(debug,
-                     "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\n"
-                     "Node ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
-                     personality.Network_Config.Acoord,
-                     personality.Network_Config.Anodes,
-                     personality.Network_Config.Bcoord,
-                     personality.Network_Config.Bnodes,
-                     personality.Network_Config.Ccoord,
-                     personality.Network_Config.Cnodes,
-                     personality.Network_Config.Dcoord,
-                     personality.Network_Config.Dnodes,
-                     personality.Network_Config.Ecoord,
-                     personality.Network_Config.Enodes,
-                     Kernel_ProcessorCoreID(),
-                     16,
-                     Kernel_ProcessorID(),
-                     64,
-                     Kernel_ProcessorThreadID(),
-                     4);
-    }
-    return hostnum;
-}
-#endif
-
 static int mpi_hostname_hash()
 {
     int hash_int;
 
-#if GMX_TARGET_BGQ
-    hash_int = bgq_nodenum();
-#elif GMX_LIB_MPI
+#if GMX_LIB_MPI
     int  resultlen;
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 

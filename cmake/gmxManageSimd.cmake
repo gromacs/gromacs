@@ -237,18 +237,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions using CXX flags: ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}")
 
-elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_QPX")
-
-    try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-        "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
-
-    if (TEST_QPX)
-        set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-        set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions without special flags.")
-    else()
-        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
-    endif()
-
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
 
     gmx_find_simd_ibm_vmx_flags(SIMD_IBM_VMX_C_SUPPORTED SIMD_IBM_VMX_CXX_SUPPORTED
@@ -375,9 +363,7 @@ endif()
 # so we avoid searching for any.
 #
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
-    if(GMX_TARGET_BGQ)
-        set(CALLCONV_LIST " ")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
         set(CALLCONV_LIST __regcall " ")
    elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
         set(CALLCONV_LIST " ")
