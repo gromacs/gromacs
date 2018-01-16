@@ -1661,11 +1661,10 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
          * Since table lookup's don't parallelize with SIMD, analytical
          * will probably always be faster for a SIMD width of 8 or more.
          * With FMA analytical is sometimes faster for a width if 4 as well.
-         * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)
         /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
          * of single or double precision and 128 or 256-bit AVX2.
          */
@@ -2527,20 +2526,6 @@ void init_forcerec(FILE                    *fp,
         {
             fprintf(fp, "\n%s\n", note);
         }
-
-        if (GMX_TARGET_BGQ)
-        {
-            GMX_LOG(mdlog.warning).asParagraph()
-                .appendText("There is no SIMD implementation of the group scheme kernels on "
-                            "BlueGene/Q. You will observe better performance from using the "
-                            "Verlet cut-off scheme.");
-        }
-    }
-    if (GMX_TARGET_BGQ)
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The support for the BlueGene/Q platform is deprecated, and may be removed "
-                       "in a future version.");
     }
 
     /* Determine if we will do PBC for distances in bonded interactions */

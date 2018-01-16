@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,7 +144,7 @@ class CpuInfo
             X86_Xop,         //!< AMD extended instructions, only AMD for now
             Arm_Neon,        //!< 32-bit ARM NEON
             Arm_NeonAsimd,   //!< 64-bit ARM AArch64 Advanced SIMD
-            Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q and later)
+            Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q)
             Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
             Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)
             Fujitsu_HpcAce   //!< Fujitsu Sparc64 HPC-ACE
