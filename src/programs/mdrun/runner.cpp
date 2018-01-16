@@ -325,7 +325,7 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
                                                const t_inputrec *ir,
                                                bool              issueWarning)
 {
-    if (ir->opts.ngener > 1)
+    if (ir->opts.ngener - ir->nwall > 1)
     {
         /* The GPU code does not support more than one energy group.
          * If the user requested GPUs explicitly, a fatal error is given later.

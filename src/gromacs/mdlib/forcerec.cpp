@@ -2245,13 +2245,22 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     }
 
     snew(nbv->nbat, 1);
+    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
+    if (ir->opts.ngener - ir->nwall == 1)
+    {
+        /* We have only one non-wall energy group, we do not need energy group
+         * support in the non-bondeds kernels, since all non-bonded energy
+         * contributions go to the first element of the energy group matrix.
+         */
+        mimimumNumEnergyGroupNonbonded = 1;
+    }
     bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
     nbnxn_atomdata_init(mdlog,
                         nbv->nbat,
                         nbv->grp[0].kernel_type,
                         enbnxninitcombrule,
                         fr->ntype, fr->nbfp,
-                        ir->opts.ngener,
+                        mimimumNumEnergyGroupNonbonded,
                         bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                         nb_alloc, nb_free);
 
