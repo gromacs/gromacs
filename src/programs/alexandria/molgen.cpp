@@ -38,10 +38,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "moldip.h"
-
 #include <cmath>
-
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -52,11 +49,13 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
+#include "molgen.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 
@@ -284,7 +283,7 @@ int IndexCount::cleanIndex(int   minimum_data,
     return nremove;
 }
 
-MolDip::MolDip()
+MolGen::MolGen()
 {
     cr_     = nullptr;
     fixchi_ = (char *)"";
@@ -299,7 +298,7 @@ MolDip::MolDip()
     fill_inputrec(inputrec_);
     bFinal_    = false;
     bDone_     = false;
-    bGenVsite_ = FALSE;
+    bGenVsite_ = false;
     J0_min_    = 5;
     Chi0_min_  = 1;
     zeta_min_  = 2;
@@ -312,10 +311,10 @@ MolDip::MolDip()
     mindata_   = 3;
     lot_       = "B3LYP/aug-cc-pVTZ";
     hfac_      = 0;
-    bOptHfac_  = FALSE;
+    bOptHfac_  = false;
 }
 
-MolDip::~MolDip()
+MolGen::~MolGen()
 {
     if (cr_)
     {
@@ -323,7 +322,7 @@ MolDip::~MolDip()
     }
 }
 
-void MolDip::addOptions(std::vector<t_pargs> *pargs)
+void MolGen::addOptions(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
@@ -382,13 +381,13 @@ void MolDip::addOptions(std::vector<t_pargs> *pargs)
         { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
           "Generate virtual sites. Check and double check." }
     };
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    for (size_t i = 0; i < asize(pa); i++)
     {
         pargs->push_back(pa[i]);
     }
 }
 
-void MolDip::optionsFinished()
+void MolGen::optionsFinished()
 {
     iChargeDistributionModel_   = name2eemtype(cqdist[0]);
     iChargeGenerationAlgorithm_ = (ChargeGenerationAlgorithm) get_option(cqgen);
@@ -403,7 +402,7 @@ void MolDip::optionsFinished()
 
 }
 
-immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol,
+immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
                                          IndexCount       *ic)
 {
     immStatus imm = immOK;
@@ -450,7 +449,7 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol mymol,
     return imm;
 }
 
-void MolDip::Read(FILE            *fp,
+void MolGen::Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
                   gmx_bool         bZero,

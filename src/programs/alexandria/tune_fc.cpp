@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -64,7 +63,7 @@
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
-#include "moldip.h"
+#include "molgen.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
@@ -835,7 +834,7 @@ void ForceConstants::dump(FILE *fp) const
     }
 }
 
-class Optimization : public MolDip
+class Optimization : public MolGen
 {
     using param_type = std::vector<double>;
 
@@ -1591,7 +1590,7 @@ double Optimization::calcDeviation()
         fprintf(debug, "Done communicating force parameters\n");
         fflush(debug);
     }
-    resetEner();
+    resetEnergies();
 
     for (auto &mymol : mymols())
     {
@@ -1662,11 +1661,11 @@ double Optimization::calcDeviation()
                                 copy_rvec(mymol.f_[j], mymol.optf_[j]);
                             }
                             mymol.OptForce2_   /= natoms;
-                            incrEner(ermsForce2, mymol.OptForce2_);
+                            increaseEnergy(ermsForce2, mymol.OptForce2_);
                             mymol.OptEcalc_     = mymol.enerd_->term[F_EPOT];
                         }
 
-                        incrEner(ermsEPOT, ener);
+                        increaseEnergy(ermsEPOT, ener);
 
                         if (nullptr != debug)
                         {
@@ -1700,11 +1699,11 @@ double Optimization::calcDeviation()
         {
             if (param_[j] < lower_[j])
             {
-                incrEner(ermsBOUNDS, gmx::square(param_[j]-lower_[j]));
+                increaseEnergy(ermsBOUNDS, gmx::square(param_[j]-lower_[j]));
             }
             else if (param_[j] > upper_[j])
             {
-                incrEner(ermsBOUNDS, gmx::square(param_[j]-upper_[j]));
+                increaseEnergy(ermsBOUNDS, gmx::square(param_[j]-upper_[j]));
             }
         }
     }

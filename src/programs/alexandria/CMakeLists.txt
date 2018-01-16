@@ -50,7 +50,7 @@ set(ALEXANDRIA_SOURCES
            getmdlogger.cpp
            merge_mp.cpp
            merge_pd.cpp
-           moldip.cpp
+           molgen.cpp
            molprop_check.cpp
            molprop_tables.cpp
            molprop_sqlite3.cpp

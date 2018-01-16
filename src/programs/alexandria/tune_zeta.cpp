@@ -42,7 +42,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -65,7 +64,7 @@
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
-#include "moldip.h"
+#include "molgen.h"
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_tables.h"
@@ -75,7 +74,7 @@
 namespace alexandria
 {
 
-class OptZeta : public MolDip
+class OptZeta : public MolGen
 {
     using param_type = std::vector<double>;
 
@@ -295,7 +294,7 @@ void OptZeta::calcDeviation()
     {
         poldata().broadcast(commrec());
     }
-    resetEner();
+    resetEnergies();
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
@@ -334,16 +333,16 @@ void OptZeta::calcDeviation()
                                                    (atomnr == 16) || (atomnr == 17) ||
                                                    (atomnr == 35) || (atomnr == 53))))
                         {
-                            incrEner(ermsCHARGE, gmx::square(qq));
+                            increaseEnergy(ermsCHARGE, gmx::square(qq));
                         }
                     }
 
                 }
-                incrEner(ermsCHARGE,
+                increaseEnergy(ermsCHARGE,
                          gmx::square(qtot - mymol.molProp()->getCharge()));
             }
             mymol.Qgresp_.calcPot();
-            incrEner(ermsESP,
+            increaseEnergy(ermsESP,
                      convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
             if (bDipole_)
             {
@@ -352,11 +351,11 @@ void OptZeta::calcDeviation()
                 {
                     rvec dmu;
                     rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
-                    incrEner(ermsMU, iprod(dmu, dmu));
+                    increaseEnergy(ermsMU, iprod(dmu, dmu));
                 }
                 else
                 {
-                    incrEner(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
+                    increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                 }
             }
             if (bQuadrupole_)
@@ -368,7 +367,7 @@ void OptZeta::calcDeviation()
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-                            incrEner(ermsQUAD, 
+                            increaseEnergy(ermsQUAD, 
                                      gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
@@ -403,8 +402,8 @@ double OptZeta::objFunction(const double v[])
         }
     }
     calcDeviation();
-    incrEner(ermsBOUNDS, bounds);
-    incrEner(ermsTOT, bounds);
+    increaseEnergy(ermsBOUNDS, bounds);
+    increaseEnergy(ermsTOT, bounds);
     return energy(ermsTOT);
 }
 

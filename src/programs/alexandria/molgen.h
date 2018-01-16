@@ -37,8 +37,8 @@
  * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLDIP_H
-#define MOLDIP_H
+#ifndef MOLGEN_H
+#define MOLGEN_H
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
@@ -165,7 +165,7 @@ class IndexCount
 using IndexCountIterator      = typename std::vector<IndexCount>::iterator;
 using IndexCountConstIterator = typename std::vector<IndexCount>::const_iterator;
 
-class MolDip
+class MolGen
 {
     private:
         int                             nmol_support_;
@@ -204,9 +204,9 @@ class MolDip
         const char                     *lot_;
     public:
 
-        MolDip();
+        MolGen();
 
-        ~MolDip();
+        ~MolGen();
 
         IndexCount *indexCount() { return &indexCount_; }
 
@@ -291,7 +291,18 @@ class MolDip
         double J0Max() const { return J0_max_; }
         double chi0Min() const { return Chi0_min_; }
         double chi0Max() const { return Chi0_max_; }
-        void resetEner()
+        
+        void setEnergy(int qt, real ener)
+        {
+            ener_[qt] = ener;
+        }
+        
+        double energy(int qt) const 
+        { 
+            return fc_[qt]*ener_[qt]; 
+        }
+        
+        void resetEnergies()
         {
             for (int j = 0; j < ermsNR; j++)
             {
@@ -299,17 +310,12 @@ class MolDip
             }
         }
 
-        double energy(int qt) const { return fc_[qt]*ener_[qt]; }
-
-        void incrEner(int qt, real delta)
+        void increaseEnergy(int qt, real delta)
         {
             ener_[qt] += delta;
         }
 
-        void setEnergy(int qt, real ener)
-        {
-            ener_[qt] = ener;
-        }
+        
         void sumEnergies()
         {
             if (PAR(commrec()) && !final())

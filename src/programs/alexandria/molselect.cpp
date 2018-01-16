@@ -38,15 +38,11 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molselect.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <random>
 #include <vector>
-
 #include <strings.h>
 
 #include "gromacs/commandline/filenm.h"
@@ -62,9 +58,10 @@
 
 #include "composition.h"
 #include "getmdlogger.h"
-#include "moldip.h"
+#include "molgen.h"
 #include "molprop.h"
 #include "molprop_xml.h"
+#include "molselect.h"
 #include "mymol.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -290,7 +287,7 @@ int alex_molselect(int argc, char *argv[])
     };
 
     gmx_output_env_t       *oenv;
-    alexandria::MolDip      mdp;
+    alexandria::MolGen      mdp;
     alexandria::MolSelect   gms;
     time_t                  my_t;
     FILE                   *fp;

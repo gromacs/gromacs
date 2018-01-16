@@ -42,7 +42,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -66,7 +65,7 @@
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
-#include "moldip.h"
+#include "molgen.h"
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -75,7 +74,7 @@
 namespace alexandria
 {
 
-class OptEEM : public MolDip
+class OptEEM : public MolGen
 {
     using param_type = std::vector<double>;
 
@@ -260,7 +259,7 @@ void OptEEM::calcDeviation()
     {
         poldata().broadcast(commrec());
     }
-    resetEner();
+    resetEnergies();
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
@@ -301,7 +300,7 @@ void OptEEM::calcDeviation()
                                           (atomnr == 16) || (atomnr == 17) ||
                                           (atomnr == 35) || (atomnr == 53))))
                         {
-                            incrEner(ermsBOUNDS, fabs(qq));
+                            increaseEnergy(ermsBOUNDS, fabs(qq));
                         }
                     }
                 }
@@ -321,7 +320,7 @@ void OptEEM::calcDeviation()
                     }
                     mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                     mymol.Qgresp_.calcPot();
-                    incrEner(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                    increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
                 }
                 if (bDipole_)
                 {
@@ -330,11 +329,11 @@ void OptEEM::calcDeviation()
                     {
                         rvec dmu;
                         rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
-                        incrEner(ermsMU, iprod(dmu, dmu));
+                        increaseEnergy(ermsMU, iprod(dmu, dmu));
                     }
                     else
                     {
-                        incrEner(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
+                        increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                     }
                 }
                 if (bQuadrupole_)
@@ -346,12 +345,12 @@ void OptEEM::calcDeviation()
                         {
                             for (auto nn = 0; nn < DIM; nn++)
                             {
-                                incrEner(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                                increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                             }
                         }
                         else
                         {
-                            incrEner(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]));
+                            increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]));
                         }
                     }
                 }
@@ -613,10 +612,10 @@ double OptEEM::objFunction(const double v[])
 
     if (TuneEEM_.bounds())
     {
-        incrEner(ermsBOUNDS, bound);
-        incrEner(ermsTOT, bound);
+        increaseEnergy(ermsBOUNDS, bound);
+        increaseEnergy(ermsTOT, bound);
     }
-    incrEner(ermsTOT, penalty);
+    increaseEnergy(ermsTOT, penalty);
 
     return energy(ermsTOT);
 }

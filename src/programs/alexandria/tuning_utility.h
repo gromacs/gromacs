@@ -44,7 +44,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -60,7 +59,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "gmx_simple_comm.h"
-#include "moldip.h"
+#include "molgen.h"
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
