@@ -106,12 +106,12 @@ static int gmx_fio_int_flush(t_fileio* fio)
    type of access to the fio's elements. */
 void gmx_fio_lock(t_fileio *fio)
 {
-    tMPI_Lock_lock(&(fio->mtx));
+    //tMPI_Lock_lock(&(fio->mtx));
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
-    tMPI_Lock_unlock(&(fio->mtx));
+    //tMPI_Lock_unlock(&(fio->mtx));
 }
 
 /* make a dummy head element, assuming we locked everything. */
@@ -124,7 +124,7 @@ static void gmx_fio_make_dummy(void)
         open_files->fn   = nullptr;
         open_files->next = open_files;
         open_files->prev = open_files;
-        tMPI_Lock_init(&(open_files->mtx));
+        //tMPI_Lock_init(&(open_files->mtx));
     }
 }
 
@@ -302,7 +302,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     snew(fio, 1);
-    tMPI_Lock_init(&(fio->mtx));
+    //tMPI_Lock_init(&(fio->mtx));
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
