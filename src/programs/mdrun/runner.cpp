@@ -63,6 +63,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gpu_utils/devicecontext.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -420,6 +421,23 @@ static TaskTarget findTaskTarget(const char *optionString)
     return returnValue;
 }
 
+/*! \brief Contains handles to all the GPU contexts on a rank.
+ *
+ * The use of shared_ptr ensures that we will clean up any context
+ * that we create, but not before every task and/or rank sharing
+ * it has finished with it.
+ *
+ * As the number of contexts permitted on a rank grows, or becomes
+ * thread-specific, this data structure will change.
+ */
+struct DeviceContexts
+{
+    //! Context for nonbonded work.
+    DeviceContextPtr nonbonded = std::make_shared<DeviceContext>();
+    //! Context for PME work.
+    DeviceContextPtr pme = std::make_shared<DeviceContext>();
+};
+
 int Mdrunner::mdrunner()
 {
     matrix                    box;
@@ -441,6 +459,12 @@ int Mdrunner::mdrunner()
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
+
+    /* This needs to be declared earlier than anything that uses the device contexts
+     * (e.g. pinned GPU buffers in globalState).
+     * The destruction order is the opposite of construction order.
+     */
+    DeviceContexts deviceContexts;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1050,8 +1074,6 @@ int Mdrunner::mdrunner()
     check_resource_division_efficiency(hwinfo, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
                                        cr, mdlog);
 
-    gmx_device_info_t *nonbondedDeviceInfo = nullptr;
-
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         // This works because only one task of each type is currently permitted.
@@ -1059,9 +1081,9 @@ int Mdrunner::mdrunner()
                                              hasTaskType<GpuTask::Nonbonded>);
         if (nbGpuTaskMapping != gpuTaskAssignment.end())
         {
-            int nonbondedDeviceId = nbGpuTaskMapping->deviceId_;
-            nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
-            init_gpu(mdlog, nonbondedDeviceInfo);
+            int  nonbondedDeviceId   = nbGpuTaskMapping->deviceId_;
+            auto nonbondedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, nonbondedDeviceId);
+            deviceContexts.nonbonded = std::make_shared<DeviceContext>(mdlog, nonbondedDeviceInfo);
 
             if (DOMAINDECOMP(cr))
             {
@@ -1072,13 +1094,12 @@ int Mdrunner::mdrunner()
         }
     }
 
-    gmx_device_info_t *pmeDeviceInfo = nullptr;
     // This works because only one task of each type is currently permitted.
     auto               pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
     if (pmeGpuTaskMapping != gpuTaskAssignment.end())
     {
-        pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
-        init_gpu(mdlog, pmeDeviceInfo);
+        auto pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
+        deviceContexts.pme = std::make_shared<DeviceContext>(mdlog, pmeDeviceInfo);
     }
 
     /* getting number of PP/PME threads
@@ -1158,7 +1179,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
-                      *hwinfo, nonbondedDeviceInfo,
+                      *hwinfo, deviceContexts.nonbonded->getDeviceInfo(),
                       FALSE,
                       pforce);
 
@@ -1264,7 +1285,7 @@ int Mdrunner::mdrunner()
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
-                                       pmeRunMode, nullptr, pmeDeviceInfo, mdlog);
+                                       pmeRunMode, nullptr, deviceContexts.pme->getDeviceInfo(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1372,18 +1393,10 @@ int Mdrunner::mdrunner()
         pmedata = nullptr;
     }
 
-    // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
-    // before we destroy the GPU context(s) in free_gpu_resources().
-    // Pinned buffers are associated with contexts in CUDA.
-    // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
-    mdAtoms.reset(nullptr);
-    globalState.reset(nullptr);
-    mdModules.reset(nullptr);   // destruct force providers here as they might also use the GPU
-
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, cr);
-    free_gpu(nonbondedDeviceInfo);
-    free_gpu(pmeDeviceInfo);
+    // FIXME: remove barrier
+    // TODO: remove mutex
 
     if (doMembed)
     {
