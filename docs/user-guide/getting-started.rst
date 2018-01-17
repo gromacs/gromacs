@@ -156,7 +156,10 @@ checkpoint file (:ref:`cpt` file).
 
 Tutorial material
 -----------------
-There are many tutorials_ available that cover aspects of using |Gromacs|.
+There are `several tutorials`_ available that cover aspects of using |Gromacs|.
+Further information can also be found in the :doc:`How to <../how-to/index>` section.
+
+.. _several tutorials: http://www.bevanlab.biochem.vt.edu/Pages/Personal/justin/gmx-tutorials/
 
 Background reading
 ------------------
