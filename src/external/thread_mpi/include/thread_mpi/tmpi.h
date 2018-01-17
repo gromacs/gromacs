@@ -62,16 +62,6 @@
 
 #include "visibility.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
-
-
 /** tMPI definition.
 
    Use this to check for thread_mpi with the preprocessor. */
@@ -1393,9 +1383,5 @@ int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
 /*! \} */
 
 
-
-#ifdef __cplusplus
-} /* closing extern "C" */
-#endif
 
 #endif /* TMPI_TMPI_H_ */
