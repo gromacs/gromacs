@@ -1,6 +1,8 @@
 Terminology
 ===========
 
+.. _gmx-pressure:
+
 Pressure
 --------
 
@@ -198,14 +200,14 @@ case:
 * Treatment of pair lists,
 * Constraint algorithms (see e.g. Hess, B. P-LINCS: A parallel linear constraint
   solver for molecular simulation. *J. Chem. Theor. Comp.* **4**, 116–122
-  (2008).)
-* The integration timestep,
-* Temperature coupling and pressure coupling,
+  (`2008 <http://dx.doi.org/10.1021/ct700116n>`_).).
+* The integration timestep.
+* :ref:`Temperature coupling <gmx-thermostats>` and :ref:`pressure coupling <gmx-pressure>`.
 * Round-off error (in particular in single precision), for example subtracting
   large numbers (Lippert, R. A. et al. A common, avoidable source of error in
-  molecular dynamics integrators. *J. Chem. Phys.* **126**, 046101 (2007).)
+  molecular dynamics integrators. *J. Chem. Phys.* **126**, 046101 (`2007 <http://dx.doi.org/10.1063/1.2431176>`_).).
 * The choice of the integration algorithm (in |Gromacs| this is normally
-  leap-frog),
+  leap-frog).
 * Removal of center of mass motion: when doing this in more than one group the
   conservation of energy will be violated.
 
@@ -365,10 +367,42 @@ Other sources of possible problems are in the biomolecule topology itself.
 Molecular dynamics
 ------------------
 
-A short introduction to Molecular Dynamics can be found in the
-:ref:`Reference Manual <md>`.
+Molecular dynamics (MD) is computer simulation with atoms and/or molecules
+interacting using some basic laws of physics.
+The |Gromacs| :ref:`Reference Manual <md>` provides a good general introduction to this area,
+as well as specific material for use with |Gromacs|. The first few chapters are mandatory reading
+for anybody wishing to use |Gromacs| and not waste time.
 
-.. TODO refer to reference manual definitions
+* Introduction to molecular modeling (`slides`_, `video`_)] - theoretical framework, modeling levels,
+  limitations and possibilities, systems and methods (Erik Lindahl).
+
+Books
+^^^^^
+
+There a several text books around.
+
+Good introductory books are:
+* A. Leach (2001) Molecular Modeling: Principles and Applications.
+* T. Schlick (2002) Molecular Modeling and Simulation
+
+With programming background:
+* D. Rapaport (1996) The Art of Molecular Dynamics Simulation
+* D. Frenkel, B. Smith (2001) Understanding Molecular Simulation
+
+More from the physicist's view:
+* M. Allen, D. Tildesley (1989) Computer simulation of liquids
+* H.J.C. Berendsen (2007) Simulating the Physical World: Hierarchical Modeling from Quantum Mechanics to Fluid Dynamics
+
+Types / Ensembles
+^^^^^^^^^^^^^^^^^
+* NVE - number of particles (N), system volume (V) and energy (E) are constant / conserved.
+* NVT - number of particles (N), system volume (V) and temperature (T) are
+  constant / conserved. (See :ref:`thermostats <gmx-thermostats>` for more on *constant* temperature).
+* NPT - number of particles (N), system pressure (P) and temperature (T) are constant / conserved.
+  (See :ref:`pressure coupling <gmx-pressure>` for more on *constant* pressure).
+
+.. _slides: https://extras.csc.fi/chem/courses/gmx2007/Erik_Talks/preworkshop_tutorial_introduction.pdf
+.. _video:  http://tv.funet.fi/medar/showRecordingInfo.do?id=/metadata/fi/csc/courses/gromacs_workshop_2007/IntroductiontoMolecularSimulationandGromacs.xml
 
 .. _gmx-force-field:
 
