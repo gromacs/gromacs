@@ -48,15 +48,6 @@
  */
 
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* Avoids screwing up auto-indentation */
-#endif
-
-
 /**  Lock-free single-ended stack (FIFO)
 
    Is a list with push, pop and detach operations */
@@ -156,11 +147,6 @@ void tMPI_List_add(tMPI_List *l, tMPI_List_element *le);
 void tMPI_List_insert(tMPI_List *l, tMPI_List_element *after,
                       tMPI_List_element *le);
 void tMPI_List_remove(tMPI_List *l, tMPI_List_element *le);
-#endif
-
-
-#ifdef __cplusplus
-} /* closing extern "C" */
 #endif
 
 #endif /* TMPI_LIST_H_ */

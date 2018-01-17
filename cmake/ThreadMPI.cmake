@@ -33,9 +33,9 @@
 # be called official thread_mpi. Details are found in the README & COPYING
 # files.
 
-include(CheckIncludeFiles)
-include(CheckFunctionExists)
-include(CheckCSourceCompiles)
+include(CheckIncludeFileCXX)
+include(CheckCXXSymbolExists)
+include(CheckCXXSourceCompiles)
 
 # sets TMPI_ATOMICS to 1 if atomic operations are found, unset otherwise
 # Options:
@@ -44,7 +44,7 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
 
     if (NOT DEFINED TMPI_ATOMICS)
         try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
-                "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
+                "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.cpp"
                 COMPILE_DEFINITIONS "-I${INCDIR} -DTMPI_ATOMICS")
         if (TEST_ATOMICS)
             message(STATUS "Atomic operations found")
@@ -62,7 +62,7 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
 
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
-try_compile(HAVE_PROCESSOR_NUMBER ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/TestWinProcNum.c")
+try_compile(HAVE_PROCESSOR_NUMBER ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/TestWinProcNum.cpp")
 
 include(FindThreads)
 
@@ -74,7 +74,7 @@ if (CMAKE_USE_WIN32_THREADS_INIT AND HAVE_PROCESSOR_NUMBER)
     set(THREAD_WINDOWS 1)
     set(THREAD_LIB)
 elseif (CMAKE_USE_PTHREADS_INIT)
-    check_include_files(pthread.h    HAVE_PTHREAD_H)
+    check_include_file_cxx(pthread.h    HAVE_PTHREAD_H)
     set(THREAD_PTHREADS 1)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else()
@@ -90,7 +90,7 @@ MACRO(TMPI_ENABLE_CORE INCDIR)
     if (THREAD_PTHREADS)
         set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
         # check for sched_setaffinity
-        check_c_source_compiles(
+        check_cxx_source_compiles(
             "#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdlib.h>
@@ -112,18 +112,16 @@ MACRO(TMPI_ENABLE_CORE INCDIR)
 
 
 # this runs on POSIX systems
-    check_include_files(unistd.h        HAVE_UNISTD_H)
-    check_include_files(sched.h         HAVE_SCHED_H)
-    check_include_files(sys/time.h      HAVE_SYS_TIME_H)
-    check_function_exists(sysconf       HAVE_SYSCONF)
+    check_include_file_cxx(unistd.h             HAVE_UNISTD_H)
+    check_include_file_cxx(sched.h              HAVE_SCHED_H)
+    check_include_file_cxx(sys/time.h           HAVE_SYS_TIME_H)
+    check_cxx_symbol_exists(sysconf    unistd.h HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
 ENDMACRO(TMPI_ENABLE_CORE)
 
 # enable C++ library build.
-MACRO(TMPI_ENABLE_CXX)
-    set(TMPI_CXX_LIB 1)
-ENDMACRO(TMPI_ENABLE_CXX)
+set(TMPI_CXX_LIB 1)
 
 # Turns on thread_mpi MPI functions.
 MACRO(TMPI_ENABLE)
@@ -169,22 +167,20 @@ MACRO(TMPI_ENABLE)
     else ()
         set(TMPI_WARNINGS 0)
     endif ()
-
-    include(CheckCSourceCompiles)
 ENDMACRO(TMPI_ENABLE)
 
 
 MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
     set(${SRC_VARIABLE}
-        ${SRC_ROOT}/errhandler.c
-        ${SRC_ROOT}/tmpi_malloc.c
-        ${SRC_ROOT}/atomic.c
-        ${SRC_ROOT}/lock.c)
+        ${SRC_ROOT}/errhandler.cpp
+        ${SRC_ROOT}/tmpi_malloc.cpp
+        ${SRC_ROOT}/atomic.cpp
+        ${SRC_ROOT}/lock.cpp)
 
     if (THREAD_PTHREADS)
-        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/pthreads.c)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/pthreads.cpp)
     elseif (THREAD_WINDOWS)
-        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/winthreads.c)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/winthreads.cpp)
     endif ()
 
     if (TMPI_CXX_LIB)
@@ -193,17 +189,17 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
 
     if (TMPI_ENABLED)
         list(APPEND ${SRC_VARIABLE}
-             ${SRC_ROOT}/alltoall.c      ${SRC_ROOT}/p2p_protocol.c
-             ${SRC_ROOT}/barrier.c       ${SRC_ROOT}/p2p_send_recv.c
-             ${SRC_ROOT}/bcast.c         ${SRC_ROOT}/p2p_wait.c
-             ${SRC_ROOT}/collective.c    ${SRC_ROOT}/profile.c
-             ${SRC_ROOT}/comm.c          ${SRC_ROOT}/reduce.c
-             ${SRC_ROOT}/event.c         ${SRC_ROOT}/reduce_fast.c
-             ${SRC_ROOT}/gather.c        ${SRC_ROOT}/scatter.c
-             ${SRC_ROOT}/group.c         ${SRC_ROOT}/tmpi_init.c
-             ${SRC_ROOT}/topology.c      ${SRC_ROOT}/list.c
-             ${SRC_ROOT}/type.c          ${SRC_ROOT}/scan.c
-             ${SRC_ROOT}/numa_malloc.c   ${SRC_ROOT}/once.c)
+             ${SRC_ROOT}/alltoall.cpp      ${SRC_ROOT}/p2p_protocol.cpp
+             ${SRC_ROOT}/barrier.cpp       ${SRC_ROOT}/p2p_send_recv.cpp
+             ${SRC_ROOT}/bcast.cpp         ${SRC_ROOT}/p2p_wait.cpp
+             ${SRC_ROOT}/collective.cpp    ${SRC_ROOT}/profile.cpp
+             ${SRC_ROOT}/comm.cpp          ${SRC_ROOT}/reduce.cpp
+             ${SRC_ROOT}/event.cpp         ${SRC_ROOT}/reduce_fast.cpp
+             ${SRC_ROOT}/gather.cpp        ${SRC_ROOT}/scatter.cpp
+             ${SRC_ROOT}/group.cpp         ${SRC_ROOT}/tmpi_init.cpp
+             ${SRC_ROOT}/topology.cpp      ${SRC_ROOT}/list.cpp
+             ${SRC_ROOT}/type.cpp          ${SRC_ROOT}/scan.cpp
+             ${SRC_ROOT}/numa_malloc.cpp   ${SRC_ROOT}/once.cpp)
     endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 

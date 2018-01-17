@@ -42,10 +42,6 @@
 #include "wait.h"
 #include "atomic.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /** Fast (possibly busy-wait-based) lock type
  *
  *  This lock type forms an intermediate between the spinlocks and mutexes:
@@ -105,9 +101,5 @@ int tMPI_Lock_trylock(tMPI_Lock_t *lock);
  */
 TMPI_EXPORT
 int tMPI_Lock_islocked(tMPI_Lock_t *lock);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* TMPI_FASTLOCK_H_ */
