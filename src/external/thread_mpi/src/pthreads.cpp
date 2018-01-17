@@ -52,7 +52,8 @@
 
 #ifdef THREAD_PTHREADS
 
-#ifdef HAVE_PTHREAD_SETAFFINITY
+/* We wish to use some non-POSIX GNU extensions for handling thread affinity */
+#if defined(HAVE_PTHREAD_SETAFFINITY) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
 #endif
 
@@ -318,7 +319,7 @@ tMPI_Thread_t tMPI_Thread_self(void)
         return NULL;
     }
 
-    th = pthread_getspecific(thread_id_key);
+    th = static_cast<tMPI_Thread_t>(pthread_getspecific(thread_id_key));
 
     /* check if it is already in our list */
     if (th == NULL)
@@ -361,7 +362,7 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t tmpi_unused thread,
                                    unsigned int  tmpi_unused nr)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY
-    int       nt = tMPI_Thread_get_hw_number();
+    unsigned int nt = static_cast<unsigned int>(tMPI_Thread_get_hw_number());
     cpu_set_t set;
 
     if (nt < nr)
