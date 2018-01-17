@@ -578,7 +578,7 @@ void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
 }
 
 /* Point-to-point communication protocol functions */
-void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
+static void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
 {
     req->source = ev->src;
     req->comm   = ev->comm;
@@ -620,6 +620,7 @@ void tMPI_Set_status(struct tmpi_req_ *req, tMPI_Status *st)
     }
 }
 
+static
 tmpi_bool tMPI_Envelope_matches(const struct envelope *sev,
                                 const struct envelope *rev)
 {
@@ -654,6 +655,7 @@ tmpi_bool tMPI_Envelope_matches(const struct envelope *sev,
     return FALSE;
 }
 
+static
 struct envelope* tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
                                                struct envelope           *rev)
 {
@@ -673,6 +675,7 @@ struct envelope* tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
     return NULL;
 }
 
+static
 struct envelope* tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
                                                struct envelope           *sev)
 {
@@ -753,6 +756,7 @@ void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
 }
 #endif
 
+static
 struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl,
                                          tMPI_Comm comm,
                                          struct tmpi_thread *src,
@@ -802,6 +806,7 @@ struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl,
     return ev;
 }
 
+static
 struct envelope* tMPI_Prep_recv_envelope(struct tmpi_thread *cur,
                                          tMPI_Comm comm,
                                          struct tmpi_thread *src,

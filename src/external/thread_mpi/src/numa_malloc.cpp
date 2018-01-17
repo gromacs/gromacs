@@ -29,6 +29,8 @@
 
 #ifndef THREAD_WINDOWS
 
+#include "../include/thread_mpi/numa_malloc.h"
+
 /* We don't have specific NUMA aware allocators: */
 
 void *tMPI_Malloc_local(size_t size)

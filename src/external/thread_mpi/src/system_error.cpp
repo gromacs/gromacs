@@ -35,8 +35,6 @@
    files.
  */
 
-#ifdef __cplusplus
-
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
@@ -48,5 +46,3 @@ tMPI::system_error::system_error(error_code ec)
     : runtime_error(std::string(std::strerror(ec))), ec_(ec)
 {
 }
-
-#endif /* __cplusplus */

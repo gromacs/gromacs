@@ -55,13 +55,6 @@
  */
 
 #ifndef DOXYGEN
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-
-
 
 /* The MPI_Comm structure contains the group of processes to communicate
    with (defines the scope for global operations such as broadcast) */
@@ -256,10 +249,6 @@ typedef tMPI_Op MPI_Op;
 #define MPI_Allreduce               tMPI_Allreduce
 #define MPI_Scan                    tMPI_Scan
 
-#ifdef __cplusplus
-} /* closing extern "C" */
-#endif
-
-#endif
+#endif /* DOXYGEN */
 
 #endif /* TMPI_MPI_BINDINGS_H_ */
