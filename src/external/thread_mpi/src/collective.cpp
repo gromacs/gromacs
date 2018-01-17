@@ -143,6 +143,7 @@ void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl,
 }
 #endif
 
+static
 int tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
 {
     tMPI_Atomic_set(&(met->current_sync), 0);
@@ -177,6 +178,7 @@ int tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     return TMPI_SUCCESS;
 }
 
+static
 void tMPI_Coll_envt_destroy(struct coll_env_thread *met)
 {
     free( (void*)met->buf );

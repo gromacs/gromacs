@@ -57,6 +57,7 @@
 
 #endif
 
+#include <cassert>
 
 #include "impl.h"
 
@@ -98,6 +99,7 @@ struct tmpi_global *tmpi_global = NULL;
 
 
 /* start N threads with argc, argv (used by tMPI_Init)*/
+static
 int tMPI_Start_threads(tmpi_bool main_returns, int N,
                        tMPI_Affinity_strategy aff_strategy,
                        int *argc, char ***argv,
@@ -450,6 +452,7 @@ int tMPI_Start_threads(tmpi_bool main_returns, int N,
         {
             return ret;
         }
+        assert(TMPI_COMM_WORLD != nullptr);
         TMPI_GROUP_EMPTY = tMPI_Group_alloc();
 
         if (tMPI_Thread_key_create(&id_key, NULL))

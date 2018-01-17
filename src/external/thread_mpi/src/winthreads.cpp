@@ -364,8 +364,9 @@ int tMPI_Init_NUMA(void)
 
     /* allocate array of processor info blocks */
 
-    pMPI_ProcessorInfo = malloc( sizeof(MPI_NUMA_PROCESSOR_INFO) *
-                                 dwTotalProcessors );
+    pMPI_ProcessorInfo =
+        static_cast<MPI_NUMA_PROCESSOR_INFO *> (malloc( sizeof(MPI_NUMA_PROCESSOR_INFO) *
+                                                        dwTotalProcessors ));
     if (pMPI_ProcessorInfo == NULL)
     {
         goto cleanup;

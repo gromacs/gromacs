@@ -29,6 +29,8 @@
 
 #ifndef THREAD_WINDOWS
 
+#include "../include/thread_mpi/numa_malloc.h"
+
 /* We don't have specific NUMA aware allocators: */
 
 void *tMPI_Malloc_local(size_t size)
@@ -332,7 +334,7 @@ ReturnHeapHandle(
 
         HeapSetInformation(
                 hHeap,
-                0,          /* HeapCompatibilityInformation */
+                HEAP_INFORMATION_CLASS(0), /* HeapCompatibilityInformation */
                 &ulOption,
                 sizeof(ulOption)
                 );
@@ -443,7 +445,7 @@ void *tMPI_Realloc_local(void *ptr, size_t size)
 
     if (hHeap != phdr->hHeap)
     {
-        new_ptr = HeapAlloc( hHeap, 0, new_size );
+        new_ptr = static_cast<unsigned char *>(HeapAlloc( hHeap, 0, new_size ));
 
         /* if the new allocation succeeded, copy the buffer and free the
            original buffer.
@@ -485,12 +487,11 @@ void *tMPI_Realloc_local(void *ptr, size_t size)
 
         hHeap = phdr->hHeap;
 
-        new_ptr = HeapReAlloc(
-                    hHeap,
-                    0,
-                    phdr,
-                    new_size
-                    );
+        new_ptr = static_cast<unsigned char *>(HeapReAlloc(hHeap,
+                                                           0,
+                                                           phdr,
+                                                           new_size
+                                                           ));
     }
 
     if (new_ptr == NULL)
