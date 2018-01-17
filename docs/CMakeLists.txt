@@ -124,6 +124,11 @@ if (SPHINX_FOUND)
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
         fragments/doxygen-links.rst
+        how-to/index.rst
+        how-to/beginners.rst
+        how-to/topology.rst
+        how-to/special.rst
+        how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
         release-notes/features.rst
