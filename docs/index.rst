@@ -19,6 +19,7 @@ Welcome to the |Gromacs| documentation!
    release-notes/index
    install-guide/index
    user-guide/index
+   how-to/index
    reference-manual/index
    dev-manual/index
 
