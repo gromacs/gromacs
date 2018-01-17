@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -123,6 +123,11 @@ if (SPHINX_FOUND)
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
         fragments/doxygen-links.rst
+        how-to/index.rst
+        how-to/beginners.rst
+        how-to/topology.rst
+        how-to/special.rst
+        how-to/visualize.rst
         install-guide/index.rst
         user-guide/index.rst
         user-guide/cutoff-schemes.rst
@@ -131,7 +136,6 @@ if (SPHINX_FOUND)
         user-guide/faq.rst
         user-guide/flow.rst
         user-guide/floating-point.rst
-        user-guide/how-to.rst
         user-guide/system-preparation.rst
         user-guide/managing-simulations.rst
         user-guide/mdrun-features.rst
