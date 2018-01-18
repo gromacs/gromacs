@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -180,6 +180,12 @@ TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
 {
     const char *inputMdpFile = "electric-field-z = 3.7 7.5 0 0";
     runTest(inputMdpFile);
+}
+
+TEST_F(GetIrTest, TerminatesOnDuplicateOldAndNewKeys)
+{
+    const char *inputMdpFile[] = {"verlet-buffer-drift = 1.3", "verlet-buffer-tolerance = 2.7"};
+    EXPECT_DEATH(runTest(joinStrings(inputMdpFile, "\n")), "A parameter is present with both");
 }
 
 } // namespace
