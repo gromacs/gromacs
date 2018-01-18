@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,8 +146,6 @@ class Mdrunner
         const char                      *pme_fft_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                              nstlist_cmdline = 0;
-        //! Number of simulations in multi-simulation set.
-        int                              nmultisim = 0;
         //! Parameters for replica-exchange simulations.
         ReplicaExchangeParameters        replExParams;
         //! Print a warning if any force is larger than this (in kJ/mol nm).

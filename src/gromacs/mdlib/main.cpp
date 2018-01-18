@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -238,8 +239,7 @@ void gmx_log_close(FILE *fp)
 }
 
 // TODO move this to multi-sim module
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[])
+void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
 {
     gmx_multisim_t *ms;
     int             nnodes, nnodpersim, sim, i;
@@ -248,12 +248,16 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     int            *rank;
 #endif
 
-#if !GMX_MPI
-    if (nsim > 1)
+    if (nsim < 1)
     {
-        gmx_fatal(FARGS, "This binary is compiled without MPI support, can not do multiple simulations.");
+        return;
     }
-#endif
+    if (!GMX_LIB_MPI && nsim > 1)
+    {
+        gmx_fatal(FARGS, "mdrun -multidir is only supported when GROMACS has been "
+                  "configured with a proper external MPI library.");
+    }
+    GMX_RELEASE_ASSERT(multidirs, "Must have multiple directories for -multisim");
 
     nnodes  = cr->nnodes;
     if (nnodes % nsim != 0)
@@ -312,47 +316,11 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 
     if (debug)
     {
-        fprintf(debug, "This is simulation %d", cr->ms->sim);
-        if (PAR(cr))
-        {
-            fprintf(debug, ", local number of ranks %d, local rank ID %d",
-                    cr->nnodes, cr->sim_nodeid);
-        }
-        fprintf(debug, "\n\n");
+        fprintf(debug, "This is simulation %d, local number of ranks %d, local rank ID %d\n",
+                cr->ms->sim, cr->nnodes, cr->sim_nodeid);
+        fprintf(debug, "Changing to working directory %s\n", multidirs[cr->ms->sim]);
     }
 
-    if (multidirs)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Changing to directory %s\n", multidirs[cr->ms->sim]);
-        }
-        gmx_chdir(multidirs[cr->ms->sim]);
-    }
-    else
-    {
-        try
-        {
-            std::string rankString = gmx::formatString("%d", cr->ms->sim);
-            /* Patch output and tpx, cpt and rerun input file names */
-            for (i = 0; (i < nfile); i++)
-            {
-                /* Because of possible multiple extensions per type we must look
-                 * at the actual file name for rerun. */
-                if (is_output(&fnm[i]) ||
-                    fnm[i].ftp == efTPR || fnm[i].ftp == efCPT ||
-                    strcmp(fnm[i].opt, "-rerun") == 0)
-                {
-                    std::string newFileName = gmx::Path::concatenateBeforeExtension(fnm[i].fns[0], rankString);
-                    sfree(fnm[i].fns[0]);
-                    fnm[i].fns[0] = gmx_strdup(newFileName.c_str());
-                }
-            }
-        }
-        catch (gmx::GromacsException &e)
-        {
-            e.prependContext(gmx::formatString("Failed to modify mdrun -multi filename to add per-simulation suffix. You could perhaps reorganize your files and try mdrun -multidir.\n"));
-            throw;
-        }
-    }
+    // TODO This should throw upon error
+    gmx_chdir(multidirs[cr->ms->sim]);
 }

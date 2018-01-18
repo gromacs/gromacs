@@ -2237,12 +2237,11 @@ NMR refinement
 
       distance restraints over an ensemble of molecules in one
       simulation box. Normally, one would perform ensemble averaging
-      over multiple subsystems, each in a separate box, using ``mdrun
-      -multi``. Supply ``topol0.tpr``, ``topol1.tpr``, ... with
-      different coordinates and/or velocities. The environment
+      over multiple simulations, using ``mdrun
+      -multidir``. The environment
       variable ``GMX_DISRE_ENSEMBLE_SIZE`` sets the number of systems
-      within each ensemble (usually equal to the ``mdrun -multi``
-      value).
+      within each ensemble (usually equal to the number of directories
+      supplied to ``mdrun -multidir``).
 
 .. mdp:: disre-weighting
 
@@ -2301,7 +2300,7 @@ NMR refinement
    .. mdp-value:: yes
 
       use orientation restraints, ensemble averaging can be performed
-      with `mdrun -multi`
+      with ``mdrun -multidir``
 
 .. mdp:: orire-fc
 

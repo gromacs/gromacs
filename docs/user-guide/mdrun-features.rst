@@ -71,23 +71,8 @@ including ``-deffnm``.
    most convenient to use. ``gmx mdrun -table`` for the group cutoff-scheme
    works only in this mode.
 
-``-multi``
-   You must organize that the filenames for each simulation in a set of
-   ``n`` simulations have an integer ``0`` through ``n-1`` appended to
-   the filename (e.g. ``topol2.tpr``), and run with
-   ``mpirun -np x gmx mdrun -multi n -s input``. The order of simulations
-   within the set is determined by the integer appended.
-
 Examples running multi-simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-    mpirun -np 32 gmx_mpi mdrun -multi
-
-Starts a multi-simulation on 32 ranks with as many simulations ``n`` as
-there are files named ``topol*.tpr`` for integers ``0`` to ``n-1``. Other
-input and output files are suffixed similarly.
 
 ::
 
@@ -113,7 +98,7 @@ Running replica-exchange simulations
 
 When running a multi-simulation, using ``gmx mdrun -replex n`` means that a
 replica exchange is attempted every given number of steps. The number
-of replicas is set with the ``-multi`` or ``-multidir`` option, described
+of replicas is set with ``-multidir`` option, described
 above.  All run input files should use a different value for the
 coupling parameter (e.g. temperature), which ascends over the set of
 input files. The random seed for replica exchange is set with
