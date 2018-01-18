@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,8 @@ typedef std::unique_ptr<CommandLine> CommandLinePointer;
  *
  * \ingroup module_mdrun_integration_tests
  */
-class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
+class MultiSimTest : public ::testing::Test,
+                     public ::testing::WithParamInterface<const char *>
 {
     public:
         //! Constructor
@@ -81,14 +82,17 @@ class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
          * and doing it this way allows this function to be re-used
          * for testing replica-exchange.
          *
+         * \param runner          The simulation runner that uses the
+         *                        mdp file that is organized.
          * \param controlVariable Allows parameterization to work with
          * T, P or (later) lambda as the control variable, by passing a
          * string with "mdp-param = value" such that different paths
          * in init_replica_exchange() are followed.
          * \param numSteps        Number of MD steps to perform.
          */
-        void organizeMdpFile(const char *controlVariable,
-                             int         numSteps = 2);
+        void organizeMdpFile(SimulationRunner *runner,
+                             const char       *controlVariable,
+                             int               numSteps = 2);
         //! Test that a basic simulation works
         void runExitsNormallyTest();
         //! Test that mdrun -maxh and restart works
@@ -99,8 +103,8 @@ class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
         int                rank_;
         //! Object for building the mdrun command line
         CommandLinePointer mdrunCaller_;
-        //! Name of .tpr file to be used by mdrun
-        std::string        mdrunTprFileName_;
+        //! Manages temporary files during the test.
+        TestFileManager    fileManager_;
 };
 
 } // namespace
