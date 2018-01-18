@@ -913,12 +913,6 @@ int Mdrunner::mdrunner()
 
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
-    if (cr->ms && cr->ms->nsim > 1 && !opt2bSet("-multidir", nfile, fnm))
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -multi flag is deprecated, and may be removed in a future version. Please "
-                       "update your workflows to use -multidir instead.");
-    }
 #if GMX_MPI
     if (MULTISIM(cr))
     {

@@ -74,13 +74,13 @@
 #include "repl_ex.h"
 #include "runner.h"
 
-/*! \brief Return whether either of the command-line parameters that
+/*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */
 static bool is_multisim_option_set(int argc, const char *const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-multi") == 0 || strcmp(argv[i], "-multidir") == 0)
+        if (strcmp(argv[i], "-multidir") == 0)
         {
             return true;
         }
@@ -343,8 +343,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
         { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
           "Terminate after 0.99 times this time (hours)" },
-        { "-multi",   FALSE, etINT, {&nmultisim},
-          "Do multiple simulations in parallel" },
         { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
           "Attempt replica exchange periodically with this period (steps)" },
         { "-nex",  FALSE, etINT, {&replExParams.numExchanges},
@@ -376,26 +374,14 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     cr = init_commrec();
 
     unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
-    // With -multi or -multidir, the file names are going to get processed
-    // further (or the working directory changed), so we can't check for their
-    // existence during parsing.  It isn't useful to do any completion based on
-    // file system contents, either.
+    // With -multidir, the working directory still needs to be
+    // changed, so we can't check for the existence of files during
+    // parsing.  It isn't useful to do any completion based on file
+    // system contents, either.
     if (is_multisim_option_set(argc, argv))
     {
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
-
-    /* Comment this in to do fexist calls only on master
-     * works not with rerun or tables at the moment
-     * also comment out the version of init_forcerec in md.c
-     * with NULL instead of opt2fn
-     */
-    /*
-       if (!MASTER(cr))
-       {
-       PCA_Flags |= PCA_NOT_READ_NODE;
-       }
-     */
 
     if (!parse_common_args(&argc, argv, PCA_Flags, nfile, fnm, asize(pa), pa,
                            asize(desc), desc, 0, nullptr, &oenv))
@@ -445,20 +431,16 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
-    /* now check the -multi and -multidir option */
+    // now check for a multi-simulation
     if (opt2bSet("-multidir", nfile, fnm))
     {
-        if (nmultisim > 0)
-        {
-            gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
-        }
         nmultisim = opt2fns(&multidir, "-multidir", nfile, fnm);
     }
 
 
     if (replExParams.exchangeInterval != 0 && nmultisim < 2)
     {
-        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (option -multidir)");
+        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (use option -multidir)");
     }
 
     if (replExParams.numExchanges < 0)
@@ -466,15 +448,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    if (nmultisim >= 1)
-    {
-#if !GMX_THREAD_MPI
-        init_multisystem(cr, nmultisim, multidir, nfile, fnm);
-#else
-        gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
-                  "Please compile GROMACS with a proper external MPI library.");
-#endif
-    }
+    init_multisystem(cr, nmultisim, multidir);
 
     if (!opt2bSet("-cpi", nfile, fnm))
     {

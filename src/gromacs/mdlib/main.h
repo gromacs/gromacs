@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,14 +60,13 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms,
 void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
                        gmx_int64_t val, const char *name,
                        gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multi run
+/* Check if val is the same on all processors for a mdrun -multidir run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match. If bQuiet is true and the check passes,
  * no output is written.
  */
 
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[]);
+void init_multisystem(t_commrec *cr, int nsim, char **multidirs);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
