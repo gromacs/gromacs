@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,6 @@
  * \brief
  * Tests for the mdrun multi-simulation functionality
  *
- * \todo Test mdrun -multidir also
- *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
@@ -70,29 +68,31 @@ namespace test
 
 MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
                                rank_(gmx_node_rank()),
-                               mdrunCaller_(new CommandLine)
+                               mdrunCaller_(new CommandLine),
+                               fileManager_()
 {
-    runner_.mdpInputFileName_  = fileManager_.getTemporaryFilePath(formatString("input%d.mdp", rank_));
-    runner_.mdpOutputFileName_ = fileManager_.getTemporaryFilePath(formatString("output%d.mdp", rank_));
+    const char *directoryNameFormat = "sim_%d";
 
-    /* grompp needs to name the .tpr file so that when mdrun appends
-       the MPI rank, it will find the right file. If we just used
-       "%d.tpr" then \c TestFileManager prefixes that with an
-       underscore. Then, there is no way for mdrun to be told the
-       right name, because if you add the underscore manually, you get
-       a second one from \c TestFileManager. However, it's easy to
-       just start the suffix with "topol" in both cases. */
-    runner_.tprFileName_ = fileManager_.getTemporaryFilePath(formatString("topol%d.tpr", rank_));
-    mdrunTprFileName_    = fileManager_.getTemporaryFilePath("topol.tpr");
-
-    runner_.useTopGroAndNdxFromDatabase("spc2");
+    // Modify the file manager to have a temporary directory unique to
+    // each simulation. No need to have a mutex on this, nobody else
+    // can access the fileManager_ yet because we only just
+    // constructed it.
+    std::string originalTempDirectory = fileManager_.getOutputTempDirectory();
+    std::string newTempDirectory      = Path::join(originalTempDirectory, formatString(directoryNameFormat, rank_));
+    Directory::create(newTempDirectory);
+    fileManager_.setOutputTempDirectory(newTempDirectory);
 
     mdrunCaller_->append("mdrun");
-    mdrunCaller_->addOption("-multi", size_);
+    mdrunCaller_->addOption("-multidir");
+    for (int i = 0; i != size_; ++i)
+    {
+        mdrunCaller_->append(Path::join(originalTempDirectory, formatString(directoryNameFormat, i)));
+    }
 }
 
-void MultiSimTest::organizeMdpFile(const char *controlVariable,
-                                   int         numSteps)
+void MultiSimTest::organizeMdpFile(SimulationRunner *runner,
+                                   const char       *controlVariable,
+                                   int               numSteps)
 {
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
@@ -123,7 +123,7 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable,
                         replica exchange to occur. */
                      std::max(baseTemperature - 10 * rank_, real(0)),
                      controlVariable);
-    runner_.useStringAsMdpFile(mdpFileContents);
+    runner->useStringAsMdpFile(mdpFileContents);
 }
 
 void MultiSimTest::runExitsNormallyTest()
@@ -134,15 +134,16 @@ void MultiSimTest::runExitsNormallyTest()
         return;
     }
 
+    SimulationRunner runner(&fileManager_);
+    runner.useTopGroAndNdxFromDatabase("spc2");
+
     const char *pcoupl = GetParam();
-    organizeMdpFile(pcoupl);
+    organizeMdpFile(&runner, pcoupl);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    EXPECT_EQ(0, runner.callGromppOnThisRank());
 
-    // mdrun names the files without the rank suffix
-    runner_.tprFileName_ = mdrunTprFileName_;
-    ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
+    ASSERT_EQ(0, runner.callMdrun(*mdrunCaller_));
 }
 
 void MultiSimTest::runMaxhTest()
@@ -153,22 +154,18 @@ void MultiSimTest::runMaxhTest()
         return;
     }
 
-    TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner_);
+    SimulationRunner runner(&fileManager_);
+    runner.useTopGroAndNdxFromDatabase("spc2");
+
+    TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner);
     // Make sure -maxh has a chance to propagate
     int               numSteps = 100;
-    organizeMdpFile("pcoupl = no", numSteps);
+    organizeMdpFile(&runner, "pcoupl = no", numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    EXPECT_EQ(0, runner.callGromppOnThisRank());
 
-    // mdrun names the files without the rank suffix
-    runner_.tprFileName_ = mdrunTprFileName_;
-
-    // The actual output checkpoint file gets a rank suffix, so
-    // handle that in the expected result.
-    std::string expectedCptFileName
-        = Path::concatenateBeforeExtension(runner_.cptFileName_, formatString("%d", rank_));
-    helper.runFirstMdrun(expectedCptFileName);
+    helper.runFirstMdrun(runner.cptFileName_);
     helper.runSecondMdrun();
 }
 
