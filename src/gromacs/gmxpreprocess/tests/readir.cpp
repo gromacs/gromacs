@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,8 +71,7 @@ namespace test
 class GetIrTest : public ::testing::Test
 {
     public:
-        GetIrTest() : fileManager_(), data_(), checker_(data_.rootChecker()),
-                      ir_(), mdModules_(), opts_(),
+        GetIrTest() : fileManager_(), ir_(), mdModules_(), opts_(),
                       wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
 
         {
@@ -99,17 +98,19 @@ class GetIrTest : public ::testing::Test
 
             get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(),
                    &mdModules_, &ir_, &opts_, WriteMdpHeader::no, wi_);
-            bool failure = warning_errors_exist(wi_);
-            checker_.checkBoolean(failure, "Error parsing mdp file");
+
+            // Now check
+            bool                 failure = warning_errors_exist(wi_);
+            TestReferenceData    data;
+            TestReferenceChecker checker(data.rootChecker());
+            checker.checkBoolean(failure, "Error parsing mdp file");
             warning_reset(wi_);
 
             auto outputMdpContents = TextReader::readFileToString(outputMdpFilename);
-            checker_.checkString(outputMdpContents, "OutputMdpFile");
+            checker.checkString(outputMdpContents, "OutputMdpFile");
         }
 
         TestFileManager                    fileManager_;
-        TestReferenceData                  data_;
-        TestReferenceChecker               checker_;
         t_inputrec                         ir_;
         MDModules                          mdModules_;
         t_gromppopts                       opts_;
