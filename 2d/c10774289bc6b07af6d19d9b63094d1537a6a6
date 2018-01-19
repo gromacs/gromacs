@@ -1,0 +1,10 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+2: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+1: Vedran Miletić <vedran@miletic.net>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Fri, 19 Jan 2018 08:06:10 +0100
+Reviewed-on: https://gerrit.gromacs.org/7473
+Project: gromacs
+Branch: refs/heads/master
