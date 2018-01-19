@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,23 +105,23 @@ gatherLoadBySimdIntTranspose(const float *base, SimdFInt32 offset, SimdFloat *v,
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const float *base, SimdFInt32 offset, Targs... Fargs)
+gatherLoadUBySimdIntTranspose(const float *base, SimdFInt32 offset, SimdFloat *v, Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, offset, Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, offset, v, Fargs ...);
 }
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadTranspose(const float *base, const std::int32_t offset[], Targs... Fargs)
+gatherLoadTranspose(const float *base, const std::int32_t offset[], SimdFloat *v, Targs... Fargs)
 {
-    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v, Fargs ...);
 }
 
 template <int align, typename ... Targs>
 static inline void gmx_simdcall
-gatherLoadUTranspose(const float *base, const std::int32_t offset[], Targs... Fargs)
+gatherLoadUTranspose(const float *base, const std::int32_t offset[], SimdFloat *v, Targs... Fargs)
 {
-    gatherLoadTranspose<align>(base, offset, Fargs ...);
+    gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v, Fargs ...);
 }
 
 template <int align>
