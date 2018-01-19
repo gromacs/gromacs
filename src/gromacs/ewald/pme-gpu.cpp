@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include <list>
 
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
@@ -200,11 +201,11 @@ void pme_gpu_prepare_computation(gmx_pme_t            *pme,
 
         if (!pme_gpu_performs_solve(pmeGpu))
         {
-            // TODO this has already been computed in pme->gpu
-            //memcpy(pme->recipbox, pme->gpu->common->
-            gmx::invertBoxMatrix(box, pme->recipbox);
-            // FIXME verify that the box is scaled correctly on GPU codepath
-            pme->boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+            // TODO remove code duplication and add test coverage
+            matrix scaledBox;
+            pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
+            gmx::invertBoxMatrix(scaledBox, pme->recipbox);
+            pme->boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
         }
     }
 }
