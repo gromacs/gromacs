@@ -167,3 +167,45 @@ information from the source tree as part of this workflow.
 
 :file:`admin/builds/update-regtest-hash.py` has logic to update the
 regressiontests tarball MD5 sum for the released tarball automatically.
+
+Updating regressiontests data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes we add new tests to the regressiontests repository. Also, as
+the source code or data files change, it is sometimes necessary to
+update regressiontests. This requires a particular CMake build type
+and both a single and double-precision build of |Gromacs| to generate
+all the data. Jenkins can automate much of the tedium here.
+
+* Upload a regressiontests change that lacks the relevant reference
+  data (either because you deleted the outdated data, or because the
+  test is new). Jenkins will do the normal thing, which we ignore.
+  There is now a Gerrit patch number for that change, symbolized here
+  with ``MMMM``.
+
+* Go to change ``MMMM`` on gerrit, select the patch set you want to
+  update with new reference data (usually the latest one), and comment
+
+    ``[JENKINS] Update``
+
+  to update against the HEAD of the matching source-code branch, or
+
+    ``[JENKINS] Cross-verify NNNN update``
+
+  to update from builds of |Gromacs| from the latest version of
+  Gerrit source-code patch ``NNNN``. You will need to do this when
+  functionality changes in ``NNNN`` affect either the layout of
+  the files in the reference data, or the results of the simulation,
+  or the results of the subsequent analysis.
+
+* Eventually, Jenkins will upload a new version of the regressiontests
+  patch to Gerrit, which will contain the updated regressiontest data.
+  That upload will again trigger Jenkins to do the normal pre-submit
+  verify, which will now pass (but perhaps will only pass under
+  cross-verify with patch ``NNNN``, as above).
+
+* Later, if you later need to verify an updated version of source-code
+  patch ``NNNN`` against the newly generated reference data, go to the
+  source-code patch ``NNNN`` and comment
+
+    ``[JENKINS] Cross-verify MMMM``
