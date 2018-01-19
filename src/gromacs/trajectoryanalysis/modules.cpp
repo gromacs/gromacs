@@ -54,6 +54,7 @@
 #include "modules/sasa.h"
 #include "modules/select.h"
 #include "modules/trajectory.h"
+#include "modules/convert.h"
 
 namespace gmx
 {
@@ -98,6 +99,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
     registerModule<TrajectoryInfo>(manager, group);
+    registerModule<Convert>(manager, group);
 }
 //! \endcond
 
