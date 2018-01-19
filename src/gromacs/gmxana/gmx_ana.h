@@ -241,6 +241,9 @@ int
 gmx_trjconv(int argc, char *argv[]);
 
 int
+gmx_trjpbc(int argc, char *argv[]);
+
+int
 gmx_trjorder(int argc, char *argv[]);
 
 int

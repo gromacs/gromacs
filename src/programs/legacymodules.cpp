@@ -216,7 +216,9 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_trjcat, "trjcat",
                    "Concatenate trajectory files");
     registerModule(manager, &gmx_trjconv, "trjconv",
-                   "Convert and manipulates trajectory files");
+                   "Convert trajectory files between formats");
+    registerModule(manager, &gmx_trjpbc, "trjpbc",
+                   "Chnage PBC in trajectory files");
     registerModule(manager, &gmx_trjorder, "trjorder",
                    "Order molecules according to their distance to a group");
     registerModule(manager, &gmx_xpm2ps, "xpm2ps",

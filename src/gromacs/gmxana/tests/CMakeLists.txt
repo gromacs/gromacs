@@ -38,5 +38,6 @@ gmx_add_gtest_executable(
     ${exename}
     gmx_traj.cpp
     gmx_trjconv.cpp
+    gmx_trjpbc.cpp
     )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST)
