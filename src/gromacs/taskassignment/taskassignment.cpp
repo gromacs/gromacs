@@ -294,7 +294,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
             MPI_Barrier(cr->mpi_comm_mysim);
 #endif
         }
-        if (MULTISIM(cr))
+        if (isMultiSim(cr->ms))
         {
 #if GMX_MPI
             MPI_Barrier(cr->ms->mpi_comm_masters);

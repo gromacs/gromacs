@@ -914,7 +914,7 @@ int Mdrunner::mdrunner()
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
 #if GMX_MPI
-    if (MULTISIM(cr))
+    if (isMultiSim(cr->ms))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "This is simulation %d out of %d running as a composite GROMACS\n"
@@ -1034,7 +1034,7 @@ int Mdrunner::mdrunner()
     {
         MPI_Barrier(cr->mpi_comm_mysim);
     }
-    if (MULTISIM(cr))
+    if (isMultiSim(cr->ms))
     {
         MPI_Barrier(cr->ms->mpi_comm_masters);
     }
@@ -1357,7 +1357,7 @@ int Mdrunner::mdrunner()
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
                pmedata,
-               EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+               EI_DYNAMICS(inputrec->eI) && !isMultiSim(cr->ms));
 
     // Free PME data
     if (pmedata)

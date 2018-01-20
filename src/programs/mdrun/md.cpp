@@ -939,7 +939,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     step_rel = 0;
 
     // TODO extract this to new multi-simulation module
-    if (MASTER(cr) && MULTISIM(cr) && !useReplicaExchange)
+    if (MASTER(cr) && isMultiSim(cr->ms) && !useReplicaExchange)
     {
         if (!multisim_int_all_are_equal(cr->ms, ir->nsteps))
         {
@@ -1812,7 +1812,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             state->fep_state = lamnew;
         }
         /* Print the remaining wall clock time for the run */
-        if (MULTIMASTER(cr) &&
+        if (isMasterSimMasterRank(cr) &&
             (do_verbose || gmx_got_usr_signal()) &&
             !bPMETunePrinting)
         {
