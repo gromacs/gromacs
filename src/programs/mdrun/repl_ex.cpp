@@ -164,7 +164,7 @@ init_replica_exchange(FILE                            *fplog,
 
     fprintf(fplog, "\nInitializing Replica Exchange\n");
 
-    if (ms == nullptr || ms->nsim == 1)
+    if (!isMultiSim(ms) || ms->nsim == 1)
     {
         gmx_fatal(FARGS, "Nothing to exchange with only one replica, maybe you forgot to set the -multidir option of mdrun?");
     }
@@ -172,7 +172,7 @@ init_replica_exchange(FILE                            *fplog,
     {
         gmx_fatal(FARGS, "Replica exchange is only supported by dynamical simulations");
         /* Note that PAR(cr) is defined by cr->nnodes > 1, which is
-         * distinct from MULTISIM(cr). A multi-simulation only runs
+         * distinct from isMultiSim(cr->ms). A multi-simulation only runs
          * with real MPI parallelism, but this does not imply PAR(cr)
          * is true!
          *
@@ -380,7 +380,7 @@ init_replica_exchange(FILE                            *fplog,
     re->nst = nst;
     if (replExParams.randomSeed == -1)
     {
-        if (MASTERSIM(ms))
+        if (isMasterSim(ms))
         {
             re->seed = static_cast<int>(gmx::makeRandomSeed());
         }

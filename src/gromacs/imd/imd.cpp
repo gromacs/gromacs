@@ -1308,6 +1308,9 @@ void init_IMD(t_inputrec             *ir,
     {
         return;
     }
+    // TODO many of these error conditions were we can't do what the
+    // user asked for should be handled with a fatal error, not just a
+    // warning.
 
     const ImdOptions &options = mdrunOptions.imdOptions;
 
@@ -1319,7 +1322,7 @@ void init_IMD(t_inputrec             *ir,
         if (options.wait || options.terminatable || options.pull)
         {
             /* Multiple simulations or replica exchange */
-            if (MULTISIM(cr))
+            if (isMultiSim(cr->ms))
             {
                 fprintf(stderr, "%s Cannot use IMD for multiple simulations or replica exchange.\n", IMDstr);
             }
