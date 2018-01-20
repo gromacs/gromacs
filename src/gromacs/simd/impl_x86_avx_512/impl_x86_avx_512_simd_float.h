@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -507,6 +507,17 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     return {
                _mm512_mask_blend_ps(sel.simdInternal_, a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+copysign(SimdFloat a, SimdFloat b)
+{
+    return {
+               _mm512_castsi512_ps(_mm512_ternarylogic_epi32(
+                                           _mm512_castps_si512(a.simdInternal_),
+                                           _mm512_castps_si512(b.simdInternal_),
+                                           _mm512_set1_epi32(INT32_MIN), 0xD8))
     };
 }
 
