@@ -76,7 +76,7 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
     // all multi-node MPI cases with more than one PP rank per node,
     // with and without GPUs. By always having it available, we also
     // don't need to protect calls to mpi_comm_physicalnode, etc.
-    if (PAR(cr) || MULTISIM(cr))
+    if (PAR(cr) || isMultiSim(cr->ms))
     {
         MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid, &cr->mpi_comm_physicalnode);
     }
@@ -137,7 +137,7 @@ static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 void done_commrec(t_commrec *cr)
 {
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (PAR(cr) || isMultiSim(cr->ms))
     {
         MPI_Comm_free(&cr->mpi_comm_physicalnode);
     }

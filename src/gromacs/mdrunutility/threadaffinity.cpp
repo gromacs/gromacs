@@ -404,7 +404,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     thread0_id_node = 0;
     nthread_node    = nthread_local;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (PAR(cr) || isMultiSim(cr->ms))
     {
         /* We need to determine a scan of the thread counts in this
          * compute node.
