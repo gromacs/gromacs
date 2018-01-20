@@ -850,7 +850,7 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
          * all detected ncore_tot physical cores. We are currently not
          * checking for that here.
          */
-        int numRanksTot     = cr->nnodes*(MULTISIM(cr) ? cr->ms->nsim : 1);
+        int numRanksTot     = cr->nnodes*(isMultiSim(cr->ms) ? cr->ms->nsim : 1);
         int numAtomsPerRank = mtop.natoms/cr->nnodes;
         int numCoresPerRank = hwinfo.ncore_tot/numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold*gmx::square(numCoresPerRank))
@@ -889,7 +889,7 @@ void checkHardwareOversubscription(int                          numThreadsOnThis
     int numRanksOnThisNode   = 1;
     int numThreadsOnThisNode = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (PAR(cr) || isMultiSim(cr->ms))
     {
         /* Count the threads within this physical node */
         MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);

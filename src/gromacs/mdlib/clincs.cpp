@@ -2475,7 +2475,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 cconerr(lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
-                if (MULTISIM(cr))
+                if (isMultiSim(cr->ms))
                 {
                     sprintf(buf3, " in simulation %d", cr->ms->sim);
                 }

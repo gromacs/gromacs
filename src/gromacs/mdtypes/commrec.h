@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,13 +179,25 @@ inline bool thisRankHasDuty(const t_commrec *cr, int duty)
  * than one domain, not just that the dd algorithm is active. */
 #define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 
-//! Are we doing multiple independent simulations
-#define MULTISIM(cr)       ((cr)->ms)
+//! Are we doing multiple independent simulations?
+static bool inline isMultiSim(const gmx_multisim_t *ms)
+{
+    return ms != nullptr;
+}
 
-//! Are we the master node of a multisimulation
-#define MASTERSIM(ms)      ((ms)->sim == 0)
+//! Are we the master simulation of a possible multi-simulation?
+static bool inline isMasterSim(const gmx_multisim_t *ms)
+{
+    return !isMultiSim(ms) || ms->sim == 0;
+}
 
-//! The master of all (the node that prints the remaining run time etc.)
-#define MULTIMASTER(cr)    (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
+/*! \brief Are we the master rank (of the master simulation, for a multi-sim).
+ *
+ * This rank prints the remaining run time etc. */
+static bool inline isMasterSimMasterRank(const gmx_multisim_t *ms,
+                                         const t_commrec      *cr)
+{
+    return (SIMMASTER(cr) && isMasterSim(ms));
+}
 
 #endif
