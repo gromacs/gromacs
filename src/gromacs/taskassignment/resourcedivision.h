@@ -54,6 +54,7 @@
 struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 struct t_commrec;
 struct t_inputrec;
 
@@ -108,17 +109,19 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
  *
  * Should be called when we know the MPI rank count and PME run mode.
  */
-void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
-                                             const gmx_hw_info_t &hwinfo,
-                                             const t_commrec     *cr,
-                                             PmeRunMode           pmeRunMode,
-                                             const gmx_mtop_t    &mtop);
+void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
+                                             const gmx_hw_info_t  &hwinfo,
+                                             const t_commrec      *cr,
+                                             const gmx_multisim_t *ms,
+                                             PmeRunMode            pmeRunMode,
+                                             const gmx_mtop_t     &mtop);
 
 /*! \brief Warns for oversubscribing the hardware threads, when that is the case
  */
 void checkHardwareOversubscription(int                          numThreadsOnThisRank,
                                    const gmx::HardwareTopology &hwTop,
                                    const t_commrec             *cr,
+                                   const gmx_multisim_t        *ms,
                                    const gmx::MDLogger         &mdlog);
 
 #endif

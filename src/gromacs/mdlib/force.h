@@ -49,6 +49,7 @@ struct gmx_device_info_t;
 struct gmx_edsam;
 struct gmx_gpu_info_t;
 struct gmx_groups_t;
+struct gmx_multisim_t;
 struct gmx_vsite_t;
 class history_t;
 struct nonbonded_verlet_t;
@@ -151,6 +152,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
 void do_force(FILE *log, t_commrec *cr,
+              const gmx_multisim_t *ms,
               t_inputrec *inputrec,
               gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
@@ -192,6 +194,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        t_inputrec   *ir,
                        t_idef       *idef,
                        t_commrec    *cr,
+                       const gmx_multisim_t *ms,
                        t_nrnb       *nrnb,
                        gmx_wallcycle_t wcycle,
                        t_mdatoms    *md,
@@ -212,6 +215,7 @@ void do_force_lowlevel(t_forcerec   *fr,
 /* Call all the force routines */
 
 void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr);
+                        const t_commrec             *cr,
+                        const gmx_multisim_t        *ms);
 
 #endif

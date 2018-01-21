@@ -477,6 +477,7 @@ calcBondedForces(const t_idef     *idef,
 }
 
 void calc_listed(const t_commrec             *cr,
+                 const gmx_multisim_t *ms,
                  struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
@@ -546,14 +547,14 @@ void calc_listed(const t_commrec             *cr,
              */
             GMX_RELEASE_ASSERT(fr->ePBC == epbcNONE || g != nullptr, "With orientation restraints molecules should be whole");
             enerd->term[F_ORIRESDEV] =
-                calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
+                calc_orires_dev(ms, idef->il[F_ORIRES].nr,
                                 idef->il[F_ORIRES].iatoms,
                                 idef->iparams, md, x,
                                 pbc_null, fcd, hist);
         }
         if (fcd->disres.nres > 0)
         {
-            calc_disres_R_6(cr,
+            calc_disres_R_6(cr, ms,
                             idef->il[F_DISRES].nr,
                             idef->il[F_DISRES].iatoms,
                             x, pbc_null,
@@ -670,6 +671,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 matrix                       box,
                 const t_lambda              *fepvals,
                 const t_commrec             *cr,
+                const gmx_multisim_t        *ms,
                 const t_idef                *idef,
                 const rvec                   x[],
                 history_t                   *hist,
@@ -699,7 +701,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         /* Not enough flops to bother counting */
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(cr, wcycle, idef, x, hist,
+    calc_listed(cr, ms, wcycle, idef, x, hist,
                 forceForUseWithShiftForces, forceWithVirial,
                 fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,

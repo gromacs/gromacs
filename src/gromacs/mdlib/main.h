@@ -40,6 +40,7 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -66,10 +67,13 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
  * no output is written.
  */
 
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs);
+gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
  */
+
+//! Cleans up multi-system handler.
+void done_multisim(gmx_multisim_t *ms);
 
 #endif

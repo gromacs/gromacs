@@ -63,14 +63,17 @@ typedef struct {
     int              dbuf_alloc;
 } mpi_in_place_buf_t;
 
-struct gmx_multisim_t {
-    int       nsim;
-    int       sim;
-    MPI_Group mpi_group_masters;
-    MPI_Comm  mpi_comm_masters;
+void done_mpi_in_place_buf(mpi_in_place_buf_t *buf);
+
+struct gmx_multisim_t
+{
+    int       nsim              = 1;
+    int       sim               = 0;
+    MPI_Group mpi_group_masters = MPI_GROUP_NULL;
+    MPI_Comm  mpi_comm_masters  = MPI_COMM_NULL;
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
-    mpi_in_place_buf_t *mpb;
+    mpi_in_place_buf_t *mpb = nullptr;
 };
 
 #define DUTY_PP  (1<<0)
@@ -122,8 +125,6 @@ struct t_commrec {
      * This should be read through thisRankHasDuty() or getThisRankDuties().
      */
     int                    duty;
-
-    gmx_multisim_t        *ms;
 
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/

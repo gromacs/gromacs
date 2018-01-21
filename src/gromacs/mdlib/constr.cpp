@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -275,6 +275,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir,
                    t_commrec *cr,
+                   const gmx_multisim_t *ms,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
                    t_mdatoms *md,
@@ -386,7 +387,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (constr->lincsd != nullptr)
     {
-        bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr,
+        bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr, ms,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,

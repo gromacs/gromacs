@@ -1287,6 +1287,7 @@ static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
 
 void init_IMD(t_inputrec             *ir,
               t_commrec              *cr,
+              const gmx_multisim_t   *ms,
               gmx_mtop_t             *top_global,
               FILE                   *fplog,
               int                     defnstimd,
@@ -1322,7 +1323,7 @@ void init_IMD(t_inputrec             *ir,
         if (options.wait || options.terminatable || options.pull)
         {
             /* Multiple simulations or replica exchange */
-            if (isMultiSim(cr->ms))
+            if (isMultiSim(ms))
             {
                 fprintf(stderr, "%s Cannot use IMD for multiple simulations or replica exchange.\n", IMDstr);
             }
