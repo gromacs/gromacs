@@ -136,6 +136,7 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
 
 void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
+                       const gmx_multisim_t *ms,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
                        t_mdatoms  *md,
                        rvec       x[],      history_t  *hist,
@@ -326,7 +327,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                    TRUE, box);
     }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr,
+    do_force_listed(wcycle, box, ir->fepvals, cr, ms,
                     idef, (const rvec *) x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,

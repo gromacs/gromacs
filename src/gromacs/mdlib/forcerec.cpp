@@ -3121,7 +3121,8 @@ void init_forcerec(FILE                    *fp,
  * that it's not needed anymore (with a shared GPU run).
  */
 void free_gpu_resources(const t_forcerec        *fr,
-                        const t_commrec         *cr)
+                        const t_commrec         *cr,
+                        const gmx_multisim_t    *ms)
 {
     bool isPPrankUsingGPU = fr && fr->nbv && fr->nbv->bUseGPU;
 
@@ -3144,7 +3145,7 @@ void free_gpu_resources(const t_forcerec        *fr,
      * Note: it is safe to not call the barrier on the ranks which do not use GPU,
      * but it is easier and more futureproof to call it on the whole node.
      */
-    if (GMX_THREAD_MPI && (PAR(cr) || isMultiSim(cr->ms)))
+    if (GMX_THREAD_MPI && (PAR(cr) || isMultiSim(ms)))
     {
         gmx_barrier_physical_node(cr);
     }

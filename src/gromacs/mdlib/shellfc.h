@@ -47,6 +47,7 @@
 struct gmx_constr;
 struct gmx_enerdata_t;
 struct gmx_groups_t;
+struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
 struct t_forcerec;
@@ -67,7 +68,9 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t *shfc);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
+void relax_shell_flexcon(FILE *log, t_commrec *cr,
+                         const gmx_multisim_t *ms,
+                         gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,

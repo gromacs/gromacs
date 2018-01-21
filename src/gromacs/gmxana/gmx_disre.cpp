@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ static void check_viol(FILE *log,
         while (((i+n) < disres->nr) &&
                (forceparams[forceatoms[i+n]].disres.label == label));
 
-        calc_disres_R_6(nullptr, n, &forceatoms[i],
+        calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i],
                         (const rvec*)x, pbc, fcd, nullptr);
 
         if (fcd->disres.Rt_6[label] <= 0)
@@ -813,7 +813,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir->dr_tau = 0.0;
-    init_disres(fplog, &mtop, ir, nullptr, &fcd, nullptr, FALSE);
+    init_disres(fplog, &mtop, ir, nullptr, nullptr, &fcd, nullptr, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);

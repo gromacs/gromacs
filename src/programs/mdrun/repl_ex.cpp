@@ -172,7 +172,7 @@ init_replica_exchange(FILE                            *fplog,
     {
         gmx_fatal(FARGS, "Replica exchange is only supported by dynamical simulations");
         /* Note that PAR(cr) is defined by cr->nnodes > 1, which is
-         * distinct from isMultiSim(cr->ms). A multi-simulation only runs
+         * distinct from isMultiSim(ms). A multi-simulation only runs
          * with real MPI parallelism, but this does not imply PAR(cr)
          * is true!
          *
@@ -1211,7 +1211,8 @@ prepare_to_do_exchange(struct gmx_repl_ex *re,
     }
 }
 
-gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *re,
+gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr,
+                          const gmx_multisim_t *ms, struct gmx_repl_ex *re,
                           t_state *state, const gmx_enerdata_t *enerd,
                           t_state *state_local, gmx_int64_t step, real time)
 {
@@ -1228,7 +1229,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     if (MASTER(cr))
     {
         replica_id  = re->repl;
-        test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
+        test_for_replica_exchange(fplog, ms, re, enerd, det(state_local->box), step, time);
         prepare_to_do_exchange(re, replica_id, &maxswap, &bThisReplicaExchanged);
     }
     /* Do intra-simulation broadcast so all processors belonging to
@@ -1273,7 +1274,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
                     {
                         fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
                     }
-                    exchange_state(cr->ms, exchange_partner, state);
+                    exchange_state(ms, exchange_partner, state);
                 }
             }
             /* For temperature-type replica exchange, we need to scale
