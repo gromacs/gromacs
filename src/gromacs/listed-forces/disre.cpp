@@ -69,6 +69,7 @@
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
+                 const gmx_multisim_t *ms,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
     int                  fa, nmol, npair, np;
@@ -203,7 +204,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
     ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
-    if (cr && cr->ms != nullptr && ptr != nullptr && !bIsREMD)
+    if (cr && ms != nullptr && ptr != nullptr && !bIsREMD)
     {
 #if GMX_MPI
         dd->nsystems = 0;
@@ -217,7 +218,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
          * than one processor per simulation system. */
         if (MASTER(cr))
         {
-            check_multi_int(fplog, cr->ms, dd->nsystems,
+            check_multi_int(fplog, ms, dd->nsystems,
                             "the number of systems per ensemble",
                             FALSE);
         }
@@ -227,9 +228,9 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
          * of ms->nsim. But this required an extra communicator which
          * was stored in t_fcdata. This pulled in mpi.h in nearly all C files.
          */
-        if (!(cr->ms->nsim == 1 || cr->ms->nsim == dd->nsystems))
+        if (!(ms->nsim == 1 || ms->nsim == dd->nsystems))
         {
-            gmx_fatal(FARGS, "GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems (option -multidir) %d", dd->nsystems, cr->ms->nsim);
+            gmx_fatal(FARGS, "GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems (option -multidir) %d", dd->nsystems, ms->nsim);
         }
         if (fplog)
         {
@@ -237,7 +238,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
             for (int i = 0; i < dd->nsystems; i++)
             {
                 fprintf(fplog, " %d",
-                        (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
+                        (ms->sim/dd->nsystems)*dd->nsystems+i);
             }
             fprintf(fplog, "\n");
         }
@@ -269,9 +270,9 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
          * checks from appropriate processes (since check_multi_int is
          * too broken to check whether the communication will
          * succeed...) */
-        if (cr && cr->ms && dd->nsystems > 1 && MASTER(cr))
+        if (cr && ms && dd->nsystems > 1 && MASTER(cr))
         {
-            check_multi_int(fplog, cr->ms, fcd->disres.nres,
+            check_multi_int(fplog, ms, fcd->disres.nres,
                             "the number of distance restraints",
                             FALSE);
         }
@@ -281,6 +282,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
 }
 
 void calc_disres_R_6(const t_commrec *cr,
+                     const gmx_multisim_t *ms,
                      int nfa, const t_iatom forceatoms[],
                      const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
@@ -380,8 +382,8 @@ void calc_disres_R_6(const t_commrec *cr,
             Rtav_6[res] *= invn;
         }
 
-        GMX_ASSERT(cr != NULL && cr->ms != NULL, "We need multisim with nsystems>1");
-        gmx_sum_sim(2*dd->nres, dd->Rt_6, cr->ms);
+        GMX_ASSERT(cr != NULL && ms != NULL, "We need multisim with nsystems>1");
+        gmx_sum_sim(2*dd->nres, dd->Rt_6, ms);
 
         if (DOMAINDECOMP(cr))
         {

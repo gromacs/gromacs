@@ -114,15 +114,17 @@ BiasCoupledToSystem::BiasCoupledToSystem(Bias                    bias,
     GMX_RELEASE_ASSERT(static_cast<size_t>(bias.ndim()) == pullCoordIndex.size(), "The bias dimensionality should match the number of pull coordinates.");
 }
 
-Awh::Awh(FILE              *fplog,
-         const t_inputrec  &inputRecord,
-         const t_commrec   *commRecord,
-         const AwhParams   &awhParams,
-         const std::string &biasInitFilename,
-         pull_t            *pull_work) :
+Awh::Awh(FILE                 *fplog,
+         const t_inputrec     &inputRecord,
+         const t_commrec      *commRecord,
+         const gmx_multisim_t *multiSimRecord,
+         const AwhParams      &awhParams,
+         const std::string    &biasInitFilename,
+         pull_t               *pull_work) :
     seed_(awhParams.seed),
     nstout_(awhParams.nstOut),
     commRecord_(commRecord),
+    multiSimRecord_(multiSimRecord),
     pull_(pull_work),
     potentialOffset_(0)
 {
@@ -142,9 +144,9 @@ Awh::Awh(FILE              *fplog,
     }
 
     int numSharingSimulations = 1;
-    if (awhParams.shareBiasMultisim && isMultiSim(commRecord_->ms))
+    if (awhParams.shareBiasMultisim && isMultiSim(multiSimRecord_))
     {
-        numSharingSimulations = commRecord_->ms->nsim;
+        numSharingSimulations = multiSimRecord_->nsim;
     }
 
     /* Initialize all the biases */
@@ -185,7 +187,7 @@ Awh::Awh(FILE              *fplog,
             pointSize.push_back(biasCts.bias.state().points().size());
         }
         /* Ensure that the shared biased are compatible between simulations */
-        biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, commRecord_->ms);
+        biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, multiSimRecord_);
     }
 }
 
@@ -240,7 +242,7 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
         gmx::ArrayRef<const double> biasForce =
             biasCts.bias.calcForceAndUpdateBias(coordValue,
                                                 &biasPotential, &biasPotentialJump,
-                                                commRecord_->ms,
+                                                multiSimRecord_,
                                                 t, step, seed_, fplog);
 
         awhPotential += biasPotential;

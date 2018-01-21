@@ -65,12 +65,13 @@
 // TODO This implementation of ensemble orientation restraints is nasty because
 // a user can't just do multi-sim with single-sim orientation restraints.
 
-void init_orires(FILE             *fplog,
-                 const gmx_mtop_t *mtop,
-                 const t_inputrec *ir,
-                 const t_commrec  *cr,
-                 t_state          *globalState,
-                 t_oriresdata     *od)
+void init_orires(FILE                 *fplog,
+                 const gmx_mtop_t     *mtop,
+                 const t_inputrec     *ir,
+                 const t_commrec      *cr,
+                 const gmx_multisim_t *ms,
+                 t_state              *globalState,
+                 t_oriresdata         *od)
 {
     od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
     if (0 == od->nr)
@@ -152,7 +153,6 @@ void init_orires(FILE             *fplog,
      */
     snew(od->Dinsl, od->nr);
 
-    const gmx_multisim_t *ms = cr->ms;
     if (ms)
     {
         snew(od->Dins, od->nr);

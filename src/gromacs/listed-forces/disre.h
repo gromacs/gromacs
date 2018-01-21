@@ -50,6 +50,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 class history_t;
 struct t_commrec;
 struct t_inputrec;
@@ -68,6 +69,7 @@ class t_state;
  */
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
+                 const gmx_multisim_t *ms,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
 
 /*! \brief
@@ -75,6 +77,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
 void calc_disres_R_6(const t_commrec *cr,
+                     const gmx_multisim_t *ms,
                      int nfa, const t_iatom *fa,
                      const rvec *x, const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 struct gmx_constr;
 struct gmx_localtop_t;
+struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct gmx_update_t;
 struct MdrunOptions;
@@ -138,7 +139,9 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayR
 
 void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
-                        t_state *state, t_commrec *cr, t_nrnb *nrnb,
+                        t_state *state, t_commrec *cr,
+                        const gmx_multisim_t *ms,
+                        t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top);
 
 void init_md(FILE *fplog,

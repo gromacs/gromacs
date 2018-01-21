@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,17 +53,20 @@ struct t_filenm;
 struct t_commrec *init_commrec(void);
 /* Allocate, initialize and return the commrec. */
 
-void done_commrec(struct t_commrec *cr);
+void done_commrec(t_commrec *cr);
 /* Free memory associated with the commrec. */
 
-struct t_commrec *reinitialize_commrec_for_this_thread(const struct t_commrec *cro);
+struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
+                                                       const gmx_multisim_t *ms);
+
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
    the individual threads. Copies the original commrec to
    thread-local versions (a small memory leak results because we don't
    deallocate the old shared version).  */
 
-void gmx_fill_commrec_from_mpi(struct t_commrec *cr);
+void gmx_fill_commrec_from_mpi(t_commrec            *cr,
+                               const gmx_multisim_t *ms);
 /* Continues t_commrec construction */
 
 void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);

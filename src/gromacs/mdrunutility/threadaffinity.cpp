@@ -366,6 +366,7 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
 void
 gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
+                        const gmx_multisim_t        *ms,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
                         int                          nthread_local,
@@ -404,7 +405,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     thread0_id_node = 0;
     nthread_node    = nthread_local;
 #if GMX_MPI
-    if (PAR(cr) || isMultiSim(cr->ms))
+    if (PAR(cr) || isMultiSim(ms))
     {
         /* We need to determine a scan of the thread counts in this
          * compute node.
@@ -421,6 +422,8 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
         MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
         MPI_Comm_free(&comm_intra);
     }
+#else
+    GMX_UNUSED_VALUE(ms);
 #endif
 
     int  offset              = hw_opt->core_pinning_offset;
