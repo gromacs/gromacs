@@ -150,7 +150,7 @@ void Mdrunner::reinitializeOnSpawnedThread()
     // Mdrunner.
     fnm = dup_tfn(nfile, fnm);
 
-    cr  = reinitialize_commrec_for_this_thread(cr);
+    cr  = reinitialize_commrec_for_this_thread(cr, ms);
 
     if (!MASTER(cr))
     {
@@ -217,7 +217,7 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
     GMX_UNUSED_VALUE(mdrunner_start_fn);
 #endif
 
-    return reinitialize_commrec_for_this_thread(cr);
+    return reinitialize_commrec_for_this_thread(cr, ms);
 }
 
 }      // namespace
@@ -498,7 +498,7 @@ int Mdrunner::mdrunner()
 
     hwinfo = gmx_detect_hardware(mdlog, cr);
 
-    gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
+    gmx_print_detected_hardware(fplog, cr, ms, mdlog, hwinfo);
 
     std::vector<int> gpuIdsToUse;
     auto             compatibleGpus = getCompatibleGpus(hwinfo->gpu_info);
@@ -790,9 +790,9 @@ int Mdrunner::mdrunner()
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, fcd, globalState.get(), replExParams.exchangeInterval > 0);
+    init_disres(fplog, mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
 
-    init_orires(fplog, mtop, inputrec, cr, globalState.get(), &(fcd->orires));
+    init_orires(fplog, mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
     if (inputrecDeform(inputrec))
     {
@@ -914,12 +914,12 @@ int Mdrunner::mdrunner()
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
 #if GMX_MPI
-    if (isMultiSim(cr->ms))
+    if (isMultiSim(ms))
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "This is simulation %d out of %d running as a composite GROMACS\n"
                 "multi-simulation job. Setup for this simulation:\n",
-                cr->ms->sim, cr->ms->nsim);
+                ms->sim, ms->nsim);
     }
     GMX_LOG(mdlog.warning).appendTextFormatted(
             "Using %d MPI %s\n",
@@ -937,7 +937,7 @@ int Mdrunner::mdrunner()
     check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
     /* Check and update the number of OpenMP threads requested */
-    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, pmeRunMode, *mtop);
+    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, pmeRunMode, *mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
@@ -1017,7 +1017,7 @@ int Mdrunner::mdrunner()
     {
         // Produce the task assignment for this rank.
         gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
-                                              mdlog, cr, gpuTasksOnThisRank);
+                                              mdlog, cr, ms, gpuTasksOnThisRank);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1034,9 +1034,9 @@ int Mdrunner::mdrunner()
     {
         MPI_Barrier(cr->mpi_comm_mysim);
     }
-    if (isMultiSim(cr->ms))
+    if (isMultiSim(ms))
     {
-        MPI_Barrier(cr->ms->mpi_comm_masters);
+        MPI_Barrier(ms->mpi_comm_masters);
     }
 #endif
 
@@ -1094,7 +1094,7 @@ int Mdrunner::mdrunner()
 
     checkHardwareOversubscription(numThreadsOnThisRank,
                                   *hwinfo->hardwareTopology,
-                                  cr, mdlog);
+                                  cr, ms, mdlog);
 
     if (hw_opt.thread_affinity != threadaffOFF)
     {
@@ -1106,7 +1106,7 @@ int Mdrunner::mdrunner()
                                       &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
+        gmx_set_thread_affinity(mdlog, cr, ms, &hw_opt, *hwinfo->hardwareTopology,
                                 numThreadsOnThisRank, nullptr);
     }
 
@@ -1315,7 +1315,7 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
+        my_integrator(inputrec->eI) (fplog, cr, ms, mdlog, nfile, fnm,
                                      oenv,
                                      mdrunOptions,
                                      vsite, constr,
@@ -1357,7 +1357,7 @@ int Mdrunner::mdrunner()
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
                pmedata,
-               EI_DYNAMICS(inputrec->eI) && !isMultiSim(cr->ms));
+               EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
 
     // Free PME data
     if (pmedata)
@@ -1375,7 +1375,7 @@ int Mdrunner::mdrunner()
     mdModules.reset(nullptr);   // destruct force providers here as they might also use the GPU
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
-    free_gpu_resources(fr, cr);
+    free_gpu_resources(fr, cr, ms);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
 
@@ -1394,6 +1394,7 @@ int Mdrunner::mdrunner()
     if (MASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_close(fplog);
+        fplog = nullptr;
     }
 
     rc = (int)gmx_get_stop_condition();
@@ -1404,6 +1405,7 @@ int Mdrunner::mdrunner()
        wait for that. */
     if (PAR(cr) && MASTER(cr))
     {
+        done_commrec(cr);
         tMPI_Finalize();
     }
 #endif

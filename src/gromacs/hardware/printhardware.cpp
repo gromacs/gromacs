@@ -355,6 +355,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 }
 
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx_multisim_t *ms,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo)
 {
@@ -378,7 +379,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
      */
     if (cpuInfo.supportLevel() >= gmx::CpuInfo::SupportLevel::Features)
     {
-        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, isMasterSimMasterRank(cr->ms, cr));
+        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, isMasterSimMasterRank(ms, cr));
     }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */

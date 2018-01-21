@@ -52,6 +52,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -430,7 +432,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
     // now check for a multi-simulation
-    int nmultisim = 0;
+    int nmultisim = 1;
     if (opt2bSet("-multidir", nfile, fnm))
     {
         nmultisim = opt2fns(&multidir, "-multidir", nfile, fnm);
@@ -447,7 +449,21 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    init_multisystem(cr, nmultisim, multidir);
+    ms = init_multisystem(MPI_COMM_WORLD, nmultisim, multidir);
+
+    /* Prepare the intra-simulation communication */
+    // TODO consolidate this with init_commrec, after changing the
+    // relative ordering of init_commrec and init_multisystem
+#if GMX_MPI
+    if (ms != nullptr)
+    {
+        cr->nnodes = cr->nnodes / nmultisim;
+        MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
+        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
+        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
+    }
+#endif
 
     if (!opt2bSet("-cpi", nfile, fnm))
     {
@@ -469,7 +485,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
 
-    handleRestart(cr, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
+    handleRestart(cr, ms, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
 
     mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
@@ -502,11 +518,16 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !continuationOptions.appendFiles)
+    if (fplog != nullptr)
     {
         gmx_log_close(fplog);
     }
 
+    if (GMX_LIB_MPI)
+    {
+        done_commrec(cr);
+    }
+    done_multisim(ms);
     return rc;
 }
 

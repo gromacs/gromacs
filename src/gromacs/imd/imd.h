@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,6 +76,7 @@
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
 struct MdrunOptions;
@@ -129,6 +130,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param ir           The inputrec structure containing the MD input parameters
  *                     including a pointer to the IMD data structure.
  * \param cr           Information structure for MPI communication.
+ * \param ms           Handler for multi-simulations.
  * \param top_global   The topology of the whole system.
  * \param fplog        General output file, normally md.log.
  * \param defnstimd    Default IMD update (=communication) frequency.
@@ -138,7 +140,9 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param oenv         Output options.
  * \param mdrunOptions Options for mdrun.
  */
-void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
+void init_IMD(t_inputrec *ir, t_commrec *cr,
+              const gmx_multisim_t *ms,
+              gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
               const MdrunOptions &mdrunOptions);

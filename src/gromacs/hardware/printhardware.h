@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #include <cstdio>
 
 struct gmx_hw_info_t;
+struct gmx_multisim_t;
 struct t_commrec;
 
 namespace gmx
@@ -49,6 +50,7 @@ class MDLogger;
  * and to stderr the master rank.
  */
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx_multisim_t *ms,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo);
 

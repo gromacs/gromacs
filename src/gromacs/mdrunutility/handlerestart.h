@@ -60,6 +60,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_multisim_t;
 struct t_commrec;
 struct t_filenm;
 
@@ -80,6 +81,7 @@ struct t_filenm;
  * and/or simulations.
  *
  * \param[in]    cr                 Communication structure
+ * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    bTryToAppendFiles  Whether appending is requested (from mdrun)
  * \param[in]    NFILE              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
@@ -90,11 +92,12 @@ struct t_filenm;
  * \param[out]   bStartFromCpt      True on return if we found the checkpoint
  *                                  and will use it to restart.
  */
-void handleRestart(t_commrec *cr,
-                   gmx_bool   bTryToAppendFiles,
-                   const int  NFILE,
-                   t_filenm   fnm[],
-                   bool      *bDoAppendFiles,
-                   bool      *bStartFromCpt);
+void handleRestart(t_commrec            *cr,
+                   const gmx_multisim_t *ms,
+                   gmx_bool              bTryToAppendFiles,
+                   const int             NFILE,
+                   t_filenm              fnm[],
+                   bool                 *bDoAppendFiles,
+                   bool                 *bStartFromCpt);
 
 #endif
