@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1553,6 +1553,7 @@ void update_constraints(FILE                          *fplog,
                         t_idef                        *idef,
                         tensor                         vir_part,
                         t_commrec                     *cr,
+                        const gmx_multisim_t          *ms,
                         t_nrnb                        *nrnb,
                         gmx_wallcycle_t                wcycle,
                         gmx_update_t                  *upd,
@@ -1611,7 +1612,7 @@ void update_constraints(FILE                          *fplog,
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
             constrain(nullptr, bLog, bEner, constr, idef,
-                      inputrec, cr, step, 1, 1.0, md,
+                      inputrec, cr, ms, step, 1, 1.0, md,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1620,7 +1621,7 @@ void update_constraints(FILE                          *fplog,
         else
         {
             constrain(nullptr, bLog, bEner, constr, idef,
-                      inputrec, cr, step, 1, 1.0, md,
+                      inputrec, cr, ms, step, 1, 1.0, md,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1681,7 +1682,7 @@ void update_constraints(FILE                          *fplog,
             wallcycle_start(wcycle, ewcCONSTR);
 
             constrain(nullptr, bLog, bEner, constr, idef,
-                      inputrec, cr, step, 1, 0.5, md,
+                      inputrec, cr, ms, step, 1, 0.5, md,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
