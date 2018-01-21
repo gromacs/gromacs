@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,16 +118,18 @@ class Awh
          * \param[in,out] fplog             General output file, normally md.log, can be nullptr.
          * \param[in]     inputRecord       General input parameters (as set up by grompp).
          * \param[in]     commRecord        Struct for communication, can be nullptr.
+         * \param[in]     multiSimRecord    Multi-sim handler
          * \param[in]     awhParams         AWH input parameters, consistent with the relevant parts of \p inputRecord (as set up by grompp).
          * \param[in]     biasInitFilename  Name of file to read PMF and target from.
          * \param[in,out] pull_work         Pointer to a pull struct which AWH will couple to, has to be initialized, is assumed not to change during the lifetime of the Awh object.
          */
-        Awh(FILE              *fplog,
-            const t_inputrec  &inputRecord,
-            const t_commrec   *commRecord,
-            const AwhParams   &awhParams,
-            const std::string &biasInitFilename,
-            pull_t            *pull_work);
+        Awh(FILE                 *fplog,
+            const t_inputrec     &inputRecord,
+            const t_commrec      *commRecord,
+            const gmx_multisim_t *multiSimRecord,
+            const AwhParams      &awhParams,
+            const std::string    &biasInitFilename,
+            pull_t               *pull_work);
 
         /*! \brief Destructor. */
         ~Awh();
@@ -242,6 +244,7 @@ class Awh
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
         const int                        nstout_;              /**< Interval in steps for writing to energy file. */
         const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
+        const gmx_multisim_t            *multiSimRecord_;      /**< Handler for multi-simulations. */
         pull_t                          *pull_;                /**< Pointer to the pull working data. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };

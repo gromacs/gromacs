@@ -187,6 +187,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
                   const gmx_hw_info_t        &hardwareInfo,
                   const MDLogger             &mdlog,
                   const t_commrec            *cr,
+                  const gmx_multisim_t       *ms,
                   const std::vector<GpuTask> &gpuTasksOnThisRank)
 {
     /* Communicate among ranks on this node to find each task that can
@@ -294,10 +295,10 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
             MPI_Barrier(cr->mpi_comm_mysim);
 #endif
         }
-        if (isMultiSim(cr->ms))
+        if (isMultiSim(ms))
         {
 #if GMX_MPI
-            MPI_Barrier(cr->ms->mpi_comm_masters);
+            MPI_Barrier(ms->mpi_comm_masters);
 #endif
         }
 

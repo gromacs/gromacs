@@ -1039,6 +1039,7 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
 }
 
 static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+                                const gmx_multisim_t *ms,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
@@ -1535,7 +1536,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms,
+                      cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
@@ -1747,6 +1748,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 }
 
 static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
+                               const gmx_multisim_t *ms,
                                t_inputrec *inputrec,
                                gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                gmx_localtop_t *top,
@@ -1981,7 +1983,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms,
+                      cr, ms, nrnb, wcycle, mdatoms,
                       as_rvec_array(x.data()), hist, f, &forceWithVirial, enerd, fcd,
                       box, inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
@@ -2076,6 +2078,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
+              const gmx_multisim_t *ms,
               t_inputrec *inputrec,
               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
@@ -2105,7 +2108,7 @@ void do_force(FILE *fplog, t_commrec *cr,
     switch (inputrec->cutoff_scheme)
     {
         case ecutsVERLET:
-            do_force_cutsVERLET(fplog, cr, inputrec,
+            do_force_cutsVERLET(fplog, cr, ms, inputrec,
                                 step, nrnb, wcycle,
                                 top,
                                 groups,
@@ -2122,7 +2125,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 ddCloseBalanceRegion);
             break;
         case ecutsGROUP:
-            do_force_cutsGROUP(fplog, cr, inputrec,
+            do_force_cutsGROUP(fplog, cr, ms, inputrec,
                                step, nrnb, wcycle,
                                top,
                                groups,
@@ -2156,7 +2159,9 @@ void do_force(FILE *fplog, t_commrec *cr,
 
 void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_inputrec *ir, t_mdatoms *md,
-                        t_state *state, t_commrec *cr, t_nrnb *nrnb,
+                        t_state *state, t_commrec *cr,
+                        const gmx_multisim_t *ms,
+                        t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top)
 {
     int             i, m, start, end;
@@ -2190,7 +2195,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
     /* constrain the current position */
     constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-              ir, cr, step, 0, 1.0, md,
+              ir, cr, ms, step, 0, 1.0, md,
               as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
@@ -2200,7 +2205,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-                  ir, cr, step, 0, 1.0, md,
+                  ir, cr, ms, step, 0, 1.0, md,
                   as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
@@ -2230,7 +2235,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         }
         dvdl_dum = 0;
         constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-                  ir, cr, step, -1, 1.0, md,
+                  ir, cr, ms, step, -1, 1.0, md,
                   as_rvec_array(state->x.data()), savex, nullptr,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,

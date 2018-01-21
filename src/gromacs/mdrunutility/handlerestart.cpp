@@ -231,12 +231,13 @@ read_checkpoint_data(const char *filename, int *simulation_part,
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 void
-handleRestart(t_commrec *cr,
-              gmx_bool   bTryToAppendFiles,
-              const int  NFILE,
-              t_filenm   fnm[],
-              bool      *bDoAppendFiles,
-              bool      *bStartFromCpt)
+handleRestart(t_commrec            *cr,
+              const gmx_multisim_t *ms,
+              gmx_bool              bTryToAppendFiles,
+              const int             NFILE,
+              t_filenm              fnm[],
+              bool                 *bDoAppendFiles,
+              bool                 *bStartFromCpt)
 {
     gmx_bool        bAddPart;
     int             sim_part, sim_part_fn;
@@ -255,7 +256,7 @@ handleRestart(t_commrec *cr,
                              &sim_part_fn, cr,
                              bTryToAppendFiles, NFILE, fnm,
                              part_suffix, &bAddPart, bDoAppendFiles);
-        if (sim_part_fn == 0 && isMasterSimMasterRank(cr, cr->ms))
+        if (sim_part_fn == 0 && isMasterSimMasterRank(cr, ms))
         {
             fprintf(stdout, "No previous checkpoint file present with -cpi option, assuming this is a new run.\n");
         }
@@ -267,10 +268,10 @@ handleRestart(t_commrec *cr,
         // Master ranks of multi simulations should check that the
         // simulation part number is consistent across the
         // simulations.
-        if (isMultiSim(cr->ms) && MASTER(cr))
+        if (isMultiSim(ms) && MASTER(cr))
         {
             // Only the master simulation should report on problems.
-            if (isMasterSimMasterRank(cr, cr->ms))
+            if (isMasterSimMasterRank(cr, ms))
             {
                 /* Log file is not yet available, so if there's a
                  * problem we can only write to stderr. */
@@ -280,7 +281,7 @@ handleRestart(t_commrec *cr,
             {
                 fpmulti = nullptr;
             }
-            check_multi_int(fpmulti, cr->ms, sim_part, "simulation part", TRUE);
+            check_multi_int(fpmulti, ms, sim_part, "simulation part", TRUE);
         }
     }
     else
@@ -305,7 +306,7 @@ handleRestart(t_commrec *cr,
         sprintf(suffix, "%s%04d", part_suffix, sim_part_fn);
 
         add_suffix_to_output_names(fnm, NFILE, suffix);
-        if (isMasterSimMasterRank(cr, cr->ms))
+        if (isMasterSimMasterRank(cr, ms))
         {
             fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
         }

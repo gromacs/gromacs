@@ -280,7 +280,9 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
 }
 
 /*! \libinternal
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+                           const gmx_multisim_t *ms,
+                           const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv,
                            const MdrunOptions &mdrunOptions,
@@ -296,7 +298,9 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                            gmx_membed_t *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+double gmx::do_md(FILE *fplog, t_commrec *cr,
+                  const gmx_multisim_t *ms,
+                  const gmx::MDLogger &mdlog,
                   int nfile, const t_filenm fnm[],
                   const gmx_output_env_t *oenv,
                   const MdrunOptions &mdrunOptions,
@@ -389,7 +393,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     SimulationSignals signals;
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
-    SimulationSignaller nullSignaller(nullptr, nullptr, false, false);
+    SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
     if (!mdrunOptions.writeConfout)
     {
@@ -549,7 +553,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
+    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
+             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
              nfile, fnm, oenv, mdrunOptions);
 
     if (DOMAINDECOMP(cr))
@@ -616,7 +621,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     /* Initialize AWH and restore state from history in checkpoint if needed. */
     if (ir->bDoAwh)
     {
-        ir->awh = new gmx::Awh(fplog, *ir, cr, *ir->awhParams, opt2fn("-awh", nfile, fnm), ir->pull_work);
+        ir->awh = new gmx::Awh(fplog, *ir, cr, ms, *ir->awhParams, opt2fn("-awh", nfile, fnm), ir->pull_work);
 
         if (startingFromCheckpoint)
         {
@@ -633,7 +638,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
     if (useReplicaExchange && MASTER(cr))
     {
-        repl_ex = init_replica_exchange(fplog, cr->ms, top_global->natoms, ir,
+        repl_ex = init_replica_exchange(fplog, ms, top_global->natoms, ir,
                                         replExParams);
     }
 
@@ -678,7 +683,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* Constrain the initial coordinates and velocities */
             do_constrain_first(fplog, constr, ir, mdatoms, state,
-                               cr, nrnb, fr, top);
+                               cr, ms, nrnb, fr, top);
         }
         if (vsite)
         {
@@ -916,7 +921,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     bNeedRepartition = FALSE;
     // TODO This implementation of ensemble orientation restraints is nasty because
     // a user can't just do multi-sim with single-sim orientation restraints.
-    bUsingEnsembleRestraints = (fcd->disres.nsystems > 1) || (cr->ms && fcd->orires.nr);
+    bUsingEnsembleRestraints = (fcd->disres.nsystems > 1) || (ms && fcd->orires.nr);
 
     {
         // Replica exchange and ensemble restraints need all
@@ -939,15 +944,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     step_rel = 0;
 
     // TODO extract this to new multi-simulation module
-    if (MASTER(cr) && isMultiSim(cr->ms) && !useReplicaExchange)
+    if (MASTER(cr) && isMultiSim(ms) && !useReplicaExchange)
     {
-        if (!multisim_int_all_are_equal(cr->ms, ir->nsteps))
+        if (!multisim_int_all_are_equal(ms, ir->nsteps))
         {
             GMX_LOG(mdlog.warning).appendText(
                     "Note: The number of steps is not consistent across multi simulations,\n"
                     "but we are proceeding anyway!");
         }
-        if (!multisim_int_all_are_equal(cr->ms, ir->init_step))
+        if (!multisim_int_all_are_equal(ms, ir->init_step))
         {
             GMX_LOG(mdlog.warning).appendText(
                     "Note: The initial step is not consistent across multi simulations,\n"
@@ -1195,7 +1200,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog, cr, mdrunOptions.verbose, step,
+            relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
                                 state, &f, force_vir, mdatoms,
@@ -1224,7 +1229,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
+            do_force(fplog, cr, ms, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -1266,7 +1271,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
-                                   cr, nrnb, wcycle, upd, constr,
+                                   cr, ms, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
@@ -1521,7 +1526,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
-                                   cr, nrnb, wcycle, upd, constr,
+                                   cr, ms, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
             }
         }
@@ -1586,7 +1591,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
-                               cr, nrnb, wcycle, upd, constr,
+                               cr, ms, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
 
             if (ir->eI == eiVVAK)
@@ -1616,7 +1621,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 update_constraints(fplog, step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
-                                   cr, nrnb, wcycle, upd, nullptr,
+                                   cr, ms, nrnb, wcycle, upd, nullptr,
                                    FALSE, bCalcVir);
             }
             if (EI_VV(ir->eI))
@@ -1686,7 +1691,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 // situation where e.g. checkpointing can't be
                 // signalled.
                 bool                doIntraSimSignal = true;
-                SimulationSignaller signaller(&signals, cr, doInterSimSignal, doIntraSimSignal);
+                SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
@@ -1812,7 +1817,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             state->fep_state = lamnew;
         }
         /* Print the remaining wall clock time for the run */
-        if (isMasterSimMasterRank(cr, cr->ms) &&
+        if (isMasterSimMasterRank(cr, ms) &&
             (do_verbose || gmx_got_usr_signal()) &&
             !bPMETunePrinting)
         {
@@ -1846,7 +1851,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         bExchanged = FALSE;
         if (bDoReplEx)
         {
-            bExchanged = replica_exchange(fplog, cr, repl_ex,
+            bExchanged = replica_exchange(fplog, cr, ms, repl_ex,
                                           state_global, enerd,
                                           state, step, t);
         }

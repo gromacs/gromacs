@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_membed_t;
+struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct MdrunOptions;
 struct ObservablesHistory;
@@ -75,6 +76,7 @@ class MDAtoms;
  *
  * \param[in] fplog               Log file for output
  * \param[in] cr                  Communication record
+ * \param[in] ms                  Handle to multi-simulation handler.
  * \param[in] mdlog               Log writer for important output
  * \param[in] nfile               Number of files
  * \param[in] fnm                 Filename structure array
@@ -96,7 +98,9 @@ class MDAtoms;
  * \param[in] membed              Membrane embedding data structure
  * \param[in] walltime_accounting More timing information
  */
-typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+typedef double integrator_t (FILE *fplog, t_commrec *cr,
+                             const gmx_multisim_t *ms,
+                             const gmx::MDLogger &mdlog,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv,
                              const MdrunOptions &mdrunOptions,

@@ -57,10 +57,13 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
+void gmx_fill_commrec_from_mpi(t_commrec            *cr,
+                               const gmx_multisim_t *ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(ms);
 #else
     if (!gmx_mpi_initialized())
     {
@@ -76,7 +79,7 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
     // all multi-node MPI cases with more than one PP rank per node,
     // with and without GPUs. By always having it available, we also
     // don't need to protect calls to mpi_comm_physicalnode, etc.
-    if (PAR(cr) || isMultiSim(cr->ms))
+    if (PAR(cr) || isMultiSim(ms))
     {
         MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid, &cr->mpi_comm_physicalnode);
     }
@@ -93,11 +96,12 @@ t_commrec *init_commrec()
 
     snew(cr, 1);
 
+    cr->mpi_comm_physicalnode = MPI_COMM_NULL;
 #if GMX_LIB_MPI
-    gmx_fill_commrec_from_mpi(cr);
+    gmx_fill_commrec_from_mpi(cr, nullptr);
 #else
-    cr->mpi_comm_mysim   = nullptr;
-    cr->mpi_comm_mygroup = nullptr;
+    cr->mpi_comm_mysim   = MPI_COMM_NULL;
+    cr->mpi_comm_mygroup = MPI_COMM_NULL;
     cr->nnodes           = 1;
     cr->sim_nodeid       = 0;
     cr->nodeid           = cr->sim_nodeid;
@@ -122,7 +126,7 @@ t_commrec *init_commrec()
     return cr;
 }
 
-static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
+void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 {
     if (nullptr != buf)
     {
@@ -137,7 +141,7 @@ static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 void done_commrec(t_commrec *cr)
 {
 #if GMX_MPI
-    if (PAR(cr) || isMultiSim(cr->ms))
+    if (cr->mpi_comm_physicalnode != MPI_COMM_NULL)
     {
         MPI_Comm_free(&cr->mpi_comm_physicalnode);
     }
@@ -147,16 +151,12 @@ void done_commrec(t_commrec *cr)
         // TODO: implement
         // done_domdec(cr->dd);
     }
-    if (nullptr != cr->ms)
-    {
-        done_mpi_in_place_buf(cr->ms->mpb);
-        sfree(cr->ms);
-    }
     done_mpi_in_place_buf(cr->mpb);
     sfree(cr);
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
+                                                const gmx_multisim_t *ms)
 {
 #if GMX_THREAD_MPI
     t_commrec *cr;
@@ -168,13 +168,15 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
     *cr = *cro;
 
     /* and we start setting our own thread-specific values for things */
-    gmx_fill_commrec_from_mpi(cr);
+    gmx_fill_commrec_from_mpi(cr, ms);
 
     // TODO cr->duty should not be initialized here
     cr->duty             = (DUTY_PP | DUTY_PME);
 
     return cr;
 #else
+    GMX_UNUSED_VALUE(cro);
+    GMX_UNUSED_VALUE(ms);
     return nullptr;
 #endif
 }

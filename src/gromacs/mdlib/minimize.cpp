@@ -322,7 +322,9 @@ static void get_state_f_norm_max(t_commrec *cr,
 
 //! Initialize the energy minimization
 static void init_em(FILE *fplog, const char *title,
-                    t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                    t_commrec *cr,
+                    const gmx_multisim_t *ms,
+                    gmx::IMDOutputProvider *outputProvider,
                     t_inputrec *ir,
                     const MdrunOptions &mdrunOptions,
                     t_state *state_global, gmx_mtop_t *top_global,
@@ -353,7 +355,7 @@ static void init_em(FILE *fplog, const char *title,
     init_nrnb(nrnb);
 
     /* Interactive molecular dynamics */
-    init_IMD(ir, cr, top_global, fplog, 1,
+    init_IMD(ir, cr, ms, top_global, fplog, 1,
              MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
              nfile, fnm, nullptr, mdrunOptions);
 
@@ -440,7 +442,7 @@ static void init_em(FILE *fplog, const char *title,
             /* Constrain the starting coordinates */
             dvdl_constr = 0;
             constrain(PAR(cr) ? nullptr : fplog, TRUE, TRUE, constr, &(*top)->idef,
-                      ir, cr, -1, 0, 1.0, mdatoms,
+                      ir, cr, ms, -1, 0, 1.0, mdatoms,
                       as_rvec_array(ems->s.x.data()),
                       as_rvec_array(ems->s.x.data()),
                       nullptr,
@@ -560,7 +562,9 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 //! \brief Do one minimization step
 //
 // \returns true when the step succeeded, false when a constraint error occurred
-static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
+static bool do_em_step(t_commrec *cr,
+                       const gmx_multisim_t *ms,
+                       t_inputrec *ir, t_mdatoms *md,
                        gmx_bool bMolPBC,
                        em_state_t *ems1, real a, const PaddedRVecVector *force,
                        em_state_t *ems2,
@@ -673,7 +677,7 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
         dvdl_constr = 0;
         validStep   =
             constrain(nullptr, TRUE, TRUE, constr, &top->idef,
-                      ir, cr, count, 0, 1.0, md,
+                      ir, cr, ms, count, 0, 1.0, md,
                       as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
                       nullptr, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
@@ -710,6 +714,7 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
 
 //! De one energy evaluation
 static void evaluate_energy(FILE *fplog, t_commrec *cr,
+                            const gmx_multisim_t *ms,
                             gmx_mtop_t *top_global,
                             em_state_t *ems, gmx_localtop_t *top,
                             t_inputrec *inputrec,
@@ -765,7 +770,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    do_force(fplog, cr, inputrec,
+    do_force(fplog, cr, ms, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
              ems->f, force_vir, mdAtoms->mdatoms(), enerd, fcd,
@@ -816,7 +821,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         dvdl_constr = 0;
         rvec *f_rvec = as_rvec_array(ems->f.data());
         constrain(nullptr, FALSE, FALSE, constr, &top->idef,
-                  inputrec, cr, count, 0, 1.0, mdAtoms->mdatoms(),
+                  inputrec, cr, ms, count, 0, 1.0, mdAtoms->mdatoms(),
                   as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
@@ -975,7 +980,9 @@ namespace gmx
 {
 
 /*! \brief Do conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+                           const gmx_multi_sim_t *,
+                           const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv,
                            const MdrunOptions &mdrunOptions,
@@ -992,7 +999,9 @@ namespace gmx
                            gmx_membed_t gmx_unused *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
+double do_cg(FILE *fplog, t_commrec *cr,
+             const gmx_multisim_t *ms,
+             const gmx::MDLogger gmx_unused &mdlog,
              int nfile, const t_filenm fnm[],
              const gmx_output_env_t gmx_unused *oenv,
              const MdrunOptions &mdrunOptions,
@@ -1043,7 +1052,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     em_state_t *s_c   = &s3;
 
     /* Init em and store the local state in s_min */
-    init_em(fplog, CG, cr, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, CG, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_min, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -1068,7 +1077,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    evaluate_energy(fplog, cr,
+    evaluate_energy(fplog, cr, ms,
                     top_global, s_min, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdAtoms, fr,
@@ -1241,12 +1250,12 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         }
 
         /* Take a trial step (new coords in s_c) */
-        do_em_step(cr, inputrec, mdatoms, fr->bMolPBC, s_min, c, &s_min->s.cg_p, s_c,
+        do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC, s_min, c, &s_min->s.cg_p, s_c,
                    constr, top, nrnb, wcycle, -1);
 
         neval++;
         /* Calculate energy for the trial step */
-        evaluate_energy(fplog, cr,
+        evaluate_energy(fplog, cr, ms,
                         top_global, s_c, top,
                         inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdAtoms, fr,
@@ -1350,12 +1359,12 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 }
 
                 /* Take a trial step to this new point - new coords in s_b */
-                do_em_step(cr, inputrec, mdatoms, fr->bMolPBC, s_min, b, &s_min->s.cg_p, s_b,
+                do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC, s_min, b, &s_min->s.cg_p, s_b,
                            constr, top, nrnb, wcycle, -1);
 
                 neval++;
                 /* Calculate energy for the trial step */
-                evaluate_energy(fplog, cr,
+                evaluate_energy(fplog, cr, ms,
                                 top_global, s_b, top,
                                 inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdAtoms, fr,
@@ -1620,7 +1629,9 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
 
 /*! \brief Do L-BFGS conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+                          const gmx_multi_sim_t *,
+                          const gmx::MDLogger &mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv,
                           const MdrunOptions &mdrunOptions,
@@ -1637,7 +1648,9 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                           gmx_membed_t gmx_unused *membed,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
+double do_lbfgs(FILE *fplog, t_commrec *cr,
+                const gmx_multisim_t *ms,
+                const gmx::MDLogger gmx_unused &mdlog,
                 int nfile, const t_filenm fnm[],
                 const gmx_output_env_t gmx_unused *oenv,
                 const MdrunOptions &mdrunOptions,
@@ -1712,7 +1725,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     neval = 0;
 
     /* Init em */
-    init_em(fplog, LBFGS, cr, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, LBFGS, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &ems, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -1774,7 +1787,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
      * We do not unshift, so molecules are always whole
      */
     neval++;
-    evaluate_energy(fplog, cr,
+    evaluate_energy(fplog, cr, ms,
                     top_global, &ems, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdAtoms, fr,
@@ -1980,7 +1993,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 
         neval++;
         // Calculate energy for the trial step in position C
-        evaluate_energy(fplog, cr,
+        evaluate_energy(fplog, cr, ms,
                         top_global, sc, top,
                         inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdAtoms, fr,
@@ -2071,7 +2084,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 
                 neval++;
                 // Calculate energy for the trial step in point B
-                evaluate_energy(fplog, cr,
+                evaluate_energy(fplog, cr, ms,
                                 top_global, sb, top,
                                 inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdAtoms, fr,
@@ -2386,7 +2399,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 }   /* That's all folks */
 
 /*! \brief Do steepest descents minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+                          const gmx_multi_sim_t *,
+                          const gmx::MDLogger &mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv,
                           const MdrunOptions &mdrunOptions,
@@ -2402,7 +2417,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                           const ReplicaExchangeParameters &replExParams,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
+double do_steep(FILE *fplog, t_commrec *cr,
+                const gmx_multisim_t *ms,
+                const gmx::MDLogger gmx_unused &mdlog,
                 int nfile, const t_filenm fnm[],
                 const gmx_output_env_t gmx_unused *oenv,
                 const MdrunOptions &mdrunOptions,
@@ -2442,7 +2459,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     em_state_t *s_try = &s1;
 
     /* Init em and store the local state in s_try */
-    init_em(fplog, SD, cr, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, SD, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, s_try, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, nullptr,
@@ -2488,14 +2505,14 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         if (count > 0)
         {
             validStep =
-                do_em_step(cr, inputrec, mdatoms, fr->bMolPBC,
+                do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC,
                            s_min, stepsize, &s_min->f, s_try,
                            constr, top, nrnb, wcycle, count);
         }
 
         if (validStep)
         {
-            evaluate_energy(fplog, cr,
+            evaluate_energy(fplog, cr, ms,
                             top_global, s_try, top,
                             inputrec, nrnb, wcycle, gstat,
                             vsite, constr, fcd, graph, mdAtoms, fr,
@@ -2652,7 +2669,9 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 }   /* That's all folks */
 
 /*! \brief Do normal modes analysis
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+                          const gmx_multi_sim_t *,
+                          const gmx::MDLogger &mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv,
                           const MdrunOptions &mdrunOptions,
@@ -2668,7 +2687,9 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                           const ReplicaExchangeParameters &replExParams,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+double do_nm(FILE *fplog, t_commrec *cr,
+             const gmx_multisim_t *ms,
+             const gmx::MDLogger &mdlog,
              int nfile, const t_filenm fnm[],
              const gmx_output_env_t gmx_unused *oenv,
              const MdrunOptions &mdrunOptions,
@@ -2717,7 +2738,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     em_state_t     state_work {};
 
     /* Init em and store the local state in state_minimum */
-    init_em(fplog, NM, cr, outputProvider, inputrec, mdrunOptions,
+    init_em(fplog, NM, cr, ms, outputProvider, inputrec, mdrunOptions,
             state_global, top_global, &state_work, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdAtoms, &gstat,
             vsite, constr, &shellfc,
@@ -2796,7 +2817,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
-    evaluate_energy(fplog, cr,
+    evaluate_energy(fplog, cr, ms,
                     top_global, &state_work, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdAtoms, fr,
@@ -2854,7 +2875,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 if (shellfc)
                 {
                     /* Now is the time to relax the shells */
-                    (void) relax_shell_flexcon(fplog, cr, mdrunOptions.verbose, step,
+                    (void) relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
                                                inputrec, bNS, force_flags,
                                                top,
                                                constr, enerd, fcd,
@@ -2869,7 +2890,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 }
                 else
                 {
-                    evaluate_energy(fplog, cr,
+                    evaluate_energy(fplog, cr, ms,
                                     top_global, &state_work, top,
                                     inputrec, nrnb, wcycle, gstat,
                                     vsite, constr, fcd, graph, mdAtoms, fr,
