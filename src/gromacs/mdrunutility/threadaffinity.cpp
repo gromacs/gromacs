@@ -355,6 +355,7 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int intraNodeTh
 }
 
 void analyzeThreadsOnThisNode(const t_commrec            *cr,
+                              const gmx_multisim_t       *ms,
                               gmx::IThreadAffinityAccess *affinityAccess,
                               int                         numThreadsOnThisRank,
                               int                        *numThreadsOnThisNode,
@@ -363,7 +364,7 @@ void analyzeThreadsOnThisNode(const t_commrec            *cr,
     *intraNodeThreadOffset                  = 0;
     *numThreadsOnThisNode                   = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || isMultiSim(cr->ms))
+    if (PAR(cr) || isMultiSim(ms))
     {
         if (affinityAccess == nullptr)
         {
@@ -387,6 +388,7 @@ void analyzeThreadsOnThisNode(const t_commrec            *cr,
     }
 #else
     GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(ms);
     GMX_UNUSED_VALUE(affinityAccess);
 #endif
 

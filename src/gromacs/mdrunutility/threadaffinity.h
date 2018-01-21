@@ -47,6 +47,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_opt_t;
+struct gmx_multisim_t;
 struct t_commrec;
 
 namespace gmx
@@ -74,6 +75,7 @@ class IThreadAffinityAccess
  * See gmx_set_thread_affinity(), which consumes this output.
  *
  * \param[in]  cr                     Communication handler.
+ * \param[in]  ms                     Multi-simulation handler.
  * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
  * \param[out] numThreadsOnThisNode   On exit, the number of threads on all ranks of this node.
@@ -81,6 +83,7 @@ class IThreadAffinityAccess
  *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
  */
 void analyzeThreadsOnThisNode(const t_commrec            *cr,
+                              const gmx_multisim_t       *ms,
                               gmx::IThreadAffinityAccess *affinityAccess,
                               int                         numThreadsOnThisRank,
                               int                        *numThreadsOnThisNode,

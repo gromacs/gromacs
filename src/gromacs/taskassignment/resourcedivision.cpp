@@ -793,11 +793,12 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
     }
 }
 
-void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
-                                             const gmx_hw_info_t &hwinfo,
-                                             const t_commrec     *cr,
-                                             PmeRunMode           pmeRunMode,
-                                             const gmx_mtop_t    &mtop)
+void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
+                                             const gmx_hw_info_t  &hwinfo,
+                                             const t_commrec      *cr,
+                                             const gmx_multisim_t *ms,
+                                             PmeRunMode            pmeRunMode,
+                                             const gmx_mtop_t     &mtop)
 {
 #if GMX_THREAD_MPI
     GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
@@ -850,7 +851,7 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
          * all detected ncore_tot physical cores. We are currently not
          * checking for that here.
          */
-        int numRanksTot     = cr->nnodes*(isMultiSim(cr->ms) ? cr->ms->nsim : 1);
+        int numRanksTot     = cr->nnodes*(isMultiSim(ms) ? ms->nsim : 1);
         int numAtomsPerRank = mtop.natoms/cr->nnodes;
         int numCoresPerRank = hwinfo.ncore_tot/numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold*gmx::square(numCoresPerRank))
@@ -878,6 +879,7 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
 void checkHardwareOversubscription(int                          numThreadsOnThisRank,
                                    const gmx::HardwareTopology &hwTop,
                                    const t_commrec             *cr,
+                                   const gmx_multisim_t        *ms,
                                    const gmx::MDLogger         &mdlog)
 {
     if (hwTop.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
@@ -889,12 +891,14 @@ void checkHardwareOversubscription(int                          numThreadsOnThis
     int numRanksOnThisNode   = 1;
     int numThreadsOnThisNode = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || isMultiSim(cr->ms))
+    if (PAR(cr) || isMultiSim(ms))
     {
         /* Count the threads within this physical node */
         MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);
         MPI_Allreduce(&numThreadsOnThisRank, &numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, cr->mpi_comm_physicalnode);
     }
+#else
+    GMX_UNUSED_VALUE(ms);
 #endif
 
     if (numThreadsOnThisNode > hwTop.machine().logicalProcessorCount)

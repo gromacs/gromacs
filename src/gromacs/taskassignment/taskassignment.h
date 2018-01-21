@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include <vector>
 
 struct gmx_hw_info_t;
+struct gmx_multisim_t;
 struct t_commrec;
 
 namespace gmx
@@ -102,6 +103,7 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  * \param[in]  hardwareInfo               The detected hardware
  * \param[in]  mdlog                      Logging object to write to.
  * \param[in]  cr                         Communication object.
+ * \param[in]  ms                         Handles multi-simulations.
  * \param[in]  gpuTasksOnThisRank         Information about what GPU tasks
  *                                        exist on this rank.
  *
@@ -116,6 +118,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
                   const gmx_hw_info_t        &hardwareInfo,
                   const MDLogger             &mdlog,
                   const t_commrec            *cr,
+                  const gmx_multisim_t       *ms,
                   const std::vector<GpuTask> &gpuTasksOnThisRank);
 
 //! Function for whether the task of \c mapping has value \c TaskType.

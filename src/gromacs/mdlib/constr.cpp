@@ -276,6 +276,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir,
                    t_commrec *cr,
+                   const gmx_multisim_t *ms,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
                    t_mdatoms *md,
@@ -387,7 +388,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (constr->lincsd != nullptr)
     {
-        bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr,
+        bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr, ms,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,

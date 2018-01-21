@@ -65,11 +65,12 @@
 namespace gmx
 {
 
-SimulationSignaller::SimulationSignaller(SimulationSignals *signals,
-                                         const t_commrec   *cr,
-                                         bool               doInterSim,
-                                         bool               doIntraSim)
-    : signals_(signals), cr_(cr),
+SimulationSignaller::SimulationSignaller(SimulationSignals    *signals,
+                                         const t_commrec      *cr,
+                                         const gmx_multisim_t *ms,
+                                         bool                  doInterSim,
+                                         bool                  doIntraSim)
+    : signals_(signals), cr_(cr), ms_(ms),
       doInterSim_(doInterSim),
       doIntraSim_(doInterSim || doIntraSim),
       mpiBuffer_ {}
@@ -102,11 +103,11 @@ SimulationSignaller::signalInterSim()
     // multi-simulation begin active should already have issued an
     // error at mdrun time in release mode, so there's no need for a
     // release-mode assertion.
-    GMX_ASSERT(isMultiSim(cr_->ms), "Cannot do inter-simulation signalling without a multi-simulation");
+    GMX_ASSERT(isMultiSim(ms_), "Cannot do inter-simulation signalling without a multi-simulation");
     if (MASTER(cr_))
     {
         // Communicate the signals between the simulations.
-        gmx_sum_sim(eglsNR, mpiBuffer_.data(), cr_->ms);
+        gmx_sum_sim(eglsNR, mpiBuffer_.data(), ms_);
     }
     // Communicate the signals from the master to the others.
     gmx_bcast(eglsNR*sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);

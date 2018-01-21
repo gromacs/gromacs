@@ -239,18 +239,17 @@ void gmx_log_close(FILE *fp)
 }
 
 // TODO move this to multi-sim module
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
+gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs)
 {
     gmx_multisim_t *ms;
-    int             nnodes, nnodpersim, sim;
 #if GMX_MPI
     MPI_Group       mpi_group_world;
     int            *rank;
 #endif
 
-    if (nsim < 1)
+    if (nsim <= 1)
     {
-        return;
+        return nullptr;
     }
     if (!GMX_LIB_MPI && nsim > 1)
     {
@@ -259,33 +258,34 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
     }
     GMX_RELEASE_ASSERT(multidirs, "Must have multiple directories for -multisim");
 
-    nnodes  = cr->nnodes;
-    if (nnodes % nsim != 0)
+#if GMX_MPI
+    int numRanks;
+    MPI_Comm_size(comm, &numRanks);
+    if (numRanks % nsim != 0)
     {
-        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", numRanks, nsim);
     }
 
-    nnodpersim = nnodes/nsim;
-    sim        = cr->nodeid/nnodpersim;
+    int numRanksPerSim = numRanks/nsim;
+    int rankWithinComm;
+    MPI_Comm_rank(comm, &rankWithinComm);
 
     if (debug)
     {
-        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, nnodpersim, sim);
+        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, numRanksPerSim, rankWithinComm/numRanksPerSim);
     }
 
-    snew(ms, 1);
-    cr->ms   = ms;
+    ms       = new gmx_multisim_t;
     ms->nsim = nsim;
-    ms->sim  = sim;
-#if GMX_MPI
+    ms->sim  = rankWithinComm/numRanksPerSim;
     /* Create a communicator for the master nodes */
     snew(rank, ms->nsim);
     for (int i = 0; i < ms->nsim; i++)
     {
-        rank[i] = i*nnodpersim;
+        rank[i] = i*numRanksPerSim;
     }
-    MPI_Comm_group(MPI_COMM_WORLD, &mpi_group_world);
-    MPI_Group_incl(mpi_group_world, nsim, rank, &ms->mpi_group_masters);
+    MPI_Comm_group(comm, &mpi_group_world);
+    MPI_Group_incl(mpi_group_world, ms->nsim, rank, &ms->mpi_group_masters);
     sfree(rank);
     MPI_Comm_create(MPI_COMM_WORLD, ms->mpi_group_masters,
                     &ms->mpi_comm_masters);
@@ -303,24 +303,21 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
     ms->mpb->dbuf_alloc  = 0;
 #endif
 
-#endif
-
-    /* Reduce the intra-simulation communication */
-    cr->sim_nodeid = cr->nodeid % nnodpersim;
-    cr->nnodes     = nnodpersim;
-#if GMX_MPI
-    MPI_Comm_split(MPI_COMM_WORLD, sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-    cr->nodeid           = cr->sim_nodeid;
-#endif
-
-    if (debug)
-    {
-        fprintf(debug, "This is simulation %d, local number of ranks %d, local rank ID %d\n",
-                cr->ms->sim, cr->nnodes, cr->sim_nodeid);
-        fprintf(debug, "Changing to working directory %s\n", multidirs[cr->ms->sim]);
-    }
-
     // TODO This should throw upon error
-    gmx_chdir(multidirs[cr->ms->sim]);
+    gmx_chdir(multidirs[ms->sim]);
+#else
+    GMX_UNUSED_VALUE(comm);
+    ms = nullptr;
+#endif
+
+    return ms;
+}
+
+void done_multisim(gmx_multisim_t *ms)
+{
+    if (nullptr != ms)
+    {
+        done_mpi_in_place_buf(ms->mpb);
+        delete ms;
+    }
 }

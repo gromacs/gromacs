@@ -154,6 +154,8 @@ class Mdrunner
         FILE                            *fplog;
         //! Handle to communication data structure.
         t_commrec                       *cr;
+        //! Handle to multi-simulation handler.
+        gmx_multisim_t                  *ms;
 
     public:
         /*! \brief Defaulted constructor.

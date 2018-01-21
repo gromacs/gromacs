@@ -172,7 +172,7 @@ class ThreadAffinityTestHelper
                 setLogicalProcessorCount(1);
             }
             int numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank;
-            analyzeThreadsOnThisNode(cr_, &affinityAccess_,
+            analyzeThreadsOnThisNode(cr_, nullptr, &affinityAccess_,
                                      numThreadsOnThisRank,
                                      &numThreadsOnThisNode,
                                      &indexWithinNodeOfFirstThreadOnThisRank);

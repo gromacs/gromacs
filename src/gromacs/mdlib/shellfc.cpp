@@ -893,7 +893,9 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
 
 static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
-                      t_commrec *cr, int dd_ac1,
+                      t_commrec *cr,
+                      const gmx_multisim_t *ms,
+                      int dd_ac1,
                       gmx_int64_t step, t_mdatoms *md, int end,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
@@ -946,11 +948,11 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
             }
         }
     }
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x, xnold, nullptr, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               nullptr, nullptr, nrnb, econqCoord);
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x, xnew, nullptr, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               nullptr, nullptr, nrnb, econqCoord);
@@ -967,13 +969,15 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
+    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               nullptr, nullptr, nrnb, econqDeriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
+void relax_shell_flexcon(FILE *fplog, t_commrec *cr,
+                         const gmx_multisim_t *ms,
+                         gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,
@@ -1116,7 +1120,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(state->x.data()), homenr);
     }
-    do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
+    do_force(fplog, cr, ms, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
@@ -1128,7 +1132,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     if (nflexcon)
     {
         init_adir(fplog, shfc,
-                  constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
+                  constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
                   shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min].data()),
                   shfc->acc_dir,
                   fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
@@ -1197,7 +1201,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         if (nflexcon)
         {
             init_adir(fplog, shfc,
-                      constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
+                      constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
@@ -1219,7 +1223,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
         }
         /* Try the new positions */
-        do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
+        do_force(fplog, cr, ms, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
@@ -1236,7 +1240,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         if (nflexcon)
         {
             init_adir(fplog, shfc,
-                      constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
+                      constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 

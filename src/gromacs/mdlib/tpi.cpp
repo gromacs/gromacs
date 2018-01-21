@@ -127,7 +127,9 @@ namespace gmx
 {
 
 /*! \brief Do test particle insertion.
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+                           const gmx_multi_sim_t *,
+                           const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv,
                            const MdrunOptions &mdrunOptions,
@@ -144,7 +146,9 @@ namespace gmx
                            gmx_membed_t gmx_unused *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
+double do_tpi(FILE *fplog, t_commrec *cr,
+              const gmx_multisim_t *ms,
+              const gmx::MDLogger gmx_unused &mdlog,
               int nfile, const t_filenm fnm[],
               const gmx_output_env_t *oenv,
               const MdrunOptions &mdrunOptions,
@@ -659,7 +663,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              * out of the box. */
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
-            do_force(fplog, cr, inputrec,
+            do_force(fplog, cr, ms, inputrec,
                      step, nrnb, wcycle, top, &top_global->groups,
                      state_global->box, state_global->x, &state_global->hist,
                      f, force_vir, mdatoms, enerd, fcd,

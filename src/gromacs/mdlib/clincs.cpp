@@ -2328,6 +2328,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          gmx_int64_t step,
                          struct gmx_lincsdata *lincsd, t_mdatoms *md,
                          t_commrec *cr,
+                         const gmx_multisim_t *ms,
                          rvec *x, rvec *xprime, rvec *min_proj,
                          matrix box, t_pbc *pbc,
                          real lambda, real *dvdlambda,
@@ -2476,9 +2477,9 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 cconerr(lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
-                if (isMultiSim(cr->ms))
+                if (isMultiSim(ms))
                 {
-                    sprintf(buf3, " in simulation %d", cr->ms->sim);
+                    sprintf(buf3, " in simulation %d", ms->sim);
                 }
                 else
                 {
