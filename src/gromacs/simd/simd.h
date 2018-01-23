@@ -80,6 +80,9 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
+
+#define ALTERNATIVE 1
+
 //! \cond libapi
 
 
@@ -97,6 +100,9 @@ struct SimdDoubleTag {};
 struct SimdFInt32Tag {};
 /*! \libinternal \brief Tag type to select to load SimdDInt32 with simdLoad(U) */
 struct SimdDInt32Tag {};
+
+template<typename T>
+class SimdFloatBasic;
 }
 
 /*! \name SIMD predefined macros to describe high-level capabilities

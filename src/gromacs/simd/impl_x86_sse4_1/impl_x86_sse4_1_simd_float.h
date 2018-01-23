@@ -40,6 +40,32 @@
 
 #include <smmintrin.h>
 
+namespace gmx
+{
+
+struct SimdIsaSSE41 {
+#if ALTERNATIVE==2
+    static constexpr bool hasLogical = true;
+#endif
+};
+template<>
+class SimdFloatBasic<SimdIsaSSE41>
+{
+    public:
+        SimdFloatBasic() {}
+
+        SimdFloatBasic(float f) : simdInternal_(_mm_set1_ps(f)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFloatBasic(__m128 simd) : simdInternal_(simd) {}
+
+        __m128  simdInternal_;
+};
+using SimdFloat = SimdFloatBasic<SimdIsaSSE41>;
+
+} //namespace
+
+//TODO: cleanup so that SimdFloat alias not needed to be defined before include
 #include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd_float.h"
 
 namespace gmx

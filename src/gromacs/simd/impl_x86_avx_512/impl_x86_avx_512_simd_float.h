@@ -51,19 +51,22 @@
 namespace gmx
 {
 
-class SimdFloat
+struct SimdIsaAVX512 {};
+template<>
+class SimdFloatBasic<SimdIsaAVX512>
 {
     public:
-        SimdFloat() {}
+        SimdFloatBasic() {}
 
-        SimdFloat(float f) : simdInternal_(_mm512_set1_ps(f)) {}
+        SimdFloatBasic(float f) : simdInternal_(_mm512_set1_ps(f)) {}
 
         // Internal utility constructor to simplify return statements
-        SimdFloat(__m512 simd) : simdInternal_(simd) {}
+        SimdFloatBasic(__m512 simd) : simdInternal_(simd) {}
 
         __m512  simdInternal_;
 };
-
+using SimdFloat = SimdFloatBasic<SimdIsaAVX512>;
+ 
 class SimdFInt32
 {
     public:

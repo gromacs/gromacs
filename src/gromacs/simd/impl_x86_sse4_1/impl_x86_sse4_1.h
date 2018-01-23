@@ -40,8 +40,8 @@
 #include "impl_x86_sse4_1_general.h"
 // SSE4.1 cannot do double precision SIMD4
 #include "impl_x86_sse4_1_simd4_float.h"
-#include "impl_x86_sse4_1_simd_double.h"
 #include "impl_x86_sse4_1_simd_float.h"
+#include "impl_x86_sse4_1_simd_double.h"
 #include "impl_x86_sse4_1_util_double.h"
 #include "impl_x86_sse4_1_util_float.h"
 

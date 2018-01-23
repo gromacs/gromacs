@@ -93,23 +93,62 @@ namespace gmx
  * SINGLE PRECISION SIMD MATH FUNCTIONS *
  ****************************************/
 
-#if !GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT
+#if ALTERNATIVE==1
+// Only here for proof of concept. Should go to some utility header.
+template<typename F1, typename F2, typename ...Args>
+auto evalWithAlternativeImpl(int, F1 f1, F2, Args...args) -> decltype (f1(args...))
+{
+    return f1(args...);
+}
+
+template<typename F1, typename F2, typename ...Args>
+auto evalWithAlternativeImpl(char, F1, F2 f2, Args...args) -> decltype (f2(args...))
+{
+    return f2(args...);
+}
+
+//! Evaluates f1 if possible and if not evaluates f2
+template<typename F1, typename F2, typename ...Args>
+auto evalWithAlternative(F1 f1, F2 f2, Args...args) -> decltype(evalWithAlternativeImpl(0, f1, f2, args...))
+{
+    return evalWithAlternativeImpl(0, f1, f2, args...);
+}
+#elif ALTERNATIVE==2
+//!evaluates F1(args) or F2(args) depending on first argument
+template<typename F1, typename F2, typename ...Args>
+auto evalIf(std::true_type, F1 f1, F2, Args...args) -> decltype(f1(args...))
+{
+    return f1(args...);
+}
+template<typename F1, typename F2, typename ...Args>
+auto evalIf(std::false_type, F1, F2 f2, Args...args) -> decltype(f2(args...))
+{
+    return f2(args...);
+}
+
+template <bool B>
+using bool_constant = std::integral_constant<bool, B>;
+#endif
+
+    
 /*! \brief Composes floating point value with the magnitude of x and the sign of y.
  *
  * \param x Values to set sign for
  * \param y Values used to set sign
  * \return  Magnitude of x, sign of y
  */
-static inline SimdFloat gmx_simdcall
-copysign(SimdFloat x, SimdFloat y)
+template<typename ISA>
+static inline SimdFloatBasic<ISA> gmx_simdcall
+copysign(SimdFloatBasic<ISA> x, SimdFloatBasic<ISA> y)
 {
-#if GMX_SIMD_HAVE_LOGICAL
-    return abs(x) | ( SimdFloat(GMX_FLOAT_NEGZERO) & y );
-#else
-    return blend(abs(x), -abs(x), y < setZero());
+#if ALTERNATIVE==1
+    return evalWithAlternative(
+#elif ALTERNATIVE==2
+    return evalIf(bool_constant<ISA::hasLogical>(),
 #endif
+                               [=]() {return abs(x) | ( SimdFloatBasic<ISA>(GMX_FLOAT_NEGZERO) & y );},
+                               [=]() {return blend(abs(x), -abs(x), y < setZero());});
 }
-#endif
 
 #if !GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT
 /*! \brief Perform one Newton-Raphson iteration to improve 1/sqrt(x) for SIMD float.

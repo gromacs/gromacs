@@ -48,18 +48,27 @@
 namespace gmx
 {
 
-class SimdFloat
+struct SimdIsaSSE2 {
+#if ALTERNATIVE==2
+    static constexpr bool hasLogical = false;
+#endif
+};
+template<>
+class SimdFloatBasic<SimdIsaSSE2>
 {
     public:
-        SimdFloat() {}
+        SimdFloatBasic() {}
 
-        SimdFloat(float f) : simdInternal_(_mm_set1_ps(f)) {}
+        SimdFloatBasic(float f) : simdInternal_(_mm_set1_ps(f)) {}
 
         // Internal utility constructor to simplify return statements
-        SimdFloat(__m128 simd) : simdInternal_(simd) {}
+        SimdFloatBasic(__m128 simd) : simdInternal_(simd) {}
 
         __m128  simdInternal_;
 };
+#if GMX_SIMD_X86_SSE2
+using SimdFloat = SimdFloatBasic<SimdIsaSSE2>;
+#endif
 
 class SimdFInt32
 {
