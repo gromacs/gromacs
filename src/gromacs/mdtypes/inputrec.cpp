@@ -1487,6 +1487,11 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
     }
 }
 
+bool integratorHasReferenceTemperature(const t_inputrec *ir)
+{
+    return ((ir->etc != etcNO) || EI_SD(ir->eI) || (ir->eI == eiBD) || EI_TPI(ir->eI));
+}
+
 int inputrec2nboundeddim(const t_inputrec *ir)
 {
     if (inputrecPbcXY2Walls(ir))
