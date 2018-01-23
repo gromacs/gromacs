@@ -180,16 +180,6 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
     }
 }
 
-
-
-static void _low_check(gmx_bool b, const char *s, warninp_t wi)
-{
-    if (b)
-    {
-        warning_error(wi, s);
-    }
-}
-
 static void check_nst(const char *desc_nst, int nst,
                       const char *desc_p, int *p,
                       warninp_t wi)
@@ -249,11 +239,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
  * like temperature coupling group options here, but in triple_check
  */
 {
-    /* Strange macro: first one fills the err_buf, and then one can check
-     * the condition, which will print the message and increase the error
-     * counter.
-     */
-#define CHECK(b) _low_check(b, err_buf, wi)
     char        err_buf[256], warn_buf[STRLEN];
     int         i, j;
     real        dt_pcoupl;
@@ -283,8 +268,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         warning_error(wi, "rlist should be >= 0");
     }
-    sprintf(err_buf, "nstlist can not be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
-    CHECK(ir->nstlist < 0);
+    if (ir->nstlist < 0)
+    {
+        warning_error(wi, "nstlist can not be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
+    }
 
     process_interaction_modifier(ir, &ir->coulomb_modifier);
     process_interaction_modifier(ir, &ir->vdw_modifier);
@@ -560,16 +547,20 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     /* TPI STUFF */
     if (EI_TPI(ir->eI))
     {
-        sprintf(err_buf, "TPI only works with pbc = %s", epbc_names[epbcXYZ]);
-        CHECK(ir->ePBC != epbcXYZ);
-        sprintf(err_buf, "TPI only works with ns = %s", ens_names[ensGRID]);
-        CHECK(ir->ns_type != ensGRID);
-        sprintf(err_buf, "with TPI nstlist should be larger than zero");
-        CHECK(ir->nstlist <= 0);
-        sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
-        CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
-        sprintf(err_buf, "TPI does not work (yet) with the Verlet cut-off scheme");
-        CHECK(ir->cutoff_scheme == ecutsVERLET);
+        if (ir->ePBC != epbcXYZ)
+            warning_error(wi, gmx::formatString("TPI only works with pbc = %s", epbc_names[epbcXYZ]));
+        if (ir->ns_type != ensGRID)
+            warning_error(wi, gmx::formatString("TPI only works with ns = %s", ens_names[ensGRID]));
+        if (ir->nstlist <= 0)
+            warning_error(wi, "with TPI nstlist should be larger than zero");
+        if (EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype))
+        {
+            warning_error(wi, "TPI does not work with full electrostatics other than PME");
+        }
+        if (ir->cutoff_scheme == ecutsVERLET)
+        {
+            warning_error(wi, "TPI does not work (yet) with the Verlet cut-off scheme");
+        }
     }
 
     /* SHAKE / LINCS */
@@ -592,18 +583,18 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         gmx_bool bAllTempZero = TRUE;
         for (i = 0; i < fep->n_lambda; i++)
         {
-            sprintf(err_buf, "Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[efptTEMPERATURE], fep->all_lambda[efptTEMPERATURE][i]);
-            CHECK((fep->all_lambda[efptTEMPERATURE][i] < 0) || (fep->all_lambda[efptTEMPERATURE][i] > 1));
+            if ((fep->all_lambda[efptTEMPERATURE][i] < 0) || (fep->all_lambda[efptTEMPERATURE][i] > 1))
+                warning_error(wi, gmx::formatString("Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[efptTEMPERATURE], fep->all_lambda[efptTEMPERATURE][i]));
             if (fep->all_lambda[efptTEMPERATURE][i] > 0)
             {
                 bAllTempZero = FALSE;
             }
         }
-        sprintf(err_buf, "if simulated tempering is on, temperature-lambdas may not be all zero");
-        CHECK(bAllTempZero == TRUE);
+        if (bAllTempZero == TRUE)
+            warning_error(wi, "if simulated tempering is on, temperature-lambdas may not be all zero");
 
-        sprintf(err_buf, "Simulated tempering is currently only compatible with md-vv");
-        CHECK(ir->eI != eiVV);
+        if (ir->eI != eiVV)
+            warning_error(wi, "Simulated tempering is currently only compatible with md-vv");
 
         /* check compatability of the temperature coupling with simulated tempering */
 
@@ -615,14 +606,15 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         /* check that the temperatures make sense */
 
-        sprintf(err_buf, "Higher simulated tempering temperature (%g) must be >= than the simulated tempering lower temperature (%g)", ir->simtempvals->simtemp_high, ir->simtempvals->simtemp_low);
-        CHECK(ir->simtempvals->simtemp_high <= ir->simtempvals->simtemp_low);
+        if (ir->simtempvals->simtemp_high <= ir->simtempvals->simtemp_low)
+            warning_error(wi, gmx::formatString("Higher simulated tempering temperature (%g) must be >= than the simulated tempering lower temperature (%g)",
+                                                ir->simtempvals->simtemp_high, ir->simtempvals->simtemp_low));
 
-        sprintf(err_buf, "Higher simulated tempering temperature (%g) must be >= zero", ir->simtempvals->simtemp_high);
-        CHECK(ir->simtempvals->simtemp_high <= 0);
+        if (ir->simtempvals->simtemp_high <= 0)
+            warning_error(wi, gmx::formatString("Higher simulated tempering temperature (%g) must be >= zero", ir->simtempvals->simtemp_high));
 
-        sprintf(err_buf, "Lower simulated tempering temperature (%g) must be >= zero", ir->simtempvals->simtemp_low);
-        CHECK(ir->simtempvals->simtemp_low <= 0);
+        if (ir->simtempvals->simtemp_low <= 0)
+            warning_error(wi, gmx::formatString("Lower simulated tempering temperature (%g) must be >= zero", ir->simtempvals->simtemp_low));
     }
 
     /* verify free energy options */
@@ -630,46 +622,45 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     if (ir->efep != efepNO)
     {
         fep = ir->fepvals;
-        sprintf(err_buf, "The soft-core power is %d and can only be 1 or 2",
-                fep->sc_power);
-        CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
+        if (fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2)
+            warning_error(wi, gmx::formatString("The soft-core power is %d and can only be 1 or 2",
+                    fep->sc_power));
 
-        sprintf(err_buf, "The soft-core sc-r-power is %d and can only be 6 or 48",
-                (int)fep->sc_r_power);
-        CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
+        if (fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0)
+            warning_error(wi, gmx::formatString("The soft-core sc-r-power is %d and can only be 6 or 48",
+                    (int)fep->sc_r_power));
 
-        sprintf(err_buf, "Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
-        CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)));
+        if (fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)))
+        warning_error(wi, gmx::formatString("Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda));
 
-        sprintf(err_buf, "Can't use positive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
-        CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
+        if (fep->delta_lambda > 0 && (ir->efep == efepEXPANDED))
+        warning_error(wi, gmx::formatString("Can't use positive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda));
 
-        sprintf(err_buf, "Can only use expanded ensemble with md-vv (for now)");
-        CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
+        if (!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED))
+        warning_error(wi, "Can only use expanded ensemble with md-vv (for now)");
 
-        sprintf(err_buf, "Free-energy not implemented for Ewald");
-        CHECK(ir->coulombtype == eelEWALD);
+        if (ir->coulombtype == eelEWALD)
+            warning_error(wi, "Free-energy not implemented for Ewald");
 
         /* check validty of lambda inputs */
         if (fep->n_lambda == 0)
         {
             /* Clear output in case of no states:*/
-            sprintf(err_buf, "init-lambda-state set to %d: no lambda states are defined.", fep->init_fep_state);
-            CHECK((fep->init_fep_state >= 0) && (fep->n_lambda == 0));
+            if ((fep->init_fep_state >= 0) && (fep->n_lambda == 0))
+            warning_error(wi, gmx::formatString("init-lambda-state set to %d: no lambda states are defined.", fep->init_fep_state));
         }
         else
         {
-            sprintf(err_buf, "initial thermodynamic state %d does not exist, only goes to %d", fep->init_fep_state, fep->n_lambda-1);
-            CHECK((fep->init_fep_state >= fep->n_lambda));
+            if (fep->init_fep_state >= fep->n_lambda)
+                            warning_error(wi, gmx::formatString("initial thermodynamic state %d does not exist, only goes to %d", fep->init_fep_state, fep->n_lambda-1));
         }
 
-        sprintf(err_buf, "Lambda state must be set, either with init-lambda-state or with init-lambda");
-        CHECK((fep->init_fep_state < 0) && (fep->init_lambda < 0));
+        if ((fep->init_fep_state < 0) && (fep->init_lambda < 0))
+                    warning_error(wi, "Lambda state must be set, either with init-lambda-state or with init-lambda");
 
-        sprintf(err_buf, "init-lambda=%g while init-lambda-state=%d. Lambda state must be set either with init-lambda-state or with init-lambda, but not both",
-                fep->init_lambda, fep->init_fep_state);
-        CHECK((fep->init_fep_state >= 0) && (fep->init_lambda >= 0));
-
+        if ((fep->init_fep_state >= 0) && (fep->init_lambda >= 0))
+            warning_error(wi, gmx::formatString("init-lambda=%g while init-lambda-state=%d. Lambda state must be set either with init-lambda-state or with init-lambda, but not both",
+                    fep->init_lambda, fep->init_fep_state));
 
 
         if ((fep->init_lambda >= 0) && (fep->delta_lambda == 0))
@@ -700,8 +691,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             for (i = 0; i < fep->n_lambda; i++)
             {
-                sprintf(err_buf, "Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[j], fep->all_lambda[j][i]);
-                CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
+                if ((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1))
+                    warning_error(wi, gmx::formatString("Entry %d for %s must be between 0 and 1, instead is %g", i, efpt_names[j], fep->all_lambda[j][i]));
             }
         }
 
@@ -709,13 +700,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             for (i = 0; i < fep->n_lambda; i++)
             {
-                sprintf(err_buf, "For state %d, vdw-lambdas (%f) is changing with vdw softcore, while coul-lambdas (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.", i, fep->all_lambda[efptVDW][i],
-                        fep->all_lambda[efptCOUL][i]);
-                CHECK((fep->sc_alpha > 0) &&
+                if ((fep->sc_alpha > 0) &&
                       (((fep->all_lambda[efptCOUL][i] > 0.0) &&
                         (fep->all_lambda[efptCOUL][i] < 1.0)) &&
                        ((fep->all_lambda[efptVDW][i] > 0.0) &&
-                        (fep->all_lambda[efptVDW][i] < 1.0))));
+                        (fep->all_lambda[efptVDW][i] < 1.0))))
+                    warning_error(wi, gmx::formatString("For state %d, vdw-lambdas (%f) is changing with vdw softcore, while coul-lambdas (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.", i, fep->all_lambda[efptVDW][i],
+                            fep->all_lambda[efptCOUL][i]));
             }
         }
 
@@ -740,8 +731,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             for (j = 0; j < fep->n_lambda; j++)
             {
-                sprintf(err_buf, "%s[%d] must be between 0 and 1", efpt_names[i], j);
-                CHECK((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1));
+                if ((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1))
+                    warning_error(wi, gmx::formatString("%s[%d] must be between 0 and 1", efpt_names[i], j));
             }
         }
     }
@@ -752,86 +743,86 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         /* checking equilibration of weights inputs for validity */
 
-        sprintf(err_buf, "weight-equil-number-all-lambda (%d) is ignored if lmc-weights-equil is not equal to %s",
-                expand->equil_n_at_lam, elmceq_names[elmceqNUMATLAM]);
-        CHECK((expand->equil_n_at_lam > 0) && (expand->elmceq != elmceqNUMATLAM));
+        if ((expand->equil_n_at_lam > 0) && (expand->elmceq != elmceqNUMATLAM))
+            warning_error(wi, gmx::formatString("weight-equil-number-all-lambda (%d) is ignored if lmc-weights-equil is not equal to %s",
+                    expand->equil_n_at_lam, elmceq_names[elmceqNUMATLAM]));
 
-        sprintf(err_buf, "weight-equil-number-samples (%d) is ignored if lmc-weights-equil is not equal to %s",
-                expand->equil_samples, elmceq_names[elmceqSAMPLES]);
-        CHECK((expand->equil_samples > 0) && (expand->elmceq != elmceqSAMPLES));
+        if ((expand->equil_samples > 0) && (expand->elmceq != elmceqSAMPLES))
+            warning_error(wi, gmx::formatString("weight-equil-number-samples (%d) is ignored if lmc-weights-equil is not equal to %s",
+                    expand->equil_samples, elmceq_names[elmceqSAMPLES]));
 
-        sprintf(err_buf, "weight-equil-number-steps (%d) is ignored if lmc-weights-equil is not equal to %s",
-                expand->equil_steps, elmceq_names[elmceqSTEPS]);
-        CHECK((expand->equil_steps > 0) && (expand->elmceq != elmceqSTEPS));
+        if ((expand->equil_steps > 0) && (expand->elmceq != elmceqSTEPS))
+            warning_error(wi, gmx::formatString("weight-equil-number-steps (%d) is ignored if lmc-weights-equil is not equal to %s",
+                    expand->equil_steps, elmceq_names[elmceqSTEPS]));
 
-        sprintf(err_buf, "weight-equil-wl-delta (%d) is ignored if lmc-weights-equil is not equal to %s",
-                expand->equil_samples, elmceq_names[elmceqWLDELTA]);
-        CHECK((expand->equil_wl_delta > 0) && (expand->elmceq != elmceqWLDELTA));
+        if ((expand->equil_wl_delta > 0) && (expand->elmceq != elmceqWLDELTA))
+            warning_error(wi, gmx::formatString("weight-equil-wl-delta (%d) is ignored if lmc-weights-equil is not equal to %s",
+                    expand->equil_samples, elmceq_names[elmceqWLDELTA]));
 
-        sprintf(err_buf, "weight-equil-count-ratio (%f) is ignored if lmc-weights-equil is not equal to %s",
-                expand->equil_ratio, elmceq_names[elmceqRATIO]);
-        CHECK((expand->equil_ratio > 0) && (expand->elmceq != elmceqRATIO));
+        if ((expand->equil_ratio > 0) && (expand->elmceq != elmceqRATIO))
+        warning_error(wi, gmx::formatString("weight-equil-count-ratio (%f) is ignored if lmc-weights-equil is not equal to %s",
+                expand->equil_ratio, elmceq_names[elmceqRATIO]));
 
-        sprintf(err_buf, "weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weights-equil=%s",
-                expand->equil_n_at_lam, elmceq_names[elmceqNUMATLAM]);
-        CHECK((expand->equil_n_at_lam <= 0) && (expand->elmceq == elmceqNUMATLAM));
+        if ((expand->equil_n_at_lam <= 0) && (expand->elmceq == elmceqNUMATLAM))
+            warning_error(wi, gmx::formatString("weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weights-equil=%s",
+                    expand->equil_n_at_lam, elmceq_names[elmceqNUMATLAM]));
 
-        sprintf(err_buf, "weight-equil-number-samples (%d) must be a positive integer if lmc-weights-equil=%s",
-                expand->equil_samples, elmceq_names[elmceqSAMPLES]);
-        CHECK((expand->equil_samples <= 0) && (expand->elmceq == elmceqSAMPLES));
+        if ((expand->equil_samples <= 0) && (expand->elmceq == elmceqSAMPLES))
+            warning_error(wi, gmx::formatString("weight-equil-number-samples (%d) must be a positive integer if lmc-weights-equil=%s",
+                    expand->equil_samples, elmceq_names[elmceqSAMPLES]));
 
-        sprintf(err_buf, "weight-equil-number-steps (%d) must be a positive integer if lmc-weights-equil=%s",
-                expand->equil_steps, elmceq_names[elmceqSTEPS]);
-        CHECK((expand->equil_steps <= 0) && (expand->elmceq == elmceqSTEPS));
+        if ((expand->equil_steps <= 0) && (expand->elmceq == elmceqSTEPS))
+            warning_error(wi, gmx::formatString("weight-equil-number-steps (%d) must be a positive integer if lmc-weights-equil=%s",
+                    expand->equil_steps, elmceq_names[elmceqSTEPS]));
 
-        sprintf(err_buf, "weight-equil-wl-delta (%f) must be > 0 if lmc-weights-equil=%s",
-                expand->equil_wl_delta, elmceq_names[elmceqWLDELTA]);
-        CHECK((expand->equil_wl_delta <= 0) && (expand->elmceq == elmceqWLDELTA));
+        if ((expand->equil_wl_delta <= 0) && (expand->elmceq == elmceqWLDELTA))
+            warning_error(wi, gmx::formatString("weight-equil-wl-delta (%f) must be > 0 if lmc-weights-equil=%s",
+                    expand->equil_wl_delta, elmceq_names[elmceqWLDELTA]));
 
-        sprintf(err_buf, "weight-equil-count-ratio (%f) must be > 0 if lmc-weights-equil=%s",
-                expand->equil_ratio, elmceq_names[elmceqRATIO]);
-        CHECK((expand->equil_ratio <= 0) && (expand->elmceq == elmceqRATIO));
+        if ((expand->equil_ratio <= 0) && (expand->elmceq == elmceqRATIO))
+            warning_error(wi, gmx::formatString("weight-equil-count-ratio (%f) must be > 0 if lmc-weights-equil=%s",
+                    expand->equil_ratio, elmceq_names[elmceqRATIO]));
 
-        sprintf(err_buf, "lmc-weights-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
-                elmceq_names[elmceqWLDELTA], elamstats_names[elamstatsWL], elamstats_names[elamstatsWWL]);
-        CHECK((expand->elmceq == elmceqWLDELTA) && (!EWL(expand->elamstats)));
+        if ((expand->elmceq == elmceqWLDELTA) && (!EWL(expand->elamstats)))
+            warning_error(wi, gmx::formatString("lmc-weights-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
+                    elmceq_names[elmceqWLDELTA], elamstats_names[elamstatsWL], elamstats_names[elamstatsWWL]));
 
-        sprintf(err_buf, "lmc-repeats (%d) must be greater than 0", expand->lmc_repeats);
-        CHECK((expand->lmc_repeats <= 0));
-        sprintf(err_buf, "minimum-var-min (%d) must be greater than 0", expand->minvarmin);
-        CHECK((expand->minvarmin <= 0));
-        sprintf(err_buf, "weight-c-range (%d) must be greater or equal to 0", expand->c_range);
-        CHECK((expand->c_range < 0));
-        sprintf(err_buf, "init-lambda-state (%d) must be zero if lmc-forced-nstart (%d)> 0 and lmc-move != 'no'",
-                fep->init_fep_state, expand->lmc_forced_nstart);
-        CHECK((fep->init_fep_state != 0) && (expand->lmc_forced_nstart > 0) && (expand->elmcmove != elmcmoveNO));
-        sprintf(err_buf, "lmc-forced-nstart (%d) must not be negative", expand->lmc_forced_nstart);
-        CHECK((expand->lmc_forced_nstart < 0));
-        sprintf(err_buf, "init-lambda-state (%d) must be in the interval [0,number of lambdas)", fep->init_fep_state);
-        CHECK((fep->init_fep_state < 0) || (fep->init_fep_state >= fep->n_lambda));
+        if (expand->lmc_repeats <= 0)
+            warning_error(wi, gmx::formatString("lmc-repeats (%d) must be greater than 0", expand->lmc_repeats));
+        if (expand->minvarmin <= 0)
+            warning_error(wi, gmx::formatString("minimum-var-min (%d) must be greater than 0", expand->minvarmin));
+        if (expand->c_range < 0)
+            warning_error(wi, gmx::formatString("weight-c-range (%d) must be greater or equal to 0", expand->c_range));
+        if ((fep->init_fep_state != 0) && (expand->lmc_forced_nstart > 0) && (expand->elmcmove != elmcmoveNO))
+            warning_error(wi, gmx::formatString("init-lambda-state (%d) must be zero if lmc-forced-nstart (%d)> 0 and lmc-move != 'no'",
+                    fep->init_fep_state, expand->lmc_forced_nstart));
+        if (expand->lmc_forced_nstart < 0)
+            warning_error(wi, gmx::formatString("lmc-forced-nstart (%d) must not be negative", expand->lmc_forced_nstart));
+        if ((fep->init_fep_state < 0) || (fep->init_fep_state >= fep->n_lambda))
+            warning_error(wi, gmx::formatString("init-lambda-state (%d) must be in the interval [0,number of lambdas)", fep->init_fep_state));
 
-        sprintf(err_buf, "init-wl-delta (%f) must be greater than or equal to 0", expand->init_wl_delta);
-        CHECK((expand->init_wl_delta < 0));
-        sprintf(err_buf, "wl-ratio (%f) must be between 0 and 1", expand->wl_ratio);
-        CHECK((expand->wl_ratio <= 0) || (expand->wl_ratio >= 1));
-        sprintf(err_buf, "wl-scale (%f) must be between 0 and 1", expand->wl_scale);
-        CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
+        if ((expand->init_wl_delta < 0))
+        warning_error(wi, gmx::formatString("init-wl-delta (%f) must be greater than or equal to 0", expand->init_wl_delta));
+        if ((expand->wl_ratio <= 0) || (expand->wl_ratio >= 1))
+        warning_error(wi, gmx::formatString("wl-ratio (%f) must be between 0 and 1", expand->wl_ratio));
+        if ((expand->wl_scale <= 0) || (expand->wl_scale >= 1))
+        warning_error(wi, gmx::formatString("wl-scale (%f) must be between 0 and 1", expand->wl_scale));
 
         /* if there is no temperature control, we need to specify an MC temperature */
-        sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+        warning_error(wi, gmx::formatString("If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number"));
         if (expand->nstTij > 0)
         {
-            sprintf(err_buf, "nstlog must be non-zero");
-            CHECK(ir->nstlog == 0);
-            sprintf(err_buf, "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
+            warning_error(wi, gmx::formatString("nstlog must be non-zero");
+            if (ir->nstlog == 0);
+            warning_error(wi, gmx::formatString("nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
                     expand->nstTij, ir->nstlog);
-            CHECK((expand->nstTij % ir->nstlog) != 0);
+            if ((expand->nstTij % ir->nstlog) != 0);
         }
     }
 
     /* PBC/WALLS */
-    sprintf(err_buf, "walls only work with pbc=%s", epbc_names[epbcXY]);
-    CHECK(ir->nwall && ir->ePBC != epbcXY);
+    if (ir->nwall && ir->ePBC != epbcXY)
+      warning_error(wi, gmx::formatString("walls only work with pbc=%s", epbc_names[epbcXY]));
 
     /* VACUUM STUFF */
     if (ir->ePBC != epbcXYZ && ir->nwall != 2)
@@ -846,28 +837,27 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         else
         {
-            sprintf(err_buf, "Can not have pressure coupling with pbc=%s",
-                    epbc_names[ir->ePBC]);
-            CHECK(ir->epc != epcNO);
+            if (ir->epc != epcNO)
+                warning_error(wi, gmx::formatString("Can not have pressure coupling with pbc=%s",
+                                                    epbc_names[ir->ePBC]));
         }
-        sprintf(err_buf, "Can not have Ewald with pbc=%s", epbc_names[ir->ePBC]);
-        CHECK(EEL_FULL(ir->coulombtype));
-
-        sprintf(err_buf, "Can not have dispersion correction with pbc=%s",
-                epbc_names[ir->ePBC]);
-        CHECK(ir->eDispCorr != edispcNO);
+        if (EEL_FULL(ir->coulombtype))
+            warning_error(wi, gmx::formatString("Can not have Ewald with pbc=%s", epbc_names[ir->ePBC]));
+        if (ir->eDispCorr != edispcNO)
+            warning_error(wi, gmx::formatString("Can not have dispersion correction with pbc=%s",
+                                                epbc_names[ir->ePBC]));
     }
 
     if (ir->rlist == 0.0)
     {
-        sprintf(err_buf, "can only have neighborlist cut-off zero (=infinite)\n"
-                "with coulombtype = %s or coulombtype = %s\n"
-                "without periodic boundary conditions (pbc = %s) and\n"
-                "rcoulomb and rvdw set to zero",
-                eel_names[eelCUT], eel_names[eelUSER], epbc_names[epbcNONE]);
-        CHECK(((ir->coulombtype != eelCUT) && (ir->coulombtype != eelUSER)) ||
+        if (((ir->coulombtype != eelCUT) && (ir->coulombtype != eelUSER)) ||
               (ir->ePBC     != epbcNONE) ||
-              (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
+              (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0))
+            warning_error(wi, gmx::formatString("can only have neighborlist cut-off zero (=infinite)\n"
+                              "with coulombtype = %s or coulombtype = %s\n"
+                              "without periodic boundary conditions (pbc = %s) and\n"
+                              "rcoulomb and rvdw set to zero",
+                              eel_names[eelCUT], eel_names[eelUSER], epbc_names[epbcNONE]));
 
         if (ir->nstlist > 0)
         {
@@ -896,8 +886,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         if (ir->comm_mode == ecmANGULAR)
         {
-            sprintf(err_buf, "Can not remove the rotation around the center of mass with periodic molecules");
-            CHECK(ir->bPeriodicMols);
+            if (ir->bPeriodicMols)
+                warning_error(wi, "Can not remove the rotation around the center of mass with periodic molecules");
             if (ir->ePBC != epbcNONE)
             {
                 warning(wi, "Removing the rotation around the center of mass in a periodic system, this can lead to artifacts. Only use this on a single (cluster of) molecules. This cluster should not cross periodic boundaries.");
@@ -941,15 +931,15 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->eI == eiVVAK)
     {
-        sprintf(err_buf, "%s implemented primarily for validation, and requires nsttcouple = 1 and nstpcouple = 1.",
-                ei_names[eiVVAK]);
-        CHECK((ir->nsttcouple != 1) || (ir->nstpcouple != 1));
+        if ((ir->nsttcouple != 1) || (ir->nstpcouple != 1))
+            warning_error(wi, gmx::formatString("%s implemented primarily for validation, and requires nsttcouple = 1 and nstpcouple = 1.",
+                    ei_names[eiVVAK]));
     }
 
     if (ETC_ANDERSEN(ir->etc))
     {
-        sprintf(err_buf, "%s temperature control not supported for integrator %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
-        CHECK(!(EI_VV(ir->eI)));
+        warning_error(wi, gmx::formatString("%s temperature control not supported for integrator %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
+        if (!(EI_VV(ir->eI)));
 
         if (ir->nstcomm > 0 && (ir->etc == etcANDERSEN))
         {
@@ -957,8 +947,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_note(wi, warn_buf);
         }
 
-        sprintf(err_buf, "nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are randomized every time step", ir->nstcomm, etcoupl_names[ir->etc]);
-        CHECK(ir->nstcomm > 1 && (ir->etc == etcANDERSEN));
+        if (ir->nstcomm > 1 && (ir->etc == etcANDERSEN))
+            warning_error(wi, gmx::formatString("nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are randomized every time step", ir->nstcomm, etcoupl_names[ir->etc]));
     }
 
     if (ir->etc == etcBERENDSEN)
@@ -988,8 +978,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         dt_pcoupl = ir->nstpcouple*ir->delta_t;
 
-        sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->tau_p);
-        CHECK(ir->tau_p <= 0);
+        warning_error(wi, gmx::formatString("tau-p must be > 0 instead of %g\n", ir->tau_p);
+        if (ir->tau_p <= 0);
 
         if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc) - 10*GMX_REAL_EPS)
         {
@@ -998,9 +988,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning(wi, warn_buf);
         }
 
-        sprintf(err_buf, "compressibility must be > 0 when using pressure"
+        warning_error(wi, gmx::formatString("compressibility must be > 0 when using pressure"
                 " coupling %s\n", EPCOUPLTYPE(ir->epc));
-        CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 ||
+        if (ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 ||
               ir->compress[ZZ][ZZ] < 0 ||
               (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
                ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
@@ -1066,16 +1056,15 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->epsilon_r == 0)
     {
-        sprintf(err_buf,
-                "It is pointless to use long-range or Generalized Born electrostatics with infinite relative permittivity."
-                "Since you are effectively turning of electrostatics, a plain cutoff will be much faster.");
-        CHECK(EEL_FULL(ir->coulombtype) || ir->implicit_solvent == eisGBSA);
+        if (EEL_FULL(ir->coulombtype) || ir->implicit_solvent == eisGBSA)
+            warning_error(wi, "It is pointless to use long-range or Generalized Born electrostatics with infinite relative permittivity."
+                              "Since you are effectively turning of electrostatics, a plain cutoff will be much faster.");
     }
 
     if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
     {
-        sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
-        CHECK(ir->epsilon_r < 0);
+        if (ir->epsilon_r < 0)
+            warning_error(wi, gmx::formatString("epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r));
     }
 
     if (EEL_RF(ir->coulombtype))
@@ -1090,9 +1079,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             ir->epsilon_rf = 0.0;
         }
 
-        sprintf(err_buf, "epsilon-rf must be >= epsilon-r");
-        CHECK((ir->epsilon_rf < ir->epsilon_r && ir->epsilon_rf != 0) ||
-              (ir->epsilon_r == 0));
+        if ((ir->epsilon_rf < ir->epsilon_r && ir->epsilon_rf != 0) || (ir->epsilon_r == 0))
+            warning_error(wi, "epsilon-rf must be >= epsilon-r");
         if (ir->epsilon_rf == ir->epsilon_r)
         {
             sprintf(warn_buf, "Using epsilon-rf = epsilon-r with %s does not make sense",
@@ -1108,33 +1096,30 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir_coulomb_switched(ir))
         {
-            sprintf(err_buf,
-                    "With coulombtype = %s rcoulomb_switch must be < rcoulomb. Or, better: Use the potential modifier options!",
-                    eel_names[ir->coulombtype]);
-            CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
+            if (ir->rcoulomb_switch >= ir->rcoulomb)
+                warning_error(wi, gmx::formatString("With coulombtype = %s rcoulomb_switch must be < rcoulomb. Or, better: Use the potential modifier options!",
+                        eel_names[ir->coulombtype]));
         }
     }
     else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
         if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
         {
-            sprintf(err_buf, "With coulombtype = %s, rcoulomb should be >= rlist unless you use a potential modifier",
-                    eel_names[ir->coulombtype]);
-            CHECK(ir->rlist > ir->rcoulomb);
+            if (ir->rlist > ir->rcoulomb)
+                warning_error(wi, gmx::formatString("With coulombtype = %s, rcoulomb should be >= rlist unless you use a potential modifier",
+                        eel_names[ir->coulombtype]));
         }
     }
 
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
     {
-        sprintf(err_buf,
-                "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
-        CHECK( ir->coulomb_modifier != eintmodNONE);
+        if (ir->coulomb_modifier != eintmodNONE)
+            warning_error(wi, "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
     }
     if (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
-        sprintf(err_buf,
-                "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
-        CHECK( ir->vdw_modifier != eintmodNONE);
+        if (ir->vdw_modifier != eintmodNONE)
+            warning_error(wi, "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
     }
 
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT ||
@@ -1170,20 +1155,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir->coulombtype == eelPMESWITCH || ir->coulombtype == eelPMEUSER ||
             ir->coulombtype == eelPMEUSERSWITCH)
-        {
-            sprintf(err_buf, "With coulombtype = %s, rcoulomb must be <= rlist",
-                    eel_names[ir->coulombtype]);
-            CHECK(ir->rcoulomb > ir->rlist);
+        {      
+            if (ir->rcoulomb > ir->rlist)
+                warning_error(wi, gmx::formatString("With coulombtype = %s, rcoulomb must be <= rlist",
+                                                                             eel_names[ir->coulombtype]));
         }
         else if (ir->cutoff_scheme == ecutsGROUP && ir->coulomb_modifier == eintmodNONE)
         {
             if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
             {
-                sprintf(err_buf,
-                        "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
-                        "For optimal energy conservation,consider using\n"
-                        "a potential modifier.", eel_names[ir->coulombtype]);
-                CHECK(ir->rcoulomb != ir->rlist);
+                if (ir->rcoulomb != ir->rlist)
+                    warning_error(wi, gmx::formatString("With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
+                                                        "For optimal energy conservation,consider using\n"
+                                                        "a potential modifier.", eel_names[ir->coulombtype]));
             }
         }
     }
@@ -1210,8 +1194,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning(wi, warn_buf);
         }
         /* This check avoids extra pbc coding for exclusion corrections */
-        sprintf(err_buf, "wall-ewald-zfac should be >= 2");
-        CHECK(ir->wall_ewald_zfac < 2);
+        if (ir->wall_ewald_zfac < 2)
+            warning_error(wi, "wall-ewald-zfac should be >= 2");
     }
     if ((ir->ewald_geometry == eewg3DC) && (ir->ePBC != epbcXY) &&
         EEL_FULL(ir->coulombtype))
@@ -1238,8 +1222,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir_vdw_switched(ir))
     {
-        sprintf(err_buf, "With switched vdw forces or potentials, rvdw-switch must be < rvdw");
-        CHECK(ir->rvdw_switch >= ir->rvdw);
+        if (ir->rvdw_switch >= ir->rvdw)
+            warning_error(wi, gmx::formatString("With switched vdw forces or potentials, rvdw-switch must be < rvdw"));
 
         if (ir->rvdw_switch < 0.5*ir->rvdw)
         {
@@ -1252,8 +1236,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE)
         {
-            sprintf(err_buf, "With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier", evdw_names[ir->vdwtype]);
-            CHECK(ir->rlist > ir->rvdw);
+            if (ir->rlist > ir->rvdw)
+                warning_error(wi, gmx::formatString("With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier", evdw_names[ir->vdwtype]));
         }
     }
 
@@ -1261,7 +1245,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (!(ir->vdw_modifier == eintmodNONE || ir->vdw_modifier == eintmodPOTSHIFT))
         {
-            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s and %s",
+            warning_error(wi, gmx::formatString("With vdwtype = %s, the only supported modifiers are %s and %s",
                     evdw_names[ir->vdwtype],
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
@@ -1335,24 +1319,21 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->sa_algorithm == esaSTILL)
     {
-        sprintf(err_buf, "Still SA algorithm not available yet, use %s or %s instead\n", esa_names[esaAPPROX], esa_names[esaNO]);
-        CHECK(ir->sa_algorithm == esaSTILL);
+        warning_error(wi, gmx::formatString("Still SA algorithm not available yet, use %s or %s instead\n", esa_names[esaAPPROX], esa_names[esaNO]));
     }
 
     if (ir->implicit_solvent == eisGBSA)
     {
-        sprintf(err_buf, "With GBSA implicit solvent, rgbradii must be equal to rlist.");
-        CHECK(ir->rgbradii != ir->rlist);
+        if (ir->rgbradii != ir->rlist)
+             warning_error(wi, "With GBSA implicit solvent, rgbradii must be equal to rlist.");
 
         if (ir->coulombtype != eelCUT)
         {
-            sprintf(err_buf, "With GBSA, coulombtype must be equal to %s\n", eel_names[eelCUT]);
-            CHECK(ir->coulombtype != eelCUT);
+            warning_error(wi, gmx::formatString("With GBSA, coulombtype must be equal to %s\n", eel_names[eelCUT]));
         }
         if (ir->vdwtype != evdwCUT)
         {
-            sprintf(err_buf, "With GBSA, vdw-type must be equal to %s\n", evdw_names[evdwCUT]);
-            CHECK(ir->vdwtype != evdwCUT);
+            warning_error(wi, gmx::formatString("With GBSA, vdw-type must be equal to %s\n", evdw_names[evdwCUT]));
         }
         if (ir->nstgbradii < 1)
         {
@@ -1381,8 +1362,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         if (ir->sa_surface_tension == 0 && ir->sa_algorithm != esaNO)
         {
-            sprintf(err_buf, "Surface tension set to 0 while SA-calculation requested\n");
-            CHECK(ir->sa_surface_tension == 0 && ir->sa_algorithm != esaNO);
+            warning_error(wi, "Surface tension set to 0 while SA-calculation requested\n");
         }
 
     }
@@ -4162,11 +4142,15 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
         for (i = 0; i < ir->opts.ngtc; i++)
         {
-            sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
-            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
-            sprintf(err_buf, "all tau_t must be positive using Andersen temperature control, tau_t[%d]=%10.6f",
-                    i, ir->opts.tau_t[i]);
-            CHECK(ir->opts.tau_t[i] < 0);
+            if (ir->opts.tau_t[0] != ir->opts.tau_t[i])
+            {
+                warning_error(wi, gmx::formatString("all tau_t must currently be equal using Andersen temperature control, violated for group %d", i));
+            }
+            if (ir->opts.tau_t[i] < 0)
+            {
+                warning_error(wi, gmx::formatString("all tau_t must be positive using Andersen temperature control, tau_t[%d]=%10.6f",
+                                                    i, ir->opts.tau_t[i]));
+            }
         }
 
         if (ir->etc == etcANDERSENMASSIVE && ir->comm_mode != ecmNO)
@@ -4174,8 +4158,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
             for (i = 0; i < ir->opts.ngtc; i++)
             {
                 int nsteps = static_cast<int>(ir->opts.tau_t[i]/ir->delta_t + 0.5);
-                sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
-                CHECK(nsteps % ir->nstcomm != 0);
+                if (nsteps % ir->nstcomm != 0)
+                    warning_error(wi, gmx::formatString("tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps));
             }
         }
     }
@@ -4247,16 +4231,16 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     /* Generalized reaction field */
     if (ir->opts.ngtc == 0)
     {
-        sprintf(err_buf, "No temperature coupling while using coulombtype %s",
-                eel_names[eelGRF]);
-        CHECK(ir->coulombtype == eelGRF);
+        if (ir->coulombtype == eelGRF)
+            warning_error(wi, gmx::formatString("No temperature coupling while using coulombtype %s",
+                    eel_names[eelGRF]));
     }
     else
     {
-        sprintf(err_buf, "When using coulombtype = %s"
-                " ref-t for temperature coupling should be > 0",
-                eel_names[eelGRF]);
-        CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+        if ((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0))
+            warning_error(wi, gmx::formatString("When using coulombtype = %s"
+                    " ref-t for temperature coupling should be > 0",
+                    eel_names[eelGRF]));
     }
 
     bAcc = FALSE;
