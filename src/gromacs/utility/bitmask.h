@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,25 +91,25 @@ gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 }
 
 /*! \brief Test if bit b is set */
-gmx_inline static gmx_bool bitmask_is_set(gmx_bitmask_t m, int b)
+gmx_inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
     return (m & ((gmx_bitmask_t)1 << b)) != 0;
 }
 
 /*! \brief Test if both bitmasks have no common bits enabled */
-gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+gmx_inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     return !(a & b);
 }
 
 /*! \brief Test if both bitmasks are equal */
-gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+gmx_inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     return a == b;
 }
 
 /*! \brief Test if bitmask has no enabled bits */
-gmx_inline static gmx_bool bitmask_is_zero(gmx_bitmask_t m)
+gmx_inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
     return !m;
 }
@@ -146,15 +146,15 @@ gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
     memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
-gmx_inline static gmx_bool bitmask_is_set(gmx_bitmask_t m, int b)
+gmx_inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
     return (m[b/64] & ((gmx_uint64_t)1 << (b%64))) != 0;
 }
 
-gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+gmx_inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = 1;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && !(a[i] & b[i]);
@@ -162,10 +162,10 @@ gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
     return r;
 }
 
-gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+gmx_inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = 1;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (a[i] == b[i]);
@@ -173,10 +173,10 @@ gmx_inline static gmx_bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
     return r;
 }
 
-gmx_inline static gmx_bool bitmask_is_zero(gmx_bitmask_t m)
+gmx_inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
     int      i;
-    gmx_bool r = 1;
+    bool     r = 1;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && !m[i];
