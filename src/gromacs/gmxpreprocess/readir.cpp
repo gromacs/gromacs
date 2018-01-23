@@ -813,7 +813,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
 
         /* if there is no temperature control, we need to specify an MC temperature */
-        sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+        sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temp must be set to a positive number");
+        if ((ir->etc == etcNO) && (expand->elmcmove != elmcmoveNO) && (expand->mc_temp <= 0.0))
+        {
+            warning_error(wi, err_buf);
+        }
         if (expand->nstTij > 0)
         {
             sprintf(err_buf, "nstlog must be non-zero");
