@@ -813,7 +813,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
 
         /* if there is no temperature control, we need to specify an MC temperature */
-        sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+        if (!integratorHasReferenceTemperature(ir) && (expand->elmcmove != elmcmoveNO) && (expand->mc_temp <= 0.0))
+        {
+            sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!='no', mc_temp must be set to a positive number");
+            warning_error(wi, err_buf);
+        }
         if (expand->nstTij > 0)
         {
             sprintf(err_buf, "nstlog must be non-zero");
@@ -3187,7 +3191,7 @@ void do_index(const char* mdparin, const char *ndx,
     int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
     char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
     int           i, j, k, restnm;
-    gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
+    gmx_bool      bExcl, bTable, bAnneal, bRest;
     int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
     char*         endptr;
@@ -3237,9 +3241,9 @@ void do_index(const char* mdparin, const char *ndx,
                   "%d tau-t values", ntcg, nref_t, ntau_t);
     }
 
-    bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI == eiBD || EI_TPI(ir->eI));
+    const bool useReferenceTemperature = integratorHasReferenceTemperature(ir);
     do_numbering(natoms, groups, ntcg, ptr3, grps, gnames, egcTC,
-                 restnm, bSetTCpar ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
+                 restnm, useReferenceTemperature ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
     nr            = groups->grps[egcTC].nr;
     ir->opts.ngtc = nr;
     snew(ir->opts.nrdf, nr);
@@ -3250,7 +3254,7 @@ void do_index(const char* mdparin, const char *ndx,
         fprintf(stderr, "bd-fric=0, so tau-t will be used as the inverse friction constant(s)\n");
     }
 
-    if (bSetTCpar)
+    if (useReferenceTemperature)
     {
         if (nr != nref_t)
         {
