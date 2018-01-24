@@ -46,10 +46,6 @@ clang-3.4 double thread-mpi no-openmp fftpack asan
 # Test newest supported MSVC on Windows
 msvc-2015 openmp release
 
-# Test oldest supported icc on Windows
-# Test newest supported icc on Windows
-icc-16.0 msvc-2015 fftpack
-
 # Test newest cmake at time of release
 # Test MKL
 # Test without any MPI

@@ -37,6 +37,13 @@ clang-3.4 npme=1 nranks=2 mpi no-openmp
 # Test SSE2 SIMD
 gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
 
+# Test oldest supported icc on Windows
+# Test newest supported icc on Windows
+# TODO When merging to release-2018, reconsider which build
+# options might best remain in pre-submit on the msvc config,
+# and which are OK in post-submit
+icc-16.0 msvc-2015 fftpack
+
 # TODO
 # Re-enable Phi build
 # Test without TNG support
