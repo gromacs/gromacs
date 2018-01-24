@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -342,7 +342,7 @@ static void reset_neighbor_lists(t_forcerec *fr)
 
 
 
-static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int gid)
+static inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int gid)
 {
     int    nri = nlist->nri;
 
@@ -387,7 +387,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int 
     }
 }
 
-static gmx_inline void close_i_nblist(t_nblist *nlist)
+static inline void close_i_nblist(t_nblist *nlist)
 {
     int nri = nlist->nri;
     int len;
@@ -417,7 +417,7 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
     }
 }
 
-static gmx_inline void close_nblist(t_nblist *nlist)
+static inline void close_nblist(t_nblist *nlist)
 {
     /* Only close this nblist when it has been initialized.
      * Avoid the creation of i-lists with no j-particles.
@@ -439,7 +439,7 @@ static gmx_inline void close_nblist(t_nblist *nlist)
     }
 }
 
-static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
+static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
 {
     int n, i;
 
@@ -458,7 +458,7 @@ static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnb
 }
 
 
-static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom)
+static inline void add_j_to_nblist(t_nblist *nlist, int j_atom)
 {
     int nrj = nlist->nrj;
 
@@ -479,9 +479,9 @@ static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom)
     nlist->nrj++;
 }
 
-static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
-                                          int j_start, int j_end,
-                                          t_excl *bexcl, gmx_bool i_is_j)
+static inline void add_j_to_nblist_cg(t_nblist *nlist,
+                                      int j_start, int j_end,
+                                      t_excl *bexcl, gmx_bool i_is_j)
 {
     int nrj = nlist->nrj;
     int j;
@@ -1540,9 +1540,9 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
-                                 int ncpddc, int shift_min, int shift_max,
-                                 int *g0, int *g1, real *dcx2)
+static inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
+                             int ncpddc, int shift_min, int shift_max,
+                             int *g0, int *g1, real *dcx2)
 {
     real dcx, tmp;
     int  g_min, g_max, shift_home;

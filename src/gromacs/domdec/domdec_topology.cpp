@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -874,7 +874,7 @@ void dd_make_reverse_top(FILE *fplog,
  * confuses static analysis tools unless we fuse the vsite
  * atom-indexing organization code with the ifunc-adding code, so that
  * they can see that nral is the same value. */
-static gmx_inline void
+static inline void
 add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
                      int nral, gmx_bool bHomeA,
                      int a, int a_gl, int a_mol,
@@ -923,7 +923,7 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
 }
 
 /*! \brief Store a bonded interaction at the end of \p il */
-static gmx_inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 {
     t_iatom *liatoms;
     int      k;
@@ -1302,7 +1302,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
 /*! \brief Check and when available assign bonded interactions for local atom i
  */
-static gmx_inline void
+static inline void
 check_assign_interactions_atom(int i, int i_gl,
                                int mol, int i_mol,
                                const int *index, const int *rtil,

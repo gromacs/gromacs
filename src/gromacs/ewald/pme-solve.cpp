@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,7 +220,7 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_q(int, int, real f, ArrayRef<const SimdReal> d_aligned, ArrayRef<const SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
+inline static void calc_exponentials_q(int, int, real f, ArrayRef<const SimdReal> d_aligned, ArrayRef<const SimdReal> r_aligned, ArrayRef<SimdReal> e_aligned)
 {
     {
         SimdReal              f_simd(f);
@@ -243,7 +243,7 @@ gmx_inline static void calc_exponentials_q(int, int, real f, ArrayRef<const Simd
     }
 }
 #else
-gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<real> d, ArrayRef<real> r, ArrayRef<real> e)
+inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<real> d, ArrayRef<real> r, ArrayRef<real> e)
 {
     GMX_ASSERT(d.size() == r.size(), "d and r must have same size");
     GMX_ASSERT(d.size() == e.size(), "d and e must have same size");
@@ -265,7 +265,7 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, ArrayRef<
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-gmx_inline static void calc_exponentials_lj(int, int, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
+inline static void calc_exponentials_lj(int, int, ArrayRef<SimdReal> r_aligned, ArrayRef<SimdReal> factor_aligned, ArrayRef<SimdReal> d_aligned)
 {
     SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
@@ -289,7 +289,7 @@ gmx_inline static void calc_exponentials_lj(int, int, ArrayRef<SimdReal> r_align
     }
 }
 #else
-gmx_inline static void calc_exponentials_lj(int start, int end, ArrayRef<real> r, ArrayRef<real> tmp2, ArrayRef<real> d)
+inline static void calc_exponentials_lj(int start, int end, ArrayRef<real> r, ArrayRef<real> tmp2, ArrayRef<real> d)
 {
     int  kx;
     real mk;

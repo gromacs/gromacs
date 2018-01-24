@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ void set_pbc_simd(const t_pbc *pbc,
  * without PBC. But on modern processors the overhead of this, often called,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 pbc_correct_dx_simd(SimdReal         *dx,
                     SimdReal         *dy,
                     SimdReal         *dz,
@@ -116,7 +116,7 @@ pbc_correct_dx_simd(SimdReal         *dx,
  * when all atoms are in the unit-cell (aiuc).
  * This is the SIMD equivalent of the scalar version declared in pbc.h.
  */
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 pbc_dx_aiuc(const real       *pbc_simd,
             const SimdReal   *x1,
             const SimdReal   *x2,
