@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -496,7 +496,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *CUDA_FUNC_ARGUMEN
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  True if PME runs on multiple GPUs, false otherwise.
  */
-gmx_inline bool pme_gpu_uses_dd(const PmeGpu *pmeGpu)
+inline bool pme_gpu_uses_dd(const PmeGpu *pmeGpu)
 {
     return !pmeGpu->settings.useDecomposition;
 }
@@ -507,7 +507,7 @@ gmx_inline bool pme_gpu_uses_dd(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  True if the gathering is performed on GPU, false otherwise.
  */
-gmx_inline bool pme_gpu_performs_gather(const PmeGpu *pmeGpu)
+inline bool pme_gpu_performs_gather(const PmeGpu *pmeGpu)
 {
     return pmeGpu->settings.performGPUGather;
 }
@@ -518,7 +518,7 @@ gmx_inline bool pme_gpu_performs_gather(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  True if FFT is performed on GPU, false otherwise.
  */
-gmx_inline bool pme_gpu_performs_FFT(const PmeGpu *pmeGpu)
+inline bool pme_gpu_performs_FFT(const PmeGpu *pmeGpu)
 {
     return pmeGpu->settings.performGPUFFT;
 }
@@ -529,7 +529,7 @@ gmx_inline bool pme_gpu_performs_FFT(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  True if (un-)wrapping is performed on GPU, false otherwise.
  */
-gmx_inline bool pme_gpu_performs_wrapping(const PmeGpu *pmeGpu)
+inline bool pme_gpu_performs_wrapping(const PmeGpu *pmeGpu)
 {
     return pmeGpu->settings.useDecomposition;
 }
@@ -540,7 +540,7 @@ gmx_inline bool pme_gpu_performs_wrapping(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  True if solving is performed on GPU, false otherwise.
  */
-gmx_inline bool pme_gpu_performs_solve(const PmeGpu *pmeGpu)
+inline bool pme_gpu_performs_solve(const PmeGpu *pmeGpu)
 {
     return pmeGpu->settings.performGPUSolve;
 }
@@ -553,7 +553,7 @@ gmx_inline bool pme_gpu_performs_solve(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu             The PME GPU structure.
  * \param[in] testing            Should the testing mode be enabled, or disabled.
  */
-gmx_inline void pme_gpu_set_testing(PmeGpu *pmeGpu, bool testing)
+inline void pme_gpu_set_testing(PmeGpu *pmeGpu, bool testing)
 {
     pmeGpu->settings.copyAllOutputs = testing;
     pmeGpu->settings.transferKind   = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
@@ -565,7 +565,7 @@ gmx_inline void pme_gpu_set_testing(PmeGpu *pmeGpu, bool testing)
  * \param[in] pmeGpu             The PME GPU structure.
  * \returns                      true if testing mode is enabled, false otherwise.
  */
-gmx_inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
+inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
 {
     return pmeGpu->settings.copyAllOutputs;
 }

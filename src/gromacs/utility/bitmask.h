@@ -67,55 +67,55 @@ typedef gmx_uint64_t gmx_bitmask_t; /**< bitmask type */
 #endif
 
 /*! \brief Initialize all bits to 0 */
-gmx_inline static void bitmask_clear(gmx_bitmask_t* m)
+inline static void bitmask_clear(gmx_bitmask_t* m)
 {
     *m = 0;
 }
 
 /*! \brief Set bit at position b to 1. */
-gmx_inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
     *m |= ((gmx_bitmask_t)1 << b);
 }
 
 /*! \brief Initialize all bits: bit b to 1, others to 0 */
-gmx_inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     *m = ((gmx_bitmask_t)1 << b);
 }
 
 /*! \brief Initialize all bits: all bits below b to 1, others to 0 */
-gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
     *m = ((gmx_bitmask_t)1 << b) - 1;
 }
 
 /*! \brief Test if bit b is set */
-gmx_inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
+inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
     return (m & ((gmx_bitmask_t)1 << b)) != 0;
 }
 
 /*! \brief Test if both bitmasks have no common bits enabled */
-gmx_inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     return !(a & b);
 }
 
 /*! \brief Test if both bitmasks are equal */
-gmx_inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     return a == b;
 }
 
 /*! \brief Test if bitmask has no enabled bits */
-gmx_inline static bool bitmask_is_zero(gmx_bitmask_t m)
+inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
     return !m;
 }
 
 /*! \brief Set all bits enabled in either mask and write into a */
-gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
+inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 {
     *a |= b;
 }
@@ -123,35 +123,35 @@ gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 #define BITMASK_ALEN (BITMASK_SIZE/64)
 typedef gmx_uint64_t gmx_bitmask_t[BITMASK_ALEN];
 
-gmx_inline static void bitmask_clear(gmx_bitmask_t* m)
+inline static void bitmask_clear(gmx_bitmask_t* m)
 {
     memset(*m, 0, BITMASK_SIZE/8);
 }
 
-gmx_inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
     (*m)[b/64] |= ((gmx_uint64_t)1 << (b%64));
 }
 
-gmx_inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     bitmask_clear(m);
     (*m)[b/64] = ((gmx_uint64_t)1 << (b%64));
 }
 
-gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
+inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
     memset(*m, 255, b/64*8);
     (*m)[b/64] = ((gmx_uint64_t)1 << (b%64)) - 1;
     memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
 }
 
-gmx_inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
+inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
     return (m[b/64] & ((gmx_uint64_t)1 << (b%64))) != 0;
 }
 
-gmx_inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
     bool     r = 1;
@@ -162,7 +162,7 @@ gmx_inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
     return r;
 }
 
-gmx_inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
+inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
     int      i;
     bool     r = 1;
@@ -173,7 +173,7 @@ gmx_inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
     return r;
 }
 
-gmx_inline static bool bitmask_is_zero(gmx_bitmask_t m)
+inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
     int      i;
     bool     r = 1;
@@ -184,7 +184,7 @@ gmx_inline static bool bitmask_is_zero(gmx_bitmask_t m)
     return r;
 }
 
-gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
+inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 {
     int i;
     for (i = 0; i < BITMASK_ALEN; i++)

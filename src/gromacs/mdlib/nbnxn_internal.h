@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ static const int c_packX8 = 8;
 #define STRIDE_P8         (DIM*c_packX8)
 
 /* Returns the index in a coordinate array corresponding to atom a */
-template<int packSize> static gmx_inline int atom_to_x_index(int a)
+template<int packSize> static inline int atom_to_x_index(int a)
 {
     return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
 }

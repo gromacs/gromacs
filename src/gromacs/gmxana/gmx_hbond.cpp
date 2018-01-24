@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1108,15 +1108,15 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static gmx_inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static gmx_inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
-static gmx_inline int grid_mod(int j, int n)
+static inline int grid_mod(int j, int n)
 {
     return (j+n) % (n);
 }

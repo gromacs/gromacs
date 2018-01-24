@@ -52,6 +52,22 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+/*! \def gmx_inline
+ * \brief
+ * Keyword to use in C code instead of C99 `inline`.
+ *
+ * Some of the C compilers we support do not recognize the C99 keyword
+ * `inline`.  This macro should be used in C code and in shared C/C++ headers
+ * to indicate a function is inlined.
+ * C++ code should use plain `inline`, as that is already in C++98.
+ */
+#if !defined __cplusplus && defined _MSC_VER
+#define gmx_inline __inline
+#else
+/* C++ or C99 */
+#define gmx_inline inline
+#endif
+
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.
  */

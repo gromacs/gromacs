@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -552,7 +552,7 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
 
 
 /* Returns if any atom pair from two clusters is within distance sqrt(rlist2) */
-static gmx_inline gmx_bool
+static inline gmx_bool
 clusterpair_in_range(const nbnxn_list_work_t *work,
                      int si,
                      int csj, int stride, const real *x_j,
@@ -1624,7 +1624,7 @@ setExclusionsForSimpleIentry(const nbnxn_search_t  nbs,
 }
 
 /* Add a new i-entry to the FEP list and copy the i-properties */
-static gmx_inline void fep_list_new_nri_copy(t_nblist *nlist)
+static inline void fep_list_new_nri_copy(t_nblist *nlist)
 {
     /* Add a new i-entry */
     nlist->nri++;
@@ -1836,19 +1836,19 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 }
 
 /* Return the index of atom a within a cluster */
-static gmx_inline int cj_mod_cj4(int cj)
+static inline int cj_mod_cj4(int cj)
 {
     return cj & (c_nbnxnGpuJgroupSize - 1);
 }
 
 /* Convert a j-cluster to a cj4 group */
-static gmx_inline int cj_to_cj4(int cj)
+static inline int cj_to_cj4(int cj)
 {
     return cj/c_nbnxnGpuJgroupSize;
 }
 
 /* Return the index of an j-atom within a warp */
-static gmx_inline int a_mod_wj(int a)
+static inline int a_mod_wj(int a)
 {
     return a & (c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit - 1);
 }
@@ -2428,9 +2428,9 @@ static void clear_pairlist_fep(t_nblist *nl)
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static gmx_inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
-                                           real shx, real shy, real shz,
-                                           nbnxn_bb_t *bb_ci)
+static inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
+                                       real shx, real shy, real shz,
+                                       nbnxn_bb_t *bb_ci)
 {
     bb_ci->lower[BB_X] = bb[ci].lower[BB_X] + shx;
     bb_ci->lower[BB_Y] = bb[ci].lower[BB_Y] + shy;

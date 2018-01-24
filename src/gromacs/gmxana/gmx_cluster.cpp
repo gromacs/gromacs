@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@
 #include "gromacs/utility/stringutil.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
-static gmx_inline
+static inline
 void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     fprintf(fp1, "%s", buf);
@@ -76,14 +76,14 @@ void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 }
 
 /* just print a prepared buffer to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 {
     sprintf(buf, fmt, arg);
@@ -91,7 +91,7 @@ void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 {
     sprintf(buf, fmt, arg);
@@ -99,7 +99,7 @@ void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
 {
     sprintf(buf, fmt, arg);
@@ -107,7 +107,7 @@ void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *ar
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -115,7 +115,7 @@ void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -123,7 +123,7 @@ void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, re
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
+static inline
 void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
