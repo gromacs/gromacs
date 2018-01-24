@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -285,13 +285,9 @@ struct PmeGpuStaging
 struct PmeShared
 {
     /*! \brief Grid count - currently always 1 on GPU */
-    int ngrids;
+    int                    ngrids;
     /*! \brief Grid dimensions - nkx, nky, nkz */
-    int nk[DIM];
-    /*! \brief Padded grid dimensions - pmegrid_nx, pmegrid_ny, pmegrid_nz
-     * TODO: find out if these are really needed for the CPU FFT compatibility.
-     */
-    int                    pmegrid_n[DIM];
+    int                    nk[DIM];
     /*! \brief PME interpolation order */
     int                    pme_order;
     /*! \brief Ewald splitting coefficient for Coulomb */

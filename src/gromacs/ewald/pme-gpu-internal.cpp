@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,9 +201,6 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     pmeGpu->common->nk[XX]        = pme->nkx;
     pmeGpu->common->nk[YY]        = pme->nky;
     pmeGpu->common->nk[ZZ]        = pme->nkz;
-    pmeGpu->common->pmegrid_n[XX] = pme->pmegrid_nx;
-    pmeGpu->common->pmegrid_n[YY] = pme->pmegrid_ny;
-    pmeGpu->common->pmegrid_n[ZZ] = pme->pmegrid_nz;
     pmeGpu->common->pme_order     = pme->pme_order;
     for (int i = 0; i < DIM; i++)
     {
