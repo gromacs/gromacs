@@ -27,6 +27,9 @@ cmake/ThreadMPI.cmake                   !filter
 cmake/*.c                               -filter -gmx-doxygen
 cmake/*.cpp                             -filter -gmx-doxygen
 cmake/*.c.cmakein                       !filter
+cmake/*.h                               !filter
+cmake/*.cu                              !filter
+cmake/*.cuh                             !filter
 cmake/FindCUDA/*.cmake                  !filter
 docs/doxygen/Doxyfile-*.cmakein         !filter
 docs/doxygen/*.cpp                      !filter
