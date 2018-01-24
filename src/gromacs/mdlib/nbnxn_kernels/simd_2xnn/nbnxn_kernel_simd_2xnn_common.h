@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#include "gromacs/utility/basedefinitions.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
 #endif
@@ -74,7 +73,7 @@ using namespace gmx;
 /* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static gmx_inline void
+static inline void
 add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
     for (int jj = 0; jj < (UNROLLJ/2); jj++)
@@ -92,7 +91,7 @@ typedef SimdReal     SimdBitMask;
 #endif
 
 
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gmx_load_simd_2xnn_interactions(int                  excl,
                                 SimdBitMask          filter_S0,
                                 SimdBitMask          filter_S2,

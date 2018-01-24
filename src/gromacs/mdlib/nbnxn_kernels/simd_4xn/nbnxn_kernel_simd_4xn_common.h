@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ using namespace gmx;
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
-static gmx_inline void add_ener_grp(SimdReal e_S, real *v, const int *offset_jj)
+static inline void add_ener_grp(SimdReal e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -97,7 +97,7 @@ typedef SimdInt32    SimdBitMask;
 typedef SimdReal     SimdBitMask;
 #endif
 
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 gmx_load_simd_4xn_interactions(int                               excl,
                                SimdBitMask gmx_unused            filter_S0,
                                SimdBitMask gmx_unused            filter_S1,

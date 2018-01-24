@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ gmx_fjsp_any_lt_v2r8(_fjsp_v2r8 a, _fjsp_v2r8 b)
 }
 
 /* 1.0/sqrt(x) */
-static gmx_inline _fjsp_v2r8
+static inline _fjsp_v2r8
 gmx_fjsp_invsqrt_v2r8(_fjsp_v2r8 x)
 {
     const _fjsp_v2r8 half  = gmx_fjsp_set1_v2r8(0.5);
@@ -131,7 +131,7 @@ gmx_fjsp_invsqrt_v2r8(_fjsp_v2r8 x)
 
 
 /* 1.0/x */
-static gmx_inline _fjsp_v2r8
+static inline _fjsp_v2r8
 gmx_fjsp_inv_v2r8(_fjsp_v2r8 x)
 {
     const _fjsp_v2r8 two  = gmx_fjsp_set1_v2r8(2.0);
@@ -152,7 +152,7 @@ gmx_fjsp_inv_v2r8(_fjsp_v2r8 x)
 }
 
 
-static gmx_inline _fjsp_v2r8
+static inline _fjsp_v2r8
 gmx_fjsp_calc_rsq_v2r8(_fjsp_v2r8 dx, _fjsp_v2r8 dy, _fjsp_v2r8 dz)
 {
     return _fjsp_madd_v2r8(dx, dx, _fjsp_madd_v2r8(dy, dy, _fjsp_mul_v2r8(dz, dz)));
@@ -224,7 +224,7 @@ gmx_fjsp_increment_1real_v2r8(double * gmx_restrict ptrA, _fjsp_v2r8 xmm1)
 
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_2pair_swizzle_v2r8(const double * gmx_restrict p1,
                                  const double * gmx_restrict p2,
                                  _fjsp_v2r8 * gmx_restrict   c6,
@@ -239,7 +239,7 @@ gmx_fjsp_load_2pair_swizzle_v2r8(const double * gmx_restrict p1,
     *c12 = _fjsp_unpackhi_v2r8(t1, t2);
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_1pair_swizzle_v2r8(const double * gmx_restrict p1,
                                  _fjsp_v2r8 * gmx_restrict   c6,
                                  _fjsp_v2r8 * gmx_restrict   c12)
@@ -249,7 +249,7 @@ gmx_fjsp_load_1pair_swizzle_v2r8(const double * gmx_restrict p1,
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
                                              const double * gmx_restrict xyz,
                                              _fjsp_v2r8 * gmx_restrict   x1,
@@ -272,7 +272,7 @@ gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(const double * gmx_restrict xyz_shi
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
                                              const double * gmx_restrict xyz,
                                              _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
@@ -310,7 +310,7 @@ gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(const double * gmx_restrict xyz_shi
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
                                              const double * gmx_restrict xyz,
                                              _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
@@ -355,7 +355,7 @@ gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(const double * gmx_restrict xyz_shi
 
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_1rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
                                       _fjsp_v2r8 * gmx_restrict x, _fjsp_v2r8 * gmx_restrict y, _fjsp_v2r8 * gmx_restrict z)
 {
@@ -364,7 +364,7 @@ gmx_fjsp_load_1rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
     *z            = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1+2);
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
                                       _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
                                       _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
@@ -381,7 +381,7 @@ gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
     *z3            = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1+8);
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
                                       _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
                                       _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
@@ -403,7 +403,7 @@ gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA,
                                       const double * gmx_restrict ptrB,
                                       _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1)
@@ -419,7 +419,7 @@ gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA,
     *z1          = _fjsp_unpacklo_v2r8(t3, t4);
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                       _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
                                       _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
@@ -452,7 +452,7 @@ gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA, const do
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_load_4rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
                                       _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
                                       _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
@@ -807,7 +807,7 @@ gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptrA, double * 
 
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_update_iforce_1atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjsp_v2r8 fiz1,
                                           double * gmx_restrict fptr,
                                           double * gmx_restrict fshiftptr)
@@ -833,7 +833,7 @@ gmx_fjsp_update_iforce_1atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjs
     _fjsp_storel_v2r8( fshiftptr+2, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr+2), fiz1 ));
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_update_iforce_3atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjsp_v2r8 fiz1,
                                           _fjsp_v2r8 fix2, _fjsp_v2r8 fiy2, _fjsp_v2r8 fiz2,
                                           _fjsp_v2r8 fix3, _fjsp_v2r8 fiy3, _fjsp_v2r8 fiz3,
@@ -887,7 +887,7 @@ gmx_fjsp_update_iforce_3atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjs
 }
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_update_iforce_4atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjsp_v2r8 fiz1,
                                           _fjsp_v2r8 fix2, _fjsp_v2r8 fiy2, _fjsp_v2r8 fiz2,
                                           _fjsp_v2r8 fix3, _fjsp_v2r8 fiy3, _fjsp_v2r8 fiz3,
@@ -949,14 +949,14 @@ gmx_fjsp_update_iforce_4atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjs
 
 
 
-static gmx_inline void
+static inline void
 gmx_fjsp_update_1pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA)
 {
     pot1 = _fjsp_add_v2r8(pot1, _fjsp_unpackhi_v2r8(pot1, pot1));
     _fjsp_storel_v2r8(ptrA, _fjsp_add_v2r8(pot1, _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrA)));
 }
 
-static gmx_inline void
+static inline void
 gmx_fjsp_update_2pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA,
                           _fjsp_v2r8 pot2, double * gmx_restrict ptrB)
 {

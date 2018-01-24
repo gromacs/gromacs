@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -227,7 +227,7 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static gmx_inline
+static inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
@@ -235,7 +235,7 @@ void print_minimum(FILE *fp, int num, const t_minimum *min)
             num, min->index, min->ener);
 }
 
-static gmx_inline
+static inline
 void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 {
     print_minimum(fp, num, min);
@@ -243,7 +243,7 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
     mm[num].ener  = min->ener;
 }
 
-static gmx_inline
+static inline
 gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_min,
@@ -256,7 +256,7 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
     /* Note over/underflow within W cannot occur. */
 }
 
-static gmx_inline
+static inline
 gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_max,

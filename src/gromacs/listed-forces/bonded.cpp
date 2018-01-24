@@ -1552,7 +1552,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
  * also calculates the pre-factor required for the dihedral force update.
  * Note that bv and buf should be register aligned.
  */
-static gmx_inline void
+static inline void
 dih_angle_simd(const rvec *x,
                const int *ai, const int *aj, const int *ak, const int *al,
                const real *pbc_simd,
@@ -1774,7 +1774,7 @@ do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
 
 #if GMX_SIMD_HAVE_REAL
 /* As do_dih_fup_noshiftf above, but with SIMD and pre-calculated pre-factors */
-static gmx_inline void gmx_simdcall
+static inline void gmx_simdcall
 do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int *al,
                          SimdReal p, SimdReal q,
                          SimdReal f_i_x,  SimdReal f_i_y,  SimdReal f_i_z,
