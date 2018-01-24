@@ -977,9 +977,10 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atom[j].m             = 0;
             newatoms->atom[j].mB            = 0;
             newatoms->atom[j].atomnumber    = topology_->atoms.atom[i].atomnumber;
-            sprintf(buf, "%s_s", atomtype.c_str());
-            newname[j]                      = strdup(buf);
+            sprintf(buf, "%s_s", topology_->atoms.atom[i].elem);
             newatoms->atomname[j]           = put_symtab(symtab_, buf);
+            sprintf(buf, "%s_s", atomtype.c_str());
+            newname[j]                      = strdup(buf);           
             shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
@@ -1613,7 +1614,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
     else
     {
-        printmol.name = strdup("Onbekend");
+        printmol.name = strdup("Unknown");
     }
     
     printmol.nr = 1;
@@ -1665,7 +1666,7 @@ void MyMol::PrintTopology(FILE                   *fp,
        
     if (efield > 0 && nullptr != cr)
     {    
-        CalcPolarizability(efield, cr, fp);
+        CalcPolarizability(efield, cr, debug);
         add_tensor(&commercials, "Alexandria Polarizability components (A^3)",
                    alpha_calc_);
         

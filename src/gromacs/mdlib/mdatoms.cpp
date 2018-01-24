@@ -86,7 +86,8 @@ static real getAtomRow(int atomnumber)
     }
     else
     {
-        gmx_fatal(FARGS, "Atom number does not exist in periodic table %d.\n", atomnumber);
+        return 0;
+        //gmx_fatal(FARGS, "Atom number does not exist in periodic table %d.\n", atomnumber);
     }
 }
 

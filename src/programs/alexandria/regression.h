@@ -37,6 +37,8 @@
 
 #include <vector>
 
+#include "gromacs/math/vectypes.h"
+
 class MatrixWrapper
 {
     public:
@@ -93,5 +95,7 @@ class MatrixWrapper
         // The internal data structure
         double **a_;
 };
+
+void kabsch_rotation(tensor p, tensor q, tensor rotated_p);
 
 #endif

@@ -32,28 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "regression.h"
 
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-
 #include <vector>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "regression.h"
 
 extern "C"
 {
 void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
              double* b, int* ldb, double* s, double* rcond, int* rank,
              double* work, int* lwork, int* iwork, int* info );
+             
 void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
             double* b, int* ldb, double* work, int* lwork, int* info );
+            
+void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
+             int* lda, double* s, double* u, int* ldu, double* vt, int* ldvt,
+             double* work, int* lwork, int* info );
 }
 
-void multi_regression2(int nrow, double y[], int ncol,
-                       double **a, double x[])
+static void multi_regression2(int nrow, double y[], int ncol,
+                              double **a, double x[])
 {
     /* Query and allocate the optimal workspace */
     int                 lwork = -1;
@@ -111,6 +117,134 @@ void multi_regression2(int nrow, double y[], int ncol,
     {
         x[i] = y[i];
     }
+}
+
+static void tensor2matrix(tensor c, double **a)
+{
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            a[i][j] = c[i][j];
+        }
+    }
+
+}
+
+static void array2tensor(double **a, tensor c)
+{
+    tensor tmp;    
+    tmp[XX][XX] = a[XX][ZZ];
+    tmp[XX][YY] = a[XX][YY];
+    tmp[XX][ZZ] = a[XX][XX];   
+    tmp[YY][XX] = a[ZZ][ZZ];
+    tmp[YY][YY] = a[ZZ][YY];
+    tmp[YY][ZZ] = a[ZZ][XX];    
+    tmp[ZZ][XX] = a[YY][ZZ];
+    tmp[ZZ][YY] = a[YY][YY];
+    tmp[ZZ][ZZ] = a[YY][XX];   
+    transpose(tmp, c);
+}
+
+static void unitTensor(tensor I, int ncol, int nrow)
+{
+    for (int i = 0; i < ncol; i++)
+    {
+        for (int j = 0; j < nrow; j++)
+        {
+            I[i][j]  = 1 ? (ncol == nrow) : 0;
+        }
+    }
+}
+
+static void SVD(int*    m,    int*     n,     double** a,
+                int*    lda,  double** s,     double** u, 
+                int*    ldu,  double** vt,    int*     ldvt)
+{    
+    int       lwork;   
+    int       info; 
+    double    wkopt;    
+    std::vector<double> work;
+    
+    lwork = -1;
+    dgesvd_("All", "All", m, n, a[0], lda, s[0], u[0], ldu, vt[0], ldvt, &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work.resize(lwork);
+    dgesvd_("All", "All", m, n, a[0], lda, s[0], u[0], ldu, vt[0], ldvt, work.data(), &lwork, &info);
+    if (info > 0)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "SVD algorithm failed to converge. Info = %d.", info);
+        GMX_THROW(gmx::InvalidInputError(buf));
+    }   
+}
+
+/*
+ * Kabsch algorithm to find the optimal rotation matrix to 
+ * rotate matrix P (N, 3) onto matrix Q (N, 3). 
+ * https://en.wikipedia.org/wiki/Kabsch_algorithm
+ *
+ * tensor here is 3 by 3 matrix! 
+ */
+void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
+{
+    int       m      = DIM;
+    int       n      = DIM;
+    int       lda    = m;
+    int       ldu    = m;
+    int       ldvt   = n;        
+    double  **A      = alloc_matrix(m, n);;        
+    double  **s      = alloc_matrix(m, n);;
+    double  **u      = alloc_matrix(m, n);;
+    double  **vt     = alloc_matrix(m, n);;   
+    tensor    C, U, Vt, UVt;
+    tensor    Pt, I, UI, R;
+    
+        
+    /*transpose of p (Pt)*/
+    transpose(P, Pt);
+    
+    /*Covariance matrix (A)*/
+    mmul(Pt, Q, C);    
+    tensor2matrix(C, A);
+    
+    /* SVD of the covariance matrix (A)
+     * u : left singular vectors
+     * vt: right singular vectors, trasnposed
+     * s : singular values
+     * A = u*s*vt
+     */
+    SVD(&m, &n, A, &lda, s, u, &ldu, vt, &ldvt);       
+    array2tensor(u, U);
+    array2tensor(vt, Vt);
+    
+    /*Check for correction*/
+    mmul(U, Vt, UVt);
+    int d;
+    if (det(UVt) > 0)
+    {
+        d = 1;
+    }
+    else
+    {
+        d = -1;
+    }
+    
+    /*Unit tensor (I)*/
+    unitTensor(I, m, n);
+    I[ZZ][ZZ] = d;
+    
+    /*Rotation matrix (R)*/
+    mmul(U, I, UI);
+    mmul(UI, Vt, R);
+    
+    /*Rotate*/
+    mmul(R, P, rotated_P);
+  
+    free_matrix(A);
+    free_matrix(s);
+    free_matrix(u);
+    free_matrix(vt);
 }
 
 MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)

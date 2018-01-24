@@ -38,10 +38,7 @@
  * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "mymol_low.h"
-
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
@@ -60,6 +57,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+#include "mymol_low.h"
 #include "poldata.h"
 
 namespace alexandria
