@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -287,6 +287,10 @@ calc_one_bond(int thread,
         efptFTYPE = efptBONDED;
     }
 
+    GMX_ASSERT(fr->efep == efepNO || idef->ilsort == ilsortNO_FE || idef->ilsort == ilsortFE_SORTED, "With free-energy calculations, we should either have no perturbed bondeds or sorted perturbed bondeds");
+    const bool useFreeEnergy     = (idef->ilsort == ilsortFE_SORTED && idef->il[ftype].nr_nonperturbed < idef->il[ftype].nr);
+    const bool computeForcesOnly = (!bCalcEnerVir && !useFreeEnergy);
+
     nat1      = interaction_function[ftype].nratoms + 1;
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
@@ -309,8 +313,7 @@ calc_one_bond(int thread,
                           md, fcd, global_atom_index);
         }
 #if GMX_SIMD_HAVE_REAL
-        else if (ftype == F_ANGLES && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+        else if (ftype == F_ANGLES && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
             angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -321,8 +324,7 @@ calc_one_bond(int thread,
             v = 0;
         }
 
-        else if (ftype == F_UREY_BRADLEY && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+        else if (ftype == F_UREY_BRADLEY && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
             urey_bradley_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -333,8 +335,7 @@ calc_one_bond(int thread,
             v = 0;
         }
 #endif
-        else if (ftype == F_PDIHS &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+        else if (ftype == F_PDIHS && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
 #if GMX_SIMD_HAVE_REAL
@@ -358,8 +359,7 @@ calc_one_bond(int thread,
             v = 0;
         }
 #if GMX_SIMD_HAVE_REAL
-        else if (ftype == F_RBDIHS && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+        else if (ftype == F_RBDIHS && bUseSIMD && computeForcesOnly)
         {
             /* No energies, shift forces, dvdl */
             rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
