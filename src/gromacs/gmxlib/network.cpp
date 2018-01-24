@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -271,7 +271,6 @@ void gmx_init_intranode_counters(t_commrec *cr)
 {
     /* counters for PP+PME and PP-only processes on my physical node */
     int nrank_intranode, rank_intranode;
-    int nrank_pp_intranode, rank_pp_intranode;
     /* thread-MPI is not initialized when not running in parallel */
 #if GMX_MPI && !GMX_THREAD_MPI
     int nrank_world, rank_world;
@@ -297,8 +296,6 @@ void gmx_init_intranode_counters(t_commrec *cr)
 
     nrank_intranode    = 0;
     rank_intranode     = 0;
-    nrank_pp_intranode = 0;
-    rank_pp_intranode  = 0;
     for (i = 0; i < nrank_world; i++)
     {
         if (hash[i] == myhash)
@@ -307,14 +304,6 @@ void gmx_init_intranode_counters(t_commrec *cr)
             if (i < rank_world)
             {
                 rank_intranode++;
-            }
-        }
-        if (hash_pp[i] == myhash)
-        {
-            nrank_pp_intranode++;
-            if (thisRankHasDuty(cr, DUTY_PP) && i < rank_world)
-            {
-                rank_pp_intranode++;
             }
         }
     }
@@ -326,8 +315,6 @@ void gmx_init_intranode_counters(t_commrec *cr)
     /* Serial or thread-MPI code: we run within a single physical node */
     nrank_intranode    = cr->nnodes;
     rank_intranode     = cr->sim_nodeid;
-    nrank_pp_intranode = cr->nnodes - cr->npmenodes;
-    rank_pp_intranode  = cr->nodeid;
 #endif
 
     if (debug)
@@ -341,17 +328,13 @@ void gmx_init_intranode_counters(t_commrec *cr)
         {
             sprintf(sbuf, "%s", thisRankHasDuty(cr, DUTY_PP) ? "PP" : "PME");
         }
-        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
-                "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
+        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d\n",
                 sbuf, cr->sim_nodeid,
-                nrank_intranode, rank_intranode,
-                nrank_pp_intranode, rank_pp_intranode);
+                nrank_intranode, rank_intranode);
     }
 
     cr->nrank_intranode    = nrank_intranode;
     cr->rank_intranode     = rank_intranode;
-    cr->nrank_pp_intranode = nrank_pp_intranode;
-    cr->rank_pp_intranode  = rank_pp_intranode;
 }
 
 
