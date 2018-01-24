@@ -34,17 +34,11 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "gmxpre.h"
-
-#include "gauss_io.h"
-
-#include "config.h"
-
 #include <cstdio>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -60,6 +54,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "config.h"
+#include "gmxpre.h"
+#include "gauss_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "poldata.h"
