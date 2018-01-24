@@ -287,6 +287,9 @@ calc_one_bond(int thread,
         efptFTYPE = efptBONDED;
     }
 
+    GMX_ASSERT(fr->efep == efepNO || idef->ilsort == ilsortNO_FE || idef->ilsort == ilsortFE_SORTED, "With free-energy calculations, we should either have no perturbed bondeds or sorted perturbed bondeds");
+    const bool useFreeEnergy = (idef->ilsort == ilsortFE_SORTED && idef->il[ftype].nr_nonperturbed < idef->il[ftype].nr);
+
     nat1      = interaction_function[ftype].nratoms + 1;
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
@@ -310,7 +313,7 @@ calc_one_bond(int thread,
         }
 #if GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+                 !bCalcEnerVir && !useFreeEnergy)
         {
             /* No energies, shift forces, dvdl */
             angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -322,7 +325,7 @@ calc_one_bond(int thread,
         }
 
         else if (ftype == F_UREY_BRADLEY && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+                 !bCalcEnerVir && !useFreeEnergy)
         {
             /* No energies, shift forces, dvdl */
             urey_bradley_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -334,7 +337,7 @@ calc_one_bond(int thread,
         }
 #endif
         else if (ftype == F_PDIHS &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+                 !bCalcEnerVir && !useFreeEnergy)
         {
             /* No energies, shift forces, dvdl */
 #if GMX_SIMD_HAVE_REAL
@@ -359,7 +362,7 @@ calc_one_bond(int thread,
         }
 #if GMX_SIMD_HAVE_REAL
         else if (ftype == F_RBDIHS && bUseSIMD &&
-                 !bCalcEnerVir && fr->efep == efepNO)
+                 !bCalcEnerVir && !useFreeEnergy)
         {
             /* No energies, shift forces, dvdl */
             rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
