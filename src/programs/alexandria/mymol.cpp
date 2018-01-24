@@ -2000,7 +2000,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
         dip_weight_ = gmx::square(1.0/error);
         
-        if (!bZero && dipQM(qtElec) == 0.0)
+        if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
         {
           imm = immZeroDip;
         }
