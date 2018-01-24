@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
  * \param[in] pme            The PME data structure.
  * \returns                  True if timings are enabled, false otherwise.
  */
-gmx_inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGpu)
+inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGpu)
 {
     return pmeGpu->archSpecific->useTiming;
 }

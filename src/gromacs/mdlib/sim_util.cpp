@@ -673,7 +673,7 @@ gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-static gmx_inline void clear_rvecs_omp(int n, rvec v[])
+static inline void clear_rvecs_omp(int n, rvec v[])
 {
     int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
 

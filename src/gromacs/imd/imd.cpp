@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -756,7 +756,7 @@ static void keep_old_values(t_gmx_IMD_setup *IMDsetup)
 
 
 /*! \brief Returns TRUE if any component of the two rvecs differs. */
-static gmx_inline gmx_bool rvecs_differ(const rvec v1, const rvec v2)
+static inline gmx_bool rvecs_differ(const rvec v1, const rvec v2)
 {
     int i;
 

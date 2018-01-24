@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 #endif
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-static gmx_inline void
+static inline void
 icell_set_x_simd_2xnn(int ci,
                       real shx, real shy, real shz,
                       int gmx_unused stride, const real *x,
@@ -77,7 +77,7 @@ icell_set_x_simd_2xnn(int ci,
  * \param[in]     rbb2                The squared cut-off for putting cluster-pairs in the list based on bounding box distance only
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
-static gmx_inline void
+static inline void
 makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
                         nbnxn_pairlist_t *        nbl,
                         int                       icluster,
