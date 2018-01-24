@@ -311,6 +311,7 @@ MolGen::MolGen()
     mindata_   = 3;
     lot_       = "B3LYP/aug-cc-pVTZ";
     hfac_      = 0;
+    maxESP_    = 100;
     bOptHfac_  = false;
 }
 
@@ -328,6 +329,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs)
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
+        { "-maxpot", FALSE, etINT, {&maxESP_},
+          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },          
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
@@ -587,6 +590,7 @@ void MolGen::Read(FILE            *fp,
                                                 tabfn,
                                                 hwinfo_,
                                                 qcycle_,
+                                                maxESP_,
                                                 qtol_,
                                                 nullptr);
                     (void) mymol.espRms();
@@ -715,6 +719,7 @@ void MolGen::Read(FILE            *fp,
                                             tabfn,
                                             hwinfo_,
                                             qcycle_,
+                                            maxESP_,
                                             qtol_,
                                             nullptr);
                 (void) mymol.espRms();

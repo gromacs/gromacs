@@ -369,6 +369,7 @@ class MyMol
                                   const char                *tabfn,
                                   gmx_hw_info_t             *hwinfo,
                                   int                        qcycle,
+                                  int                        maxESP,
                                   real                       qtol,
                                   const gmx_output_env_t    *oenv);
 

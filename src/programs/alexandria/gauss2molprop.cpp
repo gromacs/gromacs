@@ -108,7 +108,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         { "-ff", FALSE, etSTR, {&forcefield},
           "Force field for basic atom typing available in OpenBabel" },
         { "-maxpot", FALSE, etINT, {&maxpot},
-          "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
+          "Maximum percent of the electrostatic potential points that will be added to the molprop file." }
     };
     
     gmx_output_env_t                *oenv;

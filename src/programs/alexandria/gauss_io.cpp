@@ -65,32 +65,6 @@
 #include "poldata.h"
 #include "stringutil.h"
 
-static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
-                                          std::vector<alexandria::ElectrostaticPotential> &espv,
-                                          int                                              natom,
-                                          int                                              maxPotential)
-{
-    maxPotential = std::max(0, std::min(maxPotential, 100));
-    /*std::sort(espv.begin()+natom, espv.end(),
-              [](const alexandria::ElectrostaticPotential &a,
-                 const alexandria::ElectrostaticPotential &b)
-              {
-                return (a.getV() < b.getV());
-                });*/
-
-    int npot   = espv.size() - natom;
-    int maxpot = (npot * maxPotential)/100;
-    int mod    = npot / maxpot;
-    int i      = 0;
-    for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
-    {
-        if ((i < natom) || (((i-natom) % mod) == 0))
-        {
-            mpt.LastExperiment()->AddPotential(*esi);
-        }
-    }
-}
-
 // Include Open Babel classes for OBMol and OBConversion
 #if HAVE_LIBOPENBABEL2
 // Hack to make this compile!
@@ -116,6 +90,25 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
 #endif
 #undef KOKO
 #endif
+
+static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
+                                          std::vector<alexandria::ElectrostaticPotential> &espv,
+                                          int                                              natom,
+                                          int                                              maxPotential)
+{
+    maxPotential = std::max(0, std::min(maxPotential, 100));
+    int npot   = espv.size() - natom;
+    int maxpot = (npot * maxPotential)/100;
+    int mod    = npot / maxpot;
+    int i      = 0;
+    for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
+    {
+        if ((i < natom) || (((i-natom) % mod) == 0))
+        {
+            mpt.LastExperiment()->AddPotential(*esi);
+        }
+    }
+}
 
 static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mol)
 {
@@ -184,7 +177,6 @@ void ReadGauss(const char          *g09,
     OpenBabel::OBMatrixData   *quadrupole;
     OpenBabel::OBMatrixData   *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
-    //OpenBabel::OBPcharge      *OBpc;
     alexandria::jobType        jobtype = alexandria::string2jobType(jobType);
 
     std::vector<alexandria::ElectrostaticPotential> espv;
@@ -238,8 +230,8 @@ void ReadGauss(const char          *g09,
                 std::string dup = i;
                 std::replace_if(dup.begin(), dup.end(),
                                 [](const char c) {
-                    return c == '_';
-                }, ' ');
+                                    return c == '_';
+                                }, ' ');
                 mpt.AddCategory(dup);
             }
         }
@@ -431,8 +423,8 @@ void ReadGauss(const char          *g09,
                 OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
                 if (nullptr != OBpd)
                 {
-                    charge_model = strdup(OBpd->GetValue().c_str());
-                    OBpc = (OpenBabel::OBPcharge *) mol.GetData(charge_model);
+                    charge_model       = strdup(OBpd->GetValue().c_str());
+                    OBpc               = (OpenBabel::OBPcharge *) mol.GetData(charge_model);
                     auto PartialCharge = OBpc->GetPartialCharge();
                     alexandria::AtomicCharge aq(charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);                
                     ca.AddCharge(aq);
@@ -525,9 +517,9 @@ void ReadGauss(const char          *g09,
     {
         OpenBabel::OBFreeGridPoint        *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
-        std::string xyz_unit(unit2string(eg2cPm));
-        std::string V_unit(unit2string(eg2cHartree_e));
-        int         espid = 0;
+        std::string                        xyz_unit(unit2string(eg2cPm));
+        std::string                        V_unit(unit2string(eg2cHartree_e));
+        int                                espid = 0;
 
         fgpi = esp->BeginPoints();
         for (fgp = esp->BeginPoint(fgpi); (nullptr != fgp); fgp = esp->NextPoint(fgpi))

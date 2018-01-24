@@ -38,11 +38,7 @@
  * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-
-#include "mymol.h"
-
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
@@ -77,6 +73,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
+#include "mymol.h"
 #include "mymol_low.h"
       
 namespace alexandria
@@ -1054,13 +1051,14 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
                                  int                        maxiter,
+                                 int                        maxESP,
                                  real                       tolerance,
                                  const gmx_output_env_t    *oenv)
 {
     std::vector<double> qq;
-    immStatus imm       = immOK;
-    bool      converged = false;
-    int       iter      = 0;
+    immStatus imm         = immOK;
+    bool      converged   = false;
+    int       iter        = 0;
     
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeDistributionModel);
@@ -1094,7 +1092,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             return immOK;
         case eqgESP:
-        {
+        {          
             Qgresp_.setChargeDistributionModel(iChargeDistributionModel);
             Qgresp_.setAtomWeight(watoms);
             Qgresp_.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
@@ -1105,10 +1103,11 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
             if (ci != molProp()->EndExperiment())
             {
+                int mod  = 100/maxESP;                
                 int iesp = 0;
                 for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
                 {
-                    if (Qgresp_.myWeight(iesp) == 0)
+                    if (Qgresp_.myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
                     {
                         continue;
                     }

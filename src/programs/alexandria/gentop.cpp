@@ -471,28 +471,24 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        /*if (nullptr == tabfn && iChargeDistributionModel == eqdAXps)
-        {
-            gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
-                      "model without a potential table. Please supply a table file.",
-                      getEemtypeName(iChargeDistributionModel));
-                      }*/
-        imm = mymol.GenerateCharges(pd,
-                                    mdlog,
-                                    aps,
-                                    iChargeDistributionModel,
-                                    iChargeGenerationAlgorithm,
-                                    watoms,
-                                    hfac,
-                                    lot,
-                                    bQsym,
-                                    symm_string,
-                                    cr,
-                                    tabfn,
-                                    nullptr,
-                                    qcycle,
-                                    qtol,
-                                    oenv);
+        maxpot = 100; //Use 100 percent of the ESP read from Gaussian file. 
+        imm    = mymol.GenerateCharges(pd,
+                                       mdlog,
+                                       aps,
+                                       iChargeDistributionModel,
+                                       iChargeGenerationAlgorithm,
+                                       watoms,
+                                       hfac,
+                                       lot,
+                                       bQsym,
+                                       symm_string,
+                                       cr,
+                                       tabfn,
+                                       nullptr,
+                                       qcycle,
+                                       maxpot,
+                                       qtol,
+                                       oenv);
     }
     if (immOK == imm)
     {

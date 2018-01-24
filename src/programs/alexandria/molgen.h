@@ -170,6 +170,7 @@ class MolGen
     private:
         int                             nmol_support_;
         int                             mindata_;
+        int                             maxESP_;
         real                            J0_min_;
         real                            Chi0_min_;
         real                            zeta_min_;
