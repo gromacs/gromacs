@@ -42,6 +42,7 @@
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -64,15 +65,12 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
         ~MockThreadAffinityAccess();
 
         void setSupported(bool supported) { supported_ = supported; }
-        void setPhysicalNodeId(int nodeId) { physicalNodeId_ = nodeId; }
 
         virtual bool isThreadAffinitySupported() const { return supported_; }
-        virtual int physicalNodeId() const { return physicalNodeId_; }
         MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
     private:
         bool supported_;
-        int  physicalNodeId_;
 };
 
 class ThreadAffinityTestHelper
@@ -97,7 +95,7 @@ class ThreadAffinityTestHelper
 
         void setPhysicalNodeId(int nodeId)
         {
-            affinityAccess_.setPhysicalNodeId(nodeId);
+            physicalNodeId_ = nodeId;
         }
 
         void setLogicalProcessorCount(int logicalProcessorCount);
@@ -171,8 +169,9 @@ class ThreadAffinityTestHelper
             {
                 setLogicalProcessorCount(1);
             }
+            gmx::PhysicalNodeCommunicator comm(MPI_COMM_WORLD, physicalNodeId_);
             int numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank;
-            analyzeThreadsOnThisNode(cr_, &affinityAccess_,
+            analyzeThreadsOnThisNode(comm,
                                      numThreadsOnThisRank,
                                      &numThreadsOnThisNode,
                                      &indexWithinNodeOfFirstThreadOnThisRank);
@@ -187,6 +186,7 @@ class ThreadAffinityTestHelper
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
         LoggerTestHelper                   logHelper_;
+        int                                physicalNodeId_;
 };
 
 } // namespace test

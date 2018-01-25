@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -88,11 +90,11 @@ void callAddGlobalTestEnvironment()
 static gmx_hw_info_t *hardwareInit()
 {
     unique_cptr<t_commrec, done_commrec> commrec(init_commrec());
-    gmx_init_intranode_counters(commrec.get());
-    LoggerBuilder builder;
-    LoggerOwner   logOwner(builder.build());
-    MDLogger      log(logOwner.logger());
-    return gmx_detect_hardware(log, commrec.get());
+    LoggerBuilder            builder;
+    LoggerOwner              logOwner(builder.build());
+    MDLogger                 log(logOwner.logger());
+    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
+    return gmx_detect_hardware(log, commrec.get(), &physicalNodeComm);
 }
 
 void PmeTestEnvironment::SetUp()

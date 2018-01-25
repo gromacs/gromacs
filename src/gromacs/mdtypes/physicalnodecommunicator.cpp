@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,60 +34,82 @@
  */
 #include "gmxpre.h"
 
-#include "threadaffinitytest.h"
+#include "physicalnodecommunicator.h"
 
 #include "config.h"
 
-#include <gmock/gmock.h>
-
-#include "gromacs/hardware/hardwaretopology.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
-namespace test
-{
 
-MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+PhysicalNodeCommunicator::PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId)
 {
-    using ::testing::_;
-    using ::testing::Return;
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
-}
-
-MockThreadAffinityAccess::~MockThreadAffinityAccess()
-{
-}
-
-
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
-{
-    snew(cr_, 1);
-    cr_->nnodes         = gmx_node_num();
-    cr_->nodeid         = gmx_node_rank();
-    cr_->duty           = DUTY_PP;
 #if GMX_MPI
-    cr_->mpi_comm_mysim = MPI_COMM_WORLD;
+    int isInitialized;
+    MPI_Initialized(&isInitialized);
+    if (isInitialized)
+    {
+        int sizeOfWorld;
+        MPI_Comm_size(world, &sizeOfWorld);
+        if (sizeOfWorld > 1)
+        {
+            int rankWithinWorld;
+            MPI_Comm_rank(world, &rankWithinWorld);
+            MPI_Comm_split(world, physicalNodeId, rankWithinWorld, &comm_);
+            MPI_Comm_size(comm_, &size_);
+            MPI_Comm_rank(comm_, &rank_);
+        }
+        else
+        {
+            // Handle this trivial case separately, because thread-MPI
+            // doesn't have a valid communicator when there is only
+            // one rank.
+            comm_ = world;
+            size_ = 1;
+            rank_ = 0;
+        }
+    }
+    else
+    {
+        comm_ = MPI_COMM_NULL;
+        size_ = 1;
+        rank_ = 0;
+    }
+#else
+    // Trivial case when there is no MPI support or not initialized
+    GMX_UNUSED_VALUE(world);
+    GMX_UNUSED_VALUE(physicalNodeId);
+    comm_ = nullptr;
+    size_ = 1;
+    rank_ = 0;
 #endif
-    hwOpt_.thread_affinity     = threadaffAUTO;
-    hwOpt_.totNumThreadsIsAuto = false;
-    physicalNodeId_            = 0;
 }
 
-ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
+PhysicalNodeCommunicator::~PhysicalNodeCommunicator()
 {
-    sfree(cr_);
+#if GMX_LIB_MPI
+    if (comm_ != MPI_COMM_NULL)
+    {
+        MPI_Comm_free(&comm_);
+    }
+#else
+    // Nothing to do
+#endif
 }
 
-void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
+void PhysicalNodeCommunicator::barrier() const
 {
-    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
+#if GMX_MPI
+    if (size_ > 1)
+    {
+        MPI_Barrier(comm_);
+    }
+#else
+    // Nothing to do
+#endif
 }
 
-} // namespace test
-} // namespace gmx
+} // namespace
