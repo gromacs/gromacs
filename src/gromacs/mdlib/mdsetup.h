@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,14 +35,19 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/pbcutil/mshift.h"
-#include "gromacs/topology/topology.h"
+struct gmx_localtop_t;
+struct gmx_mtop_t;
+struct gmx_shellfc_t;
+struct gmx_vsite_t;
+struct t_commrec;
+struct t_forcerec;
+struct t_graph;
+struct t_inputrec;
+
+namespace gmx
+{
+class MDAtoms;
+}
 
 /*! \brief Sets atom data for several MD algorithms
  *
