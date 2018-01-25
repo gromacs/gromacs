@@ -41,6 +41,7 @@ struct gmx_hw_info_t;
 namespace gmx
 {
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
@@ -52,7 +53,8 @@ class MDLogger;
  *
  * May do communication on MPI_COMM_WORLD when compiled with real MPI.
  */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog);
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
+                                   const PhysicalNodeCommunicator &physicalNodeComm);
 
 /*! \brief Free the hwinfo structure */
 void gmx_hardware_info_free();
