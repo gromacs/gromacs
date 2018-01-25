@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@ namespace gmx
 {
 
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 /*! \brief Types of compute tasks that can be run on a GPU.
  *
@@ -102,6 +103,7 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  * \param[in]  hardwareInfo               The detected hardware
  * \param[in]  mdlog                      Logging object to write to.
  * \param[in]  cr                         Communication object.
+ * \param[in]  physicalNodeComm           Communication object for this physical node.
  * \param[in]  gpuTasksOnThisRank         Information about what GPU tasks
  *                                        exist on this rank.
  *
@@ -111,12 +113,13 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  *           InconsistentInputError  If user and/or detected inputs are inconsistent.
  */
 GpuTaskAssignments::value_type
-runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
-                  const std::vector<int>     &userGpuTaskAssignment,
-                  const gmx_hw_info_t        &hardwareInfo,
-                  const MDLogger             &mdlog,
-                  const t_commrec            *cr,
-                  const std::vector<GpuTask> &gpuTasksOnThisRank);
+runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
+                  const std::vector<int>         &userGpuTaskAssignment,
+                  const gmx_hw_info_t            &hardwareInfo,
+                  const MDLogger                 &mdlog,
+                  const t_commrec                *cr,
+                  const PhysicalNodeCommunicator &physicalNodeComm,
+                  const std::vector<GpuTask>     &gpuTasksOnThisRank);
 
 //! Function for whether the task of \c mapping has value \c TaskType.
 template<GpuTask TaskType>

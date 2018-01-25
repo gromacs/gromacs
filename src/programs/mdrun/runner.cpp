@@ -97,6 +97,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -108,6 +109,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -631,6 +633,8 @@ int Mdrunner::mdrunner()
     }
     /* END OF CAUTION: cr is now reliable */
 
+    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid);
+
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
@@ -911,8 +915,6 @@ int Mdrunner::mdrunner()
         gmx_setup_nodecomm(fplog, cr);
     }
 
-    /* Initialize per-physical-node MPI process/thread ID and counters. */
-    gmx_init_intranode_counters(cr);
 #if GMX_MPI
     if (MULTISIM(cr))
     {
@@ -937,10 +939,12 @@ int Mdrunner::mdrunner()
     check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
     /* Check and update the number of OpenMP threads requested */
-    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, pmeRunMode, *mtop);
+    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, physicalNodeComm.size_,
+                                            pmeRunMode, *mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
+                          physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
                           !thisRankHasDuty(cr, DUTY_PP),
@@ -1017,7 +1021,7 @@ int Mdrunner::mdrunner()
     {
         // Produce the task assignment for this rank.
         gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
-                                              mdlog, cr, gpuTasksOnThisRank);
+                                              mdlog, cr, physicalNodeComm, gpuTasksOnThisRank);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1092,9 +1096,9 @@ int Mdrunner::mdrunner()
         numThreadsOnThisRank = nthreads_pme;
     }
 
-    checkHardwareOversubscription(numThreadsOnThisRank,
+    checkHardwareOversubscription(numThreadsOnThisRank, cr->nodeid,
                                   *hwinfo->hardwareTopology,
-                                  cr, mdlog);
+                                  physicalNodeComm, mdlog);
 
     if (hw_opt.thread_affinity != threadaffOFF)
     {
@@ -1106,8 +1110,8 @@ int Mdrunner::mdrunner()
                                       &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
-                                numThreadsOnThisRank, nullptr);
+        gmx_set_thread_affinity(mdlog, cr, physicalNodeComm, &hw_opt,
+                                *hwinfo->hardwareTopology, numThreadsOnThisRank, nullptr);
     }
 
     if (mdrunOptions.timingOptions.resetStep > -1)
@@ -1375,7 +1379,7 @@ int Mdrunner::mdrunner()
     mdModules.reset(nullptr);   // destruct force providers here as they might also use the GPU
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
-    free_gpu_resources(fr, cr);
+    free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
 

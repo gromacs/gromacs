@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,14 +69,8 @@ void gmx_fill_commrec_from_mpi(struct t_commrec *cr);
 void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_init_intranode_counters(struct t_commrec *cr);
-/* Initializes intra-physical-node MPI process/thread counts and ID. */
-
 void gmx_barrier(const struct t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
-
-void gmx_barrier_physical_node(const struct t_commrec *cr);
-/* Wait till all processes in cr->mpi_comm_physical_node have reached the barrier */
 
 void gmx_bcast(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */

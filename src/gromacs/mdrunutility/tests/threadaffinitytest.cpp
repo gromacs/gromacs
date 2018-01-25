@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
@@ -52,7 +53,7 @@ namespace test
 {
 
 MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true), physicalNodeId_(0)
+    : supported_(true)
 {
     using ::testing::_;
     using ::testing::Return;
@@ -70,7 +71,6 @@ ThreadAffinityTestHelper::ThreadAffinityTestHelper()
     snew(cr_, 1);
     cr_->nnodes         = gmx_node_num();
     cr_->nodeid         = gmx_node_rank();
-    cr_->rank_intranode = cr_->nodeid;
     cr_->duty           = DUTY_PP;
 #if GMX_MPI
     cr_->mpi_comm_mysim = MPI_COMM_WORLD;
@@ -87,6 +87,17 @@ ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
 {
     hwTop_.reset(new HardwareTopology(logicalProcessorCount));
+}
+
+void ThreadAffinityTestHelper::setAffinity(int nthread_local)
+{
+    if (hwTop_ == nullptr)
+    {
+        setLogicalProcessorCount(1);
+    }
+    PhysicalNodeCommunicator physicalNodeComm(cr_->mpi_comm_mysim, physicalNodeId_, cr_->nodeid);
+    gmx_set_thread_affinity(logHelper_.logger(), cr_, physicalNodeComm, &hwOpt_, *hwTop_,
+                            nthread_local, &affinityAccess_);
 }
 
 } // namespace test

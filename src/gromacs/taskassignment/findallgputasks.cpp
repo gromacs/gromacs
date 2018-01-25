@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -174,12 +175,13 @@ static std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
  * assignment. Separating this aspect makes it possible to unit test
  * the logic of task assignment. */
 GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask> gpuTasksOnThisRank,
-                          int                     numRanksOnThisNode,
-                          MPI_Comm                communicator)
+findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
+                          const PhysicalNodeCommunicator &physicalNodeComm)
 {
+    int      numRanksOnThisNode = physicalNodeComm.size_;
+    MPI_Comm communicator       = physicalNodeComm.comm_;
     // Find out how many GPU tasks are on each rank on this node.
-    auto numGpuTasksOnEachRankOfThisNode =
+    auto     numGpuTasksOnEachRankOfThisNode =
         allgather(gpuTasksOnThisRank.size(), numRanksOnThisNode, communicator);
 
     /* Collect on each rank of this node a vector describing all

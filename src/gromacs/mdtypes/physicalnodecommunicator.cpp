@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,34 +34,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal
- * \file
- * \brief Declares routine for collecting all GPU tasks found on ranks of a node.
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_taskassignment
- */
-#ifndef GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
-#define GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
+#include "gmxpre.h"
 
-#include "gromacs/taskassignment/taskassignment.h"
-#include "gromacs/utility/arrayref.h"
+#include "physicalnodecommunicator.h"
+
+#include "config.h"
+
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {
 
-class PhysicalNodeCommunicator;
+PhysicalNodeCommunicator::PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId, int rankWithinWorld)
+{
+#if GMX_LIB_MPI
+    MPI_Comm_split(world, physicalNodeId, rankWithinWorld, &comm_);
+    MPI_Comm_size(comm_, &size_);
+    MPI_Comm_rank(comm_, &rank_);
+#elif GMX_THREAD_MPI
+    comm_ = world;
+    MPI_Comm_size(comm_, &size_);
+    MPI_Comm_rank(comm_, &rank_);
+#else
+    // Trivial case when there is no MPI support
+    comm_ = nullptr;
+    size_ = 1;
+    rank_ = 0;
+#endif
+}
 
-/*! \brief Returns container of all tasks on all ranks of this node
- * that are eligible for GPU execution.
- *
- * Perform all necessary communication for preparing for task
- * assignment. Separating this aspect makes it possible to unit test
- * the logic of task assignment. */
-GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
-                          const PhysicalNodeCommunicator &physicalNodeComm);
+PhysicalNodeCommunicator::~PhysicalNodeCommunicator()
+{
+#if GMX_MPI
+    MPI_Comm_free(&comm_);
+#else
+    // Nothing to do
+#endif
+}
+
+void PhysicalNodeCommunicator::barrier() const
+{
+#if GMX_MPI
+    MPI_Barrier(comm_);
+#else
+    // Nothing to do
+#endif
+}
 
 } // namespace
-
-#endif

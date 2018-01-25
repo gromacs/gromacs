@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,33 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal
- * \file
- * \brief Declares routine for collecting all GPU tasks found on ranks of a node.
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_taskassignment
- */
-#ifndef GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
-#define GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
+#ifndef GMX_MDTYPES_PHYSICALNODECOMMUNICATOR_H
+#define GMX_MDTYPES_PHYSICALNODECOMMUNICATOR_H
 
-#include "gromacs/taskassignment/taskassignment.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {
 
-class PhysicalNodeCommunicator;
-
-/*! \brief Returns container of all tasks on all ranks of this node
- * that are eligible for GPU execution.
+/*! \brief Holds a communicator for a physical node of this rank
  *
- * Perform all necessary communication for preparing for task
- * assignment. Separating this aspect makes it possible to unit test
- * the logic of task assignment. */
-GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
-                          const PhysicalNodeCommunicator &physicalNodeComm);
+ * This communicator should only be used for appropriate tasks,
+ * e.g. during initialization and finalization. It can contain ranks
+ * from PP, PME and multiple simulations with multisim, so is not
+ * suited for general-purpose communication. */
+class PhysicalNodeCommunicator
+{
+    public:
+        /*! \brief Constructor.
+         *
+         * Communicates within \c world to make intra-communicator \c
+         * comm_ between all ranks that share \c physicalNodeId. */
+        PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId, int rankWithinWorld);
+        //! Destructor.
+        ~PhysicalNodeCommunicator();
+        //! Communicator for all ranks on this physical node
+        MPI_Comm comm_;
+        //! Number of ranks on this physical node, corresponds to MPI_Comm_size of comm.
+        int size_;
+        //! Rank ID within this physical node, corresponds to MPI_Comm_rank of comm.
+        int rank_;
+        //! Creates a barrier for all ranks on this physical node.
+        void barrier() const;
+};
 
 } // namespace
 
