@@ -500,7 +500,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::FileNameOptionManager      fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
-                isFlagSet(PCA_NOT_READ_NODE) || isFlagSet(PCA_DISABLE_INPUT_FILE_CHECKING));
+                isFlagSet(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
 
         if (isFlagSet(PCA_CAN_SET_DEFFNM))
@@ -610,8 +610,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             setTimeValue(TDELTA, tdelta);
         }
-
-        adapter.copyValues(!isFlagSet(PCA_NOT_READ_NODE));
 
         return TRUE;
     }
