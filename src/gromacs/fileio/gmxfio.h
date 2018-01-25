@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,14 +40,12 @@
 
 #include <stdio.h>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct t_fileio t_fileio;
 
@@ -141,24 +139,19 @@ FILE *gmx_fio_getfp(t_fileio *fio);
  * If you do not have it on some other platform you do not have largefile
  * support at all, and you can define it to int (or better, find out how to
  * enable large files).  */
-typedef struct gmx_file_position_t
+struct gmx_file_position_t
 {
-    char          filename[STRLEN];
-    gmx_off_t     offset;
-    unsigned char chksum[16];
-    int           chksum_size;
-}
-gmx_file_position_t;
+    char          filename[STRLEN] = {0};
+    gmx_off_t     offset           = 0;
+    unsigned char chksum[16]       = {0};
+    int           chksum_size      = 0;
+};
 
-int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
-                                      int                   *nfiles );
-/* Return the name and file pointer positions for all currently open
- * output files. This is used for saving in the checkpoint files, so we
- * can truncate output files upon restart-with-appending.
+/*! \brief Return data about output files.
  *
- * For the first argument you should use a pointer, which will be set to
- * point to a list of open files.
- */
+ * This is used for handling data stored in the checkpoint files, so
+ * we can truncate output files upon restart-with-appending. */
+std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions();
 
 t_fileio *gmx_fio_all_output_fsync(void);
 /* fsync all open output files. This is used for checkpointing, where
@@ -180,9 +173,5 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
 
 int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnly);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
