@@ -266,7 +266,7 @@ class OptionsAdapter
         /*! \brief
          * Copies values back from options to t_pargs/t_filenm.
          */
-        void copyValues(bool bReadNode);
+        void copyValues();
 
     private:
         struct FileNameData
@@ -419,15 +419,11 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
     GMX_THROW(NotImplementedError("Argument type not implemented"));
 }
 
-void OptionsAdapter::copyValues(bool bReadNode)
+void OptionsAdapter::copyValues()
 {
     std::list<FileNameData>::const_iterator file;
     for (file = fileNameOptions_.begin(); file != fileNameOptions_.end(); ++file)
     {
-        if (!bReadNode && (file->fnm->flag & ffREAD))
-        {
-            continue;
-        }
         if (file->optionInfo->isSet())
         {
             file->fnm->flag |= ffSET;
@@ -500,7 +496,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::FileNameOptionManager      fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
-                isFlagSet(PCA_NOT_READ_NODE) || isFlagSet(PCA_DISABLE_INPUT_FILE_CHECKING));
+                isFlagSet(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
 
         if (isFlagSet(PCA_CAN_SET_DEFFNM))
@@ -611,7 +607,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             setTimeValue(TDELTA, tdelta);
         }
 
-        adapter.copyValues(!isFlagSet(PCA_NOT_READ_NODE));
+        adapter.copyValues();
 
         return TRUE;
     }
