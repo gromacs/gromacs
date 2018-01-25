@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,60 +34,29 @@
  */
 #include "gmxpre.h"
 
-#include "threadaffinitytest.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 
-#include "config.h"
+#include <array>
 
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "gromacs/hardware/hardwaretopology.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
+#include "testutils/mpitest.h"
 
 namespace gmx
 {
-namespace test
+namespace
 {
 
-MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+TEST(PhysicalNodeCommunicatorTest, CanConstruct)
 {
-    using ::testing::_;
-    using ::testing::Return;
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
+    PhysicalNodeCommunicator comm(MPI_COMM_WORLD, 0);
 }
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess()
+TEST(PhysicalNodeCommunicatorTest, CanCallBarrier)
 {
+    PhysicalNodeCommunicator comm(MPI_COMM_WORLD, 0);
+    comm.barrier();
 }
 
-
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
-{
-    snew(cr_, 1);
-    cr_->nnodes         = gmx_node_num();
-    cr_->nodeid         = gmx_node_rank();
-    cr_->duty           = DUTY_PP;
-#if GMX_MPI
-    cr_->mpi_comm_mysim = MPI_COMM_WORLD;
-#endif
-    hwOpt_.thread_affinity     = threadaffAUTO;
-    hwOpt_.totNumThreadsIsAuto = false;
-    physicalNodeId_            = 0;
-}
-
-ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
-{
-    sfree(cr_);
-}
-
-void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
-{
-    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
-}
-
-} // namespace test
-} // namespace gmx
+} // namespace
+} // namespace

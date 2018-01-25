@@ -41,8 +41,13 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   logger.cpp
                   mutex.cpp
                   path.cpp
+                  physicalnodecommunicator.cpp
                   stringutil.cpp
                   textreader.cpp
                   textwriter.cpp
                   typetraits.cpp
+                  )
+
+gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 4
+                  physicalnodecommunicator-mpi.cpp
                   )

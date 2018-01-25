@@ -67,6 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -108,14 +109,9 @@ static int                            n_hwinfo = 0;
 static tMPI_Thread_mutex_t            hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 //! Detect GPUs, if that makes sense to attempt.
-static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
+static void gmx_detect_gpus(const gmx::MDLogger            &mdlog,
+                            const PhysicalNodeCommunicator &physicalNodeComm)
 {
-#if GMX_LIB_MPI
-    int              rank_world;
-    MPI_Comm         physicalnode_comm;
-#endif
-    bool             isMasterRankOfNode;
-
     hwinfo_g->gpu_info.bDetectGPUs =
         (bGPUBinary && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
     if (!hwinfo_g->gpu_info.bDetectGPUs)
@@ -123,36 +119,16 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
         return;
     }
 
-    /* Under certain circumstances MPI ranks on the same physical node
-     * can not simultaneously access the same GPU(s). Therefore we run
-     * the detection only on one MPI rank per node and broadcast the info.
-     * Note that with thread-MPI only a single thread runs this code.
-     *
-     * NOTE: We can't broadcast gpu_info with OpenCL as the device and platform
-     * ID stored in the structure are unique for each rank (even if a device
-     * is shared by multiple ranks).
-     *
-     * TODO: We should also do CPU hardware detection only once on each
-     * physical node and broadcast it, instead of do it on every MPI rank.
-     */
+    bool isMasterRankOfPhysicalNode = true;
 #if GMX_LIB_MPI
-    /* A split of MPI_COMM_WORLD over physical nodes is only required here,
-     * so we create and destroy it locally.
-     */
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
-    MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(),
-                   rank_world, &physicalnode_comm);
-    {
-        int rankOnNode = -1;
-        MPI_Comm_rank(physicalnode_comm, &rankOnNode);
-        isMasterRankOfNode = (rankOnNode == 0);
-    }
+    isMasterRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
 #else
     // We choose to run the detection only once with thread-MPI and
     // use reference counting on the results of the detection to
     // enforce it. But we can assert that this is true.
     GMX_RELEASE_ASSERT(n_hwinfo == 0, "Cannot run GPU detection on non-master thread-MPI ranks");
-    isMasterRankOfNode = true;
+    GMX_UNUSED_VALUE(physicalNodeComm);
+    isMasterRankOfPhysicalNode = true;
 #endif
 
     /* The OpenCL support requires us to run detection on all ranks.
@@ -160,7 +136,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
      * and send the information to the other ranks over MPI. */
     bool allRanksMustDetectGpus = (GMX_GPU == GMX_GPU_OPENCL);
     bool gpusCanBeDetected      = false;
-    if (isMasterRankOfNode || allRanksMustDetectGpus)
+    if (isMasterRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;
         gpusCanBeDetected = canDetectGpus(&errorMessage);
@@ -185,7 +161,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
     if (!allRanksMustDetectGpus)
     {
         /* Broadcast the GPU info to the other ranks within this node */
-        MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
+        MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalNodeComm.comm_);
 
         if (hwinfo_g->gpu_info.n_dev > 0)
         {
@@ -193,24 +169,23 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
 
             dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
 
-            if (!isMasterRankOfNode)
+            if (!isMasterRankOfPhysicalNode)
             {
                 hwinfo_g->gpu_info.gpu_dev =
                     (struct gmx_device_info_t *)malloc(dev_size);
             }
             MPI_Bcast(hwinfo_g->gpu_info.gpu_dev, dev_size, MPI_BYTE,
-                      0, physicalnode_comm);
+                      0, physicalNodeComm.comm_);
             MPI_Bcast(&hwinfo_g->gpu_info.n_dev_compatible, 1, MPI_INT,
-                      0, physicalnode_comm);
+                      0, physicalNodeComm.comm_);
         }
     }
-
-    MPI_Comm_free(&physicalnode_comm);
 #endif
 }
 
 //! Reduce the locally collected \p hwinfo_g over MPI ranks
-static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
+static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
+                                     const PhysicalNodeCommunicator &physicalNodeComm)
 {
     const int  ncore        = hwinfo_g->hardwareTopology->numberOfCores();
     /* Zen has family=23, for now we treat future AMD CPUs like Zen */
@@ -218,14 +193,9 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
                                cpuInfo.family() >= 23);
 
 #if GMX_LIB_MPI
-    int       rank_id;
-    int       nrank, rank, nhwthread, ngpu, i;
+    int       nhwthread, ngpu, i;
     int       gpu_hash;
-    int      *buf, *all;
 
-    rank_id   = gmx_physicalnode_id_hash();
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nrank);
     nhwthread = hwinfo_g->nthreads_hw_avail;
     ngpu      = hwinfo_g->gpu_info.n_dev_compatible;
     /* Create a unique hash of the GPU type(s) in this node */
@@ -246,48 +216,20 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
         gpu_hash ^= gmx_string_fullhash_func(stmp, gmx_string_hash_init);
     }
 
-    snew(buf, nrank);
-    snew(all, nrank);
-    buf[rank] = rank_id;
-
-    MPI_Allreduce(buf, all, nrank, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    gmx_bool bFound;
-    int      nnode0, ncore0, nhwthread0, ngpu0, r;
-
-    bFound     = FALSE;
-    ncore0     = 0;
-    nnode0     = 0;
-    nhwthread0 = 0;
-    ngpu0      = 0;
-    for (r = 0; r < nrank; r++)
-    {
-        if (all[r] == rank_id)
-        {
-            if (!bFound && r == rank)
-            {
-                /* We are the first rank in this physical node */
-                nnode0     = 1;
-                ncore0     = ncore;
-                nhwthread0 = nhwthread;
-                ngpu0      = ngpu;
-            }
-            bFound = TRUE;
-        }
-    }
-
-    sfree(buf);
-    sfree(all);
-
     constexpr int                          numElementsCounts =  4;
     std::array<int, numElementsCounts>     countsReduced;
     {
-        std::array<int, numElementsCounts> countsLocal;
-        /* Sum values from only intra-rank 0 so we get the sum over all nodes */
-        countsLocal[0] = nnode0;
-        countsLocal[1] = ncore0;
-        countsLocal[2] = nhwthread0;
-        countsLocal[3] = ngpu0;
+        std::array<int, numElementsCounts> countsLocal = {{0}};
+        // Organize to sum values from only one rank within each node,
+        // so we get the sum over all nodes.
+        bool isMasterRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
+        if (isMasterRankOfPhysicalNode)
+        {
+            countsLocal[0] = 1;
+            countsLocal[1] = ncore;
+            countsLocal[2] = nhwthread;
+            countsLocal[3] = ngpu;
+        }
 
         MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(),
                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -346,6 +288,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
     hwinfo_g->haveAmdZenCpu       = cpuIsAmdZen;
+    GMX_UNUSED_VALUE(physicalNodeComm);
 #endif
 }
 
@@ -474,7 +417,8 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
 #endif
 }
 
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog)
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
+                                   const PhysicalNodeCommunicator &physicalNodeComm)
 {
     int ret;
 
@@ -490,6 +434,8 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog)
     {
         hwinfo_g = compat::make_unique<gmx_hw_info_t>();
 
+        /* TODO: We should also do CPU hardware detection only once on each
+         * physical node and broadcast it, instead of do it on every MPI rank. */
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
 
         hardwareTopologyPrepareDetection();
@@ -509,8 +455,8 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog)
         hwinfo_g->gpu_info.n_dev_compatible = 0;
         hwinfo_g->gpu_info.gpu_dev          = nullptr;
 
-        gmx_detect_gpus(mdlog);
-        gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
+        gmx_detect_gpus(mdlog, physicalNodeComm);
+        gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo, physicalNodeComm);
     }
     /* increase the reference counter */
     n_hwinfo++;

@@ -48,8 +48,10 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 
 namespace gmx
 {
@@ -85,10 +87,11 @@ void callAddGlobalTestEnvironment()
 //! Simple hardware initialization
 static gmx_hw_info_t *hardwareInit()
 {
-    LoggerBuilder builder;
-    LoggerOwner   logOwner(builder.build());
-    MDLogger      log(logOwner.logger());
-    return gmx_detect_hardware(log);
+    LoggerBuilder                        builder;
+    LoggerOwner                          logOwner(builder.build());
+    MDLogger                             log(logOwner.logger());
+    PhysicalNodeCommunicator             physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
+    return gmx_detect_hardware(log, physicalNodeComm);
 }
 
 void PmeTestEnvironment::SetUp()
