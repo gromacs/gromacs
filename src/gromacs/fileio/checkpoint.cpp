@@ -2747,21 +2747,6 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     sfree(bhost);
 }
 
-void
-read_checkpoint_state(const char *fn, int *simulation_part,
-                      gmx_int64_t *step, double *t, t_state *state)
-{
-    t_fileio *fp;
-
-    fp = gmx_fio_open(fn, "r");
-    std::vector<gmx_file_position_t> outputfiles;
-    read_checkpoint_data(fp, simulation_part, step, t, state, &outputfiles);
-    if (gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
-    }
-}
-
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
     t_state                          state;

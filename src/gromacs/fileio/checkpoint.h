@@ -88,14 +88,6 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested);
 
-/* Read the state from checkpoint file.
- * Arrays in state that are NULL are allocated.
- * If bReadRNG=TRUE a RNG state compatible with the current
- * number of nodes was read.
- */
-void read_checkpoint_state(const char *fn, int *simulation_part,
-                           gmx_int64_t *step, double *t, t_state *state);
-
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
 
