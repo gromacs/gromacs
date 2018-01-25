@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
@@ -796,6 +797,7 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
                                              const gmx_hw_info_t &hwinfo,
                                              const t_commrec     *cr,
+                                             int                  numRanksOnThisNode,
                                              PmeRunMode           pmeRunMode,
                                              const gmx_mtop_t    &mtop)
 {
@@ -855,9 +857,8 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
         int numCoresPerRank = hwinfo.ncore_tot/numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold*gmx::square(numCoresPerRank))
         {
-            int numRanksInThisNode = (cr ? cr->nrank_intranode : 1);
             /* Choose one OpenMP thread per physical core */
-            hw_opt->nthreads_omp = std::max(1, hwinfo.hardwareTopology->numberOfCores()/numRanksInThisNode);
+            hw_opt->nthreads_omp = std::max(1, hwinfo.hardwareTopology->numberOfCores()/numRanksOnThisNode);
         }
     }
 
@@ -875,26 +876,26 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t        *hw_opt,
     }
 }
 
-void checkHardwareOversubscription(int                          numThreadsOnThisRank,
-                                   const gmx::HardwareTopology &hwTop,
-                                   const t_commrec             *cr,
-                                   const gmx::MDLogger         &mdlog)
+namespace gmx
 {
-    if (hwTop.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+
+void checkHardwareOversubscription(int                             numThreadsOnThisRank,
+                                   int                             rank,
+                                   const HardwareTopology         &hwTop,
+                                   const PhysicalNodeCommunicator &comm,
+                                   const MDLogger                 &mdlog)
+{
+    if (hwTop.supportLevel() < HardwareTopology::SupportLevel::LogicalProcessorCount)
     {
         /* There is nothing we can check */
         return;
     }
 
-    int numRanksOnThisNode   = 1;
+    int numRanksOnThisNode   = comm.size_;
     int numThreadsOnThisNode = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
-    {
-        /* Count the threads within this physical node */
-        MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);
-        MPI_Allreduce(&numThreadsOnThisRank, &numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, cr->mpi_comm_physicalnode);
-    }
+    /* Count the threads within this physical node */
+    MPI_Allreduce(&numThreadsOnThisRank, &numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, comm.comm_);
 #endif
 
     if (numThreadsOnThisNode > hwTop.machine().logicalProcessorCount)
@@ -902,18 +903,18 @@ void checkHardwareOversubscription(int                          numThreadsOnThis
         std::string mesg = "WARNING: ";
         if (GMX_LIB_MPI)
         {
-            mesg += gmx::formatString("On rank %d: o", cr->sim_nodeid);
+            mesg += formatString("On rank %d: o", rank);
         }
         else
         {
             mesg += "O";
         }
-        mesg     += gmx::formatString("versubscribing the available %d logical CPU cores", hwTop.machine().logicalProcessorCount);
+        mesg     += formatString("versubscribing the available %d logical CPU cores", hwTop.machine().logicalProcessorCount);
         if (GMX_LIB_MPI)
         {
             mesg += " per node";
         }
-        mesg     += gmx::formatString(" with %d ", numThreadsOnThisNode);
+        mesg     += formatString(" with %d ", numThreadsOnThisNode);
         if (numRanksOnThisNode == numThreadsOnThisNode)
         {
             if (GMX_THREAD_MPI)
@@ -938,3 +939,5 @@ void checkHardwareOversubscription(int                          numThreadsOnThis
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(mesg.c_str());
     }
 }
+
+} // namespace
