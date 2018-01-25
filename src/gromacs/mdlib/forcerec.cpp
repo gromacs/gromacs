@@ -84,6 +84,7 @@
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -3120,8 +3121,8 @@ void init_forcerec(FILE                    *fp,
  * \todo Remove physical node barrier from this function after making sure
  * that it's not needed anymore (with a shared GPU run).
  */
-void free_gpu_resources(const t_forcerec        *fr,
-                        const t_commrec         *cr)
+void free_gpu_resources(const t_forcerec                    *fr,
+                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
     bool isPPrankUsingGPU = fr && fr->nbv && fr->nbv->bUseGPU;
 
@@ -3144,8 +3145,8 @@ void free_gpu_resources(const t_forcerec        *fr,
      * Note: it is safe to not call the barrier on the ranks which do not use GPU,
      * but it is easier and more futureproof to call it on the whole node.
      */
-    if (GMX_THREAD_MPI && (PAR(cr) || MULTISIM(cr)))
+    if (GMX_THREAD_MPI)
     {
-        gmx_barrier_physical_node(cr);
+        physicalNodeCommunicator.barrier();
     }
 }
