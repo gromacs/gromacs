@@ -57,13 +57,11 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-void gmx_fill_commrec_from_mpi(t_commrec            *cr,
-                               const gmx_multisim_t *ms)
+void gmx_fill_commrec_from_mpi(t_commrec *cr)
 {
 #if !GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
     GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(ms);
 #else
     if (!gmx_mpi_initialized())
     {
@@ -72,21 +70,9 @@ void gmx_fill_commrec_from_mpi(t_commrec            *cr,
 
     cr->nnodes           = gmx_node_num();
     cr->nodeid           = gmx_node_rank();
-    // TODO This communicator should be always available. Currently we
-    // make it multiple times, and keep it only when relevant. But the
-    // cost of an extra communicator is negligible in single-node
-    // cases (both thread-MPI and real MPI) case, and we need it in
-    // all multi-node MPI cases with more than one PP rank per node,
-    // with and without GPUs. By always having it available, we also
-    // don't need to protect calls to mpi_comm_physicalnode, etc.
-    if (PAR(cr) || isMultiSim(ms))
-    {
-        MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid, &cr->mpi_comm_physicalnode);
-    }
     cr->sim_nodeid       = cr->nodeid;
     cr->mpi_comm_mysim   = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = MPI_COMM_WORLD;
-
 #endif
 }
 
@@ -96,9 +82,8 @@ t_commrec *init_commrec()
 
     snew(cr, 1);
 
-    cr->mpi_comm_physicalnode = MPI_COMM_NULL;
 #if GMX_LIB_MPI
-    gmx_fill_commrec_from_mpi(cr, nullptr);
+    gmx_fill_commrec_from_mpi(cr);
 #else
     cr->mpi_comm_mysim   = MPI_COMM_NULL;
     cr->mpi_comm_mygroup = MPI_COMM_NULL;
@@ -140,12 +125,6 @@ void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 
 void done_commrec(t_commrec *cr)
 {
-#if GMX_MPI
-    if (cr->mpi_comm_physicalnode != MPI_COMM_NULL)
-    {
-        MPI_Comm_free(&cr->mpi_comm_physicalnode);
-    }
-#endif
     if (nullptr != cr->dd)
     {
         // TODO: implement
@@ -155,8 +134,7 @@ void done_commrec(t_commrec *cr)
     sfree(cr);
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
-                                                const gmx_multisim_t *ms)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
 {
 #if GMX_THREAD_MPI
     t_commrec *cr;
@@ -168,7 +146,7 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
     *cr = *cro;
 
     /* and we start setting our own thread-specific values for things */
-    gmx_fill_commrec_from_mpi(cr, ms);
+    gmx_fill_commrec_from_mpi(cr);
 
     // TODO cr->duty should not be initialized here
     cr->duty             = (DUTY_PP | DUTY_PME);
@@ -176,7 +154,6 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
     return cr;
 #else
     GMX_UNUSED_VALUE(cro);
-    GMX_UNUSED_VALUE(ms);
     return nullptr;
 #endif
 }
@@ -203,6 +180,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 #if GMX_MPI
     int n, rank;
 
+    // TODO PhysicalNodeCommunicator could be extended/used to handle
+    // the need for per-node per-group communicators.
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
@@ -269,92 +248,12 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 #endif
 }
 
-void gmx_init_intranode_counters(t_commrec *cr)
-{
-    /* counters for PP+PME and PP-only processes on my physical node */
-    int nrank_intranode, rank_intranode;
-    /* thread-MPI is not initialized when not running in parallel */
-#if GMX_MPI && !GMX_THREAD_MPI
-    int nrank_world, rank_world;
-    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
-
-    MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
-
-    /* Get a (hopefully unique) hash that identifies our physical node */
-    myhash = gmx_physicalnode_id_hash();
-
-    /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(hash,   nrank_world);
-    snew(hash_s, nrank_world);
-    snew(hash_pp,   nrank_world);
-    snew(hash_pp_s, nrank_world);
-
-    hash_s[rank_world]    = myhash;
-    hash_pp_s[rank_world] = thisRankHasDuty(cr, DUTY_PP) ? myhash : -1;
-
-    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    nrank_intranode    = 0;
-    rank_intranode     = 0;
-    for (i = 0; i < nrank_world; i++)
-    {
-        if (hash[i] == myhash)
-        {
-            nrank_intranode++;
-            if (i < rank_world)
-            {
-                rank_intranode++;
-            }
-        }
-    }
-    sfree(hash);
-    sfree(hash_s);
-    sfree(hash_pp);
-    sfree(hash_pp_s);
-#else
-    /* Serial or thread-MPI code: we run within a single physical node */
-    nrank_intranode    = cr->nnodes;
-    rank_intranode     = cr->sim_nodeid;
-#endif
-
-    if (debug)
-    {
-        char sbuf[STRLEN];
-        if (thisRankHasDuty(cr, DUTY_PP) && thisRankHasDuty(cr, DUTY_PME))
-        {
-            sprintf(sbuf, "PP+PME");
-        }
-        else
-        {
-            sprintf(sbuf, "%s", thisRankHasDuty(cr, DUTY_PP) ? "PP" : "PME");
-        }
-        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d\n",
-                sbuf, cr->sim_nodeid,
-                nrank_intranode, rank_intranode);
-    }
-
-    cr->nrank_intranode    = nrank_intranode;
-    cr->rank_intranode     = rank_intranode;
-}
-
-
 void gmx_barrier(const t_commrec gmx_unused *cr)
 {
 #if !GMX_MPI
     gmx_call("gmx_barrier");
 #else
     MPI_Barrier(cr->mpi_comm_mygroup);
-#endif
-}
-
-void gmx_barrier_physical_node(const t_commrec gmx_unused *cr)
-{
-#if !GMX_MPI
-    gmx_call("gmx_barrier_physical_node");
-#else
-    MPI_Barrier(cr->mpi_comm_physicalnode);
 #endif
 }
 

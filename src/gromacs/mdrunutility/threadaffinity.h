@@ -55,12 +55,12 @@ namespace gmx
 
 class HardwareTopology;
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 class IThreadAffinityAccess
 {
     public:
         virtual bool isThreadAffinitySupported() const        = 0;
-        virtual int physicalNodeId() const                    = 0;
         virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
     protected:
@@ -70,24 +70,11 @@ class IThreadAffinityAccess
 } // namespace gmx
 
 /*! \brief Communicates within physical nodes to discover the
- * distribution of threads over ranks.
- *
- * See gmx_set_thread_affinity(), which consumes this output.
- *
- * \param[in]  cr                     Communication handler.
- * \param[in]  ms                     Multi-simulation handler.
- * \param[in]  affinityAccess         Interface for low-level access to affinity details.
- * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
- * \param[out] numThreadsOnThisNode   On exit, the number of threads on all ranks of this node.
- * \param[out] intraNodeThreadOffset  On exit, the index of the first hardware thread of this rank
- *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
- */
-void analyzeThreadsOnThisNode(const t_commrec            *cr,
-                              const gmx_multisim_t       *ms,
-                              gmx::IThreadAffinityAccess *affinityAccess,
-                              int                         numThreadsOnThisRank,
-                              int                        *numThreadsOnThisNode,
-                              int                        *intraNodeThreadOffset);
+ * distribution of threads over ranks. */
+void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeComm,
+                              int                                  numThreadsOnThisRank,
+                              int                                 *numThreadsOnThisNode,
+                              int                                 *intraNodeThreadOffset);
 
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
