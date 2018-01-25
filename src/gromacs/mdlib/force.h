@@ -68,6 +68,7 @@ namespace gmx
 {
 class ForceWithVirial;
 class MDLogger;
+class PhysicalNodeCommunicator;
 }
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
@@ -214,8 +215,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr,
-                        const gmx_multisim_t        *ms);
+void free_gpu_resources(const t_forcerec                    *fr,
+                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
 
 #endif

@@ -5415,8 +5415,10 @@ void dd_setup_dlb_resource_sharing(t_commrec            *cr,
     }
     /* Split the PP communicator over the physical nodes */
     /* TODO: See if we should store this (before), as it's also used for
-     * for the nodecomm summution.
+     * for the nodecomm summation.
      */
+    // TODO PhysicalNodeCommunicator could be extended/used to handle
+    // the need for per-node per-group communicators.
     MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank,
                    &mpi_comm_pp_physicalnode);
     MPI_Comm_split(mpi_comm_pp_physicalnode, gpu_id, dd->rank,
