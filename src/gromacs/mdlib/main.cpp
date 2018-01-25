@@ -242,7 +242,7 @@ void gmx_log_close(FILE *fp)
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
 {
     gmx_multisim_t *ms;
-    int             nnodes, nnodpersim, sim, i;
+    int             nnodes, nnodpersim, sim;
 #if GMX_MPI
     MPI_Group       mpi_group_world;
     int            *rank;
@@ -280,7 +280,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs)
 #if GMX_MPI
     /* Create a communicator for the master nodes */
     snew(rank, ms->nsim);
-    for (i = 0; i < ms->nsim; i++)
+    for (int i = 0; i < ms->nsim; i++)
     {
         rank[i] = i*nnodpersim;
     }

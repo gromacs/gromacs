@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@ struct t_commrec;
 namespace gmx
 {
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
@@ -59,8 +60,9 @@ class MDLogger;
  * available on all nodes.
  * Caller is responsible for calling gmx_hardware_info_free() when finished.
  */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec     *cr);
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
+                                   const t_commrec                *cr,
+                                   const PhysicalNodeCommunicator &physicalNodeComm);
 
 /*! \brief Free the hwinfo structure */
 void gmx_hardware_info_free();

@@ -108,6 +108,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -116,6 +117,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -496,7 +498,16 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    hwinfo = gmx_detect_hardware(mdlog, cr);
+    // TODO The thread-MPI master rank makes a working
+    // PhysicalNodeCommunicator here, but it gets rebuilt by all ranks
+    // after the threads have been launched. This works because no use
+    // is made of that communicator until after the execution paths
+    // have rejoined. But it is likely that we can improve the way
+    // this is expressed, e.g. by expressly running detection only the
+    // master rank for thread-MPI, rather than relying on the mutex
+    // and reference count.
+    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
+    hwinfo = gmx_detect_hardware(mdlog, cr, physicalNodeComm);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -628,8 +639,9 @@ int Mdrunner::mdrunner()
         // TODO Both master and spawned threads call dup_tfn and
         // reinitialize_commrec_for_this_thread. Find a way to express
         // this better.
+        physicalNodeComm = PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
     }
-    /* END OF CAUTION: cr is now reliable */
+    // END OF CAUTION: cr and physicalNodeComm are now reliable
 
     if (PAR(cr))
     {
@@ -911,8 +923,6 @@ int Mdrunner::mdrunner()
         gmx_setup_nodecomm(fplog, cr);
     }
 
-    /* Initialize per-physical-node MPI process/thread ID and counters. */
-    gmx_init_intranode_counters(cr);
 #if GMX_MPI
     if (MULTISIM(cr))
     {
@@ -937,10 +947,12 @@ int Mdrunner::mdrunner()
     check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
     /* Check and update the number of OpenMP threads requested */
-    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, pmeRunMode, *mtop);
+    checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, physicalNodeComm.size_,
+                                            pmeRunMode, *mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
+                          physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
                           !thisRankHasDuty(cr, DUTY_PP),
@@ -1017,7 +1029,7 @@ int Mdrunner::mdrunner()
     {
         // Produce the task assignment for this rank.
         gpuTaskAssignment = runTaskAssignment(gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
-                                              mdlog, cr, gpuTasksOnThisRank);
+                                              mdlog, cr, physicalNodeComm, gpuTasksOnThisRank);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1092,9 +1104,9 @@ int Mdrunner::mdrunner()
         numThreadsOnThisRank = nthreads_pme;
     }
 
-    checkHardwareOversubscription(numThreadsOnThisRank,
+    checkHardwareOversubscription(numThreadsOnThisRank, cr->nodeid,
                                   *hwinfo->hardwareTopology,
-                                  cr, mdlog);
+                                  physicalNodeComm, mdlog);
 
     if (hw_opt.thread_affinity != threadaffOFF)
     {
@@ -1106,7 +1118,7 @@ int Mdrunner::mdrunner()
                                       &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         int numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank;
-        analyzeThreadsOnThisNode(cr, nullptr, numThreadsOnThisRank, &numThreadsOnThisNode,
+        analyzeThreadsOnThisNode(physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode,
                                  &indexWithinNodeOfFirstThreadOnThisRank);
 
         /* Set the CPU affinity */
@@ -1380,7 +1392,7 @@ int Mdrunner::mdrunner()
     mdModules.reset(nullptr);   // destruct force providers here as they might also use the GPU
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
-    free_gpu_resources(fr, cr);
+    free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
 

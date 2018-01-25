@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -72,10 +73,6 @@ class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
         virtual bool isThreadAffinitySupported() const
         {
             return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
-        }
-        virtual int physicalNodeId() const
-        {
-            return gmx_physicalnode_id_hash();
         }
         virtual bool setCurrentThreadAffinityToCore(int core)
         {
@@ -354,37 +351,26 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
     return allAffinitiesSet;
 }
 
-void analyzeThreadsOnThisNode(const t_commrec            *cr,
-                              gmx::IThreadAffinityAccess *affinityAccess,
-                              int                         numThreadsOnThisRank,
-                              int                        *numThreadsOnThisNode,
-                              int                        *indexWithinNodeOfFirstThreadOnThisRank)
+void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeComm,
+                              int                                  numThreadsOnThisRank,
+                              int                                 *numThreadsOnThisNode,
+                              int                                 *indexWithinNodeOfFirstThreadOnThisRank)
 {
     *indexWithinNodeOfFirstThreadOnThisRank = 0;
     *numThreadsOnThisNode                   = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (physicalNodeComm.size_ > 1)
     {
-        if (affinityAccess == nullptr)
-        {
-            affinityAccess = &g_defaultAffinityAccess;
-        }
-
         /* We need to determine a scan of the thread counts in this
-         * compute node.
-         */
-        MPI_Comm comm_intra;
-
-        MPI_Comm_split(MPI_COMM_WORLD,
-                       affinityAccess->physicalNodeId(), cr->rank_intranode,
-                       &comm_intra);
-        MPI_Scan(&numThreadsOnThisRank, indexWithinNodeOfFirstThreadOnThisRank, 1, MPI_INT, MPI_SUM, comm_intra);
+         * compute node. */
+        MPI_Scan(&numThreadsOnThisRank, indexWithinNodeOfFirstThreadOnThisRank, 1, MPI_INT, MPI_SUM, physicalNodeComm.comm_);
         /* MPI_Scan is inclusive, but here we need exclusive */
         *indexWithinNodeOfFirstThreadOnThisRank -= numThreadsOnThisRank;
         /* Get the total number of threads on this physical node */
-        MPI_Allreduce(&numThreadsOnThisRank, numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, comm_intra);
-        MPI_Comm_free(&comm_intra);
+        MPI_Allreduce(&numThreadsOnThisRank, numThreadsOnThisNode, 1, MPI_INT, MPI_SUM, physicalNodeComm.comm_);
     }
+#else
+    GMX_UNUSED_VALUE(physicalNodeComm);
 #endif
 
 }

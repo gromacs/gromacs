@@ -54,12 +54,12 @@ namespace gmx
 
 class HardwareTopology;
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 class IThreadAffinityAccess
 {
     public:
         virtual bool isThreadAffinitySupported() const        = 0;
-        virtual int physicalNodeId() const                    = 0;
         virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
     protected:
@@ -70,11 +70,10 @@ class IThreadAffinityAccess
 
 /*! \brief Communicates within physical nodes to discover the
  * distribution of threads over ranks. */
-void analyzeThreadsOnThisNode(const t_commrec            *cr,
-                              gmx::IThreadAffinityAccess *affinityAccess,
-                              int                         numThreadsOnThisRank,
-                              int                        *numThreadsOnThisNode,
-                              int                        *indexWithinNodeOfFirstThreadOnThisRank);
+void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeComm,
+                              int                                  numThreadsOnThisRank,
+                              int                                 *numThreadsOnThisNode,
+                              int                                 *indexWithinNodeOfFirstThreadOnThisRank);
 
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.

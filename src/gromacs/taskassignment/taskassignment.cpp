@@ -65,6 +65,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -182,18 +183,18 @@ size_t countGpuTasksOnThisNode(const GpuTasksOnRanks &gpuTasksOnRanksOfThisNode)
 }   // namespace
 
 GpuTaskAssignments::value_type
-runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
-                  const std::vector<int>     &userGpuTaskAssignment,
-                  const gmx_hw_info_t        &hardwareInfo,
-                  const MDLogger             &mdlog,
-                  const t_commrec            *cr,
-                  const std::vector<GpuTask> &gpuTasksOnThisRank)
+runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
+                  const std::vector<int>         &userGpuTaskAssignment,
+                  const gmx_hw_info_t            &hardwareInfo,
+                  const MDLogger                 &mdlog,
+                  const t_commrec                *cr,
+                  const PhysicalNodeCommunicator &physicalNodeComm,
+                  const std::vector<GpuTask>     &gpuTasksOnThisRank)
 {
     /* Communicate among ranks on this node to find each task that can
      * be executed on a GPU, on each rank. */
-    auto gpuTasksOnRanksOfThisNode = findAllGpuTasksOnThisNode(gpuTasksOnThisRank,
-                                                               cr->nrank_intranode,
-                                                               cr->mpi_comm_physicalnode);
+    auto               gpuTasksOnRanksOfThisNode = findAllGpuTasksOnThisNode(gpuTasksOnThisRank,
+                                                                             physicalNodeComm);
     auto               numGpuTasksOnThisNode = countGpuTasksOnThisNode(gpuTasksOnRanksOfThisNode);
 
     GpuTaskAssignments taskAssignmentOnRanksOfThisNode;
@@ -222,7 +223,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
             ArrayRef<const int> compatibleGpusToUse = gpuIdsToUse;
 
             // enforce the single device/rank restriction
-            if (cr->nrank_intranode == 1 && !compatibleGpusToUse.empty())
+            if (physicalNodeComm.size_ == 1 && !compatibleGpusToUse.empty())
             {
                 compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
             }
@@ -283,7 +284,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
         // GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR), but it is unclear
         // how we should involve MPI in the implementation of error
         // handling.
-        if (cr->rank_intranode == 0)
+        if (physicalNodeComm.rank_ == 0)
         {
             printFatalErrorMessage(stderr, ex);
         }
@@ -305,7 +306,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
     }
 
     reportGpuUsage(mdlog, !userGpuTaskAssignment.empty(), taskAssignmentOnRanksOfThisNode,
-                   numGpuTasksOnThisNode, cr->nrank_intranode, cr->nnodes > 1);
+                   numGpuTasksOnThisNode, physicalNodeComm.size_, cr->nnodes > 1);
 
     // If the user chose a task assignment, give them some hints where appropriate.
     if (!userGpuTaskAssignment.empty())
@@ -315,7 +316,7 @@ runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
                             taskAssignmentOnRanksOfThisNode);
     }
 
-    return taskAssignmentOnRanksOfThisNode[cr->rank_intranode];
+    return taskAssignmentOnRanksOfThisNode[physicalNodeComm.rank_];
 
     // TODO There is no check that mdrun -nb gpu or -pme gpu or
     // -gpu_id is actually being implemented such that nonbonded tasks
