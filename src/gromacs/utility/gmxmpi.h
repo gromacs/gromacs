@@ -82,9 +82,9 @@ typedef void* MPI_Comm;
 typedef void* MPI_Request;
 typedef void* MPI_Status;
 typedef void* MPI_Group;
-#define MPI_COMM_NULL NULL
-#define MPI_GROUP_NULL NULL
-#define MPI_COMM_WORLD NULL
+#define MPI_COMM_NULL  nullptr
+#define MPI_GROUP_NULL nullptr
+#define MPI_COMM_WORLD nullptr
 #endif
 #endif
 //! \endcond

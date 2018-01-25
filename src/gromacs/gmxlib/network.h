@@ -56,8 +56,7 @@ struct t_commrec *init_commrec(void);
 void done_commrec(t_commrec *cr);
 /* Free memory associated with the commrec. */
 
-struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro,
-                                                       const gmx_multisim_t *ms);
+struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
 
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
@@ -65,21 +64,14 @@ struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec      *cro
    thread-local versions (a small memory leak results because we don't
    deallocate the old shared version).  */
 
-void gmx_fill_commrec_from_mpi(t_commrec            *cr,
-                               const gmx_multisim_t *ms);
+void gmx_fill_commrec_from_mpi(t_commrec            *cr);
 /* Continues t_commrec construction */
 
 void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_init_intranode_counters(struct t_commrec *cr);
-/* Initializes intra-physical-node MPI process/thread counts and ID. */
-
 void gmx_barrier(const struct t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
-
-void gmx_barrier_physical_node(const struct t_commrec *cr);
-/* Wait till all processes in cr->mpi_comm_physical_node have reached the barrier */
 
 void gmx_bcast(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
