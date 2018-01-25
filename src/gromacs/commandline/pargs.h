@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -232,8 +232,6 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa);
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
-/** Is this node not reading: for parallel all nodes but the master */
-#define PCA_NOT_READ_NODE  (1<<16)
 /** Don't do any special processing for ffREAD files */
 #define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
 

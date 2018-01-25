@@ -536,44 +536,6 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     done_filenms(nfile(), fnm);
 }
 
-/********************************************************************
- * Tests for general behavior
- */
-
-TEST_F(ParseCommonArgsTest, HandlesNonReadNode)
-{
-    t_filenm          fnm[] = {
-        { efTPS, "-s",  nullptr,  ffREAD },
-        { efTRX, "-f",  nullptr,  ffREAD },
-        { efTRX, "-f2", nullptr,  ffREAD }
-    };
-    const char *const cmdline[] = {
-        "test", "-f", "-f2", "other"
-    };
-    parseFromArray(cmdline, PCA_NOT_READ_NODE, fnm, gmx::EmptyArrayRef());
-    EXPECT_EQ(nullptr, fnm[0].fns);
-    EXPECT_EQ(nullptr, fnm[1].fns);
-    EXPECT_EQ(nullptr, fnm[2].fns);
-    done_filenms(nfile(), fnm);
-}
-
-TEST_F(ParseCommonArgsTest, HandlesNonReadNodeWithDefaultFileName)
-{
-    t_filenm          fnm[] = {
-        { efTPS, "-s",  nullptr,  ffREAD },
-        { efTRX, "-f",  nullptr,  ffREAD },
-        { efTRX, "-f2", nullptr,  ffREAD }
-    };
-    const char *const cmdline[] = {
-        "test", "-deffnm", "def", "-f", "-f2", "other"
-    };
-    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM | PCA_NOT_READ_NODE, fnm, gmx::EmptyArrayRef());
-    EXPECT_EQ(nullptr, fnm[0].fns);
-    EXPECT_EQ(nullptr, fnm[1].fns);
-    EXPECT_EQ(nullptr, fnm[2].fns);
-    done_filenms(nfile(), fnm);
-}
-
 // This is needed e.g. for tune_pme, which passes unknown arguments on
 // to child mdrun processes that it spawns.
 TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
