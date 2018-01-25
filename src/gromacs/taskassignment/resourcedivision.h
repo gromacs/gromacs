@@ -62,6 +62,7 @@ namespace gmx
 {
 class HardwareTopology;
 class MDLogger;
+class PhysicalNodeCommunicator;
 }
 
 /*! \brief Return the number of threads to use for thread-MPI based on how many
@@ -113,15 +114,21 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
                                              const gmx_hw_info_t  &hwinfo,
                                              const t_commrec      *cr,
                                              const gmx_multisim_t *ms,
+                                             int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
                                              const gmx_mtop_t     &mtop);
 
+namespace gmx
+{
+
 /*! \brief Warns for oversubscribing the hardware threads, when that is the case
  */
-void checkHardwareOversubscription(int                          numThreadsOnThisRank,
-                                   const gmx::HardwareTopology &hwTop,
-                                   const t_commrec             *cr,
-                                   const gmx_multisim_t        *ms,
-                                   const gmx::MDLogger         &mdlog);
+void checkHardwareOversubscription(int                             numThreadsOnThisRank,
+                                   int                             rank,
+                                   const HardwareTopology         &hwTop,
+                                   const PhysicalNodeCommunicator &comm,
+                                   const MDLogger                 &mdlog);
+
+} // namespace
 
 #endif

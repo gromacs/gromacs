@@ -107,13 +107,6 @@ struct t_commrec {
     MPI_Comm mpi_comm_mygroup;         /* subset of mpi_comm_mysim including only
                                           the ranks in the same group (PP or PME) */
 
-    /* MPI ranks and a communicator within a physical node for hardware access */
-    MPI_Comm       mpi_comm_physicalnode; /* communicator for all ranks of the physical node
-                                           * NOTE: this communicator should only be used during initialization and finalization, as it can contain ranks from PP, PME and multiple simulations with multisim
-                                           */
-    int            nrank_intranode;       /* nr of ranks on this physical node */
-    int            rank_intranode;        /* our rank on this physical node */
-
     gmx_nodecomm_t nc;
 
     /* For domain decomposition */

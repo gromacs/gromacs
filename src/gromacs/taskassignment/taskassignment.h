@@ -60,6 +60,7 @@ namespace gmx
 {
 
 class MDLogger;
+class PhysicalNodeCommunicator;
 
 /*! \brief Types of compute tasks that can be run on a GPU.
  *
@@ -103,7 +104,8 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  * \param[in]  hardwareInfo               The detected hardware
  * \param[in]  mdlog                      Logging object to write to.
  * \param[in]  cr                         Communication object.
- * \param[in]  ms                         Handles multi-simulations.
+ * \param[in]  ms                         Multi-simulation handler.
+ * \param[in]  physicalNodeComm           Communication object for this physical node.
  * \param[in]  gpuTasksOnThisRank         Information about what GPU tasks
  *                                        exist on this rank.
  *
@@ -113,13 +115,14 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  *           InconsistentInputError  If user and/or detected inputs are inconsistent.
  */
 GpuTaskAssignments::value_type
-runTaskAssignment(const std::vector<int>     &gpuIdsToUse,
-                  const std::vector<int>     &userGpuTaskAssignment,
-                  const gmx_hw_info_t        &hardwareInfo,
-                  const MDLogger             &mdlog,
-                  const t_commrec            *cr,
-                  const gmx_multisim_t       *ms,
-                  const std::vector<GpuTask> &gpuTasksOnThisRank);
+runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
+                  const std::vector<int>         &userGpuTaskAssignment,
+                  const gmx_hw_info_t            &hardwareInfo,
+                  const MDLogger                 &mdlog,
+                  const t_commrec                *cr,
+                  const gmx_multisim_t           *ms,
+                  const PhysicalNodeCommunicator &physicalNodeComm,
+                  const std::vector<GpuTask>     &gpuTasksOnThisRank);
 
 //! Function for whether the task of \c mapping has value \c TaskType.
 template<GpuTask TaskType>
