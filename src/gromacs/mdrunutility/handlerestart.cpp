@@ -108,9 +108,6 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                      bool *bDoAppendFiles)
 {
     t_fileio            *fp;
-    int                  nfiles;
-    gmx_file_position_t *outputfiles;
-    int                  nexist, f;
     char                *fn, suf_up[STRLEN];
 
     *bDoAppendFiles = FALSE;
@@ -126,22 +123,22 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         }
         else
         {
+            std::vector<gmx_file_position_t> outputfiles;
             read_checkpoint_simulation_part_and_filenames(fp,
                                                           simulation_part,
-                                                          &nfiles,
                                                           &outputfiles);
 
             if (bTryToAppendFiles)
             {
-                nexist = 0;
-                for (f = 0; f < nfiles; f++)
+                std::size_t nexist = 0;
+                for (const auto &outputfile : outputfiles)
                 {
-                    if (exist_output_file(outputfiles[f].filename, nfile, fnm))
+                    if (exist_output_file(outputfile.filename, nfile, fnm))
                     {
                         nexist++;
                     }
                 }
-                if (nexist == nfiles)
+                if (nexist == outputfiles.size())
                 {
                     *bDoAppendFiles = bTryToAppendFiles;
                 }
@@ -157,27 +154,27 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                             "are not present or not named as the output files by the current program:\n",
                             filename);
                     fprintf(stderr, "Expect output files present:\n");
-                    for (f = 0; f < nfiles; f++)
+                    for (const auto &outputfile : outputfiles)
                     {
-                        if (exist_output_file(outputfiles[f].filename,
+                        if (exist_output_file(outputfile.filename,
                                               nfile, fnm))
                         {
-                            fprintf(stderr, "  %s\n", outputfiles[f].filename);
+                            fprintf(stderr, "  %s\n", outputfile.filename);
                         }
                     }
                     fprintf(stderr, "\n");
                     fprintf(stderr, "Expected output files not present or named differently:\n");
-                    for (f = 0; f < nfiles; f++)
+                    for (const auto &outputfile : outputfiles)
                     {
-                        if (!exist_output_file(outputfiles[f].filename,
+                        if (!exist_output_file(outputfile.filename,
                                                nfile, fnm))
                         {
-                            fprintf(stderr, "  %s\n", outputfiles[f].filename);
+                            fprintf(stderr, "  %s\n", outputfile.filename);
                         }
                     }
 
                     gmx_fatal(FARGS,
-                              "File appending requested, but %d of the %d output files are not present or are named differently. "
+                              "File appending requested, but %zu of the %zu output files are not present or are named differently. "
                               "For safety reasons, GROMACS-2016 and later only allows file appending to be used when all files "
                               "have the same names as they had in the original run. "
                               "Checkpointing is merely intended for plain continuation of runs. "
@@ -188,13 +185,13 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                               "If the files are not available, you "
                               "can add the -noappend flag to mdrun and write separate new parts. "
                               "For mere concatenation of files, you should use the gmx trjcat tool instead.",
-                              nfiles-nexist, nfiles);
+                              outputfiles.size()-nexist, outputfiles.size());
                 }
             }
 
             if (*bDoAppendFiles)
             {
-                if (nfiles == 0)
+                if (outputfiles.empty())
                 {
                     gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
                 }
@@ -212,8 +209,6 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 *bAddPart = (strstr(fn, part_suffix) != nullptr ||
                              strstr(fn, suf_up) != nullptr);
             }
-
-            sfree(outputfiles);
         }
     }
     if (PAR(cr))

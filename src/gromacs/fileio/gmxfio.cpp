@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -574,18 +574,10 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     return 0;
 }
 
-int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
-                                      int                  *p_nfiles)
+std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
 {
-    int                   nfiles, nalloc;
-    gmx_file_position_t * outputfiles;
-    t_fileio             *cur;
-
-    nfiles = 0;
-
-    /* pre-allocate 100 files */
-    nalloc = 100;
-    snew(outputfiles, nalloc);
+    std::vector<gmx_file_position_t> outputfiles;
+    t_fileio                        *cur;
 
     Lock openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
@@ -595,32 +587,24 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
            we call this routine... */
         if (!cur->bRead && cur->iFTP != efCPT)
         {
-            /* This is an output file currently open for writing, add it */
-            if (nfiles == nalloc)
-            {
-                nalloc += 100;
-                srenew(outputfiles, nalloc);
-            }
+            outputfiles.push_back(gmx_file_position_t {});
 
-            std::strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
+            std::strncpy(outputfiles.back().filename, cur->fn, STRLEN - 1);
 
             /* Get the file position */
-            gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
+            gmx_fio_int_get_file_position(cur, &outputfiles.back().offset);
 #ifndef GMX_FAHCORE
-            outputfiles[nfiles].chksum_size
+            outputfiles.back().chksum_size
                 = gmx_fio_int_get_file_md5(cur,
-                                           outputfiles[nfiles].offset,
-                                           outputfiles[nfiles].chksum);
+                                           outputfiles.back().offset,
+                                           outputfiles.back().chksum);
 #endif
-            nfiles++;
         }
 
         cur = gmx_fio_get_next(cur);
     }
-    *p_nfiles      = nfiles;
-    *p_outputfiles = outputfiles;
 
-    return 0;
+    return outputfiles;
 }
 
 

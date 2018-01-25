@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1672,35 +1672,34 @@ static int do_cpt_awh(XDR *xd, gmx_bool bRead,
 }
 
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
-                        gmx_file_position_t **p_outputfiles, int *nfiles,
+                        std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
 {
-    int                  i;
     gmx_off_t            offset;
     gmx_off_t            mask = 0xFFFFFFFFL;
     int                  offset_high, offset_low;
     char                *buf;
-    gmx_file_position_t *outputfiles;
+    GMX_RELEASE_ASSERT(outputfiles, "Must have valid outputfiles");
 
-    if (do_cpt_int(xd, "number of output files", nfiles, list) != 0)
+    // Ensure that reading pre-allocates outputfiles, while writing
+    // writes what is already there.
+    int nfiles = outputfiles->size();
+    if (do_cpt_int(xd, "number of output files", &nfiles, list) != 0)
     {
         return -1;
     }
-
     if (bRead)
     {
-        snew(*p_outputfiles, *nfiles);
+        outputfiles->resize(nfiles);
     }
 
-    outputfiles = *p_outputfiles;
-
-    for (i = 0; i < *nfiles; i++)
+    for (auto &outputfile : *outputfiles)
     {
         /* 64-bit XDR numbers are not portable, so it is stored as separate high/low fractions */
         if (bRead)
         {
             do_cpt_string_err(xd, bRead, "output filename", &buf, list);
-            std::strncpy(outputfiles[i].filename, buf, CPTSTRLEN-1);
+            std::strncpy(outputfile.filename, buf, CPTSTRLEN-1);
             if (list == nullptr)
             {
                 sfree(buf);
@@ -1714,14 +1713,14 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             {
                 return -1;
             }
-            outputfiles[i].offset = (static_cast<gmx_off_t>(offset_high) << 32 ) | ( static_cast<gmx_off_t>(offset_low) & mask );
+            outputfile.offset = (static_cast<gmx_off_t>(offset_high) << 32 ) | ( static_cast<gmx_off_t>(offset_low) & mask );
         }
         else
         {
-            buf = outputfiles[i].filename;
+            buf = outputfile.filename;
             do_cpt_string_err(xd, bRead, "output filename", &buf, list);
             /* writing */
-            offset      = outputfiles[i].offset;
+            offset      = outputfile.offset;
             if (offset == -1)
             {
                 offset_low  = -1;
@@ -1743,19 +1742,19 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         }
         if (file_version >= 8)
         {
-            if (do_cpt_int(xd, "file_checksum_size", &(outputfiles[i].chksum_size),
+            if (do_cpt_int(xd, "file_checksum_size", &outputfile.chksum_size,
                            list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_u_chars(xd, "file_checksum", 16, outputfiles[i].chksum, list) != 0)
+            if (do_cpt_u_chars(xd, "file_checksum", 16, outputfile.chksum, list) != 0)
             {
                 return -1;
             }
         }
         else
         {
-            outputfiles[i].chksum_size = -1;
+            outputfile.chksum_size = -1;
         }
     }
     return 0;
@@ -1782,8 +1781,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     char                 timebuf[STRLEN];
     int                  npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
-    gmx_file_position_t *outputfiles;
-    int                  noutputfiles;
     char                *ftime;
     t_fileio            *ret;
 
@@ -1820,7 +1817,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     }
 
     /* Get offsets for open files */
-    gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
+    auto outputfiles = gmx_fio_get_output_file_positions();
 
     fp = gmx_fio_open(fntemp, "w");
 
@@ -1940,7 +1937,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), NULL) < 0) ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
-        (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, nullptr,
+        (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       file_version) < 0))
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
@@ -2009,7 +2006,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     }
 #endif  /* GMX_NO_RENAME */
 
-    sfree(outputfiles);
     sfree(fntemp);
 
 #ifdef GMX_FAHCORE
@@ -2189,7 +2185,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             gmx_bool reproducibilityRequested)
 {
     t_fileio            *fp;
-    int                  i, j, rc;
+    int                  j, rc;
     int                  file_version;
     char                *version, *btime, *buser, *bhost, *fprog, *ftime;
     int                  double_prec;
@@ -2199,8 +2195,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh, flags_awhh;
     int                  nED, eSwapCoords;
     int                  ret;
-    gmx_file_position_t *outputfiles;
-    int                  nfiles;
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
@@ -2415,7 +2409,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, &nfiles, nullptr, file_version);
+    std::vector<gmx_file_position_t> outputfiles;
+    ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, nullptr, file_version);
     if (ret)
     {
         cp_error();
@@ -2446,6 +2441,10 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
      */
     if (bAppendOutputFiles)
     {
+        if (outputfiles.empty())
+        {
+            gmx_fatal(FARGS, "No names of output files were recorded in the checkpoint");
+        }
         if (fn2ftp(outputfiles[0].filename) != efLOG)
         {
             /* make sure first file is log file so that it is OK to use it for
@@ -2454,23 +2453,24 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             gmx_fatal(FARGS, "The first output file should always be the log "
                       "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
-        for (i = 0; i < nfiles; i++)
+        bool firstFile = true;
+        for (const auto &outputfile : outputfiles)
         {
-            if (outputfiles[i].offset < 0)
+            if (outputfile.offset < 0)
             {
                 gmx_fatal(FARGS, "The original run wrote a file called '%s' which "
                           "is larger than 2 GB, but mdrun did not support large file"
                           " offsets. Can not append. Run mdrun with -noappend",
-                          outputfiles[i].filename);
+                          outputfile.filename);
             }
 #ifdef GMX_FAHCORE
-            chksum_file = gmx_fio_open(outputfiles[i].filename, "a");
+            chksum_file = gmx_fio_open(outputfile.filename, "a");
 
 #else
-            chksum_file = gmx_fio_open(outputfiles[i].filename, "r+");
+            chksum_file = gmx_fio_open(outputfile.filename, "r+");
 
             /* lock log file */
-            if (i == 0)
+            if (firstFile)
             {
                 /* Note that there are systems where the lock operation
                  * will succeed, but a second process can also lock the file.
@@ -2494,48 +2494,51 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                         }
                         else
                         {
-                            fprintf(stderr, "\nNOTE: File locking is not supported on this system, will not lock %s\n\n", outputfiles[i].filename);
+                            fprintf(stderr, "\nNOTE: File locking is not supported on this system, will not lock %s\n\n", outputfile.filename);
                             if (fplog)
                             {
-                                fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", outputfiles[i].filename);
+                                fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", outputfile.filename);
                             }
                         }
                     }
                     else if (errno == EACCES || errno == EAGAIN)
                     {
                         gmx_fatal(FARGS, "Failed to lock: %s. Already running "
-                                  "simulation?", outputfiles[i].filename);
+                                  "simulation?", outputfile.filename);
                     }
                     else
                     {
                         gmx_fatal(FARGS, "Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, std::strerror(errno));
+                                  outputfile.filename, std::strerror(errno));
                     }
                 }
             }
 
             /* compute md5 chksum */
-            if (outputfiles[i].chksum_size != -1)
+            if (outputfile.chksum_size != -1)
             {
-                if (gmx_fio_get_file_md5(chksum_file, outputfiles[i].offset,
-                                         digest) != outputfiles[i].chksum_size) /*at the end of the call the file position is at the end of the file*/
+                if (gmx_fio_get_file_md5(chksum_file, outputfile.offset,
+                                         digest) != outputfile.chksum_size) /*at the end of the call the file position is at the end of the file*/
                 {
                     gmx_fatal(FARGS, "Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                              outputfiles[i].chksum_size,
-                              outputfiles[i].filename);
+                              outputfile.chksum_size,
+                              outputfile.filename);
                 }
             }
-            if (i == 0)  /*log file needs to be seeked in case we need to truncate (other files are truncated below)*/
+            /* log file needs to be seeked in case we need to truncate
+             * (other files are truncated below)*/
+            if (firstFile)
             {
-                if (gmx_fio_seek(chksum_file, outputfiles[i].offset))
+                if (gmx_fio_seek(chksum_file, outputfile.offset))
                 {
                     gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
             }
 #endif
 
-            if (i == 0) /*open log file here - so that lock is never lifted
-                           after chksum is calculated */
+            /* open log file here - so that lock is never lifted
+             * after chksum is calculated */
+            if (firstFile)
             {
                 *pfplog = gmx_fio_getfp(chksum_file);
             }
@@ -2545,12 +2548,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             }
 #ifndef GMX_FAHCORE
             /* compare md5 chksum */
-            if (outputfiles[i].chksum_size != -1 &&
-                memcmp(digest, outputfiles[i].chksum, 16) != 0)
+            if (outputfile.chksum_size != -1 &&
+                memcmp(digest, outputfile.chksum, 16) != 0)
             {
                 if (debug)
                 {
-                    fprintf(debug, "chksum for %s: ", outputfiles[i].filename);
+                    fprintf(debug, "chksum for %s: ", outputfile.filename);
                     for (j = 0; j < 16; j++)
                     {
                         fprintf(debug, "%02x", digest[j]);
@@ -2558,26 +2561,25 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                     fprintf(debug, "\n");
                 }
                 gmx_fatal(FARGS, "Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
-                          outputfiles[i].filename);
+                          outputfile.filename);
             }
 #endif
 
 
-            if (i != 0) /*log file is already seeked to correct position */
+            if (!firstFile) /* log file is already seeked to correct position */
             {
 #if !GMX_NATIVE_WINDOWS || !defined(GMX_FAHCORE)
                 /* For FAHCORE, we do this elsewhere*/
-                rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
+                rc = gmx_truncate(outputfile.filename, outputfile.offset);
                 if (rc != 0)
                 {
-                    gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfiles[i].filename);
+                    gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfile.filename);
                 }
 #endif
             }
+            firstFile = false;
         }
     }
-
-    sfree(outputfiles);
 }
 
 
@@ -2658,7 +2660,7 @@ void read_checkpoint_part_and_step(const char  *filename,
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                                  gmx_int64_t *step, double *t, t_state *state,
-                                 int *nfiles, gmx_file_position_t **outputfiles)
+                                 std::vector<gmx_file_position_t> *outputfiles)
 {
     int                  file_version;
     char                *version, *btime, *buser, *bhost, *fprog, *ftime;
@@ -2669,8 +2671,6 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     int                  nlambda;
     int                  flags_eks, flags_enh, flags_dfh, flags_awhh;
     int                  nED, eSwapCoords;
-    int                  nfiles_loc;
-    gmx_file_position_t *files_loc = nullptr;
     int                  ret;
 
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
@@ -2726,21 +2726,8 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE,
-                       &files_loc,
-                       &nfiles_loc,
+                       outputfiles,
                        nullptr, file_version);
-    if (outputfiles != nullptr)
-    {
-        *outputfiles = files_loc;
-    }
-    else
-    {
-        sfree(files_loc);
-    }
-    if (nfiles != nullptr)
-    {
-        *nfiles = nfiles_loc;
-    }
 
     if (ret)
     {
@@ -2767,7 +2754,8 @@ read_checkpoint_state(const char *fn, int *simulation_part,
     t_fileio *fp;
 
     fp = gmx_fio_open(fn, "r");
-    read_checkpoint_data(fp, simulation_part, step, t, state, nullptr, nullptr);
+    std::vector<gmx_file_position_t> outputfiles;
+    read_checkpoint_data(fp, simulation_part, step, t, state, &outputfiles);
     if (gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
@@ -2776,12 +2764,13 @@ read_checkpoint_state(const char *fn, int *simulation_part,
 
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
-    t_state         state;
-    int             simulation_part;
-    gmx_int64_t     step;
-    double          t;
+    t_state                          state;
+    int                              simulation_part;
+    gmx_int64_t                      step;
+    double                           t;
 
-    read_checkpoint_data(fp, &simulation_part, &step, &t, &state, nullptr, nullptr);
+    std::vector<gmx_file_position_t> outputfiles;
+    read_checkpoint_data(fp, &simulation_part, &step, &t, &state, &outputfiles);
 
     fr->natoms  = state.natoms;
     fr->bStep   = TRUE;
@@ -2825,8 +2814,6 @@ void list_checkpoint(const char *fn, FILE *out)
     int                  flags_eks, flags_enh, flags_dfh, flags_awhh;;
     int                  nED, eSwapCoords;
     int                  ret;
-    gmx_file_position_t *outputfiles;
-    int                  nfiles;
 
     t_state              state;
 
@@ -2879,7 +2866,8 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, &nfiles, out, file_version);
+        std::vector<gmx_file_position_t> outputfiles;
+        ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, out, file_version);
     }
 
     if (ret == 0)
@@ -2899,17 +2887,15 @@ void list_checkpoint(const char *fn, FILE *out)
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 void
-read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
-                                              int                  *simulation_part,
-                                              int                  *nfiles,
-                                              gmx_file_position_t **outputfiles)
+read_checkpoint_simulation_part_and_filenames(t_fileio                         *fp,
+                                              int                              *simulation_part,
+                                              std::vector<gmx_file_position_t> *outputfiles)
 {
     gmx_int64_t step = 0;
     double      t;
     t_state     state;
 
-    read_checkpoint_data(fp, simulation_part, &step, &t, &state,
-                         nfiles, outputfiles);
+    read_checkpoint_data(fp, simulation_part, &step, &t, &state, outputfiles);
     if (gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
