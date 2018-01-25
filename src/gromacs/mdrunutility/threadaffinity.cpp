@@ -52,6 +52,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/physicalnodecommunicator.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -72,10 +73,6 @@ class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
         virtual bool isThreadAffinitySupported() const
         {
             return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
-        }
-        virtual int physicalNodeId() const
-        {
-            return gmx_physicalnode_id_hash();
         }
         virtual bool setCurrentThreadAffinityToCore(int core)
         {
@@ -364,12 +361,13 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
-                        const t_commrec             *cr,
-                        const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local,
-                        gmx::IThreadAffinityAccess  *affinityAccess)
+gmx_set_thread_affinity(const gmx::MDLogger                 &mdlog,
+                        const t_commrec                     *cr,
+                        const gmx::PhysicalNodeCommunicator &physicalNodeComm,
+                        const gmx_hw_opt_t                  *hw_opt,
+                        const gmx::HardwareTopology         &hwTop,
+                        int                                  nthread_local,
+                        gmx::IThreadAffinityAccess          *affinityAccess)
 {
     int        thread0_id_node, nthread_node;
     int *      localityOrder = nullptr;
@@ -404,22 +402,15 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
     thread0_id_node = 0;
     nthread_node    = nthread_local;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (physicalNodeComm.size_ > 1)
     {
-        /* We need to determine a scan of the thread counts in this
-         * compute node.
-         */
-        MPI_Comm comm_intra;
-
-        MPI_Comm_split(MPI_COMM_WORLD,
-                       affinityAccess->physicalNodeId(), cr->rank_intranode,
-                       &comm_intra);
-        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
-        /* MPI_Scan is inclusive, but here we need exclusive */
+        // We need to determine a scan of the thread counts in this
+        // compute node.
+        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, physicalNodeComm.comm_);
+        // MPI_Scan is inclusive, but here we need exclusive
         thread0_id_node -= nthread_local;
-        /* Get the total number of threads on this physical node */
-        MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
-        MPI_Comm_free(&comm_intra);
+        // Get the total number of threads on this physical node
+        MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, physicalNodeComm.comm_);
     }
 #endif
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,73 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_MDTYPES_PHYSICALNODECOMMUNICATOR_H
+#define GMX_MDTYPES_PHYSICALNODECOMMUNICATOR_H
 
-#include "threadaffinitytest.h"
-
-#include "config.h"
-
-#include <gmock/gmock.h>
-
-#include "gromacs/hardware/hardwaretopology.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/physicalnodecommunicator.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
-namespace test
-{
 
-MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+/*! \libinternal \brief Holds a communicator for the physical node of this rank
+ *
+ * This communicator should only be used for appropriate tasks,
+ * e.g. during initialization and finalization. It can contain ranks
+ * from PP, PME and multiple simulations with multisim, so is not
+ * suited for general-purpose communication. */
+class PhysicalNodeCommunicator
 {
-    using ::testing::_;
-    using ::testing::Return;
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
-}
+    public:
+        /*! \brief Constructor.
+         *
+         * Communicates within \c world to make intra-communicator \c
+         * comm_ between all ranks that share \c physicalNodeId. */
+        PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId);
+        //! Destructor.
+        ~PhysicalNodeCommunicator();
+        //! Communicator for all ranks on this physical node
+        MPI_Comm comm_;
+        //! Number of ranks on this physical node, corresponds to MPI_Comm_size of comm.
+        int      size_;
+        //! Rank ID within this physical node, corresponds to MPI_Comm_rank of comm.
+        int      rank_;
+        //! Creates a barrier for all ranks on this physical node.
+        void barrier() const;
+};
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess()
-{
-}
+} // namespace
 
-
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
-{
-    snew(cr_, 1);
-    cr_->nnodes         = gmx_node_num();
-    cr_->nodeid         = gmx_node_rank();
-    cr_->duty           = DUTY_PP;
-#if GMX_MPI
-    cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif
-    hwOpt_.thread_affinity     = threadaffAUTO;
-    hwOpt_.totNumThreadsIsAuto = false;
-}
-
-ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
-{
-    sfree(cr_);
-}
-
-void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
-{
-    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
-}
-
-void ThreadAffinityTestHelper::setAffinity(int nthread_local)
-{
-    if (hwTop_ == nullptr)
-    {
-        setLogicalProcessorCount(1);
-    }
-    PhysicalNodeCommunicator physicalNodeComm(cr_->mpi_comm_mysim, physicalNodeId_);
-    gmx_set_thread_affinity(logHelper_.logger(), cr_, physicalNodeComm, &hwOpt_, *hwTop_,
-                            nthread_local, &affinityAccess_);
-}
-
-} // namespace test
-} // namespace gmx
