@@ -2879,7 +2879,7 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, &nfiles, out, file_version);
+        ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, &nfiles, out, file_version);
     }
 
     if (ret == 0)
