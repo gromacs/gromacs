@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,16 +35,16 @@
 #ifndef GMX_UTILITY_CUDA_VERSION_INFORMATION_H
 #define GMX_UTILITY_CUDA_VERSION_INFORMATION_H
 
-#include <utility>
+#include <string>
 
 namespace gmx
 {
 
-//! Returns a (major, minor) tuple of the CUDA driver version.
-std::pair<int, int> getCudaDriverVersion();
+//! Returns a string of the CUDA driver version.
+std::string getCudaDriverVersionString();
 
-//! Returns a (major, minor) tuple of the CUDA runtime version.
-std::pair<int, int> getCudaRuntimeVersion();
+//! Returns a string of the CUDA runtime version.
+std::string getCudaRuntimeVersionString();
 
 } // namespace
 

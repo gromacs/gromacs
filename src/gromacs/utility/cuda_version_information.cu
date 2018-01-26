@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,23 +37,29 @@
 
 #include "cuda_version_information.h"
 
-#include <utility>
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
 
-std::pair<int, int> getCudaDriverVersion()
+std::string getCudaDriverVersionString()
 {
-    int cuda_driver;
-    cudaDriverGetVersion(&cuda_driver);
-    return std::pair<int, int>(cuda_driver/1000, cuda_driver%100);
+    int cuda_driver = 0;
+    if (cudaDriverGetVersion(&cuda_driver) != cudaSuccess)
+    {
+        return "N/A";
+    }
+    return formatString("%d.%d", cuda_driver/1000, cuda_driver%100);
 }
 
-std::pair<int, int> getCudaRuntimeVersion()
+std::string getCudaRuntimeVersionString()
 {
-    int cuda_runtime;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    return std::pair<int, int>(cuda_runtime/1000, cuda_runtime%100);
+    int cuda_runtime = 0;
+    if (cudaRuntimeGetVersion(&cuda_runtime) != cudaSuccess)
+    {
+        return "N/A";
+    }
+    return formatString("%d.%d", cuda_runtime/1000, cuda_runtime%100);
 }
 
 } // namespace
