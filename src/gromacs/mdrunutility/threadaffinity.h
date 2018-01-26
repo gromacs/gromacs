@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,6 +68,14 @@ class IThreadAffinityAccess
 
 } // namespace gmx
 
+/*! \brief Communicates within physical nodes to discover the
+ * distribution of threads over ranks. */
+void analyzeThreadsOnThisNode(const t_commrec            *cr,
+                              gmx::IThreadAffinityAccess *affinityAccess,
+                              int                         numThreadsOnThisRank,
+                              int                        *numThreadsOnThisNode,
+                              int                        *indexWithinNodeOfFirstThreadOnThisRank);
+
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
  */
@@ -76,7 +84,9 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local,
+                        int                          numThreadsOnThisRank,
+                        int                          numThreadsOnThisNode,
+                        int                          indexWithinNodeOfFirstThreadOnThisRank,
                         gmx::IThreadAffinityAccess  *affinityAccess);
 
 /*! \brief
