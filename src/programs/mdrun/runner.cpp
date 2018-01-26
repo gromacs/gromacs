@@ -1105,9 +1105,14 @@ int Mdrunner::mdrunner()
         gmx_check_thread_affinity_set(mdlog, cr,
                                       &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
+        int numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank;
+        analyzeThreadsOnThisNode(cr, nullptr, numThreadsOnThisRank, &numThreadsOnThisNode,
+                                 &indexWithinNodeOfFirstThreadOnThisRank);
+
         /* Set the CPU affinity */
         gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
-                                numThreadsOnThisRank, nullptr);
+                                numThreadsOnThisRank, numThreadsOnThisNode,
+                                indexWithinNodeOfFirstThreadOnThisRank, nullptr);
     }
 
     if (mdrunOptions.timingOptions.resetStep > -1)
