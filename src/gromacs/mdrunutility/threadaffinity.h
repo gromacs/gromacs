@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,15 +68,47 @@ class IThreadAffinityAccess
 
 } // namespace gmx
 
+/*! \brief Communicates within physical nodes to discover the
+ * distribution of threads over ranks.
+ *
+ * See gmx_set_thread_affinity(), which consumes this output.
+ *
+ * \param[in]  cr                     Communication handler.
+ * \param[in]  affinityAccess         Interface for low-level access to affinity details.
+ * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
+ * \param[out] numThreadsOnThisNode   On exit, the number of threads on all ranks of this node.
+ * \param[out] intraNodeThreadOffset  On exit, the index of the first hardware thread of this rank
+ *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
+ */
+void analyzeThreadsOnThisNode(const t_commrec            *cr,
+                              gmx::IThreadAffinityAccess *affinityAccess,
+                              int                         numThreadsOnThisRank,
+                              int                        *numThreadsOnThisNode,
+                              int                        *intraNodeThreadOffset);
+
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
+ *
+ * See analyzeThreadsOnThisNode(), which prepares some of the input.
+ *
+ * \param[out] mdlog                  Logger.
+ * \param[in]  cr                     Communication handler.
+ * \param[in]  hw_opt                 Accesses user choices for thread affinity handling.
+ * \param[in]  hwTop                  Detected hardware topology.
+ * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
+ * \param[in]  numThreadsOnThisNode   The number of threads on all ranks of this node.
+ * \param[in]  intraNodeThreadOffset  The index of the first hardware thread of this rank
+ *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
+ * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  */
 void
 gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local,
+                        int                          numThreadsOnThisRank,
+                        int                          numThreadsOnThisNode,
+                        int                          intraNodeThreadOffset,
                         gmx::IThreadAffinityAccess  *affinityAccess);
 
 /*! \brief
