@@ -596,7 +596,6 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
             {
                 gmx_fatal(FARGS, "Type %s: incompatible checkpoint formats or corrupted checkpoint file.", buf);
             }
-            fprintf(stderr, "Precision %s\n", buf);
         }
 
         T *vp;
@@ -2025,14 +2024,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
 static void check_int(FILE *fplog, const char *type, int p, int f, gmx_bool *mm)
 {
-    FILE *fp = fplog ? fplog : stderr;
-
-    if (p != f)
+    if (fplog && p != f)
     {
-        fprintf(fp, "  %s mismatch,\n", type);
-        fprintf(fp, "    current program: %d\n", p);
-        fprintf(fp, "    checkpoint file: %d\n", f);
-        fprintf(fp, "\n");
+        fprintf(fplog, "  %s mismatch,\n", type);
+        fprintf(fplog, "    current program: %d\n", p);
+        fprintf(fplog, "    checkpoint file: %d\n", f);
+        fprintf(fplog, "\n");
         *mm = TRUE;
     }
 }
@@ -2040,14 +2037,12 @@ static void check_int(FILE *fplog, const char *type, int p, int f, gmx_bool *mm)
 static void check_string(FILE *fplog, const char *type, const char *p,
                          const char *f, gmx_bool *mm)
 {
-    FILE *fp = fplog ? fplog : stderr;
-
-    if (std::strcmp(p, f) != 0)
+    if (fplog && std::strcmp(p, f) != 0)
     {
-        fprintf(fp, "  %s mismatch,\n", type);
-        fprintf(fp, "    current program: %s\n", p);
-        fprintf(fp, "    checkpoint file: %s\n", f);
-        fprintf(fp, "\n");
+        fprintf(fplog, "  %s mismatch,\n", type);
+        fprintf(fplog, "    current program: %s\n", p);
+        fprintf(fplog, "    checkpoint file: %s\n", f);
+        fprintf(fplog, "\n");
         *mm = TRUE;
     }
 }
@@ -2070,7 +2065,6 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
         const char msg_precision_difference[] =
             "You are continuing a simulation with a different precision. Not matching\n"
             "single/double precision will lead to precision or performance loss.\n";
-        fprintf(stderr, "%s\n", msg_precision_difference);
         if (fplog)
         {
             fprintf(fplog, "%s\n", msg_precision_difference);
@@ -2136,13 +2130,8 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
             "GROMACS patchlevel, binary or parallel settings differ from previous run.\n"
             "Continuation is exact, but not guaranteed to be binary identical.\n";
 
-        const char msg_logdetails[] =
-            "See the log file for details.\n";
-
         if (majorVersionDiffers)
         {
-            fprintf(stderr, "%s%s\n", msg_major_version_difference, fplog ? msg_logdetails : "");
-
             if (fplog)
             {
                 fprintf(fplog, "%s\n", msg_major_version_difference);
@@ -2151,7 +2140,6 @@ static void check_match(FILE *fplog, const t_commrec *cr, const ivec dd_nc,
         else if (reproducibilityRequested)
         {
             /* Major & minor versions match at least, but something is different. */
-            fprintf(stderr, "%s%s\n", msg_mismatch_notice, fplog ? msg_logdetails : "");
             if (fplog)
             {
                 fprintf(fplog, "%s\n", msg_mismatch_notice);
@@ -2198,12 +2186,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         headerContents->file_version >= 13 && headerContents->double_prec != GMX_DOUBLE)
     {
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
-    }
-
-    if (cr == nullptr || MASTER(cr))
-    {
-        fprintf(stderr, "\nReading checkpoint file %s generated: %s\n\n",
-                fn, headerContents->ftime);
     }
 
     /* This will not be written if we do appending, since fplog is still NULL then */
@@ -2293,15 +2275,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->file_version < 6)
     {
-        const char *warn = "Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
-
-        fprintf(stderr, "\nWARNING: %s\n\n", warn);
-        if (fplog)
-        {
-            fprintf(fplog, "\nWARNING: %s\n\n", warn);
-        }
-        observablesHistory->energyHistory->nsum     = headerContents->step;
-        observablesHistory->energyHistory->nsum_sim = headerContents->step;
+        gmx_fatal(FARGS, "Reading old checkpoint file formats is not supported");
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents->flags_dfh, headerContents->nlambda, &state->dfhist, nullptr);
@@ -2420,7 +2394,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                         }
                         else
                         {
-                            fprintf(stderr, "\nNOTE: File locking is not supported on this system, will not lock %s\n\n", outputfile.filename);
                             if (fplog)
                             {
                                 fprintf(fplog, "\nNOTE: File locking not supported on this system, will not lock %s\n\n", outputfile.filename);
