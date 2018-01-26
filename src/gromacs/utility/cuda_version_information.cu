@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,14 +44,14 @@ namespace gmx
 
 std::pair<int, int> getCudaDriverVersion()
 {
-    int cuda_driver;
+    int cuda_driver = 0;
     cudaDriverGetVersion(&cuda_driver);
     return std::pair<int, int>(cuda_driver/1000, cuda_driver%100);
 }
 
 std::pair<int, int> getCudaRuntimeVersion()
 {
-    int cuda_runtime;
+    int cuda_runtime = 0;
     cudaRuntimeGetVersion(&cuda_runtime);
     return std::pair<int, int>(cuda_runtime/1000, cuda_runtime%100);
 }
