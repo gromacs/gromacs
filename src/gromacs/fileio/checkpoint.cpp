@@ -2024,25 +2024,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 #endif /* end GMX_FAHCORE block */
 }
 
-static void print_flag_mismatch(FILE *fplog, int sflags, int fflags)
-{
-    int i;
-
-    fprintf(fplog, "\nState entry mismatch between the simulation and the checkpoint file\n");
-    fprintf(fplog, "Entries which are not present in the checkpoint file will not be updated\n");
-    fprintf(fplog, "  %24s    %11s    %11s\n", "", "simulation", "checkpoint");
-    for (i = 0; i < estNR; i++)
-    {
-        if ((sflags & (1<<i)) || (fflags & (1<<i)))
-        {
-            fprintf(fplog, "  %24s    %11s    %11s\n",
-                    est_names[i],
-                    (sflags & (1<<i)) ? "  present  " : "not present",
-                    (fflags & (1<<i)) ? "  present  " : "not present");
-        }
-    }
-}
-
 static void check_int(FILE *fplog, const char *type, int p, int f, gmx_bool *mm)
 {
     FILE *fp = fplog ? fplog : stderr;
@@ -2203,10 +2184,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                                 dependent! */
 #endif
 
-    const char *int_warn =
-        "WARNING: The checkpoint file was generated with integrator %s,\n"
-        "         while the simulation uses integrator %s\n\n";
-
 #if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
@@ -2271,61 +2248,20 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (headerContents->eIntegrator != eIntegrator)
     {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, int_warn, EI(headerContents->eIntegrator), EI(eIntegrator));
-        }
-        if (bAppendOutputFiles)
-        {
-            gmx_fatal(FARGS,
-                      "Output file appending requested, but input/checkpoint integrators do not match.\n"
-                      "Stopping the run to prevent you from ruining all your data...\n"
-                      "If you _really_ know what you are doing, try with the -noappend option.\n");
-        }
-        if (fplog)
-        {
-            fprintf(fplog, int_warn, EI(headerContents->eIntegrator), EI(eIntegrator));
-        }
+        gmx_fatal(FARGS, "Cannot change integrator during a checkpoint restart. Perhaps you should make a new .tpr with grompp -f new.mdp -t %s", fn);
     }
 
     if (headerContents->flags_state != state->flags)
     {
-
-        if (MASTER(cr))
-        {
-            if (bAppendOutputFiles)
-            {
-                gmx_fatal(FARGS,
-                          "Output file appending requested, but input and checkpoint states are not identical.\n"
-                          "Stopping the run to prevent you from ruining all your data...\n"
-                          "You can try with the -noappend option, and get more info in the log file.\n");
-            }
-
-            if (getenv("GMX_ALLOW_CPT_MISMATCH") == nullptr)
-            {
-                gmx_fatal(FARGS, "You seem to have switched ensemble, integrator, T and/or P-coupling algorithm between the cpt and tpr file, or switched GROMACS version. The recommended way of doing this is passing the cpt file to grompp (with option -t) instead of to mdrun. If you know what you are doing, you can override this error by setting the env.var. GMX_ALLOW_CPT_MISMATCH");
-            }
-            else
-            {
-                fprintf(stderr,
-                        "WARNING: The checkpoint state entries do not match the simulation,\n"
-                        "         see the log file for details\n\n");
-            }
-        }
-
-        if (fplog)
-        {
-            print_flag_mismatch(fplog, state->flags, headerContents->flags_state);
-        }
+        gmx_fatal(FARGS, "Cannot change a simulation algorithm during a checkpoint restart. Perhaps you should make a new .tpr with grompp -f new.mdp -t %s", fn);
     }
-    else
+
+    if (MASTER(cr))
     {
-        if (MASTER(cr))
-        {
-            check_match(fplog, cr, dd_nc, *headerContents,
-                        reproducibilityRequested);
-        }
+        check_match(fplog, cr, dd_nc, *headerContents,
+                    reproducibilityRequested);
     }
+
     ret             = do_cpt_state(gmx_fio_getxdr(fp), headerContents->flags_state, state, nullptr);
     *init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
                                             Investigate for 5.0. */
