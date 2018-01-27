@@ -364,7 +364,6 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
     {
         TestReferenceChecker                 outputChecker(
                 checker.checkCompound("OutputFiles", "Files"));
-        Impl::OutputFileList::const_iterator outfile;
         for (const auto &outfile : impl_->outputFiles_)
         {
             TestReferenceChecker fileChecker(
