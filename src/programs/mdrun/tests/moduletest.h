@@ -115,6 +115,8 @@ class SimulationRunner
         /*! \brief Convenience wrapper for calling mdrun for testing
          * with default command line */
         int callMdrun();
+        //! Calls convert-tpr on this rank to set a new number of steps in the tpr.
+        int changeTprNsteps(int nsteps);
 
         //@{
         /*! \name Names for frequently used grompp and mdrun output files

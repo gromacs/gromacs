@@ -38,6 +38,7 @@
 
 #include "filenm.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 
@@ -255,8 +256,20 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
             for (std::string &filename : fnm[i].filenames)
             {
                 std::strncpy(buf, filename.c_str(), STRLEN - 1);
-                extpos   = strrchr(buf, '.');
+                extpos   = std::strrchr(buf, '.');
                 *extpos  = '\0';
+                // If there was a previous '.partNNNN' string, get rid of that too
+                char *previousDot = std::strrchr(buf, '.');
+                if ((previousDot != nullptr) &&
+                    (previousDot + 9 == extpos) &&
+                    (std::strncmp(previousDot, ".part", 5) == 0) &&
+                    (std::isdigit(*(previousDot + 5))) &&
+                    (std::isdigit(*(previousDot + 6))) &&
+                    (std::isdigit(*(previousDot + 7))) &&
+                    (std::isdigit(*(previousDot + 8))))
+                {
+                    *previousDot = '\0';
+                }
                 filename = gmx::formatString("%s%s.%s", buf, suffix, extpos + 1);
             }
         }

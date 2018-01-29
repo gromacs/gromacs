@@ -140,20 +140,22 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 }
                 if (nexist == outputfiles.size())
                 {
+                    // TODO This does not make sense, as bTryToAppendFiles is always true.
                     *bDoAppendFiles = bTryToAppendFiles;
                 }
                 else
                 {
                     // If we get here, the user requested restarting from a checkpoint file, that checkpoint
                     // file was found (so it is not the first part of a new run), but we are still missing
-                    // some or all checkpoint files. In this case we issue a fatal error since there are
+                    // some or all files listed in the checkpoint. In this case,
+                    // we issue a fatal error since there are
                     // so many special cases we cannot keep track of, and better safe than sorry.
                     fprintf(stderr,
                             "Output file appending has been requested,\n"
                             "but some output files listed in the checkpoint file %s\n"
                             "are not present or not named as the output files by the current program:\n",
                             filename);
-                    fprintf(stderr, "Expect output files present:\n");
+                    fprintf(stderr, "Expected output files that are present:\n");
                     for (const auto &outputfile : outputfiles)
                     {
                         if (exist_output_file(outputfile.filename,
@@ -163,7 +165,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                         }
                     }
                     fprintf(stderr, "\n");
-                    fprintf(stderr, "Expected output files not present or named differently:\n");
+                    fprintf(stderr, "Expected output files that are not present, or are named differently:\n");
                     for (const auto &outputfile : outputfiles)
                     {
                         if (!exist_output_file(outputfile.filename,
@@ -201,6 +203,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 {
                     gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
                 }
+                // TODO If we are appending to files, this does not make sense, fix this.
                 /* Set bAddPart to whether the suffix string '.part' is present
                  * in the log file name.
                  */
@@ -287,18 +290,13 @@ handleRestart(t_commrec            *cr,
 
     *bStartFromCpt = sim_part > 1;
 
-    if (!*bDoAppendFiles)
-    {
-        sim_part_fn = sim_part;
-    }
-
     if (bAddPart)
     {
         char suffix[STRLEN];
 
         /* Rename all output files (except checkpoint files) */
         /* create new part name first (zero-filled) */
-        sprintf(suffix, "%s%04d", part_suffix, sim_part_fn);
+        sprintf(suffix, "%s%04d", part_suffix, sim_part);
 
         add_suffix_to_output_names(fnm, NFILE, suffix);
         if (isMasterSimMasterRank(ms, cr))
