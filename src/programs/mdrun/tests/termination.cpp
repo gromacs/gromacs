@@ -81,5 +81,18 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
     helper.runSecondMdrun();
 }
 
+TEST_F(MdrunTerminationTest, CheckpointRestartWorksWithNoAppend)
+{
+    CommandLine       mdrunCaller;
+    mdrunCaller.append("mdrun");
+    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
+
+    organizeMdpFile(&runner_);
+    EXPECT_EQ(0, runner_.callGrompp());
+
+    helper.runFirstMdrun(runner_.cptFileName_);
+    helper.runSecondMdrunWithNoAppend();
+}
+
 } // namespace
 } // namespace

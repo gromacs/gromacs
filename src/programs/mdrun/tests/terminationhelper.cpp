@@ -84,5 +84,14 @@ void TerminationHelper::runSecondMdrun()
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
+void TerminationHelper::runSecondMdrunWithNoAppend()
+{
+    CommandLine secondPart(*mdrunCaller_);
+    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-nsteps", 2);
+    secondPart.append("-noappend");
+    ASSERT_EQ(0, runner_->callMdrun(secondPart));
+}
+
 } // namespace
 } // namespace

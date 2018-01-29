@@ -84,6 +84,8 @@ class TerminationHelper
         void runFirstMdrun(const std::string &expectedCptFileName);
         //! Check that the restart works, but don't do any more MD steps.
         void runSecondMdrun();
+        //! Check that the restart works without appending, but don't do any more MD steps.
+        void runSecondMdrunWithNoAppend();
     protected:
         //! Object to help call mdrun
         CommandLine      *mdrunCaller_;
