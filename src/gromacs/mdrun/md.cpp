@@ -538,25 +538,15 @@ void gmx::Integrator::do_md()
 
     if (MASTER(cr))
     {
-        if (startingFromCheckpoint)
+        // Add energy history to mdebin if appropriate, otherwise
+        // discard useless history.
+        if (startingFromCheckpoint && observablesHistory->energyHistory && continuationOptions.appendFiles)
         {
-            /* Update mdebin with energy history if appending to output files */
-            if (continuationOptions.appendFiles)
-            {
-                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
-            }
-            else if (observablesHistory->energyHistory.get() != nullptr)
-            {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
-                 */
-                observablesHistory->energyHistory = {};
-            }
+            restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
         }
-        if (observablesHistory->energyHistory.get() == nullptr)
+        else
         {
-            observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+            observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
