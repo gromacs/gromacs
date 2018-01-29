@@ -177,6 +177,8 @@ gmx_bool is_set(const t_filenm *fnm);
 /*! \brief
  * When we do checkpointing, this routine is called to check for previous
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
+ * If there was already a '.partNNNN' suffix before the file extension, that
+ * is removed before the new suffix is added.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 
