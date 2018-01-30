@@ -116,7 +116,7 @@ bool threadMpiTestRunner(std::function<void()> testBody)
     {
         return true;
     }
-#if GMX_THREAD_MPI && !GTEST_IS_THREADSAFE
+#if GMX_THREAD_MPI && !defined(GTEST_IS_THREADSAFE)
     ADD_FAILURE()
     << "Google Test is not thread safe on this platform. "
     << "Cannot run multi-rank tests with thread-MPI.";
