@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,7 +116,7 @@ bool threadMpiTestRunner(std::function<void()> testBody)
     {
         return true;
     }
-#if GMX_THREAD_MPI && !GTEST_IS_THREADSAFE
+#if GMX_THREAD_MPI && !defined(GTEST_IS_THREADSAFE)
     ADD_FAILURE()
     << "Google Test is not thread safe on this platform. "
     << "Cannot run multi-rank tests with thread-MPI.";
