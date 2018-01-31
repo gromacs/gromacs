@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1241,6 +1241,8 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
             "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
+// TODO It is too many responsibilities for this function to handle
+// both .edr and .log output for both per-time and time-average data.
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
@@ -1262,6 +1264,15 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
     real        *block[enxNR];
 
     t_enxframe   fr;
+
+    if (mode == eprAVER && md->ebin->nsum_sim <= 0)
+    {
+        if (log)
+        {
+            fprintf(log, "Not enough data recorded to report energy averages\n");
+        }
+        return;
+    }
 
     switch (mode)
     {
