@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,7 +161,7 @@ class PairDistance : public TrajectoryAnalysisModule
         real                    cutoff2_;
 
         //! Neighborhood search object for the pair search.
-        AnalysisNeighborhood    nb_;
+        AnalysisNeighborhood                nb_;
 
         // Copy and assign disallowed by base.
 };
@@ -396,20 +396,20 @@ TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(
         const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
-            new PairDistanceModuleData(this, opt, selections, refGroupCount_,
-                                       refSel_, maxGroupCount_));
+            new PairDistanceModuleData(this, opt, selections,
+                                       refGroupCount_, refSel_, maxGroupCount_));
 }
 
 void
 PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                            TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle         dh            = pdata->dataHandle(distances_);
-    const Selection           &refSel        = pdata->parallelSelection(refSel_);
-    const SelectionList       &sel           = pdata->parallelSelections(sel_);
-    PairDistanceModuleData    &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
-    std::vector<real>         &distArray     = frameData.distArray_;
-    std::vector<int>          &countArray    = frameData.countArray_;
+    AnalysisDataHandle            dh            = pdata->dataHandle(distances_);
+    const Selection              &refSel        = pdata->parallelSelection(refSel_);
+    const SelectionList          &sel           = pdata->parallelSelections(sel_);
+    PairDistanceModuleData       &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
+    std::vector<real>            &distArray     = frameData.distArray_;
+    std::vector<int>             &countArray    = frameData.countArray_;
 
     if (cutoff_ > 0.0 && refSel.isDynamic())
     {
@@ -424,7 +424,7 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const std::vector<int>    &refCountArray = frameData.refCountArray_;
 
     AnalysisNeighborhoodSearch nbsearch  = nb_.initSearch(pbc, refSel);
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         const int columnCount = distances_.columnCount(g);
@@ -512,13 +512,13 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             if (countArray[i] > 0)
             {
-                dh.setPoint(i, std::sqrt(distArray[i]));
+                dh.setRealPoint(i, std::sqrt(distArray[i]));
             }
             else
             {
                 // If there are no contributing positions, write out the cutoff
                 // value.
-                dh.setPoint(i, cutoff_, false);
+                dh.setRealPoint(i, cutoff_, false);
             }
         }
     }

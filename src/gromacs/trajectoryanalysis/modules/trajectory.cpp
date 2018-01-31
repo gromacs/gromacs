@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,6 @@ class Trajectory : public TrajectoryAnalysisModule
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -98,6 +97,7 @@ class Trajectory : public TrajectoryAnalysisModule
         AnalysisData                        xdata_;
         AnalysisData                        vdata_;
         AnalysisData                        fdata_;
+
 };
 
 Trajectory::Trajectory()
@@ -237,13 +237,11 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
-
 void
 Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                          TrajectoryAnalysisModuleData *pdata)
 {
-    const SelectionList &sel = pdata->parallelSelections(sel_);
-
+    const SelectionList          &sel = pdata->parallelSelections(sel_);
     // There is some duplication here, but cppcheck cannot handle function
     // types that return rvec references, and MSVC also apparently segfaults
     // when using std::function with a member function here...
@@ -251,14 +249,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.x(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.x(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -269,14 +267,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.v(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.v(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -287,21 +285,20 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.f(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.f(), pos.selected());
                 }
             }
             dh.finishFrame();
         }
     }
 }
-
 
 void
 Trajectory::finishAnalysis(int /*nframes*/)

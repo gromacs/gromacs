@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -317,6 +317,7 @@ class Select : public TrajectoryAnalysisModule
         AnalysisData                        mdata_;
         AnalysisDataAverageModulePointer    occupancyModule_;
         AnalysisDataLifetimeModulePointer   lifetimeModule_;
+
 };
 
 Select::Select()
@@ -601,14 +602,14 @@ void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                      TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
-    AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
-    AnalysisDataHandle   idh = pdata->dataHandle(idata_);
-    AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
-    const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology          *top = top_->topology();
+    AnalysisDataHandle            sdh   = pdata->dataHandle(sdata_);
+    AnalysisDataHandle            cdh   = pdata->dataHandle(cdata_);
+    AnalysisDataHandle            idh   = pdata->dataHandle(idata_);
+    AnalysisDataHandle            mdh   = pdata->dataHandle(mdata_);
+    const SelectionList          &sel   = pdata->parallelSelections(sel_);
+    t_topology                   *top   = top_->topology();
 
-    sdh.startFrame(frnr, fr.time);
+    sdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         real normfac = bFracNorm_ ? 1.0 / sel[g].coveredFraction() : 1.0;
@@ -616,49 +617,49 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         {
             normfac /= totsize_[g];
         }
-        sdh.setPoint(g, sel[g].posCount() * normfac);
+        sdh.setRealPoint(g, sel[g].posCount() * normfac);
     }
     sdh.finishFrame();
 
-    cdh.startFrame(frnr, fr.time);
+    cdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        cdh.setPoint(g, sel[g].coveredFraction());
+        cdh.setRealPoint(g, sel[g].coveredFraction());
     }
     cdh.finishFrame();
 
-    idh.startFrame(frnr, fr.time);
+    idh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        idh.setPoint(0, sel[g].posCount());
+        idh.setRealPoint(0, sel[g].posCount());
         idh.finishPointSet();
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
+                idh.setRealPoint(1, top->atoms.resinfo[p.mappedId()].nr);
             }
             else
             {
-                idh.setPoint(1, p.mappedId() + 1);
+                idh.setRealPoint(1, p.mappedId() + 1);
             }
             idh.finishPointSet();
         }
     }
     idh.finishFrame();
 
-    mdh.startFrame(frnr, fr.time);
+    mdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         mdh.selectDataSet(g);
         for (int i = 0; i < totsize_[g]; ++i)
         {
-            mdh.setPoint(i, 0);
+            mdh.setRealPoint(i, 0);
         }
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
-            mdh.setPoint(sel[g].position(i).refId(), 1);
+            mdh.setRealPoint(sel[g].position(i).refId(), 1);
         }
     }
     mdh.finishFrame();
@@ -669,7 +670,6 @@ void
 Select::finishAnalysis(int /*nframes*/)
 {
 }
-
 
 void
 Select::writeOutput()

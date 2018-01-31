@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ class Distance : public TrajectoryAnalysisModule
                                   const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
         virtual void writeOutput();
@@ -312,19 +312,18 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
-
 void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   distHandle = pdata->dataHandle(distances_);
-    AnalysisDataHandle   xyzHandle  = pdata->dataHandle(xyz_);
-    const SelectionList &sel        = pdata->parallelSelections(sel_);
+    AnalysisDataHandle            distHandle = pdata->dataHandle(distances_);
+    AnalysisDataHandle            xyzHandle  = pdata->dataHandle(xyz_);
+    const SelectionList          &sel        = pdata->parallelSelections(sel_);
 
     checkSelections(sel);
 
-    distHandle.startFrame(frnr, fr.time);
-    xyzHandle.startFrame(frnr, fr.time);
+    distHandle.startRealFrame(frnr, fr.time);
+    xyzHandle.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         distHandle.selectDataSet(g);
@@ -344,8 +343,8 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             real dist     = norm(dx);
             bool bPresent = p1.selected() && p2.selected();
-            distHandle.setPoint(n, dist, bPresent);
-            xyzHandle.setPoints(n*3, 3, dx, bPresent);
+            distHandle.setRealPoint(n, dist, bPresent);
+            xyzHandle.setRealPoints(n*3, 3, dx, bPresent);
         }
     }
     distHandle.finishFrame();
@@ -360,7 +359,6 @@ Distance::finishAnalysis(int /*nframes*/)
     averageHistogram.normalizeProbability();
     averageHistogram.done();
 }
-
 
 void
 Distance::writeOutput()

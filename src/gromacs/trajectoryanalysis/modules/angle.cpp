@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,7 +278,7 @@ class Angle : public TrajectoryAnalysisModule
                                   const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+                TrajectoryAnalysisModuleData *pdata); //,
 
         virtual void finishAnalysis(int nframes);
         virtual void writeOutput();
@@ -309,6 +309,7 @@ class Angle : public TrajectoryAnalysisModule
         int                                      natoms1_;
         int                                      natoms2_;
         std::vector<std::vector<RVec> >          vt0_;
+
 
         // Copy and assign disallowed by base.
 };
@@ -689,18 +690,17 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
     }
 }
 
-
 void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh   = pdata->dataHandle(angles_);
-    const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
-    const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
+    AnalysisDataHandle            dh    = pdata->dataHandle(angles_);
+    const SelectionList          &sel1  = pdata->parallelSelections(sel1_);
+    const SelectionList          &sel2  = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
 
     AnglePositionIterator iter1(sel1, natoms1_);
     AnglePositionIterator iter2(sel2, natoms2_);
@@ -831,12 +831,11 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            dh.setPoint(n, angle * RAD2DEG, bPresent);
+            dh.setRealPoint(n, angle * RAD2DEG, bPresent);
         }
     }
     dh.finishFrame();
 }
-
 
 void
 Angle::finishAnalysis(int /*nframes*/)

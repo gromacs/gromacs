@@ -95,7 +95,6 @@ TrajectoryAnalysisSettings::plotSettings() const
     return impl_->plotSettings;
 }
 
-
 unsigned long
 TrajectoryAnalysisSettings::flags() const
 {

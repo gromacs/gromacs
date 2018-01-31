@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc);
 
         virtual void finishAnalysis(int nframes);
         virtual void writeOutput();
@@ -122,8 +121,7 @@ SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
 }
 
 void
-SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
-                              TrajectoryAnalysisModuleData * /*pdata*/)
+SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/)
 {
     fprintf(stderr, "\n");
     for (size_t g = 0; g < selections_.size(); ++g)

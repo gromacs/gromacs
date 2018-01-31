@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,20 +101,20 @@ class FreeVolume : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        std::string                       fnFreevol_;
-        Selection                         sel_;
-        AnalysisData                      data_;
-        AnalysisDataAverageModulePointer  adata_;
+        std::string                         fnFreevol_;
+        Selection                           sel_;
+        AnalysisData                        data_;
+        AnalysisDataAverageModulePointer    adata_;
 
-        int                               nmol_;
-        double                            mtot_;
-        double                            cutoff_;
-        double                            probeRadius_;
-        gmx::DefaultRandomEngine          rng_;
-        int                               seed_, ninsert_;
-        AnalysisNeighborhood              nb_;
+        int                                 nmol_;
+        double                              mtot_;
+        double                              cutoff_;
+        double                              probeRadius_;
+        gmx::DefaultRandomEngine            rng_;
+        int                                 seed_, ninsert_;
+        AnalysisNeighborhood                nb_;
         //! The van der Waals radius per atom
-        std::vector<double>               vdw_radius_;
+        std::vector<double>                 vdw_radius_;
 
         // Copy and assign disallowed by base.
 };
@@ -313,14 +313,14 @@ void
 FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                          TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle                   dh   = pdata->dataHandle(data_);
-    const Selection                     &sel  = pdata->parallelSelection(sel_);
+    AnalysisDataHandle                   dh    = pdata->dataHandle(data_);
+    const Selection                     &sel   = pdata->parallelSelection(sel_);
     gmx::UniformRealDistribution<real>   dist;
 
     GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
     // Analysis framework magic
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
 
     // Compute volume and number of insertions to perform
     real V       = det(fr.box);
@@ -373,14 +373,13 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         frac = (100.0*NinsTot)/Ninsert;
     }
     // Add the free volume fraction to the data set in column 0
-    dh.setPoint(0, frac);
+    dh.setRealPoint(0, frac);
     // Add the total volume to the data set in column 1
-    dh.setPoint(1, V);
+    dh.setRealPoint(1, V);
 
     // Magic
     dh.finishFrame();
 }
-
 
 void
 FreeVolume::finishAnalysis(int /* nframes */)

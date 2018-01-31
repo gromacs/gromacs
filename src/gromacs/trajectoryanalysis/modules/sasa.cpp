@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -386,9 +386,9 @@ class Sasa : public TrajectoryAnalysisModule
          *
          * Empty if the free energy output has not been requested.
          */
-        std::vector<real>       dgsFactor_;
+        std::vector<real>                   dgsFactor_;
         //! Calculation algorithm.
-        SurfaceAreaCalculator   calculator_;
+        SurfaceAreaCalculator               calculator_;
 
         // Copy and assign disallowed by base.
 };
@@ -854,7 +854,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
         totalArea += atomArea;
         if (bResAt)
         {
-            atomAreaHandle.setPoint(ii, atomArea);
+            atomAreaHandle.setRealPoint(ii, atomArea);
             (*resAreaWork)[ri] += atomArea;
         }
         if (bDGsolv)
@@ -866,7 +866,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
     {
         for (size_t i = 0; i < (*resAreaWork).size(); ++i)
         {
-            resAreaHandle.setPoint(i, (*resAreaWork)[i]);
+            resAreaHandle.setRealPoint(i, (*resAreaWork)[i]);
         }
     }
     *totalAreaOut = totalArea;
@@ -877,18 +877,18 @@ void
 Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                    TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   ah         = pdata->dataHandle(area_);
-    AnalysisDataHandle   dgh        = pdata->dataHandle(dgSolv_);
-    AnalysisDataHandle   aah        = pdata->dataHandle(atomArea_);
-    AnalysisDataHandle   rah        = pdata->dataHandle(residueArea_);
-    AnalysisDataHandle   vh         = pdata->dataHandle(volume_);
-    const Selection     &surfaceSel = pdata->parallelSelection(surfaceSel_);
-    const SelectionList &outputSel  = pdata->parallelSelections(outputSel_);
-    SasaModuleData      &frameData  = *static_cast<SasaModuleData *>(pdata);
+    AnalysisDataHandle            ah         = pdata->dataHandle(area_);
+    AnalysisDataHandle            dgh        = pdata->dataHandle(dgSolv_);
+    AnalysisDataHandle            aah        = pdata->dataHandle(atomArea_);
+    AnalysisDataHandle            rah        = pdata->dataHandle(residueArea_);
+    AnalysisDataHandle            vh         = pdata->dataHandle(volume_);
+    const Selection              &surfaceSel = pdata->parallelSelection(surfaceSel_);
+    const SelectionList          &outputSel  = pdata->parallelSelections(outputSel_);
+    SasaModuleData               &frameData  = *static_cast<SasaModuleData *>(pdata);
 
-    const bool           bResAt    = !frameData.res_a_.empty();
-    const bool           bDGsol    = !dgsFactor_.empty();
-    const bool           bConnolly = (frnr == 0 && !fnConnolly_.empty());
+    const bool                    bResAt    = !frameData.res_a_.empty();
+    const bool                    bDGsol    = !dgsFactor_.empty();
+    const bool                    bConnolly = (frnr == 0 && !fnConnolly_.empty());
 
     // Update indices of selected atoms in the work array.
     if (surfaceSel.isDynamic())
@@ -967,18 +967,18 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                       &top_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
     }
 
-    ah.startFrame(frnr, fr.time);
+    ah.startRealFrame(frnr, fr.time);
     if (bResAt)
     {
-        aah.startFrame(frnr, fr.time);
-        rah.startFrame(frnr, fr.time);
+        aah.startRealFrame(frnr, fr.time);
+        rah.startRealFrame(frnr, fr.time);
     }
     if (bDGsol)
     {
-        dgh.startFrame(frnr, fr.time);
+        dgh.startRealFrame(frnr, fr.time);
     }
 
-    ah.setPoint(0, totarea);
+    ah.setRealPoint(0, totarea);
 
     real totalArea, dgsolv;
     if (bResAt || bDGsol)
@@ -987,7 +987,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
         if (bDGsol)
         {
-            dgh.setPoint(0, dgsolv);
+            dgh.setRealPoint(0, dgsolv);
         }
     }
     for (size_t g = 0; g < outputSel.size(); ++g)
@@ -999,10 +999,10 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         computeAreas(surfaceSel, outputSel[g], frameData.atomAreas_, dgsFactor_,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
-        ah.setPoint(g + 1, totalArea);
+        ah.setRealPoint(g + 1, totalArea);
         if (bDGsol)
         {
-            dgh.setPoint(g + 1, dgsolv);
+            dgh.setRealPoint(g + 1, dgsolv);
         }
     }
 
@@ -1025,9 +1025,9 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             totmass += surfaceSel.position(i).mass();
         }
         const real density = totmass*AMU/(totvolume*NANO*NANO*NANO);
-        vh.startFrame(frnr, fr.time);
-        vh.setPoint(0, totvolume);
-        vh.setPoint(1, density);
+        vh.startRealFrame(frnr, fr.time);
+        vh.setRealPoint(0, totvolume);
+        vh.setRealPoint(1, density);
         vh.finishFrame();
     }
 }

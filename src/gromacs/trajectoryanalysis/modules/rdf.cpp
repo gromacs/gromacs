@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,6 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -465,14 +464,14 @@ void
 Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                   TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   dh        = pdata->dataHandle(pairDist_);
-    AnalysisDataHandle   nh        = pdata->dataHandle(normFactors_);
-    const Selection     &refSel    = pdata->parallelSelection(refSel_);
-    const SelectionList &sel       = pdata->parallelSelections(sel_);
-    RdfModuleData       &frameData = *static_cast<RdfModuleData *>(pdata);
-    const bool           bSurface  = !frameData.surfaceDist2_.empty();
+    AnalysisDataHandle            dh        = pdata->dataHandle(pairDist_);
+    AnalysisDataHandle            nh        = pdata->dataHandle(normFactors_);
+    const Selection              &refSel    = pdata->parallelSelection(refSel_);
+    const SelectionList          &sel       = pdata->parallelSelections(sel_);
+    RdfModuleData                &frameData = *static_cast<RdfModuleData *>(pdata);
+    const bool                    bSurface  = !frameData.surfaceDist2_.empty();
 
-    matrix               boxForVolume;
+    matrix                        boxForVolume;
     copy_mat(fr.box, boxForVolume);
     if (bXY_)
     {
@@ -482,7 +481,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
     const real inverseVolume = 1.0 / det(boxForVolume);
 
-    nh.startFrame(frnr, fr.time);
+    nh.startRealFrame(frnr, fr.time);
     // Compute the normalization factor for the number of reference positions.
     if (bSurface)
     {
@@ -502,19 +501,19 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     prevId = id;
                 }
             }
-            nh.setPoint(0, count);
+            nh.setRealPoint(0, count);
         }
         else
         {
-            nh.setPoint(0, surfaceGroupCount_);
+            nh.setRealPoint(0, surfaceGroupCount_);
         }
     }
     else
     {
-        nh.setPoint(0, refSel.posCount());
+        nh.setRealPoint(0, refSel.posCount());
     }
 
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
     AnalysisNeighborhoodSearch    nbsearch = nb_.initSearch(pbc, refSel);
     for (size_t g = 0; g < sel.size(); ++g)
     {
@@ -551,7 +550,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     // surface positions.
                     if (r2 > cut2_ && r2 <= rmax2_)
                     {
-                        dh.setPoint(0, std::sqrt(r2));
+                        dh.setRealPoint(0, std::sqrt(r2));
                         dh.finishPointSet();
                     }
                 }
@@ -570,14 +569,14 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 {
                     // TODO: Consider whether the histogramming could be done with
                     // less overhead (after first measuring the overhead).
-                    dh.setPoint(0, std::sqrt(r2));
+                    dh.setRealPoint(0, std::sqrt(r2));
                     dh.finishPointSet();
                 }
             }
         }
         // Normalization factor for the number density (only used without
         // -surf, but does not hurt to populate otherwise).
-        nh.setPoint(g + 1, sel[g].posCount() * inverseVolume);
+        nh.setRealPoint(g + 1, sel[g].posCount() * inverseVolume);
     }
     dh.finishFrame();
     nh.finishFrame();

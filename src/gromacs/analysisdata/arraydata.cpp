@@ -128,7 +128,7 @@ AbstractAnalysisArrayData::allocateValues()
     std::vector<AnalysisDataValue>::iterator i;
     for (i = value_.begin(); i != value_.end(); ++i)
     {
-        i->setValue(0.0);
+        i->setRealValue(0.0);
     }
 }
 
