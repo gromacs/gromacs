@@ -252,6 +252,8 @@ class Poldata
          * \param[in] atype  Atom type
          */
         std::string  getCharge(  std::string atype);
+        
+        std::vector<Ffatype> &getAtypes() {return alexandria_; }
 
         FfatypeIterator getAtypeBegin() { return alexandria_.begin(); }
 
