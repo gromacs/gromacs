@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,9 @@
 #include <algorithm>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
@@ -54,6 +57,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
 namespace gmx
@@ -79,11 +83,12 @@ class Trajectory : public TrajectoryAnalysisModule
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void startFrames(const SelectionCollection         &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -98,6 +103,10 @@ class Trajectory : public TrajectoryAnalysisModule
         AnalysisData                        xdata_;
         AnalysisData                        vdata_;
         AnalysisData                        fdata_;
+
+        AnalysisDataParallelOptions         dataOptions_;
+        TrajectoryAnalysisModuleDataPointer pdata_;
+
 };
 
 Trajectory::Trajectory()
@@ -237,13 +246,19 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
+void
+Trajectory::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
 
 void
-Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                         TrajectoryAnalysisModuleData *pdata)
+Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
+//                         TrajectoryAnalysisModuleData *pdata)
 {
-    const SelectionList &sel = pdata->parallelSelections(sel_);
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
 
+    const SelectionList          &sel = pdata->parallelSelections(sel_);
     // There is some duplication here, but cppcheck cannot handle function
     // types that return rvec references, and MSVC also apparently segfaults
     // when using std::function with a member function here...
@@ -300,6 +315,17 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
             dh.finishFrame();
         }
     }
+}
+
+void
+Trajectory::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
 }
 
 
