@@ -1991,7 +1991,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                        eprAVER, mdebin, fcd, groups, &(ir->opts), ir->awh);
         }
     }
-
+    // TODO Enable the next line when merging to master branch
+    // done_ebin(mdebin->ebin);
     done_mdoutf(outf);
 
     if (bPMETune)
