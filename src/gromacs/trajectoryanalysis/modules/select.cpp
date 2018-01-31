@@ -54,6 +54,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -66,6 +67,7 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -285,10 +287,15 @@ class Select : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void startFrames(const SelectionCollection         &selections);
+        TrajectoryAnalysisModuleDataPointer setDataPointer(
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -317,6 +324,9 @@ class Select : public TrajectoryAnalysisModule
         AnalysisData                        mdata_;
         AnalysisDataAverageModulePointer    occupancyModule_;
         AnalysisDataLifetimeModulePointer   lifetimeModule_;
+
+        AnalysisDataParallelOptions         dataOptions_;
+        TrajectoryAnalysisModuleDataPointer pdata_;
 };
 
 Select::Select()
@@ -476,6 +486,21 @@ Select::optionsFinished(TrajectoryAnalysisSettings *settings)
 }
 
 void
+Select::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
+
+TrajectoryAnalysisModuleDataPointer
+Select::setDataPointer(const AnalysisDataParallelOptions &opt,
+                       const SelectionCollection         &selections)
+{
+    return TrajectoryAnalysisModuleDataPointer(
+            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
+}
+
+
+void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation        &top)
 {
@@ -598,15 +623,16 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                     TrajectoryAnalysisModuleData *pdata)
+Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
+//                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
-    AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
-    AnalysisDataHandle   idh = pdata->dataHandle(idata_);
-    AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
-    const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology          *top = top_->topology();
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    AnalysisDataHandle            sdh   = pdata->dataHandle(sdata_);
+    AnalysisDataHandle            cdh   = pdata->dataHandle(cdata_);
+    AnalysisDataHandle            idh   = pdata->dataHandle(idata_);
+    AnalysisDataHandle            mdh   = pdata->dataHandle(mdata_);
+    const SelectionList          &sel   = pdata->parallelSelections(sel_);
+    t_topology                   *top   = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -670,6 +696,16 @@ Select::finishAnalysis(int /*nframes*/)
 {
 }
 
+void
+Select::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
+}
 
 void
 Select::writeOutput()

@@ -217,8 +217,7 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
  * TrajectoryAnalysisModuleDataBasic
  */
 
-namespace
-{
+
 
 /*! \brief
  * Basic thread-local trajectory analysis data storage class.
@@ -228,22 +227,6 @@ namespace
  *
  * \ingroup module_trajectoryanalysis
  */
-class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
-{
-    public:
-        /*! \brief
-         * Initializes thread-local storage for data handles and selections.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         */
-        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
-                                          const AnalysisDataParallelOptions &opt,
-                                          const SelectionCollection         &selections);
-
-        virtual void finish();
-};
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule          *module,
@@ -259,8 +242,6 @@ TrajectoryAnalysisModuleDataBasic::finish()
 {
     finishDataHandles();
 }
-
-}   // namespace
 
 
 /********************************************************************
@@ -291,16 +272,14 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(
 }
 
 
-TrajectoryAnalysisModuleDataPointer
-TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
-                                      const SelectionCollection         &selections)
+void
+TrajectoryAnalysisModule::startFrames( //const AnalysisDataParallelOptions &opt,
+        const SelectionCollection         & /*selections*/)
 {
-    return TrajectoryAnalysisModuleDataPointer(
-            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
-void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
+void TrajectoryAnalysisModule::finishFrames() //TrajectoryAnalysisModuleData * /*pdata*/)
 {
 }
 

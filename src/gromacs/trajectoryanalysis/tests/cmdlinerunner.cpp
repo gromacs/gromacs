@@ -46,10 +46,17 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
@@ -68,10 +75,12 @@ class MockModule : public gmx::TrajectoryAnalysisModule
                                        gmx::TrajectoryAnalysisSettings *settings));
         MOCK_METHOD2(initAnalysis, void(const gmx::TrajectoryAnalysisSettings &settings,
                                         const gmx::TopologyInformation        &top));
+        MOCK_METHOD1(startFrames, void(const gmx::SelectionCollection         &selections));
 
-        MOCK_METHOD4(analyzeFrame, void(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                        gmx::TrajectoryAnalysisModuleData *pdata));
+        MOCK_METHOD3(analyzeFrame, void(int frnr, const t_trxframe &fr, t_pbc *pbc)); //,
+//                                        gmx::TrajectoryAnalysisModuleData *pdata));
         MOCK_METHOD1(finishAnalysis, void(int nframes));
+        MOCK_METHOD0(finishFrames, void());
         MOCK_METHOD0(writeOutput, void());
 };
 
@@ -134,9 +143,11 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, RunsWithSubsetTrajectory)
     using ::testing::_;
     EXPECT_CALL(*mockModule_, initOptions(_, _));
     EXPECT_CALL(*mockModule_, initAnalysis(_, _));
-    EXPECT_CALL(*mockModule_, analyzeFrame(0, _, _, _));
-    EXPECT_CALL(*mockModule_, analyzeFrame(1, _, _, _));
+    EXPECT_CALL(*mockModule_, startFrames(_));
+    EXPECT_CALL(*mockModule_, analyzeFrame(0, _, _));
+    EXPECT_CALL(*mockModule_, analyzeFrame(1, _, _));
     EXPECT_CALL(*mockModule_, finishAnalysis(2));
+    EXPECT_CALL(*mockModule_, finishFrames());
     EXPECT_CALL(*mockModule_, writeOutput());
 
     setInputFile("-s", "simple.gro");

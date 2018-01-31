@@ -131,9 +131,7 @@ int RunnerModule::run()
     t_pbc *ppbc = settings_.hasPBC() ? &pbc : nullptr;
 
     int    nframes = 0;
-    AnalysisDataParallelOptions         dataOptions;
-    TrajectoryAnalysisModuleDataPointer pdata(
-            module_->startFrames(dataOptions, selections_));
+    module_->startFrames(selections_);
     do
     {
         common_.initFrame();
@@ -144,18 +142,13 @@ int RunnerModule::run()
         }
 
         selections_.evaluate(&frame, ppbc);
-        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        module_->analyzeFrame(nframes, frame, ppbc);
         module_->finishFrameSerial(nframes);
 
         ++nframes;
     }
     while (common_.readNextFrame());
-    module_->finishFrames(pdata.get());
-    if (pdata.get() != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata.reset();
+    module_->finishFrames();
 
     if (common_.hasTrajectory())
     {

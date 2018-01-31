@@ -51,14 +51,19 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -110,13 +115,16 @@ class PairDistance : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        virtual void startFrames(const SelectionCollection         &selections);
+        TrajectoryAnalysisModuleDataPointer setDataPointer(
             const AnalysisDataParallelOptions &opt,
             const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -161,7 +169,10 @@ class PairDistance : public TrajectoryAnalysisModule
         real                    cutoff2_;
 
         //! Neighborhood search object for the pair search.
-        AnalysisNeighborhood    nb_;
+        AnalysisNeighborhood                nb_;
+
+        TrajectoryAnalysisModuleDataPointer pdata_;
+        AnalysisDataParallelOptions         dataOptions_;
 
         // Copy and assign disallowed by base.
 };
@@ -391,25 +402,33 @@ class PairDistanceModuleData : public TrajectoryAnalysisModuleData
         std::vector<int>  refCountArray_;
 };
 
-TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection         &selections)
+//TrajectoryAnalysisModuleDataPointer
+void
+PairDistance::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
+
+TrajectoryAnalysisModuleDataPointer
+PairDistance::setDataPointer(const AnalysisDataParallelOptions &opt,
+                             const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
-            new PairDistanceModuleData(this, opt, selections, refGroupCount_,
-                                       refSel_, maxGroupCount_));
+            new PairDistanceModuleData(this, opt, selections,
+                                       refGroupCount_, refSel_, maxGroupCount_));
 }
 
 void
-PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                           TrajectoryAnalysisModuleData *pdata)
+PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
+//                           TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle         dh            = pdata->dataHandle(distances_);
-    const Selection           &refSel        = pdata->parallelSelection(refSel_);
-    const SelectionList       &sel           = pdata->parallelSelections(sel_);
-    PairDistanceModuleData    &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
-    std::vector<real>         &distArray     = frameData.distArray_;
-    std::vector<int>          &countArray    = frameData.countArray_;
+    TrajectoryAnalysisModuleData *pdata         = pdata_.get();
+    AnalysisDataHandle            dh            = pdata->dataHandle(distances_);
+    const Selection              &refSel        = pdata->parallelSelection(refSel_);
+    const SelectionList          &sel           = pdata->parallelSelections(sel_);
+    PairDistanceModuleData       &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
+    std::vector<real>            &distArray     = frameData.distArray_;
+    std::vector<int>             &countArray    = frameData.countArray_;
 
     if (cutoff_ > 0.0 && refSel.isDynamic())
     {
@@ -529,6 +548,18 @@ void
 PairDistance::finishAnalysis(int /*nframes*/)
 {
 }
+
+void
+PairDistance::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
+}
+
 
 void
 PairDistance::writeOutput()
