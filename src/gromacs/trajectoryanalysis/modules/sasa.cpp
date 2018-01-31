@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,
+ * by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +51,9 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
@@ -292,13 +296,15 @@ class Sasa : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        virtual void startFrames(const SelectionCollection         &selections);
+        TrajectoryAnalysisModuleDataPointer setDataPointer(
             const AnalysisDataParallelOptions &opt,
             const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -386,9 +392,12 @@ class Sasa : public TrajectoryAnalysisModule
          *
          * Empty if the free energy output has not been requested.
          */
-        std::vector<real>       dgsFactor_;
+        std::vector<real>                   dgsFactor_;
         //! Calculation algorithm.
-        SurfaceAreaCalculator   calculator_;
+        SurfaceAreaCalculator               calculator_;
+
+        AnalysisDataParallelOptions         dataOptions_;
+        TrajectoryAnalysisModuleDataPointer pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -786,7 +795,14 @@ class SasaModuleData : public TrajectoryAnalysisModuleData
         std::vector<real>       res_a_;
 };
 
-TrajectoryAnalysisModuleDataPointer Sasa::startFrames(
+void
+Sasa::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
+
+TrajectoryAnalysisModuleDataPointer
+Sasa::setDataPointer(
         const AnalysisDataParallelOptions &opt,
         const SelectionCollection         &selections)
 {
@@ -874,21 +890,22 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
 }
 
 void
-Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                   TrajectoryAnalysisModuleData *pdata)
+Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
+//                   TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   ah         = pdata->dataHandle(area_);
-    AnalysisDataHandle   dgh        = pdata->dataHandle(dgSolv_);
-    AnalysisDataHandle   aah        = pdata->dataHandle(atomArea_);
-    AnalysisDataHandle   rah        = pdata->dataHandle(residueArea_);
-    AnalysisDataHandle   vh         = pdata->dataHandle(volume_);
-    const Selection     &surfaceSel = pdata->parallelSelection(surfaceSel_);
-    const SelectionList &outputSel  = pdata->parallelSelections(outputSel_);
-    SasaModuleData      &frameData  = *static_cast<SasaModuleData *>(pdata);
+    TrajectoryAnalysisModuleData *pdata      = pdata_.get();
+    AnalysisDataHandle            ah         = pdata->dataHandle(area_);
+    AnalysisDataHandle            dgh        = pdata->dataHandle(dgSolv_);
+    AnalysisDataHandle            aah        = pdata->dataHandle(atomArea_);
+    AnalysisDataHandle            rah        = pdata->dataHandle(residueArea_);
+    AnalysisDataHandle            vh         = pdata->dataHandle(volume_);
+    const Selection              &surfaceSel = pdata->parallelSelection(surfaceSel_);
+    const SelectionList          &outputSel  = pdata->parallelSelections(outputSel_);
+    SasaModuleData               &frameData  = *static_cast<SasaModuleData *>(pdata);
 
-    const bool           bResAt    = !frameData.res_a_.empty();
-    const bool           bDGsol    = !dgsFactor_.empty();
-    const bool           bConnolly = (frnr == 0 && !fnConnolly_.empty());
+    const bool                    bResAt    = !frameData.res_a_.empty();
+    const bool                    bDGsol    = !dgsFactor_.empty();
+    const bool                    bConnolly = (frnr == 0 && !fnConnolly_.empty());
 
     // Update indices of selected atoms in the work array.
     if (surfaceSel.isDynamic())
@@ -1052,6 +1069,17 @@ Sasa::finishAnalysis(int /*nframes*/)
     //    }
     //    ffclose(fp3);
     //}
+}
+
+void
+Sasa::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
 }
 
 void

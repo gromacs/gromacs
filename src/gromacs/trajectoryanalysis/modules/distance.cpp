@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,
+ * by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +47,9 @@
 #include <string>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -57,6 +61,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -81,10 +86,15 @@ class Distance : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void startFrames(const SelectionCollection         &selections);
+        TrajectoryAnalysisModuleDataPointer setDataPointer(
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//        TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -104,6 +114,10 @@ class Distance : public TrajectoryAnalysisModule
         AnalysisDataAverageModulePointer         allStatsModule_;
         AnalysisDataFrameAverageModulePointer    averageModule_;
         AnalysisDataSimpleHistogramModulePointer histogramModule_;
+
+        AnalysisDataParallelOptions              dataOptions_;
+        TrajectoryAnalysisModuleDataPointer      pdata_;
+
 
         // Copy and assign disallowed by base.
 };
@@ -312,14 +326,30 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
+void
+Distance::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
+
+TrajectoryAnalysisModuleDataPointer
+Distance::setDataPointer(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection         &selections)
+{
+    return TrajectoryAnalysisModuleDataPointer(
+            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
+}
+
 
 void
-Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                       TrajectoryAnalysisModuleData *pdata)
+Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
+//                       TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle   distHandle = pdata->dataHandle(distances_);
-    AnalysisDataHandle   xyzHandle  = pdata->dataHandle(xyz_);
-    const SelectionList &sel        = pdata->parallelSelections(sel_);
+    TrajectoryAnalysisModuleData *pdata      = pdata_.get();
+    AnalysisDataHandle            distHandle = pdata->dataHandle(distances_);
+    AnalysisDataHandle            xyzHandle  = pdata->dataHandle(xyz_);
+    const SelectionList          &sel        = pdata->parallelSelections(sel_);
 
     checkSelections(sel);
 
@@ -361,6 +391,16 @@ Distance::finishAnalysis(int /*nframes*/)
     averageHistogram.done();
 }
 
+void
+Distance::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
+}
 
 void
 Distance::writeOutput()

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,
+ * by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +51,7 @@
 
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
+//#include "gromacs/analysisdata/paralleloptions.h"
 
 struct t_pbc;
 struct t_trxframe;
@@ -181,6 +183,24 @@ class TrajectoryAnalysisModuleData
 typedef std::unique_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
+class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
+{
+    public:
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         */
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
+                                          const AnalysisDataParallelOptions &opt,
+                                          const SelectionCollection         &selections);
+
+        virtual void finish();
+};
+
+
 /*! \brief
  * Base class for trajectory analysis modules.
  *
@@ -299,7 +319,6 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Starts the analysis of frames.
          *
-         * \param[in]  opt
          * \param[in]  selections  Frame-local selection collection object.
          * \returns    Data structure for thread-local data.
          *
@@ -311,14 +330,15 @@ class TrajectoryAnalysisModule
          * registerAnalysisDataset(), as well as the thread-local selection
          * collection.  These can be accessed in analyzeFrame() using the
          * methods in TrajectoryAnalysisModuleData.
+         * As the data modules are part of the modules, each module needs
+         * to take care itself in registering it.
          * If other thread-local data is needed, this function should be
          * overridden and it should create an instance of a class derived from
          * TrajectoryAnalysisModuleData.
          *
          * \see TrajectoryAnalysisModuleData
          */
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
+        virtual void startFrames(
             const SelectionCollection         &selections);
         /*! \brief
          * Analyzes a single frame.
@@ -327,44 +347,34 @@ class TrajectoryAnalysisModule
          *      uniquely identifies the frame.
          * \param[in]     fr     Current frame.
          * \param[in]     pbc    Periodic boundary conditions for \p fr.
-         * \param[in,out] pdata  Data structure for frame-local data.
          *
          * This method is called once for each frame to be analyzed, and should
          * analyze the positions provided in the selections.  Data handles and
          * selections should be obtained from the \p pdata structure.
          *
          * For threaded analysis, this method is called asynchronously in
-         * different threads to analyze different frames.  The \p pdata
-         * structure is one of the structures created with startFrames(),
-         * but no assumptions should be made about which of these data
-         * structures is used.  It is guaranteed that two instances of
-         * analyzeFrame() are not running concurrently with the same \p pdata
-         * data structure.
-         * Any access to data structures not stored in \p pdata should be
-         * designed to be thread-safe.
+         * different threads to analyze different frames.  Each module also needs
+         * to declare a pdata structure in startFrames() to have access to the
+         * data being stored. no assumptions should be made about which of these data
+         * structures is used.
          */
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata) = 0;
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) = 0;
         /*! \brief
          * Finishes the analysis of frames.
          *
-         * \param[in]  pdata    Data structure for thread-local data.
-         *
          * This method is called once for each call of startFrames(), with the
          * data structure returned by the corresponding startFrames().
-         * The \p pdata object should be destroyed by the caller after this
-         * function has been called.
          *
          * You only need to override this method if you need custom
          * operations to combine data from the frame-local data structures
          * to get the final result.  In such cases, the data should be
          * aggregated in this function and stored in a member attribute.
          *
-         * The default implementation does nothing.
+         * The default implementation frees the pdata object of the module.
          *
          * \see startFrames()
          */
-        virtual void finishFrames(TrajectoryAnalysisModuleData *pdata);
+        virtual void finishFrames();
 
         /*! \brief
          * Postprocesses data after frames have been read.

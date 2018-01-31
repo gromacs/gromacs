@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,
+ * by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -217,8 +218,7 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
  * TrajectoryAnalysisModuleDataBasic
  */
 
-namespace
-{
+
 
 /*! \brief
  * Basic thread-local trajectory analysis data storage class.
@@ -228,22 +228,6 @@ namespace
  *
  * \ingroup module_trajectoryanalysis
  */
-class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
-{
-    public:
-        /*! \brief
-         * Initializes thread-local storage for data handles and selections.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         */
-        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
-                                          const AnalysisDataParallelOptions &opt,
-                                          const SelectionCollection         &selections);
-
-        virtual void finish();
-};
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule          *module,
@@ -259,8 +243,6 @@ TrajectoryAnalysisModuleDataBasic::finish()
 {
     finishDataHandles();
 }
-
-}   // namespace
 
 
 /********************************************************************
@@ -291,16 +273,14 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(
 }
 
 
-TrajectoryAnalysisModuleDataPointer
-TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
-                                      const SelectionCollection         &selections)
+void
+TrajectoryAnalysisModule::startFrames( //const AnalysisDataParallelOptions &opt,
+        const SelectionCollection         & /*selections*/)
 {
-    return TrajectoryAnalysisModuleDataPointer(
-            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
-void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
+void TrajectoryAnalysisModule::finishFrames() //TrajectoryAnalysisModuleData * /*pdata*/)
 {
 }
 
