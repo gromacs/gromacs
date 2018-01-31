@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,6 +84,8 @@ class TerminationHelper
         void runFirstMdrun(const std::string &expectedCptFileName);
         //! Check that the restart works, but don't do any more MD steps.
         void runSecondMdrun();
+        //! Check that the restart works without appending, but don't do any more MD steps.
+        void runSecondMdrunWithNoAppend();
     protected:
         //! Object to help call mdrun
         CommandLine      *mdrunCaller_;

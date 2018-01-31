@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +81,15 @@ void TerminationHelper::runSecondMdrun()
     CommandLine secondPart(*mdrunCaller_);
     secondPart.addOption("-cpi", runner_->cptFileName_);
     secondPart.addOption("-nsteps", 2);
+    ASSERT_EQ(0, runner_->callMdrun(secondPart));
+}
+
+void TerminationHelper::runSecondMdrunWithNoAppend()
+{
+    CommandLine secondPart(*mdrunCaller_);
+    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-nsteps", 2);
+    secondPart.append("-noappend");
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
