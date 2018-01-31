@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,9 @@
 #include <string>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/math/functions.h"
@@ -63,6 +66,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -95,26 +99,31 @@ class FreeVolume : public TrajectoryAnalysisModule
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void startFrames(const SelectionCollection         &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
-        std::string                       fnFreevol_;
-        Selection                         sel_;
-        AnalysisData                      data_;
-        AnalysisDataAverageModulePointer  adata_;
+        std::string                         fnFreevol_;
+        Selection                           sel_;
+        AnalysisData                        data_;
+        AnalysisDataAverageModulePointer    adata_;
 
-        int                               nmol_;
-        double                            mtot_;
-        double                            cutoff_;
-        double                            probeRadius_;
-        gmx::DefaultRandomEngine          rng_;
-        int                               seed_, ninsert_;
-        AnalysisNeighborhood              nb_;
+        int                                 nmol_;
+        double                              mtot_;
+        double                              cutoff_;
+        double                              probeRadius_;
+        gmx::DefaultRandomEngine            rng_;
+        int                                 seed_, ninsert_;
+        AnalysisNeighborhood                nb_;
         //! The van der Waals radius per atom
-        std::vector<double>               vdw_radius_;
+        std::vector<double>                 vdw_radius_;
+
+        AnalysisDataParallelOptions         dataOptions_;
+        TrajectoryAnalysisModuleDataPointer pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -310,11 +319,18 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 void
-FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                         TrajectoryAnalysisModuleData *pdata)
+FreeVolume::startFrames(const SelectionCollection         &selections)
 {
-    AnalysisDataHandle                   dh   = pdata->dataHandle(data_);
-    const Selection                     &sel  = pdata->parallelSelection(sel_);
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
+
+void
+FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
+//                         TrajectoryAnalysisModuleData *pdata)
+{
+    TrajectoryAnalysisModuleData        *pdata = pdata_.get();
+    AnalysisDataHandle                   dh    = pdata->dataHandle(data_);
+    const Selection                     &sel   = pdata->parallelSelection(sel_);
     gmx::UniformRealDistribution<real>   dist;
 
     GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
@@ -381,6 +397,16 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh.finishFrame();
 }
 
+void
+FreeVolume::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
+}
 
 void
 FreeVolume::finishAnalysis(int /* nframes */)

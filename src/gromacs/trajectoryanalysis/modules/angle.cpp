@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,9 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -60,6 +63,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -276,11 +280,13 @@ class Angle : public TrajectoryAnalysisModule
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
+        virtual void startFrames(const SelectionCollection         &selections);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
+//                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
+        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -309,6 +315,9 @@ class Angle : public TrajectoryAnalysisModule
         int                                      natoms1_;
         int                                      natoms2_;
         std::vector<std::vector<RVec> >          vt0_;
+
+        AnalysisDataParallelOptions              dataOptions_;
+        TrajectoryAnalysisModuleDataPointer      pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -689,14 +698,20 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
     }
 }
 
+void
+Angle::startFrames(const SelectionCollection         &selections)
+{
+    pdata_ = (setDataPointer(dataOptions_, selections));
+}
 
 void
-Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                    TrajectoryAnalysisModuleData *pdata)
+Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
+//                    TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh   = pdata->dataHandle(angles_);
-    const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
-    const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    AnalysisDataHandle            dh    = pdata->dataHandle(angles_);
+    const SelectionList          &sel1  = pdata->parallelSelections(sel1_);
+    const SelectionList          &sel2  = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
@@ -837,6 +852,16 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh.finishFrame();
 }
 
+void
+Angle::finishFrames()
+{
+    TrajectoryAnalysisModuleData *pdata = pdata_.get();
+    if (pdata != nullptr)
+    {
+        pdata->finish();
+    }
+    pdata_.reset();
+}
 
 void
 Angle::finishAnalysis(int /*nframes*/)
