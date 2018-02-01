@@ -46,9 +46,6 @@
 #include <algorithm>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
@@ -57,7 +54,6 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
 namespace gmx
@@ -83,12 +79,10 @@ class Trajectory : public TrajectoryAnalysisModule
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-        virtual void startFrames(const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -103,9 +97,6 @@ class Trajectory : public TrajectoryAnalysisModule
         AnalysisData                        xdata_;
         AnalysisData                        vdata_;
         AnalysisData                        fdata_;
-
-        AnalysisDataParallelOptions         dataOptions_;
-        TrajectoryAnalysisModuleDataPointer pdata_;
 
 };
 
@@ -247,17 +238,9 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 void
-Trajectory::startFrames(const SelectionCollection         &selections)
+Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                         TrajectoryAnalysisModuleData *pdata)
 {
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-void
-Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
-//                         TrajectoryAnalysisModuleData *pdata)
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-
     const SelectionList          &sel = pdata->parallelSelections(sel_);
     // There is some duplication here, but cppcheck cannot handle function
     // types that return rvec references, and MSVC also apparently segfaults
@@ -266,14 +249,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.x(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.x(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -284,14 +267,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.v(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.v(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -302,32 +285,20 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startFrame(frnr, fr.time);
+            dh.startRealFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setPoints(i*3, 3, pos.f(), pos.selected());
+                    dh.setRealPoints(i*3, 3, pos.f(), pos.selected());
                 }
             }
             dh.finishFrame();
         }
     }
 }
-
-void
-Trajectory::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
-}
-
 
 void
 Trajectory::finishAnalysis(int /*nframes*/)

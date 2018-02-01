@@ -53,9 +53,6 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -71,7 +68,6 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -127,15 +123,13 @@ class Rdf : public TrajectoryAnalysisModule
         virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
                                          const t_trxframe                 &fr);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        TrajectoryAnalysisModuleDataPointer setDataPointer(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
             const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -203,9 +197,6 @@ class Rdf : public TrajectoryAnalysisModule
         real                                      cut2_;
         real                                      rmax2_;
         int                                       surfaceGroupCount_;
-
-        AnalysisDataParallelOptions               dataOptions_;
-        TrajectoryAnalysisModuleDataPointer       pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -461,14 +452,7 @@ class RdfModuleData : public TrajectoryAnalysisModuleData
         std::vector<real> surfaceDist2_;
 };
 
-void
-Rdf::startFrames(const SelectionCollection         &selections)
-{
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-TrajectoryAnalysisModuleDataPointer
-Rdf::setDataPointer(
+TrajectoryAnalysisModuleDataPointer Rdf::startFrames(
         const AnalysisDataParallelOptions &opt,
         const SelectionCollection         &selections)
 {
@@ -477,10 +461,9 @@ Rdf::setDataPointer(
 }
 
 void
-Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                  TrajectoryAnalysisModuleData *pdata)
+Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                  TrajectoryAnalysisModuleData *pdata)
 {
-    TrajectoryAnalysisModuleData *pdata     = pdata_.get();
     AnalysisDataHandle            dh        = pdata->dataHandle(pairDist_);
     AnalysisDataHandle            nh        = pdata->dataHandle(normFactors_);
     const Selection              &refSel    = pdata->parallelSelection(refSel_);
@@ -498,7 +481,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
     }
     const real inverseVolume = 1.0 / det(boxForVolume);
 
-    nh.startFrame(frnr, fr.time);
+    nh.startRealFrame(frnr, fr.time);
     // Compute the normalization factor for the number of reference positions.
     if (bSurface)
     {
@@ -518,19 +501,19 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                     prevId = id;
                 }
             }
-            nh.setPoint(0, count);
+            nh.setRealPoint(0, count);
         }
         else
         {
-            nh.setPoint(0, surfaceGroupCount_);
+            nh.setRealPoint(0, surfaceGroupCount_);
         }
     }
     else
     {
-        nh.setPoint(0, refSel.posCount());
+        nh.setRealPoint(0, refSel.posCount());
     }
 
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
     AnalysisNeighborhoodSearch    nbsearch = nb_.initSearch(pbc, refSel);
     for (size_t g = 0; g < sel.size(); ++g)
     {
@@ -567,7 +550,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                     // surface positions.
                     if (r2 > cut2_ && r2 <= rmax2_)
                     {
-                        dh.setPoint(0, std::sqrt(r2));
+                        dh.setRealPoint(0, std::sqrt(r2));
                         dh.finishPointSet();
                     }
                 }
@@ -586,14 +569,14 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                 {
                     // TODO: Consider whether the histogramming could be done with
                     // less overhead (after first measuring the overhead).
-                    dh.setPoint(0, std::sqrt(r2));
+                    dh.setRealPoint(0, std::sqrt(r2));
                     dh.finishPointSet();
                 }
             }
         }
         // Normalization factor for the number density (only used without
         // -surf, but does not hurt to populate otherwise).
-        nh.setPoint(g + 1, sel[g].posCount() * inverseVolume);
+        nh.setRealPoint(g + 1, sel[g].posCount() * inverseVolume);
     }
     dh.finishFrame();
     nh.finishFrame();
@@ -693,17 +676,6 @@ Rdf::finishAnalysis(int /*nframes*/)
         }
         cumulativeRdf->addModule(plotm);
     }
-}
-
-void
-Rdf::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
 }
 
 void

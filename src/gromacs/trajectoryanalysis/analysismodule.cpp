@@ -217,7 +217,8 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
  * TrajectoryAnalysisModuleDataBasic
  */
 
-
+namespace
+{
 
 /*! \brief
  * Basic thread-local trajectory analysis data storage class.
@@ -228,6 +229,23 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
  * \ingroup module_trajectoryanalysis
  */
 
+class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
+{
+    public:
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         */
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
+                                          const AnalysisDataParallelOptions &opt,
+                                          const SelectionCollection         &selections);
+
+        virtual void finish();
+};
+
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule          *module,
         const AnalysisDataParallelOptions &opt,
@@ -237,12 +255,14 @@ TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
 }
 
 
+
 void
 TrajectoryAnalysisModuleDataBasic::finish()
 {
     finishDataHandles();
 }
 
+} // namespace
 
 /********************************************************************
  * TrajectoryAnalysisModule
@@ -272,23 +292,16 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(
 }
 
 
-void
-TrajectoryAnalysisModule::startFrames(
-        const SelectionCollection         & /*selections*/)
-{
-}
-
 TrajectoryAnalysisModuleDataPointer
-TrajectoryAnalysisModule::setDataPointer(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection         &selections)
+TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
+                                      const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
-void TrajectoryAnalysisModule::finishFrames() //TrajectoryAnalysisModuleData * /*pdata*/)
+void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
 {
 }
 
@@ -349,7 +362,6 @@ void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
     registerBasicDataset(data, name);
     impl_->analysisDatasets_[name] = data;
 }
-
 
 void TrajectoryAnalysisModule::finishFrameSerial(int frameIndex)
 {

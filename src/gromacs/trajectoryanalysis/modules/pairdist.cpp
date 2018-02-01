@@ -51,19 +51,14 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -115,15 +110,13 @@ class PairDistance : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        TrajectoryAnalysisModuleDataPointer setDataPointer(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
             const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -169,9 +162,6 @@ class PairDistance : public TrajectoryAnalysisModule
 
         //! Neighborhood search object for the pair search.
         AnalysisNeighborhood                nb_;
-
-        TrajectoryAnalysisModuleDataPointer pdata_;
-        AnalysisDataParallelOptions         dataOptions_;
 
         // Copy and assign disallowed by base.
 };
@@ -401,16 +391,9 @@ class PairDistanceModuleData : public TrajectoryAnalysisModuleData
         std::vector<int>  refCountArray_;
 };
 
-//TrajectoryAnalysisModuleDataPointer
-void
-PairDistance::startFrames(const SelectionCollection         &selections)
-{
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-TrajectoryAnalysisModuleDataPointer
-PairDistance::setDataPointer(const AnalysisDataParallelOptions &opt,
-                             const SelectionCollection         &selections)
+TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new PairDistanceModuleData(this, opt, selections,
@@ -418,10 +401,9 @@ PairDistance::setDataPointer(const AnalysisDataParallelOptions &opt,
 }
 
 void
-PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                           TrajectoryAnalysisModuleData *pdata)
+PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                           TrajectoryAnalysisModuleData *pdata)
 {
-    TrajectoryAnalysisModuleData *pdata         = pdata_.get();
     AnalysisDataHandle            dh            = pdata->dataHandle(distances_);
     const Selection              &refSel        = pdata->parallelSelection(refSel_);
     const SelectionList          &sel           = pdata->parallelSelections(sel_);
@@ -442,7 +424,7 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
     const std::vector<int>    &refCountArray = frameData.refCountArray_;
 
     AnalysisNeighborhoodSearch nbsearch  = nb_.initSearch(pbc, refSel);
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         const int columnCount = distances_.columnCount(g);
@@ -530,13 +512,13 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
         {
             if (countArray[i] > 0)
             {
-                dh.setPoint(i, std::sqrt(distArray[i]));
+                dh.setRealPoint(i, std::sqrt(distArray[i]));
             }
             else
             {
                 // If there are no contributing positions, write out the cutoff
                 // value.
-                dh.setPoint(i, cutoff_, false);
+                dh.setRealPoint(i, cutoff_, false);
             }
         }
     }
@@ -547,18 +529,6 @@ void
 PairDistance::finishAnalysis(int /*nframes*/)
 {
 }
-
-void
-PairDistance::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
-}
-
 
 void
 PairDistance::writeOutput()

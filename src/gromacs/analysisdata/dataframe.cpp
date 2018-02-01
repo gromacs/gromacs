@@ -55,15 +55,26 @@ namespace gmx
 AnalysisDataFrameHeader::AnalysisDataFrameHeader()
     : index_(-1), x_(0.0), dx_(0.0)
 {
+    clear_trxframe(&coord_, TRUE);
 }
-
+AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index)
+    : index_(index), x_(0.0), dx_(0.0)
+{
+    clear_trxframe(&coord_, TRUE);
+}
 
 AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
     : index_(index), x_(x), dx_(dx)
 {
     GMX_ASSERT(index >= 0, "Invalid frame index");
+    clear_trxframe(&coord_, TRUE);
 }
 
+AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, t_trxframe coord)
+    : index_(index), x_(0.0), dx_(0.0), coord_(coord)
+{
+    GMX_ASSERT(index >= 0, "Invalid frame index");
+}
 
 /********************************************************************
  * AnalysisDataPointSetRef

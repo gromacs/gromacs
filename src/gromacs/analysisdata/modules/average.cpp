@@ -155,12 +155,12 @@ AnalysisDataAverageModule::dataFinished()
         int j = 0;
         for (; j < impl_->averagers_[i].columnCount(); ++j)
         {
-            value(j, i).setValue(impl_->averagers_[i].average(j),
+            value(j, i).setRealValue(impl_->averagers_[i].average(j),
                                  std::sqrt(impl_->averagers_[i].variance(j)));
         }
         for (; j < rowCount(); ++j)
         {
-            value(j, i).setValue(0.0, 0.0, false);
+            value(j, i).setRealValue(0.0, 0.0, false);
         }
     }
     valuesReady();
@@ -250,7 +250,7 @@ AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &head
     for (int i = 0; i < columnCount(); ++i)
     {
         impl_->sampleCount_[i] = 0;
-        frame.setValue(i, 0.0);
+        frame.setRealValue(i, 0.0);
     }
 }
 

@@ -142,6 +142,7 @@ gmx_install_headers(
     random.h
     selection.h
     trajectoryanalysis.h
+    trajectorydata.h
     utility.h
     ${CMAKE_CURRENT_BINARY_DIR}/version.h
     )

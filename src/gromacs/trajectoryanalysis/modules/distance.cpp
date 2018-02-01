@@ -46,9 +46,6 @@
 #include <string>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -60,7 +57,6 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -85,12 +81,10 @@ class Distance : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//        TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+        TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -110,10 +104,6 @@ class Distance : public TrajectoryAnalysisModule
         AnalysisDataAverageModulePointer         allStatsModule_;
         AnalysisDataFrameAverageModulePointer    averageModule_;
         AnalysisDataSimpleHistogramModulePointer histogramModule_;
-
-        AnalysisDataParallelOptions              dataOptions_;
-        TrajectoryAnalysisModuleDataPointer      pdata_;
-
 
         // Copy and assign disallowed by base.
 };
@@ -323,24 +313,17 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 void
-Distance::startFrames(const SelectionCollection         &selections)
+Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                       TrajectoryAnalysisModuleData *pdata)
 {
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-void
-Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                       TrajectoryAnalysisModuleData *pdata)
-{
-    TrajectoryAnalysisModuleData *pdata      = pdata_.get();
     AnalysisDataHandle            distHandle = pdata->dataHandle(distances_);
     AnalysisDataHandle            xyzHandle  = pdata->dataHandle(xyz_);
     const SelectionList          &sel        = pdata->parallelSelections(sel_);
 
     checkSelections(sel);
 
-    distHandle.startFrame(frnr, fr.time);
-    xyzHandle.startFrame(frnr, fr.time);
+    distHandle.startRealFrame(frnr, fr.time);
+    xyzHandle.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         distHandle.selectDataSet(g);
@@ -360,8 +343,8 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
             }
             real dist     = norm(dx);
             bool bPresent = p1.selected() && p2.selected();
-            distHandle.setPoint(n, dist, bPresent);
-            xyzHandle.setPoints(n*3, 3, dx, bPresent);
+            distHandle.setRealPoint(n, dist, bPresent);
+            xyzHandle.setRealPoints(n*3, 3, dx, bPresent);
         }
     }
     distHandle.finishFrame();
@@ -375,17 +358,6 @@ Distance::finishAnalysis(int /*nframes*/)
     AbstractAverageHistogram &averageHistogram = histogramModule_->averager();
     averageHistogram.normalizeProbability();
     averageHistogram.done();
-}
-
-void
-Distance::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
 }
 
 void

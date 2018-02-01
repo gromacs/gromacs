@@ -54,7 +54,6 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -67,7 +66,6 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -287,12 +285,10 @@ class Select : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -322,8 +318,6 @@ class Select : public TrajectoryAnalysisModule
         AnalysisDataAverageModulePointer    occupancyModule_;
         AnalysisDataLifetimeModulePointer   lifetimeModule_;
 
-        AnalysisDataParallelOptions         dataOptions_;
-        TrajectoryAnalysisModuleDataPointer pdata_;
 };
 
 Select::Select()
@@ -483,12 +477,6 @@ Select::optionsFinished(TrajectoryAnalysisSettings *settings)
 }
 
 void
-Select::startFrames(const SelectionCollection         &selections)
-{
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation        &top)
 {
@@ -611,10 +599,9 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
-//                     TrajectoryAnalysisModuleData *pdata)
+Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                     TrajectoryAnalysisModuleData *pdata)
 {
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
     AnalysisDataHandle            sdh   = pdata->dataHandle(sdata_);
     AnalysisDataHandle            cdh   = pdata->dataHandle(cdata_);
     AnalysisDataHandle            idh   = pdata->dataHandle(idata_);
@@ -622,7 +609,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
     const SelectionList          &sel   = pdata->parallelSelections(sel_);
     t_topology                   *top   = top_->topology();
 
-    sdh.startFrame(frnr, fr.time);
+    sdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         real normfac = bFracNorm_ ? 1.0 / sel[g].coveredFraction() : 1.0;
@@ -630,49 +617,49 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
         {
             normfac /= totsize_[g];
         }
-        sdh.setPoint(g, sel[g].posCount() * normfac);
+        sdh.setRealPoint(g, sel[g].posCount() * normfac);
     }
     sdh.finishFrame();
 
-    cdh.startFrame(frnr, fr.time);
+    cdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        cdh.setPoint(g, sel[g].coveredFraction());
+        cdh.setRealPoint(g, sel[g].coveredFraction());
     }
     cdh.finishFrame();
 
-    idh.startFrame(frnr, fr.time);
+    idh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        idh.setPoint(0, sel[g].posCount());
+        idh.setRealPoint(0, sel[g].posCount());
         idh.finishPointSet();
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
+                idh.setRealPoint(1, top->atoms.resinfo[p.mappedId()].nr);
             }
             else
             {
-                idh.setPoint(1, p.mappedId() + 1);
+                idh.setRealPoint(1, p.mappedId() + 1);
             }
             idh.finishPointSet();
         }
     }
     idh.finishFrame();
 
-    mdh.startFrame(frnr, fr.time);
+    mdh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         mdh.selectDataSet(g);
         for (int i = 0; i < totsize_[g]; ++i)
         {
-            mdh.setPoint(i, 0);
+            mdh.setRealPoint(i, 0);
         }
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
-            mdh.setPoint(sel[g].position(i).refId(), 1);
+            mdh.setRealPoint(sel[g].position(i).refId(), 1);
         }
     }
     mdh.finishFrame();
@@ -682,17 +669,6 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */) //,
 void
 Select::finishAnalysis(int /*nframes*/)
 {
-}
-
-void
-Select::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
 }
 
 void

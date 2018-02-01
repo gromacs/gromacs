@@ -38,4 +38,5 @@ gmx_install_headers(
     histogram.h
     lifetime.h
     plot.h
+    write.h
     )

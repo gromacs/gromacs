@@ -313,7 +313,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
                 v2 = value(j + 1, c).value();
                 e2 = value(j + 1, c).error();
             }
-            dest->value(i, c).setValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
+            dest->value(i, c).setRealValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
         }
         if (bFirstHalfBin)
         {
@@ -366,7 +366,7 @@ AbstractAverageHistogram::makeCumulative()
             sum += value(i, c).value();
             // Clear the error, as we don't cumulate that.
             value(i, c).clear();
-            value(i, c).setValue(sum);
+            value(i, c).setRealValue(sum);
         }
     }
     setXAxis(settings().firstEdge() + settings().binWidth(),
@@ -514,7 +514,7 @@ BasicAverageHistogramModule::dataFinished()
         averagers_[i].finish();
         for (int j = 0; j < rowCount(); ++j)
         {
-            value(j, i).setValue(averagers_[i].average(j),
+            value(j, i).setRealValue(averagers_[i].average(j),
                                  std::sqrt(averagers_[i].variance(j)));
         }
     }
@@ -727,7 +727,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
         frame.selectDataSet(s);
         for (int i = 0; i < columnCount; ++i)
         {
-            frame.setValue(i, dataSet.value(i));
+            frame.setRealValue(i, dataSet.value(i));
         }
     }
     frame.finishFrame();
@@ -901,7 +901,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
         frame.selectDataSet(s);
         for (int i = 0; i < columnCount; ++i)
         {
-            frame.setValue(i, dataSet.value(i));
+            frame.setRealValue(i, dataSet.value(i));
         }
     }
     frame.finishFrame();
@@ -1054,7 +1054,7 @@ AnalysisDataBinAverageModule::dataFinished()
         averager.finish();
         for (int j = 0; j < rowCount(); ++j)
         {
-            value(j, i).setValue(averager.average(j),
+            value(j, i).setRealValue(averager.average(j),
                                  std::sqrt(averager.variance(j)));
         }
     }

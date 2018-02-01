@@ -223,7 +223,7 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
                                                int row, AnalysisDataHandle handle)
 {
     const AnalysisDataTestInputFrame &frame = input.frame(row);
-    handle.startFrame(row, frame.x(), frame.dx());
+    handle.startRealFrame(row, frame.x(), frame.dx());
     for (int i = 0; i < frame.pointSetCount(); ++i)
     {
         const AnalysisDataTestInputPointSet &points = frame.pointSet(i);
@@ -232,12 +232,12 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
         {
             if (points.hasError(j))
             {
-                handle.setPoint(j + points.firstColumn(),
+                handle.setRealPoint(j + points.firstColumn(),
                                 points.y(j), points.error(j), points.present(j));
             }
             else
             {
-                handle.setPoint(j + points.firstColumn(),
+                handle.setRealPoint(j + points.firstColumn(),
                                 points.y(j), points.present(j));
             }
         }

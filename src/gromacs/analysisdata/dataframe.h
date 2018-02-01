@@ -49,6 +49,8 @@
 #include "gromacs/utility/flags.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/fileio/trxio.h"
 
 namespace gmx
 {
@@ -74,9 +76,12 @@ class AnalysisDataValue
         /*! \brief
          * Constructs an unset value.
          */
-        AnalysisDataValue() : value_(0.0), error_(0.0) {}
+        AnalysisDataValue() : value_(0.0), error_(0.0)
+        {
+            clear_trxframe(&coord_,TRUE);
+        }
         /*! \brief
-         * Constructs a value object with the given value.
+         * Constructs a value object with the given real value.
          *
          * The constructed object is marked as set and present.
          */
@@ -86,23 +91,43 @@ class AnalysisDataValue
             flags_.set(efSet);
             flags_.set(efPresent);
         }
-
         /*! \brief
-         * Direct access to the value.
+         * Constructs a value object with the given coordinate value.
+         *
+         * The constructed object is marked as set and present.
+         */
+        explicit AnalysisDataValue(t_trxframe coord)
+            : value_(0.0), error_(0.0), coord_(coord)
+        {
+            flags_.set(efSet);
+            flags_.set(efPresent);
+        }
+        /*! \brief
+         * Direct access to the real value.
          *
          * Assigning a value to this does not mark the value as set; setValue()
          * must be used for this.
          */
         real &value() { return value_; }
         /*! \brief
+         * Direct access to the coordinate value.
+         *
+         * Assigning a value to this does not mark the value as set; setValue()
+         * must be used for this.
+         */
+        t_trxframe &coord() { return coord_; }
+        /*! \brief
          * Direct access to the error estimate.
+         * No corresponding function for coordinates
          *
          * Assigning a value to this does not mark the error estimate as set;
          * setValue() must be used for this.
          */
         real &error() { return error_; }
-        //! Returns the value for this value.
+        //! Returns the value for this real value.
         real value() const { return value_; }
+        //! Returns the value for this coordinate value.
+        t_trxframe coord() const { return coord_; }
         //! Returns the error estimate for this value, or zero if not set.
         real error() const { return error_; }
         /*! \brief
@@ -132,15 +157,15 @@ class AnalysisDataValue
         {
             *this = AnalysisDataValue();
         }
-        //! Sets this value.
-        void setValue(real value, bool bPresent = true)
+        //! Sets this real value.
+        void setRealValue(real value, bool bPresent = true)
         {
             value_ = value;
             flags_.set(efSet);
             flags_.set(efPresent, bPresent);
         }
-        //! Sets this value and its error estimate.
-        void setValue(real value, real error, bool bPresent = true)
+        //! Sets this real value and its error estimate.
+        void setRealValue(real value, real error, bool bPresent = true)
         {
             value_ = value;
             error_ = error;
@@ -154,6 +179,13 @@ class AnalysisDataValue
             error_ = error;
             flags_.set(efErrorSet);
         }
+        //! Sets this coordinate value.
+        void setCoordValue(t_trxframe coord, bool bPresent = true)
+        {
+            coord_ = coord;
+            flags_.set(efSet);
+            flags_.set(efPresent, bPresent);
+        }
 
     private:
         //! Possible flags for \a flags_.
@@ -164,10 +196,12 @@ class AnalysisDataValue
             efPresent   = 1<<2  //!< Value is set as present.
         };
 
-        //! Value for this value.
+        //! Value for this real value.
         real                    value_;
         //! Error estimate for this value, zero if not set.
         real                    error_;
+        //! Value for this coordinate value.
+        t_trxframe              coord_;
         //! Status flags for thise value.
         FlagsTemplate<Flag>     flags_;
 };
@@ -204,13 +238,27 @@ class AnalysisDataFrameHeader
          */
         AnalysisDataFrameHeader();
         /*! \brief
-         * Constructs a frame header from given values.
+         * Constructs a frame header from given real values.
+         *
+         * \param[in] index  Index of the frame. Must be >= 0.
+         */
+        AnalysisDataFrameHeader(int index);
+        /*! \brief
+         * Constructs a frame header from given real values.
          *
          * \param[in] index  Index of the frame. Must be >= 0.
          * \param[in] x      x coordinate for the frame.
          * \param[in] dx     Error estimate for x.
          */
         AnalysisDataFrameHeader(int index, real x, real dx);
+
+        /*! \brief
+         * Constructs a frame header from given coordinate values.
+         *
+         * \param[in] index  Index of the frame. Must be >= 0.
+         * \param[in] coord  coordinate value for the frame.
+         */
+        AnalysisDataFrameHeader(int index, t_trxframe coord);
 
         /*! \brief
          * Returns whether the frame header corresponds to a valid frame.
@@ -243,6 +291,16 @@ class AnalysisDataFrameHeader
             return x_;
         }
         /*! \brief
+         * Returns the x coordinate for the frame.
+         *
+         * Should not be called for invalid frames.
+         */
+        t_trxframe coord() const
+        {
+            GMX_ASSERT(isValid(), "Tried to access invalid frame header");
+            return coord_;
+        }
+        /*! \brief
          * Returns error in the x coordinate for the frame (if applicable).
          *
          * All data do not provide error estimates.
@@ -260,6 +318,7 @@ class AnalysisDataFrameHeader
         int                     index_;
         real                    x_;
         real                    dx_;
+        t_trxframe              coord_;
 };
 
 
@@ -417,6 +476,11 @@ class AnalysisDataPointSetRef
         real dx() const
         {
             return header_.dx();
+        }
+        //! \copydoc AnalysisDataFrameHeader::coord()
+        t_trxframe coord() const
+        {
+            return header_.coord();
         }
         //! Returns zero-based index of the dataset that this set is part of.
         int dataSetIndex() const
@@ -592,6 +656,11 @@ class AnalysisDataFrameRef
         real dx() const
         {
             return header().dx();
+        }
+        //! \copydoc AnalysisDataFrameHeader::coord()
+        t_trxframe coord() const
+        {
+            return header().coord();
         }
         /*! \brief
          * Returns the number of point sets for this frame.

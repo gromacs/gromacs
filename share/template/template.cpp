@@ -36,7 +36,6 @@
 #include <vector>
 
 #include <gromacs/trajectoryanalysis.h>
-#include <gromacs/analysisdata/paralleloptions.h>
 
 using namespace gmx;
 
@@ -53,16 +52,10 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        TrajectoryAnalysisModuleDataPointer setDataPointer(
-                const AnalysisDataParallelOptions &opt,
-                const SelectionCollection &selections);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -78,8 +71,6 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_;
 
-        AnalysisDataParallelOptions         dataOptions_;
-        TrajectoryAnalysisModuleDataPointer pdata_;
 };
 
 
@@ -155,29 +146,14 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 void
-AnalysisTemplate::startFrames(const SelectionCollection         &selections)
+AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                               TrajectoryAnalysisModuleData *pdata)
 {
-    pdata_ = (setDataPointer(dataOptions_,selections));
-}
-
-TrajectoryAnalysisModuleDataPointer
-AnalysisTemplate::setDataPointer(const AnalysisDataParallelOptions &opt,
-                       const SelectionCollection         &selections)
-{
-    return TrajectoryAnalysisModuleDataPointer(
-        new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
-}
-
-void
-AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                               TrajectoryAnalysisModuleData *pdata)
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
     AnalysisDataHandle         dh     = pdata->dataHandle(data_);
     const Selection           &refsel = pdata->parallelSelection(refsel_);
 
     AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refsel);
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
         const Selection &sel   = pdata->parallelSelection(sel_[g]);
@@ -189,7 +165,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
             frave += nbsearch.minimumDistance(p.x());
         }
         frave /= nr;
-        dh.setPoint(g, frave);
+        dh.setRealPoint(g, frave);
     }
     dh.finishFrame();
 }
@@ -199,18 +175,6 @@ void
 AnalysisTemplate::finishAnalysis(int /*nframes*/)
 {
 }
-
-void
-AnalysisTemplate::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
-}
-
 
 void
 AnalysisTemplate::writeOutput()

@@ -262,13 +262,13 @@ AnalysisDataLifetimeModule::dataFinished()
             // N-1 last frames).  row is always smaller than frameCount_
             // because of the histograms have at most frameCount_ entries.
             const real normalized = *i / static_cast<real>(impl_->frameCount_ - row);
-            value(row, column).setValue(normalized);
+            value(row, column).setRealValue(normalized);
         }
         // Pad the rest of the histogram with zeros to match the longest
         // histogram.
         for (; row < rowCount(); ++row)
         {
-            value(row, column).setValue(0.0);
+            value(row, column).setRealValue(0.0);
         }
     }
     impl_->lifetimeHistograms_.clear();

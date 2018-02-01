@@ -44,6 +44,7 @@
 #define GMX_ANALYSISDATA_ANALYSISDATA_H
 
 #include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -263,7 +264,7 @@ class AnalysisDataHandle
         bool isValid() const { return impl_ != nullptr; }
 
         /*! \brief
-         * Start data for a new frame.
+         * Start data for a new frame of real values.
          *
          * \param[in] index  Zero-based index for the frame to start.
          * \param[in] x      x value for the frame.
@@ -279,7 +280,24 @@ class AnalysisDataHandle
          * the index can be in the future (as counted from the first frame that
          * is not finished).
          */
-        void startFrame(int index, real x, real dx = 0.0);
+        void startRealFrame(int index, real x, real dx = 0.0);
+        /*! \brief
+         * Start data for a new frame of coordinate values.
+         *
+         * \param[in] index  Zero-based index for the frame to start.
+         * \param[in] coord  coordinate value for the frame.
+         *
+         * \throws    unspecified  Any exception thrown by attached data
+         *      modules in IAnalysisDataModule::frameStarted().
+         *
+         * Each \p index value 0, 1, ..., N (where N is the total number of
+         * frames) should be started exactly once by exactly one handle of an
+         * AnalysisData object.  The frames may be started out of order, but
+         * currently the implementation places some limitations on how far
+         * the index can be in the future (as counted from the first frame that
+         * is not finished).
+         */
+        void startCoordFrame(int index, t_trxframe coord);
         /*! \brief
          * Selects a data set for subsequent setPoint()/setPoints() calls.
          *
@@ -304,7 +322,7 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoint(int column, real value, bool bPresent = true);
+        void setRealPoint(int column, real value, bool bPresent = true);
         /*! \brief
          * Set a value and its error estimate for a single column for the
          * current frame.
@@ -319,7 +337,7 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoint(int column, real value, real error, bool bPresent = true);
+        void setRealPoint(int column, real value, real error, bool bPresent = true);
         /*! \brief
          * Set values for consecutive columns for the current frame.
          *
@@ -333,7 +351,35 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
+        void setRealPoints(int firstColumn, int count, const real *values, bool bPresent = true);
+        /*! \brief
+         * Set a value and its error estimate for a single column for the
+         * current frame.
+         *
+         * \param[in] column  Zero-based column index.
+         * \param[in] value   Value to set for the column.
+         * \param[in] bPresent Present flag to set for the column.
+         *
+         * If called multiple times for a column (within one point set for
+         * multipoint data), old values are overwritten.
+         *
+         * Does not throw.
+         */
+        void setCoordPoint(int column, t_trxframe value, bool bPresent = true);
+        /*! \brief
+         * Set values for consecutive columns for the current frame.
+         *
+         * \param[in] firstColumn  Zero-based column index.
+         * \param[in] count        Number of columns to set.
+         * \param[in] values       Value array of \p column items.
+         * \param[in] bPresent     Present flag to set for the column.
+         *
+         * Equivalent to calling setPoint(firstColumn + i, values[i], bPresent) for
+         * i from 0 to count.
+         *
+         * Does not throw.
+         */
+        void setCoordPoints(int firstColumn, int count, const t_trxframe *values, bool bPresent = true);
         /*! \brief
          * Finish data for the current point set.
          *

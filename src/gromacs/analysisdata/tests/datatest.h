@@ -106,7 +106,7 @@ class AnalysisDataTestInputPointSet
         AnalysisDataValue value(int i) const
         {
             AnalysisDataValue result;
-            result.setValue(values_[i].y);
+            result.setRealValue(values_[i].y);
             if (values_[i].bError)
             {
                 result.setError(values_[i].error);

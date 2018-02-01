@@ -50,9 +50,6 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
@@ -295,15 +292,13 @@ class Sasa : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void startFrames(const SelectionCollection         &selections);
-        TrajectoryAnalysisModuleDataPointer setDataPointer(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
             const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -394,9 +389,6 @@ class Sasa : public TrajectoryAnalysisModule
         std::vector<real>                   dgsFactor_;
         //! Calculation algorithm.
         SurfaceAreaCalculator               calculator_;
-
-        AnalysisDataParallelOptions         dataOptions_;
-        TrajectoryAnalysisModuleDataPointer pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -794,14 +786,7 @@ class SasaModuleData : public TrajectoryAnalysisModuleData
         std::vector<real>       res_a_;
 };
 
-void
-Sasa::startFrames(const SelectionCollection         &selections)
-{
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-TrajectoryAnalysisModuleDataPointer
-Sasa::setDataPointer(
+TrajectoryAnalysisModuleDataPointer Sasa::startFrames(
         const AnalysisDataParallelOptions &opt,
         const SelectionCollection         &selections)
 {
@@ -869,7 +854,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
         totalArea += atomArea;
         if (bResAt)
         {
-            atomAreaHandle.setPoint(ii, atomArea);
+            atomAreaHandle.setRealPoint(ii, atomArea);
             (*resAreaWork)[ri] += atomArea;
         }
         if (bDGsolv)
@@ -881,7 +866,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
     {
         for (size_t i = 0; i < (*resAreaWork).size(); ++i)
         {
-            resAreaHandle.setPoint(i, (*resAreaWork)[i]);
+            resAreaHandle.setRealPoint(i, (*resAreaWork)[i]);
         }
     }
     *totalAreaOut = totalArea;
@@ -889,10 +874,9 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
 }
 
 void
-Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                   TrajectoryAnalysisModuleData *pdata)
+Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                   TrajectoryAnalysisModuleData *pdata)
 {
-    TrajectoryAnalysisModuleData *pdata      = pdata_.get();
     AnalysisDataHandle            ah         = pdata->dataHandle(area_);
     AnalysisDataHandle            dgh        = pdata->dataHandle(dgSolv_);
     AnalysisDataHandle            aah        = pdata->dataHandle(atomArea_);
@@ -983,18 +967,18 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                       &top_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
     }
 
-    ah.startFrame(frnr, fr.time);
+    ah.startRealFrame(frnr, fr.time);
     if (bResAt)
     {
-        aah.startFrame(frnr, fr.time);
-        rah.startFrame(frnr, fr.time);
+        aah.startRealFrame(frnr, fr.time);
+        rah.startRealFrame(frnr, fr.time);
     }
     if (bDGsol)
     {
-        dgh.startFrame(frnr, fr.time);
+        dgh.startRealFrame(frnr, fr.time);
     }
 
-    ah.setPoint(0, totarea);
+    ah.setRealPoint(0, totarea);
 
     real totalArea, dgsolv;
     if (bResAt || bDGsol)
@@ -1003,7 +987,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
         if (bDGsol)
         {
-            dgh.setPoint(0, dgsolv);
+            dgh.setRealPoint(0, dgsolv);
         }
     }
     for (size_t g = 0; g < outputSel.size(); ++g)
@@ -1015,10 +999,10 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
         }
         computeAreas(surfaceSel, outputSel[g], frameData.atomAreas_, dgsFactor_,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
-        ah.setPoint(g + 1, totalArea);
+        ah.setRealPoint(g + 1, totalArea);
         if (bDGsol)
         {
-            dgh.setPoint(g + 1, dgsolv);
+            dgh.setRealPoint(g + 1, dgsolv);
         }
     }
 
@@ -1041,9 +1025,9 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
             totmass += surfaceSel.position(i).mass();
         }
         const real density = totmass*AMU/(totvolume*NANO*NANO*NANO);
-        vh.startFrame(frnr, fr.time);
-        vh.setPoint(0, totvolume);
-        vh.setPoint(1, density);
+        vh.startRealFrame(frnr, fr.time);
+        vh.setRealPoint(0, totvolume);
+        vh.setRealPoint(1, density);
         vh.finishFrame();
     }
 }
@@ -1068,17 +1052,6 @@ Sasa::finishAnalysis(int /*nframes*/)
     //    }
     //    ffclose(fp3);
     //}
-}
-
-void
-Sasa::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
 }
 
 void

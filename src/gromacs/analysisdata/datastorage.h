@@ -106,7 +106,7 @@ class AnalysisDataStorageFrame
         int columnCount() const { return columnCount_; }
 
         /*! \brief
-         * Sets value for a column.
+         * Sets value for a column real value.
          *
          * \param[in] column  Zero-based column index.
          * \param[in] value   Value to set for the column.
@@ -117,15 +117,15 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        void setValue(int column, real value, bool bPresent = true)
+        void setRealValue(int column, real value, bool bPresent = true)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[currentOffset_ + column].setValue(value, bPresent);
+            values_[currentOffset_ + column].setRealValue(value, bPresent);
             bPointSetInProgress_ = true;
         }
         /*! \brief
-         * Sets value for a column.
+         * Sets value for a column real value and error.
          *
          * \param[in] column  Zero-based column index.
          * \param[in] value   Value to set for the column.
@@ -137,15 +137,35 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        void setValue(int column, real value, real error, bool bPresent = true)
+        void setRealValue(int column, real value, real error, bool bPresent = true)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[currentOffset_ + column].setValue(value, error, bPresent);
+            values_[currentOffset_ + column].setRealValue(value, error, bPresent);
+            bPointSetInProgress_ = true;
+        }
+
+        /*! \brief
+         * Sets value for a column coordinate value.
+         *
+         * \param[in] column  Zero-based column index.
+         * \param[in] value   Value to set for the column.
+         * \param[in] bPresent Present flag to set for the column.
+         *
+         * If called multiple times for a column (within one point set for
+         * multipoint data), old values are overwritten.
+         *
+         * Does not throw.
+         */
+        void setCoordValue(int column, t_trxframe value, bool bPresent = true)
+        {
+            GMX_ASSERT(column >= 0 && column < columnCount(),
+                       "Invalid column index");
+            values_[currentOffset_ + column].setCoordValue(value, bPresent);
             bPointSetInProgress_ = true;
         }
         /*! \brief
-         * Access value for a column.
+         * Access value for a column real value.
          *
          * \param[in] column  Zero-based column index.
          *
@@ -162,7 +182,24 @@ class AnalysisDataStorageFrame
             return values_[currentOffset_ + column].value();
         }
         /*! \brief
-         * Access value for a column.
+         * Access value for a column coordinate value.
+         *
+         * \param[in] column  Zero-based column index.
+         *
+         * Should only be called after the column value has been set using
+         * setValue(); assigning a value to \c value(i) does not mark the
+         * column as set.
+         *
+         * Does not throw.
+         */
+        t_trxframe &coord(int column)
+        {
+            GMX_ASSERT(column >= 0 && column < columnCount(),
+                       "Invalid column index");
+            return values_[currentOffset_ + column].coord();
+        }
+        /*! \brief
+         * Access value for a column real value.
          *
          * \param[in] column  Zero-based column index.
          *
@@ -176,6 +213,22 @@ class AnalysisDataStorageFrame
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
             return values_[currentOffset_ + column].value();
+        }
+        /*! \brief
+         * Access value for a column coordinate value.
+         *
+         * \param[in] column  Zero-based column index.
+         *
+         * Should only be called after the column value has been set using
+         * setValue().
+         *
+         * Does not throw.
+         */
+        t_trxframe coord(int column) const
+        {
+            GMX_ASSERT(column >= 0 && column < columnCount(),
+                       "Invalid column index");
+            return values_[currentOffset_ + column].coord();
         }
         /*! \brief
          * Mark point set as finished for multipoint data.
@@ -380,11 +433,17 @@ class AnalysisDataStorage
          */
         AnalysisDataStorageFrame &startFrame(const AnalysisDataFrameHeader &header);
         /*! \brief
-         * Convenience method to start storing a new frame.
+         * Convenience method to start storing a new frame for real values.
          *
          * Identical to \c startFrame(AnalysisDataFrameHeader(index, x, dx));
          */
         AnalysisDataStorageFrame &startFrame(int index, real x, real dx);
+        /*! \brief
+         * Convenience method to start storing a new frame for coordinate values.
+         *
+         * Identical to \c startFrame(AnalysisDataFrameHeader(index, coord));
+         */
+        AnalysisDataStorageFrame &startFrame(int index, t_trxframe coord);
         /*! \brief
          * Obtains a frame object for an in-progress frame.
          *

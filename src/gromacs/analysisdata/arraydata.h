@@ -88,10 +88,14 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          */
         int rowCount() const { return rowCount_; }
         //! Returns true if values have been allocated.
-        bool isAllocated() const { return !value_.empty(); }
+        bool isAllocated() const 
+        { return !value_.empty(); }
         //! Returns the x value of the first frame.
         real xstart() const { return xvalue_[0]; }
+        //! Returns the coordinates of the first frame.
+        t_trxframe coordStart() const { return coordValue_[0]; }
         //! Returns the step between frame x values.
+        //! There is no corresponding function for coordinates.
         real xstep() const
         {
             GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
@@ -103,7 +107,13 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             return xvalue_[row];
         }
-        //! Returns a given array element.
+        //! Returns the coordinate for a row
+        t_trxframe coordValue(int row) const
+        {
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+            return coordValue_[row];
+        }
+        //! Returns a given array element for a real value.
         const AnalysisDataValue &value(int row, int col) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
@@ -158,6 +168,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          *
          * Must not be called after valuesReady().
          * Any values set with setXAxisValue() are overwritten.
+         * There is no corresponding function for coordinates.
          *
          * Does not throw.
          */
@@ -169,6 +180,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * \param[in] value  x value for the frame specified by \p row.
          *
          * Must not be called after valuesReady().
+         * There is no corresponding function for coordinates.
          *
          * Does not throw.
          */
@@ -213,6 +225,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         AnalysisDataPointSetInfo       pointSetInfo_;
         std::vector<AnalysisDataValue> value_;
         std::vector<real>              xvalue_;
+        std::vector<t_trxframe>          coordValue_;
         real                           xstep_;
         bool                           bUniformX_;
         bool                           bReady_;

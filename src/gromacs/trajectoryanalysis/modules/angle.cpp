@@ -48,9 +48,6 @@
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datamodule.h"
-#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -63,7 +60,6 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -280,13 +276,11 @@ class Angle : public TrajectoryAnalysisModule
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-        virtual void startFrames(const SelectionCollection         &selections);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc); //,
-//                                  TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                TrajectoryAnalysisModuleData *pdata); //,
 
         virtual void finishAnalysis(int nframes);
-        virtual void finishFrames();
         virtual void writeOutput();
 
     private:
@@ -316,8 +310,6 @@ class Angle : public TrajectoryAnalysisModule
         int                                      natoms2_;
         std::vector<std::vector<RVec> >          vt0_;
 
-        AnalysisDataParallelOptions              dataOptions_;
-        TrajectoryAnalysisModuleDataPointer      pdata_;
 
         // Copy and assign disallowed by base.
 };
@@ -699,23 +691,16 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 }
 
 void
-Angle::startFrames(const SelectionCollection         &selections)
+Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                    TrajectoryAnalysisModuleData *pdata)
 {
-    pdata_ = (setDataPointer(dataOptions_, selections));
-}
-
-void
-Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
-//                    TrajectoryAnalysisModuleData *pdata)
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
     AnalysisDataHandle            dh    = pdata->dataHandle(angles_);
     const SelectionList          &sel1  = pdata->parallelSelections(sel1_);
     const SelectionList          &sel2  = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
-    dh.startFrame(frnr, fr.time);
+    dh.startRealFrame(frnr, fr.time);
 
     AnglePositionIterator iter1(sel1, natoms1_);
     AnglePositionIterator iter2(sel2, natoms2_);
@@ -846,21 +831,10 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc) //,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            dh.setPoint(n, angle * RAD2DEG, bPresent);
+            dh.setRealPoint(n, angle * RAD2DEG, bPresent);
         }
     }
     dh.finishFrame();
-}
-
-void
-Angle::finishFrames()
-{
-    TrajectoryAnalysisModuleData *pdata = pdata_.get();
-    if (pdata != nullptr)
-    {
-        pdata->finish();
-    }
-    pdata_.reset();
 }
 
 void
