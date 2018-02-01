@@ -108,7 +108,7 @@ static int                            n_hwinfo = 0;
 static tMPI_Thread_mutex_t            hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 //! Detect GPUs, if that makes sense to attempt.
-static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
+static void gmx_detect_gpus(const gmx::MDLogger &mdlog)
 {
 #if GMX_LIB_MPI
     int              rank_world;
@@ -147,20 +147,19 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
         MPI_Comm_rank(physicalnode_comm, &rankOnNode);
         isMasterRankOfNode = (rankOnNode == 0);
     }
-    GMX_UNUSED_VALUE(cr);
 #else
-    // Here there should be only one process, because if we are using
-    // thread-MPI, only one thread is active so far. So we check this.
-    GMX_RELEASE_ASSERT(cr->nnodes == 1 && cr->sim_nodeid == 0, "Only a single (master) process should execute here");
+    // We choose to run the detection only once with thread-MPI and
+    // use reference counting on the results of the detection to
+    // enforce it. But we can assert that this is true.
+    GMX_RELEASE_ASSERT(n_hwinfo == 0, "Cannot run GPU detection on non-master thread-MPI ranks");
     isMasterRankOfNode = true;
 #endif
 
-    /*  With CUDA detect only on one rank per host, with OpenCL need do
-     *  the detection on all PP ranks */
-    bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && thisRankHasDuty(cr, DUTY_PP));
-
+    /* The OpenCL support requires us to run detection on all ranks.
+     * With CUDA we don't need to, and prefer to detect on one rank
+     * and send the information to the other ranks over MPI. */
     bool gpusCanBeDetected = false;
-    if (isMasterRankOfNode || isOpenclPpRank)
+    if (isMasterRankOfNode || (GMX_GPU == GMX_GPU_OPENCL))
     {
         std::string errorMessage;
         gpusCanBeDetected = canDetectGpus(&errorMessage);
@@ -182,7 +181,7 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     }
 
 #if GMX_LIB_MPI
-    if (!isOpenclPpRank)
+    if (GMX_GPU != GMX_GPU_OPENCL)
     {
         /* Broadcast the GPU info to the other ranks within this node */
         MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
@@ -474,7 +473,7 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
 #endif
 }
 
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *cr)
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog)
 {
     int ret;
 
@@ -509,7 +508,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         hwinfo_g->gpu_info.n_dev_compatible = 0;
         hwinfo_g->gpu_info.gpu_dev          = nullptr;
 
-        gmx_detect_gpus(mdlog, cr);
+        gmx_detect_gpus(mdlog);
         gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
     }
     /* increase the reference counter */

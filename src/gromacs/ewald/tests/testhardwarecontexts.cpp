@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,7 @@ static gmx_hw_info_t *hardwareInit()
     LoggerBuilder builder;
     LoggerOwner   logOwner(builder.build());
     MDLogger      log(logOwner.logger());
-    return gmx_detect_hardware(log, commrec.get());
+    return gmx_detect_hardware(log);
 }
 
 void PmeTestEnvironment::SetUp()
