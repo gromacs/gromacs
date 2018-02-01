@@ -70,6 +70,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_;
+
 };
 
 
@@ -144,7 +145,6 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
-
 void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
@@ -175,7 +175,6 @@ void
 AnalysisTemplate::finishAnalysis(int /*nframes*/)
 {
 }
-
 
 void
 AnalysisTemplate::writeOutput()

@@ -95,6 +95,12 @@ TrajectoryAnalysisSettings::plotSettings() const
     return impl_->plotSettings;
 }
 
+const TrajectoryDataWriteSettings &
+TrajectoryAnalysisSettings::writeSettings() const
+{
+    return impl_->writeSettings;
+}
+
 
 unsigned long
 TrajectoryAnalysisSettings::flags() const

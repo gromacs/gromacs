@@ -260,7 +260,6 @@ class Variant
  * \ingroup module_utility
  */
 std::string simpleValueToString(const Variant &value);
-//! \cond libapi
 /*! \brief Converts simple Variant value to an Integer.
  *
  * Tries different casts of the stored data and returns them as Integers
@@ -269,7 +268,6 @@ std::string simpleValueToString(const Variant &value);
  * \ingroup module_utility
  */
 int simpleValueToInt(const Variant &value);
-//! \cond libapi
 /*! \brief Converts simple Variant value to a Float.
  *
  * Tries different casts of the stored data and returns them as Float

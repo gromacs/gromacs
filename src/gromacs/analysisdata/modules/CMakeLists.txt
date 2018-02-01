@@ -35,7 +35,11 @@
 gmx_install_headers(
     average.h
     displacement.h
+    filehandler.h
+    framehandler.h
     histogram.h
     lifetime.h
     plot.h
+    settings.h
+    write.h
     )

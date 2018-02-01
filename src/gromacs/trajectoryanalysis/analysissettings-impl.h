@@ -45,6 +45,7 @@
 #include <string>
 
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/analysisdata/modules/settings.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
@@ -72,6 +73,8 @@ class TrajectoryAnalysisSettings::Impl
         TimeUnit                 timeUnit;
         //! Global plotting settings for the analysis module.
         AnalysisDataPlotSettings plotSettings;
+        //! Global file writing settings for the analysis module.
+        TrajectoryDataWriteSettings writeSettings;
         //! Flags for the analysis module.
         unsigned long            flags;
         //! Frame reading flags for the analysis module.

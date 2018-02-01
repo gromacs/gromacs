@@ -377,6 +377,8 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
 
     // Add plot options.
     settings.impl_->plotSettings.initOptions(options);
+    // Add file writing options.
+    settings.impl_->writeSettings.initOptions(options);
 
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))

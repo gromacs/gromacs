@@ -58,6 +58,7 @@ namespace gmx
 template <typename T> class ArrayRef;
 
 class AnalysisDataPlotSettings;
+class TrajectoryDataWriteSettings;
 class ICommandLineOptionsModuleSettings;
 class Options;
 class TrajectoryAnalysisRunnerCommon;
@@ -134,6 +135,9 @@ class TrajectoryAnalysisSettings
         TimeUnit timeUnit() const;
         //! Returns common settings for analysis data plot modules.
         const AnalysisDataPlotSettings &plotSettings() const;
+
+        //! Returns the settings for file writing modules.
+        const TrajectoryDataWriteSettings &writeSettings() const;
 
         //! Returns the currently set flags.
         unsigned long flags() const;
