@@ -76,19 +76,18 @@ typedef gmx::test::ImdTestFixture ImdTest;
  */
 TEST_F(ImdTest, ImdCanRun)
 {
-    std::string name = "spc2";
-    runner_.useTopGroAndNdxFromDatabase(name.c_str());
-    std::string mdpContents = "\
-            -dt                       = 0.004\
-            -nsteps                   = 2\
-            -tcoupl                   = Berendsen\
-            -tc-grps                  = System\
-            -tau-t                    = 0.5\
-            -ref-t                    = 300\
-            -constraints              = all-bonds\
-            -cutoff-scheme            = Verlet\
-            -IMD-group                = SecondWaterMolecule\
-    ";
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    const std::string mdpContents = R"(
+        dt            = 0.004
+        nsteps        = 2
+        tcoupl        = Berendsen
+        tc-grps       = System
+        tau-t         = 0.5
+        ref-t         = 300
+        constraints   = all-bonds
+        cutoff-scheme = Verlet
+        IMD-group     = SecondWaterMolecule
+    )";
     runner_.useStringAsMdpFile(mdpContents);
 
     EXPECT_EQ(0, runner_.callGrompp());

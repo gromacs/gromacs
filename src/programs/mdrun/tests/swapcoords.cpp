@@ -76,41 +76,41 @@ typedef gmx::test::SwapTestFixture CompelTest;
  * the swap state variables can be written to and read from checkpoint. */
 TEST_F(CompelTest, SwapCanRun)
 {
-    std::string name = "OctaneSandwich";
-    runner_.useTopGroAndNdxFromDatabase(name.c_str());
-    std::string mdpContents = "\
-    dt                       = 0.005\
-    nsteps                   = 2\
-    define                   = -DPOSRES\
-    tcoupl                   = Berendsen\
-    tc-grps                  = System\
-    tau-t                    = 0.5\
-    ref-t                    = 300\
-    constraints              = all-bonds\
-    cutoff-scheme            = Verlet\
-    swapcoords               = Z\
-    swap_frequency           = 1\
-    split_group0             = Ch0\
-    split_group1             = Ch1\
-    massw_split0             = yes\
-    massw_split1             = no\
-    solvent_group            = SOL\
-    cyl0_r                   = 1\
-    cyl0_up                  = 0.5\
-    cyl0_down                = 0.5\
-    cyl1_r                   = 1\
-    cyl1_up                  = 0.5\
-    cyl1_down                = 0.5\
-    coupl_steps              = 5\
-    iontypes                 = 2\
-    iontype0-name            = NA+\
-    iontype0-in-A            = 8\
-    iontype0-in-B            = 11\
-    iontype1-name            = CL-\
-    iontype1-in-A            = -1\
-    iontype1-in-B            = -1\
-    threshold                = 1\
-    ";
+    runner_.useTopGroAndNdxFromDatabase("OctaneSandwich");
+    const std::string mdpContents = R"(
+        dt                       = 0.005
+        nsteps                   = 2
+        define                   = -DPOSRES
+        tcoupl                   = Berendsen
+        tc-grps                  = System
+        tau-t                    = 0.5
+        ref-t                    = 300
+        constraints              = all-bonds
+        cutoff-scheme            = Verlet
+        swapcoords               = Z
+        swap_frequency           = 1
+        split_group0             = Ch0
+        split_group1             = Ch1
+        massw_split0             = yes
+        massw_split1             = no
+        solvent_group            = SOL
+        cyl0_r                   = 1
+        cyl0_up                  = 0.5
+        cyl0_down                = 0.5
+        cyl1_r                   = 1
+        cyl1_up                  = 0.5
+        cyl1_down                = 0.5
+        coupl_steps              = 5
+        iontypes                 = 2
+        iontype0-name            = NA+
+        iontype0-in-A            = 8
+        iontype0-in-B            = 11
+        iontype1-name            = CL-
+        iontype1-in-A            = -1
+        iontype1-in-B            = -1
+        threshold                = 1
+     )";
+
     runner_.useStringAsMdpFile(mdpContents);
 
     EXPECT_EQ(0, runner_.callGrompp());
