@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,13 @@ void done_frame(t_trxframe *frame)
         done_atom(frame->atoms);
         sfree(frame->atoms);
     }
+    sfree(frame->x);
+    sfree(frame->v);
+    sfree(frame->f);
+}
+
+void done_coord(t_trxframe *frame)
+{
     sfree(frame->x);
     sfree(frame->v);
     sfree(frame->f);

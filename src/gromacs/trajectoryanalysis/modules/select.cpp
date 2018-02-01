@@ -216,7 +216,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
             std::string name = groups_[currentGroup_].name;
             if (groups_[currentGroup_].bDynamic)
             {
-                name += formatString("_f%d_t%.3f", points.frameIndex(), points.x());
+                name += formatString("_f%d_t%.3f", points.frameIndex(), simpleValueToFloat(points.x()));
             }
             std::fprintf(fp_, "[ %s ]", name.c_str());
             bAnyWritten_ = true;
