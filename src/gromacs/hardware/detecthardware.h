@@ -60,6 +60,6 @@ void gmx_hardware_info_free();
 //! Return whether compatible GPUs were found.
 bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
 
-#endif
-
 } // namespace gmx
+
+#endif
