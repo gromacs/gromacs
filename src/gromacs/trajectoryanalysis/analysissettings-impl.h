@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <string>
 
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/analysisdata/modules/settings.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
@@ -69,13 +70,15 @@ class TrajectoryAnalysisSettings::Impl
         }
 
         //! Global time unit setting for the analysis module.
-        TimeUnit                 timeUnit;
+        TimeUnit                    timeUnit;
         //! Global plotting settings for the analysis module.
-        AnalysisDataPlotSettings plotSettings;
+        AnalysisDataPlotSettings    plotSettings;
+        //! Global file writing settings for the analysis module.
+        TrajectoryDataWriteSettings writeSettings;
         //! Flags for the analysis module.
-        unsigned long            flags;
+        unsigned long               flags;
         //! Frame reading flags for the analysis module.
-        int                      frflags;
+        int                         frflags;
 
         //! Whether to make molecules whole for each frame.
         bool                 bRmPBC;

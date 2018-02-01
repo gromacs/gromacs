@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,7 @@ namespace gmx
 template <typename T> class ArrayRef;
 
 class AnalysisDataPlotSettings;
+class TrajectoryDataWriteSettings;
 class ICommandLineOptionsModuleSettings;
 class Options;
 class TrajectoryAnalysisRunnerCommon;
@@ -130,10 +131,21 @@ class TrajectoryAnalysisSettings
         //! Injects command line options module settings for some methods to use.
         void setOptionsModuleSettings(ICommandLineOptionsModuleSettings *settings);
 
+        /*! \brief
+         * Initializes Settings for the file writing module.
+         *
+         * Makes it possible to initialize the file writing module from outside
+         * of the main cmdlinerunner.
+         */
+        void initWriteSettings(IOptionsContainer *options);
+
         //! Returns the time unit the user has requested.
         TimeUnit timeUnit() const;
         //! Returns common settings for analysis data plot modules.
         const AnalysisDataPlotSettings &plotSettings() const;
+
+        //! Returns the settings for file writing modules.
+        const TrajectoryDataWriteSettings &writeSettings() const;
 
         //! Returns the currently set flags.
         unsigned long flags() const;
