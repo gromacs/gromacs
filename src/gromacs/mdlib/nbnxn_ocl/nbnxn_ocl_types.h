@@ -47,6 +47,7 @@
 
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/gpu_utils/traits.h"
 #include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -164,8 +165,7 @@ typedef struct cl_atomdata
     int         natoms_local;        /**< number of local atoms                        */
     int         nalloc;              /**< allocation size for the atom data (xq, f)    */
 
-    cl_mem      xq;                  /**< float4 buffer with atom coordinates + charges, size natoms */
-
+    DeviceBuffer<float4> xq;      /**< atom coordinates + charges, size natoms    */
     cl_mem      f;                   /**< float3 buffer with force output array, size natoms         */
     size_t      f_elem_size;         /**< Size in bytes for one element of f buffer      */
 
@@ -176,7 +176,7 @@ typedef struct cl_atomdata
     size_t      fshift_elem_size;    /**< Size in bytes for one element of fshift buffer */
 
     int         ntypes;              /**< number of atom types                           */
-    cl_mem      atom_types;          /**< int buffer with atom type indices, size natoms */
+    DeviceBuffer<int> atom_types; /**< atom type indices, size natoms             */
     cl_mem      lj_comb;             /**< float2 buffer with sqrt(c6),sqrt(c12), size natoms */
 
     cl_mem      shift_vec;           /**< float3 buffer with shifts values               */

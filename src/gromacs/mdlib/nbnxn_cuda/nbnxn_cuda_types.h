@@ -48,6 +48,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/traits.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -142,7 +143,7 @@ struct cu_atomdata
     int      natoms_local;      /**< number of local atoms                        */
     int      nalloc;            /**< allocation size for the atom data (xq, f)    */
 
-    float4  *xq;                /**< atom coordinates + charges, size natoms      */
+    DeviceBuffer<float4> xq;      /**< atom coordinates + charges, size natoms    */
     float3  *f;                 /**< force output array, size natoms              */
 
     float   *e_lj;              /**< LJ energy output, size 1                     */
@@ -151,7 +152,7 @@ struct cu_atomdata
     float3  *fshift;            /**< shift forces                                 */
 
     int      ntypes;            /**< number of atom types                         */
-    int     *atom_types;        /**< atom type indices, size natoms               */
+    DeviceBuffer<int> atom_types; /**< atom type indices, size natoms             */
     float2  *lj_comb;           /**< sqrt(c6),sqrt(c12) size natoms               */
 
     float3  *shift_vec;         /**< shifts                                       */
