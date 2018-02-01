@@ -418,6 +418,7 @@ find_library(HAVE_LIBM m)
 mark_as_advanced(HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
+check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
 
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
