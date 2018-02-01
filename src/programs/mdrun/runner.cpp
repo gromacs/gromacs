@@ -496,7 +496,7 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    hwinfo = gmx_detect_hardware(mdlog, cr);
+    hwinfo = gmx_detect_hardware(mdlog);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
