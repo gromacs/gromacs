@@ -102,6 +102,7 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     logFileName_(fileManager->getTemporaryFilePath(".log")),
     edrFileName_(fileManager->getTemporaryFilePath(".edr")),
     nsteps_(-2),
+    hasCapturedStderr_(false),
     fileManager_(*fileManager)
 {
 #if GMX_LIB_MPI
@@ -242,7 +243,16 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-    return gmx_mdrun(caller.argc(), caller.argv());
+    hasCapturedStderr_ = false;
+#if GTEST_HAS_STREAM_REDIRECTION
+    testing::internal::CaptureStderr();
+#endif
+    int result = gmx_mdrun(caller.argc(), caller.argv());
+#if GTEST_HAS_STREAM_REDIRECTION
+    capturedStderr_    = testing::internal::GetCapturedStderr();
+    hasCapturedStderr_ = true;
+#endif
+    return result;
 }
 
 int
