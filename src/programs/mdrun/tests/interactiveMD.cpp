@@ -42,6 +42,8 @@
  */
 #include "gmxpre.h"
 
+#include <gmock/gmock-matchers.h>
+
 #include "moduletest.h"
 
 namespace gmx
@@ -100,6 +102,10 @@ TEST_F(ImdTest, ImdCanRun)
 
     // Do an mdrun with IMD enabled
     ASSERT_EQ(0, runner_.callMdrun(imdCaller));
+    if (runner_.hasCapturedStderr_)
+    {
+        EXPECT_THAT(runner_.capturedStderr_, ::testing::HasSubstr("IMD: Enabled. This simulation will accept incoming IMD connections."));
+    }
 }
 
 

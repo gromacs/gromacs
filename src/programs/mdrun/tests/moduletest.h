@@ -147,6 +147,10 @@ class SimulationRunner
         //! What will be written into mdpInputFileName_ before the grompp call
         std::string mdpInputContents_;
 
+        //! Tells whether capturedStderr_ is meaningful at the moment
+        bool             hasCapturedStderr_;
+        //! Contents of stderr after callMdrun(), valid only if(hasCapturedStderr_)
+        std::string      capturedStderr_;
     private:
         TestFileManager &fileManager_;
 
