@@ -42,6 +42,8 @@
  */
 #include "gmxpre.h"
 
+#include <gmock/gmock-matchers.h>
+
 #include "moduletest.h"
 
 namespace gmx
@@ -127,11 +129,20 @@ TEST_F(CompelTest, SwapCanRun)
     ::gmx::test::CommandLine firstCaller(swapCaller);
     firstCaller.addOption("-cpo", runner_.cptFileName_);
     ASSERT_EQ(0, runner_.callMdrun(firstCaller));
+    if (runner_.hasCapturedStderr_)
+    {
+        EXPECT_THAT(runner_.capturedStderr_, ::testing::HasSubstr("SWAP: Determining initial numbers of ions"));
+    }
+
     // Continue mdrun from that checkpoint file
     ::gmx::test::CommandLine secondCaller(swapCaller);
     secondCaller.addOption("-cpi", runner_.cptFileName_);
     runner_.nsteps_ = 2;
     ASSERT_EQ(0, runner_.callMdrun(secondCaller));
+    if (runner_.hasCapturedStderr_)
+    {
+        EXPECT_THAT(runner_.capturedStderr_, ::testing::HasSubstr("SWAP: Copying channel fluxes from checkpoint file data"));
+    }
 }
 
 
