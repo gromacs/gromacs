@@ -946,14 +946,12 @@ int Mdrunner::mdrunner()
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-#ifndef NDEBUG
-    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
-    if (!EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET)
+    const bool FPExceptionsSwitchedOffDuringRun = (EI_TPI(inputrec->eI) || inputrec->cutoff_scheme == ecutsGROUP)
+        && gmx_feexceptenabled();
+    if (FPExceptionsSwitchedOffDuringRun)
     {
-        gmx_feenableexcept();
+        gmx_fedisableexcept();
     }
-#endif
 
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
@@ -1408,6 +1406,11 @@ int Mdrunner::mdrunner()
         tMPI_Finalize();
     }
 #endif
+
+    if (FPExceptionsSwitchedOffDuringRun)
+    {
+        gmx_feenableexcept();
+    }
 
     return rc;
 }
