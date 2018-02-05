@@ -57,11 +57,19 @@ static int faculty(int n)
 
 static double Coulomb_PP(double r)
 {
+    if (r == 0)
+    {
+        return 0;
+    }
     return 1/r;
 }
 
 static double DCoulomb_PP(double r)
 {
+    if (r == 0)
+    {
+        return 0;
+    }
     return -1/gmx::square(r);
 }
 
@@ -270,7 +278,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                             vd = fd = vr = fr = 0;
                         }
                         fprintf(fp1, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
-                        if (atpi != atpj)
+                        if (atpi->getType() != atpj->getType())
                         {
                             fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
                         }
@@ -396,7 +404,10 @@ int alex_gen_table(int argc, char *argv[])
     
     gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv, atypes);
     
-    gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rc, 1.0/pts_nm, oenv);
-   
+    if (iDistributionModel != eqdAXp && iDistributionModel != eqdAXpp)
+    {
+        gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rc, 1.0/pts_nm, oenv);
+    }
+    
     return 0;
 }
