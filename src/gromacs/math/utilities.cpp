@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,14 +43,15 @@
 #include <assert.h>
 #include <limits.h>
 
+#include <cfenv>
 #include <cmath>
 
 #include <algorithm>
 
-#if !GMX_NATIVE_WINDOWS
-// for fp exception control stuff
-#include <fenv.h>
-#endif
+#pragma STDC FENV_ACCESS on
+
+//! Floating point exception set that we use
+constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
 int
 gmx_within_tol(double   f1,
@@ -120,7 +121,7 @@ int gmx_greatest_common_divisor(int p, int q)
 int gmx_feenableexcept()
 {
 #if HAVE_FEENABLEEXCEPT
-    return feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    return feenableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     /* Author:  David N. Williams
      * License:  Public Domain
@@ -128,9 +129,8 @@ int gmx_feenableexcept()
      * Might also work on non-Apple Unix. But should be tested
      * before enabling.
      */
-    unsigned int  excepts = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
     static fenv_t fenv;
-    unsigned int  new_excepts = excepts & FE_ALL_EXCEPT,
+    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT,
                   old_excepts; // previous masks
 
     if (fegetenv (&fenv) )
@@ -147,6 +147,48 @@ int gmx_feenableexcept()
 #else
     return -1;
 #endif
+}
+
+int gmx_fedisableexcept()
+{
+#if HAVE_FEENABLEEXCEPT //TODO
+    return fedisableexcept(c_FPexceptions);
+#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+    static fenv_t fenv;
+    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT,
+                  old_excepts; // all previous masks
+
+    if (fegetenv (&fenv) )
+    {
+        return -1;
+    }
+    old_excepts = fenv.__control & FE_ALL_EXCEPT;
+
+    // mask
+    fenv.__control |= new_excepts;
+    fenv.__mxcsr   |= new_excepts << 7;
+
+    return ( fesetenv (&fenv) ? -1 : old_excepts );
+#else
+    return -1;
+#endif
+}
+
+static int gmx_fegetexcept()
+{
+#if HAVE_FEENABLEEXCEPT //TODO
+    return fegetexcept();
+#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+    static fenv_t fenv;
+    return fegetenv (&fenv) ? -1 : (fenv.__control & FE_ALL_EXCEPT);
+#else
+    return -1;
+#endif
+}
+
+bool gmx_feexceptenabled()
+{
+    return (gmx_fegetexcept() == c_FPexceptions);
 }
 
 real max_cutoff(real cutoff1, real cutoff2)

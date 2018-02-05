@@ -637,6 +637,13 @@ int Mdrunner::mdrunner()
         init_parallel(cr, inputrec, mtop);
     }
 
+    const bool FPExceptionsSwitchedOffDuringRun = (EI_TPI(inputrec->eI) || inputrec->cutoff_scheme == ecutsGROUP)
+        && gmx_feexceptenabled();
+    if (FPExceptionsSwitchedOffDuringRun)
+    {
+        gmx_fedisableexcept();
+    } 
+  
     // Now each rank knows the inputrec that SIMMASTER read and used,
     // and (if applicable) cr->nnodes has been assigned the number of
     // thread-MPI ranks that have been chosen. The ranks can now all
@@ -945,15 +952,6 @@ int Mdrunner::mdrunner()
                           hw_opt.nthreads_omp_pme,
                           !thisRankHasDuty(cr, DUTY_PP),
                           inputrec->cutoff_scheme == ecutsVERLET);
-
-#ifndef NDEBUG
-    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
-    if (!EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET)
-    {
-        gmx_feenableexcept();
-    }
-#endif
 
     // Build a data structure that expresses which kinds of non-bonded
     // task are handled by this rank.
@@ -1408,6 +1406,11 @@ int Mdrunner::mdrunner()
         tMPI_Finalize();
     }
 #endif
+
+    if (FPExceptionsSwitchedOffDuringRun)
+    {
+        gmx_feenableexcept();
+    }
 
     return rc;
 }
