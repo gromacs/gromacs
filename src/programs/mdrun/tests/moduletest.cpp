@@ -164,7 +164,10 @@ SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
     caller.append("grompp");
     caller.merge(callerRef);
     caller.addOption("-f", mdpInputFileName);
-    caller.addOption("-n", ndxFileName_);
+    if (!ndxFileName_.empty())
+    {
+        caller.addOption("-n", ndxFileName_);
+    }
     caller.addOption("-p", topFileName_);
     caller.addOption("-c", groFileName_);
     caller.addOption("-r", groFileName_);
