@@ -947,7 +947,7 @@ int Mdrunner::mdrunner()
                           inputrec->cutoff_scheme == ecutsVERLET);
 
 #ifndef NDEBUG
-    if (EI_TPI(inputrec->eI) &&
+    if (!EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
     {
         gmx_feenableexcept();
