@@ -95,7 +95,7 @@ class OptEEM : public MolGen
 
         OptEEM() 
             : 
-                bESP_(true), 
+                bESP_(false), 
                 bDipole_(false), 
                 bQuadrupole_(false), 
                 bFullTensor_(false), 
@@ -515,20 +515,24 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
     double         p       = 0;
     double         ref_chi = 0;
     const Poldata &pd      = poldata();
-    ref_chi = pd.getChi0(iChargeDistributionModel(), fixchi());
-
+    
+    if (strlen(fixchi()) != 0)
+    {
+        ref_chi  = pd.getChi0(iChargeDistributionModel(), fixchi());
+    }
+    
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
-    auto ai_elem = pd.getElem(ai->name());
-    auto ai_row  = ei->getRowstr();
+    //auto ai_elem = pd.getElem(ai->name());
+    //auto ai_row  = ei->getRowstr();
     auto ai_chi  = ei->getChi0();
-    auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
+    //auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
     if (ai_chi < ref_chi)
     {
         p += 1e5;
     }
 
-    auto *ic = indexCount();
+    /*auto *ic = indexCount();
     for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
     {
         if (!aj->isConst())
@@ -558,7 +562,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                 }
             }
         }
-    }
+        }*/
     return p;
 }
 
