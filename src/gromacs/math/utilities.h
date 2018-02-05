@@ -165,6 +165,12 @@ gmx_greatest_common_divisor(int p, int q);
  */
 int gmx_feenableexcept();
 
+/*! \brief Disable floating-point exceptions if supported on OS */
+int gmx_fedisableexcept();
+
+/*! \brief Tests whether preferred floating-point exceptions are enabled. */
+bool gmx_feexceptenabled();
+
 /*! \brief Return cut-off to use
  *
  * Takes the max of two cut-offs. However a cut-off of 0
