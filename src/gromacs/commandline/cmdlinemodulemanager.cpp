@@ -158,6 +158,9 @@ CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
       niceLevel_(19), bNiceSet_(false), bBackup_(true), bFpexcept_(false),
       debugLevel_(0)
 {
+#if !defined(NDEBUG)
+    bFpexcept_ = true;
+#endif
     binaryInfoSettings_.copyright(true);
 }
 
@@ -579,7 +582,6 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (optionsHolder.enableFPExceptions())
     {
-        //TODO: currently it is always enabled for mdrun (verlet) and tests.
         gmx_feenableexcept();
     }
 
