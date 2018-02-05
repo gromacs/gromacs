@@ -371,6 +371,12 @@
 /* Define if we have feenableexcept */
 #cmakedefine01 HAVE_FEENABLEEXCEPT
 
+/* Define if we have fedisableexcept */
+#cmakedefine01 HAVE_FEDISABLEEXCEPT
+
+/* Define if we have fegetexcept */
+#cmakedefine01 HAVE_FEGETEXCEPT
+
 /*! \endcond */
 
 #endif
