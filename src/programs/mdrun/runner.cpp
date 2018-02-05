@@ -947,7 +947,8 @@ int Mdrunner::mdrunner()
                           inputrec->cutoff_scheme == ecutsVERLET);
 
 #ifndef NDEBUG
-    if (EI_TPI(inputrec->eI) &&
+    //FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
+    if (!EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
     {
         gmx_feenableexcept();
