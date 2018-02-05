@@ -133,9 +133,6 @@ class SimulationRunner
         std::string reducedPrecisionTrajectoryFileName_;
         std::string groOutputFileName_;
         std::string ndxFileName_;
-        std::string mdpInputFileName_;    /**< This file is temporary and will be overwritten with mdpInputContents_ when calling grompp.
-                                           * TODO: remove this when the multisim tests use -multidir.
-                                           */
         std::string mdpOutputFileName_;
         std::string tprFileName_;
         std::string logFileName_;
@@ -144,7 +141,7 @@ class SimulationRunner
         std::string swapFileName_;
         int         nsteps_;
         //@}
-        //! What will be written into mdpInputFileName_ before the grompp call
+        //! What will be written into a temporary mdp file before the grompp call
         std::string mdpInputContents_;
 
     private:

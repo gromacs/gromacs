@@ -96,7 +96,6 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
     groFileName_(),
     fullPrecisionTrajectoryFileName_(),
     ndxFileName_(),
-    mdpInputFileName_(fileManager->getTemporaryFilePath("input.mdp")),
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
@@ -158,12 +157,13 @@ SimulationRunner::useGroFromDatabase(const char *name)
 int
 SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
-    gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpInputContents_);
+    const std::string mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp"));
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
 
     CommandLine caller;
     caller.append("grompp");
     caller.merge(callerRef);
-    caller.addOption("-f", mdpInputFileName_);
+    caller.addOption("-f", mdpInputFileName);
     caller.addOption("-n", ndxFileName_);
     caller.addOption("-p", topFileName_);
     caller.addOption("-c", groFileName_);
