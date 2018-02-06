@@ -128,6 +128,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         ewtabscale          = ic->tabq_scale;
         ewtabhalfspace      = 0.5/ewtabscale;
     }
+    else
+    {
+        ewtab          = nullptr;
+        ewtabhalfspace = ewtabscale = 0;
+    }
 
     rcoulomb2           = ic->rcoulomb*ic->rcoulomb;
     rvdw                = ic->rvdw;
