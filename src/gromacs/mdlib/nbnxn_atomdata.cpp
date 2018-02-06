@@ -56,6 +56,8 @@
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_util.h"
+#include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/exceptions.h"
