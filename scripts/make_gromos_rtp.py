@@ -1,4 +1,4 @@
-#!/usr/freeware/bin/python
+#!/usr/bin/env python2
 
 # usage:  make_gromos_rtp.py > ffG43a1.rtp
 # this script tries to make a residue topology database for GROMACS from
