@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */

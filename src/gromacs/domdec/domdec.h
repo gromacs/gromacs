@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,29 +58,30 @@
 #ifndef GMX_DOMDEC_DOMDEC_H
 #define GMX_DOMDEC_DOMDEC_H
 
-#include <stdio.h>
-
 #include <vector>
 
-#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct cginfo_mb_t;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
+struct gmx_vsite_t;
 struct MdrunOptions;
+struct t_block;
+struct t_blocka;
 struct t_commrec;
+struct t_forcerec;
 struct t_inputrec;
+struct t_mdatoms;
+struct t_nrnb;
 class t_state;
 
 namespace gmx
