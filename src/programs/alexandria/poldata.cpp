@@ -158,6 +158,22 @@ const std::string &Poldata::getElem(const std::string &atype) const
     gmx_fatal(FARGS, "No such atomtype %s", atype.c_str());
 }
 
+const std::string &Poldata::ztype2elem(const std::string &ztype) const
+{
+    size_t i;
+    if (ztype.size() != 0)
+    {
+        for (i = 0; i < alexandria_.size(); i++)
+        {
+            if (alexandria_[i].getZtype().compare(ztype) == 0)
+            {
+                return alexandria_[i].getElem();
+            }
+        }
+    }
+    gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
+}
+
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Polarizability STUFF

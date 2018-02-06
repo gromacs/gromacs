@@ -243,6 +243,13 @@ class Poldata
          * \param[in] atype  Atom Type
          */
         const std::string &getElem(const std::string &atype) const;
+        
+        /*! \brief
+         * Return the element name corresponding to the zeta type
+         *
+         * \param[in] ztype  zeta Type
+         */
+        const std::string &ztype2elem(const std::string &ztype) const;
 
 
         /*! \brief

@@ -113,6 +113,8 @@ class OptEEM : public MolGen
         gmx_bool quadrupole() const { return bQuadrupole_; }
 
         gmx_bool fullTensor() const { return bFullTensor_; }
+        
+        gmx_bool fitZeta() const { return bFitZeta_; }
 
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -128,6 +130,8 @@ class OptEEM : public MolGen
                   "Calibrate EEM parameters to reproduce quadrupole tensor." },
                 { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                   "Calibrate atomic polarizability." },
+                { "-fitzeta", FALSE, etBOOL, {&bFitZeta_},
+                  "Calibrate orbital exponent." },
                 { "-charge", FALSE, etBOOL, {&bCharge_},
                   "Calibrate parameters to keep reasonable charges (do not use with ESP)." }
             };
@@ -249,7 +253,7 @@ void OptEEM::calcDeviation()
     if (PAR(commrec()))
     {
         bool bFinal = final();
-        gmx_bcast(sizeof(bFinal), &bFinal, commrec());
+        gmx_bcast(sizeof(final()), &bFinal, commrec());
         if (bFinal)
         {
             setFinal();
@@ -295,71 +299,67 @@ void OptEEM::calcDeviation()
                     if (mymol.topology_->atoms.atom[j].ptype == eptAtom ||
                         mymol.topology_->atoms.atom[j].ptype == eptNucleus)
                     {
-                        if (((qq < 0) && (atomnr == 1)) ||
-                            ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
-                                          (atomnr == 16) || (atomnr == 17) ||
-                                          (atomnr == 35) || (atomnr == 53))))
+                        auto q_H        = 0 ? (nullptr != mymol.shellfc_) : 1;
+                        auto q_OFSClBrI = 0 ? (nullptr != mymol.shellfc_) : 2;
+                        if (((qq < q_H) && (atomnr == 1)) ||
+                            ((qq > q_OFSClBrI) && ((atomnr == 8)  || (atomnr == 9) ||
+                                                   (atomnr == 16) || (atomnr == 17) ||
+                                                   (atomnr == 35) || (atomnr == 53))))
                         {
-                            increaseEnergy(ermsBOUNDS, fabs(qq));
+                            increaseEnergy(ermsCHARGE, gmx::square(qq));
                         }
                     }
                 }
-                if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
+                increaseEnergy(ermsCHARGE,
+                         gmx::square(qtot - mymol.molProp()->getCharge()));
+            }
+            if (bESP_)
+            {
+                real  rrms   = 0;
+                real  wtot   = 0;
+                if (nullptr != mymol.shellfc_)
                 {
-                    fprintf(stderr, "Warning qtot for %s is %g, should be %d\n",
-                            mymol.molProp()->getMolname().c_str(),
-                            qtot, mymol.molProp()->getCharge());
+                    mymol.Qgresp_.updateAtomCoords(mymol.x());
                 }
-                if (bESP_)
+                mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
+                mymol.Qgresp_.calcPot();
+                increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+            }
+            if (bDipole_)
+            {
+                mymol.CalcDipole();
+                if (bQM())
                 {
-                    real  rrms   = 0;
-                    real  wtot   = 0;
-                    if (nullptr != mymol.shellfc_)
-                    {
-                        mymol.Qgresp_.updateAtomCoords(mymol.x());
-                    }
-                    mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
-                    mymol.Qgresp_.calcPot();
-                    increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
+                    rvec dmu;
+                    rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
+                    increaseEnergy(ermsMU, iprod(dmu, dmu));
                 }
-                if (bDipole_)
+                else
                 {
-                    mymol.CalcDipole();
-                    if (bQM())
-                    {
-                        rvec dmu;
-                        rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
-                        increaseEnergy(ermsMU, iprod(dmu, dmu));
-                    }
-                    else
-                    {
-                        increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
-                    }
+                    increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                 }
-                if (bQuadrupole_)
+            }
+            if (bQuadrupole_)
+            {
+                mymol.CalcQuadrupole();
+                for (auto mm = 0; mm < DIM; mm++)
                 {
-                    mymol.CalcQuadrupole();
-                    for (auto mm = 0; mm < DIM; mm++)
+                    for (auto nn = 0; nn < DIM; nn++)
                     {
-                        if (fullTensor())
+                        if (fullTensor() || mm == nn)
                         {
-                            for (auto nn = 0; nn < DIM; nn++)
-                            {
-                                increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
-                            }
-                        }
-                        else
-                        {
-                            increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][mm] - mymol.QQM(qtElec)[mm][mm]));
+                            increaseEnergy(ermsQUAD, 
+                                     gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
             }
+            
         }
-        sumEnergies();
-        normalizeEnergies();
-        printEnergies(debug);
     }
+    sumEnergies();
+    normalizeEnergies();
+    printEnergies(debug);
 }
 
 void OptEEM::polData2TuneEEM()
@@ -512,7 +512,7 @@ void OptEEM::InitOpt(real  factor)
 
 double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
-    double         p       = 0;
+    double         penalty = 0;
     double         ref_chi = 0;
     const Poldata &pd      = poldata();
     
@@ -520,50 +520,50 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
     {
         ref_chi  = pd.getChi0(iChargeDistributionModel(), fixchi());
     }
-    
+     
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
-    //auto ai_elem = pd.getElem(ai->name());
-    //auto ai_row  = ei->getRowstr();
+    auto ai_elem = pd.ztype2elem(ei->getName());
+    auto ai_row  = ei->getRow(0);
     auto ai_chi  = ei->getChi0();
-    //auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
+    auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
     if (ai_chi < ref_chi)
     {
-        p += 1e5;
+        penalty += 1e5;
     }
 
-    /*auto *ic = indexCount();
+    auto *ic = indexCount();    
     for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
     {
         if (!aj->isConst())
         {
             const auto ej      = pd.findEem(iChargeDistributionModel(), aj->name());
-            const auto aj_elem = pd.getElem(aj->name());
-            auto       aj_row  = ej->getRowstr();
+            const auto aj_elem = pd.ztype2elem(ej->getName());
+            auto       aj_row  = ej->getRow(0);
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
-
+            
             if ((ai_row == aj_row) && (ai_atn != aj_atn))
             {
                 auto aj_chi = ej->getChi0();
-
+                
                 if (ai_atn > aj_atn)
                 {
                     if (ai_chi < aj_chi)
                     {
-                        p += 1e5;
+                        penalty += 1e5;
                     }
                 }
                 else if (aj_atn > ai_atn)
                 {
                     if (aj_chi < ai_chi)
                     {
-                        p += 1e5;
+                        penalty += 1e5;
                     }
                 }
             }
         }
-        }*/
-    return p;
+    }
+    return penalty;
 }
 
 double OptEEM::objFunction(const double v[])
@@ -579,7 +579,6 @@ double OptEEM::objFunction(const double v[])
     }
 
     TuneEEM2PolData();
-
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -594,7 +593,6 @@ double OptEEM::objFunction(const double v[])
                 auto Chi0 = param_[n++];
                 bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
             }
-
             if (bFitZeta_)
             {
                 auto nzeta = poldata().getNzeta(iChargeDistributionModel(), ai->name());
@@ -613,14 +611,12 @@ double OptEEM::objFunction(const double v[])
         bound += 100*gmx::square(hfacDiff());
     }
     calcDeviation();
-
     if (TuneEEM_.bounds())
     {
         increaseEnergy(ermsBOUNDS, bound);
         increaseEnergy(ermsTOT, bound);
     }
     increaseEnergy(ermsTOT, penalty);
-
     return energy(ermsTOT);
 }
 
@@ -635,11 +631,9 @@ void OptEEM::optRun(FILE                   *fp,
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
 
-    auto                func = [&] (const double v[]) {
-            return objFunction(v);
-        };
-    TuneEEM_.setFunc(func, param_, lower_, upper_, &chi2);
-    TuneEEM_.Init(xvgconv, xvgepot, oenv);
+    auto  func = [&] (const double v[]) {
+        return objFunction(v);
+    };
 
     if (MASTER(commrec()))
     {
@@ -650,8 +644,9 @@ void OptEEM::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, (nrun*TuneEEM_.maxIter()*param_.size()));
             }
         }
-
         chi2 = chi2_min = GMX_REAL_MAX;
+        TuneEEM_.setFunc(func, param_, lower_, upper_, &chi2);
+        TuneEEM_.Init(xvgconv, xvgepot, oenv);
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -659,12 +654,10 @@ void OptEEM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-
             TuneEEM_.simulate();
             TuneEEM_.getBestParam(optb);
             TuneEEM_.getPsigma(opts);
             TuneEEM_.getPmean(optm);
-
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
@@ -700,24 +693,15 @@ void OptEEM::optRun(FILE                   *fp,
         auto niter = gmx_recv_int(commrec(), 0);
         for (auto n = 0; n < niter + 2; n++)
         {
-            calcDeviation();
+            calcDeviation();          
         }
     }
     setFinal();
     if (MASTER(commrec()))
     {
-        chi2 = objFunction(best_.data());;
-        if (nullptr != fp)
-        {
-            fprintf(fp, "rmsd: %4.3f  ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), energy(ermsBOUNDS), nrun);
-        }
-        if (nullptr != fplog)
-        {
-            fprintf(fplog, "rmsd: %4.3f   ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), energy(ermsBOUNDS), nrun);
-            fflush(fplog);
-        }
+        chi2 = objFunction(best_.data());
+        printEnergies(fp);
+        printEnergies(fplog);
     }
 }
 }
@@ -852,10 +836,7 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
     opt.optionsFinished();
-    if (MASTER(opt.commrec()))
-    {
-        printf("There are %d threads/processes.\n", opt.commrec()->nnodes);
-    }
+
     if (MASTER(opt.commrec()))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -876,10 +857,6 @@ int alex_tune_eem(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    gmx_bool    bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
-                          opt.iChargeDistributionModel() == eqdAXpg  ||
-                          opt.iChargeDistributionModel() == eqdAXps);
-
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -890,8 +867,8 @@ int alex_tune_eem(int argc, char *argv[])
              true,
              false,
              false,
-             bPolar,
              bZPE,
+             opt.fitZeta(),
              tabfn);
 
     if (nullptr != fp)
@@ -921,6 +898,10 @@ int alex_tune_eem(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
+        gmx_bool bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
+                           opt.iChargeDistributionModel() == eqdAXpg  ||
+                           opt.iChargeDistributionModel() == eqdAXps);
+                          
         auto *ic = opt.indexCount();
         print_electric_props(fp,
                              opt.mymols(),

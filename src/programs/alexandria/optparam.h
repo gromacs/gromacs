@@ -242,9 +242,7 @@ template <class T>
 void Bayes<T>::changeParam(int j, real rand)
 {
     real delta = (2*rand-1)*step()*fabs(param_[j]);
-
     param_[j] += delta;
-
     if (bounds())
     {
         if (param_[j] < lowerBound_[j])
@@ -261,16 +259,19 @@ void Bayes<T>::changeParam(int j, real rand)
 template <class T>
 void Bayes<T>::simulate()
 {
-    parm_t                           sum, sum_of_sq;
-    int                              nsum = 0, nParam = 0; // ncycle = 0;
     T                                storeParam;
-    double                           currEval = 0.0;
-    double                           prevEval = 0.0;
-    double                           deltaEval;
-    double                           randProbability;
-    double                           mcProbability;
-
-    FILE                            *fpc = nullptr, *fpe = nullptr;
+    int                              nsum            = 0;
+    int                              nParam          = 0; 
+    double                           currEval        = 0;
+    double                           prevEval        = 0;
+    double                           deltaEval       = 0;
+    double                           randProbability = 0;
+    double                           mcProbability   = 0;    
+    parm_t                           sum, sum_of_sq;
+    
+    FILE                            *fpc             = nullptr;
+    FILE                            *fpe             = nullptr;
+    
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> uniform(0, 1);
@@ -289,14 +290,13 @@ void Bayes<T>::simulate()
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
-
+    
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
         double beta = computeBeta(iter/nParam);
-        // Pick random parameter to change
-        int j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam;
+        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
         
         storeParam = param_[j];
         changeParam(j, uniform(gen));
@@ -304,6 +304,7 @@ void Bayes<T>::simulate()
         deltaEval       = currEval-prevEval;
         randProbability = uniform(gen);
         mcProbability   = exp(-beta*deltaEval);
+        
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
             double xiter = (1.0*iter)/nParam;
@@ -335,7 +336,7 @@ void Bayes<T>::simulate()
         }
         if (iter >= maxIter()/2)
         {
-            for (int k = 0; k < nParam; k++)
+            for (auto k = 0; k < nParam; k++)
             {
                 sum[k]       += param_[k];
                 sum_of_sq[k] += gmx::square(param_[k]);
@@ -345,7 +346,7 @@ void Bayes<T>::simulate()
     }
     if (nsum > 0)
     {
-        for (int k = 0; k < nParam; k++)
+        for (auto k = 0; k < nParam; k++)
         {
             pmean_[k]     = (sum[k]/nsum);
             sum_of_sq[k] /= nsum;

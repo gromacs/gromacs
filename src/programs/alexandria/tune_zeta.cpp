@@ -365,7 +365,7 @@ void OptZeta::calcDeviation()
                 {
                     for (auto nn = 0; nn < DIM; nn++)
                     {
-                        if (bFullTensor_ || mm == nn)
+                        if (fullTensor() || mm == nn)
                         {
                             increaseEnergy(ermsQUAD, 
                                      gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
@@ -418,9 +418,9 @@ void OptZeta::optRun(FILE                   *fp,
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
 
-    auto                func = [&] (const double v[]) {
-            return objFunction(v);
-        };
+    auto  func = [&] (const double v[]) {
+        return objFunction(v);
+    };
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
@@ -682,6 +682,10 @@ int alex_tune_zeta(int argc, char *argv[])
     
     if (MASTER(opt.commrec()))
     {
+        gmx_bool bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
+                           opt.iChargeDistributionModel() == eqdAXpg  ||
+                           opt.iChargeDistributionModel() == eqdAXps);
+                           
         auto *ic = opt.indexCount();
         print_electric_props(fp,
                              opt.mymols(),
@@ -698,7 +702,7 @@ int alex_tune_zeta(int argc, char *argv[])
                              quad_toler,
                              alpha_toler,
                              oenv,
-                             true,
+                             bPolar,
                              opt.dipole(),
                              opt.quadrupole(),
                              opt.fullTensor(),
