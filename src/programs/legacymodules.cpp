@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -275,6 +275,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Extract an energy matrix from an energy file");
     registerModule(manager, &gmx_energy, "energy",
                    "Writes energies to xvg files and display averages");
+    registerModule(manager, &gmx_fca, "fca",
+                   "Full Correlation Analysis");
     registerModule(manager, &gmx_filter, "filter",
                    "Frequency filter trajectories, useful for making smooth movies");
     registerModule(manager, &gmx_gyrate, "gyrate",
@@ -410,6 +412,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("analyze");
         group.addModule("awh");
         group.addModule("dyndom");
+        group.addModule("fca");
         group.addModule("filter");
         group.addModule("lie");
         group.addModule("morph");
