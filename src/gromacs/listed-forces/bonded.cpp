@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -379,7 +379,7 @@ real bonds(int nbonds,
 
         ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
         dr2  = iprod(dx, dx);                       /*   5		*/
-        dr   = dr2*gmx::invsqrt(dr2);               /*  10		*/
+        dr   = std::sqrt(dr2);                      /*  10		*/
 
         *dvdlambda += harmonic(forceparams[type].harmonic.krA,
                                forceparams[type].harmonic.krB,
