@@ -16,3 +16,10 @@ simd -> hardware
 gpu_utils -> hardware
 topology -> listed-forces
 listed-forces -> mdlib
+math -> gmxana
+math -> fileio
+math -> random
+simd -> math
+trajectory -> math
+topology -> math
+pbcutil -> math
