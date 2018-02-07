@@ -195,7 +195,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-static void get_stx_coordnum(const char *infile, int *natoms)
+void get_stx_coordnum(const char *infile, int *natoms)
 {
     FILE      *in;
     int        ftp;
@@ -296,9 +296,9 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char **name, t_atoms *atoms,
-                          rvec x[], rvec *v, int *ePBC, matrix box)
+void read_stx_conf(const char *infile,
+                   t_symtab *symtab, char **name, t_atoms *atoms,
+                   rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
     t_trxframe  fr;
