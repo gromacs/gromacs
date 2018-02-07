@@ -98,9 +98,8 @@ static void dump_index_count(const IndexCount       *ic,
     fprintf(fp, "Name  Number  Action   #Zeta\n");
     for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
     {
-        int nZeta = pd.getNzeta(iDistributionModel,
-                                i->name());
-        int nZopt = 0;
+        int nZeta  = pd.getNzeta(iDistributionModel, i->name());
+        int nZopt  = 0;
         for (int j = 0; (j < nZeta); j++)
         {
             if (pd.getZeta(iDistributionModel,
@@ -285,20 +284,11 @@ int IndexCount::cleanIndex(int   minimum_data,
 
 MolGen::MolGen()
 {
-    cr_     = nullptr;
-    fixchi_ = (char *)"";
-    for (int i = 0; (i < ermsNR); i++)
-    {
-        fc_[i]   = 0;
-        ener_[i] = 0;
-    }
-    fc_[ermsESP] = 1;
-    fc_[ermsTOT] = 1;
-    inputrec_    = mdModules_.inputrec();
-    fill_inputrec(inputrec_);
+    cr_        = nullptr;
     bFinal_    = false;
     bDone_     = false;
     bGenVsite_ = false;
+    bOptHfac_  = false;
     J0_min_    = 5;
     Chi0_min_  = 1;
     zeta_min_  = 2;
@@ -309,10 +299,18 @@ MolGen::MolGen()
     qtol_      = 1e-6;
     qcycle_    = 1000;
     mindata_   = 3;
-    lot_       = "B3LYP/aug-cc-pVTZ";
     hfac_      = 0;
     maxESP_    = 100;
-    bOptHfac_  = false;
+    fixchi_    = (char *)"";
+    lot_       = "B3LYP/aug-cc-pVTZ";
+    inputrec_  = mdModules_.inputrec();
+    fill_inputrec(inputrec_);
+    for (int i = 0; i < ermsNR; i++)
+    {
+        fc_[i]   = 0;
+        ener_[i] = 0;
+    }
+    fc_[ermsTOT] = 1;
 }
 
 MolGen::~MolGen()

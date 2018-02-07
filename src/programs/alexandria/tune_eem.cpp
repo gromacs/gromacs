@@ -79,11 +79,7 @@ class OptEEM : public MolGen
     using param_type = std::vector<double>;
 
     private:
-        gmx_bool       bESP_;
-        gmx_bool       bDipole_;
-        gmx_bool       bQuadrupole_;
         gmx_bool       bFullTensor_;
-        gmx_bool       bCharge_;
         gmx_bool       bFitAlpha_;
         gmx_bool       bFitZeta_;
         
@@ -94,23 +90,19 @@ class OptEEM : public MolGen
     public:
 
         OptEEM() 
-            : 
-                bESP_(false), 
-                bDipole_(false), 
-                bQuadrupole_(false), 
+            :  
                 bFullTensor_(false), 
-                bCharge_(false), 
                 bFitAlpha_(false), 
                 bFitZeta_(false) 
             {}
 
         ~OptEEM() {}
 
-        gmx_bool bESP() const { return bESP_; }
+        gmx_bool bESP() const { return weight(ermsESP); }
 
-        gmx_bool dipole() const { return bDipole_; }
+        gmx_bool dipole() const { return weight(ermsMU); }
 
-        gmx_bool quadrupole() const { return bQuadrupole_; }
+        gmx_bool quadrupole() const { return weight(ermsQUAD); }
 
         gmx_bool fullTensor() const { return bFullTensor_; }
         
@@ -121,27 +113,18 @@ class OptEEM : public MolGen
             t_pargs pa[] =
             {
                 { "-fullTensor", FALSE, etBOOL, {&bFullTensor_},
-                  "consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
-                { "-dipole", FALSE, etBOOL, {&bDipole_},
-                  "Calibrate EEM parameters to reproduce dipole moment." },
-                { "-esp", FALSE, etBOOL, {&bESP_},
-                  "Calibrate EEM parameters to reproduce the electrostatic potential." },
-                { "-quadrupole", FALSE, etBOOL, {&bQuadrupole_},
-                  "Calibrate EEM parameters to reproduce quadrupole tensor." },
+                  "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
                 { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
                   "Calibrate atomic polarizability." },
                 { "-fitzeta", FALSE, etBOOL, {&bFitZeta_},
                   "Calibrate orbital exponent." },
-                { "-charge", FALSE, etBOOL, {&bCharge_},
-                  "Calibrate parameters to keep reasonable charges (do not use with ESP)." }
             };
-            for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+            for (size_t i = 0; i < asize(pa); i++)
             {
                 pargs->push_back(pa[i]);
             }
             addOptions(pargs);
             TuneEEM_.add_pargs(pargs);
-
         }
 
         double l2_regularizer (double x,
@@ -247,7 +230,8 @@ void OptEEM::setEEM()
 
 void OptEEM::calcDeviation()
 {
-    int    j;
+    int    i    = 0;
+    int    j    = 0;
     double qtot = 0;
 
     if (PAR(commrec()))
@@ -288,10 +272,10 @@ void OptEEM::calcDeviation()
                 }
                 mymol.computeForces(nullptr, commrec());
             }
-            qtot = 0;
-            if (bCharge_)
+            if (weight(ermsCHARGE))
             {
-                for (j = 0; j < mymol.topology_->atoms.nr; j++)
+                qtot = 0;
+                for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
                 {
                     auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
                     auto qq     = mymol.topology_->atoms.atom[j].q;
@@ -308,12 +292,18 @@ void OptEEM::calcDeviation()
                         {
                             increaseEnergy(ermsCHARGE, gmx::square(qq));
                         }
-                    }
+                        if (nullptr != mymol.shellfc_)
+                        {
+                            qq += mymol.topology_->atoms.atom[j+1].q;
+                        }
+                        increaseEnergy(ermsCHARGE,
+                                       gmx::square(qq - mymol.chargeQM(qtCM5)[i++]));
+                    }                   
                 }
                 increaseEnergy(ermsCHARGE,
-                         gmx::square(qtot - mymol.molProp()->getCharge()));
+                               gmx::square(qtot - mymol.molProp()->getCharge()));
             }
-            if (bESP_)
+            if (weight(ermsESP))
             {
                 real  rrms   = 0;
                 real  wtot   = 0;
@@ -325,7 +315,7 @@ void OptEEM::calcDeviation()
                 mymol.Qgresp_.calcPot();
                 increaseEnergy(ermsESP, convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e));
             }
-            if (bDipole_)
+            if (weight(ermsMU))
             {
                 mymol.CalcDipole();
                 if (bQM())
@@ -339,22 +329,21 @@ void OptEEM::calcDeviation()
                     increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                 }
             }
-            if (bQuadrupole_)
+            if (weight(ermsQUAD))
             {
                 mymol.CalcQuadrupole();
                 for (auto mm = 0; mm < DIM; mm++)
                 {
                     for (auto nn = 0; nn < DIM; nn++)
                     {
-                        if (fullTensor() || mm == nn)
+                        if (bFullTensor_ || mm == nn)
                         {
                             increaseEnergy(ermsQUAD, 
                                      gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
-            }
-            
+            }            
         }
     }
     sumEnergies();

@@ -357,13 +357,13 @@ void print_electric_props(FILE                           *fp,
                 gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(), eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
             }
 
-            fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_MPA     q_HPA     q_CM5       x       y       z\n");
+            fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
             auto qesp = mol.chargeQM(qtESP);
             auto x    = mol.x();
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
-                // TODO Or virtual site?
-                if (mol.topology_->atoms.atom[j].ptype == eptAtom)
+                if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
+                    mol.topology_->atoms.atom[j].ptype == eptNucleus)
                 {
                     auto fa = pd.findAtype(*(mol.topology_->atoms.atomtype[j]));
                     auto at = fa->getZtype();
@@ -389,9 +389,9 @@ void print_electric_props(FILE                           *fp,
                                 *(mol.topology_->atoms.atomtype[j]),
                                 qCalc,
                                 qesp[i],
-                                mol.chargeQM(qtMulliken)[i],
-                                mol.chargeQM(qtHirshfeld)[i],
                                 mol.chargeQM(qtCM5)[i],
+                                mol.chargeQM(qtHirshfeld)[i],
+                                mol.chargeQM(qtMulliken)[i],
                                 x[j][XX],
                                 x[j][YY],
                                 x[j][ZZ]);

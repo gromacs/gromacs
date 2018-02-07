@@ -137,6 +137,24 @@ class MyMol
         GentopVsites     gvt_;
         std::string      forcefield_;
 
+        //! Array of dipole vectors
+        rvec                      mu_qm_[qtNR];
+        //! Array of quadrupole tensors
+        tensor                    Q_qm_[qtNR];
+        //! Array of vectors of charges
+        std::vector<double>       charge_QM_[qtNR];
+        //! Experimental dipole
+        double                    dip_exp_    = 0;
+        //! Error in experimental dipole
+        double                    dip_err_    = 0;
+        //! Weighting factor for dipole????
+        double                    dip_weight_ = 0;
+        //! Center of charge
+        rvec                      coc_        = {0, 0, 0};        
+        //! GROMACS state variable
+        t_state                  *state_;
+        //! GROMACS force record
+        t_forcerec               *fr_;
 
         bool             IsSymmetric(real toler);
 
@@ -184,16 +202,46 @@ class MyMol
         immStatus checkAtoms(const Poldata &pd);
 
 
-        immStatus zeta2atoms(ChargeDistributionModel iChargeDistributionModel,
+        /*! \brief
+         * Add the screening factors of the distributed charge to atom structure
+         *
+         * \param[in] iModel  The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] pd      Data structure containing atomic properties
+         */
+        immStatus zeta2atoms(ChargeDistributionModel iModel,
                              const Poldata          &pd);
 
+        /*! \brief
+         * Return true if atom type neesd to have virtual site.
+         *
+         * \param[in] atype  Atom type
+         * \param[in] pd     Data structure containing atomic properties
+         */
         bool IsVsiteNeeded(std::string        atype,
                            const Poldata     &pd);
 
+        /*! \brief
+         * Find the atoms inside the molcule needed to construct the inplane virtual sites. 
+         *
+         * \param[in]  ca     The index of the central atom 
+         * \param[out] atoms  Data structure containing atomic properties
+         */
         void findInPlaneAtoms(int ca, std::vector<int> &atoms);
 
+        /*! \brief
+         * Find the atoms inside the molcule needed to construct the out of plane virtual sites. 
+         *
+         * \param[in]  ca     The index of the central atom 
+         * \param[out] atoms  Data structure containing atomic properties
+         */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
+        /*! \brief
+         * Compare the iupac name of two MyMol objects. 
+         *
+         * \param[in]  mol1  Molecule 1 
+         * \param[out] mol2  Molecule 2
+         */
         friend bool operator==(const MyMol &mol1, const MyMol &mol2)
         {
             return (mol1.molProp()->getMolname().c_str() == mol2.molProp()->getMolname().c_str());
@@ -207,60 +255,7 @@ class MyMol
          */
         void setQandMoments(qType qt, int natom, double q[]);
 
-        //! Array of dipole vectors
-        rvec                      mu_qm_[qtNR];
-        //! Experimental dipole
-        double                    dip_exp_       = 0;
-        //! Error in experimental dipole
-        double                    dip_err_       = 0;
-        //! Weighting factor for dipole????
-        double                    dip_weight_    = 0;
-        //! Center of charge
-        rvec                      coc_           = {0, 0, 0};
-        //! Array of quadrupole tensors
-        tensor                    Q_qm_[qtNR];
-        //! Array of vectors of charges
-        std::vector<double>       charge_QM_[qtNR];
-
-        //! GROMACS state variable
-        t_state                  *state_;
-        //! GROMACS force record
-        t_forcerec               *fr_;
-
     public:
-        //! \brief return QM dipole corresponding to charge type qt
-        const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
-
-        //! \brief return QM quadrupole corresponding to charge type qt
-        const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
-
-        //! \brief return Charge vector corresponding to charge type qt
-        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
-
-        /*! \brief Store dipole in appropriate vector
-         *
-         * \param[in] qt The charge type
-         * \param[in] mu The dipole to be stored
-         */
-        void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
-        
-        void rotateDipole(rvec mu, rvec muReference);
-
-        /*! \brief Store quadrupole in appropriate tensor
-         *
-         * \param[in] qt The charge type
-         * \param[in] Q  The quadrupole to be stored
-         */
-        void set_QQM(qType qt, tensor Q) { copy_mat(Q, Q_qm_[qt]); }
-
-        //! Return computed dipole for charge type qt
-        double dipQM(qType qt) const { return norm(mu_qm_[qt]); }
-
-        //! Return experimental dipole
-        double dipExper() const { return dip_exp_; }
-
-        const PaddedRVecVector   &x() const { return state_->x; }
-
         double                    chieq_         = 0;
         double                    Hform_         = 0;
         double                    Emol_          = 0;
@@ -294,17 +289,68 @@ class MyMol
         t_fcdata                 *fcd_;
         t_nrnb                    nrnb_;
         gmx_wallcycle_t           wcycle_;
-
+        
         /*! \brief
          * Constructor
          */
         MyMol();
+        
+        /*! \brief 
+         * Return QM dipole corresponding to charge type qt
+         */
+        const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
 
+        /*! \brief 
+         * Return QM quadrupole corresponding to charge type qt.
+         */
+        const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
+
+        /*! \brief 
+         * Return Charge vector corresponding to charge type qt.
+         */
+        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
+
+        /*! \brief Store dipole in appropriate vector
+         *
+         * \param[in] qt The charge type
+         * \param[in] mu The dipole to be stored
+         */
+        void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
+        
+        /*! \brief 
+         * Rotate the molcular dipole vector onto a reference vector
+         *
+         * \param[in] mu             Molecular dipole vector
+         * \param[in] muReference    The reference vector
+         */
+        void rotateDipole(rvec mu, rvec muReference);
+
+        /*! \brief Store quadrupole in appropriate tensor
+         *
+         * \param[in] qt The charge type
+         * \param[in] Q  The quadrupole to be stored
+         */
+        void set_QQM(qType qt, tensor Q) { copy_mat(Q, Q_qm_[qt]); }
+
+        /*! \brief
+         * Return computed dipole for charge type qt.
+         */
+        double dipQM(qType qt) const { return norm(mu_qm_[qt]); }
+
+        /*! \brief 
+         * Return experimental dipole
+         */
+        double dipExper() const { return dip_exp_; }
+
+        /*! \brief
+         * Return the coordinate vector of the molecule
+         */
+        const PaddedRVecVector &x() const { return state_->x; }
+               
         /*! \brief
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
-
 
         /*! \brief
          * It generates the topology structure which will be used to print the topology file.
@@ -329,6 +375,7 @@ class MyMol
                                    bool                      bAddShells,
                                    bool                      bBASTAT,
                                    const char               *tabfn);
+                                   
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
          *  electric field (under construction!!!)
@@ -436,10 +483,22 @@ class MyMol
          */
         void CalcQPol(const Poldata &pd, rvec mu);
 
+        /*! \brief
+         * Compute the molecular dipole vector
+         */
         void CalcDipole();
 
+        /*! \brief
+         * Compute the molecular dipole vector and store them in the vector mu
+         */
         void CalcDipole(rvec mu);
 
+        /*! \brief 
+         * Compute the anisotropic polarizability from the polarizability tensor
+         *
+         * \param[in]  polar     Tensor of polarizability
+         * \param[out] anisoPol  Anisotropic polarizability
+         */
         void CalcAnisoPolarizability(tensor polar, double *anisoPol);
 
         /*! \brief
@@ -465,8 +524,14 @@ class MyMol
          */
         void changeCoordinate(ExperimentIterator ei);
 
+        /*! \brief
+         * Return the optimized geometry of the molecule from the data file.
+         */
         bool getOptimizedGeometry(rvec *x);
 
+        /*! \brief
+         * Set the force field name.
+         */
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 
         /*! \brief
@@ -509,6 +574,9 @@ class MyMol
          */
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
+        /*! \brief
+         * Generate GROMACS.
+         */
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
                                   t_commrec                *cr,
                                   const char               *tabfn,
@@ -551,6 +619,11 @@ class MyMol
          */
         void PrintConformation(const char *fn);
 
+        /*! \brief
+         * set the inputrec of the MyMol object
+         *
+         * \param[in] ir   GROMACS t_inputrec structure
+         */
         void setInputrec(t_inputrec  *ir)
         {
             inputrec_ = ir;

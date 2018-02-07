@@ -126,6 +126,7 @@ class IndexCount
             return std::count_if(atomIndex_.begin(), atomIndex_.end(),
                                  [](AtomIndex ai) { return ai.isConst(); });
         }
+        
         int nConst() const { return atomIndex_.size() - nOpt(); }
 
         int nName(const std::string &name) const;
@@ -205,10 +206,19 @@ class MolGen
         const char                     *lot_;
     public:
 
+        /*! \brief 
+         * Constructor of MolGen class.
+         */ 
         MolGen();
 
+        /*! \brief 
+         * Deconstructor of MolGen class.
+         */
         ~MolGen();
 
+        /*! \brief 
+         * Return the indexCount.
+         */
         IndexCount *indexCount() { return &indexCount_; }
 
         //! \brief Add options to the command line
@@ -217,10 +227,13 @@ class MolGen
         //! \brief Process options after parsing
         void optionsFinished();
 
+        //! \brief Check that we have enough data for all parameters tp optimize. 
         immStatus check_data_sufficiency(alexandria::MyMol  mymol,
                                          IndexCount        *ic);
+                                         
         //! \brief Return the poldata as const variable
         const Poldata &poldata() const { return pd_; }
+        
         //! \brief Return the poldata
         Poldata &poldata() { return pd_; }
 
@@ -260,6 +273,7 @@ class MolGen
             }
             return 0;
         }
+        
         //! \brief The atom to fix
         const char *fixchi() const { return fixchi_; }
 
@@ -285,38 +299,59 @@ class MolGen
         const char *lot() const { return lot_; }
 
         void setFinal() { bFinal_ = true; }
-
+        
+        //! \brief Return lower boundary for Gaussian and Slater exponent.
         double zetaMin() const { return zeta_min_; }
+        
+        //! \brief Return upper boundary for Gaussian and Slater exponent.
         double zetaMax() const { return zeta_max_; }
+        
+        //! \brief Return lower boundary for atomic hardness.
         double J0Min() const { return J0_min_; }
+        
+        //! \brief Return upper boundary for atomic hardness.
         double J0Max() const { return J0_max_; }
+        
+        //! \brief Return lower boundary for atomic electronegativity.
         double chi0Min() const { return Chi0_min_; }
+        
+        //! \brief Return upper boundary for atomic electronegativity.
         double chi0Max() const { return Chi0_max_; }
         
-        void setEnergy(int qt, real ener)
+        //! \brief Set the energy value for the corresponding rms.
+        void setEnergy(int rms, real ener)
         {
-            ener_[qt] = ener;
+            ener_[rms] = ener;
         }
         
-        double energy(int qt) const 
+        //! \brief Return the energy of the corresponding rms. 
+        double energy(int rms) const 
         { 
-            return fc_[qt]*ener_[qt]; 
+            return fc_[rms]*ener_[rms]; 
         }
         
+        //! \brief Return the weighting factor of the energy.
+        double weight(int rms) const 
+        { 
+            return fc_[rms]; 
+        }
+        
+        //! \brief Set all the energies to zero.
         void resetEnergies()
         {
-            for (int j = 0; j < ermsNR; j++)
+            for (int rms = 0; rms < ermsNR; rms++)
             {
-                ener_[j] = 0;
+                ener_[rms] = 0;
             }
         }
 
-        void increaseEnergy(int qt, real delta)
+        //! \brief Increase the rms component of the energy vector by delta. 
+        void increaseEnergy(int rms, real delta)
         {
-            ener_[qt] += delta;
+            ener_[rms] += delta;
         }
 
-        
+        //! \brief Sum over the energies of the cores. 
         void sumEnergies()
         {
             if (PAR(commrec()) && !final())
@@ -325,17 +360,19 @@ class MolGen
             }
         }
 
+        //! \brief Normalize the energy by the number of molecules.
         void normalizeEnergies()
         {
             if (MASTER(commrec()))
             {
-                for (int j = 0; j < ermsTOT; j++)
+                for (int rms = 0; rms < ermsTOT; rms++)
                 {
-                    ener_[ermsTOT] += ((fc_[j]*ener_[j])/nmol_support_);
+                    ener_[ermsTOT] += ((fc_[rms]*ener_[rms])/nmol_support_);
                 }
             }
         }
 
+        //! \brief Print the energy components.
         void printEnergies(FILE *fp)
         {
             if (nullptr != fp && MASTER(commrec()))
@@ -349,6 +386,7 @@ class MolGen
             }
         }
 
+        //! \brief Read the molecular property data file to generate molecues.
         void Read(FILE                      *fp,
                   const char                *fn,
                   const char                *pd_fn,
