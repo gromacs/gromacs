@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -197,7 +197,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-static void get_stx_coordnum(const char *infile, int *natoms)
+void get_stx_coordnum(const char *infile, int *natoms)
 {
     FILE      *in;
     int        ftp;
@@ -298,9 +298,9 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char **name, t_atoms *atoms,
-                          rvec x[], rvec *v, int *ePBC, matrix box)
+void read_stx_conf(const char *infile,
+                   t_symtab *symtab, char **name, t_atoms *atoms,
+                   rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
     t_trxframe  fr;
