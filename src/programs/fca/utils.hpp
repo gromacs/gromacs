@@ -1,0 +1,472 @@
+#ifndef UTILS_HPP
+#define UTILS_HPP
+
+#if !(GMX_MPI)
+#define MPI_Bcast(A, B, C, D, E)
+#define MPI_COMM_WORLD 0
+#endif
+#define FCA_MASTER_RANK 0
+
+#include "gmxpre.h"
+
+#include <limits>
+#include <algorithm>
+#include <memory>
+
+#include <vector>
+#include <cstdio>
+#include <cassert>
+#include <ctime>
+
+#if GMX_OPENMP
+#include <omp.h>
+#endif
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/basenetwork.h"
+
+#include "gromacs/utility/gmxmpi.h"
+
+namespace FCA{
+
+namespace utils{
+
+template <class NumType>
+int fscanf_floating_point(FILE* fl, NumType* ptr);
+
+template <>
+int fscanf_floating_point<float>(FILE* fl, float* ptr){
+    return fscanf(fl, "%f", ptr);
+}
+
+template <>
+int fscanf_floating_point<double>(FILE* fl, double* ptr){
+    return fscanf(fl, "%lf", ptr);
+}
+
+
+inline static double PI_constant(){
+    return 3.14159265358979323846;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// MPI Wrapper
+/////////////////////////////////////////////////////////////////////////////////////
+
+#if GMX_MPI
+inline void AssertMpi(const int returnedValue, const std::string& filename, const int lineNumber){
+    if(MPI_SUCCESS != returnedValue) {
+        std::string messageErrorMpi = "MPI Error at line " + std::to_string(lineNumber) + " in file "
+                                    + filename + ", value "  + std::to_string(returnedValue);
+        throw std::runtime_error(messageErrorMpi);
+    }
+}
+#endif
+
+class mpi {
+    int my_rank;
+    int num_nodes;
+
+public:
+    mpi() {
+        my_rank   = gmx_node_rank();
+        num_nodes = gmx_node_num();
+    }
+
+    virtual ~mpi() {
+    }
+
+    mpi(const mpi&) = delete;
+    mpi& operator=(const mpi&) = delete;
+
+    bool isMaster() const {
+        return ((my_rank == FCA_MASTER_RANK));
+    }
+
+    bool isPar() const {
+        return ((num_nodes > 1));
+    }
+
+    int getMyRank() const {
+        return my_rank;
+    }
+
+    int getNumNodes() const {
+        return num_nodes;
+    }
+};
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Vec/mat functions
+/////////////////////////////////////////////////////////////////////////////////////
+
+inline void rm_pbc_plain(const int natoms, rvec* x, const matrix box) {
+    /* check periodic boundary */
+    for(int n = 1; n < natoms; n++) {
+        for(int m = DIM - 1; m >= 0; m--) {
+            real dist = x[n][m] - x[n - 1][m];
+            if(fabs(dist) > 0.9 * box[m][m]) {
+                if(dist > 0) {
+                    for(int d = 0; d <= m; d++) {
+                        x[n][d] -= box[m][d];
+                    }
+                } else {
+                    for(int d = 0; d <= m; d++) {
+                        x[n][d] += box[m][d];
+                    }
+                }
+            }
+        }
+    }
+}
+
+inline void apply_rm_pbc_plain_to_all(const int natoms, std::vector<std::unique_ptr<rvec[]>>* vecs, const matrix& box){
+#if GMX_OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+    for(size_t idxVec = 0 ; idxVec < vecs->size() ; ++idxVec){
+        rm_pbc_plain(natoms, (*vecs)[idxVec].get(), box);
+    }
+}
+
+
+inline void rotate_vec(const int natoms, rvec* x, const matrix& R) {
+    /*rotate X*/
+    for(int j = 0; j < natoms; j++) {
+        rvec x_old;
+        for(int m = 0; m < DIM; m++){
+            x_old[m] = x[j][m];
+        }
+        for(int r = 0; r < DIM; r++) {
+            x[j][r] = 0;
+            for(int c = 0; c < DIM; c++){
+                x[j][r] += R[r][c] * x_old[c];
+            }
+        }
+    }
+}
+
+inline void correct_vel(const int nr, rvec* vel, const rvec* v1, const rvec* v2, const real dt,
+                        rvec* vcorr) {
+    const real fact = 1.0 / dt;
+    for(int i = 0; i < nr; i++) {
+        for(int m = 0; m < DIM; m++) /* x3-2*x2+x1/(dt^2*m) is force */ {
+            vcorr[i][m] = fact * v2[i][m] - fact * v1[i][m];
+            vel[i][m] += vcorr[i][m];
+        }
+    }
+}
+
+inline void correct_force(const int nr, const real* eig_sqrtm, rvec* force, const rvec* v1, const rvec* v2,
+                          const real dt) {
+    const real fact = 1.0 / dt;
+    for(int i = 0; i < nr; i++){
+        for(int m = 0; m < DIM; m++){ /* x3-2*x2+x1/(dt^2*m) is force */
+            force[i][m] += eig_sqrtm[i] * eig_sqrtm[i] * (fact * v2[i][m] - fact * v1[i][m]);
+        }
+    }
+}
+
+template <class ObjType>
+inline ObjType squareof(const ObjType& obj){
+    return obj*obj;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Ascii eig vev output
+/////////////////////////////////////////////////////////////////////////////////////
+
+inline void write_eigvecs_ascii_fca(real mat[], const int natoms, const int nvec, char* fname) {
+    FILE* fp = gmx_ffopen(fname, "w");
+    assert(fp);
+    const int ndim = natoms * DIM;
+    for(int i = 0; i < ndim; i++) {
+        for(int j = 0; j < nvec; j++){
+            fprintf(fp, "%g ", mat[j * ndim + i]);
+        }
+        fprintf(fp, "\n");
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// rvec extra method
+/////////////////////////////////////////////////////////////////////////////////////
+
+inline void rvecadd(const int dim, const rvec a[], const rvec b[], rvec c[]) {
+    //c=a+b;
+    for(int i = 0; i < dim; i++) {
+        rvec_add(a[i], b[i], c[i]);
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Ascii matrix output
+/////////////////////////////////////////////////////////////////////////////////////
+
+inline void dump_sqrmatrix(FILE* out, const double* data, const int dim) {
+    for(int i = 0; i < dim; i++) {
+        for(int j = 0; j < dim; j++) {
+            fprintf(out, "%e ", data[i + dim * j]);
+        }
+        fprintf(out, "\n");
+    }
+}
+
+inline void dump_sqrmatrixr(FILE* out, const real* data, const int dim) {
+    for(int i = 0; i < dim; i++) {
+        for(int j = 0; j < dim; j++) {
+            fprintf(out, "%e ", data[i + dim * j]);
+        }
+        fprintf(out, "\n");
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Ascii eig vev output
+/////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+struct sfree_deleter {
+    void operator()(T* b) { sfree(b); }
+};
+
+template <class T>
+class auto_move_ptr{
+    std::unique_ptr<T[], sfree_deleter<T>>& uptr;
+    T* temp_ptr;
+public:
+    explicit auto_move_ptr(std::unique_ptr<T[], sfree_deleter<T>>&& in_uptr)
+        : uptr(in_uptr), temp_ptr(nullptr){
+    }
+
+    auto_move_ptr(const auto_move_ptr&) = delete;
+    auto_move_ptr& operator=(const auto_move_ptr&) = delete;
+
+    auto_move_ptr(auto_move_ptr&&) = default;
+    auto_move_ptr& operator=(auto_move_ptr&&) = default;
+
+    ~auto_move_ptr(){
+        if(temp_ptr){
+            uptr.reset(temp_ptr);
+        }
+    }
+
+    operator T**(){
+        return &temp_ptr;
+    }
+};
+
+template <class T>
+auto_move_ptr<T> make_auto_move_ptr(std::unique_ptr<T[], sfree_deleter<T>>& ptr){
+    return auto_move_ptr<T>(std::move(ptr));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// MinMax
+/////////////////////////////////////////////////////////////////////////////////////
+
+template <class Type>
+inline constexpr Type limits_min(){
+    return std::numeric_limits<Type>::min();
+}
+
+template <class Type>
+inline constexpr Type limits_max(){
+    return std::numeric_limits<Type>::max();
+}
+
+template <class Type>
+inline constexpr const Type& minv(const Type& v1, const Type& v2){
+    return v1 < v2 ? v1 : v2;
+}
+
+template <class Type>
+inline constexpr const Type& maxv(const Type& v1, const Type& v2){
+    return v1 > v2 ? v1 : v2;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Log
+/////////////////////////////////////////////////////////////////////////////////////
+
+struct Log {
+    Log(): MI(nullptr),
+        ic_matrix(nullptr),
+        move_log(nullptr),
+        move_matrix(nullptr),
+        icx(nullptr),
+        MI_matrix(nullptr){
+    }
+    ~Log(){
+        if(MI){
+            fclose(MI);
+        }
+        if(ic_matrix){
+            fclose(ic_matrix);
+        }
+        if(move_log){
+            fclose(move_log);
+        }
+        if(move_matrix){
+            fclose(move_matrix);
+        }
+        if(icx){
+            fclose(icx);
+        }
+        if(MI_matrix){
+            fclose(MI_matrix);
+        }
+    }
+
+    Log(const Log&) = delete;
+    Log& operator=(const Log&) = delete;
+
+    FILE* MI;
+    FILE* ic_matrix;
+    FILE* move_log;
+    FILE* move_matrix;
+    FILE* icx;
+    FILE* MI_matrix;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// TrxInfo
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+class TrxInfo {
+    const char* trj_file;
+    int dimpca;
+    const char* pca_file;
+
+public:
+    TrxInfo() : trj_file(nullptr), dimpca(0), pca_file(nullptr){
+    }
+
+    void setTrj(const char* inTrj){
+        trj_file = inTrj;
+    }
+
+    void setPca(const char* inPca){
+        pca_file = inPca;
+    }
+    void setDimPca(const int inDimPca){
+        dimpca = inDimPca;
+    }
+
+    template <class FcaMasterClass>
+    void write_fcalog(const char* fname, const FcaMasterClass& fca,
+                      const char* posfile, const char* eigvecfile) {
+        FILE* out;
+        time_t now;
+        out = gmx_ffopen(fname, "w");
+        now = time(nullptr);
+        fprintf(out, "FCA - Analysis log, written %s\n", ctime(&now));
+
+        if(trj_file) {
+            fprintf(out,
+                    "Read %d principal components for intial projection from %s\n",
+                    dimpca, pca_file);
+        } else {
+            fprintf(out, "Read data from %s\n", posfile);
+        }
+
+        fprintf(out, "\n");
+        fprintf(out, "did FCA-Minimization in %d dimensions \n", fca.getDim());
+        fprintf(out, "finally reached MI-sum: %e \n", fca.getMIsum());
+        if(eigvecfile){
+            fprintf(out, "Wrote fca-vectors to %s\n", eigvecfile);
+        }
+        fclose(out);
+    }
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+/// Parallel (multi thread) sort
+/////////////////////////////////////////////////////////////////////////////////////
+
+class PSort{
+#if GMX_OPENMP
+    template <class ArrayType, class CompareType>
+    static ArrayType selectPivot(ArrayType begin, ArrayType end, CompareType&& comparator){
+        ArrayType middle = std::next(begin,std::distance(begin,end)/2);
+
+        std::advance(end, -1);
+
+        if((comparator(*begin,*middle) && comparator(*middle,*end))
+                || (comparator(*end, *middle) && comparator(*middle,*begin))){
+            return middle;
+        }
+        else if((comparator(*middle, *begin) && comparator(*begin, *end))
+                || (comparator(*end, *begin) && comparator(*begin, *middle))){
+            return begin;
+        }
+        else{
+            return end;
+        }
+    }
+
+    template <class ArrayType, class CompareType>
+    static void sortCore(ArrayType begin, ArrayType end, CompareType&& comparator, const int deepTask){
+        if(std::distance(begin,end) == 0){
+            return;
+        }
+
+        if(deepTask == 0){
+            std::sort(begin, end, std::forward<CompareType>(comparator));
+        }
+        else{
+            ArrayType pivot = selectPivot(begin, end, std::forward<CompareType>(comparator));
+            using ValueType = decltype(*pivot);
+            auto it = std::partition(begin, end, [pivot,&comparator](const ValueType& item){return comparator(item, *pivot);});
+
+#pragma omp taskgroup
+            {
+#pragma omp task default(shared)
+                sortCore(begin, it, std::forward<CompareType>(comparator), deepTask-1);
+
+                sortCore(it, end, std::forward<CompareType>(comparator), deepTask-1);
+            }
+
+        }
+    }
+
+public:
+    template <class ArrayType, class CompareType>
+    static void sort(ArrayType begin, ArrayType end, CompareType&& comparator){
+        const int nbTasks = std::min(static_cast<decltype(std::distance(begin, end)/512)>(omp_get_max_threads()),
+                                     std::distance(begin, end)/512);
+        int deepTask = 1;
+        while((1 << deepTask) < nbTasks) deepTask += 1;
+
+#pragma omp parallel default(shared)
+#pragma omp master
+        sortCore(begin, end, std::forward<CompareType>(comparator), deepTask);
+    }
+#else
+public:
+    template <class ArrayType, class CompareType>
+    static void sort(ArrayType begin, ArrayType end, CompareType&& comparator){
+        std::sort(begin, end, std::forward<CompareType>(comparator));
+    }
+#endif
+
+    template <class ArrayType>
+    static void sort(ArrayType begin, ArrayType end){
+        using ValueType = decltype(*begin);
+        std::sort(begin, end, [](const ValueType& v1, const ValueType& v2){return v1 < v2;});
+    }
+};
+
+}
+}
+
+#endif
