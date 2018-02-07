@@ -37,7 +37,18 @@ set(exename gmxana-test)
 gmx_add_gtest_executable(
     ${exename}
     entropy.cpp
+    fca_simple_gauss.cpp
     gmx_traj.cpp
     gmx_trjconv.cpp
     )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST)
+
+if(NOT GMX_THREAD_MPI AND GMX_MPI)
+    set(exename "gmxana-mpi-test")
+
+    gmx_add_gtest_executable(
+        ${exename} MPI
+        fca_simple_gauss_mpi.cpp
+        )
+    gmx_register_gtest_test(GmxAnaMpiTest ${exename} MPI_RANKS 2 INTEGRATION_TEST)
+endif()
