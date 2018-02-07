@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
 
+#include "fca/gmx_fca.h"
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
 
@@ -362,6 +363,9 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModuleNoNice(manager, &gmx_view, "view",
                          "View a trajectory on an X-Windows terminal");
 
+    registerModule(manager, &gmx_fca, "fca",
+                   "Full Correlation Analysis");
+
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Generating topologies and coordinates");
@@ -524,13 +528,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Covariance analysis");
-        group.addModuleWithDescription("anaeig", "Analyze the eigenvectors");
-        group.addModule("covar");
-        group.addModule("make_edi");
-    }
-    {
-        gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Normal modes");
         group.addModuleWithDescription("anaeig", "Analyze the normal modes");
         group.addModule("nmeig");
@@ -538,5 +535,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("nmens");
         group.addModule("grompp");
         group.addModuleWithDescription("mdrun", "Find a potential energy minimum and calculate the Hessian");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Full Correlation Analysis");
+        group.addModule("fca");
     }
 }
