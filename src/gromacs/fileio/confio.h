@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@ extern "C" {
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_topology;
+struct t_symtab;
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
                             const t_atoms *atoms,
@@ -67,6 +68,11 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
                          struct gmx_mtop_t *mtop,
                          const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
+
+void get_stx_coordnum(const char *infile, int *natoms);
+void read_stx_conf(const char *infile,
+                   t_symtab *symtab, char **name, t_atoms *atoms,
+                   rvec x[], rvec *v, int *ePBC, matrix box);
 
 /*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
  *

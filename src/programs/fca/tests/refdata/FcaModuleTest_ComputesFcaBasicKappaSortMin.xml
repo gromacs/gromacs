@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-mi">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0.000000e+00</Real>
+          <Real>-6.303716e-02</Real>
+          <Real>-6.817460e-02</Real>
+          <Real>-6.871295e-02</Real>
+          <Real>-8.114624e-02</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>-6.303716e-02</Real>
+          <Real>0.000000e+00</Real>
+          <Real>-4.989958e-02</Real>
+          <Real>-6.009889e-02</Real>
+          <Real>-7.169819e-02</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>-6.817460e-02</Real>
+          <Real>-4.989958e-02</Real>
+          <Real>0.000000e+00</Real>
+          <Real>-6.236863e-02</Real>
+          <Real>-7.020211e-02</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>-6.871295e-02</Real>
+          <Real>-6.009889e-02</Real>
+          <Real>-6.236863e-02</Real>
+          <Real>0.000000e+00</Real>
+          <Real>-7.700849e-02</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>-8.114624e-02</Real>
+          <Real>-7.169819e-02</Real>
+          <Real>-7.020211e-02</Real>
+          <Real>-7.700849e-02</Real>
+          <Real>0.000000e+00</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-val">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>9.301072e-01</Real>
+          <Real>-1.243114e+00</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>9.367960e-01</Real>
+          <Real>-1.161631e+00</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>9.806729e-01</Real>
+          <Real>-1.193442e+00</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>9.899467e-01</Real>
+          <Real>-1.281066e+00</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>1.073427e+00</Real>
+          <Real>-1.381262e+00</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ic">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>-6.219202e-01</Real>
+          <Real>7.269928e-01</Real>
+          <Real>6.211529e-02</Real>
+          <Real>-8.342938e-02</Real>
+          <Real>-2.718052e-01</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>-6.288888e-01</Real>
+          <Real>-5.117712e-01</Real>
+          <Real>3.375133e-02</Real>
+          <Real>-5.322254e-01</Real>
+          <Real>2.412182e-01</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>-1.669285e-02</Real>
+          <Real>3.215785e-01</Real>
+          <Real>2.284059e-01</Real>
+          <Real>1.367606e-01</Real>
+          <Real>9.085349e-01</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>1.787625e-01</Real>
+          <Real>-2.399214e-02</Real>
+          <Real>9.402434e-01</Real>
+          <Real>-2.156183e-01</Real>
+          <Real>-1.921441e-01</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>4.306733e-01</Real>
+          <Real>3.249360e-01</Real>
+          <Real>-2.424367e-01</Real>
+          <Real>-8.028581e-01</Real>
+          <Real>7.470272e-02</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
