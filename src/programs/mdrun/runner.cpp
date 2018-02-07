@@ -1042,7 +1042,11 @@ int Mdrunner::mdrunner()
     }
     if (MULTISIM(cr))
     {
-        MPI_Barrier(cr->ms->mpi_comm_masters);
+        if (MASTER(cr))
+        {
+            MPI_Barrier(cr->ms->mpi_comm_masters);
+        }
+        MPI_Barrier(cr->mpi_comm_mysim);
     }
 #endif
 
