@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,9 @@ file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 
+file(GLOB FCA_SOURCES fca/*.cpp)
+add_library(fca_objlib OBJECT ${FCA_SOURCES})
+
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
     # may break some generators, according to CMake documentation. If
@@ -58,7 +61,7 @@ elseif(GMX_BUILD_MDRUN_ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
             DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 else()
-    file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
+    file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp fca/*.cpp)
     if(GMX_X11)
         file(GLOB VIEW_SOURCES view/*.cpp)
     else()
@@ -118,5 +121,6 @@ else()
 
     if(BUILD_TESTING)
         add_subdirectory(mdrun/tests)
+        add_subdirectory(fca/tests)
     endif()
 endif()
