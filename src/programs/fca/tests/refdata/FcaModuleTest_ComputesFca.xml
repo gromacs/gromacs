@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-mi">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0.00000</Real>
+          <Real>0.00087</Real>
+          <Real>0.00108</Real>
+          <Real>0.00010</Real>
+          <Real>-0.00055</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.00087</Real>
+          <Real>0.00000</Real>
+          <Real>-0.00036</Real>
+          <Real>-0.00130</Real>
+          <Real>-0.00041</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>0.00108</Real>
+          <Real>-0.00036</Real>
+          <Real>0.00000</Real>
+          <Real>0.00049</Real>
+          <Real>0.00067</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.00010</Real>
+          <Real>-0.00130</Real>
+          <Real>0.00049</Real>
+          <Real>0.00000</Real>
+          <Real>-0.00112</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>-0.00055</Real>
+          <Real>-0.00041</Real>
+          <Real>0.00067</Real>
+          <Real>-0.00112</Real>
+          <Real>0.00000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-val">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.99946</Real>
+          <Real>0.00000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>1.00438</Real>
+          <Real>-0.00042</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>1.00572</Real>
+          <Real>-0.00026</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>1.01257</Real>
+          <Real>-0.00018</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>1.01460</Real>
+          <Real>-0.00054</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ic">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>-0.91837</Real>
+          <Real>0.19411</Real>
+          <Real>0.31994</Real>
+          <Real>0.05559</Real>
+          <Real>0.11605</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.23667</Real>
+          <Real>-0.42519</Real>
+          <Real>0.83774</Real>
+          <Real>0.09796</Real>
+          <Real>0.22761</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>-0.26615</Real>
+          <Real>-0.78309</Real>
+          <Real>-0.40261</Real>
+          <Real>0.36726</Real>
+          <Real>0.13768</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.04870</Real>
+          <Real>0.08009</Real>
+          <Real>-0.18297</Real>
+          <Real>-0.33872</Real>
+          <Real>0.91815</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>-0.16546</Real>
+          <Real>-0.40236</Real>
+          <Real>0.01625</Real>
+          <Real>-0.85889</Real>
+          <Real>-0.26975</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
