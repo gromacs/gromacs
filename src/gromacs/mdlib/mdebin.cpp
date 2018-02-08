@@ -1229,6 +1229,8 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
             "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
+// TODO It is too many responsibilities for this function to handle
+// both .edr and .log output for both per-time and time-average data.
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
@@ -1250,6 +1252,15 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
     real        *block[enxNR];
 
     t_enxframe   fr;
+
+    if (mode == eprAVER && md->ebin->nsum_sim <= 0)
+    {
+        if (log)
+        {
+            fprintf(log, "Not enough data recorded to report energy averages\n");
+        }
+        return;
+    }
 
     switch (mode)
     {

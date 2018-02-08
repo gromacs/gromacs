@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,18 @@ t_ebin *mk_ebin(void)
     snew(eb, 1);
 
     return eb;
+}
+
+void done_ebin(t_ebin *eb)
+{
+    for (int i = 0; i < eb->nener; i++)
+    {
+        sfree(eb->enm[i].name);
+        sfree(eb->enm[i].unit);
+    }
+    sfree(eb->e);
+    sfree(eb->e_sim);
+    sfree(eb->enm);
 }
 
 int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
@@ -116,7 +128,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
     return index;
 }
 
-void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
+void add_ebin(t_ebin *eb, int index, int nener, const real ener[], gmx_bool bSum)
 {
     int       i, m;
     double    e, invmm, diff;
@@ -192,30 +204,31 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
              int prmode, gmx_bool bPrHead)
 {
     int  i, j, i0;
-    real ee = 0;
     int  rc;
     char buf[30];
 
     rc = 0;
 
-    if (index < 0)
+    if (index < 0 || index > eb->nener)
     {
         gmx_fatal(FARGS, "Invalid index in pr_ebin: %d", index);
     }
-    if (nener == -1)
+    int start = index;
+    if (nener > eb->nener)
     {
-        nener = eb->nener;
+        gmx_fatal(FARGS, "Invalid nener in pr_ebin: %d", nener);
     }
-    else
+    int end = eb->nener;
+    if (nener != -1)
     {
-        nener = index + nener;
+        end = index + nener;
     }
-    for (i = index; (i < nener) && rc >= 0; )
+    for (i = start; (i < end) && rc >= 0; )
     {
         if (bPrHead)
         {
             i0 = i;
-            for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+            for (j = 0; (j < nperline) && (i < end) && rc >= 0; j++, i++)
             {
                 if (strncmp(eb->enm[i].name, "Pres", 4) == 0)
                 {
@@ -236,17 +249,27 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
 
             i = i0;
         }
-        for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+        for (j = 0; (j < nperline) && (i < end) && rc >= 0; j++, i++)
         {
             switch (prmode)
             {
-                case eprNORMAL: ee = eb->e[i].e; break;
-                case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
+                case eprNORMAL:
+                    rc = fprintf(fp, "   %12.5e", eb->e[i].e);
+                    break;
+                case eprAVER:
+                    if (eb->nsum_sim > 0)
+                    {
+                        rc = fprintf(fp, "   %12.5e", eb->e_sim[i].esum/eb->nsum_sim);
+                    }
+                    else
+                    {
+                        rc = fprintf(fp, "    %-12s", "N/A");
+                    }
+                    break;
                 default: gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
                                    prmode);
             }
 
-            rc = fprintf(fp, "   %12.5e", ee);
         }
         if (rc >= 0)
         {

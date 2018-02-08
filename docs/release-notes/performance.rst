@@ -70,10 +70,6 @@ AVX_128_FMA and AVX_256 extensions. But hardware that supports the new
 AVX2_128 extensions also supports AVX_256, so we enable such support
 for the group-scheme kernels.
 
-Improved Ewald-style short-ranged interactions on Intel Skylake CPUs
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-These now default to use tabulated Ewald short-ranged interactions.
-
 Detect AVX-512 FMA units to choose best SIMD
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Recent Intel x86 hardware can have multiple AVX-512 FMA units, and the

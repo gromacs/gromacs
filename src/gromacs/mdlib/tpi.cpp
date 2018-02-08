@@ -291,7 +291,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* We need to allocate one element extra, since we might use
      * (unaligned) 4-wide SIMD loads to access rvec entries.
      */
-    f.resize(top_global->natoms + 1);
+    f.resize(gmx::paddedRVecVectorSize(top_global->natoms));
 
     /* Print to log file  */
     walltime_accounting_start(walltime_accounting);

@@ -232,7 +232,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
     if (C->verbosity)
         fprintf(msgfile, "  fnorm = %18.8g\n", fnorm);
 
-    if (!isfinite(fnorm)) {
+    if (!std::isfinite(fnorm)) {
         S->outcome = 12; /* nan */
         goto terminate;
     } else if (fnorm <= LM_DWARF) {
@@ -354,7 +354,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
             } else {
                 xnorm = lm_enorm(n, x);
             }
-            if (!isfinite(xnorm)) {
+            if (!std::isfinite(xnorm)) {
                 S->outcome = 12; /* nan */
                 goto terminate;
             }
@@ -381,7 +381,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
 
             /* Predict scaled reduction. */
             pnorm = lm_enorm(n, wa3);
-            if (!isfinite(pnorm)) {
+            if (!std::isfinite(pnorm)) {
                 S->outcome = 12; /* nan */
                 goto terminate;
             }
@@ -392,7 +392,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
                     wa3[i] -= fjac[j*m+i] * wa1[Pivot[j]];
             }
             temp1 = SQR(lm_enorm(n, wa3) / fnorm);
-            if (!isfinite(temp1)) {
+            if (!std::isfinite(temp1)) {
                 S->outcome = 12; /* nan */
                 goto terminate;
             }
@@ -411,7 +411,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
             if (S->userbreak)
                 goto terminate;
             fnorm1 = lm_enorm(m, wf);
-            if (!isfinite(fnorm1)) {
+            if (!std::isfinite(fnorm1)) {
                 S->outcome = 12; /* nan */
                 goto terminate;
             }
@@ -472,7 +472,7 @@ void lmmin(const int n, double* x, const int m, const void* data,
                 for (i = 0; i < m; i++)
                     fvec[i] = wf[i];
                 xnorm = lm_enorm(n, wa2);
-                if (!isfinite(xnorm)) {
+                if (!std::isfinite(xnorm)) {
                     S->outcome = 12; /* nan */
                     goto terminate;
                 }

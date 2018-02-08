@@ -2646,6 +2646,7 @@ void init_forcerec(FILE                    *fp,
             gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", eel_names[ic->eeltype]);
             break;
     }
+    fr->nbkernel_elec_modifier = ic->coulomb_modifier;
 
     /* Vdw: Translate from mdp settings to kernel format */
     switch (ic->vdwtype)
@@ -2675,6 +2676,7 @@ void init_forcerec(FILE                    *fp,
             gmx_fatal(FARGS, "Unsupported vdw interaction: %s", evdw_names[ic->vdwtype]);
             break;
     }
+    fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
