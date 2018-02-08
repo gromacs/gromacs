@@ -62,11 +62,6 @@ clang-5 no-openmp asan
 # Test newest supported MSVC on Windows
 msvc-2015 openmp release-with-assert
 
-# Test oldest supported icc
-# Test icc on Windows
-# Test icc with SIMD in mixed precision in release mode
-icc-16 msvc-2015 fftpack simd=avx2_256 release
-
 # Test newest icc at the time of release
 # Test icc without SIMD in double precision in release mode
 # Test MKL
