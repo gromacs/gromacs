@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -842,6 +842,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     nbnxn_gpu_pme_loadbal_update_param(nbv, ic, listParams);
 
+    // FIXME: remove?
     /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
      * also sharing texture references. To keep the code simple, we don't
      * treat texture references as shared resources, but this means that

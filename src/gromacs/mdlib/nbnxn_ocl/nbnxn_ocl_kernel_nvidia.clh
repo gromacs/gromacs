@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -533,11 +533,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                                 F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
 #elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 -
-#ifdef USE_TEXOBJ
-                                                        interpolate_coulomb_force_r(nbparam->coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)
-#else
                                                         interpolate_coulomb_force_r(coulomb_tab_climg2d, r2 * inv_r, coulomb_tab_scale)
-#endif /* USE_TEXOBJ */
                                                         ) * inv_r;
 #endif /* EL_EWALD_ANA/TAB */
 

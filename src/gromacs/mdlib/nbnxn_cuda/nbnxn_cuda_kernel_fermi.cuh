@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -272,11 +272,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef LJ_EWALD
-    #if DISABLE_CUDA_TEXTURES
             E_lj += LDG(&nbparam.nbfp[atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2]);
-    #else
-            E_lj += tex1Dfetch(nbfp_texref, atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2);
-    #endif
 #endif
         }
 
