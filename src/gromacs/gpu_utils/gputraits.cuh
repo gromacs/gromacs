@@ -46,5 +46,8 @@
 using CommandStream = cudaStream_t;
 //! \brief Single GPU call timing event - meaningless in CUDA
 using CommandEvent  = void;
+//!< A device-side buffer of raw ValueType's
+template<typename ValueType>
+using DeviceBuffer  = ValueType *;
 
 #endif
