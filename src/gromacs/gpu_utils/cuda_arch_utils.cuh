@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,13 +140,14 @@ T gmx_shfl_down_sync(const unsigned int activeMask,
 
 /*! \brief Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro.
  *
- *  Disable texture support-missing in clang (all versions up to <=5.0-dev as of writing).
+ *  Only texture objects supported, disable textures for <= CC 2.0 (but not in host code).
+ *  Disable texture support missing in clang (all versions up to <=5.0-dev as of writing).
  *
  *  This option will not influence functionality. All features using textures ought
  *  to have fallback for texture-less reads (direct/LDG loads), all new code needs
  *  to provide fallback code.
  */
-#if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__))
+#if defined(GMX_DISABLE_CUDA_TEXTURES) || (GMX_PTX_ARCH > 0 && GMX_PTX_ARCH < 300) || (defined(__clang__) && defined(__CUDA__))
 #define DISABLE_CUDA_TEXTURES 1
 #else
 #define DISABLE_CUDA_TEXTURES 0

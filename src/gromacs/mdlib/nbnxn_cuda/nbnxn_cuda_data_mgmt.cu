@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,8 +81,7 @@ static unsigned int gpu_min_ci_balanced_factor = 44;
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
 
 /* Fw. decl, */
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
-                                          const gmx_device_info_t *dev_info);
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t *nbparam);
 
 /*! \brief Return whether combination rules are used.
  *
@@ -102,18 +101,16 @@ static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
     it just re-uploads the table.
  */
 static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
-                                           cu_nbparam_t              *nbp,
-                                           const gmx_device_info_t   *dev_info)
+                                           cu_nbparam_t              *nbp)
 {
     if (nbp->coulomb_tab != NULL)
     {
-        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+        nbnxn_cuda_free_nbparam_table(nbp);
     }
 
     nbp->coulomb_tab_scale = ic->tabq_scale;
     initParamLookupTable(nbp->coulomb_tab, nbp->coulomb_tab_texobj,
-                         &nbnxn_cuda_get_coulomb_tab_texref(),
-                         ic->tabq_coul_F, ic->tabq_size, dev_info);
+                         ic->tabq_coul_F, ic->tabq_size);
 }
 
 
@@ -320,23 +317,21 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     nbp->coulomb_tab = NULL;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(ic, nbp, dev_info);
+        init_ewald_coulomb_force_table(ic, nbp);
     }
 
     /* set up LJ parameter lookup table */
     if (!useLjCombRule(nbp))
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
-                             &nbnxn_cuda_get_nbfp_texref(),
-                             nbat->nbfp, 2*ntypes*ntypes, dev_info);
+                             nbat->nbfp, 2*ntypes*ntypes);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic->vdwtype == evdwPME)
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
-                             &nbnxn_cuda_get_nbfp_comb_texref(),
-                             nbat->nbfp_comb, 2*ntypes, dev_info);
+                             nbat->nbfp_comb, 2*ntypes);
     }
 }
 
@@ -358,7 +353,7 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  nb->dev_info);
 
-    init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_info);
+    init_ewald_coulomb_force_table(ic, nb->nbparam);
 }
 
 /*! Initializes the pair list data structure. */
@@ -722,13 +717,11 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     }
 }
 
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
-                                          const gmx_device_info_t *dev_info)
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t *nbparam)
 {
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj,
-                                &nbnxn_cuda_get_coulomb_tab_texref(), dev_info);
+        destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
     }
 }
 
@@ -749,7 +742,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     plist       = nb->plist[eintLocal];
     plist_nl    = nb->plist[eintNonlocal];
 
-    nbnxn_cuda_free_nbparam_table(nbparam, nb->dev_info);
+    nbnxn_cuda_free_nbparam_table(nbparam);
 
     stat = cudaEventDestroy(nb->nonlocal_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
@@ -769,15 +762,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     if (!useLjCombRule(nb->nbparam))
     {
-        destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj,
-                                &nbnxn_cuda_get_nbfp_texref(), nb->dev_info);
+        destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj);
 
     }
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-        destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj,
-                                &nbnxn_cuda_get_nbfp_comb_texref(), nb->dev_info);
+        destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
     }
 
     stat = cudaFree(atdat->shift_vec);

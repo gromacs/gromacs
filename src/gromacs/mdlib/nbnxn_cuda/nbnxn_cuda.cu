@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,25 +65,6 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_cuda_types.h"
-
-/*
- * Texture references are created at compile-time and need to be declared
- * at file scope as global variables (see http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#texture-reference-api).
- * The texture references below are used in two translation units;
- * we declare them here along the kernels that use them (when compiling legacy Fermi kernels),
- * and provide getters (see below) used by the data_mgmt module where the
- * textures are bound/unbound.
- * (In principle we could do it the other way arond, but that would likely require
- * device linking and we'd rather avoid technical hurdles.)
- */
-/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
-texture<float, 1, cudaReadModeElementType> nbfp_texref;
-
-/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
-texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
-
-/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 
 /***** The kernel declarations/definitions come here *****/
@@ -726,21 +707,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         t->nb_d2h[iloc].closeTimingRegion(stream);
     }
-}
-
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
-{
-    return nbfp_texref;
-}
-
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
-{
-    return nbfp_comb_texref;
-}
-
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
-{
-    return coulomb_tab_texref;
 }
 
 void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)

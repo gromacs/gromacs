@@ -272,11 +272,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef LJ_EWALD
-    #if DISABLE_CUDA_TEXTURES
             E_lj += LDG(&nbparam.nbfp[atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2]);
-    #else
-            E_lj += tex1Dfetch(nbfp_texref, atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2);
-    #endif
 #endif
         }
 

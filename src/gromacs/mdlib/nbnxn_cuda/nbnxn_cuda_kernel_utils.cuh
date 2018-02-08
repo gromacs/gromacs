@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,12 +57,6 @@
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
-
-/* Use texture objects if supported by the target hardware (and in host pass). */
-#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
-/* Note: convenience macro, needs to be undef-ed at the end of the file. */
-#define USE_TEXOBJ
-#endif
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
@@ -233,11 +227,7 @@ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
 #if DISABLE_CUDA_TEXTURES
     return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
 #else
-#ifdef USE_TEXOBJ
     return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
 #endif /* DISABLE_CUDA_TEXTURES */
 }
 
@@ -320,13 +310,8 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
 #else
     /* NOTE: as we always do 8-byte aligned loads, we could
        fetch float2 here too just as above. */
-#ifdef USE_TEXOBJ
     c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type);
     c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type + 1);
-#else
-    c6c12.x = tex1Dfetch(nbfp_comb_texref, 2*type);
-    c6c12.y = tex1Dfetch(nbfp_comb_texref, 2*type + 1);
-#endif /* USE_TEXOBJ */
 #endif /* DISABLE_CUDA_TEXTURES */
 
     return c6c12;
@@ -399,13 +384,8 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
     d.x = LDG(&nbparam.coulomb_tab[index]);
     d.y = LDG(&nbparam.coulomb_tab[index + 1]);
 #else
-#ifdef USE_TEXOBJ
     d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
     d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
-#else
-    d.x =  tex1Dfetch(coulomb_tab_texref, index);
-    d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
-#endif // USE_TEXOBJ
 #endif // DISABLE_CUDA_TEXTURES
 
     return d;
@@ -461,13 +441,8 @@ void fetch_nbfp_c6_c12(float               &c6,
 #else
     /* NOTE: as we always do 8-byte aligned loads, we could
        fetch float2 here too just as above. */
-#ifdef USE_TEXOBJ
     c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
     c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
-#else
-    c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
-    c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
-#endif
 #endif // DISABLE_CUDA_TEXTURES
 }
 
@@ -764,7 +739,5 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
     }
 }
 #endif /* GMX_PTX_ARCH */
-
-#undef USE_TEXOBJ
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013-2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,21 +77,6 @@ constexpr int c_spreadMaxWarpsPerBlock = 8;
 //! Spreading max block size in threads
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
-//! Texture references for CC 2.x
-texture<int, 1, cudaReadModeElementType>   gridlineIndicesTableTextureRef;
-texture<float, 1, cudaReadModeElementType> fractShiftsTableTextureRef;
-
-/*! Returns the reference to the gridlineIndices texture. */
-const struct texture<int, 1, cudaReadModeElementType> &pme_gpu_get_gridline_texref()
-{
-    return gridlineIndicesTableTextureRef;
-}
-
-/*! Returns the reference to the fractShifts texture. */
-const struct texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref()
-{
-    return fractShiftsTableTextureRef;
-}
 
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
@@ -250,16 +235,10 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             sm_fractCoords[sharedMemoryIndex] +=
                 fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable,
                                           kernelParams.fractShiftsTableTexture,
-#if DISABLE_CUDA_TEXTURES == 0
-                                          fractShiftsTableTextureRef,
-#endif
                                           tableIndex);
             sm_gridlineIndices[sharedMemoryIndex] =
                 fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
                                           kernelParams.gridlineIndicesTableTexture,
-#if DISABLE_CUDA_TEXTURES == 0
-                                          gridlineIndicesTableTextureRef,
-#endif
                                           tableIndex);
             gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] = sm_gridlineIndices[sharedMemoryIndex];
         }
