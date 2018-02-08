@@ -1568,9 +1568,9 @@ void add_tensor(std::vector<std::string> *commercials,
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "%s:\n"
-             "; (%6.2f %6.2f %6.2f)\n"
-             "; (%6.2f %6.2f %6.2f)\n"
-             "; (%6.2f %6.2f %6.2f)\n", 
+             "; ( %6.2f %6.2f %6.2f )\n"
+             "; ( %6.2f %6.2f %6.2f )\n"
+             "; ( %6.2f %6.2f %6.2f )\n", 
              title,
              Q[XX][XX], Q[XX][YY], Q[XX][ZZ], 
              Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
@@ -1627,7 +1627,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeDistributionModel));
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
-             "; (%.2f %6.2f %6.2f) Total= %.2f\n", 
+             "; ( %.2f %6.2f %6.2f ) Total= %.2f\n", 
              mu[XX], mu[YY], mu[ZZ], 
              norm(mu));
     commercials.push_back(buf);
@@ -1640,7 +1640,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         set_muQM(qtElec, vec);
         rotateDipole(mu_qm_[qtElec], mu);
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
-                 "; (%.2f %6.2f %6.2f) Total= %.2f\n", 
+                 "; ( %.2f %6.2f %6.2f ) Total= %.2f\n", 
                  lot, 
                  mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ], 
                  norm(mu_qm_[qtElec]));
