@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,43 +56,31 @@ __device__ __forceinline__ T LDG(const T* ptr)
 #endif
 }
 
-/*! \brief Fetch the value by \p index from the texture object or reference.
- * Fetching from the object is the preferred behaviour on CC >= 3.0.
+/*! \brief Fetch the value by \p index from the texture object.
  *
  * \tparam[in] T        Raw data type
  * \param[in] texObj    Table texture object
- * \param[in] texRef    Table texture reference
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
  */
 template <typename T>
 static __forceinline__ __device__
 T fetchFromTexture(const cudaTextureObject_t texObj,
-                   const struct texture<T, 1, cudaReadModeElementType> texRef,
-                   int index)
+                   int                       index)
 {
     assert(index >= 0);
     assert(!c_disableCudaTextures);
-    T result;
-#if GMX_PTX_ARCH >= 300  // Preferring texture objects on any new arch
-    GMX_UNUSED_VALUE(texRef);
-    result = tex1Dfetch<T>(texObj, index);
-#else
-    GMX_UNUSED_VALUE(texObj);
-    result = tex1Dfetch(texRef, index);
-#endif
-    return result;
+    return tex1Dfetch<T>(texObj, index);
 }
 
 /*! \brief Fetch the value by \p index from the parameter lookup table.
  *
  *  Depending on what is supported, it fetches parameters either
- *  using direct load, texture objects, or texture references.
+ *  using direct load or texture objects.
  *
  * \tparam[in] T        Raw data type
  * \param[in] d_ptr     Device pointer to the raw table memory
  * \param[in] texObj    Table texture object
- * \param[in] texRef    Table texture reference
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
  */
@@ -100,10 +88,7 @@ template <typename T>
 static __forceinline__ __device__
 T fetchFromParamLookupTable(const T                  *d_ptr,
                             const cudaTextureObject_t texObj,
-#if DISABLE_CUDA_TEXTURES == 0
-                            const struct texture<T, 1, cudaReadModeElementType> texRef,
-#endif
-                            int index)
+                            int                       index)
 {
     assert(index >= 0);
     T result;
@@ -112,7 +97,7 @@ T fetchFromParamLookupTable(const T                  *d_ptr,
     result = LDG(d_ptr + index);
 #else
     GMX_UNUSED_VALUE(d_ptr);
-    result = fetchFromTexture<T>(texObj, texRef, index);
+    result = fetchFromTexture<T>(texObj, index);
 #endif
     return result;
 }
