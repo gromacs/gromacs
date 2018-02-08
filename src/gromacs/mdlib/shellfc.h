@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <cstdint>
 
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -141,7 +142,6 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         FILE *fp_field);
 
 /* TODO: TESTING */
-/* TODO: removing state, replacing with v and box, replacing upd with xprime */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xprime, rvec *v,
                           matrix box, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose);
 

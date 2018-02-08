@@ -974,13 +974,6 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled
  * down according to the Drude temperature set in the .mdp file
  */
-/* TODO: changes:
- * 1. Removed state
- * 2. Added v, box
- * 3. Removed upd, added xprime
- * 4. Removed mdatoms and get masses from updated Drude bond function 
- * 5. Removed F_POLARIZATION, need to add check in grompp
-*/ 
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xprime, rvec *v,
                           matrix box, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose)
 {
@@ -1034,10 +1027,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
     if (DOMAINDECOMP(cr))
     {
         dd_move_x_shells(cr->dd, box, xprime);
-/* TODO: TESTING */
-#if 0
-        dd_move_v_shells(cr->dd, v);
-#endif
     }
 
     /* loop over all entries in ilist for Drude bonds */

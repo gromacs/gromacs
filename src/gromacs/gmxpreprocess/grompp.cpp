@@ -532,6 +532,7 @@ static void split_drude_bonds(gmx_mtop_t *mtop, t_molinfo mols[])
                     /* If the bond involves a Drude, add it to the list */
                     if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
                     {
+<<<<<<< HEAD
                         /* for ease of use in the hardwall function later, we enforce 
                          * that the atom is always ai and the Drude/shell is always aj */
                         if (atom[ai].ptype == eptShell)
@@ -545,13 +546,20 @@ static void split_drude_bonds(gmx_mtop_t *mtop, t_molinfo mols[])
                         /* get masses */
                         ma = mols[molt].atoms.atom[ai].m;
                         mb = mols[molt].atoms.atom[aj].m;
+=======
+                        b0 = mols[molt].plist[ftype].param[i].c[0];
+                        kb = mols[molt].plist[ftype].param[i].c[1];
+>>>>>>> c53d21270acc00704f86e9130b38e091e5d0f0e1
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[0] = ai;
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[1] = aj;
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[0] = b0;
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[1] = kb;
+<<<<<<< HEAD
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[2] = ma;
                         mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[3] = mb;
                         /* TODO: add masses to plist as this will make life really easy in hardwall */
+=======
+>>>>>>> c53d21270acc00704f86e9130b38e091e5d0f0e1
                         nrdbond++;
                         bRemoveHarm[i] = TRUE;
                     }

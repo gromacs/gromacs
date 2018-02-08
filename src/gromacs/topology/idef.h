@@ -60,6 +60,7 @@ typedef int t_iatom;
    t_interaction_function[F_NRE] in gmxlib/ifunc.c */
 enum {
     F_BONDS,
+    F_DRUDEBONDS,
     F_G96BONDS,
     F_MORSE,
     F_CUBICBONDS,

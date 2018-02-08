@@ -81,6 +81,43 @@
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
 
+<<<<<<< HEAD
+=======
+/* TODO: temporarily moved to update.h to use in shellfc.cpp */
+#if 0
+typedef struct {
+    double em;
+} gmx_sd_const_t;
+
+typedef struct {
+    real V;
+} gmx_sd_sigma_t;
+
+typedef struct {
+    /* BD stuff */
+    real           *bd_rf;
+    /* SD stuff */
+    gmx_sd_const_t *sdc;
+    gmx_sd_sigma_t *sdsig;
+    /* andersen temperature control stuff */
+    gmx_bool       *randomize_group;
+    real           *boltzfac;
+} gmx_stochd_t;
+
+struct gmx_update_t
+{
+    gmx_stochd_t *sd;
+    /* xprime for constraint algorithms */
+    rvec         *xp;
+    int           xp_nalloc;
+
+    /* Variables for the deform algorithm */
+    gmx_int64_t     deformref_step;
+    matrix          deformref_box;
+};
+#endif
+
+>>>>>>> c53d21270acc00704f86e9130b38e091e5d0f0e1
 static void do_update_md(int start, int nrend, double dt,
                          t_grp_tcstat *tcstat,
                          double nh_vxi[],

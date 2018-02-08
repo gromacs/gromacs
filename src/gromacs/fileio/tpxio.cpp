@@ -1980,6 +1980,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
         case F_ANGLES:
         case F_G96ANGLES:
         case F_BONDS:
+        case F_DRUDEBONDS:
         case F_G96BONDS:
         case F_HARMONIC:
         case F_IDIHS:

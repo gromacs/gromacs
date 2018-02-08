@@ -212,6 +212,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->linangle.klinB = old[3];
             break;
         case F_BONDS:
+        case F_DRUDEBONDS:
         case F_ANGLES:
         case F_HARMONIC:
         case F_IDIHS:
