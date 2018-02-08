@@ -1984,7 +1984,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                        eprAVER, mdebin, fcd, groups, &(ir->opts), ir->awh);
         }
     }
-
+    done_ebin(mdebin->ebin);
     done_mdoutf(outf);
 
     if (bPMETune)
