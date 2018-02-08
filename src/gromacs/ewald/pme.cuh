@@ -224,12 +224,4 @@ struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
 
-/* CUDA texture reference functions which reside in respective kernel files
- * (due to texture references having scope of a translation unit).
- */
-/*! Returns the reference to the gridlineIndices texture. */
-const struct texture<int, 1, cudaReadModeElementType>   &pme_gpu_get_gridline_texref();
-/*! Returns the reference to the fractShifts texture. */
-const struct texture<float, 1, cudaReadModeElementType> &pme_gpu_get_fract_shifts_texref();
-
 #endif

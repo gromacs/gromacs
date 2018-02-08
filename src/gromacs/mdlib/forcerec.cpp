@@ -2271,6 +2271,8 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                        cr->nodeid,
                        (nbv->ngrp > 1));
 
+        // TODO: with the texture reference support removed, this barrier is
+        //       in principle not needed. Remove now or do it in a follow-up?
         /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
          * also sharing texture references. To keep the code simple, we don't
          * treat texture references as shared resources, but this means that

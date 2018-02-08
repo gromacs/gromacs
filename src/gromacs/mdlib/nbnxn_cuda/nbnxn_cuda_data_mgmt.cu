@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,6 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
 
     nbp->coulomb_tab_scale = ic->tabq_scale;
     initParamLookupTable(nbp->coulomb_tab, nbp->coulomb_tab_texobj,
-                         &nbnxn_cuda_get_coulomb_tab_texref(),
                          ic->tabq_coul_F, ic->tabq_size, dev_info);
 }
 
@@ -327,7 +326,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     if (!useLjCombRule(nbp))
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
-                             &nbnxn_cuda_get_nbfp_texref(),
                              nbat->nbfp, 2*ntypes*ntypes, dev_info);
     }
 
@@ -335,7 +333,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     if (ic->vdwtype == evdwPME)
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
-                             &nbnxn_cuda_get_nbfp_comb_texref(),
                              nbat->nbfp_comb, 2*ntypes, dev_info);
     }
 }
@@ -728,7 +725,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
         destroyParamLookupTable(nbparam->coulomb_tab, nbparam->coulomb_tab_texobj,
-                                &nbnxn_cuda_get_coulomb_tab_texref(), dev_info);
+                                dev_info);
     }
 }
 
@@ -770,14 +767,14 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     if (!useLjCombRule(nb->nbparam))
     {
         destroyParamLookupTable(nbparam->nbfp, nbparam->nbfp_texobj,
-                                &nbnxn_cuda_get_nbfp_texref(), nb->dev_info);
+                                nb->dev_info);
 
     }
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
         destroyParamLookupTable(nbparam->nbfp_comb, nbparam->nbfp_comb_texobj,
-                                &nbnxn_cuda_get_nbfp_comb_texref(), nb->dev_info);
+                                nb->dev_info);
     }
 
     stat = cudaFree(atdat->shift_vec);

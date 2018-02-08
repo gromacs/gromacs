@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -347,14 +347,12 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
 
     initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                          kernelParamsPtr->fractShiftsTableTexture,
-                         &pme_gpu_get_fract_shifts_texref(),
                          pmeGpu->common->fsh.data(),
                          newFractShiftsSize,
                          pmeGpu->deviceInfo);
 
     initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                          kernelParamsPtr->gridlineIndicesTableTexture,
-                         &pme_gpu_get_gridline_texref(),
                          pmeGpu->common->nn.data(),
                          newFractShiftsSize,
                          pmeGpu->deviceInfo);
@@ -365,11 +363,9 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
     auto *kernelParamsPtr = pmeGpu->kernelParams.get();
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture,
-                            &pme_gpu_get_fract_shifts_texref(),
                             pmeGpu->deviceInfo);
     destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture,
-                            &pme_gpu_get_gridline_texref(),
                             pmeGpu->deviceInfo);
 }
 

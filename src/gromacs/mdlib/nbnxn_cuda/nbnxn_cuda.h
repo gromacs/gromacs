@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,26 +43,5 @@
 
 //! Set up the cache configuration for the non-bonded kernels.
 void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
-/*! \brief Return the reference to the nbfp texture.
- *
- *  Note: it can return junk when c_disableCudaTextures==false, but we don't
- *  assert on that condition because the data_mgmt module ends up calling this
- *  function even if texture references are not used.
- */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
-/*! \brief Return the reference to the nbfp_comb texture.
- *
- *  Note: it can return junk when c_disableCudaTextures==false, but we don't
- *  assert on that condition because the data_mgmt module ends up calling this
- *  function even if texture references are not used.
- */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
-/*! \brief Return the reference to the coulomb_tab texture.
- *
- *  Note: it can return junk when c_disableCudaTextures==false, but we don't
- *  assert on that condition because the data_mgmt module ends up calling this
- *  function even if texture references are not used.
- */
-const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
 #endif
