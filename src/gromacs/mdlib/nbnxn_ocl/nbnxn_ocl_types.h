@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -261,34 +261,7 @@ typedef struct cl_nbparam_params
 /*! \internal
  * \brief Pair list data.
  */
-typedef struct cl_plist
-{
-    int              na_c;         /**< number of atoms per cluster                  */
-
-    int              nsci;         /**< size of sci, # of i clusters in the list     */
-    int              sci_nalloc;   /**< allocation size of sci                       */
-    cl_mem           sci;          /**< list of i-cluster ("super-clusters").
-                                        It contains elements of type nbnxn_sci_t     */
-
-    int              ncj4;         /**< total # of 4*j clusters                      */
-    int              cj4_nalloc;   /**< allocation size of cj4                       */
-    cl_mem           cj4;          /**< 4*j cluster list, contains j cluster number and
-                                        index into the i cluster list.
-                                        It contains elements of type nbnxn_cj4_t     */
-    int              nimask;       /**< # of 4*j clusters * # of warps               */
-    int              imask_nalloc; /**< allocation size of imask                     */
-    cl_mem           imask;        /**< imask for 2 warps for each 4*j cluster group */
-    cl_mem           excl;         /**< atom interaction bits
-                                        It contains elements of type nbnxn_excl_t    */
-    int              nexcl;        /**< count for excl                               */
-    int              excl_nalloc;  /**< allocation size of excl                      */
-
-    /* parameter+variables for normal and rolling pruning */
-    bool             haveFreshList;          /**< true after search, indictes that initial pruning with outer prunning is needed */
-    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
-    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
-}cl_plist_t;
-
+using cl_plist_t = gpu_plist<GpuFramework::OpenCL>;
 
 /** \internal
  * \brief Typedef of actual timer type.

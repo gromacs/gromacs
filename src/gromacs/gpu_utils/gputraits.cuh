@@ -46,6 +46,8 @@ template <> struct GpuTraits<GpuFramework::CUDA>
 {
     using CommandStream = cudaStream_t;
     using CommandEvent  = void;
+    template<typename ValueType>
+    using DeviceBuffer  = ValueType *;
 };
 
 #endif
