@@ -46,10 +46,10 @@
 
 #include <array>
 
+#include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 
 #include "gpuregiontimer.h"
-#include "gputraits_ocl.h"
 
 //! Short-hand for external use
 using GpuRegionTimer = GpuRegionTimerWrapper<GpuFramework::OpenCL>;

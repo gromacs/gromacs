@@ -39,6 +39,8 @@
  *  \brief Declares the GPU framework traits.
  *  Implementations are delcared in separate headers.
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *
+ *  \inlibraryapi
  */
 
 /*! \libinternal \brief
@@ -57,6 +59,8 @@ template <GpuFramework> struct GpuTraits
 {
     using CommandStream = void; //!< GPU command stream
     using CommandEvent  = void; //!< Single command call timing event - used in OpenCL
+    template<typename ValueType>
+    using DeviceBuffer = void;  //!< A device-side buffer of raw ValueType's
 };
 
 #endif

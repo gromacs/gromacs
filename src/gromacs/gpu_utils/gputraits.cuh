@@ -38,14 +38,18 @@
 /*! \libinternal \file
  *  \brief Declares the CUDA type traits.
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *
+ * \inlibraryapi
  */
 
-#include "gputraits.h"
+#include "gromacs/gpu_utils/gputraits.h"
 
 template <> struct GpuTraits<GpuFramework::CUDA>
 {
     using CommandStream = cudaStream_t;
     using CommandEvent  = void;
+    template<typename ValueType>
+    using DeviceBuffer  = ValueType *;
 };
 
 #endif

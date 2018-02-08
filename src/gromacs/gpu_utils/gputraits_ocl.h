@@ -38,14 +38,19 @@
 /*! \libinternal \file
  *  \brief Declares the OpenCL type traits.
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *
+ *  \inlibraryapi
  */
 
-#include "gputraits.h"
+#include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gputraits.h"
 
 template <> struct GpuTraits<GpuFramework::OpenCL>
 {
     using CommandStream = cl_command_queue;
     using CommandEvent  = cl_event;
+    template<typename ValueType>
+    using DeviceBuffer  = cl_mem;
 };
 
 #endif

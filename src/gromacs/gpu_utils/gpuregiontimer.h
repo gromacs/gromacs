@@ -45,9 +45,8 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include "gputraits.h"
 
 //! Debug GPU timers in debug builds only
 #if defined(NDEBUG)

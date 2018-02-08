@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,6 @@ enum evdwCu {
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
 /*! \cond */
-typedef struct cu_plist     cu_plist_t;
 typedef struct cu_atomdata  cu_atomdata_t;
 typedef struct cu_nbparam   cu_nbparam_t;
 typedef struct nb_staging   nb_staging_t;
@@ -202,30 +201,7 @@ struct cu_nbparam
 /** \internal
  * \brief Pair list data.
  */
-struct cu_plist
-{
-    int              na_c;         /**< number of atoms per cluster                  */
-
-    int              nsci;         /**< size of sci, # of i clusters in the list     */
-    int              sci_nalloc;   /**< allocation size of sci                       */
-    nbnxn_sci_t     *sci;          /**< list of i-cluster ("super-clusters")         */
-
-    int              ncj4;         /**< total # of 4*j clusters                      */
-    int              cj4_nalloc;   /**< allocation size of cj4                       */
-    nbnxn_cj4_t     *cj4;          /**< 4*j cluster list, contains j cluster number
-                                        and index into the i cluster list            */
-    int              nimask;       /**< # of 4*j clusters * # of warps               */
-    int              imask_nalloc; /**< allocation size of imask                     */
-    unsigned int    *imask;        /**< imask for 2 warps for each 4*j cluster group */
-    nbnxn_excl_t    *excl;         /**< atom interaction bits                        */
-    int              nexcl;        /**< count for excl                               */
-    int              excl_nalloc;  /**< allocation size of excl                      */
-
-    /* parameter+variables for normal and rolling pruning */
-    bool             haveFreshList;          /**< true after search, indictes that initial pruning with outer prunning is needed */
-    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
-    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
-};
+using cu_plist_t = gpu_plist < GpuTraits < GpuFramework::CUDA>>;
 
 /** \internal
  * \brief Typedef of actual timer type.
