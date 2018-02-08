@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,12 +49,6 @@
 #include "gromacs/gpu_utils/oclutils.h"
 
 #include "gpuregiontimer.h"
-
-template <> struct GpuTraits<GpuFramework::OpenCL>
-{
-    using CommandStream = cl_command_queue;
-    using CommandEvent  = cl_event;
-};
 
 //! Short-hand for external use
 using GpuRegionTimer = GpuRegionTimerWrapper<GpuFramework::OpenCL>;
