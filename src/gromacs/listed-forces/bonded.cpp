@@ -356,7 +356,6 @@ real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
     /* That was 19 flops */
 }
 
-
 real bonds(int nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
            const rvec x[], rvec f[], rvec fshift[],
@@ -392,16 +391,15 @@ real bonds(int nbonds,
             continue;
         }
 
-
         vtot  += vbond;             /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
-#ifdef DEBUG
+
         if (debug)
         {
             fprintf(debug, "BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
                     dr, vbond, fbond);
         }
-#endif
+
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
@@ -416,6 +414,70 @@ real bonds(int nbonds,
             fshift[CENTRAL][m] -= fij;
         }
     }               /* 59 TOTAL	*/
+    return vtot;
+}
+
+/* TODO: CHECK, no free energy compatibility at the moment... */
+real drude_bonds(int nbonds,
+                 const t_iatom forceatoms[], const t_iparams forceparams[],
+                 const rvec x[], rvec f[], rvec fshift[],
+                 const t_pbc *pbc, const t_graph *g,
+                 real lambda, real *dvdlambda,
+                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                 int gmx_unused *global_atom_index)
+{
+    int  i, m, ki, ai, aj, type;
+    real dr, dr2, fbond, vbond, fij, vtot;
+    rvec dx;
+    ivec dt;
+
+    vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+
+        ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2  = iprod(dx, dx);                       /*   5      */
+        dr   = dr2*gmx::invsqrt(dr2);               /*  10      */
+
+        /* TODO: note that A and B are the same! */
+        *dvdlambda += harmonic(forceparams[type].dbond.k,
+                               forceparams[type].dbond.k,
+                               forceparams[type].dbond.r,
+                               forceparams[type].dbond.r,
+                               dr, lambda, &vbond, &fbond); /*  19  */
+
+        if (dr2 == 0.0)
+        {
+            continue;
+        }
+
+        vtot  += vbond;             /* 1*/
+        fbond *= gmx::invsqrt(dr2); /*   6      */
+
+        if (g)
+        {
+            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
+            ki = IVEC2IS(dt);
+        }
+        for (m = 0; (m < DIM); m++)     /*  15      */
+        {
+            fij                 = fbond*dx[m];
+            f[ai][m]           += fij;
+            f[aj][m]           -= fij;
+            fshift[ki][m]      += fij;
+            fshift[CENTRAL][m] -= fij;
+        }
+
+        if (debug)
+        {
+            fprintf(debug, "DBONDS: dr = %10g  vbond = %10g  fbond = %10g  fij = %10g\n",
+                    dr, vbond, fbond, fij);
+        }
+
+    }               /* 59 TOTAL */
     return vtot;
 }
 
@@ -585,7 +647,7 @@ real hyperpolarize(int nbonds,
                    const t_mdatoms *md, t_fcdata gmx_unused *fcd,
                    int gmx_unused *global_atom_index)
 {
-    int  i, m, ki, ai, aj, atmp, exp, type;
+    int  i, m, ki, ai, aj, exp, type;
     real dr, dr2, fbond, vbond, fij, vtot, kb, khyp, rhyp, ddr;
     rvec dx;
     ivec dt;
@@ -594,16 +656,8 @@ real hyperpolarize(int nbonds,
     for (i = 0; (i < nbonds); )
     {
         type  = forceatoms[i++];
-        ai    = forceatoms[i++];
-        aj    = forceatoms[i++];    /* This SHOULD always be the Drude, but need to verify */
-        /* verify atom order */
-        if (!(md->ptype[aj] == eptShell))
-        {
-            /* swap */
-            atmp = ai;
-            ai   = aj;
-            aj   = atmp;
-        }
+        ai    = forceatoms[i++];    /* the atom */
+        aj    = forceatoms[i++];    /* the Drude/shell, as set by grompp */ 
         kb    = forceparams[type].hyperpol.k;
         khyp  = forceparams[type].hyperpol.khyp;
         rhyp  = forceparams[type].hyperpol.rhyp;
@@ -776,10 +830,11 @@ real aniso_pol(int nbonds,
 
             if (debug)
             {
-                fprintf(debug, "ANISOPOL: Drude: %d Atom: %d\n", aj+1, ai+1);
+                fprintf(debug, "ANISOPOL: Drude: %d Atom: %d al: %d am: %d an: %d\n",
+                        aj+1, ai+1, al+1, am+1, an+1);
             }
 
-            /* we can get the force constants from ffpararms or just re-calculate */
+            /* we can get the force constants from ffparams or just re-calculate */
             /* These are multiplied by 2 in CHARMM, but we do not need to do that here because
              * we will store K values directly, not K/2. */
             /* KISO0 aka K33 */
@@ -1105,6 +1160,9 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
 
     if (debug)
     {
+        fprintf(debug, "THOLE: fi = %f %f %f fj = %f %f %f\n",
+                fi[XX], fi[YY], fi[ZZ],
+                fj[XX], fj[YY], fj[ZZ]);
         fprintf(debug, "THOLE: returning %f for Thole\n", (v0*v1));
     }
 
@@ -1117,7 +1175,7 @@ real thole_pol(int nbonds,
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph gmx_unused *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
-               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
 {
     /* Interaction between two pairs of particles with opposite charge */
@@ -1132,11 +1190,16 @@ real thole_pol(int nbonds,
         da1   = forceatoms[i++];
         a2    = forceatoms[i++];
         da2   = forceatoms[i++];
+/* TODO: TESTING */
+#if 0
         q1    = md->chargeA[da1];
         q2    = md->chargeA[da2];
+#endif
         a     = forceparams[type].thole.a;
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
+        q1    = forceparams[type].thole.qd1;
+        q2    = forceparams[type].thole.qd2;
         qq    = q1*q2;
         afac  = a*gmx::invsixthroot(al1*al2);
 

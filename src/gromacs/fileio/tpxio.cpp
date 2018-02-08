@@ -2088,6 +2088,12 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             break;
         case F_CONNBONDS:
             break;
+        case F_DRUDEBONDS:
+            gmx_fio_do_real(fio, iparams->dbond.r);
+            gmx_fio_do_real(fio, iparams->dbond.k);
+            gmx_fio_do_real(fio, iparams->dbond.ma);
+            gmx_fio_do_real(fio, iparams->dbond.mb);
+            break;
         case F_POLARIZATION:
             gmx_fio_do_real(fio, iparams->polarize.alpha);
             break;
@@ -2096,6 +2102,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->hyperpol.rhyp);
             gmx_fio_do_real(fio, iparams->hyperpol.khyp);
             gmx_fio_do_int(fio, iparams->hyperpol.pow);
+            break;
         case F_ANHARM_POL:
             gmx_fio_do_real(fio, iparams->anharm_polarize.alpha);
             gmx_fio_do_real(fio, iparams->anharm_polarize.drcut);
@@ -2105,6 +2112,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->daniso.a11);
             gmx_fio_do_real(fio, iparams->daniso.a22);
             gmx_fio_do_real(fio, iparams->daniso.a33);
+            break;
         case F_WATER_POL:
             if (file_version < 31)
             {
@@ -2121,6 +2129,8 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->thole.a);
             gmx_fio_do_real(fio, iparams->thole.alpha1);
             gmx_fio_do_real(fio, iparams->thole.alpha2);
+            gmx_fio_do_real(fio, iparams->thole.qd1);
+            gmx_fio_do_real(fio, iparams->thole.qd2);
             break;
         case F_LJ:
             gmx_fio_do_real(fio, iparams->lj.c6);
@@ -2554,6 +2564,11 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     gmx_fio_do_real(fio, atom->q);
     gmx_fio_do_real(fio, atom->mB);
     gmx_fio_do_real(fio, atom->qB);
+/* TODO: ADD LATER */
+#if 0
+    gmx_fio_do_real(fio, atom->alpha);
+    gmx_fio_do_real(fio, atom->thole);
+#endif
     gmx_fio_do_ushort(fio, atom->type);
     gmx_fio_do_ushort(fio, atom->typeB);
     gmx_fio_do_int(fio, atom->ptype);

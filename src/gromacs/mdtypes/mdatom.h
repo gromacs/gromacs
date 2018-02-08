@@ -83,6 +83,13 @@ typedef struct t_mdatoms {
     real                  *chargeA;
     //! Atomic charge in B state
     real                  *chargeB;
+/* TODO: ADD LATER */
+#if 0
+    //! Atomic polarizabilities (unperturbed for now)
+    real                  *alpha;
+    //! Thole screening factors (unperturbed for now)
+    real                  *thole;
+#endif
     //! Dispersion constant C6 in A state
     real                  *sqrt_c6A;
     //! Dispersion constant C6 in A state

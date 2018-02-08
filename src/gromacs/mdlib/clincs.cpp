@@ -1870,7 +1870,8 @@ void set_lincs(const t_idef         *idef,
                const t_mdatoms      *md,
                gmx_bool              bDynamics,
                t_commrec            *cr,
-               struct gmx_lincsdata *li)
+               struct gmx_lincsdata *li,
+               gmx_bool              bDrudeHardWallConstraint)
 {
     int          natoms, nflexcon;
     t_blocka     at2con;
@@ -1926,7 +1927,7 @@ void set_lincs(const t_idef         *idef,
         natoms = md->homenr;
     }
     at2con = make_at2con(0, natoms, idef->il, idef->iparams, bDynamics,
-                         &nflexcon);
+                         &nflexcon, bDrudeHardWallConstraint);
 
     ncon_tot = idef->il[F_CONSTR].nr/3;
 

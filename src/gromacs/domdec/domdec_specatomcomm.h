@@ -107,6 +107,9 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *x0,
                       rvec *x1, gmx_bool bX1IsCoord);
 
+/*! \brief Communicates the velocities for special atoms, needed for Drude hardwall and thermostat */
+void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *x0);
+
 /*! \brief Sets up the communication for special atoms
  *
  * \param[in]     dd         Domain decomposition struct

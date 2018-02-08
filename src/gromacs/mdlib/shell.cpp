@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -53,6 +54,7 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
@@ -75,50 +77,16 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
-/* TODO: fix */
-static void spread_shell(t_iatom ia[],
-                         rvec x[], rvec f[], rvec fshift[],
-                         t_pbc *pbc, t_graph *g)
-{
-    rvec    fi, dx;
-    t_iatom as, ai;
-    ivec    di;
-    int     sis;
-
-    as = ia[1];     /* shell/Drude */
-    ai = ia[2];     /* atom connected to shell/Drude */
-
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, as), di);
-        sis = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        sis = pbc_dx_aiuc(pbc, x[ai], x[as], dx);
-    }
-    else
-    {
-        sis = CENTRAL;
-    }
-
-    if (fshift && (sis != CENTRAL))
-    {
-        rvec_inc(fshift[sis], f[as]);
-        rvec_dec(fshift[CENTRAL], fi);
-    }
-}
-
+/* TODO: testing necessity */
 #if 0
-static void spread_shell_f_thread(gmx_shellfc_t shell,
+static void spread_shell_f_thread(gmx_shellfc_t shellfc,
                                   rvec x[], rvec f[], rvec *fshift,
                                   gmx_bool VirCorr, matrix dxdf,
-                                  t_ilist ilist[],
+                                  t_iparams ip[], t_ilist ilist[],
                                   t_graph *g, t_pbc *pbc_null)
 {
     gmx_bool   bPBCAll;
-    real       a1, b1, c1;
-    int        i, inc, m, nra, nr, tp, ftype;
+    int        i, inc, nra, nr, ftype, tp;
     t_iatom   *ia;
     t_pbc     *pbc_null2;
     int       *shell_pbc;
@@ -128,20 +96,26 @@ static void spread_shell_f_thread(gmx_shellfc_t shell,
         clear_mat(dxdf);
     }
 
-    bPBCAll = (pbc_null != NULL && !shell->bInterCG);
+    bPBCAll = (pbc_null != NULL && !shellfc->bInterCG);
 
     pbc_null2 = NULL;
     shell_pbc = NULL;
-    /* TODO: jal remove loop? under construction! */
-    for (ftype = F_NRE-1; (ftype >= 0); ftype--)
+    /* TODO: CHECK. */ 
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
-        if ((interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND)) &&
-            ilist[ftype].nr > 0)
+        if (ilist[ftype].nr > 0)
         {
             nra    = interaction_function[ftype].nratoms;
             inc    = 1 + nra;
             nr     = ilist[ftype].nr;
             ia     = ilist[ftype].iatoms;
+
+            /* TODO: REMOVE */
+            if (debug)
+            {
+                fprintf(debug, "SPREAD SHELL F THREAD: %d %s found\n",
+                        ilist[ftype].nr, interaction_function[ftype].longname);
+            }
 
             if (bPBCAll)
             {
@@ -149,7 +123,8 @@ static void spread_shell_f_thread(gmx_shellfc_t shell,
             }
             else if (pbc_null != NULL)
             {
-                shell_pbc = shell->shell_pbc_loc[ftype-F_POLARIZATION];
+                /* TODO: seg faulting... */ 
+                shell_pbc = shellfc->shell_pbc_loc[ftype-F_DRUDEBONDS];
             }
 
             for (i = 0; i < nr; )
@@ -166,10 +141,10 @@ static void spread_shell_f_thread(gmx_shellfc_t shell,
                     }
                 }
 
-                tp   = ia[0];
-
-                spread_shell(ia, x, f, fshift, pbc_null2, g);
-                clear_rvec(f[ia[1]]);
+                /* No switch block needed, all the same function */
+                /* function type */
+                tp = ia[0];
+                /* TODO: figure out how all this shit works... */
 
                 /* Increment loop variables */
                 i  += inc;
@@ -178,10 +153,8 @@ static void spread_shell_f_thread(gmx_shellfc_t shell,
         }
     }
 }
-#endif
 
-#if 0
-void spread_shell_f(gmx_shellfc_t shell,
+void spread_shell_f(gmx_shellfc_t shellfc,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,
@@ -192,16 +165,29 @@ void spread_shell_f(gmx_shellfc_t shell,
     int   th;
 
     /* We only need to do pbc when we have inter-cg shells */
-    if ((DOMAINDECOMP(cr) || bMolPBC) && shell->n_intercg_shells)
+    if ((DOMAINDECOMP(cr) || bMolPBC) && shellfc->n_intercg_shells)
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step. But how often do we have shells with full pbc?
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : NULL, FALSE, box);
     }
     else
     {
         pbc_null = NULL;
+    }
+
+    /* TODO: REMOVE */
+    if (debug)
+    {
+        if (pbc_null != NULL)
+        {
+            fprintf(debug, "SPREAD SHELL F: pbc_null is non-NULL\n"); 
+        }
+        else
+        {
+            fprintf(debug, "SPREAD SHELL F: pbc_null is NULL!\n");
+        }
     }
 
     if (DOMAINDECOMP(cr))
@@ -209,63 +195,69 @@ void spread_shell_f(gmx_shellfc_t shell,
         dd_clear_f_shells(cr->dd, f);
     }
 
-    if (shell->nthreads == 1)
+    if (shellfc->nthreads == 1)
     {
-        spread_shell_f_thread(shell,
+        spread_shell_f_thread(shellfc,
                               x, f, fshift,
-                              VirCorr, shell->tdata[0].dxdf,
-                              idef->il,
+                              VirCorr, shellfc->tdata[0].dxdf,
+                              idef->iparams, idef->il,
                               g, pbc_null);
     }
     else
     {
         /* First spread the shells that might depend on other shells */
         /* Probably not common... */
-        spread_shell_f_thread(shell,
+        spread_shell_f_thread(shellfc,
                               x, f, fshift,
-                              VirCorr, shell->tdata[shell->nthreads].dxdf,
-                              shell->tdata[shell->nthreads].ilist,
+                              VirCorr, shellfc->tdata[shellfc->nthreads].dxdf,
+                              idef->iparams,
+                              shellfc->tdata[shellfc->nthreads].ilist,
                               g, pbc_null);
 
-#pragma omp parallel num_threads(shell->nthreads)
+#pragma omp parallel num_threads(shellfc->nthreads)
         {
-            int   thread;
-            rvec *fshift_t;
+            try
+            { 
+                int   thread;
+                rvec *fshift_t;
 
-            thread = gmx_omp_get_thread_num();
+                thread = gmx_omp_get_thread_num();
 
-            if (thread == 0 || fshift == NULL)
-            {
-                fshift_t = fshift;
-            }
-            else
-            {
-                int i;
-
-                fshift_t = shell->tdata[thread].fshift;
-
-                for (i = 0; i < SHIFTS; i++)
+                if (thread == 0 || fshift == NULL)
                 {
-                    clear_rvec(fshift_t[i]);
+                    fshift_t = fshift;
                 }
-            }
+                else
+                {
+                    int i;
 
-            spread_shell_f_thread(shell,
-                                  x, f, fshift_t,
-                                  VirCorr, shell->tdata[thread].dxdf,
-                                  shell->tdata[thread].ilist,
-                                  g, pbc_null);
+                    fshift_t = shellfc->tdata[thread].fshift;
+
+                    for (i = 0; i < SHIFTS; i++)
+                    {
+                        clear_rvec(fshift_t[i]);
+                    }
+                }
+
+                spread_shell_f_thread(shellfc,
+                                      x, f, fshift_t,
+                                      VirCorr, shellfc->tdata[thread].dxdf,
+                                      idef->iparams,
+                                      shellfc->tdata[thread].ilist,
+                                      g, pbc_null);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (fshift != NULL)
         {
             int i;
 
-            for (th = 1; th < shell->nthreads; th++)
+            for (th = 1; th < shellfc->nthreads; th++)
             {
                 for (i = 0; i < SHIFTS; i++)
                 {
-                    rvec_inc(fshift[i], shell->tdata[th].fshift[i]);
+                    rvec_inc(fshift[i], shellfc->tdata[th].fshift[i]);
                 }
             }
         }
@@ -275,13 +267,13 @@ void spread_shell_f(gmx_shellfc_t shell,
     {
         int i, j;
 
-        for (th = 0; th < (shell->nthreads == 1 ? 1 : shell->nthreads+1); th++)
+        for (th = 0; th < (shellfc->nthreads == 1 ? 1 : shellfc->nthreads+1); th++)
         {
             for (i = 0; i < DIM; i++)
             {
                 for (j = 0; j < DIM; j++)
                 {
-                    vir[i][j] += -0.5*shell->tdata[th].dxdf[i][j];
+                    vir[i][j] += -0.5*shellfc->tdata[th].dxdf[i][j];
                 }
             }
         }
@@ -293,7 +285,7 @@ void spread_shell_f(gmx_shellfc_t shell,
     }
 
     /* TODO: check */
-    inc_nrnb(nrnb, eNR_POLARIZE, shell->nshell_gl);
+    inc_nrnb(nrnb, eNR_POLARIZE, shellfc->nshell);
 }
 #endif
 
@@ -340,7 +332,7 @@ static int count_intercg_shells(const gmx_mtop_t *mtop,
         a2cg = atom2cg(&molt->cgs);
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (ftype == F_BONDS || ftype == F_POLARIZATION)
+            if (ftype == F_DRUDEBONDS || ftype == F_POLARIZATION || ftype == F_HYPER_POL)
             {
                 nral = NRAL(ftype);
                 il   = &molt->ilist[ftype];
@@ -395,115 +387,100 @@ static int **get_shell_pbc(t_ilist *ilist,
     }
 
     /* There are several possible interactions for shells/Drudes, including
-     * F_BONDS, which is why we allocate an extra +2 here instead of +1 
-     *(F_BONDS plus everything from F_POLARIZATION..F_HYPER_POL, inclusive) */
-    snew(shell_pbc, F_HYPER_POL-F_POLARIZATION+2);
+     * everything from F_DRUDEBONDS..F_HYPER_POL, inclusive */
+    snew(shell_pbc, F_HYPER_POL-F_DRUDEBONDS+1);
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
-        /* TODO: it would probably be useful to have an IF_SHELL flag or something... */
-        if (ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_ANISO_POL ||
-            ftype == F_WATER_POL || ftype == F_THOLE_POL || ftype == F_ANHARM_POL ||
-            ftype == F_HYPER_POL)
+        nral = NRAL(ftype);
+        il   = &ilist[ftype];
+        ia   = il->iatoms;
+
+        snew(shell_pbc[ftype-F_DRUDEBONDS], il->nr/(1+nral));
+        shell_pbc_f = shell_pbc[ftype-F_DRUDEBONDS];
+
+        i = 0;
+        while (i < il->nr)
         {
-            nral = NRAL(ftype);
-            il   = &ilist[ftype];
-            ia   = il->iatoms;
-
-            if (ftype == F_BONDS)
+            shi   = i/(1+nral);
+            if (md && (md->ptype[ia[i+1]] == eptShell))
             {
-                snew(shell_pbc[0], il->nr/(1+nral));
-                shell_pbc_f = shell_pbc[0];
+                shell = ia[i+1];
             }
-            else /* F_POLARIZATION and onward */
+            else if (md && (md->ptype[ia[i+2]] == eptShell))
             {
-                snew(shell_pbc[ftype-F_POLARIZATION+1], il->nr/(1+nral));
-                shell_pbc_f = shell_pbc[ftype-F_POLARIZATION+1];
+                shell = ia[i+2];
             }
 
-            i = 0;
-            while (i < il->nr)
+            if (shell != -1)
             {
-                shi   = i/(1+nral);
-                if (md && (md->ptype[ia[i+1]] == eptShell))
+                cg_v  = a2cg[shell];
+                /* A value of -2 signals that this shell and its bonded 
+                 * atoms are all within the same cg, so no pbc is required.
+                 */
+                shell_pbc_f[shi] = -2;
+                /* Check if connected atoms are outside the shell's cg */
+                for (a = 1; a < nral; a++)
                 {
-                    shell = ia[i+1];
-                }
-                else if (md && (md->ptype[ia[i+2]] == eptShell))
-                {
-                    shell = ia[i+2];
-                }
-
-                if (shell != -1)
-                {
-                    cg_v  = a2cg[shell];
-                    /* A value of -2 signals that this shell and its bonded 
-                     * atoms are all within the same cg, so no pbc is required.
-                     */
-                    shell_pbc_f[shi] = -2;
-                    /* Check if connected atoms are outside the shell's cg */
-                    for (a = 1; a < nral; a++)
+                    if (a2cg[shell+a] != cg_v)
                     {
-                        if (a2cg[shell+a] != cg_v)
+                        shell_pbc_f[shi] = -1;
+                    }
+                }
+                if (shell_pbc_f[shi] == -1)
+                {
+                    /* Check if this is the first processed atom of a shell-only cg */
+                    bShellOnlyCG_and_FirstAtom = TRUE;
+                    for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
+                    {
+                        /* Non-shells already have pbc set, so simply check for pbc_set */
+                        if (pbc_set[a])
                         {
-                            shell_pbc_f[shi] = -1;
+                            bShellOnlyCG_and_FirstAtom = FALSE;
+                            break;
                         }
                     }
-                    if (shell_pbc_f[shi] == -1)
+                    if (bShellOnlyCG_and_FirstAtom)
                     {
-                        /* Check if this is the first processed atom of a shell-only cg */
-                        bShellOnlyCG_and_FirstAtom = TRUE;
+                        /* First processed atom of a shell-only charge group.
+                         * The pbc of the input coordinates should be preserved.
+                         */
+                        shell_pbc_f[shi] = shell;
+                    }
+                    else if (cg_v != a2cg[shell+1])
+                    {
+                        /* This shell has a different charge group index
+                         * than its first connected atom
+                         * and the charge group has more than one atom,
+                         * search for the first normal particle
+                         * or shell that already had its pbc defined.
+                         * If nothing is found, use full pbc for this shell.
+                         */
                         for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
                         {
-                            /* Non-shells already have pbc set, so simply check for pbc_set */
-                            if (pbc_set[a])
+                            if (a != shell && pbc_set[a])
                             {
-                                bShellOnlyCG_and_FirstAtom = FALSE;
+                                shell_pbc_f[shi] = a;
+                                if (gmx_debug_at)
+                                {
+                                    fprintf(debug, "shell %d match pbc with atom %d\n",
+                                            shell+1, a+1);
+                                }
                                 break;
                             }
                         }
-                        if (bShellOnlyCG_and_FirstAtom)
+                        if (gmx_debug_at)
                         {
-                            /* First processed atom of a shell-only charge group.
-                             * The pbc of the input coordinates should be preserved.
-                             */
-                            shell_pbc_f[shi] = shell;
-                        }
-                        else if (cg_v != a2cg[shell+1])
-                        {
-                            /* This shell has a different charge group index
-                             * than its first connected atom
-                             * and the charge group has more than one atom,
-                             * search for the first normal particle
-                             * or shell that already had its pbc defined.
-                             * If nothing is found, use full pbc for this shell.
-                             */
-                            for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
-                            {
-                                if (a != shell && pbc_set[a])
-                                {
-                                    shell_pbc_f[shi] = a;
-                                    if (gmx_debug_at)
-                                    {
-                                        fprintf(debug, "shell %d match pbc with atom %d\n",
-                                                shell+1, a+1);
-                                    }
-                                    break;
-                                }
-                            }
-                            if (gmx_debug_at)
-                            {
-                                fprintf(debug, "shell atom %d  cg %d - %d pbc atom %d\n",
-                                        shell+1, cgs->index[cg_v]+1, cgs->index[cg_v+1],
-                                        shell_pbc_f[shi]+1);
-                            }
+                            fprintf(debug, "shell atom %d  cg %d - %d pbc atom %d\n",
+                                    shell+1, cgs->index[cg_v]+1, cgs->index[cg_v+1],
+                                    shell_pbc_f[shi]+1);
                         }
                     }
-                    i += 1+nral;
-
-                    /* This shell now has its pbc defined */
-                    pbc_set[shell] = 1;
                 }
+                i += 1+nral;
+
+                /* This shell now has its pbc defined */
+                pbc_set[shell] = 1;
             }
         }
     }
@@ -516,29 +493,23 @@ static int **get_shell_pbc(t_ilist *ilist,
 gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
                          gmx_bool bSerial_NoPBC)
 {
-    int            nshell, nshellmol, i;
-    int           *a2cg;
-    gmx_shellfc_t  shfc;
-    int            mt;
-    gmx_moltype_t *molt;
-    int            nmol;
+    int             nshell, i;
+    int            *a2cg;
+    gmx_shellfc_t   shfc;
+    int             mt;
+    gmx_moltype_t  *molt;
 
     /* check if there are shells */
-    nshell = 0;     /* total */
-    nshellmol = 0;  /* per molecule */
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    nshell = 0;
+    for (i = 0; i < F_NRE; i++)
     {
-        molt = &mtop->moltype[mt];
-        nmol = mtop->molblock->nmol;
-        for (i = 0; i < molt->atoms.nr; i++)
+        /* One shell/Drude per interaction, so just count them */
+        /* All other shell/Drude functions are a subset of one
+         * of these, so we do not need to consider all of them explicitly */
+        if ((i == F_DRUDEBONDS) || (i == F_POLARIZATION) || (i == F_HYPER_POL))
         {
-            if (molt->atoms.atom[i].ptype == eptShell)
-            {
-                nshellmol++;   /* per-moleculetype shells */
-            }
+            nshell += gmx_mtop_ftype_count(mtop, i);
         }
-        nshellmol *= nmol;
-        nshell += nshellmol;   /* total number of shells */
     }
 
     if (nshell == 0)
@@ -546,12 +517,12 @@ gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
         return NULL;
     }
 
-    snew(shfc, 1);
-
     if (debug)
     {
-        fprintf(debug, "INIT SHELL: shfc->nshell = %d\n", shfc->nshell);
+        fprintf(debug, "INIT SHELL: There are %d shells\n", nshell);
     }
+
+    snew(shfc, 1);
 
     shfc->n_intercg_shells = count_intercg_shells(mtop, &shfc->bInterCG);
 
@@ -565,9 +536,12 @@ gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
         fprintf(debug, "INIT SHELL: found %d inter-cg shells\n", shfc->n_intercg_shells);
     }
 
+    shfc->bHaveChargeGroups = (ncg_mtop(mtop) < mtop->natoms);
+
     /* If we don't have charge groups, the shell follows its own pbc */
     if (!bSerial_NoPBC &&
         shfc->bInterCG &&
+        shfc->bHaveChargeGroups &&
         shfc->n_intercg_shells > 0 && DOMAINDECOMP(cr))
     {
         shfc->nshell_pbc_molt = mtop->nmoltype;
@@ -584,8 +558,8 @@ gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
             sfree(a2cg);
         }
 
-        snew(shfc->shell_pbc_loc_nalloc, (F_HYPER_POL-F_POLARIZATION+2));
-        snew(shfc->shell_pbc_loc, (F_HYPER_POL-F_POLARIZATION+2));
+        snew(shfc->shell_pbc_loc_nalloc, (F_HYPER_POL-F_DRUDEBONDS+1));
+        snew(shfc->shell_pbc_loc, (F_HYPER_POL-F_DRUDEBONDS+1));
     }
 
     if (bSerial_NoPBC)
@@ -613,18 +587,15 @@ static void prepare_shell_thread(const t_ilist      *ilist,
 {
     int ftype;
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
-        if (interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND))
+        if (ilist[ftype].nr > shell_th->ilist[ftype].nalloc)
         {
-            if (ilist[ftype].nr > shell_th->ilist[ftype].nalloc)
-            {
-                shell_th->ilist[ftype].nalloc = over_alloc_large(ilist[ftype].nr);
-                srenew(shell_th->ilist[ftype].iatoms, shell_th->ilist[ftype].nalloc);
-            }
-
-            shell_th->ilist[ftype].nr = 0;
+            shell_th->ilist[ftype].nalloc = over_alloc_large(ilist[ftype].nr);
+            srenew(shell_th->ilist[ftype].iatoms, shell_th->ilist[ftype].nalloc);
         }
+
+        shell_th->ilist[ftype].nr = 0;
     }
 }
 
@@ -664,18 +635,15 @@ void split_shells_over_threads(const t_ilist   *ilist,
     if (bLimitRange)
     {
         shell_atom_range = -1;
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
         {
-            if ((interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND)))
+            nral1 = 1 + NRAL(ftype);
+            iat   = ilist[ftype].iatoms;
+            for (i = 0; i < ilist[ftype].nr; i += nral1)
             {
-                nral1 = 1 + NRAL(ftype);
-                iat   = ilist[ftype].iatoms;
-                for (i = 0; i < ilist[ftype].nr; i += nral1)
+                for (j = i+1; j < i+nral1; j++)
                 {
-                    for (j = i+1; j < i+nral1; j++)
-                    {
-                        shell_atom_range = std::max(shell_atom_range, iat[j]);
-                    }
+                    shell_atom_range = std::max(shell_atom_range, iat[j]);
                 }
             }
         }
@@ -720,54 +688,48 @@ void split_shells_over_threads(const t_ilist   *ilist,
         }
     }
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
-        if ((interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND)))
+        nral1 = 1 + NRAL(ftype);
+        inc   = nral1;
+        iat   = ilist[ftype].iatoms;
+        for (i = 0; i < ilist[ftype].nr; )
         {
-            nral1 = 1 + NRAL(ftype);
-            inc   = nral1;
-            iat   = ilist[ftype].iatoms;
-            for (i = 0; i < ilist[ftype].nr; )
+            th = iat[1+i]/natperthread;
+            for (j = i+2; j < i+nral1; j++)
             {
-                th = iat[1+i]/natperthread;
-                for (j = i+2; j < i+nral1; j++)
+                if (th_ind[iat[j]] != th)
                 {
-                    if (th_ind[iat[j]] != th)
-                    {
-                        /* Some constructing atoms are not assigned to
-                         * thread th, move this shell to a separate batch.
-                         */
-                        th = shfc->nthreads;
-                    }
+                    /* Some constructing atoms are not assigned to
+                     * thread th, move this shell to a separate batch.
+                     */
+                    th = shfc->nthreads;
                 }
-                /* Copy this shell to the thread data struct of thread th */
-                il_th = &shfc->tdata[th].ilist[ftype];
-                for (j = i; j < i+inc; j++)
-                {
-                    il_th->iatoms[il_th->nr++] = iat[j];
-                }
-                /* Update this shell's thread index entry */
-                th_ind[iat[1+i]] = th;
-
-                i += inc;
             }
+            /* Copy this shell to the thread data struct of thread th */
+            il_th = &shfc->tdata[th].ilist[ftype];
+            for (j = i; j < i+inc; j++)
+            {
+                il_th->iatoms[il_th->nr++] = iat[j];
+            }
+            /* Update this shell's thread index entry */
+            th_ind[iat[1+i]] = th;
+
+            i += inc;
         }
     }
 
     if (debug)
     {
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
         {
-            if ((interaction_function[ftype].flags & (IF_BOND | IF_CHEMBOND)))
+            fprintf(debug, "%-20s thread dist:",
+                    interaction_function[ftype].longname);
+            for (th = 0; th < shfc->nthreads+1; th++)
             {
-                fprintf(debug, "%-20s thread dist:",
-                        interaction_function[ftype].longname);
-                for (th = 0; th < shfc->nthreads+1; th++)
-                {
-                    fprintf(debug, " %4d", shfc->tdata[th].ilist[ftype].nr);
-                }
-                fprintf(debug, "\n");
+                fprintf(debug, " %4d", shfc->tdata[th].ilist[ftype].nr);
             }
+            fprintf(debug, "\n");
         }
     }
 }

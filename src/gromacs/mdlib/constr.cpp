@@ -74,6 +74,8 @@
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */
     int                nflexcon;       /* The number of flexible constraints */
+    /* TODO: CHECK */
+    t_blocka          *at2flexcon_mt;  /* A list of atoms to flexible constraints */
     int                n_at2con_mt;    /* The size of at2con = #moltypes     */
     t_blocka          *at2con_mt;      /* A list of atoms to constraints     */
     int                n_at2settle_mt; /* The size of at2settle = #moltypes  */
@@ -821,7 +823,7 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
 
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons)
+                     gmx_bool bDynamics, int *nflexiblecons, gmx_bool bDrudeHardWallConstraint)
 {
     int      *count, ncon, con, con_tot, nflexcon, ftype, i, a;
     t_iatom  *ia;
@@ -853,6 +855,38 @@ t_blocka make_at2con(int start, int natoms,
             ia += 3;
         }
     }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "nflexcon = %d before Drude.\n", nflexcon);
+    }
+
+    /* TODO: CHECK. Seems necessary to get at2flexcon_mt initialized, hence
+     * an accurate count of the flexible constraints (Drude-atom bonds) */
+    /* Polarizable atoms can be F_DRUDEBONDS or F_POLARIZATION (backwards compatibility) */
+    if (bDrudeHardWallConstraint)
+    {
+        /* every atom-Drude bond is subject to the constraint */
+        /* TODO: CHECK, this should be really simple */
+        nflexcon += ilist[F_DRUDEBONDS].nr/3 + ilist[F_POLARIZATION].nr/3;
+    }
+    else
+    {
+        /* the value of nflexcon is also used in shellfc and can refer to
+         * hyperpolarization entries */
+        if (ilist[F_HYPER_POL].nr > 0)
+        {
+            nflexcon += ilist[F_HYPER_POL].nr/3;
+        }
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "nflexcon = %d after Drude.\n", nflexcon);
+    }
+
     *nflexiblecons = nflexcon;
 
     at2con.nr           = natoms;
@@ -945,7 +979,7 @@ void set_constraints(struct gmx_constr *constr,
          */
         if (ir->eConstrAlg == econtLINCS)
         {
-            set_lincs(idef, md, EI_DYNAMICS(ir->eI), cr, constr->lincsd);
+            set_lincs(idef, md, EI_DYNAMICS(ir->eI), cr, constr->lincsd, (ir->bDrude && ir->drude->bHardWall));
         }
         if (ir->eConstrAlg == econtSHAKE)
         {
@@ -1098,7 +1132,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
     natoms = molt->atoms.nr;
 
     at2con = make_at2con(0, natoms, molt->ilist, iparams,
-                         EI_DYNAMICS(ir->eI), &nflexcon);
+                         EI_DYNAMICS(ir->eI), &nflexcon, (ir->bDrude && ir->drude->bHardWall));
     snew(path, 1+ir->nProjOrder);
     for (at = 0; at < 1+ir->nProjOrder; at++)
     {
@@ -1184,6 +1218,19 @@ gmx_constr_t init_constraints(FILE *fplog,
     ncon =
         gmx_mtop_ftype_count(mtop, F_CONSTR) +
         gmx_mtop_ftype_count(mtop, F_CONSTRNC);
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "Found %d constraints.\n", ncon);
+    }
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "After Drude check, there are %d constraints.\n", ncon);
+    }
+
     nset = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
     if (ncon+nset == 0 &&
@@ -1206,35 +1253,14 @@ gmx_constr_t init_constraints(FILE *fplog,
             constr->at2con_mt[mt] = make_at2con(0, mtop->moltype[mt].atoms.nr,
                                                 mtop->moltype[mt].ilist,
                                                 mtop->ffparams.iparams,
-                                                EI_DYNAMICS(ir->eI), &nflexcon);
+                                                EI_DYNAMICS(ir->eI), &nflexcon,
+                                                (ir->bDrude && ir->drude->bHardWall));
             for (i = 0; i < mtop->nmolblock; i++)
             {
                 if (mtop->molblock[i].type == mt)
                 {
                     constr->nflexcon += mtop->molblock[i].nmol*nflexcon;
                 }
-            }
-        }
-
-        if (constr->nflexcon > 0)
-        {
-            if (fplog)
-            {
-                fprintf(fplog, "There are %d flexible constraints\n",
-                        constr->nflexcon);
-                if (ir->fc_stepsize == 0)
-                {
-                    fprintf(fplog, "\n"
-                            "WARNING: step size for flexible constraining = 0\n"
-                            "         All flexible constraints will be rigid.\n"
-                            "         Will try to keep all flexible constraints at their original length,\n"
-                            "         but the lengths may exhibit some drift.\n\n");
-                    constr->nflexcon = 0;
-                }
-            }
-            if (constr->nflexcon > 0)
-            {
-                please_cite(fplog, "Hess2002");
             }
         }
 
@@ -1263,6 +1289,43 @@ gmx_constr_t init_constraints(FILE *fplog,
             }
 
             constr->shaked = shake_init();
+        }
+    }
+
+    /* TODO: CHECK. Moved from if ncon > 0 block */
+    if (constr->nflexcon > 0)
+    {
+        /* TODO: REMOVE */
+        if (debug)
+        {
+            fprintf(debug, "There are %d flexible constraints\n", constr->nflexcon);
+        }
+        snew(constr->at2flexcon_mt, constr->nflexcon);
+        if (fplog)
+        {
+            fprintf(fplog, "There are %d flexible constraints\n",
+                    constr->nflexcon);
+            if (ir->fc_stepsize == 0 && !(ir->bDrude && ir->drude->bHardWall))    /* not relevant with hard wall */
+            {
+                fprintf(fplog, "\n"
+                        "WARNING: step size for flexible constraining = 0\n"
+                        "         All flexible constraints will be rigid.\n"
+                        "         Will try to keep all flexible constraints at their original length,\n"
+                        "         but the lengths may exhibit some drift.\n\n");
+                constr->nflexcon = 0;
+            }
+        }
+        if (ir->bDrude && ir->drude->bHardWall)
+        {
+            if (fplog)
+            {
+                fprintf(fplog, "This run uses the hard wall constraint to avoid polarization catastrophe.\n");
+            }
+            please_cite(fplog, "Chowdhary2013");
+        }
+        else
+        {
+            please_cite(fplog, "Hess2002");
         }
     }
 
@@ -1353,6 +1416,12 @@ gmx_constr_t init_constraints(FILE *fplog,
 const t_blocka *atom2constraints_moltype(gmx_constr_t constr)
 {
     return constr->at2con_mt;
+}
+
+/* TODO: CHECK */
+const t_blocka *atom2flexcon_moltype(gmx_constr_t constr)
+{
+    return constr->at2flexcon_mt;
 }
 
 const int **atom2settle_moltype(gmx_constr_t constr)

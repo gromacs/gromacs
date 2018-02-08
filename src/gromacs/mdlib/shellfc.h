@@ -82,6 +82,7 @@ typedef struct gmx_shellfc {
     rvec               *adir_xnew;                  /* Work space for init_adir                 */
     int                 adir_nalloc;                /* Work space for init_adir                 */
     gmx_bool            bInterCG;                   /* Are there inter charge-group shells?     */
+    gmx_bool            bHaveChargeGroups;          /* Do we have charge groups?               */
     int                 n_intercg_shells;           /* inter-charge group shells                */
     int                 nshell_pbc_molt;            /* The array size of shell_pbc_molt         */
     int              ***shell_pbc_molt;             /* The pbc atoms for intercg shells         */
@@ -139,26 +140,31 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_vsite_t *vsite,
                         FILE *fp_field);
 
-void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,       
-                          t_state *state, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose);
+/* TODO: TESTING */
+/* TODO: removing state, replacing with v and box, replacing upd with xprime */
+void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xprime, rvec *v,
+                          matrix box, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose);
 
 /* functions for DD */
+/* TODO: spread functions not necessary, remove */
+#if 0
 static void spread_shell(t_iatom ia[],
                          rvec x[], rvec f[], rvec fshift[],
                          t_pbc *pbc, t_graph *g);
 
-static void spread_shell_f_thread(gmx_shellfc_t shell,
+static void spread_shell_f_thread(gmx_shellfc_t shellfc,
                                   rvec x[], rvec f[], rvec *fshift,
                                   gmx_bool VirCorr, matrix dxdf,
                                   t_ilist ilist[],
                                   t_graph *g, t_pbc *pbc_null);
 
-void spread_shell_f(gmx_shellfc_t shell,
+void spread_shell_f(gmx_shellfc_t shellfc,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, t_graph *g, matrix box,
                     t_commrec *cr);
+#endif
 
 gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
                          gmx_bool bSerial_NoPBC);

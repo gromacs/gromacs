@@ -417,7 +417,7 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
 {
     t_atom         *atom;
     gmx_moltype_t  *moltype;
-    int             i, j, k, ai, aj, molt, ftype, nrhyper, nrbond, last;
+    int             i, j, k, ai, aj, atmp, molt, ftype, nrhyper, nrbond, last;
     real            rhyp, khyp, kb;
     int             pow;
     gmx_bool       *bRemoveHarm;
@@ -449,6 +449,14 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
                     /* If the bond involves a Drude, add it to hyperpolarization list */
                     if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
                     {
+                        /* for ease of use in listed-forces/bonded.cpp, we enforce
+                         * that the atom is always ai and the Drude/shell is always aj */
+                        if (atom[ai].ptype == eptShell)
+                        {
+                            atmp = aj;
+                            aj   = ai;      /* Drude/shell is now aj */
+                            ai   = atmp;    /* atom is now ai */
+                        }
                         /* don't need the bond length, just k */
                         kb = mols[molt].plist[ftype].param[i].c[1];
                         mols[molt].plist[F_HYPER_POL].param[nrhyper].a[0] = ai;
@@ -486,6 +494,93 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
                 if (nrbond > 0)
                 {
                     fprintf(stderr, "Added %d out of %d bonds to the hyperpolarization list for mol %d\n", nrhyper, nrbond, molt);
+                }
+                mols[molt].plist[ftype].nr = last;
+            }
+        }
+    }
+}
+
+static void split_drude_bonds(gmx_mtop_t *mtop, t_molinfo mols[])
+{
+    t_atom         *atom;
+    gmx_moltype_t  *moltype;
+    int             i, j, k, ai, aj, atmp, molt, ftype, nrdbond, nrbond, last;
+    real            b0, kb, ma, mb;
+    gmx_bool       *bRemoveHarm;
+
+    /* loop over bonded interactions of all molecules
+     * and replace F_BONDS with F_DRUDEBONDS if there are bonds to Drudes */
+    for (molt = 0; molt < mtop->nmoltype; molt++)
+    {
+        nrdbond = mols[molt].plist[F_DRUDEBONDS].nr;
+        moltype = &mtop->moltype[molt];
+        atom    = moltype->atoms.atom;
+
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if ((ftype == F_BONDS) || (ftype == F_HARMONIC))
+            {
+                nrbond = mols[molt].plist[ftype].nr;
+                pr_alloc(nrbond, &(mols[molt].plist[F_DRUDEBONDS]));
+                snew(bRemoveHarm, nrbond);
+
+                for (i = 0; (i < nrbond); i++)
+                {
+                    ai = mols[molt].plist[ftype].param[i].ai();
+                    aj = mols[molt].plist[ftype].param[i].aj();
+                    /* If the bond involves a Drude, add it to the list */
+                    if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
+                    {
+                        /* for ease of use in the hardwall function later, we enforce 
+                         * that the atom is always ai and the Drude/shell is always aj */
+                        if (atom[ai].ptype == eptShell)
+                        {
+                            atmp = aj;
+                            aj   = ai;      /* Drude/shell is now aj */
+                            ai   = atmp;    /* atom is now ai */
+                        }
+                        b0 = mols[molt].plist[ftype].param[i].c[0];
+                        kb = mols[molt].plist[ftype].param[i].c[1];
+                        /* get masses */
+                        ma = mols[molt].atoms.atom[ai].m;
+                        mb = mols[molt].atoms.atom[aj].m;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[0] = ai;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[1] = aj;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[0] = b0;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[1] = kb;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[2] = ma;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[3] = mb;
+                        /* TODO: add masses to plist as this will make life really easy in hardwall */
+                        nrdbond++;
+                        bRemoveHarm[i] = TRUE;
+                    }
+                }
+                mols[molt].plist[F_DRUDEBONDS].nr = nrdbond;
+
+                /* Remove harmonic bonds */
+                for (j = last = 0; (j < nrbond); j++)
+                {
+                    if (!bRemoveHarm[j])
+                    {
+                        /* copy it */
+                        for (k = 0; (k < MAXATOMLIST); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].a[k] =
+                                mols[molt].plist[ftype].param[j].a[k];
+                        }
+                        for (k = 0; (k < MAXFORCEPARAM); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].c[k] =
+                                mols[molt].plist[ftype].param[j].c[k];
+                        }
+                        last++;
+                    }
+                }
+                sfree(bRemoveHarm);
+                if (nrbond > 0)
+                {
+                    fprintf(stderr, "Added %d out of %d bonds to the Drude bond list for mol %d\n", nrdbond, nrbond, molt);
                 }
                 mols[molt].plist[ftype].nr = last;
             }
@@ -1854,9 +1949,22 @@ int gmx_grompp(int argc, char *argv[])
 
         if (ir->drude->bHyper)
         {
+            /* Currently disable hyperpol + extended Lagrangian due to the re-write for DD in the
+             * thermostat functions.  Can re-enable this later once masses are added to the hyperpol
+             * structure. */
+            if (ir->drude->drudemode == edrudeLagrangian)
+            {
+                gmx_fatal(FARGS, "The combination of extended Lagrangian and quartic restraint is unsupported. "
+                          "Please use SCF mode for dynamics.");
+            }
+
             fprintf(stderr, "Constructing hyperpolarization list...\n");
             add_hyperpol(sys, mi, ir);
         }
+
+        /* separate bonds involving Drudes - this makes everything during MD easier */
+        fprintf(stderr, "Separating bonds involving Drudes...\n");
+        split_drude_bonds(sys, mi);
 
         if (ir->drude->drudemode == edrudeSCF)
         {

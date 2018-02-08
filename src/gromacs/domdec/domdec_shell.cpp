@@ -36,7 +36,7 @@
 /*! \internal \file
  *
  * \brief This file implements functions for domdec to use
- * while managing inter-atomic constraints.
+ * while managing interactions involving shells/Drudes.
  *
  * \author Justin Lemkul <jalemkul@vt.edu> 
  * \ingroup module_domdec
@@ -54,9 +54,12 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -85,18 +88,24 @@ void dd_clear_f_shells(gmx_domdec_t *dd, rvec *f)
     }
 }
 
-void dd_move_x_shells(gmx_domdec_t *dd, matrix box, rvec *x)
+void dd_move_x_shells(gmx_domdec_t *dd, matrix box, rvec *x0)
 {
     if (dd->shell_comm)
     {
-        dd_move_x_specat(dd, dd->shell_comm, box, x, NULL, FALSE);
+        dd_move_x_specat(dd, dd->shell_comm, box, x0, NULL, FALSE);
+    }
+}
+
+void dd_move_v_shells(gmx_domdec_t *dd, rvec *v)
+{
+    if (dd->shell_comm)
+    {
+        dd_move_v_specat(dd, dd->shell_comm, v);
     }
 }
 
 /* This routine sets up proper communication for function types related to
- * polarizable interactions.  It does not cover F_BONDS (i.e., CHARMM Drude FF)
- * because those are normal bonded interactions that are handled elsewhere.
- */
+ * polarizable interactions. */
 int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
     gmx_domdec_specat_comm_t   *spac;
@@ -104,8 +113,6 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     gmx_hash_t                 *ga2la_specat;
     int                         ftype, nral, i, j, a;
     int                         at_end;
-    int                         flocal[] = { F_POLARIZATION };
-    int                         nrloc = 1;  /* number of elements in flocal[] array */
     t_ilist                    *lilf;
     t_iatom                    *iatoms;
 
@@ -115,14 +122,16 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 
     ireq->n = 0;
 
-    /* TODO: remove loop? */
-    for (ftype = 0; ftype < nrloc; ftype++)
+    /* All Drude bonded functions (anisotropy, Thole, etc) are
+     * considered here. Double-counting is avoided using checks
+     * within the loop below. */
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
         /* we only care about Drudes/shells within this loop, and
          * by choosing these functions we can easily assume the atom
          * indices without any complex decisions within this block of code */
-        nral = NRAL(flocal[ftype]);
-        lilf = &lil[flocal[ftype]];
+        nral = NRAL(ftype);
+        lilf = &lil[ftype];
 
         for (i = 0; i < lilf->nr; i += 1+nral)
         {
@@ -135,10 +144,12 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                 {
                     if (debug)
                     {
-                        fprintf(debug, "DD LOCAL SHELLS: non-local iatoms[%d] = %d\n", j, iatoms[j]);
+                        fprintf(debug, "DD LOCAL SHELLS: non-local iatoms[%d] = %d in %s (i = %d)\n",
+                                j, iatoms[j], interaction_function[ftype].longname, i);
                     }
                     /* not a home atom */
                     a = -iatoms[j] - 1;
+                    /* returns -1 if key not present in hash */
                     if (gmx_hash_get_minone(dd->ga2la_shell, a) == -1)
                     {
                         /* add non-home atom to list */
@@ -159,11 +170,11 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     at_end = setup_specat_communication(dd, ireq, dd->shell_comm, ga2la_specat, at_start, 1, "shell", "");
 
     /* fill in missing indices */
-    for (ftype = 0; ftype < nrloc; ftype++)
+    for (ftype = F_DRUDEBONDS; ftype <= F_HYPER_POL; ftype++)
     {
         /* same as above */
-        nral = NRAL(flocal[ftype]);
-        lilf = &lil[flocal[ftype]];
+        nral = NRAL(ftype);
+        lilf = &lil[ftype];
         for (i = 0; i < lilf->nr; i += 1+nral)
         {
             iatoms = lilf->iatoms + i;
@@ -172,7 +183,14 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                 if (iatoms[j] < 0)
                 {
                     iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                    if (debug)
+                    {
+                        fprintf(debug, "DD LOCAL SHELLS: after gmx_hash_get_minone iatoms[%d] = %d\n",
+                                j, iatoms[j]);
+                    }
                 }
+                /* TODO: fill in shellfc data here. May need to assume order of atoms,
+                 * and at this point we can probably only support shell.nnucl = 1 */
             }
         }
     }
@@ -184,12 +202,15 @@ void init_domdec_shells(gmx_domdec_t *dd, int n_intercg_shells)
 {
     if (debug)
     {
-        fprintf(debug, "Begin init_domdec_shells\n");
+        fprintf(debug, "Begin init_domdec_shells for %d shells\n", n_intercg_shells);
     }
 
-    /* same logic as in setting up vsites */
+    /* Use a hash table for the global to local index.
+     * The number of keys is a rough estimate, it will be optimized later.
+     */
     dd->ga2la_shell = gmx_hash_init(std::min(n_intercg_shells/20,
                                              n_intercg_shells/(2*dd->nnodes)));
 
     dd->shell_comm = specat_comm_init(1);
 }
+

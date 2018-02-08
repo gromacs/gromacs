@@ -170,6 +170,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
+/* TODO: clean up debugging */
 void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       matrix box,
                       rvec *x0,
@@ -195,6 +196,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
         {
             /* Pulse the grid forward and backward */
             vbuf = spac->vbuf;
+#if 0
+            /* debug */
+            /* TODO: failing here */
+            if (vbuf == NULL)
+            {
+                gmx_fatal(FARGS, "vbuf is null for dd->nc[dim] = %d\n", dd->nc[dim]);
+            }
+#endif
             for (dir = 0; dir < 2; dir++)
             {
                 if (dir == 0 && dd->ci[dim] == 0)
@@ -259,6 +268,12 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             nr0  = spas[0].nrecv;
             ns1  = spas[1].nsend;
             nr1  = spas[1].nrecv;
+            /* TODO: REMOVE */
+            if (debug)
+            {
+                fprintf(debug, "DD MOVE X: ns0 = %d nr0 = %d ns1 = %d nr1 = %d\n",
+                        ns0, nr0, ns1, nr1);
+            }
             if (nvec == 1)
             {
                 dd_sendrecv2_rvec(dd, d,
@@ -269,6 +284,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
+#if 0
+                /* debug */
+                if (rbuf == NULL)
+                {
+                    gmx_fatal(FARGS, "rbuf is null for nvec = %d\n", nvec);
+                }
+#endif
                 dd_sendrecv2_rvec(dd, d,
                                   spac->vbuf+2*ns0, 2*ns1, rbuf, 2*nr1,
                                   spac->vbuf, 2*ns0, rbuf+2*nr1, 2*nr0);
@@ -296,6 +318,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             spas = &spac->spas[d][0];
             /* Copy the required coordinates to the send buffer */
             vbuf = spac->vbuf;
+#if 0
+            /* debug */
+            if (vbuf == NULL)
+            {
+                gmx_fatal(FARGS, "vbuf is null for dd->nc[dim] = %d\n", dd->nc[dim]);
+            }
+#endif
             for (v = 0; v < nvec; v++)
             {
                 x = (v == 0 ? x0 : x1);
@@ -303,7 +332,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
-                     * is handled in the constraint or viste routines.
+                     * is handled in the constraint or vsite routines.
                      */
                     for (i = 0; i < spas->nsend; i++)
                     {
@@ -332,6 +361,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
+#if 0
+                /* debug */
+                if (rbuf == NULL)
+                {
+                    gmx_fatal(FARGS, "rbuf is null\n");
+                }
+#endif
                 dd_sendrecv_rvec(dd, d, dddirBackward,
                                  spac->vbuf, 2*spas->nsend, rbuf, 2*spas->nrecv);
                 /* Split the buffer into the two vectors */
@@ -346,6 +382,77 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     }
                 }
             }
+            n += spas->nrecv;
+        }
+    }
+}
+
+void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *x0)
+{
+    gmx_specatsend_t *spas;
+    rvec             *x, *vbuf;
+    int               nvec, v, n, ns0, ns1, nr0, nr1, d, dim, dir, i;
+
+    nvec = 1;
+
+    n = spac->at_start;
+    for (d = 0; d < dd->ndim; d++)
+    {
+        dim = dd->dim[d];
+        if (dd->nc[dim] > 2)
+        {
+            /* Pulse the grid forward and backward */
+            vbuf = spac->vbuf;
+            for (dir = 0; dir < 2; dir++)
+            {
+                spas = &spac->spas[d][dir];
+                for (v = 0; v < nvec; v++)
+                {
+                    x = x0;
+                    /* Copy the required velocities to the send buffer */
+                    for (i = 0; i < spas->nsend; i++)
+                    {
+                        /* TODO: REMOVE */
+                        fprintf(stderr, "SPECAT V atom %d: %f %f %f\n", 
+                                ddglatnr(dd, spas->a[i]),
+                                x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]);
+                        copy_rvec(x[spas->a[i]], *vbuf);
+                        vbuf++;
+                    }
+                }
+            }
+            /* Send and receive the velocities */
+            spas = spac->spas[d];
+            ns0  = spas[0].nsend;
+            nr0  = spas[0].nrecv;
+            ns1  = spas[1].nsend;
+            nr1  = spas[1].nrecv;
+            dd_sendrecv2_rvec(dd, d,
+                              spac->vbuf+ns0, ns1, x0+n, nr1,
+                              spac->vbuf, ns0, x0+n+nr1, nr0);
+            n += nr0 + nr1;
+        }
+        else
+        {
+            spas = &spac->spas[d][0];
+            /* Copy the required velocities to the send buffer */
+            vbuf = spac->vbuf;
+            for (v = 0; v < nvec; v++)
+            {
+                x = x0; 
+                for (i = 0; i < spas->nsend; i++)
+                {
+                    /* TODO: REMOVE */
+                    fprintf(stderr, "SPECAT V atom %d: %f %f %f\n",
+                            ddglatnr(dd, spas->a[i]),
+                            x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]); 
+                    copy_rvec(x[spas->a[i]], *vbuf);
+                    vbuf++;
+                }
+            }
+            /* Send and receive the velocities */
+            dd_sendrecv_rvec(dd, d, dddirBackward,
+                             spac->vbuf, spas->nsend, x0+n, spas->nrecv);
             n += spas->nrecv;
         }
     }
@@ -611,7 +718,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
 
     if (debug)
     {
-        fprintf(debug, "Done setup_specat_communication\n");
+        fprintf(debug, "Done setup_specat_communication for %s\n", specat_type);
     }
 
     return nat_tot_specat;

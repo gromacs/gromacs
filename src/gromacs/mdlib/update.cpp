@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
@@ -79,38 +80,6 @@
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
-
-typedef struct {
-    double em;
-} gmx_sd_const_t;
-
-typedef struct {
-    real V;
-} gmx_sd_sigma_t;
-
-typedef struct {
-    /* BD stuff */
-    real           *bd_rf;
-    /* SD stuff */
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sdsig;
-    /* andersen temperature control stuff */
-    gmx_bool       *randomize_group;
-    real           *boltzfac;
-} gmx_stochd_t;
-
-struct gmx_update_t
-{
-    gmx_stochd_t *sd;
-    /* xprime for constraint algorithms */
-    rvec         *xp;
-    int           xp_nalloc;
-
-    /* Variables for the deform algorithm */
-    gmx_int64_t     deformref_step;
-    matrix          deformref_box;
-};
-
 
 static void do_update_md(int start, int nrend, double dt,
                          t_grp_tcstat *tcstat,
@@ -260,7 +229,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
                              rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              unsigned short cACC[], real m[], rvec v[], rvec f[],
-                             gmx_bool bExtended, real veta, real alpha)
+                             gmx_bool bExtended, real veta, real alpha, t_commrec *cr)
 {
     double w_dt;
     int    gf = 0, ga = 0;
@@ -290,6 +259,14 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             ga   = cACC[n];
         }
 
+        /* TODO: REMOVE, just testing... */
+        fprintf(stderr, "VV VEL: v[%d(%d)] b4 update: %f %f %f\n", 
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
+                v[n][XX], v[n][YY], v[n][ZZ]);
+        fprintf(stderr, "VV VEL: f[%d(%d)] b4 update: %f %f %f\n", 
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
+                f[n][XX], f[n][YY], f[n][ZZ]);
+
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
@@ -307,6 +284,12 @@ static void do_update_vv_vel(int start, int nrend, double dt,
                 v[n][d] = 0.0;
             }
         }
+
+        /* TODO: REMOVE, just testing... */
+        fprintf(stderr, "VV VEL: v[%d(%d)] after update: %f %f %f\n",
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
+                v[n][XX], v[n][YY], v[n][ZZ]);
+
 
         if (debug)
         {
@@ -1012,6 +995,14 @@ void calc_ke_part(t_inputrec *ir, t_commrec *cr, t_state *state, t_mdatoms *md,
     {
         if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
         {
+/* TODO: TESTING */
+#if 0
+            /* TODO: comm here is need to get correct KE/temperature */
+            if (DOMAINDECOMP(cr))
+            {
+                dd_move_v_shells(cr->dd, state->v);
+            }
+#endif
             nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, nrnb, bEkinAveVel);
             /* Note: summation of ekind occurs in compute_globals(), no need to do it here */
         }
@@ -1733,14 +1724,29 @@ void update_coords(FILE             *fplog,
                     {
                         case etrtVELOCITY1:
                         case etrtVELOCITY2:
+                            /* jal - TESTING */
+                            if ((inputrec->bDrude) && (inputrec->drude->drudemode == edrudeLagrangian))
+                            {
+                                if (DOMAINDECOMP(cr))
+                                {
+                                    dd_move_v_shells(cr->dd, state->v);
+                                }
+                            }
                             do_update_vv_vel(start_th, end_th, dt,
                                              inputrec->opts.acc, inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
                                              md->massT, state->v, f,
-                                             (bNH || bPR), state->veta, alpha);
+                                             (bNH || bPR), state->veta, alpha, cr); /* TESTING: REMOVE cr */
                             break;
                         case etrtPOSITION:
+                            if ((inputrec->bDrude) && (inputrec->drude->drudemode == edrudeLagrangian))
+                            {
+                                if (DOMAINDECOMP(cr))
+                                {
+                                    dd_move_x_shells(cr->dd, state->box, state->x);
+                                }
+                            }
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
                                              md->ptype, md->cFREEZE,

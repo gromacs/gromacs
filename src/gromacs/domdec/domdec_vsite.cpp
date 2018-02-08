@@ -126,6 +126,13 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                         /* This is not a home atom,
                          * we need to ask our neighbors.
                          */
+                        /* TODO: REMOVE */
+                        if (debug)
+                        {
+                            fprintf(debug, "DD LOCAL VSITES: non-local iatoms[%d] = %d in %s (i = %d)\n",
+                                    j, iatoms[j], interaction_function[ftype].longname, i);
+                        }
+
                         a = -iatoms[j] - 1;
                         /* Check to not ask for the same atom more than once */
                         if (gmx_hash_get_minone(dd->ga2la_vsite, a) == -1)
@@ -166,6 +173,12 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                     if (iatoms[j] < 0)
                     {
                         iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                    }
+                    /* TODO: REMOVE */
+                    if (debug)
+                    {
+                        fprintf(debug, "DD LOCAL VSITES: after gmx_hash_get_minone iatoms[%d] = %d\n",
+                                j, iatoms[j]);
                     }
                 }
             }

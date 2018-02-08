@@ -594,72 +594,6 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift)
     }
 }
 
-void dd_move_v(gmx_domdec_t *dd, rvec v[])
-{
-    int                    nzone, nat_tot, n, d, p, i, j, at0, at1, zone;
-    int                   *index, *cgindex;
-    gmx_domdec_comm_t     *comm;
-    gmx_domdec_comm_dim_t *cd;
-    gmx_domdec_ind_t      *ind;
-    rvec                  *buf, *rbuf;
-
-    comm = dd->comm;
-
-    cgindex = dd->cgindex;
-
-    buf = comm->vbuf.v;
-
-    nzone   = 1;
-    nat_tot = dd->nat_home;
-    for (d = 0; d < dd->ndim; d++)
-    {
-        cd = &comm->cd[d];
-        for (p = 0; p < cd->np; p++)
-        {
-            ind   = &cd->ind[p];
-            index = ind->index;
-            n     = 0;
-            for (i = 0; i < ind->nsend[nzone]; i++)
-            {
-                at0 = cgindex[index[i]];
-                at1 = cgindex[index[i]+1];
-                for (j = at0; j < at1; j++)
-                {
-                    copy_rvec(v[j], buf[n]);
-                    n++;
-                }
-            }
-
-            if (cd->bInPlace)
-            {
-                rbuf = v + nat_tot;
-            }
-            else
-            {
-                rbuf = comm->vbuf2.v;
-            }
-            /* Send and receive the coordinates */
-            dd_sendrecv_rvec(dd, d, dddirBackward,
-                             buf,  ind->nsend[nzone+1],
-                             rbuf, ind->nrecv[nzone+1]);
-            if (!cd->bInPlace)
-            {
-                j = 0;
-                for (zone = 0; zone < nzone; zone++)
-                {
-                    for (i = ind->cell2at0[zone]; i < ind->cell2at1[zone]; i++)
-                    {
-                        copy_rvec(rbuf[j], v[i]);
-                        j++;
-                    }
-                }
-            }
-            nat_tot += ind->nrecv[nzone+1];
-        }
-        nzone += nzone;
-    }
-}
-
 void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
 {
     int                    nzone, nat_tot, n, d, p, i, j, at0, at1, zone;
@@ -6831,7 +6765,6 @@ static char *init_bLocalCG(const gmx_mtop_t *mtop)
     return bLocalCG;
 }
 
-/* WIP: jal */
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd,
                      const gmx_mtop_t *mtop,
@@ -6842,7 +6775,6 @@ void dd_init_bondeds(FILE *fplog,
 {
     gmx_domdec_comm_t *comm;
 
-    /* TODO: check */
     dd_make_reverse_top(fplog, dd, mtop, vsite, shellfc, ir, bBCheck);
 
     comm = dd->comm;
@@ -9667,8 +9599,16 @@ void dd_partition_system(FILE                *fplog,
                                   mdatoms, FALSE, vsite);
     }
 
-    /* TODO: check! */
-    /* Make the local shell stuff, currently no communication is done */
+    /* TODO: CHECK */
+    if (shellfc != NULL)
+    {
+        split_shells_over_threads(top_local->idef.il, mdatoms, FALSE, shellfc);
+    }
+
+    /* This is needed only to populate shellfc with the proper atom indices. */ 
+    /* Note that this currently does nothing other than count the shells... */
+    /* TODO: CHOKING. Need to make this work with modified dd_make_local_shells
+     * and special atom communication */
     if (shellfc && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
         make_local_shells(cr, mdatoms, shellfc);
@@ -9729,6 +9669,11 @@ void dd_partition_system(FILE                *fplog,
      * atom coordinates again (for spreading the forces this MD step).
      */
     dd_move_x_vsites(dd, state_local->box, state_local->x);
+
+    if (shellfc)
+    {
+        dd_move_x_shells(dd, state_local->box, state_local->x);
+    }
 
     wallcycle_sub_stop(wcycle, ewcsDD_TOPOTHER);
 

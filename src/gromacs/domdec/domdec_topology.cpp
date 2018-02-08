@@ -138,12 +138,18 @@ struct gmx_reverse_top_t
 /*! \brief Returns the number of atom entries for il in gmx_reverse_top_t */
 static int nral_rt(int ftype)
 {
-    int nral;
+    int         nral;
+    gmx_bool    bShell = FALSE;
+
+    if ((ftype >= F_DRUDEBONDS) && (ftype <= F_HYPER_POL))
+    {
+        bShell = TRUE;
+    }
 
     nral = NRAL(ftype);
-    if (interaction_function[ftype].flags & IF_VSITE)
+    if ((interaction_function[ftype].flags & IF_VSITE) || bShell)
     {
-        /* With vsites the reverse topology contains
+        /* With vsites or shells the reverse topology contains
          * two extra entries for PBC.
          */
         nral += 2;
@@ -347,6 +353,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
     int             ftype, nral;
     char            buf[STRLEN];
     gmx_domdec_t   *dd;
+    gmx_bool        bShell;
 
     dd = cr->dd;
 
@@ -375,15 +382,18 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
         fprintf(stderr, "\nA list of missing interactions:\n");
         rest_global = dd->nbonded_global;
         rest_local  = local_count;
+
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
+            bShell = (ftype >= F_DRUDEBONDS) && (ftype <= F_HYPER_POL);
+
             /* In the reverse and local top all constraints are merged
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
              * and add these constraints when doing F_CONSTR.
              */
             if (((interaction_function[ftype].flags & IF_BOND) &&
-                 (dd->reverse_top->bBCheck
-                  || !(interaction_function[ftype].flags & IF_LIMZERO)))
+                 ((dd->reverse_top->bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))
+                || (!bShell)))
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
@@ -510,6 +520,7 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 /*! \brief Run the reverse ilist generation and store it when \p bAssign = TRUE */
 static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                                   const int * const * vsite_pbc,
+                                  const int * const * shell_pbc,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
                                   gmx_bool bBCheck,
@@ -523,17 +534,21 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
     int            a;
     int            nint;
     gmx_bool       bVSite;
+    gmx_bool       bShell;
 
     nint = 0;
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
+        bShell = (ftype >= F_DRUDEBONDS) && (ftype <= F_HYPER_POL);
+
         if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE)) ||
             (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
-            (bSettle && ftype == F_SETTLE))
+            (bSettle && ftype == F_SETTLE) || bShell)
         {
             bVSite = (interaction_function[ftype].flags & IF_VSITE);
             nral   = NRAL(ftype);
             il     = &il_mt[ftype];
+
             for (i = 0; i < il->nr; i += 1+nral)
             {
                 ia = il->iatoms + i;
@@ -554,6 +569,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                     /* Couple to the first atom in the interaction */
                     nlink = 1;
                 }
+
                 for (link = 0; link < nlink; link++)
                 {
                     a = ia[1+link];
@@ -568,35 +584,56 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                             r_il[r_index[a]+count[a]+1+j] = ia[j];
                         }
                     }
-                    if (interaction_function[ftype].flags & IF_VSITE)
+
+                    /* special assignments for vsites and shells */
+                    if ((interaction_function[ftype].flags & IF_VSITE) || bShell)
                     {
                         if (bAssign)
                         {
-                            /* Add an entry to iatoms for storing
-                             * which of the constructing atoms are
-                             * vsites again.
-                             */
-                            r_il[r_index[a]+count[a]+2+nral] = 0;
-                            for (j = 2; j < 1+nral; j++)
+                            if (bShell)
                             {
-                                if (atom[ia[j]].ptype == eptVSite)
+                                r_il[r_index[a]+count[a]+2+nral] = 0;
+                                for (j = 1; j < 1+nral; j++)
                                 {
-                                    r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
+                                    if (atom[ia[j]].ptype == eptShell)
+                                    {
+                                        /* Store the molecular atom number */
+                                        r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
+                                    }
                                 }
+                                /* Store shell pbc atom in a second extra entry */
+                                r_il[r_index[a]+count[a]+2+nral+1] =
+                                    (shell_pbc ? shell_pbc[ftype-F_DRUDEBONDS][i/(1+nral)] : -2);
                             }
-                            /* Store vsite pbc atom in a second extra entry */
-                            r_il[r_index[a]+count[a]+2+nral+1] =
-                                (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
+                            else
+                            {
+                                /* Add an entry to iatoms for storing
+                                 * which of the constructing atoms are
+                                 * vsites again.
+                                 */
+                                r_il[r_index[a]+count[a]+2+nral] = 0;
+                                for (j = 2; j < 1+nral; j++)
+                                {
+                                    if (atom[ia[j]].ptype == eptVSite)
+                                    {
+                                        r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
+                                    }
+                                }
+                                /* Store vsite pbc atom in a second extra entry */
+                                r_il[r_index[a]+count[a]+2+nral+1] =
+                                    (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
+                            }
                         }
                     }
                     else
                     {
-                        /* We do not count vsites since they are always
+                        /* We do not count vsites or shells since they are always
                          * uniquely assigned and can be assigned
-                         * to multiple nodes with recursive vsites.
+                         * to multiple nodes with recursive vsites/shells.
                          */
                         if (bBCheck ||
-                            !(interaction_function[ftype].flags & IF_LIMZERO))
+                            !(interaction_function[ftype].flags & IF_LIMZERO)
+                            || !bShell)
                         {
                             nint++;
                         }
@@ -614,6 +651,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
 static int make_reverse_ilist(const t_ilist *ilist,
                               const t_atoms *atoms,
                               const int * const * vsite_pbc,
+                              const int * const * shell_pbc,
                               gmx_bool bConstr, gmx_bool bSettle,
                               gmx_bool bBCheck,
                               gmx_bool bLinkToAllAtoms,
@@ -624,7 +662,7 @@ static int make_reverse_ilist(const t_ilist *ilist,
     /* Count the interactions */
     nat_mt = atoms->nr;
     snew(count, nat_mt);
-    low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
+    low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc, shell_pbc,
                            count,
                            bConstr, bSettle, bBCheck, NULL, NULL,
                            bLinkToAllAtoms, FALSE);
@@ -640,7 +678,7 @@ static int make_reverse_ilist(const t_ilist *ilist,
 
     /* Store the interactions */
     nint_mt =
-        low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
+        low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc, shell_pbc,
                                count,
                                bConstr, bSettle, bBCheck,
                                ril_mt->index, ril_mt->il,
@@ -694,6 +732,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         nint_mt[mt] =
             make_reverse_ilist(molt->ilist, &molt->atoms,
                                vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
+                               shell_pbc_molt ? shell_pbc_molt[mt] : NULL,
                                rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
                                &rt->ril_mt[mt]);
 
@@ -725,7 +764,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
 
         *nint +=
             make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
-                               NULL,
+                               NULL, NULL,
                                rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
                                &rt->ril_intermol);
     }
@@ -763,13 +802,12 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         }
     }
 
-    /* TODO: check */
     if (shell_pbc_molt != NULL)
     {
         for (thread = 0; thread < rt->nthread; thread++)
         {
-            snew(rt->th_work[thread].shell_pbc, F_HYPER_POL-F_POLARIZATION+2);
-            snew(rt->th_work[thread].shell_pbc_nalloc, F_HYPER_POL-F_POLARIZATION+2);
+            snew(rt->th_work[thread].shell_pbc, F_HYPER_POL-F_DRUDEBONDS+1);
+            snew(rt->th_work[thread].shell_pbc_nalloc, F_HYPER_POL-F_DRUDEBONDS+1);
         }
     }
 
@@ -869,7 +907,6 @@ void dd_make_reverse_top(FILE *fplog,
         init_domdec_vsites(dd, vsite->n_intercg_vsite);
     }
 
-    /* TODO: check */
     if (shellfc)
     {
         /* number of global shells is OK to use since with Verlet they will always be
@@ -878,9 +915,9 @@ void dd_make_reverse_top(FILE *fplog,
         {
             fprintf(fplog, "There are %d shells in the system,\n"
                     "will do an extra communication step for selected coordinates and forces\n",
-                    shellfc->n_intercg_shells);
+                    shellfc->n_intercg_shells);    /* TODO: CHECK. Not working for hyperpol */
         }
-        init_domdec_shells(dd, shellfc->n_intercg_shells);
+        init_domdec_shells(dd, shellfc->n_intercg_shells); /* TODO: CHECK. */
     }
 
     if (dd->bInterCGcons || dd->bInterCGsettles)
@@ -938,6 +975,58 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
         if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
         {
             /* Copy the global index, convert later in make_local_vsites */
+            tiatoms[k] = -(ak_gl + 1);
+        }
+        // Note that ga2la_get_home always sets the third parameter if
+        // it returns TRUE
+    }
+    for (int k = 0; k < 1+nral; k++)
+    {
+        liatoms[k] = tiatoms[k];
+    }
+}
+
+/*! \brief Store a shell interaction at the end of \p il
+ *
+ * This routine is basically the same principle as add_ifunc_for_vsites
+ * since shell/Drude algorithms depend on potentially non-local indices. */ 
+static gmx_inline void
+add_ifunc_for_shells(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
+                     int nral, gmx_bool bHomeA,
+                     int a, int a_gl, int a_mol,
+                     const t_iatom *iatoms,
+                     t_ilist *il)
+{
+    t_iatom *liatoms;
+
+    if (il->nr+1+nral > il->nalloc)
+    {
+        il->nalloc = over_alloc_large(il->nr+1+nral);
+        srenew(il->iatoms, il->nalloc);
+    }
+    liatoms = il->iatoms + il->nr;
+    il->nr += 1 + nral;
+
+    /* Copy the type */
+    tiatoms[0] = iatoms[0];
+
+    if (bHomeA)
+    {
+        /* We know the local index of the first atom */
+        tiatoms[1] = a;
+    }
+    else
+    {
+        /* Convert later in dd_make_local_shells */
+        tiatoms[1] = -a_gl - 1;
+    }
+
+    for (int k = 2; k < 1+nral; k++)
+    {
+        int ak_gl = a_gl + iatoms[k] - a_mol;
+        if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
+        {
+            /* Copy the global index, convert later in make_local_shells */
             tiatoms[k] = -(ak_gl + 1);
         }
         // Note that ga2la_get_home always sets the third parameter if
@@ -1144,6 +1233,62 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
     }
 }
 
+/*! \brief Store a virtual site interaction, complex because of PBC and recursion */
+static void add_shell(gmx_ga2la_t *ga2la,
+                      int ftype, int nral,
+                      gmx_bool bHomeA, int a, int a_gl, int a_mol,
+                      const t_iatom *iatoms,
+                      t_idef *idef, int **shell_pbc, int *shell_pbc_nalloc)
+{
+    int     si, pbc_a_mol;
+    t_iatom tiatoms[1+MAXATOMLIST];
+
+    /* Add this interaction to the local topology */
+    add_ifunc_for_shells(tiatoms, ga2la, nral, bHomeA, a, a_gl, a_mol, iatoms, &idef->il[ftype]);
+
+    if (shell_pbc)
+    {
+        si = idef->il[ftype].nr/(1+nral) - 1;
+        if (si >= shell_pbc_nalloc[ftype-F_DRUDEBONDS])
+        {
+            shell_pbc_nalloc[ftype-F_DRUDEBONDS] = over_alloc_large(si+1);
+            srenew(shell_pbc[ftype-F_DRUDEBONDS], shell_pbc_nalloc[ftype-F_DRUDEBONDS]);
+        }
+        if (bHomeA)
+        {
+            pbc_a_mol = iatoms[1+nral+1];
+            if (pbc_a_mol < 0)
+            {
+                /* The pbc flag is one of the following two options:
+                 * -2: shell and all constructing atoms are within the same cg, no pbc
+                 * -1: shell and its first constructing atom are in the same cg, do pbc
+                 */
+                shell_pbc[ftype-F_DRUDEBONDS][si] = pbc_a_mol;
+            }
+            else
+            {
+                /* Set the pbc atom for this shell so we can make its pbc
+                 * identical to the rest of the atoms in its charge group.
+                 * Since the order of the atoms does not change within a charge
+                 * group, we do not need the global to local atom index.
+                 */
+                shell_pbc[ftype-F_DRUDEBONDS][si] = a + pbc_a_mol - iatoms[1];
+            }
+        }
+        else
+        {
+            /* This shell is non-home (required for recursion),
+             * and therefore there is no charge group to match pbc with.
+             * But we always turn on full_pbc to assure that higher order
+             * recursion works correctly.
+             */
+            shell_pbc[ftype-F_DRUDEBONDS][si] = -1;
+        }
+    }
+
+    /* NOTE: no recursion needed with shell/Drude functions */
+}
+
 /*! \brief Update the local atom to local charge group index */
 static void make_la2lc(gmx_domdec_t *dd)
 {
@@ -1270,20 +1415,12 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
             /* TODO: check */
             gmx_bool spbc;
-            spbc = ((ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_THOLE_POL ||
-                    ftype == F_ANISO_POL || ftype == F_WATER_POL || ftype == F_ANHARM_POL ||
-                    ftype == F_HYPER_POL) && shellfc->shell_pbc_loc != NULL);
+            spbc = (((ftype >= F_DRUDEBONDS) && (ftype <= F_HYPER_POL)) 
+                    && shellfc->shell_pbc_loc != NULL);
             if (spbc)
             {
                 nral1 = 1 + NRAL(ftype);
-                if (ftype == F_BONDS)
-                {
-                    ftv = 0;
-                }
-                else
-                {
-                    ftv   = ftype - F_POLARIZATION + 1;
-                }
+                ftv   = ftype - F_DRUDEBONDS;
                 if ((ild->nr + n)/nral1 > shellfc->shell_pbc_loc_nalloc[ftv])
                 {
                     shellfc->shell_pbc_loc_nalloc[ftv] =
@@ -1376,6 +1513,7 @@ check_assign_interactions_atom(int i, int i_gl,
                                const t_iparams *ip_in,
                                t_idef *idef,
                                int **vsite_pbc, int *vsite_pbc_nalloc,
+                               int **shell_pbc, int *shell_pbc_nalloc,
                                int iz,
                                gmx_bool bBCheck,
                                int *nbonded_local)
@@ -1393,6 +1531,7 @@ check_assign_interactions_atom(int i, int i_gl,
         ftype  = rtil[j++];
         iatoms = rtil + j;
         nral   = NRAL(ftype);
+
         if (ftype == F_SETTLE)
         {
             /* Settles are only in the reverse top when they
@@ -1421,6 +1560,17 @@ check_assign_interactions_atom(int i, int i_gl,
                 add_vsite(dd->ga2la, index, rtil, ftype, nral,
                           TRUE, i, i_gl, i_mol,
                           iatoms, idef, vsite_pbc, vsite_pbc_nalloc);
+            }
+            j += 1 + nral + 2;
+        }
+        else if ((ftype >= F_DRUDEBONDS) && (ftype <= F_HYPER_POL)) 
+        {
+            assert(!bInterMolInteractions);
+            if (iz == 0)
+            {
+                add_shell(dd->ga2la, ftype, nral,
+                          TRUE, i, i_gl, i_mol,
+                          iatoms, idef, shell_pbc, shell_pbc_nalloc);
             }
             j += 1 + nral + 2;
         }
@@ -1615,6 +1765,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              t_idef *idef,
                              int **vsite_pbc,
                              int *vsite_pbc_nalloc,
+                             int **shell_pbc,
+                             int *shell_pbc_nalloc,
                              int izone,
                              int at_start, int at_end)
 {
@@ -1650,6 +1802,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                        cg_cm,
                                        ip_in,
                                        idef, vsite_pbc, vsite_pbc_nalloc,
+                                       shell_pbc, shell_pbc_nalloc,
                                        izone,
                                        bBCheck,
                                        &nbonded_local);
@@ -1672,6 +1825,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                            cg_cm,
                                            ip_in,
                                            idef, vsite_pbc, vsite_pbc_nalloc,
+                                           shell_pbc, shell_pbc_nalloc,
                                            izone,
                                            bBCheck,
                                            &nbonded_local);
@@ -2052,6 +2206,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 t_idef   *idef_t;
                 int     **vsite_pbc;
                 int      *vsite_pbc_nalloc;
+                int     **shell_pbc;
+                int      *shell_pbc_nalloc;
                 t_blocka *excl_t;
 
                 cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
@@ -2086,6 +2242,25 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     vsite_pbc_nalloc = NULL;
                 }
 
+                if (shellfc)
+                {
+                    if (thread == 0)
+                    {
+                        shell_pbc        = shellfc->shell_pbc_loc;
+                        shell_pbc_nalloc = shellfc->shell_pbc_loc_nalloc;
+                    }
+                    else
+                    {
+                        shell_pbc        = rt->th_work[thread].shell_pbc;
+                        shell_pbc_nalloc = rt->th_work[thread].shell_pbc_nalloc;
+                    }
+                }
+                else
+                {
+                    shell_pbc        = NULL;
+                    shell_pbc_nalloc = NULL;
+                }
+
                 rt->th_work[thread].nbonded =
                     make_bondeds_zone(dd, zones,
                                       mtop->molblock,
@@ -2093,6 +2268,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                       la2lc, pbc_null, cg_cm, idef->iparams,
                                       idef_t,
                                       vsite_pbc, vsite_pbc_nalloc,
+                                      shell_pbc, shell_pbc_nalloc,
                                       izone,
                                       dd->cgindex[cg0t], dd->cgindex[cg1t]);
 
@@ -2419,7 +2595,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         atoms.atom = NULL;
 
         make_reverse_ilist(mtop->intermolecular_ilist, &atoms,
-                           NULL, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
+                           NULL, NULL, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
     snew(link, 1);
@@ -2446,7 +2622,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         make_reverse_ilist(molt->ilist, &molt->atoms,
-                           NULL, FALSE, FALSE, FALSE, TRUE, &ril);
+                           NULL, NULL, FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];
 

@@ -239,6 +239,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             break;
         case F_CONNBONDS:
             break;
+        case F_DRUDEBONDS:  /* TODO: CHECK */
+            newparam->dbond.r     = old[0];
+            newparam->dbond.k     = old[1];
+            newparam->dbond.ma    = old[2];
+            newparam->dbond.mb    = old[3];
+            break;
         case F_POLARIZATION:
             newparam->polarize.alpha = old[0];
             break;
@@ -247,6 +253,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->hyperpol.rhyp = old[1];
             newparam->hyperpol.khyp = old[2];
             newparam->hyperpol.pow = old[3];
+            break;
         case F_ANHARM_POL:
             newparam->anharm_polarize.alpha = old[0];
             newparam->anharm_polarize.drcut = old[1];
@@ -256,6 +263,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->daniso.a11  = old[0];
             newparam->daniso.a22  = old[1];
             newparam->daniso.a33  = old[2];
+            break;
         case F_WATER_POL:
             newparam->wpol.al_x   = old[0];
             newparam->wpol.al_y   = old[1];
@@ -266,13 +274,22 @@ assign_param(t_functype ftype, t_iparams *newparam,
             break;
         case F_THOLE_POL:
             /* Note that polarization has always been listed in nm^3,
-             * but Thole values are presented as unitless in basically
+             * and Thole values are presented as unitless in basically
              * all the literature, but they are actually in Angstrom. So, here
              * convert everything back to Angstrom to have a unitless scaling
              * factor. */
             newparam->thole.alpha1 = old[0] * 1000;
             newparam->thole.alpha2 = old[1] * 1000;
             newparam->thole.a      = old[2] + old[3];
+            /* These can be imported from the topology itself, but that gets
+             * pretty complicated. It is simple to actually re-calculate them
+             * from the alpha value.  NOTE that we assume kD and accept some
+             * potentially small deviation from the charges.  TODO: CHECK THIS */
+            /* Note also that alpha is given as a positive number but the convention
+             * is to assign a negative charge on the Drude (CHARMM uses negative alpha
+             * to internall denote this). So we simply multiply the value by -1 */
+            newparam->thole.qd1    = -1.0 * std::sqrt((old[0] * 418400.0)/ONE_4PI_EPS0);
+            newparam->thole.qd2    = -1.0 * std::sqrt((old[1] * 418400.0)/ONE_4PI_EPS0);
             break;
         case F_BHAM:
             newparam->bham.a = old[0];

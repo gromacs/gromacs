@@ -216,11 +216,15 @@ void set_constraints(gmx_constr_t             constr,
 
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons);
+                     gmx_bool bDynamics, int *nflexiblecons,
+                     gmx_bool bDrudeHardWallConstraint);
 /* Returns a block struct to go from atoms to constraints */
 
 const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 /* Returns the an array of atom to constraints lists for the moltypes */
+
+const t_blocka *atom2flexcon_moltype(gmx_constr_t constr);
+/* Returns the array of atom to flexible constraint (Drude bond) lists for the moltypes */
 
 const int **atom2settle_moltype(gmx_constr_t constr);
 /* Returns the an array of atom to settle for the moltypes */
@@ -258,7 +262,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
                gmx_bool bDynamics, struct t_commrec *cr,
-               gmx_lincsdata_t li);
+               gmx_lincsdata_t li, gmx_bool bDrudeHardWallConstraint);
 /* Initialize lincs stuff */
 
 void set_lincs_matrix(gmx_lincsdata_t li, const real *invmass, real lambda);

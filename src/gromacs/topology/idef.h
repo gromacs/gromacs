@@ -107,6 +107,7 @@ enum {
     F_COUL_RECIP,
     F_LJ_RECIP,
     F_DPD,
+    F_DRUDEBONDS,
     F_POLARIZATION,
     F_ANISO_POL,
     F_WATER_POL,
@@ -197,6 +198,9 @@ typedef union t_iparams
         real theta, c[5];
     } qangle;
     struct {
+        real r, k, ma, mb;
+    } dbond;
+    struct {
         real alpha;
     } polarize;
     struct {
@@ -213,7 +217,7 @@ typedef union t_iparams
         real a11, a22, a33;
     } daniso;
     struct {
-        real a, alpha1, alpha2;
+        real a, alpha1, alpha2, qd1, qd2;
     } thole;
     struct {
         real c6, c12;

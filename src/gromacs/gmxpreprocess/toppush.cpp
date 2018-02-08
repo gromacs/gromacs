@@ -1300,6 +1300,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     srenew(at->atomtype, nr+1);
     srenew(at->atomtypeB, nr+1);
 
+    /* TODO: NEED TO ADD alpha/thole */
     /* fill the list */
     at->atom[nr].type  = type;
     at->atom[nr].ptype = ptype;

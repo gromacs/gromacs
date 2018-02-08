@@ -39,6 +39,7 @@
 
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdlib/shellfc.h"  /* TODO: CHECK */
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/timing/wallcycle.h"
@@ -165,7 +166,7 @@ void do_force(FILE *log, t_commrec *cr,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
               real *lambda, struct t_graph *graph,
               t_forcerec *fr,
-              gmx_vsite_t *vsite, rvec mu_tot,
+              gmx_vsite_t *vsite, gmx_shellfc_t shellfc, rvec mu_tot,
               double t, FILE *field, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
               int flags);

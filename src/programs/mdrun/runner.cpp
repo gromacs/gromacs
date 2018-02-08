@@ -226,12 +226,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real pforce, real cpt_period, real max_hours,
                                          unsigned long Flags)
 {
-    /* TODO: remove */
-    if (debug)
-    {
-        fprintf(debug, "Entering mdrunner_start_threads()...\n");
-    }
-
     int                      ret;
     struct mdrunner_arglist *mda;
     t_commrec               *crn; /* the new commrec */
@@ -1176,13 +1170,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);
-        /* TODO: jal */
-        shellfc = init_shell(mtop, cr, FALSE);
 
-        if (debug && (shellfc != NULL))
-        {
-            fprintf(debug, "Non-null shellfc found after init_shell().\n");
-        }
+        /* Initialize shell communication */ 
+        shellfc = init_shell(mtop, cr, FALSE);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1314,26 +1304,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
-
-        /* TODO: jal - initialize shells here (global) */
-        /* TODO: moving back to md.cpp */
-        /* Need to re-think this function a bit, as it should read in the shellfc initialized
-         * above by init_shell() and just fill its contents */
-        /*
-        shellfc = init_shell_flexcon(fplog, inputrec,
-                                     mtop, n_flexible_constraints(constr),
-                                     (inputrec->bContinuation ||
-                                     (DOMAINDECOMP(cr) && !MASTER(cr))) ?
-                                     NULL : state->x);
-        */
-
-        /* TODO: remove */
-        if (debug && shellfc)
-        {
-            fprintf(debug, "After init_shell_flexcon, shellfc is non-null.\n");
-            fprintf(debug, "Found %d global shells in shellfc.\n", shellfc->nshell_gl);
-            fprintf(debug, "Found %d local shells in shellfc b4 do_md().\n", shellfc->nshell);
-        }
 
         if (DOMAINDECOMP(cr))
         {

@@ -242,9 +242,6 @@ float dd_pme_f_ratio(struct gmx_domdec_t *dd);
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
 void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
 
-/*! \brief Communicate the velocities to neighboring cells. Needed for Drude thermostat. */
-void dd_move_v(struct gmx_domdec_t *dd, rvec v[]);
-
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain
@@ -311,6 +308,12 @@ void dd_move_x_constraints(struct gmx_domdec_t *dd, matrix box,
 
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(struct gmx_domdec_t *dd, matrix box, rvec *x);
+
+/*! \brief Communicates the coordinates involved in shells/Drudes */
+void dd_move_x_shells(struct gmx_domdec_t *dd, matrix box, rvec *x0);
+
+/*! \brief Communicates velocities involved in thermalized Drudes */
+void dd_move_v_shells(gmx_domdec_t *dd, rvec *v);
 
 /*! \brief Returns the local atom count array for all constraints
  *

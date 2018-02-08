@@ -431,6 +431,7 @@ static void post_process_forces(t_commrec *cr,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
         }
+
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Now add the forces, this is local */
@@ -745,7 +746,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          real *lambda, t_graph *graph,
                          t_forcerec *fr, interaction_const_t *ic,
-                         gmx_vsite_t *vsite, rvec mu_tot,
+                         gmx_vsite_t *vsite, gmx_shellfc_t shellfc, rvec mu_tot,
                          double t, FILE *field, gmx_edsam_t ed,
                          gmx_bool bBornRadii,
                          int flags)
@@ -1041,6 +1042,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             wallcycle_start(wcycle, ewcMOVEX);
             dd_move_x(cr->dd, box, x);
+            if (shellfc)
+            {
+                dd_move_x_shells(cr->dd, box, x);
+            }
 
             /* When we don't need the total dipole we sum it in global_stat */
             if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1330,6 +1335,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Communicate the forces */
         wallcycle_start(wcycle, ewcMOVEF);
         dd_move_f(cr->dd, f, fr->fshift);
+        /* jal - immediate seg fault w/o this, not sure why I need it... */
+        if (shellfc)
+        {
+            dd_move_f_shells(cr->dd, f, fr->fshift);
+        }
         wallcycle_stop(wcycle, ewcMOVEF);
     }
 
@@ -1485,6 +1495,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         post_process_forces(cr, step, nrnb, wcycle,
                             top, box, x, f, vir_force, mdatoms, graph, fr, vsite,
                             flags);
+
+        /* Note: clearing forces here or above does not make a difference */
+        if (shellfc && (DOMAINDECOMP(cr)))
+        {
+            dd_clear_f_shells(cr->dd, f);
+        }
     }
 
     /* Sum the potential energy terms from group contributions */
@@ -1502,7 +1518,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_mdatoms *mdatoms,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
                         real *lambda, t_graph *graph,
-                        t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
+                        t_forcerec *fr, gmx_vsite_t *vsite,
+                        rvec mu_tot,
                         double t, FILE *field, gmx_edsam_t ed,
                         gmx_bool bBornRadii,
                         int flags)
@@ -1887,7 +1904,7 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
               real *lambda, t_graph *graph,
               t_forcerec *fr,
-              gmx_vsite_t *vsite, rvec mu_tot,
+              gmx_vsite_t *vsite, gmx_shellfc_t shellfc, rvec mu_tot,
               double t, FILE *field, gmx_edsam_t ed,
               gmx_bool bBornRadii,
               int flags)
@@ -1900,6 +1917,7 @@ void do_force(FILE *fplog, t_commrec *cr,
 
     switch (inputrec->cutoff_scheme)
     {
+        /* TODO: CHECK. shellfc no longer used */
         case ecutsVERLET:
             do_force_cutsVERLET(fplog, cr, inputrec,
                                 step, nrnb, wcycle,
@@ -1911,7 +1929,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 enerd, fcd,
                                 lambda, graph,
                                 fr, fr->ic,
-                                vsite, mu_tot,
+                                vsite, shellfc, mu_tot,
                                 t, field, ed,
                                 bBornRadii,
                                 flags);

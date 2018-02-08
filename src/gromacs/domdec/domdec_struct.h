@@ -52,6 +52,8 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
+struct t_ilist;
+
 //! Max number of zones in domain decomposition
 #define DD_MAXZONE  8
 //! Max number of izones in domain decomposition

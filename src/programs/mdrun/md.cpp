@@ -440,14 +440,20 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             vsite, shellfc, constr,
                             nrnb, NULL, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
+        /* TODO: REMOVE */
+        if (shellfc)
+        {
+            fprintf(stderr, "After DD partition, shell->nshell = %d\n", shellfc->nshell);
+        }
     }
 
+    /* Total group masses with Drude extended Lagrangian, used by thermostats */
+    snew(grpmass, ir->opts.ngtc);
     if ((ir->bDrude) && (ir->drude->drudemode == edrudeLagrangian))
     {
         /* we need the total mass of each tc-grp in several functions
          * so we compute it here, as it requires md->cTC to be populated,
          * and we can also only do this after DD partitioning has been completed */
-        snew(grpmass, ir->opts.ngtc);
         for (i=0; i<ir->opts.ngtc; i++)
         {
             /* initialize */
@@ -469,18 +475,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 gmx_sum(1, &grpmass[i], cr);
             }
         }
-
-        /* TODO: remove */
-        if (debug)
-        {
-            if (MASTER(cr))
-            {
-                for (i=0; i<ir->opts.ngtc; i++)
-                {
-                    fprintf(debug, "MD: grpmass[%d] = %.3f\n", i, grpmass[i]);
-                }
-            }
-        }
+    }
+    else
+    {
+        sfree(grpmass);
     }
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
@@ -1116,7 +1114,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
+                     fr, vsite, shellfc, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
@@ -1141,7 +1139,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, grpmass, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
-
             }
 
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
@@ -1446,18 +1443,18 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
+            /* Drude "hard wall" constraint to avoid polarization catastrophe */
+            if (ir->bDrude && ir->drude->bHardWall)
+            {
+                apply_drude_hardwall(cr, &top->idef, ir, upd->xp, state->v, 
+                                     state->box, force_vir, step, bVerbose);
+            }
+
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
-
-            if (ir->bDrude && ir->drude->bHardWall)
-            {
-                wallcycle_start(wcycle, ewcHARDWALL);
-                apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
-                wallcycle_stop(wcycle, ewcHARDWALL);
-            }
 
             if (ir->eI == eiVVAK)
             {
@@ -1488,13 +1485,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
                                    FALSE, bCalcVir);
-
-                if (ir->bDrude && ir->drude->bHardWall)
-                {
-                    wallcycle_start(wcycle, ewcHARDWALL);
-                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
-                    wallcycle_stop(wcycle, ewcHARDWALL);
-                }
 
             }
             if (EI_VV(ir->eI))
