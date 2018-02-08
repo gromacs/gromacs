@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 
 #include "config.h"
 
+#include "gromacs/mdlib/nbnxn_pairlist.h"
+
 #if GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
 #endif
@@ -70,6 +72,31 @@ struct nbnxn_gpu_timers_t
     bool           didPrune[2];        /**< true when we timed pruning and the timings need to be accounted for */
     GpuRegionTimer rollingPrune_k[2];  /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
     bool           didRollingPrune[2]; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+};
+
+struct gpu_plist
+{
+    int                        na_c;         /**< number of atoms per cluster                  */
+
+    int                        nsci;         /**< size of sci, # of i clusters in the list     */
+    int                        sci_nalloc;   /**< allocation size of sci                       */
+    DeviceBuffer<nbnxn_sci_t>  sci;          /**< list of i-cluster ("super-clusters")         */
+
+    int                        ncj4;         /**< total # of 4*j clusters                      */
+    int                        cj4_nalloc;   /**< allocation size of cj4                       */
+    DeviceBuffer<nbnxn_cj4_t>  cj4;          /**< 4*j cluster list, contains j cluster number
+                                                and index into the i cluster list            */
+    int                        nimask;       /**< # of 4*j clusters * # of warps               */
+    int                        imask_nalloc; /**< allocation size of imask                     */
+    DeviceBuffer<unsigned int> imask;        /**< imask for 2 warps for each 4*j cluster group */
+    DeviceBuffer<nbnxn_excl_t> excl;         /**< atom interaction bits                        */
+    int                        nexcl;        /**< count for excl                               */
+    int                        excl_nalloc;  /**< allocation size of excl                      */
+
+    /* parameter+variables for normal and rolling pruning */
+    bool             haveFreshList;          /**< true after search, indictes that initial pruning with outer prunning is needed */
+    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
 
 #endif

@@ -48,5 +48,8 @@
 using CommandStream = cl_command_queue;
 //! \brief Single GPU call timing event
 using CommandEvent  = cl_event;
+//! \brief A device-side buffer of ValueTypes
+template<typename ValueType>
+using DeviceBuffer  = cl_mem;
 
 #endif
