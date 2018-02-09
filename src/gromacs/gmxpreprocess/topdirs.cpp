@@ -366,6 +366,15 @@ void DS_Init(DirStack **DS)
         set_nec(&(necessary[d_angletypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_dihedraltypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_nonbond_params]), d_atomtypes, d_none);
+        // Note that the content of the next two directives are
+        // ignored, but if grompp reads them in old force field files,
+        // it still needs to understand that they are in a valid place
+        // in the .top structure. It doesn't have to require them to
+        // be in the same place that was valid in old versions (ie. child
+        // directive of [atomtypes]) but any relevant case will
+        // satisfy that.
+        set_nec(&(necessary[d_implicit_genborn_params]), d_atomtypes, d_none);
+        set_nec(&(necessary[d_implicit_surface_params]), d_atomtypes, d_none);
         set_nec(&(necessary[d_cmaptypes]), d_atomtypes, d_none);
         set_nec(&(necessary[d_moleculetype]), d_atomtypes, d_none);
         set_nec(&(necessary[d_atoms]), d_moleculetype, d_none);
