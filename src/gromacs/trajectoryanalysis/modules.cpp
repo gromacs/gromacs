@@ -47,6 +47,7 @@
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
+#include "modules/convert.h"
 #include "modules/distance.h"
 #include "modules/freevolume.h"
 #include "modules/pairdist.h"
@@ -91,6 +92,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     using namespace gmx::analysismodules;
     CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
     registerModule<AngleInfo>(manager, group);
+    registerModule<ConvertInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
