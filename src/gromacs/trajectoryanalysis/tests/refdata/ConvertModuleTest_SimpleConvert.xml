@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">convert -select all</String>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+TITLE     frame t= 0.000
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   30.100   30.100   30.100  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  OW  SOL     1       5.690  12.750  11.650  1.00  0.00           O
+ATOM      2  HW1 SOL     1       4.760  12.680  11.280  1.00  0.00           H
+ATOM      3  HW2 SOL     1       5.800  13.640  12.090  1.00  0.00           H
+ATOM      4  OW  SOL     2      15.550  15.110   7.030  1.00  0.00           O
+ATOM      5  HW1 SOL     2      14.980  14.950   7.840  1.00  0.00           H
+ATOM      6  HW2 SOL     2      14.960  15.210   6.230  1.00  0.00           H
+TER
+ENDMDL
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
