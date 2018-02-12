@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,6 +175,21 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
 {
     GMX_RELEASE_ASSERT(false, "haveStreamTasksCompleted is not implemented for OpenCL");
     return false;
+}
+
+/*! \brief Free a device-side buffer.
+ * TODO: fully replace free_ocl_buffer and ocl_free_buffered with this.
+ *
+ * \param[in] buffer  Pointer to the buffer to free.
+ */
+template <typename DeviceBuffer>
+void freeDeviceBuffer(DeviceBuffer *buffer)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    if (*buffer)
+    {
+        GMX_RELEASE_ASSERT(clReleaseMemObject(*buffer) == CL_SUCCESS, "clReleaseMemObject failed");
+    }
 }
 
 #endif
