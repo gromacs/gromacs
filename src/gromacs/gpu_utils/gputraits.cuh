@@ -52,4 +52,14 @@ template <> struct GpuTraits<GpuFramework::CUDA>
     using DeviceBuffer  = ValueType *;
 };
 
+#include "gromacs/gpu_utils/cudautils.cuh"
+
+template <typename ValueType>
+void freeDeviceBuffer(GpuTraits<GpuFramework::CUDA>::DeviceBuffer<ValueType> *buffer)
+{
+    fprintf(stderr, "CUDA free\n");
+    CU_RET_ERR(cudaFree(*buffer), "cudaFree failed");
+}
+
+
 #endif

@@ -53,4 +53,14 @@ template <> struct GpuTraits<GpuFramework::OpenCL>
     using DeviceBuffer  = cl_mem;
 };
 
+
+#include "gromacs/utility/gmxassert.h"
+
+template <typename ValueType = void>
+void freeDeviceBuffer(GpuTraits<GpuFramework::OpenCL>::DeviceBuffer<ValueType> *buffer)
+{
+    fprintf(stderr, "OpenCL free\n");
+    GMX_RELEASE_ASSERT(clReleaseMemObject(*buffer) == CL_SUCCESS, "clReleaseMemObject failed");
+}
+
 #endif

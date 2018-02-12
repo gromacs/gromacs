@@ -1181,18 +1181,20 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     sfree(nb->nbparam);
 
     /* Free plist */
-    free_ocl_buffer(&(nb->plist[eintLocal]->sci));
-    free_ocl_buffer(&(nb->plist[eintLocal]->cj4));
-    free_ocl_buffer(&(nb->plist[eintLocal]->imask));
-    free_ocl_buffer(&(nb->plist[eintLocal]->excl));
-    sfree(nb->plist[eintLocal]);
+    auto *plist = nb->plist[eintLocal];
+    freeDeviceBuffer(&plist->sci);
+    freeDeviceBuffer(&plist->cj4);
+    freeDeviceBuffer(&plist->imask);
+    freeDeviceBuffer(&plist->excl);
+    sfree(plist);
     if (nb->bUseTwoStreams)
     {
-        free_ocl_buffer(&(nb->plist[eintNonlocal]->sci));
-        free_ocl_buffer(&(nb->plist[eintNonlocal]->cj4));
-        free_ocl_buffer(&(nb->plist[eintNonlocal]->imask));
-        free_ocl_buffer(&(nb->plist[eintNonlocal]->excl));
-        sfree(nb->plist[eintNonlocal]);
+        auto *plist_nl = nb->plist[eintNonlocal];
+        freeDeviceBuffer(&plist_nl->sci);
+        freeDeviceBuffer(&plist_nl->cj4);
+        freeDeviceBuffer(&plist_nl->imask);
+        freeDeviceBuffer(&plist_nl->excl);
+        sfree(plist_nl);
     }
 
     /* Free nbst */
