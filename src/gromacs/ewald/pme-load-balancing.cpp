@@ -45,8 +45,6 @@
 
 #include "pme-load-balancing.h"
 
-#include "config.h"
-
 #include <assert.h>
 
 #include <cmath>
@@ -841,27 +839,6 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     init_interaction_const_tables(nullptr, ic, rtab);
 
     nbnxn_gpu_pme_loadbal_update_param(nbv, ic, listParams);
-
-    // TODO: with the texture reference support removed, this barrier is
-    //       in principle not needed. Remove now or do it in a follow-up?
-    /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
-     * also sharing texture references. To keep the code simple, we don't
-     * treat texture references as shared resources, but this means that
-     * the coulomb_tab texture ref will get updated by multiple threads.
-     * Hence, to ensure that the non-bonded kernels don't start before all
-     * texture binding operations are finished, we need to wait for all ranks
-     * to arrive here before continuing.
-     *
-     * Note that we could omit this barrier if GPUs are not shared (or
-     * texture objects are used), but as this is initialization code, there
-     * is not point in complicating things.
-     */
-#if GMX_THREAD_MPI
-    if (PAR(cr) && use_GPU(nbv))
-    {
-        gmx_barrier(cr);
-    }
-#endif  /* GMX_THREAD_MPI */
 
     if (!pme_lb->bSepPMERanks)
     {
