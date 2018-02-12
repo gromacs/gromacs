@@ -63,4 +63,29 @@ template <GpuFramework> struct GpuTraits
     using DeviceBuffer = void;  //!< A device-side buffer of raw ValueType's
 };
 
+/*
+template <GpuFramework framework, typename ValueType>
+void freeDeviceBuffer(
+        typename GpuTraits<framework>::template DeviceBuffer<ValueType>
+        *){}
+*/
+
+/*
+template <typename ValueType, typename GpuTraits>
+void freeDeviceBuffer(
+        typename GpuTraits::template DeviceBuffer<ValueType> *)
+{
+  //doesn't get deduced?!
+}
+*/
+
+/*
+template <typename ValueType, GpuFramework framework>
+void freeDeviceBuffer(
+        typename GpuTraits<framework>::template DeviceBuffer<ValueType> *)
+{
+
+}
+*/
+
 #endif

@@ -52,4 +52,49 @@ template <> struct GpuTraits<GpuFramework::CUDA>
     using DeviceBuffer  = ValueType *;
 };
 
+#include "gromacs/gpu_utils/cudautils.cuh"
+
+//template <typename T>
+//void freeDeviceBuffer<GpuTraits<GpuFramework::CUDA>, T>(GpuTraits<GpuFramework::CUDA>::template DeviceBuffer<T> *buffer)
+//template <typename T>
+//void freeDeviceBuffer<GpuTraits<GpuFramework::CUDA>::DeviceBuffer<T>>(GpuTraits<GpuFramework::CUDA>::DeviceBuffer<T> *buffer)
+/*
+template <typename T>
+void freeDeviceBuffer<GpuTraits<GpuFramework::CUDA>>(GpuTraits<GpuFramework::CUDA>::DeviceBuffer<T> *)
+{
+    //TODO or use cuda_free_buffered?
+
+    CU_RET_ERR(cudaFree(*buffer), "cudaFree failed");
+}
+*/
+
+
+/*
+template <GpuFramework::CUDA, typename ValueType>
+void freeDeviceBuffer(
+        typename GpuTraits<GpuFramework::CUDA>::template DeviceBuffer<ValueType>
+        *){}
+        * */
+
+//#include <type_traits>
+
+/*
+template <typename ValueType, typename GpuTraits>
+std::enable_if<
+void freeDeviceBuffer(
+        typename GpuTraits::template DeviceBuffer<ValueType> *)
+{
+  //doesn't get deduced?!
+}
+*/
+
+template <typename ValueType>
+void freeDeviceBufferCuda(ValueType **buffer)
+{
+    CU_RET_ERR(cudaFree(*buffer), "cudaFree failed");
+}
+
+#define freeDeviceBuffer freeDeviceBufferCuda
+
+
 #endif

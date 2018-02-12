@@ -737,7 +737,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cudaError_t      stat;
     cu_atomdata_t   *atdat;
     cu_nbparam_t    *nbparam;
-    cu_plist_t      *plist, *plist_nl;
 
     if (nb == NULL)
     {
@@ -746,8 +745,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     atdat       = nb->atdat;
     nbparam     = nb->nbparam;
-    plist       = nb->plist[eintLocal];
-    plist_nl    = nb->plist[eintNonlocal];
 
     nbnxn_cuda_free_nbparam_table(nbparam, nb->dev_info);
 
@@ -795,25 +792,25 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cu_free_buffered(atdat->atom_types, &atdat->ntypes);
     cu_free_buffered(atdat->lj_comb);
 
-    cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);
-    cu_free_buffered(plist->cj4, &plist->ncj4, &plist->cj4_nalloc);
-    cu_free_buffered(plist->imask, &plist->nimask, &plist->imask_nalloc);
-    cu_free_buffered(plist->excl, &plist->nexcl, &plist->excl_nalloc);
+    /* Free plist */
+    auto *plist = nb->plist[eintLocal];
+    freeDeviceBuffer(&plist->sci);
+    freeDeviceBuffer(&plist->cj4);
+    freeDeviceBuffer(&plist->imask);
+    freeDeviceBuffer(&plist->excl);
+    sfree(plist);
     if (nb->bUseTwoStreams)
     {
-        cu_free_buffered(plist_nl->sci, &plist_nl->nsci, &plist_nl->sci_nalloc);
-        cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
-        cu_free_buffered(plist_nl->imask, &plist_nl->nimask, &plist_nl->imask_nalloc);
-        cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
+        auto *plist_nl = nb->plist[eintNonlocal];
+        freeDeviceBuffer(&plist_nl->sci);
+        freeDeviceBuffer(&plist_nl->cj4);
+        freeDeviceBuffer(&plist_nl->imask);
+        freeDeviceBuffer(&plist_nl->excl);
+        sfree(plist_nl);
     }
 
     sfree(atdat);
     sfree(nbparam);
-    sfree(plist);
-    if (nb->bUseTwoStreams)
-    {
-        sfree(plist_nl);
-    }
     sfree(nb->timings);
     sfree(nb);
 
