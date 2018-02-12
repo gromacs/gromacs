@@ -1578,6 +1578,25 @@ void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
+void rotate_tensor(tensor Q, tensor Qreference)
+{
+    matrix rotmatrix;
+    rvec   tmpvec;
+    // TODO: this code is not correct!
+    // the whole tensor should be taken into account, not
+    // just the components. All vectors should be transformed
+    // by the same matrix.
+    for(int m = 0; m < DIM; m++)
+    {
+        if (norm(Q[m]) > 0 && norm(Qreference[m]) > 0)
+        {
+            calc_rotmatrix(Q[m], Qreference[m], rotmatrix);
+            mvmul(rotmatrix, Q[m], tmpvec);
+            copy_rvec(tmpvec, Q[m]);
+        }
+    }
+}
+
 void MyMol::PrintTopology(FILE                   *fp,
                           ChargeDistributionModel iChargeDistributionModel,
                           bool                    bVerbose,
@@ -1638,7 +1657,10 @@ void MyMol::PrintTopology(FILE                   *fp,
                               &T, myref, mylot, vec, myQ))
     {
         set_muQM(qtElec, vec);
-        rotateDipole(mu_qm_[qtElec], mu);
+        if (value > 0)
+        {
+            rotateDipole(mu_qm_[qtElec], mu);
+        }
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "; ( %.2f %6.2f %6.2f ) Total= %.2f\n", 
                  lot, 
@@ -1656,8 +1678,9 @@ void MyMol::PrintTopology(FILE                   *fp,
                               &T, myref, mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
+        rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", lot);
-        add_tensor(&commercials, buf , myQ);
+        add_tensor(&commercials, buf , Q_qm_[qtElec]);
     }
     
     snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
@@ -1666,8 +1689,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     if (efield > 0 && nullptr != cr)
     {    
         CalcPolarizability(efield, cr, debug);
-        add_tensor(&commercials, "Alexandria Polarizability components (A^3)",
-                   alpha_calc_);
+        add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
         
         snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
         commercials.push_back(buf);
@@ -1804,22 +1826,6 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     }
 }
 
-void rotateQuadrupole(tensor Q, tensor Qreference)
-{
-    matrix rotmatrix;
-    rvec   tmpvec;
-    // TODO: this code is not correct!
-    // the whole tensor should be taken into account, not
-    // just the components. All vectors should be transformed
-    // by the same matrix.
-    for(int m = 0; m < DIM; m++)
-    {
-        calc_rotmatrix(Q[m], Qreference[m], rotmatrix);
-        mvmul(rotmatrix, Q[m], tmpvec);
-        copy_rvec(tmpvec, Q[m]);
-    }
-}
-
 void MyMol::rotateDipole(rvec mu, rvec muReference)
 {
     matrix rotmatrix;
@@ -1897,7 +1903,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         setQandMoments(qtMulliken, natom, q);
         if (esp_dipole_found && dipQM(qtMulliken) > 0)
         {
-            rotateQuadrupole(Q_qm_[qtMulliken], Q_qm_[qtESP]);
+            rotate_tensor(Q_qm_[qtMulliken], Q_qm_[qtESP]);
         }
     }
     T = -1;
@@ -1910,7 +1916,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         setQandMoments(qtHirshfeld, natom, q);
         if (esp_dipole_found && dipQM(qtHirshfeld) > 0)
         {
-            rotateQuadrupole(Q_qm_[qtHirshfeld], Q_qm_[qtESP]);
+            rotate_tensor(Q_qm_[qtHirshfeld], Q_qm_[qtESP]);
         }
 
     }
@@ -1924,7 +1930,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         setQandMoments(qtCM5, natom, q);
         if (esp_dipole_found && dipQM(qtCM5) > 0)
         {
-            rotateQuadrupole(Q_qm_[qtCM5], Q_qm_[qtESP]);
+            rotate_tensor(Q_qm_[qtCM5], Q_qm_[qtESP]);
         }
 
     } 
@@ -2022,7 +2028,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         set_QQM(qtElec, quadrupole);
         if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
         {
-            rotateQuadrupole(Q_qm_[qtElec], Q_qm_[qtESP]);
+            rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
         }
     }
     T = -1;  
