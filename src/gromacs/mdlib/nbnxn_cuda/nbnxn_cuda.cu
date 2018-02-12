@@ -105,14 +105,6 @@
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_prune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cu"
-#else
-/* Prevent compilation in multiple compilation unit mode for CC 2.x. Although we have
- * build-time checks to prevent this, the user could manually tweaks nvcc flags
- * which would lead to buggy kernels getting compiled.
- */
-#if GMX_PTX_ARCH > 0 && GMX_PTX_ARCH <= 210 && !defined(__clang__)
-#error Due to an CUDA nvcc compiler bug, the CUDA non-bonded module can not be compiled with multiple compilation units for CC 2.x devices. If you have changed the nvcc flags manually, either use the GMX_CUDA_TARGET_* variables instead or set GMX_CUDA_NB_SINGLE_COMPILATION_UNIT=ON CMake option.
-#endif
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 
