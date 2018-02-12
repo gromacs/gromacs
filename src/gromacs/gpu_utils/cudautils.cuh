@@ -297,4 +297,15 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
     return true;
 }
 
+/*! \brief Free a device-side buffer.
+ * TODO: fully replace cu_free_buffered with this.
+ *
+ * \param[in] buffer  Pointer to the buffer to free.
+ */
+template <typename DeviceBuffer>
+void freeDeviceBuffer(DeviceBuffer *buffer)
+{
+    GMX_RELEASE_ASSERT(cudaFree(*buffer) == cudaSuccess, "cudaFree failed");
+}
+
 #endif
