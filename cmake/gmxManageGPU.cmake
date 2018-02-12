@@ -298,30 +298,7 @@ macro(gmx_gpu_setup)
         endif() #GMX_CLANG_CUDA
     endif() # GMX_GPU
 
-    if (GMX_CLANG_CUDA)
-        set (_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT FALSE)
-    else()
-        set (_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT TRUE)
-    endif()
-    cmake_dependent_option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
-        "Whether to compile the CUDA non-bonded module using a single compilation unit." ${_GMX_CUDA_NB_SINGLE_COMPILATION_UNIT_DEFAULT}
-        "GMX_GPU" ON)
+    option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT "Whether to compile the CUDA non-bonded module using a single compilation unit." ON)
     mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
 
-    if (GMX_GPU AND NOT GMX_CLANG_CUDA)
-        # We need to use single compilation unit for kernels:
-        # when compiling with nvcc for CC 2.x devices where buggy kernel code is generated
-        gmx_check_if_changed(_gmx_cuda_target_changed GMX_CUDA_TARGET_SM GMX_CUDA_TARGET_COMPUTE CUDA_NVCC_FLAGS)
-
-        if(_gmx_cuda_target_changed OR NOT GMX_GPU_DETECTION_DONE)
-            if((NOT GMX_CUDA_TARGET_SM AND NOT GMX_CUDA_TARGET_COMPUTE) OR
-                (GMX_CUDA_TARGET_SM MATCHES "2[01]" OR GMX_CUDA_TARGET_COMPUTE MATCHES "2[01]"))
-                message(STATUS "Enabling single compilation unit for the CUDA non-bonded module. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
-                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
-            else()
-                message(STATUS "Enabling multiple compilation units for the CUDA non-bonded module.")
-                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
-            endif()
-        endif()
-    endif()
 endmacro()
