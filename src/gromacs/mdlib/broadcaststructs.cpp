@@ -777,7 +777,6 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 static
 void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 {
-    int i;
     if (debug)
     {
         fprintf(debug, "in bc_data\n");
@@ -800,11 +799,12 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 
     bc_ffparams(cr, &mtop->ffparams);
 
-    block_bc(cr, mtop->nmoltype);
-    snew_bc(cr, mtop->moltype, mtop->nmoltype);
-    for (i = 0; i < mtop->nmoltype; i++)
+    int nmoltype = mtop->moltype.size();
+    block_bc(cr, nmoltype);
+    mtop->moltype.resize(nmoltype);
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        bc_moltype(cr, &mtop->symtab, &mtop->moltype[i]);
+        bc_moltype(cr, &mtop->symtab, &moltype);
     }
 
     block_bc(cr, mtop->bIntermolecularInteractions);
@@ -814,11 +814,12 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
         bc_ilists(cr, mtop->intermolecular_ilist);
     }
 
-    block_bc(cr, mtop->nmolblock);
-    snew_bc(cr, mtop->molblock, mtop->nmolblock);
-    for (i = 0; i < mtop->nmolblock; i++)
+    int nmolblock = mtop->molblock.size();
+    block_bc(cr, nmolblock);
+    mtop->molblock.resize(nmolblock);
+    for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        bc_molblock(cr, &mtop->molblock[i]);
+        bc_molblock(cr, &molblock);
     }
 
     block_bc(cr, mtop->natoms);

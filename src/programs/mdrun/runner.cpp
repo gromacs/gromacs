@@ -447,7 +447,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
     t_inputrec                      inputrecInstance;
     t_inputrec                     *inputrec = &inputrecInstance;
-    snew(mtop, 1);
+    mtop = new gmx_mtop_t;
 
     if (mdrunOptions.continuationOptions.appendFiles)
     {

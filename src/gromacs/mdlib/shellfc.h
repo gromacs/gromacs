@@ -59,7 +59,7 @@ class t_state;
 /* Initialization function, also predicts the initial shell postions.
  */
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  gmx_mtop_t *mtop, int nflexcon,
+                                  const gmx_mtop_t *mtop, int nflexcon,
                                   int nstcalcenergy,
                                   bool usingDomainDecomposition);
 

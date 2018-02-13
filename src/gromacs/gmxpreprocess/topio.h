@@ -48,7 +48,7 @@ struct t_inputrec;
 struct warninp;
 typedef warninp *warninp_t;
 
-double check_mol(gmx_mtop_t *mtop, warninp_t wi);
+double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
 char **do_top(gmx_bool          bVerbose,

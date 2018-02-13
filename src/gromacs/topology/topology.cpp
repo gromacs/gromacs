@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,7 @@ static void init_groups(gmx_groups_t *groups)
     groups->grpname  = nullptr;
     for (int g = 0; g < egcNR; g++)
     {
+        groups->grps[g].nr     = 0;
         groups->grps[g].nm_ind = nullptr;
         groups->ngrpnr[g]      = 0;
         groups->grpnr[g]       = nullptr;
@@ -73,12 +74,20 @@ static void init_groups(gmx_groups_t *groups)
 void init_mtop(gmx_mtop_t *mtop)
 {
     mtop->name         = nullptr;
-    mtop->nmoltype     = 0;
-    mtop->moltype      = nullptr;
-    mtop->nmolblock    = 0;
-    mtop->molblock     = nullptr;
+
+    // TODO: Move to ffparams when that is converted to C++
+    mtop->ffparams.functype           = nullptr;
+    mtop->ffparams.iparams            = nullptr;
+    mtop->ffparams.cmap_grid.ngrid    = 0;
+    mtop->ffparams.cmap_grid.cmapdata = nullptr;
+
+    mtop->moltype.clear();
+    mtop->molblock.clear();
+    mtop->natoms       = 0;
     mtop->maxres_renum = 0;
     mtop->maxresnr     = -1;
+    init_atomtypes(&mtop->atomtypes);
+    init_block(&mtop->mols);
     init_groups(&mtop->groups);
     init_block(&mtop->mols);
     open_symtab(&mtop->symtab);
@@ -95,6 +104,21 @@ void init_top(t_topology *top)
     open_symtab(&top->symtab);
 }
 
+
+gmx_moltype_t::gmx_moltype_t()
+{
+    name = nullptr;
+    init_t_atoms(&atoms, 0, FALSE);
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        ilist[ftype].nr              = 0;
+        ilist[ftype].nr_nonperturbed = 0;
+        ilist[ftype].iatoms          = nullptr;
+        ilist[ftype].nalloc          = 0;
+    }
+    init_block(&cgs);
+    init_blocka(&excls);
+}
 
 void done_moltype(gmx_moltype_t *molt)
 {
@@ -144,6 +168,11 @@ void done_gmx_groups_t(gmx_groups_t *g)
     sfree(g->grpname);
 }
 
+gmx_mtop_t::gmx_mtop_t()
+{
+    init_mtop(this);
+}
+
 void done_mtop(gmx_mtop_t *mtop)
 {
     done_symtab(&mtop->symtab);
@@ -156,16 +185,16 @@ void done_mtop(gmx_mtop_t *mtop)
     }
     sfree(mtop->ffparams.cmap_grid.cmapdata);
 
-    for (int i = 0; i < mtop->nmoltype; i++)
+    for (gmx_moltype_t &molt : mtop->moltype)
     {
-        done_moltype(&mtop->moltype[i]);
+        done_moltype(&molt);
     }
-    sfree(mtop->moltype);
-    for (int i = 0; i < mtop->nmolblock; i++)
+    mtop->moltype.clear();
+    for (gmx_molblock_t &molb : mtop->molblock)
     {
-        done_molblock(&mtop->molblock[i]);
+        done_molblock(&molb);
     }
-    sfree(mtop->molblock);
+    mtop->molblock.clear();
     done_atomtypes(&mtop->atomtypes);
     done_gmx_groups_t(&mtop->groups);
     done_block(&mtop->mols);
@@ -221,7 +250,7 @@ bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveMass;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveMass;
 }
 
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
@@ -230,7 +259,7 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveCharge;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveCharge;
 }
 
 bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
@@ -239,7 +268,7 @@ bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveType;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveType;
 }
 
 bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
@@ -248,7 +277,7 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.havePdbInfo;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
@@ -342,7 +371,7 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
 
 static void pr_molblock(FILE *fp, int indent, const char *title,
                         const gmx_molblock_t *molb, int n,
-                        const gmx_moltype_t *molt)
+                        const std::vector<gmx_moltype_t> &molt)
 {
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
@@ -365,16 +394,14 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
-    int mt, mb, j;
-
     if (available(fp, mtop, indent, title))
     {
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
         fprintf(fp, "name=\"%s\"\n", *(mtop->name));
         pr_int(fp, indent, "#atoms", mtop->natoms);
-        pr_int(fp, indent, "#molblock", mtop->nmolblock);
-        for (mb = 0; mb < mtop->nmolblock; mb++)
+        pr_int(fp, indent, "#molblock", mtop->molblock.size());
+        for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
         {
             pr_molblock(fp, indent, "molblock", &mtop->molblock[mb], mb, mtop->moltype);
         }
@@ -382,7 +409,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
                gmx::boolToString(mtop->bIntermolecularInteractions));
         if (mtop->bIntermolecularInteractions)
         {
-            for (j = 0; (j < F_NRE); j++)
+            for (int j = 0; j < F_NRE; j++)
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
                          mtop->ffparams.functype,
@@ -392,7 +419,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
-        for (mt = 0; mt < mtop->nmoltype; mt++)
+        for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
                        &mtop->ffparams, bShowNumbers, bShowParameters);

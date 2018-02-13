@@ -181,24 +181,22 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 }
 
-double check_mol(gmx_mtop_t *mtop, warninp_t wi)
+double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
 {
     char     buf[256];
-    int      i, mb, nmol, ri, pt;
+    int      i, ri, pt;
     double   q;
     real     m, mB;
-    t_atoms *atoms;
 
     /* Check mass and charge */
     q = 0.0;
 
-    for (mb = 0; mb < mtop->nmoltype; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        nmol  = mtop->molblock[mb].nmol;
+        const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
         for (i = 0; (i < atoms->nr); i++)
         {
-            q += nmol*atoms->atom[i].q;
+            q += molb.nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
             mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
@@ -1331,20 +1329,20 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
      */
 
     unsigned char  *grpnr;
-    int             mb, mol, nat_mol, i, nr_mol_with_qm_atoms = 0;
+    int             mol, nat_mol, nr_mol_with_qm_atoms = 0;
     gmx_molblock_t *molb;
     gmx_bool        bQMMM;
 
     grpnr = sys->groups.grpnr[egcQMMM];
 
-    for (mb = 0; mb < sys->nmolblock; mb++)
+    for (size_t mb = 0; mb < sys->molblock.size(); mb++)
     {
         molb    = &sys->molblock[mb];
         nat_mol = sys->moltype[molb->type].atoms.nr;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             bQMMM = FALSE;
-            for (i = 0; i < nat_mol; i++)
+            for (int i = 0; i < nat_mol; i++)
             {
                 if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM)
                 {
@@ -1360,9 +1358,8 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     if (mol > 0)
                     {
                         /* Split the molblock at this molecule */
-                        sys->nmolblock++;
-                        srenew(sys->molblock, sys->nmolblock);
-                        for (i = sys->nmolblock-2; i >= mb; i--)
+                        sys->molblock.resize(sys->molblock.size() + 1);
+                        for (size_t i = sys->molblock.size() - 2; i >= mb; i--)
                         {
                             sys->molblock[i+1] = sys->molblock[i];
                         }
@@ -1374,10 +1371,9 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     if (molb->nmol > 1)
                     {
                         /* Split the molblock after this molecule */
-                        sys->nmolblock++;
-                        srenew(sys->molblock, sys->nmolblock);
+                        sys->molblock.resize(sys->molblock.size() + 1);
                         molb = &sys->molblock[mb];
-                        for (i = sys->nmolblock-2; i >= mb; i--)
+                        for (size_t i = sys->molblock.size() - 2; i >= mb; i--)
                         {
                             sys->molblock[i+1] = sys->molblock[i];
                         }
@@ -1386,17 +1382,16 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     }
 
                     /* Add a moltype for the QMMM molecule */
-                    sys->nmoltype++;
-                    srenew(sys->moltype, sys->nmoltype);
+                    sys->moltype.resize(sys->moltype.size() + 1);
                     /* Copy the moltype struct */
-                    sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
+                    sys->moltype.back() = sys->moltype[molb->type];
                     /* Copy the exclusions to a new array, since this is the only
                      * thing that needs to be modified for QMMM.
                      */
                     copy_blocka(&sys->moltype[molb->type     ].excls,
-                                &sys->moltype[sys->nmoltype-1].excls);
+                                &sys->moltype.back().excls);
                     /* Set the molecule type for the QMMM molblock */
-                    molb->type = sys->nmoltype - 1;
+                    molb->type = sys->moltype.size() - 1;
                 }
                 generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
             }
