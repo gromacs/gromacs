@@ -2047,14 +2047,13 @@ void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop)
 {
-    int      mt, icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
-    t_block *cgs;
+    int      icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
 
     /* Compute largest charge groups size (# atoms) */
     nr_in_cg = 1;
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (const gmx_moltype_t &molt : mtop->moltype)
     {
-        cgs = &mtop->moltype[mt].cgs;
+        const t_block *cgs = &molt.cgs;
         for (icg = 0; (icg < cgs->nr); icg++)
         {
             nr_in_cg = std::max(nr_in_cg, (int)(cgs->index[icg+1]-cgs->index[icg]));

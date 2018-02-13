@@ -74,11 +74,11 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
 {
     GMX_ASSERT(globalAtomIndex >= 0 && globalAtomIndex < mtop->natoms, "The atom index to look up should be within range");
     GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
-    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < mtop->nmolblock, "The starting molecule block index for the search should be within range");
+    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < static_cast<int>(mtop->molblock.size()), "The starting molecule block index for the search should be within range");
 
     /* Search the molecue block index using bisection */
     int molBlock0 = -1;
-    int molBlock1 = mtop->nmolblock;
+    int molBlock1 = mtop->molblock.size();
 
     int globalAtomStart;
     while (TRUE)

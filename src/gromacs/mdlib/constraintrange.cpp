@@ -219,14 +219,11 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
 
 real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 {
-    int  mt;
-    real rmax;
-
-    rmax = 0;
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    real rmax = 0;
+    for (const gmx_moltype_t &molt : mtop->moltype)
     {
         rmax = std::max(rmax,
-                        constr_r_max_moltype(&mtop->moltype[mt],
+                        constr_r_max_moltype(&molt,
                                              mtop->ffparams.iparams, ir));
     }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -329,23 +329,15 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         InsertMolecules()
             : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
               defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(nullptr), ePBC_(-1)
+              top_(), ePBC_(-1)
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
             clear_mat(box_);
         }
-        virtual ~InsertMolecules()
-        {
-            if (top_ != nullptr)
-            {
-                done_mtop(top_);
-                sfree(top_);
-            }
-        }
 
         // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
+        virtual gmx_mtop_t *getTopology(bool /*required*/) { return &top_; }
         virtual int getAtomCount() { return 0; }
 
         // From ICommandLineOptionsModule
@@ -377,7 +369,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         RotationType        enumRot_;
         Selection           replaceSel_;
 
-        gmx_mtop_t         *top_;
+        gmx_mtop_t          top_;
         std::vector<RVec>   x_;
         matrix              box_;
         int                 ePBC_;
@@ -508,12 +500,11 @@ void InsertMolecules::optionsFinished()
                                          "together with an existing configuration (-f)."));
     }
 
-    snew(top_, 1);
     if (!inputConfFile_.empty())
     {
-        readConformation(inputConfFile_.c_str(), top_, &x_, nullptr,
+        readConformation(inputConfFile_.c_str(), &top_, &x_, nullptr,
                          &ePBC_, box_, "solute");
-        if (top_->natoms == 0)
+        if (top_.natoms == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
         }
@@ -568,9 +559,9 @@ int InsertMolecules::run()
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
                       insertConfFile_.c_str());
         }
-        if (top_->name == nullptr)
+        if (top_.name == nullptr)
         {
-            top_->name = top_insrt->name;
+            top_.name = top_insrt->name;
         }
         if (positionFile_.empty())
         {
@@ -579,18 +570,18 @@ int InsertMolecules::run()
     }
 
     // TODO: Adapt to use mtop throughout.
-    t_atoms atoms = gmx_mtop_global_atoms(top_);
+    t_atoms atoms = gmx_mtop_global_atoms(&top_);
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                &atoms, &top_->symtab, &x_, removableAtoms, top_insrt->atoms, x_insrt,
+                &atoms, &top_.symtab, &x_, removableAtoms, top_insrt->atoms, x_insrt,
                 ePBC_, box_, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_->name, &atoms,
+    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms,
                    as_rvec_array(x_.data()), nullptr, ePBC_, box_);
 
     /* print size of generated configuration */

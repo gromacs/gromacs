@@ -337,7 +337,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
                  int *wall_atomtype,
                  gpp_atomtype_t ga, gmx_bool bVerbose)
 {
-    int         i, j, k, l, molt, mi, mj, nat, nrfp, ftype, ntype;
+    int         i, j, k, l, mi, mj, nat, nrfp, ftype, ntype;
     t_atoms    *atoms;
     t_param    *nbsnew;
     int        *typelist;
@@ -375,9 +375,9 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
      * can determine if two types should be merged.
      */
     nat = 0;
-    for (molt = 0; molt < mtop->nmoltype; molt++)
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        atoms = &mtop->moltype[molt].atoms;
+        atoms = &moltype.atoms;
         for (i = 0; (i < atoms->nr); i++)
         {
             atoms->atom[i].type =
