@@ -2449,7 +2449,7 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 {
     t_iparams            *ip;
     gmx_mtop_ilistloop_t  iloop;
-    t_ilist              *ilist, *il;
+    const t_ilist        *ilist, *il;
     int                   nmol, i, npair;
     t_iatom              *a;
 
@@ -2480,8 +2480,6 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int            mt, mb;
-
     if (bRead)
     {
         init_mtop(mtop);
@@ -2492,25 +2490,26 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 
     do_ffparams(fio, &mtop->ffparams, bRead, file_version);
 
-    gmx_fio_do_int(fio, mtop->nmoltype);
-
+    int nmoltype = mtop->moltype.size();
+    gmx_fio_do_int(fio, nmoltype);
     if (bRead)
     {
-        snew(mtop->moltype, mtop->nmoltype);
+        mtop->moltype.resize(nmoltype);
     }
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        do_moltype(fio, &mtop->moltype[mt], bRead, &mtop->symtab, file_version);
+        do_moltype(fio, &moltype, bRead, &mtop->symtab, file_version);
     }
 
-    gmx_fio_do_int(fio, mtop->nmolblock);
+    int nmolblock = mtop->molblock.size();
+    gmx_fio_do_int(fio, nmolblock);
     if (bRead)
     {
-        snew(mtop->molblock, mtop->nmolblock);
+        mtop->molblock.resize(nmolblock);
     }
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        do_molblock(fio, &mtop->molblock[mb], bRead);
+        do_molblock(fio, &molblock, bRead);
     }
     gmx_fio_do_int(fio, mtop->natoms);
 
@@ -2706,7 +2705,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
                   gmx_mtop_t *mtop)
 {
     t_tpxheader     tpx;
-    gmx_mtop_t      dum_top;
     gmx_bool        TopOnlyOK;
     int             ePBC;
     gmx_bool        bPeriodicMols;
@@ -2810,8 +2808,8 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         else
         {
+            gmx_mtop_t dum_top;
             do_mtop(fio, &dum_top, bRead, fileVersion);
-            done_mtop(&dum_top);
         }
     }
     do_test(fio, tpx.bX, x);
