@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,28 +123,24 @@ static gmx_bool is_charge(real charge)
 static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
                        real *q2all, real *q2allnr)
 {
-    int             imol, iatom; /* indices for loops */
     real            q2_all = 0;  /* Sum of squared charges */
     int             nrq_mol;     /* Number of charges in a single molecule */
     int             nrq_all;     /* Total number of charges in the MD system */
     real            qi, q2_mol;
-    gmx_moltype_t  *molecule;
-    gmx_molblock_t *molblock;
 
 #ifdef DEBUG
     fprintf(stderr, "\nCharge density:\n");
 #endif
-    q2_all  = 0.0;                                 /* total q squared */
-    nrq_all = 0;                                   /* total number of charges in the system */
-    for (imol = 0; imol < mtop->nmolblock; imol++) /* Loop over molecule types */
+    q2_all  = 0.0;                                        /* total q squared */
+    nrq_all = 0;                                          /* total number of charges in the system */
+    for (const gmx_molblock_t &molblock : mtop->molblock) /* Loop over molecule types */
     {
-        q2_mol   = 0.0;                            /* q squared value of this molecule */
-        nrq_mol  = 0;                              /* number of charges this molecule carries */
-        molecule = &(mtop->moltype[imol]);
-        molblock = &(mtop->molblock[imol]);
-        for (iatom = 0; iatom < molblock->natoms_mol; iatom++) /* Loop over atoms in this molecule */
+        q2_mol   = 0.0;                                   /* q squared value of this molecule */
+        nrq_mol  = 0;                                     /* number of charges this molecule carries */
+        const gmx_moltype_t &molecule = mtop->moltype[molblock.type];
+        for (int i = 0; i < molecule.atoms.nr; i++)
         {
-            qi = molecule->atoms.atom[iatom].q;                /* Charge of this atom */
+            qi = molecule.atoms.atom[i].q;
             /* Is this charge worth to be considered? */
             if (is_charge(qi))
             {
@@ -153,11 +149,11 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
             }
         }
         /* Multiply with the number of molecules present of this type and add */
-        q2_all  += q2_mol*molblock->nmol;
-        nrq_all += nrq_mol*molblock->nmol;
+        q2_all  += q2_mol*molblock.nmol;
+        nrq_all += nrq_mol*molblock.nmol;
 #ifdef DEBUG
         fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
-                imol, molblock->natoms_mol, q2_mol, nrq_mol, molblock->nmol, q2_all, nrq_all);
+                imol, molecule.atoms.nr, q2_mol, nrq_mol, molblock.nmol, q2_all, nrq_all);
 #endif
     }
 

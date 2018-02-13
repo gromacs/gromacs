@@ -76,7 +76,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     t_disresdata        *dd;
     history_t           *hist;
     gmx_mtop_ilistloop_t iloop;
-    t_ilist             *il;
+    const t_ilist       *il;
     char                *ptr;
     int                  type_min, type_max;
 
