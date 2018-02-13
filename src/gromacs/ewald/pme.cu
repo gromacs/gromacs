@@ -133,8 +133,7 @@ void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu)
 void pme_gpu_free_bspline_values(const PmeGpu *pmeGpu)
 {
     pfree(pmeGpu->staging.h_splineModuli);
-    cu_free_buffered(pmeGpu->kernelParams->grid.d_splineModuli, &pmeGpu->archSpecific->splineValuesSize,
-                     &pmeGpu->archSpecific->splineValuesSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->grid.d_splineModuli);
 }
 
 void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
@@ -149,7 +148,7 @@ void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
 
 void pme_gpu_free_forces(const PmeGpu *pmeGpu)
 {
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_forces, &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces);
 }
 
 void pme_gpu_copy_input_forces(PmeGpu *pmeGpu)
@@ -198,7 +197,7 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGpu, const rvec *h_coordina
 
 void pme_gpu_free_coordinates(const PmeGpu *pmeGpu)
 {
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_coordinates, &pmeGpu->archSpecific->coordinatesSize, &pmeGpu->archSpecific->coordinatesSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates);
 }
 
 void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGpu, const float *h_coefficients)
@@ -225,7 +224,7 @@ void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGpu, const flo
 
 void pme_gpu_free_coefficients(const PmeGpu *pmeGpu)
 {
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_coefficients, &pmeGpu->archSpecific->coefficientsSize, &pmeGpu->archSpecific->coefficientsSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients);
 }
 
 void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu)
@@ -256,8 +255,8 @@ void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu)
 void pme_gpu_free_spline_data(const PmeGpu *pmeGpu)
 {
     /* Two arrays of the same size */
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_theta);
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_dtheta, &pmeGpu->archSpecific->splineDataSize, &pmeGpu->archSpecific->splineDataSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_theta);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_dtheta);
     pfree(pmeGpu->staging.h_theta);
     pfree(pmeGpu->staging.h_dtheta);
 }
@@ -274,7 +273,7 @@ void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGpu)
 
 void pme_gpu_free_grid_indices(const PmeGpu *pmeGpu)
 {
-    cu_free_buffered(pmeGpu->kernelParams->atoms.d_gridlineIndices, &pmeGpu->archSpecific->gridlineIndicesSize, &pmeGpu->archSpecific->gridlineIndicesSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_gridlineIndices);
     pfree(pmeGpu->staging.h_gridlineIndices);
 }
 
@@ -315,10 +314,9 @@ void pme_gpu_free_grids(const PmeGpu *pmeGpu)
 {
     if (pmeGpu->archSpecific->performOutOfPlaceFFT)
     {
-        cu_free_buffered(pmeGpu->kernelParams->grid.d_fourierGrid);
+        freeDeviceBuffer(&pmeGpu->kernelParams->grid.d_fourierGrid);
     }
-    cu_free_buffered(pmeGpu->kernelParams->grid.d_realGrid,
-                     &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc);
+    freeDeviceBuffer(&pmeGpu->kernelParams->grid.d_realGrid);
 }
 
 void pme_gpu_clear_grids(const PmeGpu *pmeGpu)
