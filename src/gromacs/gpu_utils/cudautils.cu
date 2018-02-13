@@ -138,30 +138,6 @@ int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s 
 /**** Operation on buffered arrays (arrays with "over-allocation" in gmx wording) *****/
 
 /*!
- * If the pointers to the size variables are NULL no resetting happens.
- */
-void cu_free_buffered(void *d_ptr, int *n, int *nalloc)
-{
-    cudaError_t stat;
-
-    if (d_ptr)
-    {
-        stat = cudaFree(d_ptr);
-        CU_RET_ERR(stat, "cudaFree failed");
-    }
-
-    if (n)
-    {
-        *n = -1;
-    }
-
-    if (nalloc)
-    {
-        *nalloc = -1;
-    }
-}
-
-/*!
  *  Reallocation of the memory pointed by d_ptr and copying of the data from
  *  the location pointed by h_src host-side pointer is done. Allocation is
  *  buffered and therefore freeing is only needed if the previously allocated
@@ -190,13 +166,13 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
         /* only free if the array has already been initialized */
         if (*curr_alloc_size >= 0)
         {
-            cu_free_buffered(*d_dest, curr_size, curr_alloc_size);
+            freeDeviceBuffer(d_dest);
         }
 
         *curr_alloc_size = over_alloc_large(req_size);
 
         stat = cudaMalloc(d_dest, *curr_alloc_size * type_size);
-        CU_RET_ERR(stat, "cudaMalloc failed in cu_free_buffered");
+        CU_RET_ERR(stat, "cudaMalloc failed in cu_realloc_buffered");
     }
 
     /* size could have changed without actual reallocation */

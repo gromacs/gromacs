@@ -668,10 +668,10 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
         /* free up first if the arrays have already been initialized */
         if (d_atdat->nalloc != -1)
         {
-            cu_free_buffered(d_atdat->f, &d_atdat->natoms, &d_atdat->nalloc);
-            cu_free_buffered(d_atdat->xq);
-            cu_free_buffered(d_atdat->atom_types);
-            cu_free_buffered(d_atdat->lj_comb);
+            freeDeviceBuffer(&d_atdat->f);
+            freeDeviceBuffer(&d_atdat->xq);
+            freeDeviceBuffer(&d_atdat->atom_types);
+            freeDeviceBuffer(&d_atdat->lj_comb);
         }
 
         stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
@@ -784,10 +784,10 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     stat = cudaFree(atdat->e_el);
     CU_RET_ERR(stat, "cudaFree failed on atdat->e_el");
 
-    cu_free_buffered(atdat->f, &atdat->natoms, &atdat->nalloc);
-    cu_free_buffered(atdat->xq);
-    cu_free_buffered(atdat->atom_types, &atdat->ntypes);
-    cu_free_buffered(atdat->lj_comb);
+    freeDeviceBuffer(&atdat->f);
+    freeDeviceBuffer(&atdat->xq);
+    freeDeviceBuffer(&atdat->atom_types);
+    freeDeviceBuffer(&atdat->lj_comb);
 
     /* Free plist */
     auto *plist = nb->plist[eintLocal];

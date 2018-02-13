@@ -178,7 +178,6 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
 }
 
 /*! \brief Free a device-side buffer.
- * TODO: fully replace free_ocl_buffer and ocl_free_buffered with this.
  *
  * \param[in] buffer  Pointer to the buffer to free.
  */
