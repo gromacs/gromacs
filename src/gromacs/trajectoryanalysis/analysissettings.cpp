@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,8 +194,7 @@ TopologyInformation::TopologyInformation()
 
 TopologyInformation::~TopologyInformation()
 {
-    done_top_mtop(top_, mtop_);
-    sfree(mtop_);
+    done_top_mtop(top_, mtop_.get());
     sfree(top_);
     sfree(xtop_);
 }
@@ -206,7 +205,7 @@ t_topology *TopologyInformation::topology() const
     if (top_ == nullptr && mtop_ != nullptr)
     {
         snew(top_, 1);
-        *top_ = gmx_mtop_t_to_t_topology(mtop_, false);
+        *top_ = gmx_mtop_t_to_t_topology(mtop_.get(), false);
     }
     return top_;
 }

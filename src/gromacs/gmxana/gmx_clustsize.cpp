@@ -114,7 +114,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
 
     if (tpr)
     {
-        snew(mtop, 1);
+        mtop = new gmx_mtop_t;
         read_tpxheader(tpr, &tpxh, TRUE);
         if (tpxh.natoms != natoms)
         {
@@ -444,8 +444,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     gmx_ffclose(fp);
     if (mtop)
     {
-        done_mtop(mtop);
-        sfree(mtop);
+        delete mtop;
     }
     sfree(t_x);
     sfree(t_y);

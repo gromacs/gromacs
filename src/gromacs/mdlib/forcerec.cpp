@@ -534,7 +534,7 @@ check_solvent(FILE  *                fp,
 {
     const t_block     *   cgs;
     const gmx_moltype_t  *molt;
-    int                   mb, mol, cg_mol, at_offset, am, cgm, i, nmol_ch, nmol;
+    int                   mol, cg_mol, at_offset, am, cgm, i, nmol_ch, nmol;
     int                   n_solvent_parameters;
     solvent_parameters_t *solvent_parameters;
     int                 **cg_sp;
@@ -548,10 +548,10 @@ check_solvent(FILE  *                fp,
     n_solvent_parameters = 0;
     solvent_parameters   = nullptr;
     /* Allocate temporary array for solvent type */
-    snew(cg_sp, mtop->nmolblock);
+    snew(cg_sp, mtop->molblock.size());
 
     at_offset = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
         cgs  = &molt->cgs;
@@ -605,7 +605,7 @@ check_solvent(FILE  *                fp,
     }
 
     fr->nWatMol = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         cgs  = &mtop->moltype[mtop->molblock[mb].type].cgs;
         nmol = (mtop->molblock[mb].nmol*cgs->nr)/cginfo_mb[mb].cg_mod;
@@ -653,13 +653,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     gmx_bool             *type_VDW;
     int                  *cginfo;
     int                   cg_offset, a_offset;
-    int                   mb, m, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
+    int                   m, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
     int                  *a_con;
     int                   ftype;
     int                   ia;
     gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
-    snew(cginfo_mb, mtop->nmolblock);
+    snew(cginfo_mb, mtop->molblock.size());
 
     snew(type_VDW, fr->ntype);
     for (ai = 0; ai < fr->ntype; ai++)
@@ -681,7 +681,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     snew(bExcl, excl_nalloc);
     cg_offset = 0;
     a_offset  = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         molb = &mtop->molblock[mb];
         molt = &mtop->moltype[molb->type];
@@ -889,7 +889,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     }
     if (!fr->solvent_opt)
     {
-        for (mb = 0; mb < mtop->nmolblock; mb++)
+        for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
         {
             for (cg = 0; cg < cginfo_mb[mb].cg_mod; cg++)
             {
@@ -942,17 +942,15 @@ static bool set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     /*This now calculates sum for q and c6*/
     double         qsum, q2sum, q, c6sum, c6;
-    int            mb, nmol, i;
-    const t_atoms *atoms;
 
     qsum   = 0;
     q2sum  = 0;
     c6sum  = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        nmol  = mtop->molblock[mb].nmol;
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        for (i = 0; i < atoms->nr; i++)
+        int            nmol  = molb.nmol;
+        const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
+        for (int i = 0; i < atoms->nr; i++)
         {
             q       = atoms->atom[i].q;
             qsum   += nmol*q;
@@ -970,11 +968,11 @@ static bool set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
         qsum   = 0;
         q2sum  = 0;
         c6sum  = 0;
-        for (mb = 0; mb < mtop->nmolblock; mb++)
+        for (const gmx_molblock_t &molb : mtop->molblock)
         {
-            nmol  = mtop->molblock[mb].nmol;
-            atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-            for (i = 0; i < atoms->nr; i++)
+            int            nmol  = molb.nmol;
+            const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
+            for (int i = 0; i < atoms->nr; i++)
             {
                 q       = atoms->atom[i].qB;
                 qsum   += nmol*q;
@@ -1025,7 +1023,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
-    int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
+    int             nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
     gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
@@ -1103,12 +1101,12 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
              * any value. These unused values should not influence the dispersion
              * correction.
              */
-            for (mb = 0; mb < mtop->nmolblock; mb++)
+            for (const gmx_molblock_t &molb : mtop->molblock)
             {
-                nmol  = mtop->molblock[mb].nmol;
-                atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-                excl  = &mtop->moltype[mtop->molblock[mb].type].excls;
-                for (i = 0; (i < atoms->nr); i++)
+                int nmol = molb.nmol;
+                atoms    = &mtop->moltype[molb.type].atoms;
+                excl     = &mtop->moltype[molb.type].excls;
+                for (int i = 0; (i < atoms->nr); i++)
                 {
                     if (q == 0)
                     {
@@ -1144,7 +1142,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                                 csix    -= nmol*C6 (nbfp, ntp, tpi, tpj)/6.0;
                                 ctwelve -= nmol*C12(nbfp, ntp, tpi, tpj)/12.0;
                             }
-                            nexcl += nmol;
+                            nexcl += molb.nmol;
                         }
                     }
                 }
@@ -1156,24 +1154,24 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
              * with the rest of the system.
              */
             atoms_tpi =
-                &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
+                &mtop->moltype[mtop->molblock.back().type].atoms;
 
             npair = 0;
-            for (mb = 0; mb < mtop->nmolblock; mb++)
+            for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
             {
-                nmol  = mtop->molblock[mb].nmol;
-                atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
+                const gmx_molblock_t &molb = mtop->molblock[mb];
+                atoms                      = &mtop->moltype[molb.type].atoms;
                 for (j = 0; j < atoms->nr; j++)
                 {
-                    nmolc = nmol;
+                    nmolc = molb.nmol;
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
-                    if (mb == mtop->nmolblock-1)
+                    if (mb == mtop->molblock.size() - 1)
                     {
                         nmolc--;
 
-                        if (mb == 0 && nmol == 1)
+                        if (mb == 0 && molb.nmol == 1)
                         {
                             gmx_fatal(FARGS, "Old format tpr with TPI, please generate a new tpr file");
                         }
@@ -1257,7 +1255,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
 {
     const t_atoms *at1, *at2;
-    int            mt1, mt2, i, j, tpi, tpj, ntypes;
+    int            i, j, tpi, tpj, ntypes;
     real           b, bmin;
 
     if (fplog)
@@ -1268,7 +1266,7 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
 
     bmin            = -1;
     real bham_b_max = 0;
-    for (mt1 = 0; mt1 < mtop->nmoltype; mt1++)
+    for (size_t mt1 = 0; mt1 < mtop->moltype.size(); mt1++)
     {
         at1 = &mtop->moltype[mt1].atoms;
         for (i = 0; (i < at1->nr); i++)
@@ -1279,7 +1277,7 @@ static real calcBuckinghamBMax(FILE *fplog, const gmx_mtop_t *mtop)
                 gmx_fatal(FARGS, "Atomtype[%d] = %d, maximum = %d", i, tpi, ntypes);
             }
 
-            for (mt2 = mt1; mt2 < mtop->nmoltype; mt2++)
+            for (size_t mt2 = mt1; mt2 < mtop->moltype.size(); mt2++)
             {
                 at2 = &mtop->moltype[mt2].atoms;
                 for (j = 0; (j < at2->nr); j++)
@@ -1400,21 +1398,19 @@ static void make_nbf_tables(FILE *fp,
 static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                          int *ncount, int **count)
 {
-    const gmx_moltype_t *molt;
     const t_ilist       *il;
-    int                  mt, ftype, stride, i, j, tabnr;
+    int                  ftype, stride, i, j, tabnr;
 
     // Loop over all moleculetypes
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (const gmx_moltype_t &molt : mtop->moltype)
     {
-        molt = &mtop->moltype[mt];
         // Loop over all interaction types
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             // If the current interaction type is one of the types whose tables we're trying to count...
             if (ftype == ftype1 || ftype == ftype2)
             {
-                il     = &molt->ilist[ftype];
+                il     = &molt.ilist[ftype];
                 stride = 1 + NRAL(ftype);
                 // ... and there are actually some interactions for this type
                 for (i = 0; i < il->nr; i += stride)
@@ -2379,7 +2375,7 @@ void init_forcerec(FILE                             *fp,
         /* Because of old style topologies, we have to use the last cg
          * instead of the last molecule type.
          */
-        cgs       = &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].cgs;
+        cgs       = &mtop->moltype[mtop->molblock.back().type].cgs;
         fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
         gmx::BlockRanges molecules = gmx_mtop_molecules(*mtop);
         if (fr->n_tpi != molecules.index[molecules.numBlocks()] - molecules.index[molecules.numBlocks() - 1])
@@ -3059,7 +3055,7 @@ void init_forcerec(FILE                             *fp,
     }
     else
     {
-        fr->cginfo = cginfo_expand(mtop->nmolblock, fr->cginfo_mb);
+        fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
     }
 
     if (!DOMAINDECOMP(cr))

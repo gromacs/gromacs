@@ -2582,8 +2582,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                             gmx_bool bFirst)
 {
     t_graph        *graph;
-    int             mb, as, mol;
-    gmx_molblock_t *molb;
+    int             as, mol;
 
     if (bFirst && fplog)
     {
@@ -2592,22 +2591,21 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
 
     snew(graph, 1);
     as = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        if (molb->natoms_mol == 1 ||
-            (!bFirst && mtop->moltype[molb->type].cgs.nr == 1))
+        if (molb.natoms_mol == 1 ||
+            (!bFirst && mtop->moltype[molb.type].cgs.nr == 1))
         {
             /* Just one atom or charge group in the molecule, no PBC required */
-            as += molb->nmol*molb->natoms_mol;
+            as += molb.nmol*molb.natoms_mol;
         }
         else
         {
             /* Pass NULL iso fplog to avoid graph prints for each molecule type */
-            mk_graph_ilist(nullptr, mtop->moltype[molb->type].ilist,
-                           0, molb->natoms_mol, FALSE, FALSE, graph);
+            mk_graph_ilist(nullptr, mtop->moltype[molb.type].ilist,
+                           0, molb.natoms_mol, FALSE, FALSE, graph);
 
-            for (mol = 0; mol < molb->nmol; mol++)
+            for (mol = 0; mol < molb.nmol; mol++)
             {
                 mk_mshift(fplog, graph, ePBC, box, x+as);
 
@@ -2617,7 +2615,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                  * since we no longer need this graph.
                  */
 
-                as += molb->natoms_mol;
+                as += molb.natoms_mol;
             }
             done_graph(graph);
         }

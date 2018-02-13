@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <string>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
@@ -93,7 +94,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         virtual gmx_mtop_t *getTopology(bool required)
         {
             initTopology(required);
-            return topInfo_.mtop_;
+            return topInfo_.mtop_.get();
         }
         virtual int getAtomCount()
         {
@@ -180,15 +181,14 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        snew(topInfo_.mtop_, 1);
-        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
+        topInfo_.mtop_ = gmx::compat::make_unique<gmx_mtop_t>();
+        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_.get(),
                             &topInfo_.ePBC_, &topInfo_.xtop_, nullptr,
                             topInfo_.boxtop_);
         // TODO: Only load this here if the tool actually needs it; selections
         // take care of themselves.
-        for (int i = 0; i < topInfo_.mtop_->nmoltype; ++i)
+        for (gmx_moltype_t &moltype : topInfo_.mtop_->moltype)
         {
-            gmx_moltype_t &moltype = topInfo_.mtop_->moltype[i];
             if (!moltype.atoms.haveMass)
             {
                 // Try to read masses from database, be silent about missing masses
