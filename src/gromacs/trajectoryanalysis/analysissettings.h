@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -258,7 +258,7 @@ class TopologyInformation
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.
-        const gmx_mtop_t *mtop() const { return mtop_; }
+        const gmx_mtop_t *mtop() const { return mtop_.get(); }
         //! Returns the loaded topology, or NULL if not loaded.
         t_topology *topology() const;
         //! Returns the ePBC field from the topology.
@@ -284,7 +284,7 @@ class TopologyInformation
         TopologyInformation();
         ~TopologyInformation();
 
-        gmx_mtop_t          *mtop_;
+        std::unique_ptr<gmx_mtop_t> mtop_;
         //! The topology structure, or NULL if no topology loaded.
         // TODO: Replace fully with mtop.
         mutable t_topology  *top_;

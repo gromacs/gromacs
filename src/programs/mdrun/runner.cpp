@@ -425,7 +425,6 @@ int Mdrunner::mdrunner()
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
     t_nrnb                   *nrnb;
-    gmx_mtop_t               *mtop          = nullptr;
     t_forcerec               *fr            = nullptr;
     t_fcdata                 *fcd           = nullptr;
     real                      ewaldcoeff_q  = 0;
@@ -446,7 +445,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
     t_inputrec                      inputrecInstance;
     t_inputrec                     *inputrec = &inputrecInstance;
-    snew(mtop, 1);
+    gmx_mtop_t                      mtop;
 
     if (mdrunOptions.continuationOptions.appendFiles)
     {
@@ -555,7 +554,7 @@ int Mdrunner::mdrunner()
         globalState = std::unique_ptr<t_state>(new t_state);
 
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), mtop);
+        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), &mtop);
 
         if (inputrec->cutoff_scheme != ecutsVERLET)
         {
@@ -625,7 +624,7 @@ int Mdrunner::mdrunner()
                                                 gpuIdsToUse,
                                                 useGpuForNonbonded,
                                                 useGpuForPme,
-                                                inputrec, mtop,
+                                                inputrec, &mtop,
                                                 mdlog,
                                                 doMembed);
 
@@ -643,7 +642,7 @@ int Mdrunner::mdrunner()
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(cr, inputrec, mtop);
+        init_parallel(cr, inputrec, &mtop);
     }
 
     // Now each rank knows the inputrec that SIMMASTER read and used,
@@ -799,9 +798,9 @@ int Mdrunner::mdrunner()
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
+    init_disres(fplog, &mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
 
-    init_orires(fplog, mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
+    init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
     if (inputrecDeform(inputrec))
     {
@@ -881,7 +880,7 @@ int Mdrunner::mdrunner()
     /* Update rlist and nstlist. */
     if (inputrec->cutoff_scheme == ecutsVERLET)
     {
-        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, mtop, box,
+        prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
                               useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
 
@@ -891,7 +890,7 @@ int Mdrunner::mdrunner()
         const rvec *xOnMaster = (SIMMASTER(cr) ? as_rvec_array(globalState->x.data()) : nullptr);
 
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
-                                           mtop, inputrec,
+                                           &mtop, inputrec,
                                            box, xOnMaster,
                                            &ddbox, &npme_major, &npme_minor);
         // Note that local state still does not exist yet.
@@ -945,7 +944,7 @@ int Mdrunner::mdrunner()
 
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(&hw_opt, *hwinfo, cr, ms, physicalNodeComm.size_,
-                                            pmeRunMode, *mtop);
+                                            pmeRunMode, mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
@@ -1157,7 +1156,7 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
+        membed = init_membed(fplog, nfile, fnm, &mtop, inputrec, globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
     }
 
     std::unique_ptr<MDAtoms> mdAtoms;
@@ -1169,7 +1168,7 @@ int Mdrunner::mdrunner()
         fr                 = mk_forcerec();
         fr->forceProviders = mdModules->initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
-                      inputrec, mtop, cr, box,
+                      inputrec, &mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       opt2fns("-tableb", nfile, fnm),
@@ -1184,7 +1183,7 @@ int Mdrunner::mdrunner()
                 appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
                            "version. Please get in touch with the developers if you find the support useful, "
                            "as help is needed if the functionality is to continue to be available.");
-            init_QMMMrec(cr, mtop, inputrec, fr);
+            init_QMMMrec(cr, &mtop, inputrec, fr);
         }
 
         /* Initialize the mdAtoms structure.
@@ -1192,7 +1191,7 @@ int Mdrunner::mdrunner()
          * as this can not be done now with domain decomposition.
          */
         const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed);
-        mdAtoms = makeMDAtoms(fplog, *mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
+        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
         if (globalState)
         {
             // The pinning of coordinates in the global state object works, because we only use
@@ -1204,7 +1203,7 @@ int Mdrunner::mdrunner()
         }
 
         /* Initialize the virtual site communication */
-        vsite = initVsite(*mtop, cr);
+        vsite = initVsite(mtop, cr);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1218,7 +1217,7 @@ int Mdrunner::mdrunner()
             if (fr->ePBC != epbcNONE)
             {
                 rvec *xGlobal = as_rvec_array(globalState->x.data());
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, xGlobal);
+                do_pbc_first_mtop(fplog, inputrec->ePBC, box, &mtop, xGlobal);
             }
             if (vsite)
             {
@@ -1226,7 +1225,7 @@ int Mdrunner::mdrunner()
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                constructVsitesGlobal(*mtop, globalState->x);
+                constructVsitesGlobal(mtop, globalState->x);
             }
         }
 
@@ -1275,7 +1274,7 @@ int Mdrunner::mdrunner()
             try
             {
                 pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
-                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                                       mtop.natoms, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
@@ -1306,7 +1305,7 @@ int Mdrunner::mdrunner()
             /* Initialize pull code */
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
-                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
+                          &mtop, cr, oenv, inputrec->fepvals->init_lambda,
                           EI_DYNAMICS(inputrec->eI) && MASTER(cr),
                           continuationOptions);
         }
@@ -1314,7 +1313,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), mtop, oenv, mdrunOptions);
+            init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
@@ -1322,7 +1321,7 @@ int Mdrunner::mdrunner()
          */
         bool doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
 
-        constr = init_constraints(fplog, mtop, inputrec, doEdsam, cr);
+        constr = init_constraints(fplog, &mtop, inputrec, doEdsam, cr);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1330,7 +1329,7 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
+            dd_init_bondeds(fplog, cr->dd, &mtop, vsite, inputrec,
                             domdecOptions.checkBondedInteractions,
                             fr->cginfo_mb);
         }
@@ -1341,7 +1340,7 @@ int Mdrunner::mdrunner()
                                      mdrunOptions,
                                      vsite, constr,
                                      mdModules->outputProvider(),
-                                     inputrec, mtop,
+                                     inputrec, &mtop,
                                      fcd,
                                      globalState.get(),
                                      &observablesHistory,

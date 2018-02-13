@@ -44,6 +44,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -569,20 +570,21 @@ static void do_trunc(const char *fn, real t0)
  * molecule information will generally be present if the input TNG
  * file was written by a GROMACS tool, this seems like reasonable
  * behaviour. */
-static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
-                                     const char *input_file,
-                                     const char *output_file)
+static std::unique_ptr<gmx_mtop_t>
+read_mtop_for_tng(const char *tps_file,
+                  const char *input_file,
+                  const char *output_file)
 {
-    gmx_mtop_t *mtop = nullptr;
+    std::unique_ptr<gmx_mtop_t> mtop;
 
     if (fn2bTPX(tps_file) &&
         efTNG != fn2ftp(input_file) &&
         efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
-        snew(mtop, 1);
+        mtop = gmx::compat::make_unique<gmx_mtop_t>();
         read_tpx(tps_file, nullptr, nullptr, &temp_natoms,
-                 nullptr, nullptr, mtop);
+                 nullptr, nullptr, mtop.get());
     }
 
     return mtop;
@@ -871,7 +873,7 @@ int gmx_trjconv(int argc, char *argv[])
     int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
     t_topology        top;
-    gmx_mtop_t       *mtop  = nullptr;
+    //gmx_mtop_t       *mtop  = nullptr;
     gmx_conect        gc    = nullptr;
     int               ePBC  = -1;
     t_atoms          *atoms = nullptr, useatoms;
@@ -1081,7 +1083,7 @@ int gmx_trjconv(int argc, char *argv[])
         {
         }
 
-        mtop = read_mtop_for_tng(top_file, in_file, out_file);
+        std::unique_ptr<gmx_mtop_t> mtop = read_mtop_for_tng(top_file, in_file, out_file);
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) ||
@@ -1365,7 +1367,7 @@ int gmx_trjconv(int argc, char *argv[])
                                                               trxin,
                                                               nullptr,
                                                               nout,
-                                                              mtop,
+                                                              mtop.get(),
                                                               index,
                                                               grpnm);
                     break;
@@ -1976,10 +1978,6 @@ int gmx_trjconv(int argc, char *argv[])
         }
     }
 
-    if (mtop)
-    {
-        sfree(mtop);
-    }
     if (bTPS)
     {
         done_top(&top);

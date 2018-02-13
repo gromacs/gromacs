@@ -6069,7 +6069,7 @@ static int multi_body_bondeds_count(const gmx_mtop_t *mtop)
 {
     int                  n, nmol, ftype;
     gmx_mtop_ilistloop_t iloop;
-    t_ilist             *il;
+    const t_ilist       *il;
 
     n     = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);

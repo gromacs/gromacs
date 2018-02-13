@@ -174,7 +174,7 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     /* Check that we have only one settle type */
     int                   settle_type = -1;
     gmx_mtop_ilistloop_t  iloop       = gmx_mtop_ilistloop_init(mtop);
-    t_ilist              *ilist;
+    const t_ilist        *ilist;
     int                   nmol;
     const int             nral1       = 1 + NRAL(F_SETTLE);
     while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))

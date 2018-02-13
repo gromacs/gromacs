@@ -122,12 +122,11 @@ static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
 }
 
 /* Get the id of the molblock from a global molecule id */
-static int get_molblock(int mol_id, int nmblock, gmx_molblock_t *mblock)
+static int get_molblock(int mol_id, const std::vector<gmx_molblock_t> &mblock)
 {
-    int i;
     int nmol = 0;
 
-    for (i = 0; i < nmblock; i++)
+    for (size_t i = 0; i < mblock.size(); i++)
     {
         nmol += mblock[i].nmol;
         if (mol_id < nmol)
@@ -637,7 +636,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
         while (nupper != nlower)
         {
             mol_id = mem_p->mol_id[order[i]];
-            block  = get_molblock(mol_id, mtop->nmolblock, mtop->molblock);
+            block  = get_molblock(mol_id, mtop->molblock);
             bRM    = TRUE;
             for (l = 0; l < nrm; l++)
             {
@@ -692,7 +691,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
-    int             i, j, k, n, rm, mol_id, at, block;
+    int             j, k, n, rm, mol_id, at, block;
     rvec           *x_tmp, *v_tmp;
     int            *list;
     unsigned char  *new_egrp[egcNR];
@@ -704,7 +703,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 
     snew(list, state->natoms);
     n = 0;
-    for (i = 0; i < rm_p->nr; i++)
+    for (int i = 0; i < rm_p->nr; i++)
     {
         mol_id = rm_p->mol[i];
         at     = molecules.index[mol_id];
@@ -722,7 +721,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     snew(x_tmp, state->natoms);
     snew(v_tmp, state->natoms);
 
-    for (i = 0; i < egcNR; i++)
+    for (int i = 0; i < egcNR; i++)
     {
         if (groups->grpnr[i] != nullptr)
         {
@@ -732,7 +731,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
 
     rm = 0;
-    for (i = 0; i < state->natoms+n; i++)
+    for (int i = 0; i < state->natoms+n; i++)
     {
         bRM = FALSE;
         for (j = 0; j < n; j++)
@@ -786,7 +785,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
     sfree(v_tmp);
 
-    for (i = 0; i < egcNR; i++)
+    for (int i = 0; i < egcNR; i++)
     {
         if (groups->grpnr[i] != nullptr)
         {
@@ -797,7 +796,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 
     /* remove empty molblocks */
     RMmolblock = 0;
-    for (i = 0; i < mtop->nmolblock; i++)
+    for (size_t i = 0; i < mtop->molblock.size(); i++)
     {
         if (mtop->molblock[i].nmol == 0)
         {
@@ -808,13 +807,13 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
             mtop->molblock[i-RMmolblock] = mtop->molblock[i];
         }
     }
-    mtop->nmolblock -= RMmolblock;
+    mtop->molblock.resize(mtop->molblock.size() - RMmolblock);
 }
 
 /* remove al bonded interactions from mtop for the molecule to be embedded */
 static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 {
-    int       i, j, m;
+    int       j, m;
     int       type, natom, nmol, at, atom1 = 0, rm_at = 0;
     gmx_bool *bRM, bINS;
     /*this routine lives dangerously by assuming that all molecules of a given type are in order in the structure*/
@@ -823,13 +822,13 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
      * ins_at index group. MGWolf 050710 */
 
 
-    snew(bRM, mtop->nmoltype);
-    for (i = 0; i < mtop->nmoltype; i++)
+    snew(bRM, mtop->moltype.size());
+    for (size_t i = 0; i < mtop->moltype.size(); i++)
     {
         bRM[i] = TRUE;
     }
 
-    for (i = 0; i < mtop->nmolblock; i++)
+    for (size_t i = 0; i < mtop->molblock.size(); i++)
     {
         /*loop over molecule blocks*/
         type         = mtop->molblock[i].type;
@@ -859,7 +858,7 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
         }
     }
 
-    for (i = 0; i < mtop->nmoltype; i++)
+    for (size_t i = 0; i < mtop->moltype.size(); i++)
     {
         if (bRM[i])
         {
@@ -893,7 +892,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     gmx_tmpnam(temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
 
-    snew(nmol_rm, mtop->nmoltype);
+    snew(nmol_rm, mtop->moltype.size());
     for (i = 0; i < rm_p->nr; i++)
     {
         nmol_rm[rm_p->block[i]]++;
@@ -933,7 +932,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
             }
             else if (bMolecules == 1)
             {
-                for (i = 0; i < mtop->nmolblock; i++)
+                for (size_t i = 0; i < mtop->molblock.size(); i++)
                 {
                     nmol = mtop->molblock[i].nmol;
                     sprintf(buf, "%-15s %5d\n", *(mtop->moltype[mtop->molblock[i].type].name), nmol);
@@ -1268,12 +1267,12 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
             }
         }
 
-        for (i = 0; i < mtop->nmolblock; i++)
+        for (size_t i = 0; i < mtop->molblock.size(); i++)
         {
             ntype = 0;
             for (j = 0; j < rm_p->nr; j++)
             {
-                if (rm_p->block[j] == i)
+                if (rm_p->block[j] == static_cast<int>(i))
                 {
                     ntype++;
                 }

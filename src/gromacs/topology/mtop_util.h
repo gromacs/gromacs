@@ -123,7 +123,7 @@ gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
  */
 void
 gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              gmx_moltype_t **moltype, int *at_mol);
+                              const gmx_moltype_t **moltype, int *at_mol);
 
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
@@ -168,7 +168,7 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                        t_ilist **ilist_mol, int *nmol);
+                        const t_ilist **ilist_mol, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists of all molecules */
@@ -190,7 +190,7 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                            t_ilist **ilist_mol, int *atnr_offset);
+                            const t_ilist **ilist_mol, int *atnr_offset);
 
 
 /* Returns the total number of interactions in the system of type ftype */
@@ -228,6 +228,8 @@ gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop);
 
 /* Converts a gmx_mtop_t struct to t_topology.
  *
+ * If the lifetime of the returned topology should be longer than that
+ * of mtop, your need to pass freeMtop==true.
  * If freeMTop == true, memory related to mtop will be freed so that done_top()
  * on the result value will free all memory.
  * If freeMTop == false, mtop and the return value will share some of their
