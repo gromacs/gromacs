@@ -2762,10 +2762,10 @@ static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptr
     return (bRest && grptp == egrptpPART);
 }
 
-static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
+static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
-    gmx_groups_t           *groups;
+    const gmx_groups_t     *groups;
     pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
@@ -2773,9 +2773,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
     gmx_mtop_atomloop_all_t aloop;
-    int                     mb, mol, ftype, as;
-    gmx_molblock_t         *molb;
-    gmx_moltype_t          *molt;
+    int                     mol, ftype, as;
 
     /* Calculate nrdf.
      * First calc 3xnr-atoms for each group
@@ -2836,17 +2834,16 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
 
     as = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
-        atom = molt->atoms.atom;
-        for (mol = 0; mol < molb->nmol; mol++)
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+        atom = molt.atoms.atom;
+        for (mol = 0; mol < molb.nmol; mol++)
         {
             for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
             {
-                ia = molt->ilist[ftype].iatoms;
-                for (i = 0; i < molt->ilist[ftype].nr; )
+                ia = molt.ilist[ftype].iatoms;
+                for (i = 0; i < molt.ilist[ftype].nr; )
                 {
                     /* Subtract degrees of freedom for the constraints,
                      * if the particles still have degrees of freedom left.
@@ -2891,8 +2888,8 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                     i  += interaction_function[ftype].nratoms+1;
                 }
             }
-            ia = molt->ilist[F_SETTLE].iatoms;
-            for (i = 0; i < molt->ilist[F_SETTLE].nr; )
+            ia = molt.ilist[F_SETTLE].iatoms;
+            for (i = 0; i < molt.ilist[F_SETTLE].nr; )
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
                 for (j = 0; j < 3; j++)
@@ -2906,7 +2903,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 ia += 4;
                 i  += 4;
             }
-            as += molt->atoms.nr;
+            as += molt.atoms.nr;
         }
     }
 
@@ -3813,7 +3810,7 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
 {
     int                  d, g, i;
     gmx_mtop_ilistloop_t iloop;
-    t_ilist             *ilist;
+    const t_ilist       *ilist;
     int                  nmol;
     t_iparams           *pr;
 
