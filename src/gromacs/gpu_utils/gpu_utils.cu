@@ -137,7 +137,7 @@ static void checkCompiledTargetCompatibility(const gmx_device_info_t *devInfo)
     }
 }
 
-bool isHostMemoryPinned(void *h_ptr)
+bool isHostMemoryPinned(const void *h_ptr)
 {
     cudaPointerAttributes memoryAttributes;
     cudaError_t           stat = cudaPointerGetAttributes(&memoryAttributes, h_ptr);
