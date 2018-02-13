@@ -94,69 +94,6 @@ bool useLjCombRule(int vdwType)
             vdwType == evdwOclCUTCOMBLB);
 }
 
-/*! \brief Reallocation device buffers
- *
- *  Reallocation of the memory pointed by d_ptr and copying of the data from
- *  the location pointed by h_src host-side pointer is done. Allocation is
- *  buffered and therefore freeing is only needed if the previously allocated
- *  space is not enough.
- *  The H2D copy is launched in command queue s and can be done synchronously or
- *  asynchronously (the default is the latter).
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying the H2D copy. The event can further be used to queue a wait
- *  for this operation or to query profiling information.
- *  OpenCL equivalent of cu_realloc_buffered.
- */
-static void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
-                                 size_t type_size,
-                                 int *curr_size, int *curr_alloc_size,
-                                 int req_size,
-                                 cl_context context,
-                                 cl_command_queue s,
-                                 bool bAsync = true,
-                                 cl_event *copy_event = NULL)
-{
-    if (d_dest == NULL || req_size < 0)
-    {
-        return;
-    }
-
-    /* reallocate only if the data does not fit = allocation size is smaller
-       than the current requested size */
-    if (req_size > *curr_alloc_size)
-    {
-        cl_int gmx_unused cl_error;
-
-        /* only free if the array has already been initialized */
-        if (*curr_alloc_size >= 0)
-        {
-            freeDeviceBuffer(d_dest);
-        }
-
-        *curr_alloc_size = over_alloc_large(req_size);
-
-        *d_dest = clCreateBuffer(context, CL_MEM_READ_WRITE, *curr_alloc_size * type_size, NULL, &cl_error);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors, check clCreateBuffer flags
-    }
-
-    /* size could have changed without actual reallocation */
-    *curr_size = req_size;
-
-    /* upload to device */
-    if (h_src)
-    {
-        if (bAsync)
-        {
-            ocl_copy_H2D_async(*d_dest, h_src, 0, *curr_size * type_size, s, copy_event);
-        }
-        else
-        {
-            ocl_copy_H2D_sync(*d_dest, h_src,  0, *curr_size * type_size, s);
-        }
-    }
-}
-
 /*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale
  * and the table GPU array.
  *
@@ -886,30 +823,29 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
         nb->timers->didPairlistH2D[iloc] = true;
     }
 
-    ocl_realloc_buffered(&d_plist->sci, h_plist->sci, sizeof(nbnxn_sci_t),
-                         &d_plist->nsci, &d_plist->sci_nalloc,
-                         h_plist->nsci,
-                         nb->dev_rundata->context,
-                         stream, true, bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+    // TODO most of this function is same in CUDA and OpenCL, move into the header
+    Context context = nb->dev_rundata->context;
 
-    ocl_realloc_buffered(&d_plist->cj4, h_plist->cj4, sizeof(nbnxn_cj4_t),
-                         &d_plist->ncj4, &d_plist->cj4_nalloc,
-                         h_plist->ncj4,
-                         nb->dev_rundata->context,
-                         stream, true, bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+    reallocateDeviceBuffer(&d_plist->sci, h_plist->nsci,
+                           &d_plist->nsci, &d_plist->sci_nalloc, context);
+    copyToDeviceBuffer(&d_plist->sci, h_plist->sci, 0, h_plist->nsci,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
-    /* this call only allocates space on the device (no data is transferred) - no timing as well! */
-    ocl_realloc_buffered(&d_plist->imask, NULL, sizeof(unsigned int),
-                         &d_plist->nimask, &d_plist->imask_nalloc,
-                         h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
-                         nb->dev_rundata->context,
-                         stream, true);
+    reallocateDeviceBuffer(&d_plist->cj4, h_plist->ncj4,
+                           &d_plist->ncj4, &d_plist->cj4_nalloc, context);
+    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4, 0, h_plist->ncj4,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
-    ocl_realloc_buffered(&d_plist->excl, h_plist->excl, sizeof(nbnxn_excl_t),
-                         &d_plist->nexcl, &d_plist->excl_nalloc,
-                         h_plist->nexcl,
-                         nb->dev_rundata->context,
-                         stream, true, bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
+    reallocateDeviceBuffer(&d_plist->imask, h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
+                           &d_plist->nimask, &d_plist->imask_nalloc, context);
+
+    reallocateDeviceBuffer(&d_plist->excl, h_plist->nexcl,
+                           &d_plist->nexcl, &d_plist->excl_nalloc, context);
+    copyToDeviceBuffer(&d_plist->excl, h_plist->excl, 0, h_plist->nexcl,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
