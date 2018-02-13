@@ -41,6 +41,7 @@
 #include <cstdlib>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/devicebuffer.cuh" //TODO remove when removing cu_realloc_buffered
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
