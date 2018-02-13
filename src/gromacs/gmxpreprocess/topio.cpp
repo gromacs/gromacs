@@ -181,24 +181,22 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     }
 }
 
-double check_mol(gmx_mtop_t *mtop, warninp_t wi)
+double check_mol(const gmx_mtop_t *mtop, warninp_t wi)
 {
     char     buf[256];
-    int      i, mb, nmol, ri, pt;
+    int      i, ri, pt;
     double   q;
     real     m, mB;
-    t_atoms *atoms;
 
     /* Check mass and charge */
     q = 0.0;
 
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        nmol  = mtop->molblock[mb].nmol;
+        const t_atoms *atoms = &mtop->moltype[molb.type].atoms;
         for (i = 0; (i < atoms->nr); i++)
         {
-            q += nmol*atoms->atom[i].q;
+            q += molb.nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
             mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
@@ -395,28 +393,24 @@ static char ** cpp_opts(const char *define, const char *include,
 }
 
 
-static void make_atoms_sys(int nmolb, const gmx_molblock_t *molb,
-                           const t_molinfo *molinfo,
-                           t_atoms *atoms)
+static void make_atoms_sys(const std::vector<gmx_molblock_t> &molblock,
+                           const t_molinfo                   *molinfo,
+                           t_atoms                           *atoms)
 {
-    int            mb, m, a;
-    const t_atoms *mol_atoms;
-
     atoms->nr   = 0;
     atoms->atom = nullptr;
 
-    for (mb = 0; mb < nmolb; mb++)
+    for (const gmx_molblock_t &molb : molblock)
     {
-        assert(molb);
-        mol_atoms = &molinfo[molb[mb].type].atoms;
+        const t_atoms &mol_atoms = molinfo[molb.type].atoms;
 
-        srenew(atoms->atom, atoms->nr + molb[mb].nmol*mol_atoms->nr);
+        srenew(atoms->atom, atoms->nr + molb.nmol*mol_atoms.nr);
 
-        for (m = 0; m < molb[mb].nmol; m++)
+        for (int m = 0; m < molb.nmol; m++)
         {
-            for (a = 0; a < mol_atoms->nr; a++)
+            for (int a = 0; a < mol_atoms.nr; a++)
             {
-                atoms->atom[atoms->nr++] = mol_atoms->atom[a];
+                atoms->atom[atoms->nr++] = mol_atoms.atom[a];
             }
         }
     }
@@ -435,8 +429,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          double      *reppow,
                          t_gromppopts *opts,
                          real        *fudgeQQ,
-                         int         *nmolblock,
-                         gmx_molblock_t **molblock,
+                         std::vector<gmx_molblock_t> *molblock,
                          gmx_bool        bFEP,
                          gmx_bool        bZero,
                          gmx_bool        usingFullRangeElectrostatics,
@@ -448,9 +441,8 @@ static char **read_topol(const char *infile, const char *outfile,
     char            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
     char            genpairs[32];
     char           *dirstr, *dummy2;
-    int             nrcopies, nmol, nmolb = 0, nscan, ncombs, ncopy;
+    int             nrcopies, nmol, nscan, ncombs, ncopy;
     double          fLJ, fQQ, fPOW;
-    gmx_molblock_t *molb  = nullptr;
     t_molinfo      *mi0   = nullptr;
     DirStack       *DS;
     directive       d, newd;
@@ -634,7 +626,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 snew(*intermolecular_interactions, 1);
                                 init_molinfo(*intermolecular_interactions);
                                 mi0 = *intermolecular_interactions;
-                                make_atoms_sys(nmolb, molb, *molinfo,
+                                make_atoms_sys(*molblock, *molinfo,
                                                &mi0->atoms);
                             }
                         }
@@ -858,10 +850,9 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             push_mol(nmol, *molinfo, pline, &whichmol, &nrcopies, wi);
                             mi0 = &((*molinfo)[whichmol]);
-                            srenew(molb, nmolb+1);
-                            molb[nmolb].type = whichmol;
-                            molb[nmolb].nmol = nrcopies;
-                            nmolb++;
+                            molblock->resize(molblock->size() + 1);
+                            molblock->back().type = whichmol;
+                            molblock->back().nmol = nrcopies;
 
                             bCouple = (opts->couple_moltype != nullptr &&
                                        (gmx_strcasecmp("system", opts->couple_moltype) == 0 ||
@@ -979,30 +970,26 @@ static char **read_topol(const char *infile, const char *outfile,
 
     *nrmols = nmol;
 
-    *nmolblock = nmolb;
-    *molblock  = molb;
-
     return title;
 }
 
-char **do_top(gmx_bool          bVerbose,
-              const char       *topfile,
-              const char       *topppfile,
-              t_gromppopts     *opts,
-              gmx_bool          bZero,
-              t_symtab         *symtab,
-              t_params          plist[],
-              int              *combination_rule,
-              double           *repulsion_power,
-              real             *fudgeQQ,
-              gpp_atomtype_t    atype,
-              int              *nrmols,
-              t_molinfo       **molinfo,
-              t_molinfo       **intermolecular_interactions,
-              const t_inputrec *ir,
-              int              *nmolblock,
-              gmx_molblock_t  **molblock,
-              warninp_t         wi)
+char **do_top(gmx_bool                      bVerbose,
+              const char                   *topfile,
+              const char                   *topppfile,
+              t_gromppopts                 *opts,
+              gmx_bool                      bZero,
+              t_symtab                     *symtab,
+              t_params                      plist[],
+              int                          *combination_rule,
+              double                       *repulsion_power,
+              real                         *fudgeQQ,
+              gpp_atomtype_t                atype,
+              int                          *nrmols,
+              t_molinfo                   **molinfo,
+              t_molinfo                   **intermolecular_interactions,
+              const t_inputrec             *ir,
+              std::vector<gmx_molblock_t>  *molblock,
+              warninp_t                     wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;
@@ -1025,7 +1012,7 @@ char **do_top(gmx_bool          bVerbose,
                        symtab, atype,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
-                       opts, fudgeQQ, nmolblock, molblock,
+                       opts, fudgeQQ, molblock,
                        ir->efep != efepNO, bZero,
                        EEL_FULL(ir->coulombtype), wi);
 
@@ -1331,20 +1318,20 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
      */
 
     unsigned char  *grpnr;
-    int             mb, mol, nat_mol, i, nr_mol_with_qm_atoms = 0;
+    int             mol, nat_mol, nr_mol_with_qm_atoms = 0;
     gmx_molblock_t *molb;
     gmx_bool        bQMMM;
 
     grpnr = sys->groups.grpnr[egcQMMM];
 
-    for (mb = 0; mb < sys->nmolblock; mb++)
+    for (size_t mb = 0; mb < sys->molblock.size(); mb++)
     {
         molb    = &sys->molblock[mb];
         nat_mol = sys->moltype[molb->type].atoms.nr;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             bQMMM = FALSE;
-            for (i = 0; i < nat_mol; i++)
+            for (int i = 0; i < nat_mol; i++)
             {
                 if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM)
                 {
@@ -1360,12 +1347,8 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     if (mol > 0)
                     {
                         /* Split the molblock at this molecule */
-                        sys->nmolblock++;
-                        srenew(sys->molblock, sys->nmolblock);
-                        for (i = sys->nmolblock-2; i >= mb; i--)
-                        {
-                            sys->molblock[i+1] = sys->molblock[i];
-                        }
+                        auto pos = sys->molblock.begin() + mb + 1;
+                        sys->molblock.insert(pos, sys->molblock[mb]);
                         sys->molblock[mb  ].nmol  = mol;
                         sys->molblock[mb+1].nmol -= mol;
                         mb++;
@@ -1374,29 +1357,22 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     if (molb->nmol > 1)
                     {
                         /* Split the molblock after this molecule */
-                        sys->nmolblock++;
-                        srenew(sys->molblock, sys->nmolblock);
+                        auto pos = sys->molblock.begin() + mb + 1;
+                        sys->molblock.insert(pos, sys->molblock[mb]);
                         molb = &sys->molblock[mb];
-                        for (i = sys->nmolblock-2; i >= mb; i--)
-                        {
-                            sys->molblock[i+1] = sys->molblock[i];
-                        }
                         sys->molblock[mb  ].nmol  = 1;
                         sys->molblock[mb+1].nmol -= 1;
                     }
 
                     /* Add a moltype for the QMMM molecule */
-                    sys->nmoltype++;
-                    srenew(sys->moltype, sys->nmoltype);
-                    /* Copy the moltype struct */
-                    sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
+                    sys->moltype.push_back(sys->moltype[molb->type]);
                     /* Copy the exclusions to a new array, since this is the only
                      * thing that needs to be modified for QMMM.
                      */
                     copy_blocka(&sys->moltype[molb->type     ].excls,
-                                &sys->moltype[sys->nmoltype-1].excls);
+                                &sys->moltype.back().excls);
                     /* Set the molecule type for the QMMM molblock */
-                    molb->type = sys->nmoltype - 1;
+                    molb->type = sys->moltype.size() - 1;
                 }
                 generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
             }

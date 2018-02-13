@@ -953,8 +953,8 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                     }
                     case INDEX_MOL:
                     {
-                        int molb = 0;
-                        while (molb + 1 < top->nmolblock && id >= top->molblock[molb].moleculeIndexStart)
+                        size_t molb = 0;
+                        while (molb + 1 < top->molblock.size() && id >= top->molblock[molb].moleculeIndexStart)
                         {
                             ++molb;
                         }
