@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,62 +55,6 @@ static const bool c_debugTimerState = true;
 #endif
 
 /*! \libinternal \brief
- * Enumeration of possible GPU build-paths.
- * \todo Move somewhere general?
- */
-enum class GpuFramework
-{
-    CUDA,
-    OpenCL
-};
-
-/*! \libinternal \brief
- * GPU build-path traits such as types.
- * \todo Move somewhere general?
- */
-template <GpuFramework> struct GpuTraits
-{
-    using CommandStream      = void; //!< GPU command stream
-    using CommandEvent       = void; //!< Single command call timing event - used in OpenCL
-};
-
-/*! \libinternal \brief
- * This is a GPU region timing implementation interface.
- * It should provide methods for measuring the last timespan.
- * Copying/assignment is disabled since the underlying timing events are owned by this.
- */
-template <GpuFramework framework> class GpuRegionTimerImpl
-{
-    //! Short-hands
-    using CommandStream = typename GpuTraits<framework>::CommandStream;
-    using CommandEvent  = typename GpuTraits<framework>::CommandEvent;
-
-    public:
-
-        GpuRegionTimerImpl()  = default;
-        ~GpuRegionTimerImpl() = default;
-        //! No copying
-        GpuRegionTimerImpl(const GpuRegionTimerImpl &)       = delete;
-        //! No assignment
-        GpuRegionTimerImpl &operator=(GpuRegionTimerImpl &&) = delete;
-        //! Moving is disabled but can be considered in the future if needed
-        GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
-
-        /*! \brief Will be called before the region start. */
-        inline void openTimingRegion(CommandStream) = 0;
-        /*! \brief Will be called after the region end. */
-        inline void closeTimingRegion(CommandStream) = 0;
-        /*! \brief Resets any internal state if needed */
-        inline void reset() = 0;
-        /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset() */
-        inline double getLastRangeTime() = 0;
-        /*! \brief Returns a new raw timing event
-         * for passing into individual GPU API calls
-         * within the region if the API requires it (e.g. on OpenCL). */
-        inline CommandEvent *fetchNextEvent() = 0;
-};
-
-/*! \libinternal \brief
  * This is a GPU region timing wrapper class.
  * It allows for host-side tracking of the accumulated execution timespans in GPU code
  * (measuring kernel or transfers duration).
@@ -118,11 +62,8 @@ template <GpuFramework framework> class GpuRegionTimerImpl
  * as far as current implementation allows (see TODO in getLastRangeTime() for a disabled check).
  * Internally it uses GpuRegionTimerImpl for measuring regions.
  */
-template <GpuFramework framework> class GpuRegionTimerWrapper
+template <typename GpuRegionTimerImpl> class GpuRegionTimerWrapper
 {
-    //! Short-hands
-    using CommandStream = typename GpuTraits<framework>::CommandStream;
-    using CommandEvent  = typename GpuTraits<framework>::CommandEvent;
     //! The timer state used for debug-only assertions
     enum class TimerState
     {
@@ -132,11 +73,11 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
     } debugState_ = TimerState::Idle;
 
     //! The number of times the timespan has been measured
-    unsigned int                  callCount_ = 0;
+    unsigned int       callCount_ = 0;
     //! The accumulated duration of the timespans measured (milliseconds)
-    double                        totalMilliseconds_ = 0.0;
+    double             totalMilliseconds_ = 0.0;
     //! The underlying region timer implementation
-    GpuRegionTimerImpl<framework> impl_;
+    GpuRegionTimerImpl impl_;
 
     public:
 

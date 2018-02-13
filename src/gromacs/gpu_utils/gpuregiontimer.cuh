@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,22 +45,17 @@
 #define GMX_GPU_UTILS_GPUREGIONTIMER_CUH
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 
 #include "gpuregiontimer.h"
 
-template <> struct GpuTraits<GpuFramework::CUDA>
+/*! \libinternal \brief
+ * This is a GPU region timing implementation for CUDA.
+ * It provides methods for measuring the last timespan.
+ * Copying/assignment is disabled since the underlying timing events are owned by this.
+ */
+class GpuRegionTimerImpl
 {
-    using CommandStream = cudaStream_t;
-    using CommandEvent  = void;
-};
-
-//! Short-hand for external use
-using             GpuRegionTimer = GpuRegionTimerWrapper<GpuFramework::CUDA>;
-
-template <> class GpuRegionTimerImpl<GpuFramework::CUDA>
-{
-    //! Short-hand
-    using       CommandStream = typename GpuTraits<GpuFramework::CUDA>::CommandStream;
     //! The underlying timing event pair - the beginning and the end of the timespan
     cudaEvent_t eventStart_, eventStop_;
 
@@ -72,23 +67,31 @@ template <> class GpuRegionTimerImpl<GpuFramework::CUDA>
             CU_RET_ERR(cudaEventCreate(&eventStart_, eventFlags), "GPU timing creation failure");
             CU_RET_ERR(cudaEventCreate(&eventStop_, eventFlags), "GPU timing creation failure");
         }
-
         ~GpuRegionTimerImpl()
         {
             CU_RET_ERR(cudaEventDestroy(eventStart_), "GPU timing destruction failure");
             CU_RET_ERR(cudaEventDestroy(eventStop_), "GPU timing destruction failure");
         }
+        //! No copying
+        GpuRegionTimerImpl(const GpuRegionTimerImpl &)       = delete;
+        //! No assignment
+        GpuRegionTimerImpl &operator = (GpuRegionTimerImpl &&) = delete;
+        //! Moving is disabled but can be considered in the future if needed
+        GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
 
+        /*! \brief Will be called before the region start. */
         inline void openTimingRegion(CommandStream s)
         {
             CU_RET_ERR(cudaEventRecord(eventStart_, s), "GPU timing recording failure");
         }
 
+        /*! \brief Will be called after the region end. */
         inline void closeTimingRegion(CommandStream s)
         {
             CU_RET_ERR(cudaEventRecord(eventStop_, s), "GPU timing recording failure");
         }
 
+        /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset() */
         inline double getLastRangeTime()
         {
             float milliseconds = 0.0;
@@ -97,7 +100,11 @@ template <> class GpuRegionTimerImpl<GpuFramework::CUDA>
             return milliseconds;
         }
 
+        /*! \brief Resets internal state */
         inline void reset(){}
 };
+
+//! Short-hand for external use
+using GpuRegionTimer = GpuRegionTimerWrapper<GpuRegionTimerImpl>;
 
 #endif
