@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, 2015 by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -653,7 +653,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
     tng_molecule_alloc(tng, &mol);
     tng_molecule_name_set(tng, mol, groupName);
     tng_molecule_chain_add(tng, mol, "", &chain);
-    for (int molIndex = 0, i = 0; molIndex < mtop->nmoltype; molIndex++)
+    for (int molIndex = 0, i = 0; molIndex < mtop->nmolblock; molIndex++)
     {
         molType = &mtop->moltype[mtop->molblock[molIndex].type];
 
