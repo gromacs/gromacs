@@ -557,26 +557,28 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
         nb->timers->didPairlistH2D[iloc] = true;
     }
 
-    cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
-                        &d_plist->nsci, &d_plist->sci_nalloc,
-                        h_plist->nsci,
-                        stream, true);
+    Context context = nullptr;
 
-    cu_realloc_buffered((void **)&d_plist->cj4, h_plist->cj4, sizeof(*d_plist->cj4),
-                        &d_plist->ncj4, &d_plist->cj4_nalloc,
-                        h_plist->ncj4,
-                        stream, true);
+    reallocateDeviceBuffer(&d_plist->sci, h_plist->nsci,
+                           &d_plist->nsci, &d_plist->sci_nalloc, context);
+    copyToDeviceBuffer(&d_plist->sci, h_plist->sci, 0, h_plist->nsci,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
-    /* this call only allocates space on the device (no data is transferred) */
-    cu_realloc_buffered((void **)&d_plist->imask, NULL, sizeof(*d_plist->imask),
-                        &d_plist->nimask, &d_plist->imask_nalloc,
-                        h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
-                        stream, true);
+    reallocateDeviceBuffer(&d_plist->cj4, h_plist->ncj4,
+                           &d_plist->ncj4, &d_plist->cj4_nalloc, context);
+    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4, 0, h_plist->ncj4,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
-    cu_realloc_buffered((void **)&d_plist->excl, h_plist->excl, sizeof(*d_plist->excl),
-                        &d_plist->nexcl, &d_plist->excl_nalloc,
-                        h_plist->nexcl,
-                        stream, true);
+    reallocateDeviceBuffer(&d_plist->imask, h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
+                           &d_plist->nimask, &d_plist->imask_nalloc, context);
+
+    reallocateDeviceBuffer(&d_plist->excl, h_plist->nexcl,
+                           &d_plist->nexcl, &d_plist->excl_nalloc, context);
+    copyToDeviceBuffer(&d_plist->excl, h_plist->excl, 0, h_plist->nexcl,
+                       stream, GpuApiCallBehavior::Async,
+                       bDoTime ? nb->timers->pl_h2d[iloc].fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
