@@ -553,7 +553,7 @@ void convert_params(int atnr, t_params nbtypes[],
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
-    int             i, maxtypes, mt;
+    int             i, maxtypes;
     unsigned long   flags;
     gmx_ffparams_t *ffp;
     gmx_moltype_t  *molt;
@@ -573,7 +573,7 @@ void convert_params(int atnr, t_params nbtypes[],
     enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
 
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
         molt = &mtop->moltype[mt];
         for (i = 0; (i < F_NRE); i++)
