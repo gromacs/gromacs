@@ -177,21 +177,4 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
     return false;
 }
 
-/*! \brief Free a device-side buffer.
- * This does not reset separately stored size/capacity integers,
- * as this is planned to be a destructor of DeviceBuffer as a proper class,
- * and no calls on \p buffer should be made afterwards.
- *
- * \param[in] buffer  Pointer to the buffer to free.
- */
-template <typename DeviceBuffer>
-void freeDeviceBuffer(DeviceBuffer *buffer)
-{
-    GMX_ASSERT(buffer, "needs a buffer pointer");
-    if (*buffer)
-    {
-        GMX_RELEASE_ASSERT(clReleaseMemObject(*buffer) == CL_SUCCESS, "clReleaseMemObject failed");
-    }
-}
-
 #endif
