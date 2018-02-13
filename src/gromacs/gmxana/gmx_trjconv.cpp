@@ -580,7 +580,7 @@ static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
         efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
-        snew(mtop, 1);
+        mtop = new gmx_mtop_t;
         read_tpx(tps_file, nullptr, nullptr, &temp_natoms,
                  nullptr, nullptr, mtop);
     }
@@ -1976,7 +1976,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
     }
 
-    sfree(mtop);
+    delete mtop;
     done_top(&top);
     sfree(xp);
     sfree(xmem);

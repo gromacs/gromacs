@@ -63,6 +63,7 @@ static void init_groups(gmx_groups_t *groups)
     groups->grpname  = nullptr;
     for (int g = 0; g < egcNR; g++)
     {
+        groups->grps[g].nr     = 0;
         groups->grps[g].nm_ind = nullptr;
         groups->ngrpnr[g]      = 0;
         groups->grpnr[g]       = nullptr;
@@ -72,13 +73,23 @@ static void init_groups(gmx_groups_t *groups)
 
 void init_mtop(gmx_mtop_t *mtop)
 {
-    mtop->name         = nullptr;
-    mtop->nmoltype     = 0;
-    mtop->moltype      = nullptr;
-    mtop->nmolblock    = 0;
-    mtop->molblock     = nullptr;
+    mtop->name = nullptr;
+
+    // TODO: Move to ffparams when that is converted to C++
+    mtop->ffparams.functype           = nullptr;
+    mtop->ffparams.iparams            = nullptr;
+    mtop->ffparams.cmap_grid.ngrid    = 0;
+    mtop->ffparams.cmap_grid.cmapdata = nullptr;
+
+    mtop->moltype.clear();
+    mtop->molblock.clear();
+    mtop->bIntermolecularInteractions = FALSE;
+    mtop->intermolecular_ilist        = nullptr;
+
+    mtop->natoms       = 0;
     mtop->maxres_renum = 0;
     mtop->maxresnr     = -1;
+    init_atomtypes(&mtop->atomtypes);
     init_groups(&mtop->groups);
     open_symtab(&mtop->symtab);
 }
@@ -95,30 +106,56 @@ void init_top(t_topology *top)
 }
 
 
-void done_moltype(gmx_moltype_t *molt)
+gmx_moltype_t::gmx_moltype_t() :
+    name(nullptr),
+    ilist {},
+cgs {},
+excls {}
 {
-    done_atom(&molt->atoms);
-    done_block(&molt->cgs);
-    done_blocka(&molt->excls);
+    init_t_atoms(&atoms, 0, FALSE);
+}
+
+gmx_moltype_t::~gmx_moltype_t()
+{
+    done_atom(&atoms);
+    done_block(&cgs);
+    done_blocka(&excls);
 
     for (int f = 0; f < F_NRE; f++)
     {
-        sfree(molt->ilist[f].iatoms);
-        molt->ilist[f].nalloc = 0;
+        sfree(ilist[f].iatoms);
+        ilist[f].nalloc = 0;
     }
 }
 
-void done_molblock(gmx_molblock_t *molb)
+gmx_molblock_t::gmx_molblock_t()
 {
-    if (molb->nposres_xA > 0)
+    type       = -1;
+    nmol       = 0;
+    nposres_xA = 0;
+    posres_xA  = nullptr;
+    nposres_xB = 0;
+    posres_xB  = nullptr;
+
+    natoms_mol         = 0;
+    globalAtomStart    = -1;
+    globalAtomEnd      = -1;
+    globalResidueStart = -1;
+    residueNumberStart = -1;
+    moleculeIndexStart = -1;
+}
+
+gmx_molblock_t::~gmx_molblock_t()
+{
+    if (nposres_xA > 0)
     {
-        molb->nposres_xA = 0;
-        sfree(molb->posres_xA);
+        nposres_xA = 0;
+        sfree(posres_xA);
     }
-    if (molb->nposres_xB > 0)
+    if (nposres_xB > 0)
     {
-        molb->nposres_xB = 0;
-        sfree(molb->posres_xB);
+        nposres_xB = 0;
+        sfree(posres_xB);
     }
 }
 
@@ -143,30 +180,27 @@ void done_gmx_groups_t(gmx_groups_t *g)
     sfree(g->grpname);
 }
 
-void done_mtop(gmx_mtop_t *mtop)
+gmx_mtop_t::gmx_mtop_t()
 {
-    done_symtab(&mtop->symtab);
+    init_mtop(this);
+}
 
-    sfree(mtop->ffparams.functype);
-    sfree(mtop->ffparams.iparams);
-    for (int i = 0; i < mtop->ffparams.cmap_grid.ngrid; i++)
-    {
-        sfree(mtop->ffparams.cmap_grid.cmapdata[i].cmap);
-    }
-    sfree(mtop->ffparams.cmap_grid.cmapdata);
+gmx_mtop_t::~gmx_mtop_t()
+{
+    done_symtab(&symtab);
 
-    for (int i = 0; i < mtop->nmoltype; i++)
+    sfree(ffparams.functype);
+    sfree(ffparams.iparams);
+    for (int i = 0; i < ffparams.cmap_grid.ngrid; i++)
     {
-        done_moltype(&mtop->moltype[i]);
+        sfree(ffparams.cmap_grid.cmapdata[i].cmap);
     }
-    sfree(mtop->moltype);
-    for (int i = 0; i < mtop->nmolblock; i++)
-    {
-        done_molblock(&mtop->molblock[i]);
-    }
-    sfree(mtop->molblock);
-    done_atomtypes(&mtop->atomtypes);
-    done_gmx_groups_t(&mtop->groups);
+    sfree(ffparams.cmap_grid.cmapdata);
+
+    moltype.clear();
+    molblock.clear();
+    done_atomtypes(&atomtypes);
+    done_gmx_groups_t(&groups);
 }
 
 void done_top(t_topology *top)
@@ -210,7 +244,8 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
         }
-        done_mtop(mtop);
+
+        // Note that the rest of mtop will be freed by the destructor
     }
 }
 
@@ -220,7 +255,7 @@ bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveMass;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveMass;
 }
 
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
@@ -229,7 +264,7 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveCharge;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveCharge;
 }
 
 bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
@@ -238,7 +273,7 @@ bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveType;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.haveType;
 }
 
 bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
@@ -247,7 +282,7 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     {
         return false;
     }
-    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.havePdbInfo;
+    return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
@@ -341,7 +376,7 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
 
 static void pr_molblock(FILE *fp, int indent, const char *title,
                         const gmx_molblock_t *molb, int n,
-                        const gmx_moltype_t *molt)
+                        const std::vector<gmx_moltype_t> &molt)
 {
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
@@ -364,16 +399,14 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
-    int mt, mb, j;
-
     if (available(fp, mtop, indent, title))
     {
         indent = pr_title(fp, indent, title);
         pr_indent(fp, indent);
         fprintf(fp, "name=\"%s\"\n", *(mtop->name));
         pr_int(fp, indent, "#atoms", mtop->natoms);
-        pr_int(fp, indent, "#molblock", mtop->nmolblock);
-        for (mb = 0; mb < mtop->nmolblock; mb++)
+        pr_int(fp, indent, "#molblock", mtop->molblock.size());
+        for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
         {
             pr_molblock(fp, indent, "molblock", &mtop->molblock[mb], mb, mtop->moltype);
         }
@@ -381,7 +414,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
                gmx::boolToString(mtop->bIntermolecularInteractions));
         if (mtop->bIntermolecularInteractions)
         {
-            for (j = 0; (j < F_NRE); j++)
+            for (int j = 0; j < F_NRE; j++)
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
                          mtop->ffparams.functype,
@@ -391,7 +424,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
-        for (mt = 0; mt < mtop->nmoltype; mt++)
+        for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
                        &mtop->ffparams, bShowNumbers, bShowParameters);

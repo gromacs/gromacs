@@ -39,6 +39,8 @@
 
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -54,18 +56,45 @@ enum {
 /* Names corresponding to groups */
 extern const char *gtypes[egcNR+1];
 
-typedef struct gmx_moltype_t
+struct gmx_moltype_t
 {
+    /* Constructor */
+    gmx_moltype_t();
+
+    /* Destructor */
+    ~gmx_moltype_t();
+
+    /* Delete the copy assignment operator to avoid (not) freeing pointers */
+    gmx_moltype_t &operator=(const gmx_moltype_t &) = delete;
+
+    /* Default copy constructor */
+    gmx_moltype_t(const gmx_moltype_t &) = default;
+
     char          **name;         /* Name of the molecule type            */
     t_atoms         atoms;        /* The atoms in this molecule           */
     t_ilist         ilist[F_NRE]; /* Interaction list with local indices  */
     t_block         cgs;          /* The charge groups                    */
     t_blocka        excls;        /* The exclusions                       */
-} gmx_moltype_t;
+};
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
-typedef struct gmx_molblock_t
+struct gmx_molblock_t
 {
+    /* Constructor */
+    gmx_molblock_t();
+
+    /* Destructor */
+    ~gmx_molblock_t();
+
+    /* Default copy assignment operator.
+     *
+     * NOTE: Does not free the old pointers.
+     */
+    gmx_molblock_t &operator=(const gmx_molblock_t &) = default;
+
+    /* Default copy constructor */
+    gmx_molblock_t(const gmx_molblock_t &) = default;
+
     int     type;               /**< The molecule type index in mtop.moltype  */
     int     nmol;               /**< The number of molecules in this block    */
     int     nposres_xA;         /**< The number of posres coords for top A    */
@@ -80,7 +109,7 @@ typedef struct gmx_molblock_t
     int     globalResidueStart; /**< Global residue index of the first residue in the block */
     int     residueNumberStart; /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
     int     moleculeIndexStart; /**< Global molecule indexing starts from this value */
-} gmx_molblock_t;
+};
 
 typedef struct gmx_groups_t
 {
@@ -99,27 +128,31 @@ typedef struct gmx_groups_t
 
 /* The global, complete system topology struct, based on molecule types.
    This structure should contain no data that is O(natoms) in memory. */
-typedef struct gmx_mtop_t
+struct gmx_mtop_t
 {
-    char           **name;      /* Name of the topology                 */
-    gmx_ffparams_t   ffparams;
-    int              nmoltype;
-    gmx_moltype_t   *moltype;
-    int              nmolblock;
-    gmx_molblock_t  *molblock;
-    gmx_bool         bIntermolecularInteractions; /* Are there intermolecular
-                                                   * interactions?            */
-    t_ilist         *intermolecular_ilist;        /* List of intermolecular interactions
-                                                   * using system wide atom indices,
-                                                   * either NULL or size F_NRE           */
+    /* Constructor */
+    gmx_mtop_t();
+
+    /* Destructor */
+    ~gmx_mtop_t();
+
+    char                      **name; /* Name of the topology                 */
+    gmx_ffparams_t              ffparams;
+    std::vector<gmx_moltype_t>  moltype;
+    std::vector<gmx_molblock_t> molblock;
+    gmx_bool                    bIntermolecularInteractions; /* Are there intermolecular
+                                                              * interactions?            */
+    t_ilist                    *intermolecular_ilist;        /* List of intermolecular interactions
+                                                              * using system wide atom indices,
+                                                              * either NULL or size F_NRE           */
     int              natoms;
-    int              maxres_renum;                /* Parameter for residue numbering      */
-    int              maxresnr;                    /* The maximum residue number in moltype */
-    t_atomtypes      atomtypes;                   /* Atomtype properties                  */
+    int              maxres_renum;                           /* Parameter for residue numbering      */
+    int              maxresnr;                               /* The maximum residue number in moltype */
+    t_atomtypes      atomtypes;                              /* Atomtype properties                  */
     gmx_groups_t     groups;
-    t_symtab         symtab;                      /* The symbol table                     */
-    bool             haveMoleculeIndices;         /* Tells whether we have valid molecule indices */
-} gmx_mtop_t;
+    t_symtab         symtab;                                 /* The symbol table                     */
+    bool             haveMoleculeIndices;                    /* Tells whether we have valid molecule indices */
+};
 
 /* The mdrun node-local topology struct, completely written out */
 typedef struct gmx_localtop_t
@@ -146,10 +179,7 @@ typedef struct t_topology
 
 void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
-void done_moltype(gmx_moltype_t *molt);
-void done_molblock(gmx_molblock_t *molb);
 void done_gmx_groups_t(gmx_groups_t *g);
-void done_mtop(gmx_mtop_t *mtop);
 void done_top(t_topology *top);
 // Frees both t_topology and gmx_mtop_t when the former has been created from
 // the latter.

@@ -651,7 +651,6 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
 {
     gmx_domdec_constraints_t *dc;
     const gmx_molblock_t     *molb;
-    int mb, ncon, c;
 
     if (debug)
     {
@@ -661,11 +660,11 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
     snew(dd->constraints, 1);
     dc = dd->constraints;
 
-    snew(dc->molb_con_offset, mtop->nmolblock);
-    snew(dc->molb_ncon_mol, mtop->nmolblock);
+    snew(dc->molb_con_offset, mtop->molblock.size());
+    snew(dc->molb_ncon_mol, mtop->molblock.size());
 
-    ncon = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    int ncon = 0;
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         molb                    = &mtop->molblock[mb];
         dc->molb_con_offset[mb] = ncon;
@@ -678,7 +677,7 @@ void init_domdec_constraints(gmx_domdec_t     *dd,
     if (ncon > 0)
     {
         snew(dc->gc_req, ncon);
-        for (c = 0; c < ncon; c++)
+        for (int c = 0; c < ncon; c++)
         {
             dc->gc_req[c] = 0;
         }
