@@ -48,6 +48,7 @@
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/gpu_utils/devicebuffer_ocl.h"
 #include "gromacs/mdlib/nbnxn_gpu_types_common.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
