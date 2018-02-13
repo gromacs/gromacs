@@ -266,6 +266,53 @@ void stopGpuProfiler(void) CUDA_FUNC_TERM
 
 //! Tells whether the host buffer was pinned for non-blocking transfers. Only implemented for CUDA.
 CUDA_FUNC_QUALIFIER
-bool isHostMemoryPinned(void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false)
+bool isHostMemoryPinned(const void *CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false)
+
+
+//TODO this should be in a separate header?
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
+
+
+/*! \brief Reallocation device buffers
+ *
+ *  Reallocation of the memory pointed by d_ptr and copying of the data from
+ *  the location pointed by h_src host-side pointer is done. Allocation is
+ *  buffered and therefore freeing is only needed if the previously allocated
+ *  space is not enough.
+ *  The H2D copy is launched in command queue s and can be done synchronously or
+ *  asynchronously (the default is the latter).
+ *  If copy_event is not NULL, on return it will contain an event object
+ *  identifying the H2D copy. The event can further be used to queue a wait
+ *  for this operation or to query profiling information.
+ *  OpenCL equivalent of cu_realloc_buffered.
+ */
+#if 0 //FIXME
+template <typename DeviceBuffer, typename Context>
+void reallocateDeviceBuffer(DeviceBuffer *buffer,
+                            size_t numValues, size_t typeSize,               //TODO use ValueType?
+                            int *currentNumValues, int *currentMaxNumValues,
+                            Context context)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(currentNumValues, "needs a size pointer");
+    GMX_ASSERT(currentMaxNumValues, "needs a capacity pointer");
+
+    /* reallocate only if the data does not fit */
+    if (static_cast<int>(numValues) > *currentMaxNumValues)
+    {
+        if (*currentMaxNumValues >= 0)
+        {
+            freeDeviceBuffer(buffer);
+        }
+
+        *currentMaxNumValues = over_alloc_large(numValues);
+        allocateDeviceBuffer(buffer, *currentMaxNumValues, typeSize, context);
+    }
+
+    /* size could have changed without actual reallocation */
+    *currentNumValues = numValues;
+}
+#endif
 
 #endif

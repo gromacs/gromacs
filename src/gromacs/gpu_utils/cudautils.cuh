@@ -44,6 +44,8 @@
 
 #include <string>
 
+#include "gpu_utils.h"
+#include "gputraits.cuh"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
@@ -294,6 +296,18 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
     return true;
 }
 
+template <typename DeviceBuffer>
+void allocateDeviceBuffer(DeviceBuffer *buffer,
+                          size_t numValues, size_t typeSize, //todo ValueType
+                          Context context)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_UNUSED_VALUE(context);                                    // not used explicitly in CUDA RT
+    //    const size_t typeSize = sizeof(ValueType);
+    cudaError_t stat = cudaMalloc(buffer, numValues * typeSize);
+    GMX_RELEASE_ASSERT(stat == cudaSuccess, "cudaMalloc failure");
+}
+
 /*! \brief Free a device-side buffer.
  *
  * \param[in] buffer  Pointer to the buffer to free.
@@ -306,6 +320,70 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
     {
         GMX_RELEASE_ASSERT(cudaFree(*buffer) == cudaSuccess, "cudaFree failed");
     }
+}
+
+template <typename DeviceBuffer, typename ValueType> //FIXME
+void copyToDeviceBuffer(DeviceBuffer *buffer,
+                        const ValueType *hostBuffer,
+                        size_t startingValueIndex,
+                        size_t numValues, size_t typeSize, //TODO use ValueType?
+                        CommandStream stream,
+                        GpuApiCallBehavior transferKind,
+                        CommandEvent *timingEvent)
+{
+    if (numValues == 0)
+    {
+        return; // such calls are actually made with empty domains
+    }
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
+    GMX_UNUSED_VALUE(timingEvent); // not applicable in CUDA
+    cudaError_t  stat;
+    const size_t bytes = numValues * typeSize;
+
+    switch (transferKind)
+    {
+        case GpuApiCallBehavior::Async:
+            GMX_ASSERT(isHostMemoryPinned(hostBuffer), "Source host buffer was not pinned for CUDA");
+            stat = cudaMemcpyAsync((*buffer) + startingValueIndex, hostBuffer, bytes, cudaMemcpyHostToDevice, stream);
+            GMX_RELEASE_ASSERT(stat == cudaSuccess, "Asynchronous H2D copy failed");
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            stat = cudaMemcpy((*buffer) + startingValueIndex, hostBuffer, bytes, cudaMemcpyHostToDevice); //TODO is this type dependency the best?
+            GMX_RELEASE_ASSERT(stat == cudaSuccess, "Synchronous H2D copy failed");
+            break;
+
+        default:
+            throw;
+    }
+}
+
+//FIXME
+template <typename DeviceBuffer, typename Context>
+void reallocateDeviceBuffer(DeviceBuffer *buffer,
+                            size_t numValues, size_t typeSize,               //TODO use ValueType?
+                            int *currentNumValues, int *currentMaxNumValues,
+                            Context context)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(currentNumValues, "needs a size pointer");
+    GMX_ASSERT(currentMaxNumValues, "needs a capacity pointer");
+
+    /* reallocate only if the data does not fit */
+    if (static_cast<int>(numValues) > *currentMaxNumValues)
+    {
+        if (*currentMaxNumValues >= 0)
+        {
+            freeDeviceBuffer(buffer);
+        }
+
+        *currentMaxNumValues = over_alloc_large(numValues);
+        allocateDeviceBuffer(buffer, *currentMaxNumValues, typeSize, context);
+    }
+
+    /* size could have changed without actual reallocation */
+    *currentNumValues = numValues;
 }
 
 #endif

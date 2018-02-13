@@ -43,7 +43,8 @@
 
 #include <string>
 
-#include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gputraits_ocl.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
@@ -177,6 +178,19 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
     return false;
 }
 
+template <typename DeviceBuffer>
+void allocateDeviceBuffer(DeviceBuffer *buffer,
+                          size_t numValues, size_t typeSize, //todo ValueType
+                          Context context)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    void  *hostPtr = nullptr;
+    //    const size_t typeSize = sizeof(ValueType);
+    cl_int clError;
+    *buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, numValues * typeSize, hostPtr, &clError);
+    GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "clCreateBuffer failure");
+}
+
 /*! \brief Free a device-side buffer.
  *
  * \param[in] buffer  Pointer to the buffer to free.
@@ -189,6 +203,70 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
     {
         GMX_RELEASE_ASSERT(clReleaseMemObject(*buffer) == CL_SUCCESS, "clReleaseMemObject failed");
     }
+}
+
+//FIXME startingvalueindex - into  devcie only?
+
+template <typename ValueType>
+void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
+                        const ValueType *hostBuffer,
+                        size_t startingValueIndex,
+                        size_t numValues, size_t typeSize, //TODO use ValueType?
+                        CommandStream stream,
+                        GpuApiCallBehavior transferKind,
+                        CommandEvent *timingEvent)
+{
+    if (numValues == 0)
+    {
+        return; // such calls are actually made with empty domains
+    }
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
+    cl_int       clError;
+    const size_t offset = startingValueIndex * typeSize;
+    const size_t bytes  = numValues * typeSize;
+    switch (transferKind)
+    {
+        case GpuApiCallBehavior::Async:
+            clError = clEnqueueWriteBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Asynchronous H2D copy failed");
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            clError = clEnqueueWriteBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Synchronous H2D copy failed");
+            break;
+
+        default:
+            throw;
+    }
+}
+
+//FIXME
+template <typename DeviceBuffer, typename Context>
+void reallocateDeviceBuffer(DeviceBuffer *buffer,
+                            size_t numValues, size_t typeSize,               //TODO use ValueType?
+                            int *currentNumValues, int *currentMaxNumValues,
+                            Context context)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(currentNumValues, "needs a size pointer");
+    GMX_ASSERT(currentMaxNumValues, "needs a capacity pointer");
+
+    /* reallocate only if the data does not fit */
+    if (static_cast<int>(numValues) > *currentMaxNumValues)
+    {
+        if (*currentMaxNumValues >= 0)
+        {
+            freeDeviceBuffer(buffer);
+        }
+
+        *currentMaxNumValues = over_alloc_large(numValues);
+        allocateDeviceBuffer(buffer, *currentMaxNumValues, typeSize, context);
+    }
+
+    /* size could have changed without actual reallocation */
+    *currentNumValues = numValues;
 }
 
 #endif
