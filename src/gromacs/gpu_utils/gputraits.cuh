@@ -46,8 +46,7 @@
 using CommandStream = cudaStream_t;
 //! \brief Single GPU call timing event - meaningless in CUDA
 using CommandEvent  = void;
-//! \brief A device-side buffer of ValueTypes
-template<typename ValueType>
-using DeviceBuffer  = ValueType *;
+//! \brief Context used explicitly in OpenCL, does nothing in CUDA
+using Context       = void *;
 
 #endif
