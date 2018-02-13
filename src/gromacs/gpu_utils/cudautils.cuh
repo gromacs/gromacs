@@ -202,9 +202,6 @@ int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 /*! Launches asynchronous host to device memory copy in stream s. */
 int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
 
-/*! Frees device memory and resets the size and allocation size to -1. */
-void cu_free_buffered(void *d_ptr, int *n = NULL, int *nalloc = NULL);
-
 /*! Reallocates the device memory and copies data from the host. */
 void cu_realloc_buffered(void **d_dest, void *h_src,
                          size_t type_size,
@@ -298,7 +295,9 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
 }
 
 /*! \brief Free a device-side buffer.
- * TODO: fully replace cu_free_buffered with this.
+ * This does not reset separately stored size/capacity integers,
+ * as this is planned to be a destructor of DeviceBuffer as a proper class,
+ * and no calls on \p buffer should be made afterwards.
  *
  * \param[in] buffer  Pointer to the buffer to free.
  */

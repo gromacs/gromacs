@@ -94,32 +94,6 @@ bool useLjCombRule(int vdwType)
             vdwType == evdwOclCUTCOMBLB);
 }
 
-/*! \brief Free device buffers
- *
- * If the pointers to the size variables are NULL no resetting happens.
- */
-static void ocl_free_buffered(cl_mem d_ptr, int *n, int *nalloc)
-{
-    cl_int gmx_unused cl_error;
-
-    if (d_ptr)
-    {
-        cl_error = clReleaseMemObject(d_ptr);
-        assert(cl_error == CL_SUCCESS);
-        // TODO: handle errors
-    }
-
-    if (n)
-    {
-        *n = -1;
-    }
-
-    if (nalloc)
-    {
-        *nalloc = -1;
-    }
-}
-
 /*! \brief Reallocation device buffers
  *
  *  Reallocation of the memory pointed by d_ptr and copying of the data from
@@ -156,7 +130,7 @@ static void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
         /* only free if the array has already been initialized */
         if (*curr_alloc_size >= 0)
         {
-            ocl_free_buffered(*d_dest, curr_size, curr_alloc_size);
+            freeDeviceBuffer(d_dest);
         }
 
         *curr_alloc_size = over_alloc_large(req_size);
@@ -183,21 +157,6 @@ static void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
     }
 }
 
-/*! \brief Releases the input OpenCL buffer */
-static void free_ocl_buffer(cl_mem *buffer)
-{
-    cl_int gmx_unused cl_error;
-
-    assert(NULL != buffer);
-
-    if (*buffer)
-    {
-        cl_error = clReleaseMemObject(*buffer);
-        assert(CL_SUCCESS == cl_error);
-        *buffer = NULL;
-    }
-}
-
 /*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale
  * and the table GPU array.
  *
@@ -214,7 +173,7 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
 
     if (nbp->coulomb_tab_climg2d != NULL)
     {
-        free_ocl_buffer(&(nbp->coulomb_tab_climg2d));
+        freeDeviceBuffer(&(nbp->coulomb_tab_climg2d));
     }
 
     /* Switched from using textures to using buffers */
@@ -1010,10 +969,10 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
         /* free up first if the arrays have already been initialized */
         if (d_atdat->nalloc != -1)
         {
-            ocl_free_buffered(d_atdat->f, &d_atdat->natoms, &d_atdat->nalloc);
-            ocl_free_buffered(d_atdat->xq, NULL, NULL);
-            ocl_free_buffered(d_atdat->lj_comb, NULL, NULL);
-            ocl_free_buffered(d_atdat->atom_types, NULL, NULL);
+            freeDeviceBuffer(&d_atdat->f);
+            freeDeviceBuffer(&d_atdat->xq);
+            freeDeviceBuffer(&d_atdat->lj_comb);
+            freeDeviceBuffer(&d_atdat->atom_types);
         }
 
         d_atdat->f_elem_size = sizeof(rvec);
@@ -1163,20 +1122,20 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     free_kernel(&(nb->kernel_zero_e_fshift));
 
     /* Free atdat */
-    free_ocl_buffer(&(nb->atdat->xq));
-    free_ocl_buffer(&(nb->atdat->f));
-    free_ocl_buffer(&(nb->atdat->e_lj));
-    free_ocl_buffer(&(nb->atdat->e_el));
-    free_ocl_buffer(&(nb->atdat->fshift));
-    free_ocl_buffer(&(nb->atdat->lj_comb));
-    free_ocl_buffer(&(nb->atdat->atom_types));
-    free_ocl_buffer(&(nb->atdat->shift_vec));
+    freeDeviceBuffer(&(nb->atdat->xq));
+    freeDeviceBuffer(&(nb->atdat->f));
+    freeDeviceBuffer(&(nb->atdat->e_lj));
+    freeDeviceBuffer(&(nb->atdat->e_el));
+    freeDeviceBuffer(&(nb->atdat->fshift));
+    freeDeviceBuffer(&(nb->atdat->lj_comb));
+    freeDeviceBuffer(&(nb->atdat->atom_types));
+    freeDeviceBuffer(&(nb->atdat->shift_vec));
     sfree(nb->atdat);
 
     /* Free nbparam */
-    free_ocl_buffer(&(nb->nbparam->nbfp_climg2d));
-    free_ocl_buffer(&(nb->nbparam->nbfp_comb_climg2d));
-    free_ocl_buffer(&(nb->nbparam->coulomb_tab_climg2d));
+    freeDeviceBuffer(&(nb->nbparam->nbfp_climg2d));
+    freeDeviceBuffer(&(nb->nbparam->nbfp_comb_climg2d));
+    freeDeviceBuffer(&(nb->nbparam->coulomb_tab_climg2d));
     sfree(nb->nbparam);
 
     /* Free plist */
@@ -1207,7 +1166,7 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     nb->nbst.fshift = NULL;
 
     /* Free debug buffer */
-    free_ocl_buffer(&nb->debug_buffer);
+    freeDeviceBuffer(&nb->debug_buffer);
 
     /* Free command queues */
     clReleaseCommandQueue(nb->stream[eintLocal]);
