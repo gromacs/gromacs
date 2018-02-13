@@ -45,6 +45,7 @@
 #ifndef NBNXN_OPENCL_TYPES_H
 #define NBNXN_OPENCL_TYPES_H
 
+#include "gromacs/gpu_utils/devicebuffer_ocl.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
