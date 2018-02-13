@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,38 +194,32 @@ TEST_P(SettleTest, SatisfiesConstraints)
     const int atomsPerSettle = NRAL(F_SETTLE);
     ASSERT_LE(numSettles, updatedPositions_.size() / (atomsPerSettle * DIM)) << "cannot test that many SETTLEs " << testDescription;
 
-    // Set up the topology. We still have to make some raw pointers,
-    // but they are put into scope guards for automatic cleanup.
-    gmx_mtop_t                   *mtop;
-    snew(mtop, 1);
-    const unique_cptr<gmx_mtop_t> mtopGuard(mtop);
-    mtop->mols.nr  = 1;
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, mtop->nmoltype);
-    const unique_cptr<gmx_moltype_t> moltypeGuard(mtop->moltype);
-    mtop->nmolblock = 1;
-    snew(mtop->molblock, mtop->nmolblock);
-    const unique_cptr<gmx_molblock_t> molblockGuard(mtop->molblock);
-    mtop->molblock[0].type = 0;
-    std::vector<int>                  iatoms;
+    // Set up the topology.
+    gmx_mtop_t mtop; 
+    mtop.mols.nr = 1;
+    mtop.moltype.resize(1);
+    mtop.molblock.resize(1);
+    mtop.molblock[0].type = 0;
+    const int settleStride = 1 + atomsPerSettle;
+    int *iatoms;
+    snew(iatoms, numSettles*settleStride);
     for (int i = 0; i < numSettles; ++i)
     {
-        iatoms.push_back(settleType);
-        iatoms.push_back(i*atomsPerSettle+0);
-        iatoms.push_back(i*atomsPerSettle+1);
-        iatoms.push_back(i*atomsPerSettle+2);
+        iatoms[i*settleStride + 0] = settleType;
+        iatoms[i*settleStride + 1] = i*atomsPerSettle + 0;
+        iatoms[i*settleStride + 2] = i*atomsPerSettle + 1;
+        iatoms[i*settleStride + 3] = i*atomsPerSettle + 2;
     }
-    mtop->moltype[0].ilist[F_SETTLE].iatoms = iatoms.data();
-    mtop->moltype[0].ilist[F_SETTLE].nr     = iatoms.size();
+    mtop.moltype[0].ilist[F_SETTLE].iatoms = iatoms;
+    mtop.moltype[0].ilist[F_SETTLE].nr     = numSettles*settleStride;
 
     // Set up the SETTLE parameters.
-    mtop->ffparams.ntypes = 1;
-    snew(mtop->ffparams.iparams, mtop->ffparams.ntypes);
-    const unique_cptr<t_iparams> iparamsGuard(mtop->ffparams.iparams);
+    mtop.ffparams.ntypes = 1;
+    snew(mtop.ffparams.iparams, mtop.ffparams.ntypes);
     const real                   dOH = 0.09572;
     const real                   dHH = 0.15139;
-    mtop->ffparams.iparams[settleType].settle.doh = dOH;
-    mtop->ffparams.iparams[settleType].settle.dhh = dHH;
+    mtop.ffparams.iparams[settleType].settle.doh = dOH;
+    mtop.ffparams.iparams[settleType].settle.dhh = dHH;
 
     // Set up the masses.
     t_mdatoms         mdatoms;
@@ -245,8 +239,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mdatoms.homenr  = numSettles * atomsPerSettle;
 
     // Finally make the settle data structures
-    gmx_settledata_t settled = settle_init(mtop);
-    settle_set_constraints(settled, &mtop->moltype[0].ilist[F_SETTLE], &mdatoms);
+    gmx_settledata_t settled = settle_init(&mtop);
+    settle_set_constraints(settled, &mtop.moltype[0].ilist[F_SETTLE], &mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals
     std::vector<real> startingPositions(std::begin(g_positions), std::end(g_positions));

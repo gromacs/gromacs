@@ -2776,13 +2776,13 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
 
 static t_block mtop_mols(gmx_mtop_t *mtop)
 {
-    int     mb, m, a, mol;
+    int     m, a, mol;
     t_block mols;
 
     mols.nr = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        mols.nr += mtop->molblock[mb].nmol;
+        mols.nr += molb.nmol;
     }
     mols.nalloc_index = mols.nr + 1;
     snew(mols.index, mols.nalloc_index);
@@ -2790,11 +2790,11 @@ static t_block mtop_mols(gmx_mtop_t *mtop)
     a             = 0;
     m             = 0;
     mols.index[m] = a;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        for (mol = 0; mol < mtop->molblock[mb].nmol; mol++)
+        for (mol = 0; mol < molb.nmol; mol++)
         {
-            a += mtop->molblock[mb].natoms_mol;
+            a += molb.natoms_mol;
             m++;
             mols.index[m] = a;
         }
@@ -2894,7 +2894,7 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 {
     t_iparams            *ip;
     gmx_mtop_ilistloop_t  iloop;
-    t_ilist              *ilist, *il;
+    const t_ilist        *ilist, *il;
     int                   nmol, i, npair;
     t_iatom              *a;
 
@@ -2925,7 +2925,6 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int            mt, mb;
     t_blocka       dumb;
 
     if (bRead)
@@ -2936,47 +2935,49 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 
     do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
 
+    int nmoltype = mtop->moltype.size();
     if (file_version >= 57)
     {
         do_ffparams(fio, &mtop->ffparams, bRead, file_version);
 
-        gmx_fio_do_int(fio, mtop->nmoltype);
+        gmx_fio_do_int(fio, nmoltype);
     }
     else
     {
-        mtop->nmoltype = 1;
+        mtop->moltype.resize(1);
     }
     if (bRead)
     {
-        snew(mtop->moltype, mtop->nmoltype);
+        mtop->moltype.resize(nmoltype);
         if (file_version < 57)
         {
             mtop->moltype[0].name = mtop->name;
         }
     }
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        do_moltype(fio, &mtop->moltype[mt], bRead, &mtop->symtab, file_version,
+        do_moltype(fio, &moltype, bRead, &mtop->symtab, file_version,
                    &mtop->groups);
     }
 
+    int nmolblock = mtop->molblock.size();
     if (file_version >= 57)
     {
-        gmx_fio_do_int(fio, mtop->nmolblock);
+        gmx_fio_do_int(fio, nmolblock);
     }
     else
     {
-        mtop->nmolblock = 1;
+        nmolblock = 1;
     }
     if (bRead)
     {
-        snew(mtop->molblock, mtop->nmolblock);
+        mtop->molblock.resize(nmolblock);
     }
     if (file_version >= 57)
     {
-        for (mb = 0; mb < mtop->nmolblock; mb++)
+        for (gmx_molblock_t &molblock : mtop->molblock)
         {
-            do_molblock(fio, &mtop->molblock[mb], bRead);
+            do_molblock(fio, &molblock, bRead);
         }
         gmx_fio_do_int(fio, mtop->natoms);
     }
@@ -3218,7 +3219,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
                   gmx_mtop_t *mtop)
 {
     t_tpxheader     tpx;
-    gmx_mtop_t      dum_top;
     gmx_bool        TopOnlyOK;
     int             ePBC;
     gmx_bool        bPeriodicMols;
@@ -3322,8 +3322,8 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         else
         {
+            gmx_mtop_t dum_top;
             do_mtop(fio, &dum_top, bRead, fileVersion);
-            done_mtop(&dum_top);
         }
     }
     do_test(fio, tpx.bX, x);
