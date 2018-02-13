@@ -49,5 +49,7 @@ using CommandEvent  = void;
 //! \brief A device-side buffer of ValueTypes
 template<typename ValueType>
 using DeviceBuffer  = ValueType *;
+//! \brief Context used explicitly in OpenCL, does nothing in CUDA
+using Context       = void *;
 
 #endif
