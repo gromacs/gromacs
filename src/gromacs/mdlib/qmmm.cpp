@@ -380,7 +380,7 @@ void init_QMMMrec(const t_commrec *cr,
     gmx_mtop_atomloop_all_t  aloop;
     gmx_mtop_ilistloop_all_t iloop;
     int                      a_offset;
-    t_ilist                 *ilist_mol;
+    const t_ilist           *ilist_mol;
 
     if (ir->cutoff_scheme != ecutsGROUP)
     {

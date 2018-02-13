@@ -251,8 +251,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-static std::array<int, eptNR> countPtypes(FILE       *fplog,
-                                          gmx_mtop_t *mtop)
+static std::array<int, eptNR> countPtypes(FILE             *fplog,
+                                          const gmx_mtop_t *mtop)
 {
     std::array<int, eptNR> nptype = { { 0 } };
     /* Count number of shells, and find their indices */
@@ -295,7 +295,7 @@ static std::array<int, eptNR> countPtypes(FILE       *fplog,
 }
 
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  gmx_mtop_t *mtop, int nflexcon,
+                                  const gmx_mtop_t *mtop, int nflexcon,
                                   int nstcalcenergy,
                                   bool usingDomainDecomposition)
 {
@@ -305,17 +305,14 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     const t_atom             *atom;
 
     int                       ns, nshell, nsi;
-    int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
+    int                       i, j, type, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
     gmx_mtop_atomloop_all_t   aloop;
-    gmx_ffparams_t           *ffparams;
-    gmx_molblock_t           *molb;
-    gmx_moltype_t            *molt;
-    t_block                  *cgs;
+    const gmx_ffparams_t     *ffparams;
 
     std::array<int, eptNR>    n = countPtypes(fplog, mtop);
     nshell = n[eptShell];
@@ -387,12 +384,12 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     shfc->bInterCG = FALSE;
     ns             = 0;
     a_offset       = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
+        const gmx_molblock_t *molb = &mtop->molblock[mb];
+        const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
+        const t_block        *cgs  = &molt->cgs;
 
-        cgs = &molt->cgs;
         snew(at2cg, molt->atoms.nr);
         for (cg = 0; cg < cgs->nr; cg++)
         {

@@ -188,7 +188,7 @@ void init_molinfo(t_molinfo *mol)
     init_block(&mol->cgs);
     init_block(&mol->mols);
     init_blocka(&mol->excls);
-    init_atom(&mol->atoms);
+    init_t_atoms(&mol->atoms, 0, FALSE);
 }
 
 /* FREEING MEMORY */

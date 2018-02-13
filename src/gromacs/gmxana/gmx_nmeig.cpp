@@ -114,10 +114,9 @@ static int get_nharm(const gmx_mtop_t *mtop)
 {
     int nh = 0;
 
-    for (int j = 0; (j < mtop->nmolblock); j++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        int mt  = mtop->molblock[j].type;
-        nh += mtop->molblock[j].nmol * get_nharm_mt(&(mtop->moltype[mt]));
+        nh += molb.nmol * get_nharm_mt(&(mtop->moltype[molb.type]));
     }
     return nh;
 }

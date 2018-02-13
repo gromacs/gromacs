@@ -312,7 +312,6 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
 
     /* all we need is the ir to be able to write the label */
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
-    done_mtop(&mtop);
 }
 
 static void einstein_visco(const char *fn, const char *fni, int nsets,
