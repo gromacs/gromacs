@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, 2015 by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -308,17 +308,17 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
     atomCharges.reserve(mtop->natoms);
     atomMasses.reserve(mtop->natoms);
 
-    for (int molIndex = 0; molIndex < mtop->nmolblock; molIndex++)
+    for (const gmx_molblock_t &molBlock :  mtop->molblock)
     {
         tng_molecule_t       tngMol  = nullptr;
-        const gmx_moltype_t *molType = &mtop->moltype[mtop->molblock[molIndex].type];
+        const gmx_moltype_t *molType = &mtop->moltype[molBlock.type];
 
         /* Add a molecule to the TNG trajectory with the same name as the
          * current molecule. */
         addTngMoleculeFromTopology(gmx_tng,
                                    *(molType->name),
                                    &molType->atoms,
-                                   mtop->molblock[molIndex].nmol,
+                                   molBlock.nmol,
                                    &tngMol);
 
         /* Bonds have to be deduced from interactions (constraints etc). Different
@@ -359,7 +359,7 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  gmx_tng,
             atomCharges.push_back(molType->atoms.atom[atomCounter].q);
             atomMasses.push_back(molType->atoms.atom[atomCounter].m);
         }
-        for (int molCounter = 1; molCounter < mtop->molblock[molIndex].nmol; molCounter++)
+        for (int molCounter = 1; molCounter < molBlock.nmol; molCounter++)
         {
             std::copy_n(atomCharges.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomCharges));
             std::copy_n(atomMasses.end()  - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomMasses));
@@ -574,21 +574,18 @@ void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t  gmx_tng,
 static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
                                    const int         gtype)
 {
-    const gmx_moltype_t     *molType;
-    const t_atoms           *atoms;
-
     /* Iterate through all atoms in the molecule system and
      * check if they belong to a selection group of the
      * requested type. */
-    for (int molIndex = 0, i = 0; molIndex < mtop->nmoltype; molIndex++)
+    int i = 0;
+    for (const gmx_molblock_t &molBlock : mtop->molblock)
     {
-        molType = &mtop->moltype[mtop->molblock[molIndex].type];
+        const gmx_moltype_t &molType = mtop->moltype[molBlock.type];
+        const t_atoms       &atoms   = molType.atoms;
 
-        atoms = &molType->atoms;
-
-        for (int j = 0; j < mtop->molblock[molIndex].nmol; j++)
+        for (int j = 0; j < molBlock.nmol; j++)
         {
-            for (int atomIndex = 0; atomIndex < atoms->nr; atomIndex++, i++)
+            for (int atomIndex = 0; atomIndex < atoms.nr; atomIndex++, i++)
             {
                 if (ggrpnr(&mtop->groups, gtype, i) != 0)
                 {
@@ -610,7 +607,6 @@ static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
 static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                                  const gmx_mtop_t     *mtop)
 {
-    const gmx_moltype_t     *molType;
     const t_atoms           *atoms;
     const t_atom            *at;
     const t_resinfo         *resInfo;
@@ -653,13 +649,14 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
     tng_molecule_alloc(tng, &mol);
     tng_molecule_name_set(tng, mol, groupName);
     tng_molecule_chain_add(tng, mol, "", &chain);
-    for (int molIndex = 0, i = 0; molIndex < mtop->nmoltype; molIndex++)
+    int i = 0;
+    for (const gmx_molblock_t &molBlock :  mtop->molblock)
     {
-        molType = &mtop->moltype[mtop->molblock[molIndex].type];
+        const gmx_moltype_t &molType = mtop->moltype[molBlock.type];
 
-        atoms = &molType->atoms;
+        atoms = &molType.atoms;
 
-        for (int j = 0; j < mtop->molblock[molIndex].nmol; j++)
+        for (int j = 0; j < molBlock.nmol; j++)
         {
             bool bAtomsAdded = FALSE;
             for (int atomIndex = 0; atomIndex < atoms->nr; atomIndex++, i++)
@@ -704,7 +701,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                 {
                     if (IS_CHEMBOND(k))
                     {
-                        ilist = &molType->ilist[k];
+                        ilist = &molType.ilist[k];
                         if (ilist)
                         {
                             int l = 1;
@@ -725,7 +722,7 @@ static void add_selection_groups(gmx_tng_trajectory_t  gmx_tng,
                     }
                 }
                 /* Settle is described using three atoms */
-                ilist = &molType->ilist[F_SETTLE];
+                ilist = &molType.ilist[F_SETTLE];
                 if (ilist)
                 {
                     int l = 1;

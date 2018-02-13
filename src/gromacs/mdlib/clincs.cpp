@@ -1410,8 +1410,6 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
                            gmx_bool bPLINCS, int nIter, int nProjOrder)
 {
     struct gmx_lincsdata *li;
-    int                   mt, mb;
-    gmx_moltype_t        *molt;
     gmx_bool              bMoreThanTwoSeq;
 
     if (fplog)
@@ -1431,12 +1429,9 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
     li->nOrder = nProjOrder;
 
     li->max_connect = 0;
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
-        int a;
-
-        molt = &mtop->moltype[mt];
-        for (a = 0; a < molt->atoms.nr; a++)
+        for (int a = 0; a < mtop->moltype[mt].atoms.nr; a++)
         {
             li->max_connect = std::max(li->max_connect,
                                        at2con[mt].index[a + 1] - at2con[mt].index[a]);
@@ -1445,17 +1440,16 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 
     li->ncg_triangle = 0;
     bMoreThanTwoSeq  = FALSE;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molt              = &mtop->moltype[mtop->molblock[mb].type];
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
 
         li->ncg_triangle +=
-            mtop->molblock[mb].nmol*
-            count_triangle_constraints(molt->ilist,
-                                       &at2con[mtop->molblock[mb].type]);
+            molb.nmol*
+            count_triangle_constraints(molt.ilist, &at2con[molb.type]);
 
         if (!bMoreThanTwoSeq &&
-            more_than_two_sequential_constraints(molt->ilist, &at2con[mtop->molblock[mb].type]))
+            more_than_two_sequential_constraints(molt.ilist, &at2con[molb.type]))
         {
             bMoreThanTwoSeq = TRUE;
         }

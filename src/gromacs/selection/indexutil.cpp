@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -945,7 +945,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                         {
                             --first_atom;
                         }
-                        int first_mol_atom = top->molblock[molb].globalAtomStart;
+                        int first_mol_atom = top->molblockIndices[molb].globalAtomStart;
                         first_mol_atom += molnr*top->molblock[molb].natoms_mol;
                         first_atom      = first_mol_atom + first_atom + 1;
                         last_atom       = first_mol_atom + last_atom - 1;

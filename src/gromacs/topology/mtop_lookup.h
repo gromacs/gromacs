@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,21 +74,22 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
 {
     GMX_ASSERT(globalAtomIndex >= 0 && globalAtomIndex < mtop->natoms, "The atom index to look up should be within range");
     GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
-    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < mtop->nmolblock, "The starting molecule block index for the search should be within range");
+    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < static_cast<int>(mtop->molblock.size()), "The starting molecule block index for the search should be within range");
+    GMX_ASSERT(!mtop->molblockIndices.empty(), "The molblock indices should be present when calling mtopGetMolblockIndex");
 
     /* Search the molecue block index using bisection */
     int molBlock0 = -1;
-    int molBlock1 = mtop->nmolblock;
+    int molBlock1 = mtop->molblock.size();
 
     int globalAtomStart;
     while (TRUE)
     {
-        globalAtomStart = mtop->molblock[*moleculeBlock].globalAtomStart;
+        globalAtomStart = mtop->molblockIndices[*moleculeBlock].globalAtomStart;
         if (globalAtomIndex < globalAtomStart)
         {
             molBlock1 = *moleculeBlock;
         }
-        else if (globalAtomIndex >= mtop->molblock[*moleculeBlock].globalAtomEnd)
+        else if (globalAtomIndex >= mtop->molblockIndices[*moleculeBlock].globalAtomEnd)
         {
             molBlock0 = *moleculeBlock;
         }
@@ -189,8 +190,9 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          &moleculeIndex, &atomIndexInMolecule);
 
-    const gmx_molblock_t &molb  = mtop->molblock[*moleculeBlock];
-    const t_atoms        &atoms = mtop->moltype[molb.type].atoms;
+    const gmx_molblock_t  &molb    = mtop->molblock[*moleculeBlock];
+    const t_atoms         &atoms   = mtop->moltype[molb.type].atoms;
+    const MolblockIndices &indices = mtop->molblockIndices[*moleculeBlock];
     if (atomName != nullptr)
     {
         *atomName = *(atoms.atomname[atomIndexInMolecule]);
@@ -204,7 +206,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
         else
         {
             /* Single residue molecule, keep counting */
-            *residueNumber = molb.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+            *residueNumber = indices.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
         }
     }
     if (residueName != nullptr)
@@ -213,7 +215,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     }
     if (globalResidueIndex != nullptr)
     {
-        *globalResidueIndex = molb.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+        *globalResidueIndex = indices.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
     }
 }
 

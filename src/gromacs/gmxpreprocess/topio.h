@@ -38,6 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_TOPIO_H
 #define GMX_GMXPREPROCESS_TOPIO_H
 
+#include <vector>
+
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
@@ -48,27 +50,26 @@ struct t_inputrec;
 struct warninp;
 typedef warninp *warninp_t;
 
-double check_mol(gmx_mtop_t *mtop, warninp_t wi);
+double check_mol(const gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
-char **do_top(gmx_bool          bVerbose,
-              const char       *topfile,
-              const char       *topppfile,
-              t_gromppopts     *opts,
-              gmx_bool          bZero,
-              struct t_symtab  *symtab,
-              t_params          plist[],
-              int              *combination_rule,
-              double           *repulsion_power,
-              real             *fudgeQQ,
-              gpp_atomtype_t    atype,
-              int              *nrmols,
-              t_molinfo       **molinfo,
-              t_molinfo       **intermolecular_interactions,
-              const t_inputrec *ir,
-              int              *nmolblock,
-              gmx_molblock_t  **molblock,
-              warninp_t         wi);
+char **do_top(gmx_bool                     bVerbose,
+              const char                  *topfile,
+              const char                  *topppfile,
+              t_gromppopts                *opts,
+              gmx_bool                     bZero,
+              struct t_symtab             *symtab,
+              t_params                     plist[],
+              int                         *combination_rule,
+              double                      *repulsion_power,
+              real                        *fudgeQQ,
+              gpp_atomtype_t               atype,
+              int                         *nrmols,
+              t_molinfo                  **molinfo,
+              t_molinfo                  **intermolecular_interactions,
+              const t_inputrec            *ir,
+              std::vector<gmx_molblock_t> *molblock,
+              warninp_t                    wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -288,8 +288,7 @@ static void reduce_topology_x(int gnx, int index[],
 
     top.atoms.nr = gnx;
 
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, mtop->nmoltype);
+    mtop->moltype.resize(1);
     mtop->moltype[0].name  = mtop->name;
     mtop->moltype[0].atoms = top.atoms;
     for (i = 0; i < F_NRE; i++)
@@ -300,27 +299,22 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->moltype[0].cgs   = top.cgs;
     mtop->moltype[0].excls = top.excls;
 
-    mtop->nmolblock = 1;
-    snew(mtop->molblock, mtop->nmolblock);
+    mtop->molblock.resize(1);
     mtop->molblock[0].type       = 0;
     mtop->molblock[0].nmol       = 1;
     mtop->molblock[0].natoms_mol = top.atoms.nr;
-    mtop->molblock[0].nposres_xA = 0;
-    mtop->molblock[0].nposres_xB = 0;
 
     mtop->natoms                 = top.atoms.nr;
 }
 
 static void zeroq(int index[], gmx_mtop_t *mtop)
 {
-    int mt, i;
-
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    for (gmx_moltype_t &moltype : mtop->moltype)
     {
-        for (i = 0; (i < mtop->moltype[mt].atoms.nr); i++)
+        for (int i = 0; i < moltype.atoms.nr; i++)
         {
-            mtop->moltype[mt].atoms.atom[index[i]].q  = 0;
-            mtop->moltype[mt].atoms.atom[index[i]].qB = 0;
+            moltype.atoms.atom[index[i]].q  = 0;
+            moltype.atoms.atom[index[i]].qB = 0;
         }
     }
 }

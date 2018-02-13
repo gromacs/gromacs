@@ -768,14 +768,15 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
                            gmx::ArrayRef<gmx::RVec>  x)
 {
     GMX_ASSERT(x.size() >= static_cast<size_t>(mtop.natoms), "x should contain the whole system");
+    GMX_ASSERT(!mtop.molblockIndices.empty(), "molblock indices are needed in constructVsitesGlobal");
 
-    for (int mb = 0; mb < mtop.nmolblock; mb++)
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_molblock_t &molb = mtop.molblock[mb];
-        const gmx_moltype_t  &molt = mtop.moltype[molb.type];
+        const gmx_molblock_t  &molb = mtop.molblock[mb];
+        const gmx_moltype_t   &molt = mtop.moltype[molb.type];
         if (vsiteIlistNrCount(molt.ilist) > 0)
         {
-            int atomOffset = molb.globalAtomStart;
+            int atomOffset = mtop.molblockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
             {
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
@@ -1844,30 +1845,25 @@ static std::vector<int> atom2cg(const t_block &chargeGroups)
 
 int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
-    gmx_molblock_t *molb;
-    gmx_moltype_t  *molt;
-    int             n_intercg_vsite;
-
-    n_intercg_vsite = 0;
-    for (int mb = 0; mb < mtop->nmolblock; mb++)
+    int n_intercg_vsite = 0;
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molb = &mtop->molblock[mb];
-        molt = &mtop->moltype[molb->type];
+        const gmx_moltype_t &molt = mtop->moltype[molb.type];
 
-        std::vector<int> a2cg = atom2cg(molt->cgs);
+        std::vector<int>     a2cg = atom2cg(molt.cgs);
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
             int            nral = NRAL(ftype);
-            t_ilist       *il   = &molt->ilist[ftype];
-            const t_iatom *ia   = il->iatoms;
-            for (int i = 0; i < il->nr; i += 1 + nral)
+            const t_ilist &il   = molt.ilist[ftype];
+            const t_iatom *ia   = il.iatoms;
+            for (int i = 0; i < il.nr; i += 1 + nral)
             {
                 int cg = a2cg[ia[1+i]];
                 for (int a = 1; a < nral; a++)
                 {
                     if (a2cg[ia[1+a]] != cg)
                     {
-                        n_intercg_vsite += molb->nmol;
+                        n_intercg_vsite += molb.nmol;
                         break;
                     }
                 }
@@ -2060,9 +2056,9 @@ gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
         vsite->n_intercg_vsite > 0 &&
         DOMAINDECOMP(cr))
     {
-        vsite->nvsite_pbc_molt = mtop.nmoltype;
+        vsite->nvsite_pbc_molt = mtop.moltype.size();
         snew(vsite->vsite_pbc_molt, vsite->nvsite_pbc_molt);
-        for (int mt = 0; mt < mtop.nmoltype; mt++)
+        for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
             const gmx_moltype_t &molt = mtop.moltype[mt];
             vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams,
