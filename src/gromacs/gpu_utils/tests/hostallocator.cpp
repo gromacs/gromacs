@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -311,8 +311,8 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 TYPED_TEST(HostAllocatorTest, ChangingPinningPolicyRequiresCuda)
 {
     typename TestFixture::VectorType input;
-    EXPECT_DEATH(changePinningPolicy(&input, PinningPolicy::CanBePinned),
-                 ".*A suitable build of GROMACS.* is required.*");
+    EXPECT_DEATH_IF_SUPPORTED(changePinningPolicy(&input, PinningPolicy::CanBePinned),
+                              ".*A suitable build of GROMACS.* is required.*");
 }
 
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
