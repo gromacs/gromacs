@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,7 +312,6 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
 
     /* all we need is the ir to be able to write the label */
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
-    done_mtop(&mtop);
 }
 
 static void einstein_visco(const char *fn, const char *fni, int nsets,
