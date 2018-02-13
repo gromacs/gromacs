@@ -76,8 +76,9 @@ t_blocka *new_blocka(void)
 
 void done_block(t_block *block)
 {
-    block->nr    = 0;
+    block->nr           = 0;
     sfree(block->index);
+    block->index        = nullptr;
     block->nalloc_index = 0;
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -280,7 +280,7 @@ void init_generalized_rf(FILE *fplog,
                          const gmx_mtop_t *mtop, const t_inputrec *ir,
                          t_forcerec *fr)
 {
-    int                  mb, i, j;
+    int                  i, j;
     real                 q, zsq, nrdf, T;
     const gmx_moltype_t *molt;
     const t_block       *cgs;
@@ -290,9 +290,9 @@ void init_generalized_rf(FILE *fplog,
         fprintf(fplog, "\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
     }
     zsq = 0.0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        molt = &mtop->moltype[mtop->molblock[mb].type];
+        molt = &mtop->moltype[molb.type];
         cgs  = &molt->cgs;
         for (i = 0; (i < cgs->nr); i++)
         {
@@ -301,7 +301,7 @@ void init_generalized_rf(FILE *fplog,
             {
                 q += molt->atoms.atom[j].q;
             }
-            zsq += mtop->molblock[mb].nmol*q*q;
+            zsq += molb.nmol*q*q;
         }
         fr->zsquare = zsq;
     }
