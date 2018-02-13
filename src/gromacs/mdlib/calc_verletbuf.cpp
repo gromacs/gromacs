@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -338,8 +338,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 {
     verletbuf_atomtype_t          *att;
     int                            natt;
-    int                            mb, nmol, ft, i, a1, a2, a3, a;
-    const t_atoms                 *atoms;
+    int                            ft, i, a1, a2, a3, a;
     const t_ilist                 *il;
     const t_iparams               *ip;
     atom_nonbonded_kinetic_prop_t *prop;
@@ -354,11 +353,11 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
         *n_nonlin_vsite = 0;
     }
 
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molblock : mtop->molblock)
     {
-        nmol = mtop->molblock[mb].nmol;
-
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
+        int                  nmol    = molblock.nmol;
+        const gmx_moltype_t &moltype = mtop->moltype[molblock.type];
+        const t_atoms       *atoms   = &moltype.atoms;
 
         /* Check for constraints, as they affect the kinetic energy.
          * For virtual sites we need the masses and geometry of
@@ -369,7 +368,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
-            il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
+            il = &moltype.ilist[ft];
 
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
@@ -389,7 +388,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
         }
 
-        il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
+        il = &moltype.ilist[F_SETTLE];
 
         for (i = 0; i < il->nr; i += 1+NRAL(F_SETTLE))
         {
@@ -411,7 +410,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             prop[a3].con_len  = ip->settle.doh;
         }
 
-        get_vsite_masses(&mtop->moltype[mtop->molblock[mb].type],
+        get_vsite_masses(&moltype,
                          &mtop->ffparams,
                          vsite_m,
                          &n_nonlin_vsite_mol);

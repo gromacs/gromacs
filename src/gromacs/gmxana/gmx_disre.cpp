@@ -532,8 +532,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 {
     FILE      *fp;
     int       *resnr;
-    int        n_res, a_offset, mb, mol, a;
-    t_atoms   *atoms;
+    int        n_res, a_offset, mol, a;
     int        i, j, nra, nratoms, tp, ri, rj, index, nlabel, label;
     int        ai, aj, *ptr;
     real     **matrix, *t_res, hi, *w_dr, rav, rviol;
@@ -547,17 +546,17 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     snew(resnr, mtop->natoms);
     n_res    = 0;
     a_offset = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
+    for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        for (mol = 0; mol < mtop->molblock[mb].nmol; mol++)
+        const t_atoms &atoms = mtop->moltype[molb.type].atoms;
+        for (mol = 0; mol < molb.nmol; mol++)
         {
-            for (a = 0; a < atoms->nr; a++)
+            for (a = 0; a < atoms.nr; a++)
             {
-                resnr[a_offset+a] = n_res + atoms->atom[a].resind;
+                resnr[a_offset + a] = n_res + atoms.atom[a].resind;
             }
-            n_res    += atoms->nres;
-            a_offset += atoms->nr;
+            n_res    += atoms.nres;
+            a_offset += atoms.nr;
         }
     }
 

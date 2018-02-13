@@ -113,7 +113,7 @@ void init_orires(FILE                 *fplog,
     int                   typeMin = INT_MAX;
     int                   typeMax = 0;
     gmx_mtop_ilistloop_t  iloop   = gmx_mtop_ilistloop_init(mtop);
-    t_ilist              *il;
+    const t_ilist        *il;
     int                   nmol;
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {

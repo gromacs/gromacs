@@ -446,7 +446,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<gmx::MDModules> mdModules(new gmx::MDModules);
     t_inputrec                      inputrecInstance;
     t_inputrec                     *inputrec = &inputrecInstance;
-    snew(mtop, 1);
+    mtop = new gmx_mtop_t;
 
     if (mdrunOptions.continuationOptions.appendFiles)
     {
@@ -1419,6 +1419,8 @@ int Mdrunner::mdrunner()
     }
 
     rc = (int)gmx_get_stop_condition();
+
+    delete mtop;
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they

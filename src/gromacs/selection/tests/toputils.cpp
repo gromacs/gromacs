@@ -75,8 +75,7 @@ TopologyManager::~TopologyManager()
 {
     if (mtop_ != nullptr)
     {
-        done_mtop(mtop_);
-        sfree(mtop_);
+        delete mtop_;
     }
 
     if (frame_ != nullptr)
@@ -134,7 +133,7 @@ void TopologyManager::loadTopology(const char *filename)
     matrix  box;
 
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
-    snew(mtop_, 1);
+    mtop_ = new gmx_mtop_t;
     readConfAndTopology(
             gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
             &fullTopology, mtop_, &ePBC, frame_ != nullptr ? &xtop : nullptr,
@@ -156,12 +155,10 @@ void TopologyManager::loadTopology(const char *filename)
 void TopologyManager::initAtoms(int count)
 {
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
-    snew(mtop_, 1);
-    mtop_->nmoltype = 1;
-    snew(mtop_->moltype, 1);
+    mtop_ = new gmx_mtop_t;
+    mtop_->moltype.resize(1);
     init_t_atoms(&mtop_->moltype[0].atoms, count, FALSE);
-    mtop_->nmolblock = 1;
-    snew(mtop_->molblock, 1);
+    mtop_->molblock.resize(1);
     mtop_->molblock[0].type            = 0;
     mtop_->molblock[0].nmol            = 1;
     mtop_->molblock[0].natoms_mol      = count;
@@ -232,7 +229,7 @@ void TopologyManager::initUniformResidues(int residueSize)
 void TopologyManager::initUniformMolecules(int moleculeSize)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    GMX_RELEASE_ASSERT(mtop_->nmolblock == 1, "initUniformMolecules only implemented for a single molblock");
+    GMX_RELEASE_ASSERT(mtop_->molblock.size() == 1, "initUniformMolecules only implemented for a single molblock");
     gmx_molblock_t &molblock = mtop_->molblock[0];
     t_atoms        &atoms    = mtop_->moltype[molblock.type].atoms;
     GMX_RELEASE_ASSERT(atoms.nr % moleculeSize == 0,

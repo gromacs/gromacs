@@ -771,20 +771,20 @@ gmx_constr_t init_constraints(FILE *fplog,
     constr->nflexcon = 0;
     if (nconstraints > 0)
     {
-        constr->n_at2con_mt = mtop->nmoltype;
+        constr->n_at2con_mt = mtop->moltype.size();
         snew(constr->at2con_mt, constr->n_at2con_mt);
-        for (int mt = 0; mt < mtop->nmoltype; mt++)
+        for (int mt = 0; mt < static_cast<int>(mtop->moltype.size()); mt++)
         {
             int nflexcon;
             constr->at2con_mt[mt] = make_at2con(0, mtop->moltype[mt].atoms.nr,
                                                 mtop->moltype[mt].ilist,
                                                 mtop->ffparams.iparams,
                                                 EI_DYNAMICS(ir->eI), &nflexcon);
-            for (int i = 0; i < mtop->nmolblock; i++)
+            for (const gmx_molblock_t &molblock : mtop->molblock)
             {
-                if (mtop->molblock[i].type == mt)
+                if (molblock.type == mt)
                 {
-                    constr->nflexcon += mtop->molblock[i].nmol*nflexcon;
+                    constr->nflexcon += molblock.nmol*nflexcon;
                 }
             }
         }
@@ -848,9 +848,9 @@ gmx_constr_t init_constraints(FILE *fplog,
         constr->settled         = settle_init(mtop);
 
         /* Make an atom to settle index for use in domain decomposition */
-        constr->n_at2settle_mt = mtop->nmoltype;
+        constr->n_at2settle_mt = mtop->moltype.size();
         snew(constr->at2settle_mt, constr->n_at2settle_mt);
-        for (int mt = 0; mt < mtop->nmoltype; mt++)
+        for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
             constr->at2settle_mt[mt] =
                 make_at2settle(mtop->moltype[mt].atoms.nr,
@@ -924,12 +924,11 @@ gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
     const gmx_moltype_t *molt;
     const t_block       *cgs;
     const t_ilist       *il;
-    int                  mb;
     int                 *at2cg, cg, a, ftype, i;
     gmx_bool             bInterCG;
 
     bInterCG = FALSE;
-    for (mb = 0; mb < mtop->nmolblock && !bInterCG; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size() && !bInterCG; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
 
@@ -971,12 +970,11 @@ gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop)
     const gmx_moltype_t *molt;
     const t_block       *cgs;
     const t_ilist       *il;
-    int                  mb;
     int                 *at2cg, cg, a, ftype, i;
     gmx_bool             bInterCG;
 
     bInterCG = FALSE;
-    for (mb = 0; mb < mtop->nmolblock && !bInterCG; mb++)
+    for (size_t mb = 0; mb < mtop->molblock.size() && !bInterCG; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
 
