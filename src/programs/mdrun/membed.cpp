@@ -206,8 +206,8 @@ static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
         }
     }
 
-    sfree(ins_mtype->index);
-    sfree(rest_mtype->index);
+    done_block(ins_mtype);
+    done_block(rest_mtype);
     sfree(ins_mtype);
     sfree(rest_mtype);
 }
@@ -546,8 +546,8 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     int     *order;
 
     r_min_rad = probe_rad*probe_rad;
-    snew(rm_p->mol, mtop->mols.nr);
-    snew(rm_p->block, mtop->mols.nr);
+    gmx::BlockRanges molecules = gmx_mtop_molecules(*mtop);
+    snew(rm_p->block, molecules.numBlocks());
     nrm    = nupper = 0;
     nlower = low_up_rm;
     for (i = 0; i < ins_at->nr; i++)
@@ -580,7 +580,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                     {
                         if (mol_id == mem_p->mol_id[l])
                         {
-                            for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id+1]; k++)
+                            for (k = molecules.index[mol_id]; k < molecules.index[mol_id+1]; k++)
                             {
                                 z_lip += r[k][ZZ];
                             }
@@ -607,7 +607,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
         snew(order, mem_p->nmol);
         for (i = 0; i < mem_p->nmol; i++)
         {
-            at = mtop->mols.index[mem_p->mol_id[i]];
+            at = molecules.index[mem_p->mol_id[i]];
             pbc_dx(pbc, r[at], pos_ins->geom_cent[0], dr);
             if (pos_ins->pieces > 1)
             {
@@ -650,7 +650,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
             if (bRM)
             {
                 z_lip = 0;
-                for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id+1]; k++)
+                for (k = molecules.index[mol_id]; k < molecules.index[mol_id+1]; k++)
                 {
                     z_lip += r[k][ZZ];
                 }
@@ -692,19 +692,21 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
-    int             i, j, k, n, rm, mol_id, at, block;
-    rvec           *x_tmp, *v_tmp;
-    int            *list, *new_mols;
-    unsigned char  *new_egrp[egcNR];
-    gmx_bool        bRM;
-    int             RMmolblock;
+    int               i, j, k, n, rm, mol_id, at, block;
+    rvec             *x_tmp, *v_tmp;
+    int              *list;
+    unsigned char    *new_egrp[egcNR];
+    gmx_bool          bRM;
+    int               RMmolblock;
+
+    gmx::BlockRanges  molecules = gmx_mtop_molecules(*mtop);
 
     snew(list, state->natoms);
     n = 0;
     for (i = 0; i < rm_p->nr; i++)
     {
         mol_id = rm_p->mol[i];
-        at     = mtop->mols.index[mol_id];
+        at     = molecules.index[mol_id];
         block  = rm_p->block[i];
         mtop->molblock[block].nmol--;
         for (j = 0; j < mtop->molblock[block].natoms_mol; j++)
@@ -712,23 +714,8 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
             list[n] = at+j;
             n++;
         }
-        mtop->mols.index[mol_id] = -1;
     }
 
-    mtop->mols.nr           -= rm_p->nr;
-    mtop->mols.nalloc_index -= rm_p->nr;
-    snew(new_mols, mtop->mols.nr);
-    for (i = 0; i < mtop->mols.nr+rm_p->nr; i++)
-    {
-        j = 0;
-        if (mtop->mols.index[i] != -1)
-        {
-            new_mols[j] = mtop->mols.index[i];
-            j++;
-        }
-    }
-    sfree(mtop->mols.index);
-    mtop->mols.index = new_mols;
     mtop->natoms    -= n;
     state->natoms   -= n;
     snew(x_tmp, state->natoms);

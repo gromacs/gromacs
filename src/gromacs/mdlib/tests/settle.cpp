@@ -201,7 +201,6 @@ TEST_P(SettleTest, SatisfiesConstraints)
     gmx_mtop_t                   *mtop;
     snew(mtop, 1);
     const unique_cptr<gmx_mtop_t> mtopGuard(mtop);
-    mtop->mols.nr  = 1;
     mtop->nmoltype = 1;
     snew(mtop->moltype, mtop->nmoltype);
     const unique_cptr<gmx_moltype_t> moltypeGuard(mtop->moltype);
