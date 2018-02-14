@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -331,7 +331,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete);
 /** Checks whether a group consists of full blocks. */
 bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b);
+gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *b);
 /** Checks whether a group consists of full blocks. */
 bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);

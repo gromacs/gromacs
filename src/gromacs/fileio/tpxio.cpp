@@ -2445,35 +2445,6 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
 
 }
 
-static t_block mtop_mols(gmx_mtop_t *mtop)
-{
-    int     mb, m, a, mol;
-    t_block mols;
-
-    mols.nr = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
-    {
-        mols.nr += mtop->molblock[mb].nmol;
-    }
-    mols.nalloc_index = mols.nr + 1;
-    snew(mols.index, mols.nalloc_index);
-
-    a             = 0;
-    m             = 0;
-    mols.index[m] = a;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
-    {
-        for (mol = 0; mol < mtop->molblock[mb].nmol; mol++)
-        {
-            a += mtop->molblock[mb].natoms_mol;
-            m++;
-            mols.index[m] = a;
-        }
-    }
-
-    return mols;
-}
-
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
     t_iparams            *ip;
@@ -2575,11 +2546,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 
     do_groups(fio, &mtop->groups, bRead, &(mtop->symtab));
 
-    if (bRead)
-    {
-        done_block(&mtop->mols);
-        mtop->mols = mtop_mols(mtop);
-    }
+    mtop->haveMoleculeIndices = true;
 
     if (bRead)
     {
