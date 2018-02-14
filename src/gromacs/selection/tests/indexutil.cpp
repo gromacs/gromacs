@@ -177,6 +177,7 @@ TEST_F(IndexBlockTest, CreatesMoleculeBlock)
 {
     const int group[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     setGroup(group);
     gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
@@ -199,6 +200,7 @@ TEST_F(IndexBlockTest, CreatesMoleculeBlockWithCompletion)
 {
     const int group[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     setGroup(group);
     gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
@@ -334,6 +336,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesPositive)
     const int group[] = { 0, 1, 2, 6, 7, 8, 12, 13, 14 };
 
     topManager_.initAtoms(15);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     gmx_mtop_t *top = topManager_.topology();
 
@@ -348,6 +351,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesNegative)
     const int group3[] = { 4, 5, 6, 7, 8, 12, 13, 14 };
 
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     gmx_mtop_t *top = topManager_.topology();
 
@@ -531,6 +535,7 @@ TEST_F(IndexMapTest, InitializesMoleculeBlock)
 {
     const int maxGroup[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     testInit(maxGroup, INDEX_MOL);
 }

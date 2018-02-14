@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/mtop_lookup.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
@@ -601,7 +602,7 @@ check_molecules(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* p
 {
     bool bOk;
 
-    bOk = (top != nullptr && top->mols.nr > 0);
+    bOk = (top != nullptr);
     if (!bOk)
     {
         GMX_THROW(gmx::InconsistentInputError("Molecule information not available in topology"));
@@ -618,12 +619,14 @@ static void
 evaluate_molindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i, j;
+    gmx::BlockRanges molecules = gmx_mtop_molecules(*context.top);
+
+    int              i, j;
 
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (context.top->mols.index[j + 1] <= g->index[i])
+        while (molecules.index[j + 1] <= g->index[i])
         {
             ++j;
         }
