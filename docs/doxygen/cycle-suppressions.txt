@@ -17,4 +17,3 @@ simd -> hardware
 gpu_utils -> hardware
 topology -> listed-forces
 listed-forces -> mdlib
-mdtypes -> gpu_utils
