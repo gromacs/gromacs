@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,6 +177,7 @@ TEST_F(IndexBlockTest, CreatesMoleculeBlock)
 {
     const int group[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     setGroup(group);
     gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
@@ -199,6 +200,7 @@ TEST_F(IndexBlockTest, CreatesMoleculeBlockWithCompletion)
 {
     const int group[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     setGroup(group);
     gmx_ana_index_make_block(&blocka_, topManager_.topology(), &g_,
@@ -334,6 +336,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesPositive)
     const int group[] = { 0, 1, 2, 6, 7, 8, 12, 13, 14 };
 
     topManager_.initAtoms(15);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     gmx_mtop_t *top = topManager_.topology();
 
@@ -348,6 +351,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesNegative)
     const int group3[] = { 4, 5, 6, 7, 8, 12, 13, 14 };
 
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     gmx_mtop_t *top = topManager_.topology();
 
@@ -531,6 +535,7 @@ TEST_F(IndexMapTest, InitializesMoleculeBlock)
 {
     const int maxGroup[] = { 3, 4, 7, 8, 13 };
     topManager_.initAtoms(18);
+    topManager_.initUniformResidues(1);
     topManager_.initUniformMolecules(3);
     testInit(maxGroup, INDEX_MOL);
 }
