@@ -259,13 +259,15 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             ga   = cACC[n];
         }
 
-        /* TODO: REMOVE, just testing... */
+/* TODO: REMOVE, just testing... */
+#if 0
         fprintf(stderr, "VV VEL: v[%d(%d)] b4 update: %f %f %f\n", 
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
                 v[n][XX], v[n][YY], v[n][ZZ]);
         fprintf(stderr, "VV VEL: f[%d(%d)] b4 update: %f %f %f\n", 
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
                 f[n][XX], f[n][YY], f[n][ZZ]);
+#endif
 
         for (d = 0; d < DIM; d++)
         {
@@ -285,11 +287,12 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             }
         }
 
-        /* TODO: REMOVE, just testing... */
+/* TODO: REMOVE, just testing... */
+#if 0
         fprintf(stderr, "VV VEL: v[%d(%d)] after update: %f %f %f\n",
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
                 v[n][XX], v[n][YY], v[n][ZZ]);
-
+#endif
 
         if (debug)
         {
@@ -995,14 +998,7 @@ void calc_ke_part(t_inputrec *ir, t_commrec *cr, t_state *state, t_mdatoms *md,
     {
         if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
         {
-/* TODO: TESTING */
-#if 0
             /* TODO: comm here is need to get correct KE/temperature */
-            if (DOMAINDECOMP(cr))
-            {
-                dd_move_v_shells(cr->dd, state->v);
-            }
-#endif
             nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, nrnb, bEkinAveVel);
             /* Note: summation of ekind occurs in compute_globals(), no need to do it here */
         }

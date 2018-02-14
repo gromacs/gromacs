@@ -196,14 +196,6 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
         {
             /* Pulse the grid forward and backward */
             vbuf = spac->vbuf;
-#if 0
-            /* debug */
-            /* TODO: failing here */
-            if (vbuf == NULL)
-            {
-                gmx_fatal(FARGS, "vbuf is null for dd->nc[dim] = %d\n", dd->nc[dim]);
-            }
-#endif
             for (dir = 0; dir < 2; dir++)
             {
                 if (dir == 0 && dd->ci[dim] == 0)
@@ -284,13 +276,6 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
-#if 0
-                /* debug */
-                if (rbuf == NULL)
-                {
-                    gmx_fatal(FARGS, "rbuf is null for nvec = %d\n", nvec);
-                }
-#endif
                 dd_sendrecv2_rvec(dd, d,
                                   spac->vbuf+2*ns0, 2*ns1, rbuf, 2*nr1,
                                   spac->vbuf, 2*ns0, rbuf+2*nr1, 2*nr0);
@@ -318,13 +303,6 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             spas = &spac->spas[d][0];
             /* Copy the required coordinates to the send buffer */
             vbuf = spac->vbuf;
-#if 0
-            /* debug */
-            if (vbuf == NULL)
-            {
-                gmx_fatal(FARGS, "vbuf is null for dd->nc[dim] = %d\n", dd->nc[dim]);
-            }
-#endif
             for (v = 0; v < nvec; v++)
             {
                 x = (v == 0 ? x0 : x1);
@@ -361,13 +339,6 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
-#if 0
-                /* debug */
-                if (rbuf == NULL)
-                {
-                    gmx_fatal(FARGS, "rbuf is null\n");
-                }
-#endif
                 dd_sendrecv_rvec(dd, d, dddirBackward,
                                  spac->vbuf, 2*spas->nsend, rbuf, 2*spas->nrecv);
                 /* Split the buffer into the two vectors */
@@ -412,10 +383,12 @@ void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *x0
                     /* Copy the required velocities to the send buffer */
                     for (i = 0; i < spas->nsend; i++)
                     {
-                        /* TODO: REMOVE */
+/* TODO: REMOVE, for debugging */
+#if 0
                         fprintf(stderr, "SPECAT V atom %d: %f %f %f\n", 
                                 ddglatnr(dd, spas->a[i]),
                                 x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]);
+#endif
                         copy_rvec(x[spas->a[i]], *vbuf);
                         vbuf++;
                     }
@@ -442,10 +415,12 @@ void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *x0
                 x = x0; 
                 for (i = 0; i < spas->nsend; i++)
                 {
-                    /* TODO: REMOVE */
+/* TODO: REMOVE, for debugging */
+#if 0
                     fprintf(stderr, "SPECAT V atom %d: %f %f %f\n",
                             ddglatnr(dd, spas->a[i]),
                             x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]); 
+#endif
                     copy_rvec(x[spas->a[i]], *vbuf);
                     vbuf++;
                 }
