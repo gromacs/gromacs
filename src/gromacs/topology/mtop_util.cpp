@@ -76,26 +76,31 @@ static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
     return maxresnr;
 }
 
-static void finalizeMolblocks(gmx_mtop_t *mtop)
+static void buildMolblockIndices(gmx_mtop_t *mtop)
 {
+    mtop->molblockIndices.resize(mtop->molblock.size());
+
     int atomIndex          = 0;
     int residueIndex       = 0;
     int residueNumberStart = mtop->maxresnr + 1;
     int moleculeIndexStart = 0;
-    for (gmx_molblock_t &molb : mtop->molblock)
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
-        const int numResPerMol        = mtop->moltype[molb.type].atoms.nres;
-        molb.globalAtomStart          = atomIndex;
-        molb.globalResidueStart       = residueIndex;
+        const gmx_molblock_t &molb         = mtop->molblock[mb];
+        MolblockIndices      &indices      = mtop->molblockIndices[mb];
+        const int             numResPerMol = mtop->moltype[molb.type].atoms.nres;
+
+        indices.globalAtomStart       = atomIndex;
+        indices.globalResidueStart    = residueIndex;
         atomIndex                    += molb.nmol*molb.natoms_mol;
         residueIndex                 += molb.nmol*numResPerMol;
-        molb.globalAtomEnd            = atomIndex;
-        molb.residueNumberStart       = residueNumberStart;
+        indices.globalAtomEnd         = atomIndex;
+        indices.residueNumberStart    = residueNumberStart;
         if (numResPerMol <= mtop->maxres_renum)
         {
             residueNumberStart       += molb.nmol*numResPerMol;
         }
-        molb.moleculeIndexStart       = moleculeIndexStart;
+        indices.moleculeIndexStart    = moleculeIndexStart;
         moleculeIndexStart           += molb.nmol;
     }
 }
@@ -133,7 +138,7 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
 
     mtop->maxresnr = gmx_mtop_maxresnr(mtop, mtop->maxres_renum);
 
-    finalizeMolblocks(mtop);
+    buildMolblockIndices(mtop);
 }
 
 void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[])
@@ -771,14 +776,14 @@ static void set_posres_params(t_idef *idef, const gmx_molblock_t *molb,
         /* Copy the force constants */
         *ip    = idef->iparams[il->iatoms[i*2]];
         a_molb = il->iatoms[i*2+1] - a_offset;
-        if (molb->nposres_xA == 0)
+        if (molb->posres_xA.empty())
         {
             gmx_incons("Position restraint coordinates are missing");
         }
         ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
         ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
         ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
-        if (molb->nposres_xB > 0)
+        if (!molb->posres_xB.empty())
         {
             ip->posres.pos0B[XX] = molb->posres_xB[a_molb][XX];
             ip->posres.pos0B[YY] = molb->posres_xB[a_molb][YY];
@@ -812,7 +817,7 @@ static void set_fbposres_params(t_idef *idef, const gmx_molblock_t *molb,
         /* Copy the force constants */
         *ip    = idef->iparams[il->iatoms[i*2]];
         a_molb = il->iatoms[i*2+1] - a_offset;
-        if (molb->nposres_xA == 0)
+        if (molb->posres_xA.empty())
         {
             gmx_incons("Position restraint coordinates are missing");
         }
