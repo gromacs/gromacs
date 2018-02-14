@@ -81,30 +81,18 @@ struct gmx_moltype_t
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
 struct gmx_molblock_t
 {
-    /*! \brief Constructor */
-    gmx_molblock_t();
+    int                    type = -1; /**< The molecule type index in mtop.moltype  */
+    int                    nmol = 0;  /**< The number of molecules in this block    */
+    std::vector<gmx::RVec> posres_xA; /**< Position restraint coordinates for top A */
+    std::vector<gmx::RVec> posres_xB; /**< Position restraint coordinates for top B */
 
-    /*! \brief Destructor */
-    ~gmx_molblock_t();
+    /* Convenience information, derived from other gmx_mtop_t contents */
+    int     natoms_mol = 0;           /**< The number of atoms in one molecule      */
+};
 
-    /*! \brief Default copy assignment operator.
-     *
-     * NOTE: Does not free the old pointers.
-     */
-    gmx_molblock_t &operator=(const gmx_molblock_t &) = default;
-
-    /*! \brief Default copy constructor */
-    gmx_molblock_t(const gmx_molblock_t &) = default;
-
-    int     type;               /**< The molecule type index in mtop.moltype  */
-    int     nmol;               /**< The number of molecules in this block    */
-    int     nposres_xA;         /**< The number of posres coords for top A    */
-    rvec   *posres_xA;          /**< Position restraint coordinates for top A */
-    int     nposres_xB;         /**< The number of posres coords for top B    */
-    rvec   *posres_xB;          /**< Position restraint coordinates for top B */
-
-    /* Convenience information, derived from other gmx_mtop_t contents     */
-    int     natoms_mol;         /**< The number of atoms in one molecule      */
+/*! \brief Indices for a gmx_molblock_t, derived from other gmx_mtop_t contents */
+struct MoleculeBlockIndices
+{
     int     globalAtomStart;    /**< Global atom index of the first atom in the block */
     int     globalAtomEnd;      /**< Global atom index + 1 of the last atom in the block */
     int     globalResidueStart; /**< Global residue index of the first residue in the block */
@@ -128,7 +116,11 @@ typedef struct gmx_groups_t
 #define ggrpnr(groups, egc, i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
 
 /* The global, complete system topology struct, based on molecule types.
-   This structure should contain no data that is O(natoms) in memory. */
+ * This structure should contain no data that is O(natoms) in memory.
+ *
+ * TODO: Find a solution for ensuring that the derived data is in sync
+ *       with the primary data, possibly by converting to a class.
+ */
 struct gmx_mtop_t
 {
     /* Constructor */
@@ -150,9 +142,12 @@ struct gmx_mtop_t
     int              maxres_renum;                           /* Parameter for residue numbering      */
     int              maxresnr;                               /* The maximum residue number in moltype */
     t_atomtypes      atomtypes;                              /* Atomtype properties                  */
-    gmx_groups_t     groups;
+    gmx_groups_t     groups;                                 /* Groups of atoms for different purposes */
     t_symtab         symtab;                                 /* The symbol table                     */
     bool             haveMoleculeIndices;                    /* Tells whether we have valid molecule indices */
+
+    /* Derived data */
+    std::vector<MoleculeBlockIndices> moleculeBlockIndices;  /* Indices for each molblock entry for fast lookup of atom properties */
 };
 
 /* The mdrun node-local topology struct, completely written out */

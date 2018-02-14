@@ -938,14 +938,14 @@ static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
 
     /* Get the position restraint coordinates from the molblock */
     a_molb = mol*molb->natoms_mol + a_mol;
-    if (a_molb >= molb->nposres_xA)
+    if (a_molb >= static_cast<int>(molb->posres_xA.size()))
     {
         gmx_incons("Not enough position restraint coordinates");
     }
     ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
     ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
     ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
-    if (molb->nposres_xB > 0)
+    if (!molb->posres_xB.empty())
     {
         ip->posres.pos0B[XX] = molb->posres_xB[a_molb][XX];
         ip->posres.pos0B[YY] = molb->posres_xB[a_molb][YY];
@@ -984,7 +984,7 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
 
     /* Get the position restriant coordinats from the molblock */
     a_molb = mol*molb->natoms_mol + a_mol;
-    if (a_molb >= molb->nposres_xA)
+    if (a_molb >= static_cast<int>(molb->posres_xA.size()))
     {
         gmx_incons("Not enough position restraint coordinates");
     }
