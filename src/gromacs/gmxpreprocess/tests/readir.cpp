@@ -186,7 +186,7 @@ TEST_F(GetIrTest, ProducesOutputFromElectricFieldOscillating)
 TEST_F(GetIrTest, TerminatesOnDuplicateOldAndNewKeys)
 {
     const char *inputMdpFile[] = {"verlet-buffer-drift = 1.3", "verlet-buffer-tolerance = 2.7"};
-    EXPECT_DEATH(runTest(joinStrings(inputMdpFile, "\n")), "A parameter is present with both");
+    EXPECT_DEATH_IF_SUPPORTED(runTest(joinStrings(inputMdpFile, "\n")), "A parameter is present with both");
 }
 
 TEST_F(GetIrTest, ImplicitSolventNoWorks)
@@ -198,7 +198,7 @@ TEST_F(GetIrTest, ImplicitSolventNoWorks)
 TEST_F(GetIrTest, ImplicitSolventYesWorks)
 {
     const char *inputMdpFile = "implicit-solvent = yes";
-    EXPECT_DEATH(runTest(inputMdpFile), "Invalid enum");
+    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
 } // namespace
