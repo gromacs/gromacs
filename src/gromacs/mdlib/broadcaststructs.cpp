@@ -825,8 +825,10 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 
     bc_atomtypes(cr, &mtop->atomtypes);
 
-    bc_block(cr, &mtop->mols);
     bc_groups(cr, &mtop->symtab, mtop->natoms, &mtop->groups);
+
+    GMX_RELEASE_ASSERT(!MASTER(cr) || mtop->haveMoleculeIndices, "mtop should have valid molecule indices");
+    mtop->haveMoleculeIndices = true;
 }
 
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
