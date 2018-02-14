@@ -48,6 +48,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
@@ -133,37 +134,6 @@ gmx_moltype_t::~gmx_moltype_t()
     {
         sfree(ilist[f].iatoms);
         ilist[f].nalloc = 0;
-    }
-}
-
-gmx_molblock_t::gmx_molblock_t()
-{
-    type       = -1;
-    nmol       = 0;
-    nposres_xA = 0;
-    posres_xA  = nullptr;
-    nposres_xB = 0;
-    posres_xB  = nullptr;
-
-    natoms_mol         = 0;
-    globalAtomStart    = -1;
-    globalAtomEnd      = -1;
-    globalResidueStart = -1;
-    residueNumberStart = -1;
-    moleculeIndexStart = -1;
-}
-
-gmx_molblock_t::~gmx_molblock_t()
-{
-    if (nposres_xA > 0)
-    {
-        nposres_xA = 0;
-        sfree(posres_xA);
-    }
-    if (nposres_xB > 0)
-    {
-        nposres_xB = 0;
-        sfree(posres_xB);
     }
 }
 
@@ -392,15 +362,15 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
             "moltype", molb->type, *(molt[molb->type].name));
     pr_int(fp, indent, "#molecules", molb->nmol);
     pr_int(fp, indent, "#atoms_mol", molb->natoms_mol);
-    pr_int(fp, indent, "#posres_xA", molb->nposres_xA);
-    if (molb->nposres_xA > 0)
+    pr_int(fp, indent, "#posres_xA", molb->posres_xA.size());
+    if (!molb->posres_xA.empty())
     {
-        pr_rvecs(fp, indent, "posres_xA", molb->posres_xA, molb->nposres_xA);
+        pr_rvecs(fp, indent, "posres_xA", as_rvec_array(molb->posres_xA.data()), molb->posres_xA.size());
     }
-    pr_int(fp, indent, "#posres_xB", molb->nposres_xB);
-    if (molb->nposres_xB > 0)
+    pr_int(fp, indent, "#posres_xB", molb->posres_xB.size());
+    if (!molb->posres_xB.empty())
     {
-        pr_rvecs(fp, indent, "posres_xB", molb->posres_xB, molb->nposres_xB);
+        pr_rvecs(fp, indent, "posres_xB", as_rvec_array(molb->posres_xB.data()), molb->posres_xB.size());
     }
 }
 
