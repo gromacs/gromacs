@@ -789,22 +789,6 @@ void dd_make_reverse_top(FILE *fplog,
 
     gmx_reverse_top_t *rt = dd->reverse_top;
 
-    if (rt->ril_mt_tot_size >= 200000 &&
-        mtop->mols.nr > 1 &&
-        mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1)
-    {
-        /* mtop comes from a pre Gromacs 4 tpr file */
-        const char *note = "NOTE: The tpr file used for this simulation is in an old format, for less memory usage and possibly more performance create a new tpr file with an up to date version of grompp";
-        if (fplog)
-        {
-            fprintf(fplog, "\n%s\n\n", note);
-        }
-        if (DDMASTER(dd))
-        {
-            fprintf(stderr, "\n%s\n\n", note);
-        }
-    }
-
     /* With the Verlet scheme, exclusions are handled in the non-bonded
      * kernels and only exclusions inside the cut-off lead to exclusion
      * forces. Since each atom pair is treated at most once in the non-bonded

@@ -154,7 +154,7 @@ static const int tpx_generation = 26;
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
  */
-static const int tpx_incompatible_version = 30; // GMX3.2 has version 31
+static const int tpx_incompatible_version = 57; // GMX4.0 has version 58
 
 
 
@@ -179,39 +179,21 @@ typedef struct {
  * them to make things clear.
  */
 static const t_ftupd ftupd[] = {
-    { 34, F_FENEBONDS         },
-    { 43, F_TABBONDS          },
-    { 43, F_TABBONDSNC        },
     { 70, F_RESTRBONDS        },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
     { 76, F_LINEAR_ANGLES     },
-    { 34, F_QUARTIC_ANGLES    },
-    { 43, F_TABANGLES         },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
-    { 43, F_TABDIHS           },
     { 65, F_CMAP              },
     { 60, F_GB12_NOLONGERUSED },
     { 61, F_GB13_NOLONGERUSED },
     { 61, F_GB14_NOLONGERUSED },
     { 72, F_GBPOL_NOLONGERUSED },
     { 72, F_NPSOLVATION_NOLONGERUSED },
-    { 41, F_LJC14_Q           },
-    { 41, F_LJC_PAIRS_NB      },
-    { 32, F_BHAM_LR_NOLONGERUSED },
-    { 32, F_RF_EXCL           },
-    { 32, F_COUL_RECIP        },
     { 93, F_LJ_RECIP          },
-    { 46, F_DPD               },
-    { 36, F_THOLE_POL         },
     { 90, F_FBPOSRES          },
-    { 49, F_VSITE4FDN         },
-    { 50, F_VSITEN            },
-    { 46, F_COM_PULL          },
-    { 46, F_ECONSERVED        },
     { 69, F_VTEMP_NOLONGERUSED},
     { 66, F_PDISPCORR         },
-    { 54, F_DVDL_CONSTR       },
     { 76, F_ANHARM_POL        },
     { 79, F_DVDL_COUL         },
     { 79, F_DVDL_VDW,         },
@@ -232,8 +214,7 @@ static const t_ftupd ftupd[] = {
 static void do_pullgrp_tpx_pre95(t_fileio     *fio,
                                  t_pull_group *pgrp,
                                  t_pull_coord *pcrd,
-                                 gmx_bool      bRead,
-                                 int           file_version)
+                                 gmx_bool      bRead)
 {
     rvec tmp;
 
@@ -256,14 +237,7 @@ static void do_pullgrp_tpx_pre95(t_fileio     *fio,
     pcrd->init = tmp[0];
     gmx_fio_do_real(fio, pcrd->rate);
     gmx_fio_do_real(fio, pcrd->k);
-    if (file_version >= 56)
-    {
-        gmx_fio_do_real(fio, pcrd->kB);
-    }
-    else
-    {
-        pcrd->kB = pcrd->k;
-    }
+    gmx_fio_do_real(fio, pcrd->kB);
 }
 
 static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
@@ -561,14 +535,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
         }
     }
     gmx_fio_do_real(fio, fepvals->sc_alpha);
-    if (file_version >= 38)
-    {
-        gmx_fio_do_int(fio, fepvals->sc_power);
-    }
-    else
-    {
-        fepvals->sc_power = 2;
-    }
+    gmx_fio_do_int(fio, fepvals->sc_power);
     if (file_version >= 79)
     {
         gmx_fio_do_real(fio, fepvals->sc_r_power);
@@ -799,7 +766,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
         {
             /* We read and ignore a pull coordinate for group 0 */
             do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[std::max(g-1, 0)],
-                                 bRead, file_version);
+                                 bRead);
             if (g > 0)
             {
                 pull->coord[g-1].group[0] = 0;
@@ -1030,10 +997,10 @@ static void do_legacy_efield(t_fileio *fio, gmx::KeyValueTreeObjectBuilder *root
 
 
 static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
-                        int file_version, real *fudgeQQ)
+                        int file_version)
 {
     int      i, j, k, idum = 0;
-    real     rdum, bd_temp;
+    real     rdum;
     gmx_bool bdum = 0;
 
     if (file_version != tpx_version)
@@ -1073,14 +1040,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->init_step = idum;
     }
 
-    if (file_version >= 58)
-    {
-        gmx_fio_do_int(fio, ir->simulation_part);
-    }
-    else
-    {
-        ir->simulation_part = 1;
-    }
+    gmx_fio_do_int(fio, ir->simulation_part);
 
     if (file_version >= 67)
     {
@@ -1089,29 +1049,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->nstcalcenergy = 1;
-    }
-    if (file_version < 53)
-    {
-        /* The pbc info has been moved out of do_inputrec,
-         * since we always want it, also without reading the inputrec.
-         */
-        gmx_fio_do_int(fio, ir->ePBC);
-        if (file_version >= 45)
-        {
-            gmx_fio_do_int(fio, ir->bPeriodicMols);
-        }
-        else
-        {
-            if (ir->ePBC == 2)
-            {
-                ir->ePBC          = epbcXYZ;
-                ir->bPeriodicMols = TRUE;
-            }
-            else
-            {
-                ir->bPeriodicMols = FALSE;
-            }
-        }
     }
     if (file_version >= 81)
     {
@@ -1128,33 +1065,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->ns_type);
     gmx_fio_do_int(fio, ir->nstlist);
     gmx_fio_do_int(fio, idum); /* used to be ndelta; not used anymore */
-    if (file_version < 41)
-    {
-        gmx_fio_do_int(fio, idum);
-        gmx_fio_do_int(fio, idum);
-    }
-    if (file_version >= 45)
-    {
-        gmx_fio_do_real(fio, ir->rtpi);
-    }
-    else
-    {
-        ir->rtpi = 0.05;
-    }
+
+    gmx_fio_do_real(fio, ir->rtpi);
+
     gmx_fio_do_int(fio, ir->nstcomm);
-    if (file_version > 34)
-    {
-        gmx_fio_do_int(fio, ir->comm_mode);
-    }
-    else if (ir->nstcomm < 0)
-    {
-        ir->comm_mode = ecmANGULAR;
-    }
-    else
-    {
-        ir->comm_mode = ecmLINEAR;
-    }
-    ir->nstcomm = abs(ir->nstcomm);
+    gmx_fio_do_int(fio, ir->comm_mode);
 
     /* ignore nstcheckpoint */
     if (file_version < tpxv_RemoveObsoleteParameters1)
@@ -1233,10 +1148,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, dummy_nstcalclr);
     }
     gmx_fio_do_int(fio, ir->coulombtype);
-    if (file_version < 32 && ir->coulombtype == eelRF)
-    {
-        ir->coulombtype = eelRF_NEC_UNSUPPORTED;
-    }
     if (file_version >= 81)
     {
         gmx_fio_do_int(fio, ir->coulomb_modifier);
@@ -1260,22 +1171,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_real(fio, ir->rvdw);
     gmx_fio_do_int(fio, ir->eDispCorr);
     gmx_fio_do_real(fio, ir->epsilon_r);
-    if (file_version >= 37)
-    {
-        gmx_fio_do_real(fio, ir->epsilon_rf);
-    }
-    else
-    {
-        if (EEL_RF(ir->coulombtype))
-        {
-            ir->epsilon_rf = ir->epsilon_r;
-            ir->epsilon_r  = 1.0;
-        }
-        else
-        {
-            ir->epsilon_rf = 1.0;
-        }
-    }
+    gmx_fio_do_real(fio, ir->epsilon_rf);
     gmx_fio_do_real(fio, ir->tabext);
 
     // This permits reading a .tpr file that used implicit solvent,
@@ -1295,7 +1191,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         {
             ir->implicit_solvent = false;
         }
-        if (file_version >= 55 && file_version < tpxv_RemoveImplicitSolvation)
+        if (file_version < tpxv_RemoveImplicitSolvation)
         {
             gmx_fio_do_real(fio, rdum);
             gmx_fio_do_real(fio, rdum);
@@ -1380,18 +1276,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_rvec(fio, ir->compress[XX]);
     gmx_fio_do_rvec(fio, ir->compress[YY]);
     gmx_fio_do_rvec(fio, ir->compress[ZZ]);
-    if (file_version >= 47)
-    {
-        gmx_fio_do_int(fio, ir->refcoord_scaling);
-        gmx_fio_do_rvec(fio, ir->posres_com);
-        gmx_fio_do_rvec(fio, ir->posres_comB);
-    }
-    else
-    {
-        ir->refcoord_scaling = erscNO;
-        clear_rvec(ir->posres_com);
-        clear_rvec(ir->posres_comB);
-    }
+    gmx_fio_do_int(fio, ir->refcoord_scaling);
+    gmx_fio_do_rvec(fio, ir->posres_com);
+    gmx_fio_do_rvec(fio, ir->posres_comB);
+
     if (file_version < 79)
     {
         gmx_fio_do_int(fio, ir->andersen_seed);
@@ -1401,17 +1289,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->andersen_seed = 0;
     }
 
-    if (file_version < 37)
-    {
-        gmx_fio_do_real(fio, rdum);
-    }
-
     gmx_fio_do_real(fio, ir->shake_tol);
-    if (file_version < 54)
-    {
-        // cppcheck-suppress redundantPointerOp
-        gmx_fio_do_real(fio, *fudgeQQ);
-    }
 
     gmx_fio_do_int(fio, ir->efep);
     do_fepvals(fio, ir->fepvals, bRead, file_version);
@@ -1449,10 +1327,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         do_expandedvals(fio, ir->expandedvals, ir->fepvals, bRead, file_version);
     }
-    if (file_version >= 57)
-    {
-        gmx_fio_do_int(fio, ir->eDisre);
-    }
+
+    gmx_fio_do_int(fio, ir->eDisre);
     gmx_fio_do_int(fio, ir->eDisreWeighting);
     gmx_fio_do_gmx_bool(fio, ir->bDisreMixed);
     gmx_fio_do_real(fio, ir->dr_fc);
@@ -1466,11 +1342,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version < 79)
     {
         gmx_fio_do_real(fio, rdum);
-        if (file_version < 56)
-        {
-            gmx_fio_do_real(fio, rdum);
-            gmx_fio_do_int(fio, idum);
-        }
     }
 
     gmx_fio_do_real(fio, ir->em_stepsize);
@@ -1482,10 +1353,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->nProjOrder);
     gmx_fio_do_real(fio, ir->LincsWarnAngle);
     gmx_fio_do_int(fio, ir->nLincsIter);
-    if (file_version < 33)
-    {
-        gmx_fio_do_real(fio, bd_temp);
-    }
     gmx_fio_do_real(fio, ir->bd_fric);
     if (file_version >= tpxv_Use64BitRandomSeed)
     {
@@ -1496,19 +1363,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, idum);
         ir->ld_seed = idum;
     }
-    if (file_version >= 33)
+
+    for (i = 0; i < DIM; i++)
     {
-        for (i = 0; i < DIM; i++)
-        {
-            gmx_fio_do_rvec(fio, ir->deform[i]);
-        }
-    }
-    else
-    {
-        for (i = 0; i < DIM; i++)
-        {
-            clear_rvec(ir->deform[i]);
-        }
+        gmx_fio_do_rvec(fio, ir->deform[i]);
     }
     gmx_fio_do_real(fio, ir->cos_accel);
 
@@ -1561,7 +1419,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* pull stuff */
-    if (file_version >= 48)
     {
         int ePullOld = 0;
 
@@ -1584,10 +1441,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             }
             do_pull(fio, ir->pull, bRead, file_version, ePullOld);
         }
-    }
-    else
-    {
-        ir->bPull = FALSE;
     }
 
     if (file_version >= tpxv_AcceleratedWeightHistogram)
@@ -1677,13 +1530,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_ndo_real(fio, ir->opts.nrdf, ir->opts.ngtc);
         gmx_fio_ndo_real(fio, ir->opts.ref_t, ir->opts.ngtc);
         gmx_fio_ndo_real(fio, ir->opts.tau_t, ir->opts.ngtc);
-        if (file_version < 33 && ir->eI == eiBD)
-        {
-            for (i = 0; i < ir->opts.ngtc; i++)
-            {
-                ir->opts.tau_t[i] = bd_temp;
-            }
-        }
     }
     if (ir->opts.ngfrz > 0)
     {
@@ -1711,34 +1557,17 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_ndo_real(fio, ir->opts.anneal_temp[j], k);
     }
     /* Walls */
-    if (file_version >= 45)
     {
         gmx_fio_do_int(fio, ir->nwall);
         gmx_fio_do_int(fio, ir->wall_type);
-        if (file_version >= 50)
-        {
-            gmx_fio_do_real(fio, ir->wall_r_linpot);
-        }
-        else
-        {
-            ir->wall_r_linpot = -1;
-        }
+        gmx_fio_do_real(fio, ir->wall_r_linpot);
         gmx_fio_do_int(fio, ir->wall_atomtype[0]);
         gmx_fio_do_int(fio, ir->wall_atomtype[1]);
         gmx_fio_do_real(fio, ir->wall_density[0]);
         gmx_fio_do_real(fio, ir->wall_density[1]);
         gmx_fio_do_real(fio, ir->wall_ewald_zfac);
     }
-    else
-    {
-        ir->nwall            = 0;
-        ir->wall_type        = 0;
-        ir->wall_atomtype[0] = -1;
-        ir->wall_atomtype[1] = -1;
-        ir->wall_density[0]  = 0;
-        ir->wall_density[1]  = 0;
-        ir->wall_ewald_zfac  = 3;
-    }
+
     /* Cosine stuff for electric fields */
     if (file_version < tpxv_GenericParamsForElectricField)
     {
@@ -1760,7 +1589,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* QMMM stuff */
-    if (file_version >= 39)
     {
         gmx_fio_do_gmx_bool(fio, ir->bQMMM);
         gmx_fio_do_int(fio, ir->QMMMscheme);
@@ -2001,20 +1829,9 @@ static void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
         case F_ANGRESZ:
             gmx_fio_do_real(fio, iparams->pdihs.phiA);
             gmx_fio_do_real(fio, iparams->pdihs.cpA);
-            if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && file_version < 42)
-            {
-                /* Read the incorrectly stored multiplicity */
-                gmx_fio_do_real(fio, iparams->harmonic.rB);
-                gmx_fio_do_real(fio, iparams->harmonic.krB);
-                iparams->pdihs.phiB = iparams->pdihs.phiA;
-                iparams->pdihs.cpB  = iparams->pdihs.cpA;
-            }
-            else
-            {
-                gmx_fio_do_real(fio, iparams->pdihs.phiB);
-                gmx_fio_do_real(fio, iparams->pdihs.cpB);
-                gmx_fio_do_int(fio, iparams->pdihs.mult);
-            }
+            gmx_fio_do_real(fio, iparams->pdihs.phiB);
+            gmx_fio_do_real(fio, iparams->pdihs.cpB);
+            gmx_fio_do_int(fio, iparams->pdihs.mult);
             break;
         case F_RESTRDIHS:
             gmx_fio_do_real(fio, iparams->pdihs.phiA);
@@ -2146,17 +1963,8 @@ static void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
     }
 }
 
-static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_version)
+static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead)
 {
-    int      i, idum;
-
-    if (file_version < 44)
-    {
-        for (i = 0; i < MAXNODES; i++)
-        {
-            gmx_fio_do_int(fio, idum);
-        }
-    }
     gmx_fio_do_int(fio, ilist->nr);
     if (bRead)
     {
@@ -2168,14 +1976,7 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_ver
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
                         gmx_bool bRead, int file_version)
 {
-    int          idum, i;
-    unsigned int k;
-
     gmx_fio_do_int(fio, ffparams->atnr);
-    if (file_version < 57)
-    {
-        gmx_fio_do_int(fio, idum);
-    }
     gmx_fio_do_int(fio, ffparams->ntypes);
     if (bRead)
     {
@@ -2194,21 +1995,18 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
         ffparams->reppow = 12.0;
     }
 
-    if (file_version >= 57)
-    {
-        gmx_fio_do_real(fio, ffparams->fudgeQQ);
-    }
+    gmx_fio_do_real(fio, ffparams->fudgeQQ);
 
     /* Check whether all these function types are supported by the code.
      * In practice the code is backwards compatible, which means that the
      * numbering may have to be altered from old numbering to new numbering
      */
-    for (i = 0; (i < ffparams->ntypes); i++)
+    for (int i = 0; i < ffparams->ntypes; i++)
     {
         if (bRead)
         {
             /* Loop over file versions */
-            for (k = 0; (k < NFTUPD); k++)
+            for (int k = 0; k < NFTUPD; k++)
             {
                 /* Compare the read file_version to the update table */
                 if ((file_version < ftupd[k].fvnr) &&
@@ -2267,7 +2065,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
         }
         else
         {
-            do_ilist(fio, &ilist[j], bRead, file_version);
+            do_ilist(fio, &ilist[j], bRead);
             if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
             {
                 add_settle_atoms(&ilist[j]);
@@ -2276,35 +2074,9 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
     }
 }
 
-static void do_idef(t_fileio *fio, gmx_ffparams_t *ffparams, gmx_moltype_t *molt,
-                    gmx_bool bRead, int file_version)
+static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead)
 {
-    do_ffparams(fio, ffparams, bRead, file_version);
-
-    if (file_version >= 54)
-    {
-        gmx_fio_do_real(fio, ffparams->fudgeQQ);
-    }
-
-    do_ilists(fio, molt->ilist, bRead, file_version);
-}
-
-static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_version)
-{
-    int      i, idum, dum_nra, *dum_a;
-
-    if (file_version < 44)
-    {
-        for (i = 0; i < MAXNODES; i++)
-        {
-            gmx_fio_do_int(fio, idum);
-        }
-    }
     gmx_fio_do_int(fio, block->nr);
-    if (file_version < 51)
-    {
-        gmx_fio_do_int(fio, dum_nra);
-    }
     if (bRead)
     {
         if ((block->nalloc_index > 0) && (nullptr != block->index))
@@ -2315,27 +2087,10 @@ static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_ver
         snew(block->index, block->nalloc_index);
     }
     gmx_fio_ndo_int(fio, block->index, block->nr+1);
-
-    if (file_version < 51 && dum_nra > 0)
-    {
-        snew(dum_a, dum_nra);
-        gmx_fio_ndo_int(fio, dum_a, dum_nra);
-        sfree(dum_a);
-    }
 }
 
-static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
-                      int file_version)
+static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead)
 {
-    int      i, idum;
-
-    if (file_version < 44)
-    {
-        for (i = 0; i < MAXNODES; i++)
-        {
-            gmx_fio_do_int(fio, idum);
-        }
-    }
     gmx_fio_do_int(fio, block->nr);
     gmx_fio_do_int(fio, block->nra);
     if (bRead)
@@ -2390,11 +2145,8 @@ atomicnumber_to_element(int atomicnumber)
 }
 
 
-static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
-                    int file_version, gmx_groups_t *groups, int atnr)
+static void do_atom(t_fileio *fio, t_atom *atom, gmx_bool bRead)
 {
-    int    i, myngrp;
-
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
     gmx_fio_do_real(fio, atom->mB);
@@ -2403,78 +2155,28 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     gmx_fio_do_ushort(fio, atom->typeB);
     gmx_fio_do_int(fio, atom->ptype);
     gmx_fio_do_int(fio, atom->resind);
-    if (file_version >= 52)
+    gmx_fio_do_int(fio, atom->atomnumber);
+    if (bRead)
     {
-        gmx_fio_do_int(fio, atom->atomnumber);
-        if (bRead)
-        {
-            /* Set element string from atomic number if present.
-             * This routine returns an empty string if the name is not found.
-             */
-            std::strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
-            /* avoid warnings about potentially unterminated string */
-            atom->elem[3] = '\0';
-        }
-    }
-    else if (bRead)
-    {
-        atom->atomnumber = 0;
-    }
-    if (file_version < 39)
-    {
-        myngrp = 9;
-    }
-    else
-    {
-        myngrp = ngrp;
-    }
-
-    if (file_version < 57)
-    {
-        unsigned char uchar[egcNR];
-        gmx_fio_ndo_uchar(fio, uchar, myngrp);
-        for (i = myngrp; (i < ngrp); i++)
-        {
-            uchar[i] = 0;
-        }
-        /* Copy the old data format to the groups struct */
-        for (i = 0; i < ngrp; i++)
-        {
-            groups->grpnr[i][atnr] = uchar[i];
-        }
+        /* Set element string from atomic number if present.
+         * This routine returns an empty string if the name is not found.
+         */
+        std::strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+        /* avoid warnings about potentially unterminated string */
+        atom->elem[3] = '\0';
     }
 }
 
-static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead,
-                    int file_version)
+static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead)
 {
-    int      j, myngrp;
-
-    if (file_version < 39)
+    for (int j = 0; j < ngrp; j++)
     {
-        myngrp = 9;
-    }
-    else
-    {
-        myngrp = ngrp;
-    }
-
-    for (j = 0; (j < ngrp); j++)
-    {
-        if (j < myngrp)
+        gmx_fio_do_int(fio, grps[j].nr);
+        if (bRead)
         {
-            gmx_fio_do_int(fio, grps[j].nr);
-            if (bRead)
-            {
-                snew(grps[j].nm_ind, grps[j].nr);
-            }
-            gmx_fio_ndo_int(fio, grps[j].nm_ind, grps[j].nr);
-        }
-        else
-        {
-            grps[j].nr = 1;
             snew(grps[j].nm_ind, grps[j].nr);
         }
+        gmx_fio_ndo_int(fio, grps[j].nm_ind, grps[j].nr);
     }
 }
 
@@ -2527,22 +2229,12 @@ static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
 }
 
 static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
-                     int file_version,
-                     gmx_groups_t *groups)
+                     int file_version)
 {
     int i;
 
     gmx_fio_do_int(fio, atoms->nr);
     gmx_fio_do_int(fio, atoms->nres);
-    if (file_version < 57)
-    {
-        gmx_fio_do_int(fio, groups->ngrpname);
-        for (i = 0; i < egcNR; i++)
-        {
-            groups->ngrpnr[i] = atoms->nr;
-            snew(groups->grpnr[i], groups->ngrpnr[i]);
-        }
-    }
     if (bRead)
     {
         /* Since we have always written all t_atom properties in the tpr file
@@ -2560,10 +2252,6 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         snew(atoms->atomtype, atoms->nr);
         snew(atoms->atomtypeB, atoms->nr);
         snew(atoms->resinfo, atoms->nres);
-        if (file_version < 57)
-        {
-            snew(groups->grpname, groups->ngrpname);
-        }
         atoms->pdbinfo = nullptr;
     }
     else
@@ -2572,29 +2260,21 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     }
     for (i = 0; (i < atoms->nr); i++)
     {
-        do_atom(fio, &atoms->atom[i], egcNR, bRead, file_version, groups, i);
+        do_atom(fio, &atoms->atom[i], bRead);
     }
     do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
 
     do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
-
-    if (file_version < 57)
-    {
-        do_strstr(fio, groups->ngrpname, groups->grpname, bRead, symtab);
-
-        do_grps(fio, egcNR, groups->grps, bRead, file_version);
-    }
 }
 
 static void do_groups(t_fileio *fio, gmx_groups_t *groups,
-                      gmx_bool bRead, t_symtab *symtab,
-                      int file_version)
+                      gmx_bool bRead, t_symtab *symtab)
 {
     int      g;
 
-    do_grps(fio, egcNR, groups->grps, bRead, file_version);
+    do_grps(fio, egcNR, groups->grps, bRead);
     gmx_fio_do_int(fio, groups->ngrpname);
     if (bRead)
     {
@@ -2640,10 +2320,8 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
         gmx_fio_ndo_real(fio, dummy.data(), dummy.size());
     }
-    if (file_version >= 40)
-    {
-        gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
-    }
+    gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
+
     if (bRead && file_version >= 60 && file_version < tpxv_RemoveImplicitSolvation)
     {
         std::vector<real> dummy(atomtypes->nr, 0);
@@ -2726,25 +2404,18 @@ static void do_cmap(t_fileio *fio, gmx_cmap_t *cmap_grid, gmx_bool bRead)
 
 
 static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
-                       t_symtab *symtab, int file_version,
-                       gmx_groups_t *groups)
+                       t_symtab *symtab, int file_version)
 {
-    if (file_version >= 57)
-    {
-        do_symstr(fio, &(molt->name), bRead, symtab);
-    }
+    do_symstr(fio, &(molt->name), bRead, symtab);
 
-    do_atoms(fio, &molt->atoms, bRead, symtab, file_version, groups);
+    do_atoms(fio, &molt->atoms, bRead, symtab, file_version);
 
-    if (file_version >= 57)
-    {
-        do_ilists(fio, molt->ilist, bRead, file_version);
+    do_ilists(fio, molt->ilist, bRead, file_version);
 
-        do_block(fio, &molt->cgs, bRead, file_version);
-    }
+    do_block(fio, &molt->cgs, bRead);
 
     /* This used to be in the atoms struct */
-    do_blocka(fio, &molt->excls, bRead, file_version);
+    do_blocka(fio, &molt->excls, bRead);
 }
 
 static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
@@ -2803,93 +2474,6 @@ static t_block mtop_mols(gmx_mtop_t *mtop)
     return mols;
 }
 
-static void add_posres_molblock(gmx_mtop_t *mtop)
-{
-    t_ilist        *il, *ilfb;
-    int             am, i, mol, a;
-    gmx_bool        bFE;
-    gmx_molblock_t *molb;
-    t_iparams      *ip;
-
-    /* posres reference positions are stored in ip->posres (if present) and
-       in ip->fbposres (if present). If normal and flat-bottomed posres are present,
-       posres.pos0A are identical to fbposres.pos0. */
-    il   = &mtop->moltype[0].ilist[F_POSRES];
-    ilfb = &mtop->moltype[0].ilist[F_FBPOSRES];
-    if (il->nr == 0 && ilfb->nr == 0)
-    {
-        return;
-    }
-    am  = 0;
-    bFE = FALSE;
-    for (i = 0; i < il->nr; i += 2)
-    {
-        ip = &mtop->ffparams.iparams[il->iatoms[i]];
-        am = std::max(am, il->iatoms[i+1]);
-        if (ip->posres.pos0B[XX] != ip->posres.pos0A[XX] ||
-            ip->posres.pos0B[YY] != ip->posres.pos0A[YY] ||
-            ip->posres.pos0B[ZZ] != ip->posres.pos0A[ZZ])
-        {
-            bFE = TRUE;
-        }
-    }
-    /* This loop is required if we have only flat-bottomed posres:
-       - set am
-       - bFE == FALSE (no B-state for flat-bottomed posres) */
-    if (il->nr == 0)
-    {
-        for (i = 0; i < ilfb->nr; i += 2)
-        {
-            am = std::max(am, ilfb->iatoms[i+1]);
-        }
-    }
-    /* Make the posres coordinate block end at a molecule end */
-    mol = 0;
-    while (am >= mtop->mols.index[mol+1])
-    {
-        mol++;
-    }
-    molb             = &mtop->molblock[0];
-    molb->nposres_xA = mtop->mols.index[mol+1];
-    snew(molb->posres_xA, molb->nposres_xA);
-    if (bFE)
-    {
-        molb->nposres_xB = molb->nposres_xA;
-        snew(molb->posres_xB, molb->nposres_xB);
-    }
-    else
-    {
-        molb->nposres_xB = 0;
-    }
-    for (i = 0; i < il->nr; i += 2)
-    {
-        ip                     = &mtop->ffparams.iparams[il->iatoms[i]];
-        a                      = il->iatoms[i+1];
-        molb->posres_xA[a][XX] = ip->posres.pos0A[XX];
-        molb->posres_xA[a][YY] = ip->posres.pos0A[YY];
-        molb->posres_xA[a][ZZ] = ip->posres.pos0A[ZZ];
-        if (bFE)
-        {
-            molb->posres_xB[a][XX] = ip->posres.pos0B[XX];
-            molb->posres_xB[a][YY] = ip->posres.pos0B[YY];
-            molb->posres_xB[a][ZZ] = ip->posres.pos0B[ZZ];
-        }
-    }
-    if (il->nr == 0)
-    {
-        /* If only flat-bottomed posres are present, take reference pos from them.
-           Here: bFE == FALSE      */
-        for (i = 0; i < ilfb->nr; i += 2)
-        {
-            ip                     = &mtop->ffparams.iparams[ilfb->iatoms[i]];
-            a                      = ilfb->iatoms[i+1];
-            molb->posres_xA[a][XX] = ip->fbposres.pos0[XX];
-            molb->posres_xA[a][YY] = ip->fbposres.pos0[YY];
-            molb->posres_xA[a][ZZ] = ip->fbposres.pos0[ZZ];
-        }
-    }
-}
-
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
     t_iparams            *ip;
@@ -2926,7 +2510,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
     int            mt, mb;
-    t_blocka       dumb;
 
     if (bRead)
     {
@@ -2936,58 +2519,29 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 
     do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
 
-    if (file_version >= 57)
-    {
-        do_ffparams(fio, &mtop->ffparams, bRead, file_version);
+    do_ffparams(fio, &mtop->ffparams, bRead, file_version);
 
-        gmx_fio_do_int(fio, mtop->nmoltype);
-    }
-    else
-    {
-        mtop->nmoltype = 1;
-    }
+    gmx_fio_do_int(fio, mtop->nmoltype);
+
     if (bRead)
     {
         snew(mtop->moltype, mtop->nmoltype);
-        if (file_version < 57)
-        {
-            mtop->moltype[0].name = mtop->name;
-        }
     }
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
-        do_moltype(fio, &mtop->moltype[mt], bRead, &mtop->symtab, file_version,
-                   &mtop->groups);
+        do_moltype(fio, &mtop->moltype[mt], bRead, &mtop->symtab, file_version);
     }
 
-    if (file_version >= 57)
-    {
-        gmx_fio_do_int(fio, mtop->nmolblock);
-    }
-    else
-    {
-        mtop->nmolblock = 1;
-    }
+    gmx_fio_do_int(fio, mtop->nmolblock);
     if (bRead)
     {
         snew(mtop->molblock, mtop->nmolblock);
     }
-    if (file_version >= 57)
+    for (mb = 0; mb < mtop->nmolblock; mb++)
     {
-        for (mb = 0; mb < mtop->nmolblock; mb++)
-        {
-            do_molblock(fio, &mtop->molblock[mb], bRead);
-        }
-        gmx_fio_do_int(fio, mtop->natoms);
+        do_molblock(fio, &mtop->molblock[mb], bRead);
     }
-    else
-    {
-        mtop->molblock[0].type       = 0;
-        mtop->molblock[0].nmol       = 1;
-        mtop->molblock[0].natoms_mol = mtop->moltype[0].atoms.nr;
-        mtop->molblock[0].nposres_xA = 0;
-        mtop->molblock[0].nposres_xB = 0;
-    }
+    gmx_fio_do_int(fio, mtop->natoms);
 
     if (file_version >= tpxv_IntermolecularBondeds)
     {
@@ -3008,12 +2562,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
 
-    if (file_version < 57)
-    {
-        do_idef (fio, &mtop->ffparams, &mtop->moltype[0], bRead, file_version);
-        mtop->natoms = mtop->moltype[0].atoms.nr;
-    }
-
     if (file_version >= 65)
     {
         do_cmap(fio, &mtop->ffparams.cmap_grid, bRead);
@@ -3025,39 +2573,12 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->ffparams.cmap_grid.cmapdata     = nullptr;
     }
 
-    if (file_version >= 57)
-    {
-        do_groups(fio, &mtop->groups, bRead, &(mtop->symtab), file_version);
-    }
+    do_groups(fio, &mtop->groups, bRead, &(mtop->symtab));
 
-    if (file_version < 57)
-    {
-        do_block(fio, &mtop->moltype[0].cgs, bRead, file_version);
-        do_block(fio, &mtop->mols, bRead, file_version);
-        /* Add the posres coordinates to the molblock */
-        add_posres_molblock(mtop);
-    }
     if (bRead)
     {
-        if (file_version >= 57)
-        {
-            done_block(&mtop->mols);
-            mtop->mols = mtop_mols(mtop);
-        }
-    }
-
-    if (file_version < 51)
-    {
-        /* Here used to be the shake blocks */
-        do_blocka(fio, &dumb, bRead, file_version);
-        if (dumb.nr > 0)
-        {
-            sfree(dumb.index);
-        }
-        if (dumb.nra > 0)
-        {
-            sfree(dumb.a);
-        }
+        done_block(&mtop->mols);
+        mtop->mols = mtop_mols(mtop);
     }
 
     if (bRead)
@@ -3381,7 +2902,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         if (fileGeneration <= tpx_generation && ir)
         {
-            do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : nullptr);
+            do_inputrec(fio, ir, bRead, fileVersion);
             if (fileVersion < 51)
             {
                 set_box_rel(ir, state);
