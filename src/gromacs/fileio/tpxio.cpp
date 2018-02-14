@@ -2424,23 +2424,25 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
     gmx_fio_do_int(fio, molb->nmol);
     gmx_fio_do_int(fio, molb->natoms_mol);
     /* Position restraint coordinates */
-    gmx_fio_do_int(fio, molb->nposres_xA);
-    if (molb->nposres_xA > 0)
+    int numPosres_xA = molb->posres_xA.size();
+    gmx_fio_do_int(fio, numPosres_xA);
+    if (numPosres_xA > 0)
     {
         if (bRead)
         {
-            snew(molb->posres_xA, molb->nposres_xA);
+            molb->posres_xA.resize(numPosres_xA);
         }
-        gmx_fio_ndo_rvec(fio, molb->posres_xA, molb->nposres_xA);
+        gmx_fio_ndo_rvec(fio, as_rvec_array(molb->posres_xA.data()), numPosres_xA);
     }
-    gmx_fio_do_int(fio, molb->nposres_xB);
-    if (molb->nposres_xB > 0)
+    int numPosres_xB = molb->posres_xB.size();
+    gmx_fio_do_int(fio, numPosres_xB);
+    if (numPosres_xB > 0)
     {
         if (bRead)
         {
-            snew(molb->posres_xB, molb->nposres_xB);
+            molb->posres_xB.resize(numPosres_xB);
         }
-        gmx_fio_ndo_rvec(fio, molb->posres_xB, molb->nposres_xB);
+        gmx_fio_ndo_rvec(fio, as_rvec_array(molb->posres_xB.data()), numPosres_xB);
     }
 
 }
