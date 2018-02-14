@@ -170,7 +170,6 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-/* TODO: clean up debugging */
 void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       matrix box,
                       rvec *x0,
@@ -260,12 +259,6 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             nr0  = spas[0].nrecv;
             ns1  = spas[1].nsend;
             nr1  = spas[1].nrecv;
-            /* TODO: REMOVE */
-            if (debug)
-            {
-                fprintf(debug, "DD MOVE X: ns0 = %d nr0 = %d ns1 = %d nr1 = %d\n",
-                        ns0, nr0, ns1, nr1);
-            }
             if (nvec == 1)
             {
                 dd_sendrecv2_rvec(dd, d,
