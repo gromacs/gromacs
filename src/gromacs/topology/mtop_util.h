@@ -70,6 +70,9 @@ gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
 int
 ncg_mtop(const gmx_mtop_t *mtop);
 
+/* Returns the total number of molecules in mtop. */
+int gmx_mtop_numMolecules(const gmx_mtop_t &mtop);
+
 /* Returns the total number of residues in mtop. */
 int gmx_mtop_nres(const gmx_mtop_t *mtop);
 
@@ -208,6 +211,10 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  */
 gmx_localtop_t *
 gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
+
+
+/* Creates and returns a struct with begin/end atom indices of all molecules */
+gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
