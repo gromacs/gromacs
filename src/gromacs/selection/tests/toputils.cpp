@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,22 +226,25 @@ void TopologyManager::initUniformResidues(int residueSize)
         }
         atoms.atom[i].resind = residueIndex;
     }
+    atoms.nres = residueIndex;
 }
 
 void TopologyManager::initUniformMolecules(int moleculeSize)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    int index = 0;
-    mtop_->mols.nalloc_index = (mtop_->natoms + moleculeSize - 1) / moleculeSize + 1;
-    srenew(mtop_->mols.index, mtop_->mols.nalloc_index);
-    mtop_->mols.nr = 0;
-    while (index < mtop_->natoms)
-    {
-        mtop_->mols.index[mtop_->mols.nr] = index;
-        ++mtop_->mols.nr;
-        index += moleculeSize;
-    }
-    mtop_->mols.index[mtop_->mols.nr] = mtop_->natoms;
+    GMX_RELEASE_ASSERT(mtop_->nmolblock == 1, "initUniformMolecules only implemented for a single molblock");
+    gmx_molblock_t &molblock = mtop_->molblock[0];
+    t_atoms        &atoms    = mtop_->moltype[molblock.type].atoms;
+    GMX_RELEASE_ASSERT(atoms.nr % moleculeSize == 0,
+                       "The number of atoms should be a multiple of moleculeSize");
+    molblock.nmol  = atoms.nr/moleculeSize;
+    atoms.nr       = moleculeSize;
+    const int nres = atoms.atom[atoms.nr].resind;
+    GMX_RELEASE_ASSERT(atoms.atom[atoms.nr-1].resind != nres,
+                       "The residues should break at molecule boundaries");
+    atoms.nres                 = nres;
+    molblock.natoms_mol        = moleculeSize;
+    mtop_->haveMoleculeIndices = true;
 }
 
 void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)

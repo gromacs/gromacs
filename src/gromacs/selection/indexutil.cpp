@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -796,7 +796,8 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  * \ingroup module_selection
  */
 static bool
-next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
+next_group_index(int atomIndex, const gmx_mtop_t *top,
+                 e_index_t type, int *id)
 {
     int prev = *id;
     switch (type)
@@ -812,16 +813,11 @@ next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
             break;
         }
         case INDEX_MOL:
-            if (*id >= 0 && top->mols.index[*id] > atomIndex)
-            {
-                *id = 0;
-            }
-            while (*id < top->mols.nr && atomIndex >= top->mols.index[*id+1])
-            {
-                ++*id;
-            }
-            GMX_ASSERT(*id < top->mols.nr, "Molecules do not span all the atoms");
+        {
+            int molb = 0;
+            *id      = mtopGetMoleculeIndex(top, atomIndex, &molb);
             break;
+        }
         case INDEX_UNKNOWN:
         case INDEX_ALL:
             *id = 0;
@@ -868,7 +864,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
     // into exceptions.
     GMX_RELEASE_ASSERT(top != nullptr || (type != INDEX_RES && type != INDEX_MOL),
                        "Topology must be provided for residue or molecule blocks");
-    GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
+    GMX_RELEASE_ASSERT(type != INDEX_MOL || top->haveMoleculeIndices,
                        "Molecule information must be present for molecule blocks");
 
     /* bComplete only does something for INDEX_RES or INDEX_MOL, so turn it
@@ -956,12 +952,20 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                         break;
                     }
                     case INDEX_MOL:
-                        for (int j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
+                    {
+                        int molb = 0;
+                        while (molb + 1 < top->nmolblock && id >= top->molblock[molb].moleculeIndexStart)
                         {
-                            t->a[t->nra++] = j;
+                            ++molb;
+                        }
+                        const gmx_molblock_t &molblock  = top->molblock[molb];
+                        const int             atomStart = molblock.globalAtomStart + (id - molblock.moleculeIndexStart)*molblock.natoms_mol;
+                        for (int j = 0; j < molblock.natoms_mol; ++j)
+                        {
+                            t->a[t->nra++] = atomStart + j;
                         }
                         break;
-
+                    }
                     default: /* Should not be reached */
                         GMX_RELEASE_ASSERT(false, "Unreachable code was reached");
                         break;
@@ -995,7 +999,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
  * The atoms in \p g are assumed to be sorted.
  */
 bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
+gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::BlockRanges *b)
 {
     int  i, j, bi;
 
@@ -1004,12 +1008,12 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
     while (i < g->isize)
     {
         /* Find the block that begins with the first unmatched atom */
-        while (bi < b->nr && b->index[bi] != g->index[i])
+        while (bi < b->numBlocks() && b->index[bi] != g->index[i])
         {
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->nr || i + b->index[bi+1] -  b->index[bi] > g->isize)
+        if (bi == b->numBlocks() || i + b->index[bi+1] -  b->index[bi] > g->isize)
         {
             return false;
         }
@@ -1154,7 +1158,10 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
         }
 
         case INDEX_MOL:
-            return gmx_ana_index_has_full_blocks(g, &top->mols);
+        {
+            gmx::BlockRanges molecules = gmx_mtop_molecules(*top);
+            return gmx_ana_index_has_full_blocks(g, &molecules);
+        }
     }
     return true;
 }
@@ -1257,8 +1264,6 @@ gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
                        "to use the mapping");
     GMX_RELEASE_ASSERT(top != nullptr || (type != INDEX_RES && type != INDEX_MOL),
                        "Topology must be provided for residue or molecule blocks");
-    GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
-                       "Molecule information must be present for molecule blocks");
     // Check that all atoms in each block belong to the same group.
     // This is a separate loop for better error handling (no state is modified
     // if there is an error.
