@@ -941,7 +941,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                         {
                             --first_atom;
                         }
-                        int first_mol_atom = top->molblock[molb].globalAtomStart;
+                        int first_mol_atom = top->molblockIndices[molb].globalAtomStart;
                         first_mol_atom += molnr*top->molblock[molb].natoms_mol;
                         first_atom      = first_mol_atom + first_atom + 1;
                         last_atom       = first_mol_atom + last_atom - 1;
@@ -954,13 +954,14 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                     case INDEX_MOL:
                     {
                         size_t molb = 0;
-                        while (molb + 1 < top->molblock.size() && id >= top->molblock[molb].moleculeIndexStart)
+                        while (molb + 1 < top->molblock.size() && id >= top->molblockIndices[molb].moleculeIndexStart)
                         {
                             ++molb;
                         }
-                        const gmx_molblock_t &molblock  = top->molblock[molb];
-                        const int             atomStart = molblock.globalAtomStart + (id - molblock.moleculeIndexStart)*molblock.natoms_mol;
-                        for (int j = 0; j < molblock.natoms_mol; ++j)
+                        const int              numAtomsInMol = top->molblock[molb].natoms_mol;
+                        const MolblockIndices &indices       = top->molblockIndices[molb];
+                        const int              atomStart     = indices.globalAtomStart + (id - indices.moleculeIndexStart)*numAtomsInMol;
+                        for (int j = 0; j < numAtomsInMol; ++j)
                         {
                             t->a[t->nra++] = atomStart + j;
                         }

@@ -749,19 +749,24 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
     bc_blocka(cr, &moltype->excls);
 }
 
+static void bc_vector_of_rvec(const t_commrec *cr, std::vector<gmx::RVec> *vec)
+{
+    int numElements = vec->size();
+    block_bc(cr, numElements);
+    if (numElements > 0)
+    {
+        vec->resize(numElements);
+        nblock_bc(cr, numElements, as_rvec_array(vec->data()));
+    }
+}
+
 static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 {
-    block_bc(cr, *molb);
-    if (molb->nposres_xA > 0)
-    {
-        snew_bc(cr, molb->posres_xA, molb->nposres_xA);
-        nblock_bc(cr, molb->nposres_xA*DIM, molb->posres_xA[0]);
-    }
-    if (molb->nposres_xB > 0)
-    {
-        snew_bc(cr, molb->posres_xB, molb->nposres_xB);
-        nblock_bc(cr, molb->nposres_xB*DIM, molb->posres_xB[0]);
-    }
+    block_bc(cr, molb->type);
+    block_bc(cr, molb->nmol);
+    bc_vector_of_rvec(cr, &molb->posres_xA);
+    bc_vector_of_rvec(cr, &molb->posres_xB);
+    block_bc(cr, molb->natoms_mol);
     if (debug)
     {
         fprintf(debug, "after bc_molblock\n");

@@ -768,13 +768,15 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
                            gmx::ArrayRef<gmx::RVec>  x)
 {
     GMX_ASSERT(x.size() >= static_cast<size_t>(mtop.natoms), "x should contain the whole system");
+    GMX_ASSERT(!mtop.molblockIndices.empty(), "molblock indices are needed in constructVsitesGlobal");
 
-    for (const gmx_molblock_t &molb : mtop.molblock)
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_moltype_t  &molt = mtop.moltype[molb.type];
+        const gmx_molblock_t  &molb = mtop.molblock[mb];
+        const gmx_moltype_t   &molt = mtop.moltype[molb.type];
         if (vsiteIlistNrCount(molt.ilist) > 0)
         {
-            int atomOffset = molb.globalAtomStart;
+            int atomOffset = mtop.molblockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
             {
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
