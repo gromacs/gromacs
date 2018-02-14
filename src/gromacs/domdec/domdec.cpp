@@ -6381,7 +6381,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
 
-    comm->bInterCGBondeds = ((ncg_mtop(mtop) > mtop->mols.nr) ||
+    comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
                              mtop->bIntermolecularInteractions);
     if (comm->bInterCGBondeds)
     {

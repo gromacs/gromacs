@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,20 +39,49 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+#include <vector>
+#endif
+
 #include "gromacs/utility/basedefinitions.h"
+#ifdef __cplusplus
+#include "gromacs/utility/gmxassert.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* the block structure points into an array (usually of ints).
-   It is a list of starting indices for objects of consecutive ids, such
-   as molecules.
-   For example, if this block denotes molecules, then the first molecule
-   ranges from index[0] to index[1]-1 in the atom list.
+#ifdef __cplusplus
+namespace gmx
+{
 
-   This makes the mapping from atoms to molecules O(Nmolecules) instead
-   of O(Natoms) in size.  */
+/*! \brief Division of a range of indices into consecutive blocks
+ *
+ * A range of consecutive indices 0 to index[numBlocks()] is divided
+ * into numBlocks() consecutive blocks of consecutive indices.
+ * Block b contains indices i for which index[b] <= i < index[b+1].
+ */
+struct BlockRanges
+{
+    /*! \brief Returns the number of blocks
+     *
+     * This should only be called on a valid struct. Validy is asserted
+     * (only) in debug mode.
+     */
+    int numBlocks() const
+    {
+        GMX_ASSERT(index.size() > 0, "numBlocks() should only be called on a valid BlockRanges struct");
+        return index.size() - 1;
+    }
+
+    std::vector<int> index; /**< The list of block begin/end indices */
+};
+
+}      // nsamespace gmx
+#endif // __cplusplus
+
+/* Deprecated, C-style version of BlockRanges */
 typedef struct t_block
 {
     int      nr;           /* The number of blocks          */

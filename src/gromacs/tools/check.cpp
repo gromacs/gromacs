@@ -204,7 +204,7 @@ static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
         }
     }
     fprintf(fp, "A system of %d molecules (%d atoms) was simulated.\n",
-            mtop->mols.nr, mtop->natoms-nvsite);
+            gmx_mtop_num_molecules(*mtop), mtop->natoms-nvsite);
     if (nvsite)
     {
         fprintf(fp, "Virtual sites were used in some of the molecules.\n");

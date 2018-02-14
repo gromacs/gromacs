@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topsort.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -83,6 +84,7 @@ static void finalizeMolblocks(gmx_mtop_t *mtop)
     int atomIndex          = 0;
     int residueIndex       = 0;
     int residueNumberStart = mtop->maxresnr + 1;
+    int moleculeIndexStart = 0;
     for (int mb = 0; mb < mtop->nmolblock; mb++)
     {
         gmx_molblock_t *molb          = &mtop->molblock[mb];
@@ -97,6 +99,8 @@ static void finalizeMolblocks(gmx_mtop_t *mtop)
         {
             residueNumberStart       += molb->nmol*numResPerMol;
         }
+        molb->moleculeIndexStart      = moleculeIndexStart;
+        moleculeIndexStart           += molb->nmol;
     }
 }
 
@@ -178,6 +182,16 @@ int ncg_mtop(const gmx_mtop_t *mtop)
     }
 
     return ncg;
+}
+
+int gmx_mtop_num_molecules(const gmx_mtop_t &mtop)
+{
+    int numMolecules = 0;
+    for (int mb = 0; mb < mtop.nmolblock; mb++)
+    {
+        numMolecules += mtop.molblock[mb].nmol;
+    }
+    return numMolecules;
 }
 
 int gmx_mtop_nres(const gmx_mtop_t *mtop)
@@ -968,6 +982,57 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
     return top;
 }
 
+/*! \brief Fills an array with molecule begin/end atom indices
+ *
+ * \param[in]  mtop   The global topology
+ * \param[out] index  Array of size nr. of molecules + 1 to be filled with molecule begin/end indices
+ */
+static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
+                                gmx::ArrayRef<int> index)
+{
+    int globalAtomIndex   = 0;
+    int globalMolIndex    = 0;
+    index[globalMolIndex] = globalAtomIndex;
+    for (int mb = 0; mb < mtop.nmolblock; mb++)
+    {
+        const gmx_molblock_t &molb = mtop.molblock[mb];
+        for (int mol = 0; mol < molb.nmol; mol++)
+        {
+            globalAtomIndex       += molb.natoms_mol;
+            globalMolIndex        += 1;
+            index[globalMolIndex]  = globalAtomIndex;
+        }
+    }
+}
+
+gmx::BlockRanges gmx_mtop_molecules(const gmx_mtop_t &mtop)
+{
+    gmx::BlockRanges mols;
+
+    mols.index.resize(gmx_mtop_num_molecules(mtop) + 1);
+
+    fillMoleculeIndices(mtop, mols.index);
+
+    return mols;
+}
+
+/*! \brief Creates and returns a deprecated t_block struct with molecule indices
+ *
+ * \param[in] mtop  The global topology
+ */
+static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t &mtop)
+{
+    t_block mols;
+
+    mols.nr           = gmx_mtop_num_molecules(mtop);
+    mols.nalloc_index = mols.nr + 1;
+    snew(mols.index, mols.nalloc_index);
+
+    fillMoleculeIndices(mtop, gmx::arrayRefFromArray(mols.index, mols.nr + 1));
+
+    return mols;
+}
+
 t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
     int            mt, mb;
@@ -983,7 +1048,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
     top.cgs                         = ltop.cgs;
     top.excls                       = ltop.excls;
     top.atoms                       = gmx_mtop_global_atoms(mtop);
-    top.mols                        = mtop->mols;
+    top.mols                        = gmx_mtop_molecules_t_block(*mtop);
     top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
     top.symtab                      = mtop->symtab;
 
@@ -1052,6 +1117,8 @@ void convertAtomsToMtop(t_symtab    *symtab,
     mtop->bIntermolecularInteractions = FALSE;
 
     mtop->natoms                 = atoms->nr;
+
+    mtop->haveMoleculeIndices    = false;
 
     gmx_mtop_finalize(mtop);
 }

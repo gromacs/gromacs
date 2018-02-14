@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,7 @@ typedef struct gmx_molblock_t
     int     globalAtomEnd;      /**< Global atom index + 1 of the last atom in the block */
     int     globalResidueStart; /**< Global residue index of the first residue in the block */
     int     residueNumberStart; /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
+    int     moleculeIndexStart; /**< Global molecule indexing starts from this value */
 } gmx_molblock_t;
 
 typedef struct gmx_groups_t
@@ -115,9 +116,9 @@ typedef struct gmx_mtop_t
     int              maxres_renum;                /* Parameter for residue numbering      */
     int              maxresnr;                    /* The maximum residue number in moltype */
     t_atomtypes      atomtypes;                   /* Atomtype properties                  */
-    t_block          mols;                        /* The molecules                        */
     gmx_groups_t     groups;
     t_symtab         symtab;                      /* The symbol table                     */
+    bool             haveMoleculeIndices;         /* Tells whether we have valid molecule indices */
 } gmx_mtop_t;
 
 /* The mdrun node-local topology struct, completely written out */
