@@ -540,8 +540,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             sys->molblock.push_back(molb);
             gmx_molblock_t &molbs  = sys->molblock.back();
             molbs.natoms_mol       = molinfo[molbs.type].atoms.nr;
-            molbs.nposres_xA       = 0;
-            molbs.nposres_xB       = 0;
             sys->natoms           += molbs.nmol*molbs.natoms_mol;
         }
     }
@@ -828,7 +826,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         warninp_t wi)
 {
     gmx_bool       *hadAtom;
-    rvec           *x, *v, *xp;
+    rvec           *x, *v;
     dvec            sum;
     double          totmass;
     t_topology     *top;
@@ -916,8 +914,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             }
             if (!bTopB)
             {
-                molb.nposres_xA = nat_molb;
-                snew(molb.posres_xA, molb.nposres_xA);
+                molb.posres_xA.resize(nat_molb);
                 for (i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xA[i]);
@@ -925,8 +922,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             }
             else
             {
-                molb.nposres_xB = nat_molb;
-                snew(molb.posres_xB, molb.nposres_xB);
+                molb.posres_xB.resize(nat_molb);
                 for (i = 0; i < nat_molb; i++)
                 {
                     copy_rvec(x[a+i], molb.posres_xB[i]);
@@ -955,9 +951,9 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         for (gmx_molblock_t &molb : mtop->molblock)
         {
             nat_molb = molb.nmol*mtop->moltype[molb.type].atoms.nr;
-            if (molb.nposres_xA > 0 || molb.nposres_xB > 0)
+            if (!molb.posres_xA.empty() || !molb.posres_xB.empty())
             {
-                xp = (!bTopB ? molb.posres_xA : molb.posres_xB);
+                std::vector<gmx::RVec> &xp = (!bTopB ? molb.posres_xA : molb.posres_xB);
                 for (i = 0; i < nat_molb; i++)
                 {
                     for (j = 0; j < npbcdim; j++)
