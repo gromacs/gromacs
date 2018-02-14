@@ -303,8 +303,6 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->molblock[0].type       = 0;
     mtop->molblock[0].nmol       = 1;
     mtop->molblock[0].natoms_mol = top.atoms.nr;
-    mtop->molblock[0].nposres_xA = 0;
-    mtop->molblock[0].nposres_xB = 0;
 
     mtop->natoms                 = top.atoms.nr;
 }
