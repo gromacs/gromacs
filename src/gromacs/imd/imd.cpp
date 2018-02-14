@@ -1048,11 +1048,10 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
 {
     int      i, ii;
     int      gstart, gend, count;
-    t_block  gmols, lmols;
+    t_block  lmols;
     int      nat;
     int     *ind;
 
-    gmols = top_global->mols;
     nat   = IMDsetup->nat;
     ind   = IMDsetup->ind;
 
@@ -1067,10 +1066,11 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
         }
     }
 
-    snew(lmols.index, gmols.nr+1);
+    gmx::BlockRanges gmols = gmx_mtop_molecules(*top_global);
+    snew(lmols.index, gmols.numBlocks() + 1);
     lmols.index[0] = 0;
 
-    for (i = 0; i < gmols.nr; i++)
+    for (i = 0; i < gmols.numBlocks(); i++)
     {
         gstart = gmols.index[i];
         gend   = gmols.index[i+1];
