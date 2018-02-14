@@ -1475,23 +1475,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
+                /* Drude "hard wall" constraint to avoid polarization catastrophe */
                 if (ir->bDrude && ir->drude->bHardWall)
                 {
-                    /* TODO: TESTING */
-                    if (DOMAINDECOMP(cr))
-                    {
-                        dd_move_x_shells(cr->dd, state->box, state->x);
-                        dd_move_v(cr->dd, state->v);
-                    }
-                    wallcycle_start(wcycle, ewcHARDWALL);
-                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, upd, fr->fshift, step, bVerbose);
-                    wallcycle_stop(wcycle, ewcHARDWALL);
-                    /* TODO: TESTING */
-                    if (DOMAINDECOMP(cr))
-                    {
-                        dd_move_x_shells(cr->dd, state->box, state->x);
-                        dd_move_v(cr->dd, state->v);
-                    }
+                    apply_drude_hardwall(cr, &top->idef, ir, upd->xp, state->v,
+                                         state->box, force_vir, step, bVerbose);
                 }
 
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */

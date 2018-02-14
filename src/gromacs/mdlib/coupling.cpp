@@ -926,7 +926,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
                                       real grpmass[], t_extmass *MassQ, t_vcm gmx_unused *vcm, gmx_ekindata_t *ekind, 
                                       double scalefac[], int gmx_unused seqno)
 {
-    int             i, j, n, ftype, d;
+    int             i, j, n, ftype;
     int             nc;                     /* time steps for thermostat */
     int             ti;                     /* thermostat index */
     int             nh;                     /* NH chain lengths */
