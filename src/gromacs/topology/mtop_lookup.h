@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,6 +108,29 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
     {
         *atomIndexInMolecule = globalAtomIndex - globalAtomStart - molIndex*mtop->molblock[*moleculeBlock].natoms_mol;
     }
+}
+
+/*! \brief Returns the global molecule index of a global atom index
+ *
+ * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ */
+static inline int
+mtopGetMoleculeIndex(const gmx_mtop_t *mtop,
+                     int               globalAtomIndex,
+                     int              *moleculeBlock)
+{
+    int localMoleculeIndex;
+    mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, &localMoleculeIndex, nullptr);
+
+    return mtop->molblock[*moleculeBlock].moleculeIndexStart + localMoleculeIndex;
 }
 
 /*! \brief Returns the atom data for an atom based on global atom index

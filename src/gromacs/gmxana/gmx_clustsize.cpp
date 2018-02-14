@@ -54,6 +54,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_lookup.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
@@ -83,7 +84,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     t_tpxheader           tpxh;
     gmx_mtop_t           *mtop = nullptr;
     int                   ePBC = -1;
-    t_block              *mols = nullptr;
     int                   ii, jj;
     real                  temp, tfac;
     /* Cluster size distribution (matrix) */
@@ -132,6 +132,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         tfac = ndf/(3.0*natoms);
     }
 
+    gmx::BlockRanges mols;
     if (bMol)
     {
         if (ndx)
@@ -140,10 +141,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                    ndx);
         }
         GMX_RELEASE_ASSERT(mtop != nullptr, "Trying to access mtop->mols from NULL mtop pointer");
-        mols = &(mtop->mols);
+        mols = gmx_mtop_molecules(*mtop);
 
         /* Make dummy index */
-        nindex = mols->nr;
+        nindex = mols.numBlocks();
         snew(index, nindex);
         for (i = 0; (i < nindex); i++)
         {
@@ -209,11 +210,11 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         /* Compute distance */
                         if (bMol)
                         {
-                            GMX_RELEASE_ASSERT(mols != nullptr, "Cannot access index[] from NULL mols pointer");
+                            GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
                             bSame = FALSE;
-                            for (ii = mols->index[ai]; !bSame && (ii < mols->index[ai+1]); ii++)
+                            for (ii = mols.index[ai]; !bSame && (ii < mols.index[ai+1]); ii++)
                             {
-                                for (jj = mols->index[aj]; !bSame && (jj < mols->index[aj+1]); jj++)
+                                for (jj = mols.index[aj]; !bSame && (jj < mols.index[aj+1]); jj++)
                                 {
                                     if (bPBC)
                                     {
@@ -364,8 +365,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             {
                 if (bMol)
                 {
-                    GMX_RELEASE_ASSERT(mols != nullptr, "Cannot access index[] from NULL mols pointer");
-                    for (j = mols->index[i]; (j < mols->index[i+1]); j++)
+                    GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
+                    for (j = mols.index[i]; (j < mols.index[i+1]); j++)
                     {
                         fprintf(fp, "%d\n", j+1);
                     }
@@ -441,6 +442,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
     gmx_ffclose(fp);
+
     if (mtop)
     {
         done_mtop(mtop);
