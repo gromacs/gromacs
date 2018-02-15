@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,8 +54,11 @@
  * code that is in double precision.
  */
 
-#if GMX_PTX_ARCH < 300 && GMX_PTX_ARCH != 0
-#error "nbnxn_cuda_kernel.cuh included with GMX_PTX_ARCH < 300 or host pass"
+#if GMX_PTX_ARCH >= 300
+#define FERMI_BUILD 0
+#else
+/* also host-pass */
+#define FERMI_BUILD 1
 #endif
 
 #if defined EL_EWALD_ANA || defined EL_EWALD_TAB
@@ -80,6 +83,13 @@
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
 #define LJ_COMB
+#endif
+
+/* TODO: implement i data preload for Fermi, if nothing else to merge code-paths. */
+#if FERMI_BUILD
+#define PRELOAD_I_DATA 0
+#else
+#define PRELOAD_I_DATA 1
 #endif
 
 /*
@@ -111,24 +121,13 @@
  * shuffle-based reduction, hence CC >= 3.0.
  *
  *
- * NOTEs on Volta / CUDA 9 extensions:
- *
- * - While active thread masks are required for the warp collectives
- *   (we use any and shfl), the kernel is designed such that all conditions
- *   (other than the inner-most distance check) including loop trip counts
- *   are warp-synchronous. Therefore, we don't need ballot to compute the
- *   active masks as these are all full-warp masks.
- *
- * - TODO: reconsider the use of __syncwarp(): its only role is currently to prevent
- *   WAR hazard due to the cj preload; we should try to replace it with direct
- *   loads (which may be faster given the improved L1 on Volta).
  */
 
 /* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
  * determines the number of threads per block and it is chosen such that
  * 16 blocks/multiprocessor can be kept in flight.
- * - CC 3.0,3.5, and >=5.0: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
+ * - CC 2.x, 3.x (x!=7), and >=5.0: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:                        NTHREAD_Z=2, (128, 16) bounds
  *
  * Note: convenience macros, need to be undef-ed at the end of the file.
  */
@@ -140,12 +139,14 @@
     #define MIN_BLOCKS_PER_MP   (16)
 #endif /* GMX_PTX_ARCH == 370 */
 #define THREADS_PER_BLOCK   (c_clSize*c_clSize*NTHREAD_Z)
+/**@}*/
 
-#if GMX_PTX_ARCH >= 350
 #if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
+/* The shmem reduction does not support multiple j-pairs per block. */
     #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
 #endif
-/**@}*/
+
+#if GMX_PTX_ARCH >= 350
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
@@ -281,6 +282,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
     sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
 
+#if FERMI_BUILD
+    /* shmem j force buffer */
+    float *f_buf    = (float *)(sm_nextSlotPtr);
+    sm_nextSlotPtr += (c_clSize * c_clSize * 3*sizeof(*f_buf));
+#endif
+
+    const bool c_preLoadIData = PRELOAD_I_DATA;
+#if PRELOAD_I_DATA
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
     int *atib       = (int *)sm_nextSlotPtr;
@@ -289,6 +298,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* shmem buffer for i-atom LJ combination rule parameters */
     float2 *ljcpib  = (float2 *)sm_nextSlotPtr;
     sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*ljcpib));
+#endif
 #endif
     /*********************************************************************/
 
@@ -308,13 +318,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
 
+#if PRELOAD_I_DATA
+        if (c_preLoadIData)
+        {
 #ifndef LJ_COMB
-        /* Pre-load the i-atom types into shared memory */
-        atib[tidxj * c_clSize + tidxi] = atom_types[ai];
+            /* Pre-load the i-atom types into shared memory */
+            atib[tidxj * c_clSize + tidxi] = atom_types[ai];
 #else
-        /* Pre-load the LJ combination parameters into shared memory */
-        ljcpib[tidxj * c_clSize + tidxi] = lj_comb[ai];
+            /* Pre-load the LJ combination parameters into shared memory */
+            ljcpib[tidxj * c_clSize + tidxi] = lj_comb[ai];
 #endif
+        }
+#endif  // PRELOAD_I_DATA
     }
     __syncthreads();
 
@@ -402,7 +417,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler and later it is much slower;
-               Tested with up to nvcc 7.5 */
+               Tested with up to nvcc 7.5
+
+               TODO: test unrolling with more recent CUDA.
+             */
+#if !defined PRUNE_NBL && GMX_PTX_ARCH < 300
+#pragma unroll 4
+#endif
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 if (imask & (superClInteractionMask << (jm * c_numClPerSupercl)))
@@ -432,6 +453,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                         if (imask & mask_ji)
                         {
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
+                            if (!c_preLoadIData)
+                            {
+                                ai  = ci * c_clSize + tidxi;       /* i atom index */
+                            }
 
                             /* all threads load an atom from i cluster ci into shmem! */
                             xqbuf   = xqib[i * c_clSize + tidxi];
@@ -465,10 +490,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
+#if PRELOAD_I_DATA
                                 typei   = atib[i * c_clSize + tidxi];
+#else
+                                typei   = atom_types[ai];
+#endif                          // PRELOAD_I_DATA
                                 fetch_nbfp_c6_c12(c6, c12, nbparam, ntypes * typei + typej);
 #else
+#if PRELOAD_I_DATA
                                 ljcp_i  = ljcpib[i * c_clSize + tidxi];
+#else
+                                ljcp_i  = lj_comb[ai];
+#endif                          // PRELOAD_I_DATA
 #ifdef LJ_COMB_GEOM
                                 c6      = ljcp_i.x * ljcp_j.x;
                                 c12     = ljcp_i.y * ljcp_j.y;
@@ -606,7 +639,16 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     }
 
                     /* reduce j forces */
+#if FERMI_BUILD
+                    /* store j forces in shmem */
+                    f_buf[                   tidx] = fcj_buf.x;
+                    f_buf[    c_fbufStride + tidx] = fcj_buf.y;
+                    f_buf[2 * c_fbufStride + tidx] = fcj_buf.z;
+
+                    reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
+#else
                     reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj, c_fullWarpMask);
+#endif              // FERMI_BUILD
                 }
             }
 #ifdef PRUNE_NBL
@@ -631,21 +673,43 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     for (i = 0; i < c_numClPerSupercl; i++)
     {
         ai  = (sci * c_numClPerSupercl + i) * c_clSize + tidxi;
+#if FERMI_BUILD
+        f_buf[                   tidx] = fci_buf[i].x;
+        f_buf[    c_fbufStride + tidx] = fci_buf[i].y;
+        f_buf[2 * c_fbufStride + tidx] = fci_buf[i].z;
+        __syncthreads();
+        reduce_force_i(f_buf, f,
+                       &fshift_buf, bCalcFshift,
+                       tidxi, tidxj, ai);
+        __syncthreads();
+#else
         reduce_force_i_warp_shfl(fci_buf[i], f,
                                  &fshift_buf, bCalcFshift,
                                  tidxj, ai, c_fullWarpMask);
+#endif  // FERMI_BUILD
     }
 
     /* add up local shift forces into global mem, tidxj indexes x,y,z */
-    if (bCalcFshift && (tidxj & 3) < 3)
+#if FERMI_BUILD
+    int jOffset = (tidxj);
+#else
+    int jOffset = (tidxj & 3);
+#endif // FERMI_BUILD
+    if (bCalcFshift && jOffset < 3)
     {
-        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + (tidxj & 3), fshift_buf);
+        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + jOffset, fshift_buf);
     }
 
 #ifdef CALC_ENERGIES
-    /* reduce the energies over warps and store into global memory */
+#if FERMI_BUILD
+    /* flush the energies to shmem and reduce them */
+    f_buf[               tidx] = E_lj;
+    f_buf[c_fbufStride + tidx] = E_el;
+    reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
+#else
     reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx, c_fullWarpMask);
 #endif
+#endif // FERMI_BUILD
 }
 #endif /* FUNCTION_DECLARATION_ONLY */
 
@@ -658,3 +722,5 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #undef LJ_EWALD
 
 #undef LJ_COMB
+#undef FERMI_BUILD
+#undef PRELOAD_I_DATA
