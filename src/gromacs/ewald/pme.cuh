@@ -138,6 +138,22 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
 }
 
 /*! \brief \internal
+ * Given a possibly large \p blockCount, creates a 2D grid for kernel scheduling.
+ * Tries to minimize number of unused blocks.
+ */
+template <typename PmeGpu>
+dim3 __host__ inline pmeGpuCreateGrid(PmeGpu *pmeGpu, int blockCount)
+{
+    // How many maximum widths in X do we need (hopefully just one)
+    const int maxSpanCount = (blockCount + pmeGpu->maxGridWidthX - 1) / pmeGpu->maxGridWidthX;
+    // Trying to make things even
+    const int blockCountPerSpan = (blockCount + maxSpanCount - 1) / maxSpanCount;
+    GMX_ASSERT((blockCountPerSpan * maxSpanCount - blockCount) >= 0, "pmeGpuCreateGrid: totally wrong");
+    GMX_ASSERT((blockCountPerSpan * maxSpanCount - blockCount) < maxSpanCount, "pmeGpuCreateGrid: excessive blocks");
+    return dim3(blockCountPerSpan, maxSpanCount);
+}
+
+/*! \brief \internal
  * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
  */
 struct PmeGpuCuda
