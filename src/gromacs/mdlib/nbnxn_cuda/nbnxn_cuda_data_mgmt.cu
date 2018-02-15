@@ -145,10 +145,8 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     ad->nalloc = -1;
 }
 
-/*! Selects the Ewald kernel type, analytical on SM 3.0 and later, tabulated on
-    earlier GPUs, single or twin cut-off. */
-static int pick_ewald_kernel_type(bool                     bTwinCut,
-                                  const gmx_device_info_t *dev_info)
+/*! \brief Selects the Ewald kernel type, analytical/tabulated or single/twin cut-off. */
+static int pick_ewald_kernel_type(bool bTwinCut)
 {
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
@@ -164,8 +162,12 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
                    "requested through environment variables.");
     }
 
-    /* By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
-    if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
+    /* By default, on all arch we use analytical Ewald.
+     * Notes:
+     *  - on CC 2.0 tabulated is up to ~7% faster, but requires textures which we don't support anymore
+     *  - TODO: on Pascal/Volta there might be regimes where tabulated is faster.
+     */
+    if (!bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = true;
 
@@ -307,7 +309,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
         /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
-        nbp->eeltype = pick_ewald_kernel_type(false, dev_info);
+        nbp->eeltype = pick_ewald_kernel_type(false);
     }
     else
     {
@@ -352,8 +354,7 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
 
     set_cutoff_parameters(nbp, ic, listParams);
 
-    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
-                                                 nb->dev_info);
+    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
     init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_info);
 }
