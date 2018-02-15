@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -349,6 +349,11 @@ struct PmeGpu
 
     /*! \brief A pointer to the device used during the execution. */
     gmx_device_info_t *deviceInfo;
+
+    /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
+     * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.
+     */
+    std::intmax_t maxGridWidthX;
 
     /*! \brief A single structure encompassing all the PME data used on GPU.
      * Its value is the only argument to all the PME GPU kernels.

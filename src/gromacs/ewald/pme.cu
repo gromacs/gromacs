@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -451,6 +451,8 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
      */
     // TODO: Consider turning on by default when we can detect nr of streams.
     pmeGpu->archSpecific->useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
+
+    pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
 
     /* Creating a PME CUDA stream */
     cudaError_t stat;
