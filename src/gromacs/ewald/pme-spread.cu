@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013-2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,9 +112,10 @@ void pme_gpu_stage_atom_data(const PmeGpuCudaKernelParams       kernelParams,
                              const T * __restrict__             gm_source)
 {
     static_assert(c_usePadding, "With padding disabled, index checking should be fixed to account for spline theta/dtheta per-warp alignment");
+    const int blockIndex       = blockIdx.y * gridDim.x + blockIdx.x;
     const int threadLocalIndex = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
     const int localIndex       = threadLocalIndex;
-    const int globalIndexBase  = blockIdx.x * atomsPerBlock * dataCountPerAtom;
+    const int globalIndexBase  = blockIndex * atomsPerBlock * dataCountPerAtom;
     const int globalIndex      = globalIndexBase + localIndex;
     const int globalCheck      = pme_gpu_check_atom_data_index(globalIndex, kernelParams.atoms.nAtoms * dataCountPerAtom);
     if ((localIndex < atomsPerBlock * dataCountPerAtom) & globalCheck)
@@ -454,7 +455,16 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     // Spline values
     __shared__ float sm_theta[atomsPerBlock * DIM * order];
 
-    const int        atomIndexOffset = blockIdx.x * atomsPerBlock;
+    const int        blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
+    const int        atomIndexOffset = blockIndex * atomsPerBlock;
+
+    /* Early return for fully empty blocks at the end
+     * (should only happen on Fermi or billions of input atoms)
+     */
+    if (atomIndexOffset >= kernelParams.atoms.nAtoms)
+    {
+        return;
+    }
 
     /* Staging coefficients/charges for both spline and spread */
     pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, kernelParams.atoms.d_coefficients);
@@ -512,7 +522,8 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     //(for spline data mostly, together with varying PME_GPU_PARALLEL_SPLINE define)
     GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. spreading block size");
 
-    dim3 nBlocks(pmeGpu->nAtomsPadded / atomsPerBlock);
+    const int blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
     dim3 dimBlock(order, order, atomsPerBlock);
 
     // These should later check for PME decomposition
@@ -530,14 +541,14 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
                 if (spreadCharges)
                 {
                     pme_gpu_start_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
-                    pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY> <<< nBlocks, dimBlock, 0, stream>>> (*kernelParamsPtr);
+                    pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
                     CU_LAUNCH_ERR("pme_spline_and_spread_kernel");
                     pme_gpu_stop_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
                 }
                 else
                 {
                     pme_gpu_start_timing(pmeGpu, gtPME_SPLINE);
-                    pme_spline_and_spread_kernel<4, true, false, wrapX, wrapY> <<< nBlocks, dimBlock, 0, stream>>> (*kernelParamsPtr);
+                    pme_spline_and_spread_kernel<4, true, false, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
                     CU_LAUNCH_ERR("pme_spline_and_spread_kernel");
                     pme_gpu_stop_timing(pmeGpu, gtPME_SPLINE);
                 }
@@ -545,7 +556,7 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
             else
             {
                 pme_gpu_start_timing(pmeGpu, gtPME_SPREAD);
-                pme_spline_and_spread_kernel<4, false, true, wrapX, wrapY> <<< nBlocks, dimBlock, 0, stream>>> (*kernelParamsPtr);
+                pme_spline_and_spread_kernel<4, false, true, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
                 CU_LAUNCH_ERR("pme_spline_and_spread_kernel");
                 pme_gpu_stop_timing(pmeGpu, gtPME_SPREAD);
             }
