@@ -164,8 +164,12 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
                    "requested through environment variables.");
     }
 
-    /* By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
-    if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
+    /* By default, on all arch we use analytical Ewald.
+     * Notes:
+     *  - on CC 2.0 tabulated is up to ~7% faster, but requires textures which we don't support anymore
+     *  - TODO: on Pascal/Volta there might be regimes where tabulated is faster.
+     */
+    if (!bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = true;
 
