@@ -41,10 +41,8 @@
 #include <cstdlib>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
-#include "gromacs/gpu_utils/devicebuffer.cuh" //TODO remove when removing cu_realloc_buffered
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 /*** Generic CUDA data operation wrappers ***/
 
@@ -134,63 +132,6 @@ int cu_copy_H2D_sync(void * d_dest, void * h_src, size_t bytes)
 int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
 {
     return cu_copy_H2D(d_dest, h_src, bytes, GpuApiCallBehavior::Async, s);
-}
-
-/**** Operation on buffered arrays (arrays with "over-allocation" in gmx wording) *****/
-
-/*!
- *  Reallocation of the memory pointed by d_ptr and copying of the data from
- *  the location pointed by h_src host-side pointer is done. Allocation is
- *  buffered and therefore freeing is only needed if the previously allocated
- *  space is not enough.
- *  The H2D copy is launched in stream s and can be done synchronously or
- *  asynchronously (the default is the latter).
- */
-void cu_realloc_buffered(void **d_dest, void *h_src,
-                         size_t type_size,
-                         int *curr_size, int *curr_alloc_size,
-                         int req_size,
-                         cudaStream_t s,
-                         bool bAsync = true)
-{
-    cudaError_t stat;
-
-    if (d_dest == NULL || req_size < 0)
-    {
-        return;
-    }
-
-    /* reallocate only if the data does not fit = allocation size is smaller
-       than the current requested size */
-    if (req_size > *curr_alloc_size)
-    {
-        /* only free if the array has already been initialized */
-        if (*curr_alloc_size >= 0)
-        {
-            freeDeviceBuffer(d_dest);
-        }
-
-        *curr_alloc_size = over_alloc_large(req_size);
-
-        stat = cudaMalloc(d_dest, *curr_alloc_size * type_size);
-        CU_RET_ERR(stat, "cudaMalloc failed in cu_realloc_buffered");
-    }
-
-    /* size could have changed without actual reallocation */
-    *curr_size = req_size;
-
-    /* upload to device */
-    if (h_src)
-    {
-        if (bAsync)
-        {
-            cu_copy_H2D_async(*d_dest, h_src, *curr_size * type_size, s);
-        }
-        else
-        {
-            cu_copy_H2D_sync(*d_dest, h_src,  *curr_size * type_size);
-        }
-    }
 }
 
 /*! \brief Return whether texture objects are used on this device.
