@@ -232,8 +232,8 @@ struct PmeGpuCuda
     /* GPU arrays element counts (not the arrays sizes in bytes!).
      * They might be larger than the actual meaningful data sizes.
      * These are paired: the actual element count + the maximum element count that can fit in the current allocated memory.
-     * These integer pairs are mostly meaningful for the cu_realloc_buffered calls.
-     * As such, if cu_realloc_buffered is refactored, they can be freely changed, too.
+     * These integer pairs are mostly meaningful for the reallocateDeviceBuffer calls.
+     * As such, if DeviceBuffer is refactored into a class, they can be freely changed, too.
      * The only exceptions are realGridSize and complexGridSize which are also used for grid clearing/copying.
      * TODO: these should live in a clean buffered container type, and be refactored in the NB/cudautils as well.
      */

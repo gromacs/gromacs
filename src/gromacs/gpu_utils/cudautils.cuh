@@ -202,14 +202,6 @@ int cu_copy_H2D_sync(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 /*! Launches asynchronous host to device memory copy in stream s. */
 int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
 
-/*! Reallocates the device memory and copies data from the host. */
-void cu_realloc_buffered(void **d_dest, void *h_src,
-                         size_t type_size,
-                         int *curr_size, int *curr_alloc_size,
-                         int req_size,
-                         cudaStream_t s,
-                         bool bAsync);
-
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
 // in cuda_kernel_utils.cuh. They could all live in a separate class/struct file.
