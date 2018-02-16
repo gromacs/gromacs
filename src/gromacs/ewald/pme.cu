@@ -114,8 +114,8 @@ void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu)
         pmeGpu->kernelParams->grid.realGridSize[YY] +
         pmeGpu->kernelParams->grid.realGridSize[ZZ];
     const bool shouldRealloc = (newSplineValuesSize > pmeGpu->archSpecific->splineValuesSize);
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->grid.d_splineModuli, nullptr, sizeof(float),
-                        &pmeGpu->archSpecific->splineValuesSize, &pmeGpu->archSpecific->splineValuesSizeAlloc, newSplineValuesSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->grid.d_splineModuli, newSplineValuesSize,
+                           &pmeGpu->archSpecific->splineValuesSize, &pmeGpu->archSpecific->splineValuesSizeAlloc, pmeGpu->archSpecific->pmeStream);
     if (shouldRealloc)
     {
         /* Reallocate the host buffer */
@@ -141,8 +141,8 @@ void pme_gpu_realloc_forces(PmeGpu *pmeGpu)
 {
     const size_t newForcesSize = pmeGpu->nAtomsAlloc * DIM;
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_forces, nullptr, sizeof(float),
-                        &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc, newForcesSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, newForcesSize,
+                           &pmeGpu->archSpecific->forcesSize, &pmeGpu->archSpecific->forcesSizeAlloc, pmeGpu->archSpecific->pmeStream);
     pmeGpu->staging.h_forces.reserve(pmeGpu->nAtomsAlloc);
     pmeGpu->staging.h_forces.resize(pmeGpu->kernelParams->atoms.nAtoms);
 }
@@ -170,8 +170,8 @@ void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu)
 {
     const size_t newCoordinatesSize = pmeGpu->nAtomsAlloc * DIM;
     GMX_ASSERT(newCoordinatesSize > 0, "Bad number of atoms in PME GPU");
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_coordinates, nullptr, sizeof(float),
-                        &pmeGpu->archSpecific->coordinatesSize, &pmeGpu->archSpecific->coordinatesSizeAlloc, newCoordinatesSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, newCoordinatesSize,
+                           &pmeGpu->archSpecific->coordinatesSize, &pmeGpu->archSpecific->coordinatesSizeAlloc, pmeGpu->archSpecific->pmeStream);
     if (c_usePadding)
     {
         const size_t paddingIndex = DIM * pmeGpu->kernelParams->atoms.nAtoms;
@@ -206,9 +206,8 @@ void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGpu, const flo
     GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
     const size_t newCoefficientsSize = pmeGpu->nAtomsAlloc;
     GMX_ASSERT(newCoefficientsSize > 0, "Bad number of atoms in PME GPU");
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_coefficients, nullptr, sizeof(float),
-                        &pmeGpu->archSpecific->coefficientsSize, &pmeGpu->archSpecific->coefficientsSizeAlloc,
-                        newCoefficientsSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients, newCoefficientsSize,
+                           &pmeGpu->archSpecific->coefficientsSize, &pmeGpu->archSpecific->coefficientsSizeAlloc, pmeGpu->archSpecific->pmeStream);
     cu_copy_H2D(pmeGpu->kernelParams->atoms.d_coefficients, const_cast<float *>(h_coefficients),
                 pmeGpu->kernelParams->atoms.nAtoms * sizeof(float), pmeGpu->settings.transferKind, pmeGpu->archSpecific->pmeStream);
     if (c_usePadding)
@@ -239,10 +238,10 @@ void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu)
     const bool shouldRealloc        = (newSplineDataSize > pmeGpu->archSpecific->splineDataSize);
     int        currentSizeTemp      = pmeGpu->archSpecific->splineDataSize;
     int        currentSizeTempAlloc = pmeGpu->archSpecific->splineDataSizeAlloc;
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_theta, nullptr, sizeof(float),
-                        &currentSizeTemp, &currentSizeTempAlloc, newSplineDataSize, pmeGpu->archSpecific->pmeStream, true);
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_dtheta, nullptr, sizeof(float),
-                        &pmeGpu->archSpecific->splineDataSize, &pmeGpu->archSpecific->splineDataSizeAlloc, newSplineDataSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_theta, newSplineDataSize,
+                           &currentSizeTemp, &currentSizeTempAlloc, pmeGpu->archSpecific->pmeStream);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_dtheta, newSplineDataSize,
+                           &pmeGpu->archSpecific->splineDataSize, &pmeGpu->archSpecific->splineDataSizeAlloc, pmeGpu->archSpecific->pmeStream);
     // the host side reallocation
     if (shouldRealloc)
     {
@@ -266,8 +265,8 @@ void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGpu)
 {
     const size_t newIndicesSize = DIM * pmeGpu->nAtomsAlloc;
     GMX_ASSERT(newIndicesSize > 0, "Bad number of atoms in PME GPU");
-    cu_realloc_buffered((void **)&pmeGpu->kernelParams->atoms.d_gridlineIndices, nullptr, sizeof(int),
-                        &pmeGpu->archSpecific->gridlineIndicesSize, &pmeGpu->archSpecific->gridlineIndicesSizeAlloc, newIndicesSize, pmeGpu->archSpecific->pmeStream, true);
+    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_gridlineIndices, newIndicesSize,
+                           &pmeGpu->archSpecific->gridlineIndicesSize, &pmeGpu->archSpecific->gridlineIndicesSizeAlloc, pmeGpu->archSpecific->pmeStream);
     pfree(pmeGpu->staging.h_gridlineIndices);
     pmalloc((void **)&pmeGpu->staging.h_gridlineIndices, newIndicesSize * sizeof(int));
 }
@@ -291,20 +290,17 @@ void pme_gpu_realloc_grids(PmeGpu *pmeGpu)
     if (pmeGpu->archSpecific->performOutOfPlaceFFT)
     {
         /* 2 separate grids */
-        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_fourierGrid, nullptr, sizeof(float),
-                            &pmeGpu->archSpecific->complexGridSize, &pmeGpu->archSpecific->complexGridSizeAlloc,
-                            newComplexGridSize, pmeGpu->archSpecific->pmeStream, true);
-        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_realGrid, nullptr, sizeof(float),
-                            &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc,
-                            newRealGridSize, pmeGpu->archSpecific->pmeStream, true);
+        reallocateDeviceBuffer(&kernelParamsPtr->grid.d_fourierGrid, newComplexGridSize,
+                               &pmeGpu->archSpecific->complexGridSize, &pmeGpu->archSpecific->complexGridSizeAlloc, pmeGpu->archSpecific->pmeStream);
+        reallocateDeviceBuffer(&kernelParamsPtr->grid.d_realGrid, newRealGridSize,
+                               &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc, pmeGpu->archSpecific->pmeStream);
     }
     else
     {
         /* A single buffer so that any grid will fit */
         const int newGridsSize = std::max(newRealGridSize, newComplexGridSize);
-        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_realGrid, nullptr, sizeof(float),
-                            &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc,
-                            newGridsSize, pmeGpu->archSpecific->pmeStream, true);
+        reallocateDeviceBuffer(&kernelParamsPtr->grid.d_realGrid, newGridsSize,
+                               &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc, pmeGpu->archSpecific->pmeStream);
         kernelParamsPtr->grid.d_fourierGrid   = kernelParamsPtr->grid.d_realGrid;
         pmeGpu->archSpecific->complexGridSize = pmeGpu->archSpecific->realGridSize;
         // the size might get used later for copying the grid
