@@ -346,6 +346,11 @@ struct PmeGpu
     /*! \brief A pointer to the device used during the execution. */
     gmx_device_info_t *deviceInfo;
 
+    /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
+     * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.
+     */
+    std::intmax_t maxGridWidthX;
+
     /*! \brief A single structure encompassing all the PME data used on GPU.
      * Its value is the only argument to all the PME GPU kernels.
      * \todo Test whether this should be copied to the constant GPU memory once for each computation

@@ -192,7 +192,7 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     /* Check mass and charge */
     q = 0.0;
 
-    for (mb = 0; mb < mtop->nmoltype; mb++)
+    for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
         nmol  = mtop->molblock[mb].nmol;

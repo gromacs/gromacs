@@ -736,7 +736,7 @@ std::string getCoolQuote()
         { "They don't have half hours in the north", "Carl Caleman" },
         { "Safety lights are for dudes", "Ghostbusters 2016" },
         { "It's 2040 now. Our President is a plant.",  "Ghostbusters 2016" },
-        { "It's just B I O L O G Y, can't you see?" "Joe Jackson" },
+        { "It's just B I O L O G Y, can't you see?", "Joe Jackson" },
         { "Input, output, electricity", "Joni Mitchell" },
         { "Your daddy ain't your daddy but your daddy don't know", "Dalahan" },
         { "Why is the Earth moving 'round the sun? Floating in the vacuum with no purpose, not a one", "Fleet Foxes" },

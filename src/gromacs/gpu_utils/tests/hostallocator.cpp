@@ -311,8 +311,8 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
 TYPED_TEST(HostAllocatorTest, ChangingPinningPolicyRequiresCuda)
 {
     typename TestFixture::VectorType input;
-    EXPECT_DEATH(changePinningPolicy(&input, PinningPolicy::CanBePinned),
-                 ".*A suitable build of GROMACS.* is required.*");
+    EXPECT_DEATH_IF_SUPPORTED(changePinningPolicy(&input, PinningPolicy::CanBePinned),
+                              ".*A suitable build of GROMACS.* is required.*");
 }
 
 TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkEvenWithoutCuda)
