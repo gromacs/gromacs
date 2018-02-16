@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -603,6 +603,11 @@ static bool is_gmx_supported_gpu(const cudaDeviceProp *dev_prop)
  *  errors: incompatibility, insistence, or insanity (=unexpected behavior).
  *  It also returns the respective device's properties in \dev_prop (if applicable).
  *
+ *  As the error handling only permits returning the state of the GPU, this function
+ *  does not clear the CUDA runtime API status allowing the caller to inspect the error
+ *  upon return. Note that this also means it is the caller's responsibility to
+ *  reset the CUDA runtime state.
+ *
  *  \param[in]  dev_id   the ID of the GPU to check.
  *  \param[out] dev_prop the CUDA device properties of the device checked.
  *  \returns             the status of the requested device
@@ -718,6 +723,9 @@ void findGpus(gmx_gpu_info_t *gpu_info)
                                      "canDetectGpus() was not called appropriately beforehand."));
     }
 
+    // We expect to start device support/sanity checks with a clean runtime error state
+    gmx::ensureNoPendingCudaError("");
+
     snew(devs, ndev);
     for (i = 0; i < ndev; i++)
     {
@@ -731,8 +739,27 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         {
             gpu_info->n_dev_compatible++;
         }
+        else
+        {
+            // TODO:
+            //  - we inspect the CUDA API state to retrieve and record any
+            //    errors that occurred during is_gmx_supported_gpu_id() here,
+            //    but this would be more elegant done within is_gmx_supported_gpu_id()
+            //    and only return a string with the error if one was encountered.
+            //  - we'll be reporting without rank information which is not ideal.
+            //  - we'll end up warning also in cases where users would already
+            //    get an error before mdrun aborts.
+            //
+            // Here we also clear the CUDA API error state so potential
+            // errors during sanity checks don't propagate.
+            if ((stat = cudaGetLastError()) != cudaSuccess)
+            {
+                gmx_warning(gmx::formatString("An error occurred while sanity checking device #%d; %s: %s",
+                                              devs[i].id, cudaGetErrorName(stat), cudaGetErrorString(stat)).c_str());
+            }
+        }
     }
-    GMX_RELEASE_ASSERT(cudaSuccess == cudaPeekAtLastError(), "Should be cudaSuccess");
+    GMX_RELEASE_ASSERT(cudaSuccess == cudaPeekAtLastError(), "We promise to return with clean CUDA state!");
 
     gpu_info->n_dev   = ndev;
     gpu_info->gpu_dev = devs;
