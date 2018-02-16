@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "settle.h"
+
 #include <assert.h>
 #include <stdio.h>
 
@@ -53,6 +55,8 @@
 #include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

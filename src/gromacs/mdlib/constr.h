@@ -38,33 +38,29 @@
 #ifndef GMX_MBLIB_CONSTR_H
 #define GMX_MBLIB_CONSTR_H
 
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/topology.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_edsam;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct t_blocka;
+struct t_commrec;
+struct t_idef;
+struct t_ilist;
 struct t_inputrec;
-
-/* Abstract type for LINCS that is defined only in the file that uses it */
-typedef struct gmx_lincsdata *gmx_lincsdata_t;
-
-/* Abstract type for SHAKE that is defined only in the file that uses it */
-typedef struct gmx_shakedata *gmx_shakedata_t;
-
-/* Abstract type for SETTLE that is defined only in the file that uses it */
-typedef struct gmx_settledata *gmx_settledata_t;
+struct t_mdatoms;
+struct t_nrnb;
+struct t_pbc;
+union t_iparams;
+class t_state;
 
 /* Abstract type for constraints */
 typedef struct gmx_constr *gmx_constr_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct t_pbc;
-class t_state;
 
 enum
 {
@@ -78,87 +74,12 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-int n_flexible_constraints(struct gmx_constr *constr);
+int n_flexible_constraints(gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
 
 void too_many_constraint_warnings(int eConstrAlg, int warncount);
 /* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
-gmx_shakedata_t shake_init();
-/* Initializes and return the SHAKE data structure */
-
-gmx_bool bshakef(FILE           *log,          /* Log file			*/
-                 gmx_shakedata_t shaked,       /* Total number of atoms	*/
-                 real            invmass[],    /* Atomic masses		*/
-                 int             nblocks,      /* The number of shake blocks	*/
-                 int             sblock[],     /* The shake blocks             */
-                 t_idef         *idef,         /* The interaction def		*/
-                 t_inputrec     *ir,           /* Input record		        */
-                 rvec            x_s[],        /* Coords before update		*/
-                 rvec            prime[],      /* Output coords		*/
-                 t_nrnb         *nrnb,         /* Performance measure          */
-                 real           *lagr,         /* The Lagrange multipliers     */
-                 real            lambda,       /* FEP lambda                   */
-                 real           *dvdlambda,    /* FEP force                    */
-                 real            invdt,        /* 1/delta_t                    */
-                 rvec           *v,            /* Also constrain v if v!=NULL  */
-                 gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
-                 tensor          vir_r_m_dr,   /* sum r x m delta_r            */
-                 gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
-                 int             econq);       /* which type of constraint is occurring */
-/* Shake all the atoms blockwise. It is assumed that all the constraints
- * in the idef->shakes field are sorted, to ascending block nr. The
- * sblock array points into the idef->shakes.iatoms field, with block 0
- * starting
- * at sblock[0] and running to ( < ) sblock[1], block n running from
- * sblock[n] to sblock[n+1]. Array sblock should be large enough.
- * Return TRUE when OK, FALSE when shake-error
- */
-
-gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
-/* Initializes and returns a structure with SETTLE parameters */
-
-void settle_free(gmx_settledata_t settled);
-
-void settle_set_constraints(gmx_settledata_t  settled,
-                            const t_ilist    *il_settle,
-                            const t_mdatoms  *mdatoms);
-/* Set up the indices for the settle constraints */
-
-void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
-             int                 nthread,          /* The number of threads used */
-             int                 thread,           /* Our thread index */
-             const struct t_pbc *pbc,              /* PBC data pointer, can be NULL */
-             const real          x[],              /* Reference coordinates */
-             real                xprime[],         /* New coords, to be settled */
-             real                invdt,            /* 1/delta_t */
-             real               *v,                /* Also constrain v if v!=NULL */
-             bool                bCalcVirial,      /* Calculate the virial contribution */
-             tensor              vir_r_m_dr,       /* sum r x m delta_r */
-             bool               *bErrorHasOccurred /* True if a settle error occurred */
-             );
-/* Constrain coordinates using SETTLE.
- * Can be called on any number of threads.
- */
-
-void settle_proj(gmx_settledata_t settled, int econq,
-                 int nsettle, t_iatom iatoms[],
-                 const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
-                 rvec x[],
-                 rvec *der, rvec *derp,
-                 int CalcVirAtomEnd, tensor vir_r_m_dder);
-/* Analytical algorithm to subtract the components of derivatives
- * of coordinates working on settle type constraint.
- */
-
-void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
-            const real dist2[], real xp[], const real rij[], const real m2[], real omega,
-            const real invmass[], const real tt[], real lagr[], int *nerror);
-/* Regular iterative shake */
-
-void crattle(int iatom[], int ncon, int *nnit, int maxnit,
-             real dist2[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real tt[], real lagr[], int *nerror, real invdt);
 
 gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_constr_t constr,
@@ -208,18 +129,18 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
-                              struct t_commrec *cr);
+                              t_commrec *cr);
 /* Initialize constraints stuff */
 
 void saveEdsamPointer(gmx_constr_t      constr,
-                      struct gmx_edsam *ed);
+                      gmx_edsam        *ed);
 /* Put a pointer to the essential dynamics constraints into the constr struct */
 
 void set_constraints(gmx_constr_t             constr,
                      gmx_localtop_t          *top,
                      const t_inputrec        *ir,
                      const t_mdatoms         *md,
-                     struct t_commrec        *cr);
+                     t_commrec               *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -259,48 +180,6 @@ real *constr_rmsd_data(gmx_constr_t constr);
 real constr_rmsd(gmx_constr_t constr);
 /* Return the RMSD of the constraint */
 
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
-/* Return the data for determining constraint RMS relative deviations */
-
-real lincs_rmsd(gmx_lincsdata_t lincsd);
-/* Return the RMSD of the constraint */
-
-gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                           int nflexcon_global, const t_blocka *at2con,
-                           gmx_bool bPLINCS, int nIter, int nProjOrder);
-/* Initializes and returns the lincs data struct */
-
-void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, struct t_commrec *cr,
-               gmx_lincsdata_t li);
-/* Initialize lincs stuff */
-
-void set_lincs_matrix(gmx_lincsdata_t li, const real *invmass, real lambda);
-/* Sets the elements of the LINCS constraint coupling matrix */
-
-real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
-/* Returns an estimate of the maximum distance between atoms
- * required for LINCS.
- */
-
-gmx_bool
-constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                t_inputrec *ir,
-                gmx_int64_t step,
-                gmx_lincsdata_t lincsd, t_mdatoms *md,
-                struct t_commrec *cr,
-                const gmx_multisim_t *ms,
-                rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, struct t_pbc *pbc,
-                real lambda, real *dvdlambda,
-                real invdt, rvec *v,
-                gmx_bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
-                t_nrnb *nrnb,
-                int maxwarn, int *warncount);
-/* Returns if the constraining succeeded */
-
-
 /* helper functions for andersen temperature control, because the
  * gmx_constr construct is only defined in constr.c. Return the list
  * of blocks (get_sblock) and the number of blocks (get_nblocks).  */
@@ -309,7 +188,4 @@ int *get_sblock(struct gmx_constr *constr);
 
 int get_nblocks(struct gmx_constr *constr);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

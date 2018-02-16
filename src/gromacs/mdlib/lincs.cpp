@@ -37,6 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "lincs.h"
+
 #include "config.h"
 
 #include <assert.h>
@@ -173,7 +175,7 @@ real lincs_rmsd(struct gmx_lincsdata *lincsd)
  * This function will return with up to date thread-local
  * constraint data, without an OpenMP barrier.
  */
-static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
+static void lincs_matrix_expand(const gmx_lincsdata *lincsd,
                                 const lincs_task_t *li_task,
                                 const real *blcc,
                                 real *rhs1, real *rhs2, real *sol)
@@ -385,7 +387,7 @@ static void lincs_update_atoms_ind(int ncons, const int *ind, const int *bla,
     }
 }
 
-static void lincs_update_atoms(struct gmx_lincsdata *li, int th,
+static void lincs_update_atoms(gmx_lincsdata *li, int th,
                                real prefac,
                                const real *fac, rvec *r,
                                const real *invmass,
@@ -499,7 +501,7 @@ calc_dr_x_f_simd(int                       b0,
 
 /* LINCS projection, works on derivatives of the coordinates */
 static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
-                      struct gmx_lincsdata *lincsd, int th,
+                      gmx_lincsdata *lincsd, int th,
                       real *invmass,
                       int econq, gmx_bool bCalcDHDL,
                       gmx_bool bCalcVir, tensor rmdf)
@@ -886,7 +888,7 @@ calc_dist_iter_simd(int                       b0,
 #endif // GMX_SIMD_HAVE_REAL
 
 static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
-                     struct gmx_lincsdata *lincsd, int th,
+                     gmx_lincsdata *lincsd, int th,
                      const real *invmass,
                      t_commrec *cr,
                      gmx_bool bCalcDHDL,
@@ -1159,7 +1161,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 }
 
 /* Sets the elements in the LINCS matrix for task li_task */
-static void set_lincs_matrix_task(struct gmx_lincsdata *li,
+static void set_lincs_matrix_task(gmx_lincsdata        *li,
                                   lincs_task_t         *li_task,
                                   const real           *invmass,
                                   int                  *ncc_triangle,
@@ -1255,7 +1257,7 @@ static void set_lincs_matrix_task(struct gmx_lincsdata *li,
 }
 
 /* Sets the elements in the LINCS matrix */
-static void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
+static void set_lincs_matrix(gmx_lincsdata *li, real *invmass, real lambda)
 {
     int        i;
     const real invsqrt2 = 0.7071067811865475244;
@@ -1409,7 +1411,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
                            int nflexcon_global, const t_blocka *at2con,
                            gmx_bool bPLINCS, int nIter, int nProjOrder)
 {
-    struct gmx_lincsdata *li;
+    gmx_lincsdata        *li;
     int                   mt, mb;
     gmx_moltype_t        *molt;
     gmx_bool              bMoreThanTwoSeq;
@@ -1530,7 +1532,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 }
 
 /* Sets up the work division over the threads */
-static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
+static void lincs_thread_setup(gmx_lincsdata *li, int natoms)
 {
     lincs_task_t   *li_m;
     int             th;
@@ -1660,7 +1662,7 @@ static void resize_real_aligned(real **ptr, int nelem)
     snew_aligned(*ptr, nelem, align_bytes);
 }
 
-static void assign_constraint(struct gmx_lincsdata *li,
+static void assign_constraint(gmx_lincsdata *li,
                               int constraint_index,
                               int a1, int a2,
                               real lenA, real lenB,
@@ -1696,7 +1698,7 @@ static void assign_constraint(struct gmx_lincsdata *li,
 /* Check if constraint with topology index constraint_index is connected
  * to other constraints, and if so add those connected constraints to our task.
  */
-static void check_assign_connected(struct gmx_lincsdata *li,
+static void check_assign_connected(gmx_lincsdata *li,
                                    const t_iatom *iatom,
                                    const t_idef *idef,
                                    int bDynamics,
@@ -1746,7 +1748,7 @@ static void check_assign_connected(struct gmx_lincsdata *li,
  * in a constraint triangle, and if so add the other two constraints
  * in the triangle to our task.
  */
-static void check_assign_triangle(struct gmx_lincsdata *li,
+static void check_assign_triangle(gmx_lincsdata *li,
                                   const t_iatom *iatom,
                                   const t_idef *idef,
                                   int bDynamics,
@@ -1846,7 +1848,7 @@ static void check_assign_triangle(struct gmx_lincsdata *li,
     }
 }
 
-static void set_matrix_indices(struct gmx_lincsdata *li,
+static void set_matrix_indices(gmx_lincsdata        *li,
                                const lincs_task_t   *li_task,
                                const t_blocka       *at2con,
                                gmx_bool              bSortMatrix)
@@ -1895,7 +1897,7 @@ void set_lincs(const t_idef         *idef,
                const t_mdatoms      *md,
                gmx_bool              bDynamics,
                t_commrec            *cr,
-               struct gmx_lincsdata *li)
+               gmx_lincsdata        *li)
 {
     int          natoms, nflexcon;
     t_blocka     at2con;
@@ -2262,7 +2264,7 @@ static void lincs_warning(FILE *fplog,
     }
 }
 
-static void cconerr(const struct gmx_lincsdata *lincsd,
+static void cconerr(const gmx_lincsdata *lincsd,
                     rvec *x, t_pbc *pbc,
                     real *ncons_loc, real *ssd, real *max, int *imax)
 {
@@ -2326,7 +2328,7 @@ static void cconerr(const struct gmx_lincsdata *lincsd,
 gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          t_inputrec *ir,
                          gmx_int64_t step,
-                         struct gmx_lincsdata *lincsd, t_mdatoms *md,
+                         gmx_lincsdata *lincsd, t_mdatoms *md,
                          t_commrec *cr,
                          const gmx_multisim_t *ms,
                          rvec *x, rvec *xprime, rvec *min_proj,
