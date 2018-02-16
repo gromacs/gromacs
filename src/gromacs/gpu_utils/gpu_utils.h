@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,6 +95,8 @@ bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_W
  *  also checks for the compatibility of each and fill the
  *  gpu_info->gpu_dev array with the required information on each the
  *  device: ID, device properties, status.
+ *
+ *  Note that this function leaves the CUDA runtime API error state clean.
  *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
  *
