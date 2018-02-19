@@ -849,7 +849,13 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     {
         fprintf(fplog, "\n");
         fprintf(fplog, "  <V>  = %12.5e nm^3\n", V_all/frame);
-        fprintf(fplog, "  <mu> = %12.5e kJ/mol\n", -log(VembU_all/V_all)/beta);
+        const double mu = -log(VembU_all/V_all)/beta;
+        fprintf(fplog, "  <mu> = %12.5e kJ/mol\n", mu);
+
+        if (!std::isfinite(mu))
+        {
+            fprintf(fplog, "\nThe computed chemical potential is not finite - consider increasing the number of steps and/or the number of frames to insert into.\n");
+        }
     }
 
     /* Write the Boltzmann factor histogram */
