@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -456,37 +456,45 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
     const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
     const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
-    // rounding up to full warps so that shuffle operations produce defined results
-    dim3 threads(blockSize);
-    dim3 blocks(blocksPerGridLine,
-                (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1) / gridLinesPerBlock,
-                pmeGpu->kernelParams->grid.complexGridSize[majorDim]);
 
-    pme_gpu_start_timing(pmeGpu, gtPME_SOLVE);
+
+    KernelLaunchConfig config;
+    config.blockSize[0] = blockSize;
+    config.gridSize[0]  = blocksPerGridLine;
+    // rounding up to full warps so that shuffle operations produce defined results
+    config.gridSize[1]  = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1) / gridLinesPerBlock;
+    config.gridSize[2]  = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
+    config.stream       = pmeGpu->archSpecific->pmeStream;
+
+    int  timingId = gtPME_SOLVE;
+    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
     if (gridOrdering == GridOrdering::YZX)
     {
         if (computeEnergyAndVirial)
         {
-            pme_solve_kernel<GridOrderingInternal::YZX, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            kernelPtr = pme_solve_kernel<GridOrderingInternal::YZX, true>;
         }
         else
         {
-            pme_solve_kernel<GridOrderingInternal::YZX, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            kernelPtr = pme_solve_kernel<GridOrderingInternal::YZX, false>;
         }
     }
     else if (gridOrdering == GridOrdering::XYZ)
     {
         if (computeEnergyAndVirial)
         {
-            pme_solve_kernel<GridOrderingInternal::XYZ, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            kernelPtr = pme_solve_kernel<GridOrderingInternal::XYZ, true>;
         }
         else
         {
-            pme_solve_kernel<GridOrderingInternal::XYZ, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            kernelPtr = pme_solve_kernel<GridOrderingInternal::XYZ, false>;
         }
     }
-    CU_LAUNCH_ERR("pme_solve_kernel");
-    pme_gpu_stop_timing(pmeGpu, gtPME_SOLVE);
+
+    pme_gpu_start_timing(pmeGpu, timingId);
+    auto *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelParamsPtr);
+    pme_gpu_stop_timing(pmeGpu, timingId);
 
     if (computeEnergyAndVirial)
     {
