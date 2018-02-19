@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,14 @@ struct PmeGpu;
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
 void pme_gpu_start_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
+
+/*! \libinternal \brief
+ * Returns raw timing event from the corresponding GpURegionTimer (if timings are enabled).
+ *
+ * \param[in] pmeGpu         The PME GPU data structure.
+ * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ */
+CommandEvent *pme_gpu_fetch_timing_event(const PmeGpu *pmeGpu, size_t PMEStageId);
 
 /*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single computation (if timings are enabled).
