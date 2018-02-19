@@ -52,4 +52,15 @@ using CommandEvent  = cl_event;
 template<typename ValueType>
 using DeviceBuffer  = cl_mem;
 
+/*! \brief GPU kernels scheduling description.
+ * Currently this is almost same in OpenCL/CUDA.
+ */
+struct KernelLaunchConfig
+{
+    size_t        gridSize[3];      //!< Block counts - FIXME!
+    size_t        blockSize[3];     //!< Per-block thread counts
+    size_t        sharedMemorySize; //!< Shared memory size in bytes
+    CommandStream stream;           //!< Stream to launch kernel in
+};
+
 #endif
