@@ -44,6 +44,8 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gputraits_ocl.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
@@ -192,6 +194,110 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
     {
         GMX_RELEASE_ASSERT(clReleaseMemObject(*buffer) == CL_SUCCESS, "clReleaseMemObject failed");
     }
+}
+
+/* Kernel launch helpers */
+
+/*! \brief
+ * Compile-time recursive wrapper for launching an OpenCL kernel.
+ * This function appends one kernel argument pointer \p arg, using clSetKernelArg(),
+ * and calls itself on the next argument.
+ *
+ * \tparam    CurrentArg      Type of the current argument
+ * \tparam    RemainingArgs   Types of remaining arguments after the current one
+ * \param[in] kernel          Kernel function handle
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer
+ * \param[in] kernelName      Human readable kernel description, for error handling only
+ * \param[in] argIndex        Index of the current argument
+ * \param[in] argPtr          A pointer to the current argument to append
+ * \param[in] otherArgsPtrs   Pointers to arguments remaining to process after the current one
+ * \throws gmx::InternalError on kernel launch failure
+ */
+template <typename CurrentArg, typename ... RemainingArgs>
+void launchOpenCLKernel(cl_kernel                 kernel,
+                        const KernelLaunchConfig &config,
+                        CommandEvent             *timingEvent,
+                        const char               *kernelName,
+                        size_t                    argIndex,
+                        const CurrentArg *        argPtr,
+                        const RemainingArgs *...  otherArgsPtrs)
+{
+    cl_int clError = clSetKernelArg(kernel, argIndex, sizeof(CurrentArg), argPtr);
+    GMX_UNUSED_VALUE(clError);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+
+    launchOpenCLKernel(kernel, config, timingEvent, kernelName,
+                       argIndex + 1, otherArgsPtrs ...);
+}
+
+/*! \brief Launches the OpenCL kernel.
+ *  If the kernel uses dynamically allocated shared memory (e.g. NB kernel),
+ *  then the shared memory buffer is appended as an implicit last kernel argument,
+ *  where size of shared memory in bytes is taken from \p config.
+ *  (This requires the kernels to only have dynamic shared memory as a last argument).
+ *  This is the tail of the recursive function above.
+ *
+ * \param[in] kernel          Kernel function handle
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer
+ * \param[in] kernelName      Human readable kernel description, for error handling only
+ * \param[in] argIndex        Index of the current argument
+ * \throws gmx::InternalError on kernel launch failure
+ */
+inline void launchOpenCLKernel(cl_kernel                 kernel,
+                               const KernelLaunchConfig &config,
+                               CommandEvent             *timingEvent,
+                               const char               *kernelName,
+                               size_t                    argIndex)
+{
+    cl_int clError;
+    if (config.sharedMemorySize > 0)
+    {
+        clError = clSetKernelArg(kernel, argIndex, config.sharedMemorySize, nullptr);
+        GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+    }
+
+    const int       workDimensions    = 3;
+    const size_t   *globalWorkOffset  = nullptr;
+    const size_t    waitListSize      = 0;
+    const cl_event *waitList          = nullptr;
+    size_t          globalWorkSize[3];
+    for (int i = 0; i < workDimensions; i++)
+    {
+        globalWorkSize[i] = config.gridSize[i] * config.blockSize[i];
+    }
+    clError = clEnqueueNDRangeKernel(config.stream, kernel, workDimensions, globalWorkOffset,
+                                     globalWorkSize, config.blockSize, waitListSize, waitList, timingEvent);
+    if (CL_SUCCESS != clError)
+    {
+        const std::string errorMessage = "GPU kernel (" +  std::string(kernelName) +
+            ") failed to launch: " + ocl_get_error_string(clError);
+        GMX_THROW(gmx::InternalError(errorMessage));
+    }
+}
+
+/*! \brief Launches the OpenCL kernel.
+ *  Uses the recursive compile-time wrappers above. Shared memory buffer does not need to be passed,
+ *  but is appended as a last argument, if config.sharedMemorySize is explicitly set to non-0.
+ *
+ * \tparam    Args            Types of kernel arguments (excluding the shared memory)
+ * \param[in] kernel          Kernel function handle
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer
+ * \param[in] kernelName      Human readable kernel description, for error handling only
+ * \param[in] argsPtrs        Pointers to the kernel arguments (excluding the shared memory nullptr)
+ * \throws gmx::InternalError on kernel launch failure
+ */
+template <typename ... Args>
+void launchGpuKernel(cl_kernel                 kernel,
+                     const KernelLaunchConfig &config,
+                     CommandEvent             *timingEvent,
+                     const char               *kernelName,
+                     const Args          * ... argsPtrs)
+{
+    launchOpenCLKernel(kernel, config, timingEvent, kernelName,
+                       0, argsPtrs ...);
 }
 
 #endif
