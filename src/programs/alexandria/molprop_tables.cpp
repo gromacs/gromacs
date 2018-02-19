@@ -518,7 +518,7 @@ static void atomtype_tab_header(LongTable &lt)
 
     lt.setColumns("ccccccc");
 
-    snprintf(longbuf, STRLEN, "$N$ is the number of experimental datapoints used for fitting the polarizability of atom types. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}. The atom types are according to the General Amber Force Field~\\cite{Wang2004a}.");
+    snprintf(longbuf, STRLEN, "Atomic polarizability obtained from the decomposition of the experimental isotropic molecular polarizability. $N$ is the number of experimental datapoints used. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}. The atom types are according to the General Amber Force Field~\\cite{Wang2004a}.");
     lt.setCaption(longbuf);
     lt.setLabel("fragments");
     snprintf(longbuf, STRLEN, "Atom Type  & $N$ & \\multicolumn{4}{c}{Polarizability}");
