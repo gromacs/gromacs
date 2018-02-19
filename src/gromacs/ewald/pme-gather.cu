@@ -456,6 +456,8 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
 
     // TODO test different cache configs
 
+    //FIXME replace all kernel calls
+
     pme_gpu_start_timing(pmeGpu, gtPME_GATHER);
     if (order == 4)
     {

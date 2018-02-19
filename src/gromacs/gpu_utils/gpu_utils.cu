@@ -254,7 +254,9 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     /* try to execute a dummy kernel */
-    k_dummy_test<<< 1, 512>>> ();
+    KernelLaunchConfig config;
+    config.blockSize[0] = 512;
+    launchGpuKernel(k_dummy_test, config, nullptr);
     if (cudaThreadSynchronize() != cudaSuccess)
     {
         return -1;
