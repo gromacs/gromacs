@@ -73,8 +73,7 @@ int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
 
 void pme_gpu_synchronize(const PmeGpu *pmeGpu)
 {
-    cudaError_t stat = cudaStreamSynchronize(pmeGpu->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "Failed to synchronize the PME GPU stream!");
+    gpuStreamSynchronize(pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGpu)
