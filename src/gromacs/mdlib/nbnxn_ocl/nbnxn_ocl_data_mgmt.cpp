@@ -650,9 +650,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     nb->dev_info = deviceInfo;
     snew(nb->dev_rundata, 1);
 
-    /* init to NULL the debug buffer */
-    nb->debug_buffer = NULL;
-
     /* init nbst */
     ocl_pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
     ocl_pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
@@ -1100,9 +1097,6 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 
     ocl_pfree(nb->nbst.fshift);
     nb->nbst.fshift = NULL;
-
-    /* Free debug buffer */
-    freeDeviceBuffer(&nb->debug_buffer);
 
     /* Free command queues */
     clReleaseCommandQueue(nb->stream[eintLocal]);

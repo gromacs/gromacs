@@ -177,4 +177,61 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
     return false;
 }
 
+#include "gputraits_ocl.h"
+struct ExecutionPolicy
+{
+    size_t gridSize[3]; //FIXME
+    size_t blockSize[3];
+    size_t sharedMemorySize;
+    CommandStream stream;
+};
+
+//FIXME this is for zero arguments
+//template <typename ... FullArguments>
+inline void openclLaunchWhatever(const ExecutionPolicy &p,
+                               cl_kernel f, //void (*f)(FullArguments...),
+                               size_t argIndex)
+{
+    printf ("hello kernel\n");
+
+    // Last implicit argument is always preallocated sharedmemory
+    cl_int clError = clSetKernelArg(f, argIndex, p.sharedMemorySize, nullptr);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+
+    //GMX_ASSERT(argIndex == sizeof...(FullArguments), "Shoudl have been unrolled");
+
+    const size_t *globalWorkOffset = nullptr;
+    const size_t waitListSize = 0;
+    const cl_event *waitList = nullptr;
+    cl_event *timingEvent = nullptr; //FIXMEbDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr);
+    clError = clEnqueueNDRangeKernel(p.stream, f, 3, globalWorkOffset,
+                                         p.gridSize, p.blockSize, waitListSize, waitList, timingEvent);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+}
+
+//unrolls one parameter and places it into teh array
+template <typename FirstArg, typename ... OtherArguments> //, typename ... FullArguments>
+void openclLaunchWhatever(const ExecutionPolicy &p,
+                           cl_kernel f,//void (*f)(FullArguments...),
+                           size_t argIndex,
+                           const FirstArg *first, const OtherArguments *... args)
+{
+    printf ("hello %zu %zu %p %d\n", sizeof...(args), sizeof(FirstArg), first, *first);
+
+    cl_int clError = clSetKernelArg(f, argIndex, sizeof(FirstArg), first);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+
+    openclLaunchWhatever(p, f, argIndex + 1, args...);
+}
+
+// Generic simplified kernel launcher
+template <typename... FullArguments>
+void launchGpuKernel(const ExecutionPolicy &p,
+                //FIXME void (*f)(FullArguments...),
+                cl_kernel f,
+                const FullArguments * ... args)
+{
+    openclLaunchWhatever(p, f, 0, args...);
+}
+
 #endif

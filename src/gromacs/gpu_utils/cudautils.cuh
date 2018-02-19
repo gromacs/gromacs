@@ -286,4 +286,79 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
     return true;
 }
 
+#include "gputraits.cuh"
+struct ExecutionPolicy
+{
+    dim3 gridSize;
+    dim3 blockSize;
+    size_t sharedMemorySize;
+    CommandStream stream;
+};
+
+//FIXME this is for zero arguments
+template <typename ... FullArguments>
+void cudaLaunchWhateverWithApi(const ExecutionPolicy &p,
+                               void (*f)(FullArguments...),
+                               void **argArray, size_t argIndex)
+{
+    printf ("hello kernel with no args\n");
+#if GMX_CUDA_VERSION >= 7000
+    cudaLaunchKernel((void *)f, p.gridSize, p.blockSize, argArray, p.sharedMemorySize, p.stream);
+#endif
+}
+
+template <typename FirstArg, typename ... FullArguments>
+void cudaLaunchWhateverWithApi(const ExecutionPolicy &p,
+                               void (*f)(FullArguments...),
+                               void **argArray, size_t argIndex,
+                               const FirstArg *first)
+{
+    printf ("hello final\n");
+    //printf ("hello %zu\n", sizeof...(args));
+    argArray[argIndex] = (void *)first;
+#if GMX_CUDA_VERSION >= 7000
+    cudaLaunchKernel((void *)f, p.gridSize, p.blockSize, argArray, p.sharedMemorySize, p.stream);
+#endif
+}
+
+//unrolls one parameter and places it into teh array
+template <typename FirstArg, typename ... OtherArguments, typename ... FullArguments>
+void cudaLaunchWhateverWithApi(const ExecutionPolicy &p,
+                               void (*f)(FullArguments...),
+                               void **argArray, size_t argIndex,
+                               const FirstArg *first, const OtherArguments *... args)
+{
+    printf ("hello %zu\n", sizeof...(args));
+    argArray[argIndex] = (void *)first;
+    if (sizeof...(args) > 0)
+    cudaLaunchWhateverWithApi(p, f, argArray, argIndex + 1, args...);
+}
+
+// Generic simplified kernel launcher
+// configureGrid uses the CUDA Occupancy API to choose grid/block dimensions
+template <typename... Arguments>
+void launchGpuKernel(const ExecutionPolicy &p,
+                void (*f)(Arguments...),
+                const Arguments * ... args)
+{
+
+bool new1 = (getenv("GMX_DISABLE_CUDALAUNCH") == nullptr);
+
+if (new1)
+{
+    constexpr size_t argCount = sizeof...(args);
+    int argIndex = 0;
+    void *kernelArgs[argCount];
+    cudaLaunchWhateverWithApi(p, f, (void **)&kernelArgs, argIndex, args...);
+}
+else{
+    printf("odl school\n");
+
+    f<<<p.gridSize, p.blockSize, p.sharedMemorySize, p.stream>>>(*args...);
+}
+
+CU_LAUNCH_ERR("asdfg");
+
+}
+
 #endif

@@ -499,6 +499,13 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     const bool wrapY = true;
     GMX_UNUSED_VALUE(wrapX);
     GMX_UNUSED_VALUE(wrapY);
+
+    ExecutionPolicy p;
+    p.gridSize = nBlocks;
+    p.sharedMemorySize = 0;
+    p.blockSize = dimBlock;
+    p.stream = stream;
+
     switch (order)
     {
         case 4:
@@ -509,7 +516,7 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
                 if (spreadCharges)
                 {
                     pme_gpu_start_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
-                    pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY> <<< nBlocks, dimBlock, 0, stream>>> (*kernelParamsPtr);
+                    launchGpuKernel(p, pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY>, kernelParamsPtr); //FIXME ptr
                     CU_LAUNCH_ERR("pme_spline_and_spread_kernel");
                     pme_gpu_stop_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
                 }
