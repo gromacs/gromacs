@@ -428,7 +428,6 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pme_gpu_copy_input_forces(pmeGpu);
     }
 
-    cudaStream_t stream          = pmeGpu->archSpecific->pmeStream;
     const int    order           = pmeGpu->common->pme_order;
     const auto  *kernelParamsPtr = pmeGpu->kernelParams.get();
 
@@ -445,35 +444,44 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     const int atomsPerBlock  =  (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
     GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
 
-    const int blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
-    auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
-    dim3 dimBlock(order, order, atomsPerBlock);
+    const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
 
-    const bool wrapX = true;
-    const bool wrapY = true;
+    KernelLaunchConfig config;
+    config.blockSize[0] = config.blockSize[1] = order;
+    config.blockSize[2] = atomsPerBlock;
+    config.gridSize[0]  = dimGrid.x;
+    config.gridSize[1]  = dimGrid.y;
+    config.stream       = pmeGpu->archSpecific->pmeStream;
+
+    if (order != 4)
+    {
+        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
+    }
+
+    constexpr bool wrapX = true;
+    constexpr bool wrapY = true;
     GMX_UNUSED_VALUE(wrapX);
     GMX_UNUSED_VALUE(wrapY);
 
     // TODO test different cache configs
 
-    pme_gpu_start_timing(pmeGpu, gtPME_GATHER);
-    if (order == 4)
+    int  timingId = gtPME_GATHER;
+    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    if (forceTreatment == PmeForceOutputHandling::Set)
     {
-        if (forceTreatment == PmeForceOutputHandling::Set)
-        {
-            pme_gather_kernel<4, true, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
-        }
-        else
-        {
-            pme_gather_kernel<4, false, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
-        }
+        kernelPtr = pme_gather_kernel<4, true, wrapX, wrapY>;
     }
     else
     {
-        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 is not implemented"));
+        kernelPtr = pme_gather_kernel<4, false, wrapX, wrapY>;
     }
+
+    pme_gpu_start_timing(pmeGpu, timingId);
+    auto *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    launchGpuKernel(kernelPtr, config, timingEvent, kernelParamsPtr);
     CU_LAUNCH_ERR("pme_gather_kernel");
-    pme_gpu_stop_timing(pmeGpu, gtPME_GATHER);
+    pme_gpu_stop_timing(pmeGpu, timingId);
 
     pme_gpu_copy_output_forces(pmeGpu);
 }
