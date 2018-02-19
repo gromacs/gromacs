@@ -44,6 +44,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gputraits_ocl.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
@@ -175,6 +176,83 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
 {
     GMX_RELEASE_ASSERT(false, "haveStreamTasksCompleted is not implemented for OpenCL");
     return false;
+}
+
+/* Kernel launch helpers */
+
+/*! \brief
+ * Compile-time recursive wrapper for launching the OpenCL kernel.
+ * This function appends one kernel argument pointer \p arg, using clSetKernelArg(),
+ * and calls itself on the next argument.
+ *
+ * \tparam    CurrentArg      Type of the current argument
+ * \tparam    RemainingArgs   Types of remaining arguments after the current one
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernel          Kernel function handle
+ * \param[in] argIndex        Index of the current argument
+ * \param[in] arg             A pointer to the current argument to append
+ * \param[in] otherArgs       Pointers to arguments remaining to process after the current one
+ */
+template <typename CurrentArg, typename ... RemainingArgs>
+void launchOpenCLKernel(const KernelLaunchConfig &config,
+                        cl_kernel                 kernel,
+                        size_t                    argIndex,
+                        const CurrentArg *        arg,
+                        const RemainingArgs *...  otherArgs)
+{
+    cl_int clError = clSetKernelArg(kernel, argIndex, sizeof(CurrentArg), arg);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+
+    launchOpenCLKernel(config, kernel, argIndex + 1, otherArgs ...);
+}
+
+/*! \brief Launches the OpenCL kernel.
+ *  Before that, appends the shared memory buffer as an implicit last argument,
+ *  if needed (its size in config being non-0).
+ *  (This requires the kernels to only have shared memory as a last argument).
+ *  This is the tail of the recursive function above.
+ *  FIXME: The optional timing event is not passed.
+ *
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernel          Kernel function handle
+ * \param[in] argIndex        Index of the current argument
+ */
+inline void launchOpenCLKernel(const KernelLaunchConfig &config,
+                               cl_kernel                 kernel,
+                               size_t                    argIndex)
+{
+    if (config.sharedMemorySize > 0)
+    {
+        cl_int clError = clSetKernelArg(kernel, argIndex, config.sharedMemorySize, nullptr);
+        GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+    }
+
+    const size_t   *globalWorkOffset = nullptr;
+    const size_t    waitListSize     = 0;
+    const cl_event *waitList         = nullptr;
+    cl_event       *timingEvent      = nullptr; //FIXMEbDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr);
+    cl_int          clError          = clEnqueueNDRangeKernel(config.stream, kernel, 3, globalWorkOffset,
+                                                              config.gridSize, config.blockSize, waitListSize, waitList, timingEvent);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+}
+
+/*! \brief Launches the OpenCL kernel.
+ *  Uses the recursive compile-time wrappers above.
+ *  Shared memory buffer does not need to be passed,
+ *  but is appended as a last argument implicitly,
+ *  if config.sharedMemorySize is explicitly set to non-0.
+ *
+ * \tparam    Args            Types of kernel arguments (excluding the shared memory)
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernel          Kernel function handle
+ * \param[in] args            Pointers to the kernel arguments (excluding the shared memory nullptr)
+ */
+template <typename ... Args>
+void launchGpuKernel(const KernelLaunchConfig &config,
+                     cl_kernel                 kernel,
+                     const Args          * ... args)
+{
+    launchOpenCLKernel(config, kernel, 0, args ...);
 }
 
 #endif
