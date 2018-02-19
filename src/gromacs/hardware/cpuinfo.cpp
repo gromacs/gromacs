@@ -342,7 +342,7 @@ detectX86Features(std::string *                  brand,
         setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31 );
     }
 
-    // Check whether Hyper-threading is really possible to enable in the hardware,
+    // Check whether Intel HyperThreading / AMD SMT is really possible to enable in the hardware,
     // not just technically supported by this generation of processors
     if (features->count(CpuInfo::Feature::X86_Htt) && maxStdLevel >= 0x4)
     {
@@ -368,6 +368,7 @@ detectX86Features(std::string *                  brand,
         executeX86CpuID(0x80000001, 0, &eax, &ebx, &ecx, &edx);
 
         setFeatureFromBit(features, CpuInfo::Feature::X86_Lahf,        ecx,  0 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Extapic,     ecx,  3 );
         setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4A,       ecx,  6 );
         setFeatureFromBit(features, CpuInfo::Feature::X86_MisalignSse, ecx,  7 );
         setFeatureFromBit(features, CpuInfo::Feature::X86_Xop,         ecx, 11 );
@@ -548,7 +549,7 @@ detectX86LogicalProcessors()
         else    // haveApic
         {
             // AMD without x2APIC does not support SMT - there are no hwthread bits in apic ID
-            hwThreadBits = 0;
+            hwThreadBits = 1;
             // Get number of core bits in apic ID - try modern extended method first
             executeX86CpuID(0x80000008, 0, &eax, &ebx, &ecx, &edx);
             coreBits = (ecx >> 12) & 0xf;

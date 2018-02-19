@@ -116,7 +116,7 @@ class CpuInfo
             X86_Fma,         //!< Fused-multiply add support (mainly for AVX)
             X86_Fma4,        //!< 4-operand FMA, only on AMD for now
             X86_Hle,         //!< Hardware lock elision
-            X86_Htt,         //!< Hyper-Threading supported (but maybe not enabled)
+            X86_Htt,         //!< HyperThreading enabled (initially support is detected, then later reset if it is not enabled)
             X86_Intel,       //!< This is an Intel x86 processor
             X86_Lahf,        //!< LAHF/SAHF support in 64 bits
             X86_MisalignSse, //!< Support for misaligned SSE data instructions
@@ -140,6 +140,7 @@ class CpuInfo
             X86_Sse4_2,      //!< SSE 4.2
             X86_Ssse3,       //!< Supplemental SSE3
             X86_Tdt,         //!< TSC deadline timer
+            X86_Extapic,     //!< Extended APIC Support
             X86_X2Apic,      //!< Extended xAPIC Support
             X86_Xop,         //!< AMD extended instructions, only AMD for now
             Arm_Neon,        //!< 32-bit ARM NEON
