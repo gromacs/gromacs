@@ -99,12 +99,18 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
 
 /*! \brief Validates the input global work size parameter.
  */
-static inline void validate_global_work_size(size_t *global_work_size, int work_dim, const gmx_device_info_t *dinfo)
+static inline void validate_global_work_size(const KernelLaunchConfig &config, int work_dim, const gmx_device_info_t *dinfo)
 {
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;
 
     assert(dinfo);
+
+    size_t global_work_size[3];
+    for (int i = 0; i < work_dim; i++)
+    {
+        global_work_size[i] = config.blockSize[i] * config.gridSize[i];
+    }
 
     /* Each component of a global_work_size must not exceed the range given by the
        sizeof(device size_t) for the device on which the kernel execution will
@@ -379,9 +385,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     cl_int               cl_error;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* OpenCL kernel launch-related stuff */
-    int                  shmem;
-    size_t               local_work_size[3], global_work_size[3];
-    cl_kernel            nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    cl_kernel            nb_kernel = NULL;     /* fn pointer to the nonbonded kernel */
 
     cl_atomdata_t       *adat    = nb->atdat;
     cl_nbparam_t        *nbp     = nb->nbparam;
@@ -392,7 +396,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
     int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = nb->bDoTime;
-    cl_uint              arg_no;
 
     cl_nbparam_params_t  nbparams_params;
 
@@ -455,6 +458,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
              */
             cl_error = clFlush(stream);
             assert(CL_SUCCESS == cl_error);
+            GMX_UNUSED_VALUE(cl_error);
         }
         else
         {
@@ -493,67 +497,45 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
                                     (plist->haveFreshList && !nb->timers->didPrune[iloc]));
 
     /* kernel launch config */
-    local_work_size[0] = c_clSize;
-    local_work_size[1] = c_clSize;
-    local_work_size[2] = 1;
 
-    global_work_size[0] = plist->nsci * local_work_size[0];
-    global_work_size[1] = 1 * local_work_size[1];
-    global_work_size[2] = 1 * local_work_size[2];
+    KernelLaunchConfig config;
+    config.sharedMemorySize = calc_shmem_required_nonbonded(nbp->vdwtype, nb->bPrefetchLjParam);
+    config.stream           = stream;
+    config.blockSize[0]     = c_clSize;
+    config.blockSize[1]     = c_clSize;
+    config.gridSize[0]      = plist->nsci;
 
-    validate_global_work_size(global_work_size, 3, nb->dev_info);
-
-    shmem     = calc_shmem_required_nonbonded(nbp->vdwtype, nb->bPrefetchLjParam);
+    validate_global_work_size(config, 3, nb->dev_info);
 
     if (debug)
     {
         fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
-                (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
-                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
+                (int)(config.blockSize[0]), (int)(config.blockSize[1]), (int)(config.blockSize[2]),
+                (int)(config.blockSize[0] * config.gridSize[0]), (int)(config.blockSize[1] * config.gridSize[1]), plist->nsci*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    arg_no    = 0;
-    cl_error  = CL_SUCCESS;
-    if (!useLjCombRule(nb->nbparam->vdwtype))
-    {
-        cl_error  = clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &(adat->ntypes));
-    }
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(nbparams_params), &(nbparams_params));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->xq));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->f));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->e_lj));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->e_el));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->fshift));
+    auto *timingEvent = bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr;
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
-        cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->lj_comb));
+        launchGpuKernel(nb_kernel, config, timingEvent,
+                        &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
+                        &adat->lj_comb,
+                        &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
+                        &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
     }
     else
     {
-        cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->atom_types));
+        launchGpuKernel(nb_kernel, config, timingEvent,
+                        &adat->ntypes,
+                        &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
+                        &adat->atom_types,
+                        &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
+                        &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
     }
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->shift_vec));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nbp->nbfp_climg2d));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nbp->nbfp_comb_climg2d));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nbp->coulomb_tab_climg2d));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(plist->sci));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(plist->cj4));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(plist->excl));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &bCalcFshift);
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, shmem, NULL);
-
-    assert(cl_error == CL_SUCCESS);
-
-    if (cl_error)
-    {
-        printf("OpenCL error: %s\n", ocl_get_error_string(cl_error).c_str());
-    }
-    cl_error = clEnqueueNDRangeKernel(stream, nb_kernel, 3, NULL, global_work_size, local_work_size, 0, NULL, bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr);
-    assert(cl_error == CL_SUCCESS);
 
     if (bDoTime)
     {
@@ -591,8 +573,6 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
                                        int                    iloc,
                                        int                    numParts)
 {
-    cl_int               cl_error;
-
     cl_atomdata_t       *adat    = nb->atdat;
     cl_nbparam_t        *nbp     = nb->nbparam;
     cl_plist_t          *plist   = nb->plist[iloc];
@@ -663,50 +643,33 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
 
     /* kernel launch config */
-    size_t  local_work_size[3], global_work_size[3];
-    local_work_size[0] = c_clSize;
-    local_work_size[1] = c_clSize;
-    local_work_size[2] = num_threads_z;
+    KernelLaunchConfig config;
+    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
+    config.stream           = stream;
+    config.blockSize[0]     = c_clSize;
+    config.blockSize[1]     = c_clSize;
+    config.blockSize[2]     = num_threads_z;
+    config.gridSize[0]      = numSciInPart;
 
-    global_work_size[0] = numSciInPart * local_work_size[0];
-    global_work_size[1] = 1 * local_work_size[1];
-    global_work_size[2] = 1 * local_work_size[2];
-
-    validate_global_work_size(global_work_size, 3, nb->dev_info);
-
-    int shmem = calc_shmem_required_prune(num_threads_z);
+    validate_global_work_size(config, 3, nb->dev_info);
 
     if (debug)
     {
         fprintf(debug, "Pruning GPU kernel launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "\tGlobal work size: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
-                "\tShMem: %d\n",
-                (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
-                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
-                c_numClPerSupercl, plist->na_c, shmem);
+                "\tShMem: %zu\n",
+                (int)(config.blockSize[0]), (int)(config.blockSize[1]), (int)(config.blockSize[2]),
+                (int)(config.blockSize[0] * config.gridSize[0]), (int)(config.blockSize[1] * config.gridSize[1]), plist->nsci*c_numClPerSupercl,
+                c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
     }
 
     cl_nbparam_params_t  nbparams_params;
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    cl_uint  arg_no = 0;
-    cl_error = CL_SUCCESS;
-
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(nbparams_params), &(nbparams_params));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(adat->xq));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(adat->shift_vec));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->sci));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->cj4));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->imask));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(int), &(numParts));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(int), &(part));
-    cl_error |= clSetKernelArg(pruneKernel, arg_no++, shmem, nullptr);
-    assert(cl_error == CL_SUCCESS);
-
-    cl_error = clEnqueueNDRangeKernel(stream, pruneKernel, 3,
-                                      nullptr, global_work_size, local_work_size,
-                                      0, nullptr, bDoTime ? timer->fetchNextEvent() : nullptr);
-    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
+    auto *timingEvent = bDoTime ? timer->fetchNextEvent() : nullptr;
+    launchGpuKernel(pruneKernel, config, timingEvent,
+                    &nbparams_params, &adat->xq, &adat->shift_vec,
+                    &plist->sci, &plist->cj4, &plist->imask, &numParts, &part);
 
     if (plist->haveFreshList)
     {
