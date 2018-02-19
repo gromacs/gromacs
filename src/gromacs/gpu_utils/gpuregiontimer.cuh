@@ -103,10 +103,7 @@ class GpuRegionTimerImpl
         /*! \brief Resets internal state */
         inline void reset(){}
 
-        /*! \brief Returns a new raw timing event
-         * for passing into individual GPU API calls.
-         * This is just a dummy in CUDA.
-         */
+        /*! \brief Returns a new raw timing event - just a stub in CUDA. */
         inline CommandEvent *fetchNextEvent()
         {
             return nullptr;
