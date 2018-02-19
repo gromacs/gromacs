@@ -1,3 +1,4 @@
+
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -510,6 +511,20 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     const bool wrapY = true;
     GMX_UNUSED_VALUE(wrapX);
     GMX_UNUSED_VALUE(wrapY);
+
+    KernelLaunchConfig p;
+    // p.gridSize         = dimGrid; //FIXME
+    p.sharedMemorySize = 0;
+    //p.blockSize        = dimBlock;
+    p.stream           = stream;
+
+    p.gridSize.x  = dimGrid.x;
+    p.blockSize.x = dimBlock.x;
+    p.gridSize.y  = dimGrid.y;
+    p.blockSize.y = dimBlock.y;
+    p.gridSize.z  = dimGrid.z;
+    p.blockSize.z = dimBlock.z;
+
     switch (order)
     {
         case 4:
@@ -520,7 +535,7 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
                 if (spreadCharges)
                 {
                     pme_gpu_start_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
-                    pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY> <<< dimGrid, dimBlock, 0, stream>>> (*kernelParamsPtr);
+                    launchGpuKernel(p, pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY>, kernelParamsPtr); //FIXME ptr
                     CU_LAUNCH_ERR("pme_spline_and_spread_kernel");
                     pme_gpu_stop_timing(pmeGpu, gtPME_SPLINEANDSPREAD);
                 }

@@ -44,6 +44,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gputraits_ocl.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
@@ -175,6 +176,55 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
 {
     GMX_RELEASE_ASSERT(false, "haveStreamTasksCompleted is not implemented for OpenCL");
     return false;
+}
+
+/*! \brief Recursive compile-time wrapper for launching the OpenCL kernel.
+ * This appends one kernel argument pointer, using clSetKernelArg(), and calls itself on the next one.
+ */
+template <typename FirstArg, typename ... OtherArguments>
+void launchOpenCLKernel(const KernelLaunchConfig &p,
+                        cl_kernel                 f,
+                        size_t                    argIndex,
+                        const FirstArg           *first,
+                        const OtherArguments *... args)
+{
+    cl_int clError = clSetKernelArg(f, argIndex, sizeof(FirstArg), first);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+
+    launchOpenCLKernel(p, f, argIndex + 1, args ...);
+}
+
+/*! \brief Launches the OpenCL kernel.
+ *  Before that, appends the shared memory as a last argument, if needed.
+ *  The optional timing event is also passed.
+ */
+inline void launchOpenCLKernel(const KernelLaunchConfig &p,
+                               cl_kernel                 kernel,
+                               size_t                    argIndex)
+{
+    // Last implicit argument is shared(local) memory - if there is any
+    if (p.sharedMemorySize > 0)
+    {
+        cl_int clError = clSetKernelArg(kernel, argIndex, p.sharedMemorySize, nullptr);
+        GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+    }
+
+    const size_t   *globalWorkOffset = nullptr;
+    const size_t    waitListSize     = 0;
+    const cl_event *waitList         = nullptr;
+    cl_event       *timingEvent      = nullptr; //FIXMEbDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr);
+    cl_int          clError          = clEnqueueNDRangeKernel(p.stream, kernel, 3, globalWorkOffset,
+                                                              p.gridSize, p.blockSize, waitListSize, waitList, timingEvent);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+}
+
+// Generic simplified kernel launcher
+template <typename ... FullArguments>
+void launchGpuKernel(const KernelLaunchConfig &p,
+                     cl_kernel                 f,
+                     const FullArguments * ... args)
+{
+    launchOpenCLKernel(p, f, 0, args ...);
 }
 
 #endif
