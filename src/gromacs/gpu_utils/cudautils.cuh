@@ -42,10 +42,13 @@
 #include <nvml.h>
 #endif /* HAVE_NVML */
 
+#include <array>
 #include <string>
 
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -123,32 +126,10 @@ enum class GpuApiCallBehavior;
         } \
     } while (0)
 
-/*! Check for any previously occurred uncaught CUDA error
-   -- aimed at use after kernel calls. */
-#define CU_LAUNCH_ERR(msg) \
-    do { \
-        cudaError_t _CU_LAUNCH_ERR_status = cudaGetLastError(); \
-        if (_CU_LAUNCH_ERR_status != cudaSuccess) { \
-            gmx_fatal(FARGS, "Error while launching kernel %s: %s\n", msg, cudaGetErrorString(_CU_LAUNCH_ERR_status)); \
-        } \
-    } while (0)
-
-/*! Synchronize with GPU and check for any previously occurred uncaught CUDA error
-   -- aimed at use after kernel calls. */
-#define CU_LAUNCH_ERR_SYNC(msg) \
-    do { \
-        cudaError_t _CU_SYNC_LAUNCH_ERR_status = cudaThreadSynchronize(); \
-        if (_CU_SYNC_LAUNCH_ERR_status != cudaSuccess) { \
-            gmx_fatal(FARGS, "Error while launching kernel %s: %s\n", msg, cudaGetErrorString(_CU_SYNC_LAUNCH_ERR_status)); \
-        } \
-    } while (0)
-
 #else /* CHECK_CUDA_ERRORS */
 
 #define CU_RET_ERR(status, msg) do { } while (0)
 #define CU_CHECK_PREV_ERR()     do { } while (0)
-#define CU_LAUNCH_ERR(msg)      do { } while (0)
-#define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
 #define HANDLE_NVML_RET_ERR(status, msg) do { } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
@@ -284,6 +265,99 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
     GMX_ASSERT(stat == cudaSuccess, "Values other than cudaSuccess should have been explicitly handled");
 
     return true;
+}
+
+/* Kernel launch helpers */
+
+/*! \brief
+ * A function for setting up a single CUDA kernel argument.
+ * This is the tail of the compile-time recursive function below.
+ * It has to be seen by the compiler first.
+ *
+ * \tparam        totalArgsCount  Number of the kernel arguments
+ * \tparam        KernelPtr       Kernel function handle type
+ * \param[in]     argIndex        Index of the current argument
+ */
+template <size_t totalArgsCount, typename KernelPtr>
+void prepareGpuKernelArgument(KernelPtr /*kernel*/,
+                              std::array<void *, totalArgsCount> */* kernelArgsPtr */,
+                              size_t gmx_used_in_debug argIndex)
+{
+    GMX_ASSERT(argIndex == totalArgsCount, "Tail expansion");
+}
+
+/*! \brief
+ * Compile-time recursive function for setting up a single CUDA kernel argument.
+ * This function copies a kernel argument pointer \p argPtr into \p kernelArgsPtr,
+ * and calls itself on the next argument, eventually calling the tail function above.
+ *
+ * \tparam        CurrentArg      Type of the current argument
+ * \tparam        RemainingArgs   Types of remaining arguments after the current one
+ * \tparam        totalArgsCount  Number of the kernel arguments
+ * \tparam        KernelPtr       Kernel function handle type
+ * \param[in]     kernel          Kernel function handle
+ * \param[in,out] kernelArgsPtr   Pointer to the argument array to be filled in
+ * \param[in]     argIndex        Index of the current argument
+ * \param[in]     argPtr          Pointer to the current argument
+ * \param[in]     otherArgsPtrs   Pack of pointers to arguments remaining to process after the current one
+ */
+template <typename CurrentArg, typename ... RemainingArgs, size_t totalArgsCount, typename KernelPtr>
+void prepareGpuKernelArgument(KernelPtr kernel,
+                              std::array<void *, totalArgsCount> *kernelArgsPtr,
+                              size_t argIndex,
+                              const CurrentArg *argPtr,
+                              const RemainingArgs *... otherArgsPtrs)
+{
+    (*kernelArgsPtr)[argIndex] = (void *)argPtr;
+    prepareGpuKernelArgument(kernel, kernelArgsPtr, argIndex + 1, otherArgsPtrs ...);
+}
+
+/*! \brief
+ * A wrapper function for setting up all the CUDA kernel arguments.
+ * Calls the recursive functions above.
+ *
+ * \tparam    Args            Types of all the kernel arguments
+ * \param[in] kernel          Kernel function handle
+ * \param[in] argsPtrs        Pointers to all the kernel arguments
+ * \returns A prepared parameter pack to be used with launchGpuKernel() as the last argument.
+ */
+template <typename ... Args>
+std::array<void *, sizeof ... (Args)> prepareGpuKernelArguments(void                     (*kernel)(Args...),
+                                                                const KernelLaunchConfig & /*config */,
+                                                                const Args *...          argsPtrs)
+{
+    std::array<void *, sizeof ... (Args)> kernelArgs;
+    prepareGpuKernelArgument(kernel, &kernelArgs, 0, argsPtrs ...);
+    return kernelArgs;
+}
+
+/*! \brief Launches the CUDA kernel and handles the errors.
+ *
+ * \tparam    Args            Types of all the kernel arguments
+ * \param[in] kernel          Kernel function handle
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernelName      Human readable kernel description, for error handling only
+ * \param[in] kernelArgs      Array of the pointers to the kernel arguments, prepared by prepareGpuKernelArguments()
+ * \throws gmx::InternalError on kernel launch failure
+ */
+template <typename... Args>
+void launchGpuKernel(void                                       (*kernel)(Args...),
+                     const KernelLaunchConfig                    &config,
+                     CommandEvent                                */*timingEvent */,
+                     const char                                  *kernelName,
+                     const std::array<void *, sizeof ... (Args)> &kernelArgs)
+{
+    dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
+    dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
+    cudaLaunchKernel((void *)kernel, gridSize, blockSize, const_cast<void **>(kernelArgs.data()), config.sharedMemorySize, config.stream);
+
+    cudaError_t status = cudaGetLastError();
+    if (cudaSuccess != status)
+    {
+        const std::string errorMessage = "GPU kernel (" +  std::string(kernelName) +
+            ") failed to launch: " + std::string(cudaGetErrorString(status));
+        GMX_THROW(gmx::InternalError(errorMessage));
+    }
 }
 
 #endif
