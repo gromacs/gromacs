@@ -1037,6 +1037,101 @@ void MyMol::addShells(const Poldata          &pd,
     sfree(shell_atom);
 }
 
+immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
+                                 t_commrec                 *cr,
+                                 const char                *tabfn,
+                                 gmx_hw_info_t             *hwinfo,
+                                 ChargeDistributionModel    ieqd)
+{
+    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
+    auto nalloc = 2*topology_->atoms.nr + 1;
+
+    if (nullptr == fr_)
+    {
+        fr_ = mk_forcerec();
+    }
+    if (nullptr != tabfn)
+    {
+        inputrec_->coulombtype = eelUSER;
+    }
+
+    f_.resize(nalloc);
+    optf_.resize(nalloc);
+   
+    fr_->hwinfo = hwinfo;
+    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
+                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
+    setup_bonded_threading(fr_, &ltop_->idef);
+    wcycle_    = wallcycle_init(debug, 0, cr);
+    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
+    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);   
+    
+    if (nullptr != shellfc_)
+    {
+        make_local_shells(cr, mdatoms_, shellfc_);
+    }
+    if (ieqd != eqdAXs && ieqd != eqdAXps)
+    {
+        for (auto i = 0; i < mtop_->natoms; i++)
+        {
+            mdatoms_->row[i] = 0;
+        }
+    }
+    return immOK;
+}
+
+void MyMol::computeForces(FILE *fplog, t_commrec *cr)
+{
+    tensor          force_vir;
+    unsigned long   force_flags = ~0;
+    double          t           = 0;
+       
+    clear_mat (force_vir);
+    for (auto i = 0; i < mtop_->natoms; i++)
+    {
+        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
+        if (nullptr != debug)
+        {
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
+        }
+    }
+    if (nullptr != shellfc_)
+    {
+        auto nnodes = cr->nnodes;
+        cr->nnodes  = 1;
+        if (bHaveVSites_)
+        {
+            vsite_ = init_vsite(mtop_, cr, false);
+        }
+        relax_shell_flexcon(fplog, cr, false, 0, inputrec_, 
+                            true, force_flags, ltop_, nullptr, 
+                            enerd_, fcd_, state_,
+                            &f_, force_vir, mdatoms_,
+                            &nrnb_, wcycle_, nullptr,
+                            &(mtop_->groups), shellfc_, 
+                            fr_, false, t, nullptr,
+                            vsite_);
+        cr->nnodes = nnodes;     
+    }
+    else
+    {   
+        if (bHaveVSites_)
+        {
+            vsite_ = init_vsite(mtop_, cr, false);
+        }
+        do_force(fplog, cr, inputrec_, 0,
+                 &nrnb_, wcycle_, ltop_,
+                 &(mtop_->groups),
+                 box_, &state_->x, nullptr,
+                 &f_, force_vir, mdatoms_,
+                 enerd_, fcd_,
+                 state_->lambda, nullptr,
+                 fr_, vsite_, nullptr, t,
+                 nullptr, false,
+                 force_flags);
+    }
+}
+
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const gmx::MDLogger       &mdlog,
                                  gmx_atomprop_t             ap,
@@ -1149,7 +1244,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             do
             {
-                Qgresp_.optimizeCharges();
                 for (auto i = 0; i < topology_->atoms.nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
@@ -1158,8 +1252,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 if (nullptr != shellfc_)
                 {
                     computeForces(nullptr, cr);
+                    Qgresp_.updateAtomCoords(state_->x);
                 }
-                Qgresp_.updateAtomCoords(state_->x);
+                Qgresp_.optimizeCharges();
                 Qgresp_.calcPot();
                 EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
                 if (debug)
@@ -1208,8 +1303,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     for (auto i = 0; i < mtop_->natoms; i++)
                     {
                         mtop_->moltype[0].atoms.atom[i].q = 
-                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
-                        
+                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                         
                     }                                                        
                     if (nullptr != shellfc_)
                     {
@@ -1235,8 +1329,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             for (auto i = 0; i < mtop_->natoms; i++)
             {
                 mtop_->moltype[0].atoms.atom[i].q = 
-                    mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
-                
+                    mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                   
             }             
             if (!converged)
             {
@@ -1249,101 +1342,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             break;
     }
     return imm;
-}
-
-immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
-                                 t_commrec                 *cr,
-                                 const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo,
-                                 ChargeDistributionModel    ieqd)
-{
-    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-    auto nalloc = 2*topology_->atoms.nr + 1;
-
-    if (nullptr == fr_)
-    {
-        fr_ = mk_forcerec();
-    }
-    if (nullptr != tabfn)
-    {
-        inputrec_->coulombtype = eelUSER;
-    }
-
-    f_.resize(nalloc);
-    optf_.resize(nalloc);
-   
-    fr_->hwinfo = hwinfo;
-    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    setup_bonded_threading(fr_, &ltop_->idef);
-    wcycle_    = wallcycle_init(debug, 0, cr);
-    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
-    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);   
-    
-    if (nullptr != shellfc_)
-    {
-        make_local_shells(cr, mdatoms_, shellfc_);
-    }
-    if (ieqd != eqdAXs && ieqd != eqdAXps)
-    {
-        for (auto i = 0; i < mtop_->natoms; i++)
-        {
-            mdatoms_->row[i] = 0;
-        }
-    }
-    return immOK;
-}
-
-void MyMol::computeForces(FILE *fplog, t_commrec *cr)
-{
-    tensor          force_vir;
-    unsigned long   force_flags = ~0;
-    double          t           = 0;
-       
-    clear_mat (force_vir);
-    for (auto i = 0; i < mtop_->natoms; i++)
-    {
-        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;  
-        if (nullptr != debug)
-        {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
-        }
-    }
-    if (nullptr != shellfc_)
-    {
-        auto nnodes = cr->nnodes;
-        cr->nnodes  = 1;
-        if (bHaveVSites_)
-        {
-            vsite_ = init_vsite(mtop_, cr, false);
-        }
-        relax_shell_flexcon(fplog, cr, false, 0, inputrec_, 
-                            true, force_flags, ltop_, nullptr, 
-                            enerd_, fcd_, state_,
-                            &f_, force_vir, mdatoms_,
-                            &nrnb_, wcycle_, nullptr,
-                            &(mtop_->groups), shellfc_, 
-                            fr_, false, t, nullptr,
-                            vsite_);
-        cr->nnodes = nnodes;     
-    }
-    else
-    {   
-        if (bHaveVSites_)
-        {
-            vsite_ = init_vsite(mtop_, cr, false);
-        }
-        do_force(fplog, cr, inputrec_, 0,
-                 &nrnb_, wcycle_, ltop_,
-                 &(mtop_->groups),
-                 box_, &state_->x, nullptr,
-                 &f_, force_vir, mdatoms_,
-                 enerd_, fcd_,
-                 state_->lambda, nullptr,
-                 fr_, vsite_, nullptr, t,
-                 nullptr, false,
-                 force_flags);
-    }
 }
 
 void MyMol::changeCoordinate(ExperimentIterator ei)

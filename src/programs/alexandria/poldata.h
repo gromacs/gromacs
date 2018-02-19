@@ -251,6 +251,7 @@ class Poldata
          */
         const std::string &ztype2elem(const std::string &ztype) const;
 
+        std::vector<const std::string> ztype_names() const;
 
         /*! \brief
          * Return the charge corresponding to the atyom type
@@ -611,6 +612,12 @@ class Poldata
 
         EempropsIterator findEem(ChargeDistributionModel  eqdModel,
                                  const std::string       &atype);
+                                 
+        EempropsConstIterator ztype2Eem(ChargeDistributionModel  eqdModel,
+                                        const std::string        &ztype) const;
+
+        EempropsIterator ztype2Eem(ChargeDistributionModel  eqdModel,
+                                   const std::string        &ztype);
 
         std::vector<Eemprops> &getEemprops() {return eep_; }
 

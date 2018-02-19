@@ -62,14 +62,14 @@ static void eemprops_zeta_header(LongTable &lt)
     char             longbuf[STRLEN];
     CompositionSpecs cs;
 
-    lt.setColumns("ccccc");
+    lt.setColumns("ccc");
 
-    snprintf(longbuf, STRLEN, "The optimized values of the screening factor for the Gaussian and the Slater charges represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. The atom types are according to the General Amber Force Field (GAFF)~\\cite{Wang2004a}.");
+    snprintf(longbuf, STRLEN, "The optimized orbital exponent for the polarizable Gaussian and the Slater charges represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. The atom types are according to the General Amber Force Field~\\cite{Wang2004a}.");
     lt.setCaption(longbuf);
     lt.setLabel("screeningfactor");
-    snprintf(longbuf, STRLEN, "Atom type  & \\multicolumn{2}{c}{Non-polarizable} & \\multicolumn{2}{c}{Polarizable}");
-    lt.addHeadLine(longbuf);
-    snprintf(longbuf, STRLEN, "  & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$) & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$) ");
+    //snprintf(longbuf, STRLEN, "Atom type  & \\multicolumn{2}{c}{Non-polarizable} & \\multicolumn{2}{c}{Polarizable}");
+    //lt.addHeadLine(longbuf);
+    snprintf(longbuf, STRLEN, " Atom Type & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$)");
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
@@ -81,29 +81,28 @@ void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
     char       longbuf[STRLEN];
     LongTable  lt(fp, false, nullptr);
     
-    eemprops_zeta_header(lt);       
-    for (auto atp = pd.getAtypeBegin(); atp < pd.getAtypeEnd(); atp++)
+    eemprops_zeta_header(lt); 
+    auto ztypes = pd.ztype_names();      
+    for (auto ztp = ztypes.begin(); ztp < ztypes.end(); ztp++)
     {
-        auto AXg  = pd.findEem(eqdAXg,  atp->getType());
-        auto AXpg = pd.findEem(eqdAXpg, atp->getType());
-        auto AXs  = pd.findEem(eqdAXs,  atp->getType());
-        auto AXps = pd.findEem(eqdAXps, atp->getType());
+        auto AXpg = pd.ztype2Eem(eqdAXpg, ztp->c_str());
+        auto AXps = pd.ztype2Eem(eqdAXps, ztp->c_str());
         
-        if (AXg  != pd.EndEemprops() && 
-            AXpg != pd.EndEemprops() &&
-            AXs  != pd.EndEemprops() &&
-            AXps != pd.EndEemprops())
+        if (AXpg != pd.EndEemprops() && AXps != pd.EndEemprops())
         {
-            snprintf(longbuf, STRLEN, "%s & %0.3f (%s) & %0.3f (%s) & %0.3f (%s) & %0.3f (%s)",
-                     atp->getType().c_str(),
-                     AXg->getZeta(0),
-                     gmx::splitString(AXg->getZeta_sigma()).begin()->c_str(),
-                     AXs->getZeta(0),
-                     gmx::splitString(AXs->getZeta_sigma()).begin()->c_str(),
+            size_t      pos   = ztp->find("z_");
+            std::string ztype = ztp->c_str();
+            if (pos != std::string::npos)
+            {
+                ztype = ztp->substr(pos+2);
+            }
+            
+            snprintf(longbuf, STRLEN, "%s & %0.3f (%0.3f) & %0.3f (%0.3f)",
+                     ztype.c_str(),
                      AXpg->getZeta(0),
-                     gmx::splitString(AXpg->getZeta_sigma()).begin()->c_str(),
+                     atof(gmx::splitString(AXpg->getZeta_sigma()).begin()->c_str()),
                      AXps->getZeta(0),
-                     gmx::splitString(AXps->getZeta_sigma()).begin()->c_str());
+                     atof(gmx::splitString(AXps->getZeta_sigma()).begin()->c_str()));
             lt.printLine(longbuf);
         }
     }

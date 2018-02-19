@@ -531,23 +531,24 @@ int alex_tune_zeta(int argc, char *argv[])
     };
 
     t_filenm                    fnm[] = {
-        { efDAT, "-f",         "allmols",       ffREAD  },
-        { efDAT, "-d",         "gentop",        ffOPTRD },
-        { efDAT, "-o",         "tunezeta",      ffWRITE },
-        { efDAT, "-sel",       "molselect",     ffREAD  },
-        { efXVG, "-table",     "table",         ffOPTRD },
-        { efLOG, "-g",         "charges",       ffWRITE },
-        { efXVG, "-qhisto",    "q_histo",       ffWRITE },
-        { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
-        { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
-        { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
-        { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
-        { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
-        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
-        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
-        { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE },
-        { efTEX, "-latex",     "zeta",          ffWRITE }
+        { efDAT, "-f",         "allmols",           ffREAD  },
+        { efDAT, "-d",         "gentop",            ffOPTRD },
+        { efDAT, "-o",         "tunezeta",          ffWRITE },
+        { efDAT, "-sel",       "molselect",         ffREAD  },
+        { efXVG, "-table",     "table",             ffOPTRD },
+        { efLOG, "-g",         "charges",           ffWRITE },
+        { efXVG, "-qhisto",    "q_histo",           ffWRITE },
+        { efXVG, "-dipcorr",   "dip_corr",          ffWRITE },
+        { efXVG, "-mucorr",    "mu_corr",           ffWRITE },
+        { efXVG, "-thetacorr", "theta_corr",        ffWRITE },
+        { efXVG, "-espcorr",   "esp_corr",          ffWRITE },
+        { efXVG, "-alphacorr", "alpha_corr",        ffWRITE },
+        { efXVG, "-qcorr",     "q_corr",            ffWRITE },
+        { efXVG, "-isopol",    "isopol_corr",       ffWRITE },
+        { efXVG, "-anisopol",  "anisopol_corr",     ffWRITE },
+        { efXVG, "-conv",      "param-conv",        ffWRITE },
+        { efXVG, "-epot",      "param-epot",        ffWRITE },
+        { efTEX, "-latex",     "orbital_exponents", ffWRITE }
     };
 
     const int                   NFILE         = asize(fnm);
@@ -698,6 +699,7 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt2fn("-alphacorr", NFILE, fnm),
                              opt2fn("-isopol",    NFILE, fnm),
                              opt2fn("-anisopol",  NFILE, fnm),
+                             opt2fn("-qcorr",     NFILE, fnm),
                              dip_toler,
                              quad_toler,
                              alpha_toler,

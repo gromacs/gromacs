@@ -511,10 +511,12 @@ int alex_gentop(int argc, char *argv[])
     }
     if (immOK == imm)
     {
-        mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
+        imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
     if (immOK == imm)
     {
+        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
+        
         mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                             iChargeDistributionModel,
                             bVerbose,
@@ -522,14 +524,11 @@ int alex_gentop(int argc, char *argv[])
                             aps,
                             cr,
                             efield,
-                            lot);
-
-        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
+                            lot);       
     }
     else
     {
-        printf("\nWARNING: alexandria ended prematurely due to \"%s\"\n",
-               alexandria::immsg(imm));
+        printf("\nWARNING: alexandria ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
     }
     return 0;
 }

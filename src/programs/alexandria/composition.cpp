@@ -55,9 +55,9 @@ namespace alexandria
 
 CompositionSpecs::CompositionSpecs()
 {
-    cs_.push_back(CompositionSpec(iCalexandria, (const char *)"alexandria", (const char *)"Spoel2016a", (const char *)"AX"));
-    cs_.push_back(CompositionSpec(iCbosque, (const char *)"bosque", (const char *)"Bosque2002a", (const char *)"BS"));
-    cs_.push_back(CompositionSpec(iCmiller, (const char *)"miller", (const char *)"Miller1990a", (const char *)"MK"));
+    cs_.push_back(CompositionSpec(iCalexandria, (const char *)"Alexandria", (const char *)"Spoel2016a", (const char *)"AX"));
+    cs_.push_back(CompositionSpec(iCbosque, (const char *)"Bosque", (const char *)"Bosque2002a", (const char *)"BS"));
+    cs_.push_back(CompositionSpec(iCmiller, (const char *)"Miller", (const char *)"Miller1990a", (const char *)"MK"));
 }
 
 }

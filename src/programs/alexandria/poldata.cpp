@@ -174,6 +174,19 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
 
+std::vector<const std::string> Poldata::ztype_names() const
+{
+    std::vector<const std::string> ztype_names;   
+    for (auto atpi = alexandria_.begin(); atpi != alexandria_.end(); atpi++)
+    { 
+        if (std::find(ztype_names.begin(), ztype_names.end(), atpi->getZtype()) == ztype_names.end()) 
+        {
+            ztype_names.push_back(atpi->getZtype());
+        }
+    }
+    return ztype_names;
+}
+
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Polarizability STUFF
@@ -1040,6 +1053,28 @@ void Poldata::broadcast(const t_commrec *cr)
     }
 }
 
+EempropsConstIterator Poldata::ztype2Eem(ChargeDistributionModel  eqdModel,
+                                         const std::string        &ztype) const
+{
+    return std::find_if(eep_.begin(), eep_.end(),
+                        [eqdModel, ztype](Eemprops const &eep)
+                        {
+                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0 &&
+                                    (eep.getEqdModel() == eqdModel));
+                        });
+}
+
+EempropsIterator Poldata::ztype2Eem(ChargeDistributionModel  eqdModel,
+                                    const std::string        &ztype)
+{
+    return std::find_if(eep_.begin(), eep_.end(),
+                        [eqdModel, ztype](Eemprops const &eep)
+                        {
+                            return (strcasecmp(eep.getName(), ztype.c_str()) == 0 &&
+                                    (eep.getEqdModel() == eqdModel));
+                        });
+}
+                                   
 EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
                                        const std::string       &atype) const
 {

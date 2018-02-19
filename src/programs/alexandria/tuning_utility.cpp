@@ -243,6 +243,7 @@ void print_electric_props(FILE                           *fp,
                           const char                     *alphaCorr,
                           const char                     *isopolCorr,
                           const char                     *anisopolCorr,
+                          const char                     *qCorr,
                           real                            dip_toler,
                           real                            quad_toler,
                           real                            alpha_toler,
@@ -261,7 +262,7 @@ void print_electric_props(FILE                           *fp,
     real           aver = 0, error = 0, qCalc = 0;
 
     FILE          *dipc, *muc,  *Qc;
-    FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc;
+    FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc, *qc;
 
     struct ZetaTypeLsq {
         std::string ztype;
@@ -269,7 +270,7 @@ void print_electric_props(FILE                           *fp,
     };
 
     gmx_stats_t               lsq_mu[qtNR], lsq_dip[qtNR], lsq_quad[qtNR];
-    gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol;
+    gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge;
     const char               *eprnm[qtNR];
     std::vector<ZetaTypeLsq>  lsqt;
 
@@ -284,6 +285,7 @@ void print_electric_props(FILE                           *fp,
     lsq_alpha    = gmx_stats_init();
     lsq_isoPol   = gmx_stats_init();
     lsq_anisoPol = gmx_stats_init();
+    lsq_charge   = gmx_stats_init();
     n            = 0;
 
     for (auto ai = indexCount->beginIndex(); ai < indexCount->endIndex(); ++ai)
@@ -360,6 +362,7 @@ void print_electric_props(FILE                           *fp,
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
             auto qesp = mol.chargeQM(qtESP);
             auto x    = mol.x();
+            double qrmsd = 0;
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom ||
@@ -382,6 +385,8 @@ void print_electric_props(FILE                           *fp,
                                 qCalc += mol.topology_->atoms.atom[j+1].q;
                             }
                             gmx_stats_add_point(k->lsq, qesp[i], qCalc, 0, 0);
+                            gmx_stats_add_point(lsq_charge, qesp[i], qCalc, 0, 0);
+                            qrmsd += gmx::square(qesp[i]-qCalc);
                         }
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                                 mol.topology_->atoms.atom[j].atomnumber,
@@ -400,6 +405,11 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
+            qrmsd /= mol.topology_->atoms.nr;
+            if(qrmsd > 0.005)
+            {
+                fprintf(fp, "High RMSD in Charge for Molecule %s: %0.3f\n", mol.molProp()->getMolname().c_str(), qrmsd);
+            }
             n++;
         }
     }
@@ -409,6 +419,9 @@ void print_electric_props(FILE                           *fp,
     fprintf(fp, "\n"); 
     
     print_stats(fp, "ESP  (Hartree/e)",  lsq_esp, true,  "Electronic", "Calculated");
+    fprintf(fp, "\n");
+    
+    print_stats(fp, "Atomic Partial Charge  (e)",  lsq_charge, true,  "g16 ESP", "Calculated");
     fprintf(fp, "\n");
     
     for (int i = 0; i < qtElec; i++)
@@ -489,6 +502,11 @@ void print_electric_props(FILE                           *fp,
     xvgr_symbolize(espc, 1, eprnm, oenv);
     print_lsq_set(espc, lsq_esp);
     fclose(espc);
+    
+    qc = xvgropen(qCorr, "Atomic Partial Charge", "q (e)", "a.u.", oenv);
+    xvgr_symbolize(qc, 1, eprnm, oenv);
+    print_lsq_set(qc, lsq_charge);
+    fclose(qc);
 
     if (bPolar)
     {
@@ -546,5 +564,6 @@ void print_electric_props(FILE                           *fp,
     gmx_stats_free(lsq_alpha);
     gmx_stats_free(lsq_isoPol);
     gmx_stats_free(lsq_anisoPol);
+    gmx_stats_free(lsq_charge);
 }
 }
