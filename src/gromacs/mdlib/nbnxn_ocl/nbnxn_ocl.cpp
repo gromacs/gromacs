@@ -97,12 +97,6 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
 //@}
 
 
-/* Uncomment this define to enable kernel debugging */
-//#define DEBUG_OCL
-
-/*! \brief Specifies which kernel run to debug */
-#define DEBUG_RUN_STEP 2
-
 /*! \brief Validates the input global work size parameter.
  */
 static inline void validate_global_work_size(size_t *global_work_size, int work_dim, const gmx_device_info_t *dinfo)
@@ -404,10 +398,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     cl_uint              arg_no;
 
     cl_nbparam_params_t  nbparams_params;
-#ifdef DEBUG_OCL
-    float              * debug_buffer_h;
-    size_t               debug_buffer_size;
-#endif
 
     /* Don't launch the non-local kernel if there is no work to do.
        Doing the same for the local kernel is more complicated, since the
@@ -522,28 +512,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     shmem     = calc_shmem_required_nonbonded(nbp->vdwtype, nb->bPrefetchLjParam);
 
-#ifdef DEBUG_OCL
-    {
-        static int run_step = 1;
-
-        if (DEBUG_RUN_STEP == run_step)
-        {
-            debug_buffer_size = global_work_size[0] * global_work_size[1] * global_work_size[2] * sizeof(float);
-            debug_buffer_h    = (float*)calloc(1, debug_buffer_size);
-            assert(NULL != debug_buffer_h);
-
-            if (NULL == nb->debug_buffer)
-            {
-                nb->debug_buffer = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                                                  debug_buffer_size, debug_buffer_h, &cl_error);
-
-                assert(CL_SUCCESS == cl_error);
-            }
-        }
-
-        run_step++;
-    }
-#endif
     if (debug)
     {
         fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
@@ -584,7 +552,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(plist->excl));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &bCalcFshift);
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, shmem, NULL);
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nb->debug_buffer));
 
     assert(cl_error == CL_SUCCESS);
 
@@ -599,62 +566,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     {
         t->nb_k[iloc].closeTimingRegion(stream);
     }
-
-#ifdef DEBUG_OCL
-    {
-        static int run_step = 1;
-
-        if (DEBUG_RUN_STEP == run_step)
-        {
-            FILE *pf;
-            char  file_name[256] = {0};
-
-            ocl_copy_D2H_async(debug_buffer_h, nb->debug_buffer, 0,
-                               debug_buffer_size, stream, NULL);
-
-            // Make sure all data has been transfered back from device
-            clFinish(stream);
-
-            printf("\nWriting debug_buffer to debug_buffer_ocl.txt...");
-
-            sprintf(file_name, "debug_buffer_ocl_%d.txt", DEBUG_RUN_STEP);
-            pf = fopen(file_name, "wt");
-            assert(pf != NULL);
-
-            fprintf(pf, "%20s", "");
-            for (int j = 0; j < global_work_size[0]; j++)
-            {
-                char label[20];
-                sprintf(label, "(wIdx=%2d thIdx=%2d)", j / local_work_size[0], j % local_work_size[0]);
-                fprintf(pf, "%20s", label);
-            }
-
-            for (int i = 0; i < global_work_size[1]; i++)
-            {
-                char label[20];
-                sprintf(label, "(wIdy=%2d thIdy=%2d)", i / local_work_size[1], i % local_work_size[1]);
-                fprintf(pf, "\n%20s", label);
-
-                for (int j = 0; j < global_work_size[0]; j++)
-                {
-                    fprintf(pf, "%20.5f", debug_buffer_h[i * global_work_size[0] + j]);
-                }
-
-                //fprintf(pf, "\n");
-            }
-
-            fclose(pf);
-
-            printf(" done.\n");
-
-
-            free(debug_buffer_h);
-            debug_buffer_h = NULL;
-        }
-
-        run_step++;
-    }
-#endif
 }
 
 
