@@ -102,6 +102,8 @@ nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_c
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
 
+    printf("Calling nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -883,6 +885,8 @@ nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_c
     int              vfitab;
     real             rt,vfeps,vftabscale,Y,F,Geps,Heps2,Fp,VV,FF;
     real             *vftab;
+
+    printf("Calling nb_kernel_ElecCSTab_VdwLJ_GeomW3W3_F_c " );
 
     x                = xx[0];
     f                = ff[0];

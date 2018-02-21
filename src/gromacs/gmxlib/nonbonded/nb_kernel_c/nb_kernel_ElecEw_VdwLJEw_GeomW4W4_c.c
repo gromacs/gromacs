@@ -119,6 +119,8 @@ nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_c
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
     real             *ewtab;
 
+    printf("Calling nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -944,6 +946,8 @@ nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_c
     int              ewitab;
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
     real             *ewtab;
+
+    printf("Calling nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_c " );
 
     x                = xx[0];
     f                = ff[0];

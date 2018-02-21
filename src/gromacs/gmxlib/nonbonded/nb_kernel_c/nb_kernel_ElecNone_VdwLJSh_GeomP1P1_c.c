@@ -81,6 +81,8 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c
     int              *vdwtype;
     real             *vdwparam;
 
+    printf("Calling nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -290,6 +292,8 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c
     real             rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,br,vvdwexp,sh_vdw_invrcut6;
     int              *vdwtype;
     real             *vdwparam;
+
+    printf("Calling nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_c " );
 
     x                = xx[0];
     f                = ff[0];

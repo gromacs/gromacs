@@ -89,6 +89,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c
     real             *ewtab;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
 
+    printf("Calling nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -525,6 +527,8 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c
     real             ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace;
     real             *ewtab;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+
+    printf("Calling nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_c " );
 
     x                = xx[0];
     f                = ff[0];

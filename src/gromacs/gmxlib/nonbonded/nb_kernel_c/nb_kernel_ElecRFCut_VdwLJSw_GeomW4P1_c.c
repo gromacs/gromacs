@@ -93,6 +93,8 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_VF_c
     real             *vdwparam;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
 
+    printf("Calling nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -566,6 +568,8 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_F_c
     int              *vdwtype;
     real             *vdwparam;
     real             rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+
+    printf("Calling nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_F_c " );
 
     x                = xx[0];
     f                = ff[0];

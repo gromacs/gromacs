@@ -1345,6 +1345,7 @@ real urey_bradley(int nbonds,
             real cik, cii, ckk;
             real nrkj2, nrij2;
             rvec f_i, f_j, f_k;
+            rvec r_ki;
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
@@ -1361,6 +1362,8 @@ real urey_bradley(int nbonds,
             cik = st*gmx_invsqrt(nrkj2*nrij2); /*  12		*/
             cii = sth/nrij2;                   /*  10		*/
             ckk = sth/nrkj2;                   /*  10		*/
+
+            rvec_sub (r_kj, r_ij, r_ki);    /* construct r_ki for virial*/
 
             for (m = 0; (m < DIM); m++)        /*  39		*/
             {

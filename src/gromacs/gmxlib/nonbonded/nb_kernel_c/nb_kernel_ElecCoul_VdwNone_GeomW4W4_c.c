@@ -95,6 +95,8 @@ nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_c
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
 
+    printf("Calling nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_c " );
+
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
@@ -720,6 +722,8 @@ nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_c
     real             dx33,dy33,dz33,rsq33,rinv33,rinvsq33,r33,qq33,c6_33,c12_33,cexp1_33,cexp2_33;
     real             velec,felec,velecsum,facel,crf,krf,krf2;
     real             *charge;
+
+    printf("Calling nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_c " );
 
     x                = xx[0];
     f                = ff[0];
