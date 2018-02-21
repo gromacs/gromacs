@@ -180,12 +180,4 @@ real *constr_rmsd_data(gmx_constr_t constr);
 real constr_rmsd(gmx_constr_t constr);
 /* Return the RMSD of the constraint */
 
-/* helper functions for andersen temperature control, because the
- * gmx_constr construct is only defined in constr.c. Return the list
- * of blocks (get_sblock) and the number of blocks (get_nblocks).  */
-
-int *get_sblock(struct gmx_constr *constr);
-
-int get_nblocks(struct gmx_constr *constr);
-
 #endif
