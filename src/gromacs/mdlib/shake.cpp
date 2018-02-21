@@ -40,11 +40,16 @@
 
 #include <cmath>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/topology/invblock.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_shakedata
@@ -58,6 +63,15 @@ typedef struct gmx_shakedata
     real  delta;
     real  omega;
     real  gamma;
+    int   nblocks;        /* The number of SHAKE blocks         */
+    int  *sblock;         /* The SHAKE blocks                   */
+    int   sblock_nalloc;  /* The allocation size of sblock      */
+    /*! \brief Scaled Lagrange multiplier for each constraint.
+     *
+     * Value is -2 * eta from p. 336 of the paper, divided by the
+     * constraint distance. */
+    real *scaled_lagrange_multiplier;
+    int   lagr_nalloc;    /* The allocation size of scaled_lagrange_multiplier */
 } t_gmx_shakedata;
 
 gmx_shakedata_t shake_init()
@@ -78,6 +92,211 @@ gmx_shakedata_t shake_init()
     d->gamma = 1000000;
 
     return d;
+}
+
+typedef struct {
+    int iatom[3];
+    int blocknr;
+} t_sortblock;
+
+static int pcomp(const void *p1, const void *p2)
+{
+    int          db;
+    int          min1, min2, max1, max2;
+    t_sortblock *a1 = (t_sortblock *)p1;
+    t_sortblock *a2 = (t_sortblock *)p2;
+
+    db = a1->blocknr-a2->blocknr;
+
+    if (db != 0)
+    {
+        return db;
+    }
+
+    min1 = std::min(a1->iatom[1], a1->iatom[2]);
+    max1 = std::max(a1->iatom[1], a1->iatom[2]);
+    min2 = std::min(a2->iatom[1], a2->iatom[2]);
+    max2 = std::max(a2->iatom[1], a2->iatom[2]);
+
+    if (min1 == min2)
+    {
+        return max1-max2;
+    }
+    else
+    {
+        return min1-min2;
+    }
+}
+
+static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
+{
+    int i;
+
+    fprintf(fp, "%s\n", title);
+    for (i = 0; (i < nsb); i++)
+    {
+        fprintf(fp, "i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n",
+                i, sb[i].iatom[0], sb[i].iatom[1], sb[i].iatom[2],
+                sb[i].blocknr);
+    }
+}
+
+static void resizeLagrangianData(gmx_shakedata *shaked, int ncons)
+{
+    if (ncons > shaked->lagr_nalloc)
+    {
+        shaked->lagr_nalloc = over_alloc_dd(ncons);
+        srenew(shaked->scaled_lagrange_multiplier, shaked->lagr_nalloc);
+    }
+}
+
+void
+make_shake_sblock_serial(gmx_shakedata *shaked,
+                         t_idef *idef, const t_mdatoms *md)
+{
+    int          i, j, m, ncons;
+    int          bstart, bnr;
+    t_blocka     sblocks;
+    t_sortblock *sb;
+    t_iatom     *iatom;
+    int         *inv_sblock;
+
+    /* Since we are processing the local topology,
+     * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
+     */
+    ncons = idef->il[F_CONSTR].nr/3;
+
+    init_blocka(&sblocks);
+    gen_sblocks(nullptr, 0, md->homenr, idef, &sblocks, FALSE);
+
+    /*
+       bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
+       nblocks=blocks->multinr[idef->nodeid] - bstart;
+     */
+    bstart          = 0;
+    shaked->nblocks = sblocks.nr;
+    if (debug)
+    {
+        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %d\n",
+                ncons, bstart, shaked->nblocks);
+    }
+
+    /* Calculate block number for each atom */
+    inv_sblock = make_invblocka(&sblocks, md->nr);
+
+    done_blocka(&sblocks);
+
+    /* Store the block number in temp array and
+     * sort the constraints in order of the sblock number
+     * and the atom numbers, really sorting a segment of the array!
+     */
+#ifdef DEBUGIDEF
+    pr_idef(fplog, 0, "Before Sort", idef);
+#endif
+    iatom = idef->il[F_CONSTR].iatoms;
+    snew(sb, ncons);
+    for (i = 0; (i < ncons); i++, iatom += 3)
+    {
+        for (m = 0; (m < 3); m++)
+        {
+            sb[i].iatom[m] = iatom[m];
+        }
+        sb[i].blocknr = inv_sblock[iatom[1]];
+    }
+
+    /* Now sort the blocks */
+    if (debug)
+    {
+        pr_sortblock(debug, "Before sorting", ncons, sb);
+        fprintf(debug, "Going to sort constraints\n");
+    }
+
+    qsort(sb, ncons, (size_t)sizeof(*sb), pcomp);
+
+    if (debug)
+    {
+        pr_sortblock(debug, "After sorting", ncons, sb);
+    }
+
+    iatom = idef->il[F_CONSTR].iatoms;
+    for (i = 0; (i < ncons); i++, iatom += 3)
+    {
+        for (m = 0; (m < 3); m++)
+        {
+            iatom[m] = sb[i].iatom[m];
+        }
+    }
+#ifdef DEBUGIDEF
+    pr_idef(fplog, 0, "After Sort", idef);
+#endif
+
+    j = 0;
+    snew(shaked->sblock, shaked->nblocks+1);
+    bnr = -2;
+    for (i = 0; (i < ncons); i++)
+    {
+        if (sb[i].blocknr != bnr)
+        {
+            bnr                 = sb[i].blocknr;
+            shaked->sblock[j++] = 3*i;
+        }
+    }
+    /* Last block... */
+    shaked->sblock[j++] = 3*ncons;
+
+    if (j != (shaked->nblocks+1))
+    {
+        fprintf(stderr, "bstart: %d\n", bstart);
+        fprintf(stderr, "j: %d, nblocks: %d, ncons: %d\n",
+                j, shaked->nblocks, ncons);
+        for (i = 0; (i < ncons); i++)
+        {
+            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
+        }
+        for (j = 0; (j <= shaked->nblocks); j++)
+        {
+            fprintf(stderr, "sblock[%3d]=%5d\n", j, (int)shaked->sblock[j]);
+        }
+        gmx_fatal(FARGS, "DEATH HORROR: "
+                  "sblocks does not match idef->il[F_CONSTR]");
+    }
+    sfree(sb);
+    sfree(inv_sblock);
+    resizeLagrangianData(shaked, ncons);
+}
+
+void
+make_shake_sblock_dd(gmx_shakedata *shaked,
+                     const t_ilist *ilcon, const t_block *cgs,
+                     const gmx_domdec_t *dd)
+{
+    int      ncons, c, cg;
+    t_iatom *iatom;
+
+    if (dd->ncg_home+1 > shaked->sblock_nalloc)
+    {
+        shaked->sblock_nalloc = over_alloc_dd(dd->ncg_home+1);
+        srenew(shaked->sblock, shaked->sblock_nalloc);
+    }
+
+    ncons           = ilcon->nr/3;
+    iatom           = ilcon->iatoms;
+    shaked->nblocks = 0;
+    cg              = 0;
+    for (c = 0; c < ncons; c++)
+    {
+        if (c == 0 || iatom[1] >= cgs->index[cg+1])
+        {
+            shaked->sblock[shaked->nblocks++] = 3*c;
+            while (iatom[1] >= cgs->index[cg+1])
+            {
+                cg++;
+            }
+        }
+        iatom += 3;
+    }
+    shaked->sblock[shaked->nblocks] = 3*ncons;
+    resizeLagrangianData(shaked, ncons);
 }
 
 /*! \brief Inner kernel for SHAKE constraints
@@ -473,12 +692,13 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
     }
 }
 
-gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
-                 real invmass[], int nblocks, int sblock[],
-                 t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
-                 t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
-                 real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-                 gmx_bool bDumpOnError, int econq)
+static gmx_bool
+bshakef(FILE *log, gmx_shakedata_t shaked,
+        real invmass[],
+        t_idef *idef, const t_inputrec *ir, rvec x_s[], rvec prime[],
+        t_nrnb *nrnb, real lambda, real *dvdlambda,
+        real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
+        gmx_bool bDumpOnError, int econq)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -486,24 +706,24 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     int      tnit = 0, trij = 0;
 
 #ifdef DEBUG
-    fprintf(log, "nblocks=%d, sblock[0]=%d\n", nblocks, sblock[0]);
+    fprintf(log, "nblocks=%d, sblock[0]=%d\n", shaked->nblocks, shaked-.sblock[0]);
 #endif
 
     ncon = idef->il[F_CONSTR].nr/3;
 
     for (ll = 0; ll < ncon; ll++)
     {
-        scaled_lagrange_multiplier[ll] = 0;
+        shaked->scaled_lagrange_multiplier[ll] = 0;
     }
 
-    iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
-    for (i = 0; (i < nblocks); )
+    iatoms = &(idef->il[F_CONSTR].iatoms[shaked->sblock[0]]);
+    for (i = 0; (i < shaked->nblocks); )
     {
-        blen  = (sblock[i+1]-sblock[i]);
+        blen  = (shaked->sblock[i+1]-shaked->sblock[i]);
         blen /= 3;
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
-                           ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
+                           ir->efep != efepNO, lambda, shaked->scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
                            econq);
 
 #ifdef DEBUGSHAKE
@@ -520,10 +740,10 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
             }
             return FALSE;
         }
-        tnit                       += n0*blen;
-        trij                       += blen;
-        iatoms                     += 3*blen; /* Increment pointer! */
-        scaled_lagrange_multiplier += blen;
+        tnit                               += n0*blen;
+        trij                               += blen;
+        iatoms                             += 3*blen; /* Increment pointer! */
+        shaked->scaled_lagrange_multiplier += blen;
         i++;
     }
     /* only for position part? */
@@ -545,7 +765,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                    so the pre-factors are already present. */
                 bondA = idef->iparams[type].constr.dA;
                 bondB = idef->iparams[type].constr.dB;
-                dvdl += scaled_lagrange_multiplier[ll] * dt_2 * (bondB - bondA);
+                dvdl += shaked->scaled_lagrange_multiplier[ll] * dt_2 * (bondB - bondA);
             }
             *dvdlambda += dvdl;
         }
@@ -574,4 +794,53 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     }
 
     return TRUE;
+}
+
+bool
+constrain_shake(FILE             *log,
+                gmx_shakedata_t   shaked,
+                real              invmass[],
+                t_idef           *idef,
+                const t_inputrec *ir,
+                rvec              x_s[],
+                rvec              xprime[],
+                rvec              vprime[],
+                t_nrnb           *nrnb,
+                real              lambda,
+                real             *dvdlambda,
+                real              invdt,
+                rvec             *v,
+                gmx_bool          bCalcVir,
+                tensor            vir_r_m_dr,
+                gmx_bool          bDumpOnError,
+                int               econq)
+{
+    if (shaked->nblocks == 0)
+    {
+        return true;
+    }
+    bool bOK;
+    switch (econq)
+    {
+        case (econqCoord):
+            bOK = bshakef(log, shaked,
+                          invmass,
+                          idef, ir, x_s, xprime, nrnb,
+                          lambda, dvdlambda,
+                          invdt, v, bCalcVir, vir_r_m_dr,
+                          bDumpOnError, econq);
+            break;
+        case (econqVeloc):
+            bOK = bshakef(log, shaked,
+                          invmass,
+                          idef, ir, x_s, vprime, nrnb,
+                          lambda, dvdlambda,
+                          invdt, nullptr, bCalcVir, vir_r_m_dr,
+                          bDumpOnError, econq);
+            break;
+        default:
+            gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
+            break;
+    }
+    return bOK;
 }

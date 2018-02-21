@@ -59,7 +59,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
-#include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -69,7 +68,6 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/invblock.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
@@ -89,11 +87,6 @@ typedef struct gmx_constr {
     gmx_lincsdata_t    lincsd;         /* LINCS data                         */
     gmx_shakedata_t    shaked;         /* SHAKE data                         */
     gmx_settledata_t   settled;        /* SETTLE data                        */
-    int                nblocks;        /* The number of SHAKE blocks         */
-    int               *sblock;         /* The SHAKE blocks                   */
-    int                sblock_nalloc;  /* The allocation size of sblock      */
-    real              *lagr;           /* -2 times the Lagrange multipliers for SHAKE */
-    int                lagr_nalloc;    /* The allocation size of lagr        */
     int                maxwarn;        /* The maximum number of warnings     */
     int                warncount_lincs;
     int                warncount_settle;
@@ -106,40 +99,6 @@ typedef struct gmx_constr {
     /* Only used for printing warnings */
     const gmx_mtop_t  *warn_mtop;     /* Pointer to the global topology     */
 } t_gmx_constr;
-
-typedef struct {
-    int iatom[3];
-    int blocknr;
-} t_sortblock;
-
-static int pcomp(const void *p1, const void *p2)
-{
-    int          db;
-    int          min1, min2, max1, max2;
-    t_sortblock *a1 = (t_sortblock *)p1;
-    t_sortblock *a2 = (t_sortblock *)p2;
-
-    db = a1->blocknr-a2->blocknr;
-
-    if (db != 0)
-    {
-        return db;
-    }
-
-    min1 = std::min(a1->iatom[1], a1->iatom[2]);
-    max1 = std::max(a1->iatom[1], a1->iatom[2]);
-    min2 = std::min(a2->iatom[1], a2->iatom[2]);
-    max2 = std::max(a2->iatom[1], a2->iatom[2]);
-
-    if (min1 == min2)
-    {
-        return max1-max2;
-    }
-    else
-    {
-        return min1-min2;
-    }
-}
 
 int n_flexible_constraints(struct gmx_constr *constr)
 {
@@ -261,19 +220,6 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
         fprintf(fplog, "Wrote pdb files with previous and current coordinates\n");
     }
     fprintf(stderr, "Wrote pdb files with previous and current coordinates\n");
-}
-
-static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
-{
-    int i;
-
-    fprintf(fp, "%s\n", title);
-    for (i = 0; (i < nsb); i++)
-    {
-        fprintf(fp, "i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n",
-                i, sb[i].iatom[0], sb[i].iatom[1], sb[i].iatom[2],
-                sb[i].blocknr);
-    }
 }
 
 gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
@@ -409,30 +355,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
     }
 
-    if (constr->nblocks > 0)
+    if (constr->shaked != nullptr)
     {
-        switch (econq)
-        {
-            case (econqCoord):
-                bOK = bshakef(fplog, constr->shaked,
-                              md->invmass, constr->nblocks, constr->sblock,
-                              idef, ir, x, xprime, nrnb,
-                              constr->lagr, lambda, dvdlambda,
+        bOK = constrain_shake(fplog, constr->shaked,
+                              md->invmass,
+                              idef, ir, x, xprime, min_proj, nrnb,
+                              lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,
                               constr->maxwarn < INT_MAX, econq);
-                break;
-            case (econqVeloc):
-                bOK = bshakef(fplog, constr->shaked,
-                              md->invmass, constr->nblocks, constr->sblock,
-                              idef, ir, x, min_proj, nrnb,
-                              constr->lagr, lambda, dvdlambda,
-                              invdt, nullptr, vir != nullptr, vir_r_m_dr,
-                              constr->maxwarn < INT_MAX, econq);
-                break;
-            default:
-                gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
-                break;
-        }
 
         if (!bOK && constr->maxwarn < INT_MAX)
         {
@@ -667,151 +597,6 @@ real constr_rmsd(struct gmx_constr *constr)
     }
 }
 
-static void make_shake_sblock_serial(struct gmx_constr *constr,
-                                     t_idef *idef, const t_mdatoms *md)
-{
-    int          i, j, m, ncons;
-    int          bstart, bnr;
-    t_blocka     sblocks;
-    t_sortblock *sb;
-    t_iatom     *iatom;
-    int         *inv_sblock;
-
-    /* Since we are processing the local topology,
-     * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
-     */
-    ncons = idef->il[F_CONSTR].nr/3;
-
-    init_blocka(&sblocks);
-    gen_sblocks(nullptr, 0, md->homenr, idef, &sblocks, FALSE);
-
-    /*
-       bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
-       nblocks=blocks->multinr[idef->nodeid] - bstart;
-     */
-    bstart          = 0;
-    constr->nblocks = sblocks.nr;
-    if (debug)
-    {
-        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %d\n",
-                ncons, bstart, constr->nblocks);
-    }
-
-    /* Calculate block number for each atom */
-    inv_sblock = make_invblocka(&sblocks, md->nr);
-
-    done_blocka(&sblocks);
-
-    /* Store the block number in temp array and
-     * sort the constraints in order of the sblock number
-     * and the atom numbers, really sorting a segment of the array!
-     */
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "Before Sort", idef);
-#endif
-    iatom = idef->il[F_CONSTR].iatoms;
-    snew(sb, ncons);
-    for (i = 0; (i < ncons); i++, iatom += 3)
-    {
-        for (m = 0; (m < 3); m++)
-        {
-            sb[i].iatom[m] = iatom[m];
-        }
-        sb[i].blocknr = inv_sblock[iatom[1]];
-    }
-
-    /* Now sort the blocks */
-    if (debug)
-    {
-        pr_sortblock(debug, "Before sorting", ncons, sb);
-        fprintf(debug, "Going to sort constraints\n");
-    }
-
-    qsort(sb, ncons, (size_t)sizeof(*sb), pcomp);
-
-    if (debug)
-    {
-        pr_sortblock(debug, "After sorting", ncons, sb);
-    }
-
-    iatom = idef->il[F_CONSTR].iatoms;
-    for (i = 0; (i < ncons); i++, iatom += 3)
-    {
-        for (m = 0; (m < 3); m++)
-        {
-            iatom[m] = sb[i].iatom[m];
-        }
-    }
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "After Sort", idef);
-#endif
-
-    j = 0;
-    snew(constr->sblock, constr->nblocks+1);
-    bnr = -2;
-    for (i = 0; (i < ncons); i++)
-    {
-        if (sb[i].blocknr != bnr)
-        {
-            bnr                 = sb[i].blocknr;
-            constr->sblock[j++] = 3*i;
-        }
-    }
-    /* Last block... */
-    constr->sblock[j++] = 3*ncons;
-
-    if (j != (constr->nblocks+1))
-    {
-        fprintf(stderr, "bstart: %d\n", bstart);
-        fprintf(stderr, "j: %d, nblocks: %d, ncons: %d\n",
-                j, constr->nblocks, ncons);
-        for (i = 0; (i < ncons); i++)
-        {
-            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
-        }
-        for (j = 0; (j <= constr->nblocks); j++)
-        {
-            fprintf(stderr, "sblock[%3d]=%5d\n", j, (int)constr->sblock[j]);
-        }
-        gmx_fatal(FARGS, "DEATH HORROR: "
-                  "sblocks does not match idef->il[F_CONSTR]");
-    }
-    sfree(sb);
-    sfree(inv_sblock);
-}
-
-static void make_shake_sblock_dd(struct gmx_constr *constr,
-                                 const t_ilist *ilcon, const t_block *cgs,
-                                 const gmx_domdec_t *dd)
-{
-    int      ncons, c, cg;
-    t_iatom *iatom;
-
-    if (dd->ncg_home+1 > constr->sblock_nalloc)
-    {
-        constr->sblock_nalloc = over_alloc_dd(dd->ncg_home+1);
-        srenew(constr->sblock, constr->sblock_nalloc);
-    }
-
-    ncons           = ilcon->nr/3;
-    iatom           = ilcon->iatoms;
-    constr->nblocks = 0;
-    cg              = 0;
-    for (c = 0; c < ncons; c++)
-    {
-        if (c == 0 || iatom[1] >= cgs->index[cg+1])
-        {
-            constr->sblock[constr->nblocks++] = 3*c;
-            while (iatom[1] >= cgs->index[cg+1])
-            {
-                cg++;
-            }
-        }
-        iatom += 3;
-    }
-    constr->sblock[constr->nblocks] = 3*ncons;
-}
-
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
                      gmx_bool bDynamics, int *nflexiblecons)
@@ -923,12 +708,7 @@ void set_constraints(struct gmx_constr *constr,
 
     if (constr->ncon_tot > 0)
     {
-        /* We are using the local topology,
-         * so there are only F_CONSTR constraints.
-         */
-        int ncons = idef->il[F_CONSTR].nr/3;
-
-        /* With DD we might also need to call LINCS with ncons=0 for
+        /* With DD we might also need to call LINCS on a domain no constraints for
          * communicating coordinates to other nodes that do have constraints.
          */
         if (ir->eConstrAlg == econtLINCS)
@@ -939,16 +719,13 @@ void set_constraints(struct gmx_constr *constr,
         {
             if (cr->dd)
             {
-                make_shake_sblock_dd(constr, &idef->il[F_CONSTR], &top->cgs, cr->dd);
+                // We are using the local topology, so there are only
+                // F_CONSTR constraints.
+                make_shake_sblock_dd(constr->shaked, &idef->il[F_CONSTR], &top->cgs, cr->dd);
             }
             else
             {
-                make_shake_sblock_serial(constr, idef, md);
-            }
-            if (ncons > constr->lagr_nalloc)
-            {
-                constr->lagr_nalloc = over_alloc_dd(ncons);
-                srenew(constr->lagr, constr->lagr_nalloc);
+                make_shake_sblock_serial(constr->shaked, idef, md);
             }
         }
     }
