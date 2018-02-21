@@ -362,4 +362,86 @@ struct PmeGpu
     std::shared_ptr<PmeGpuSpecific> archSpecific; /* FIXME: make it an unique_ptr */
 };
 
+/* The inlined convenience PME GPU status getters */
+
+/*! \libinternal \brief
+ * Tells if PME runs on multiple GPUs with the decomposition.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  True if PME runs on multiple GPUs, false otherwise.
+ */
+inline bool pme_gpu_uses_dd(const PmeGpu *pmeGpu)
+{
+    return !pmeGpu->settings.useDecomposition;
+}
+
+/*! \libinternal \brief
+ * Tells if PME performs the gathering stage on GPU.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  True if the gathering is performed on GPU, false otherwise.
+ */
+inline bool pme_gpu_performs_gather(const PmeGpu *pmeGpu)
+{
+    return pmeGpu->settings.performGPUGather;
+}
+
+/*! \libinternal \brief
+ * Tells if PME performs the FFT stages on GPU.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  True if FFT is performed on GPU, false otherwise.
+ */
+inline bool pme_gpu_performs_FFT(const PmeGpu *pmeGpu)
+{
+    return pmeGpu->settings.performGPUFFT;
+}
+
+/*! \libinternal \brief
+ * Tells if PME performs the grid (un-)wrapping on GPU.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  True if (un-)wrapping is performed on GPU, false otherwise.
+ */
+inline bool pme_gpu_performs_wrapping(const PmeGpu *pmeGpu)
+{
+    return pmeGpu->settings.useDecomposition;
+}
+
+/*! \libinternal \brief
+ * Tells if PME performs the grid solving on GPU.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \returns                  True if solving is performed on GPU, false otherwise.
+ */
+inline bool pme_gpu_performs_solve(const PmeGpu *pmeGpu)
+{
+    return pmeGpu->settings.performGPUSolve;
+}
+
+/*! \libinternal \brief
+ * Enables or disables the testing mode.
+ * Testing mode only implies copying all the outputs, even the intermediate ones, to the host,
+ * and also makes the copies synchronous.
+ *
+ * \param[in] pmeGpu             The PME GPU structure.
+ * \param[in] testing            Should the testing mode be enabled, or disabled.
+ */
+inline void pme_gpu_set_testing(PmeGpu *pmeGpu, bool testing)
+{
+    pmeGpu->settings.copyAllOutputs = testing;
+    pmeGpu->settings.transferKind   = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
+}
+
+/*! \libinternal \brief
+ * Tells if PME is in the testing mode.
+ *
+ * \param[in] pmeGpu             The PME GPU structure.
+ * \returns                      true if testing mode is enabled, false otherwise.
+ */
+inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
+{
+    return pmeGpu->settings.copyAllOutputs;
+}
+
 #endif

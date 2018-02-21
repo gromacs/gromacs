@@ -57,6 +57,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "pme-gpu-internal.h"
+#include "pme-gpu-types.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-solve.h"

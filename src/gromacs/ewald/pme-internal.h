@@ -55,11 +55,12 @@
 
 #include "config.h"
 
+#include <vector>
+
+#include "gromacs/ewald/pme.h"                 // for enum PmeRunMode
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
-
-#include "pme-gpu-types.h"
 
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;

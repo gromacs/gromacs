@@ -61,6 +61,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "pme-gpu-types.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 
