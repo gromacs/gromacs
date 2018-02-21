@@ -203,6 +203,88 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
     *nerror = error;
 }
 
+static void
+crattle(int iatom[], int ncon, int *nnit, int maxnit,
+        real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
+        real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
+        int *nerror, real invdt)
+{
+    /*
+     *     r.c. van schaik and w.f. van gunsteren
+     *     eth zuerich
+     *     june 1992
+     *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
+     *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER
+     *     second part of rattle algorithm
+     */
+
+    int          ll, i, j, i3, j3, l3;
+    int          ix, iy, iz, jx, jy, jz;
+    real         constraint_distance_squared_ll;
+    real         vpijd, vx, vy, vz, acor, fac, im, jm;
+    real         xh, yh, zh, rijx, rijy, rijz;
+    int          nit, error, nconv;
+    real         iconvf;
+
+    // TODO nconv is used solely as a boolean, so we should write the
+    // code like that
+    error = 0;
+    nconv = 1;
+    for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
+    {
+        nconv = 0;
+        for (ll = 0; (ll < ncon) && (error == 0); ll++)
+        {
+            l3      = 3*ll;
+            rijx    = rij[l3+XX];
+            rijy    = rij[l3+YY];
+            rijz    = rij[l3+ZZ];
+            i       = iatom[l3+1];
+            j       = iatom[l3+2];
+            i3      = 3*i;
+            j3      = 3*j;
+            ix      = i3+XX;
+            iy      = i3+YY;
+            iz      = i3+ZZ;
+            jx      = j3+XX;
+            jy      = j3+YY;
+            jz      = j3+ZZ;
+            vx      = vp[ix]-vp[jx];
+            vy      = vp[iy]-vp[jy];
+            vz      = vp[iz]-vp[jz];
+
+            vpijd   = vx*rijx+vy*rijy+vz*rijz;
+            constraint_distance_squared_ll = constraint_distance_squared[ll];
+
+            /* iconv is zero when the error is smaller than a bound */
+            iconvf   = fabs(vpijd)*(distance_squared_tolerance[ll]/invdt);
+
+            if (iconvf > 1)
+            {
+                nconv     = static_cast<int>(iconvf);
+                fac       = omega*2.0*m2[ll]/constraint_distance_squared_ll;
+                acor      = -fac*vpijd;
+                scaled_lagrange_multiplier[ll] += acor;
+                xh        = rijx*acor;
+                yh        = rijy*acor;
+                zh        = rijz*acor;
+
+                im        = invmass[i];
+                jm        = invmass[j];
+
+                vp[ix] += xh*im;
+                vp[iy] += yh*im;
+                vp[iz] += zh*im;
+                vp[jx] -= xh*jm;
+                vp[jy] -= yh*jm;
+                vp[jz] -= zh*jm;
+            }
+        }
+    }
+    *nnit   = nit;
+    *nerror = error;
+}
+
 static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                       real invmass[], int ncon,
                       t_iparams ip[], t_iatom *iatom,
@@ -492,85 +574,4 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     }
 
     return TRUE;
-}
-
-void crattle(int iatom[], int ncon, int *nnit, int maxnit,
-             real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
-             int *nerror, real invdt)
-{
-    /*
-     *     r.c. van schaik and w.f. van gunsteren
-     *     eth zuerich
-     *     june 1992
-     *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
-     *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER
-     *     second part of rattle algorithm
-     */
-
-    int          ll, i, j, i3, j3, l3;
-    int          ix, iy, iz, jx, jy, jz;
-    real         constraint_distance_squared_ll;
-    real         vpijd, vx, vy, vz, acor, fac, im, jm;
-    real         xh, yh, zh, rijx, rijy, rijz;
-    int          nit, error, nconv;
-    real         iconvf;
-
-    // TODO nconv is used solely as a boolean, so we should write the
-    // code like that
-    error = 0;
-    nconv = 1;
-    for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
-    {
-        nconv = 0;
-        for (ll = 0; (ll < ncon) && (error == 0); ll++)
-        {
-            l3      = 3*ll;
-            rijx    = rij[l3+XX];
-            rijy    = rij[l3+YY];
-            rijz    = rij[l3+ZZ];
-            i       = iatom[l3+1];
-            j       = iatom[l3+2];
-            i3      = 3*i;
-            j3      = 3*j;
-            ix      = i3+XX;
-            iy      = i3+YY;
-            iz      = i3+ZZ;
-            jx      = j3+XX;
-            jy      = j3+YY;
-            jz      = j3+ZZ;
-            vx      = vp[ix]-vp[jx];
-            vy      = vp[iy]-vp[jy];
-            vz      = vp[iz]-vp[jz];
-
-            vpijd   = vx*rijx+vy*rijy+vz*rijz;
-            constraint_distance_squared_ll = constraint_distance_squared[ll];
-
-            /* iconv is zero when the error is smaller than a bound */
-            iconvf   = fabs(vpijd)*(distance_squared_tolerance[ll]/invdt);
-
-            if (iconvf > 1)
-            {
-                nconv     = static_cast<int>(iconvf);
-                fac       = omega*2.0*m2[ll]/constraint_distance_squared_ll;
-                acor      = -fac*vpijd;
-                scaled_lagrange_multiplier[ll] += acor;
-                xh        = rijx*acor;
-                yh        = rijy*acor;
-                zh        = rijz*acor;
-
-                im        = invmass[i];
-                jm        = invmass[j];
-
-                vp[ix] += xh*im;
-                vp[iy] += yh*im;
-                vp[iz] += zh*im;
-                vp[jx] -= xh*jm;
-                vp[jy] -= yh*jm;
-                vp[jz] -= zh*jm;
-            }
-        }
-    }
-    *nnit   = nit;
-    *nerror = error;
 }
