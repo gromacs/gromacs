@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -549,23 +549,34 @@ static void do_update_md(int                         start,
 
     if (doNoseHoover || doPROffDiagonal || doAcceleration)
     {
+        matrix stepM;
+        if (!doParrinelloRahman)
+        {
+            /* We should not apply PR scaling at this step */
+            clear_mat(stepM);
+        }
+        else
+        {
+            copy_mat(M, stepM);
+        }
+
         if (!doAcceleration)
         {
             updateMDLeapfrogGeneral<AccelerationType::none>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
         else if (ekind->bNEMD)
         {
             updateMDLeapfrogGeneral<AccelerationType::group>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
         else
         {
             updateMDLeapfrogGeneral<AccelerationType::cosine>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
     }
     else
