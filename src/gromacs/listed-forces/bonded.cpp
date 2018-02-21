@@ -1370,6 +1370,19 @@ real urey_bradley(int nbonds,
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
+                if (vir != NULL) {
+                    /* Summing up the virial pairwise */
+                    // k-i
+                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
+                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
+                    // j-i
+                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
+                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
+                    // j-k
+                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+                }
+
             }
             if (g)
             {
@@ -1405,6 +1418,11 @@ real urey_bradley(int nbonds,
             f[ak][m]           -= fik;
             fshift[ki][m]      += fik;
             fshift[CENTRAL][m] -= fik;
+	        if(vir!=NULL) {
+		        vir[ai][m] += 0.5*(1e25/AVOGADRO) * fik * r_ik[m];
+		        vir[ak][m] += 0.5*(1e25/AVOGADRO) * fik * r_ik[m];
+	        }
+
         }
     }
     return vtot;
