@@ -91,9 +91,10 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         bool isAllocated() const 
         { return !value_.empty(); }
         //! Returns the x value of the first frame.
-        real xstart() const { return xvalue_[0]; }
-        //! Returns the coordinates of the first frame.
-        t_trxframe coordStart() const { return coordValue_[0]; }
+        template <typename T>
+        T xstart() const { return xvalue_[0].cast<T>; }
+        //! Returns the x value as Variant for the first frame.
+        Variant xstartAsVariant() const { return xvalue_[0]; }
         //! Returns the step between frame x values.
         //! There is no corresponding function for coordinates.
         real xstep() const
@@ -102,16 +103,17 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             return xstep_;
         }
         //! Returns the x value of a row.
-        real xvalue(int row) const
+        template <typename T>
+        T xvalue(int row) const
+        {
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+            return xvalue_[row].cast<T>();
+        }
+        //! Returns the xvalue as Variant for a row
+        Variant xvalueAsVariant(int row) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             return xvalue_[row];
-        }
-        //! Returns the coordinate for a row
-        t_trxframe coordValue(int row) const
-        {
-            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-            return coordValue_[row];
         }
         //! Returns a given array element for a real value.
         const AnalysisDataValue &value(int row, int col) const
@@ -224,8 +226,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         int                            rowCount_;
         AnalysisDataPointSetInfo       pointSetInfo_;
         std::vector<AnalysisDataValue> value_;
-        std::vector<real>              xvalue_;
-        std::vector<t_trxframe>          coordValue_;
+        std::vector<Variant>           xvalue_;
         real                           xstep_;
         bool                           bUniformX_;
         bool                           bReady_;

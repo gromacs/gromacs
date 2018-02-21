@@ -424,7 +424,7 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const std::vector<int>    &refCountArray = frameData.refCountArray_;
 
     AnalysisNeighborhoodSearch nbsearch  = nb_.initSearch(pbc, refSel);
-    dh.startRealFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         const int columnCount = distances_.columnCount(g);
@@ -512,13 +512,13 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             if (countArray[i] > 0)
             {
-                dh.setRealPoint(i, std::sqrt(distArray[i]));
+                dh.setPoint(i, std::sqrt(distArray[i]));
             }
             else
             {
                 // If there are no contributing positions, write out the cutoff
                 // value.
-                dh.setRealPoint(i, cutoff_, false);
+                dh.setPoint(i, cutoff_, false);
             }
         }
     }

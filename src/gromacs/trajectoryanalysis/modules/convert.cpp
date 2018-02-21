@@ -169,11 +169,11 @@ Convert::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle  dh = pdata->dataHandle(write_);
-    dh.startCoordFrame(frnr, fr);
+    dh.startFrame(frnr, fr);
     // work on frame time data set
     dh.selectDataSet(0);
     // set data point with frame time for each frame
-    dh.setCoordPoint(0, fr, true);
+    dh.setPoint(0, fr, true);
     // writeModule_->writeFrame(&fr);
     dh.finishFrame();
     // can have the write method in the writetrj class now?

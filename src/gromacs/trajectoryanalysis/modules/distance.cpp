@@ -322,8 +322,8 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     checkSelections(sel);
 
-    distHandle.startRealFrame(frnr, fr.time);
-    xyzHandle.startRealFrame(frnr, fr.time);
+    distHandle.startFrame(frnr, fr.time);
+    xyzHandle.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         distHandle.selectDataSet(g);
@@ -343,8 +343,8 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             real dist     = norm(dx);
             bool bPresent = p1.selected() && p2.selected();
-            distHandle.setRealPoint(n, dist, bPresent);
-            xyzHandle.setRealPoints(n*3, 3, dx, bPresent);
+            distHandle.setPoint(n, dist, bPresent);
+            xyzHandle.setPoints(n*3, 3, dx, bPresent);
         }
     }
     distHandle.finishFrame();

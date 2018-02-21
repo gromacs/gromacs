@@ -894,15 +894,15 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
 
 
 AnalysisDataStorageFrame &
-AnalysisDataStorage::startFrame(int index, real x, real dx)
+AnalysisDataStorage::startFrame(int index, Variant x, Variant dx)
 {
     return startFrame(AnalysisDataFrameHeader(index, x, dx));
 }
 
 AnalysisDataStorageFrame &
-AnalysisDataStorage::startFrame(int index, t_trxframe coord)
+AnalysisDataStorage::startFrame(int index, Variant x)
 {
-    return startFrame(AnalysisDataFrameHeader(index, coord));
+    return startFrame(AnalysisDataFrameHeader(index, x));
 }
 
 AnalysisDataStorageFrame &

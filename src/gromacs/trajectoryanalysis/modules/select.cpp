@@ -231,7 +231,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
             {
                 std::fprintf(fp_, "\n");
             }
-            std::fprintf(fp_, "%4d ", static_cast<int>(points.y(0)));
+            std::fprintf(fp_, "%4d ", static_cast<int>(points.y(0).cast<real>()));
             ++currentSize_;
         }
     }
@@ -609,7 +609,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
     const SelectionList          &sel   = pdata->parallelSelections(sel_);
     t_topology                   *top   = top_->topology();
 
-    sdh.startRealFrame(frnr, fr.time);
+    sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         real normfac = bFracNorm_ ? 1.0 / sel[g].coveredFraction() : 1.0;
@@ -617,49 +617,49 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         {
             normfac /= totsize_[g];
         }
-        sdh.setRealPoint(g, sel[g].posCount() * normfac);
+        sdh.setPoint(g, sel[g].posCount() * normfac);
     }
     sdh.finishFrame();
 
-    cdh.startRealFrame(frnr, fr.time);
+    cdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        cdh.setRealPoint(g, sel[g].coveredFraction());
+        cdh.setPoint(g, sel[g].coveredFraction());
     }
     cdh.finishFrame();
 
-    idh.startRealFrame(frnr, fr.time);
+    idh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        idh.setRealPoint(0, sel[g].posCount());
+        idh.setPoint(0, sel[g].posCount());
         idh.finishPointSet();
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
             const SelectionPosition &p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
-                idh.setRealPoint(1, top->atoms.resinfo[p.mappedId()].nr);
+                idh.setPoint(1, top->atoms.resinfo[p.mappedId()].nr);
             }
             else
             {
-                idh.setRealPoint(1, p.mappedId() + 1);
+                idh.setPoint(1, p.mappedId() + 1);
             }
             idh.finishPointSet();
         }
     }
     idh.finishFrame();
 
-    mdh.startRealFrame(frnr, fr.time);
+    mdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         mdh.selectDataSet(g);
         for (int i = 0; i < totsize_[g]; ++i)
         {
-            mdh.setRealPoint(i, 0);
+            mdh.setPoint(i, 0);
         }
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
-            mdh.setRealPoint(sel[g].position(i).refId(), 1);
+            mdh.setPoint(sel[g].position(i).refId(), 1);
         }
     }
     mdh.finishFrame();

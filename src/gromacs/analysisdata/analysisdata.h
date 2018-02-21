@@ -44,6 +44,7 @@
 #define GMX_ANALYSISDATA_ANALYSISDATA_H
 
 #include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/utility/variant.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/real.h"
 
@@ -280,7 +281,8 @@ class AnalysisDataHandle
          * the index can be in the future (as counted from the first frame that
          * is not finished).
          */
-        void startRealFrame(int index, real x, real dx = 0.0);
+        template <typename T>
+        void startFrame(int index, T x, T dx);
         /*! \brief
          * Start data for a new frame of coordinate values.
          *
@@ -297,7 +299,8 @@ class AnalysisDataHandle
          * the index can be in the future (as counted from the first frame that
          * is not finished).
          */
-        void startCoordFrame(int index, t_trxframe coord);
+        template <typename T>
+        void startFrame(int index, T x);
         /*! \brief
          * Selects a data set for subsequent setPoint()/setPoints() calls.
          *
@@ -322,7 +325,8 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setRealPoint(int column, real value, bool bPresent = true);
+        template <typename T>
+        void setPoint(int column, T value, bool bPresent = true);
         /*! \brief
          * Set a value and its error estimate for a single column for the
          * current frame.
@@ -337,7 +341,8 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setRealPoint(int column, real value, real error, bool bPresent = true);
+        template <typename T>
+        void setPoint(int column, T value, T error, bool bPresent = true);
         /*! \brief
          * Set values for consecutive columns for the current frame.
          *
@@ -351,35 +356,8 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setRealPoints(int firstColumn, int count, const real *values, bool bPresent = true);
-        /*! \brief
-         * Set a value and its error estimate for a single column for the
-         * current frame.
-         *
-         * \param[in] column  Zero-based column index.
-         * \param[in] value   Value to set for the column.
-         * \param[in] bPresent Present flag to set for the column.
-         *
-         * If called multiple times for a column (within one point set for
-         * multipoint data), old values are overwritten.
-         *
-         * Does not throw.
-         */
-        void setCoordPoint(int column, t_trxframe value, bool bPresent = true);
-        /*! \brief
-         * Set values for consecutive columns for the current frame.
-         *
-         * \param[in] firstColumn  Zero-based column index.
-         * \param[in] count        Number of columns to set.
-         * \param[in] values       Value array of \p column items.
-         * \param[in] bPresent     Present flag to set for the column.
-         *
-         * Equivalent to calling setPoint(firstColumn + i, values[i], bPresent) for
-         * i from 0 to count.
-         *
-         * Does not throw.
-         */
-        void setCoordPoints(int firstColumn, int count, const t_trxframe *values, bool bPresent = true);
+        template <typename T>
+        void setPoints(int firstColumn, int count, const T *values, bool bPresent = true);
         /*! \brief
          * Finish data for the current point set.
          *

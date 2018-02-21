@@ -153,7 +153,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const Selection           &refsel = pdata->parallelSelection(refsel_);
 
     AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refsel);
-    dh.startRealFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
         const Selection &sel   = pdata->parallelSelection(sel_[g]);
@@ -165,7 +165,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             frave += nbsearch.minimumDistance(p.x());
         }
         frave /= nr;
-        dh.setRealPoint(g, frave);
+        dh.setPoint(g, frave);
     }
     dh.finishFrame();
 }

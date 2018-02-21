@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/trajectorydata/trajectoryframe.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"

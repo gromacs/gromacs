@@ -130,7 +130,7 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
         {
             if (points.present(i))
             {
-                impl_->averagers_[0].addValue(dataSet, points.y(i));
+                impl_->averagers_[0].addValue(dataSet, points.y(i).cast<real>());
             }
         }
     }
@@ -155,12 +155,12 @@ AnalysisDataAverageModule::dataFinished()
         int j = 0;
         for (; j < impl_->averagers_[i].columnCount(); ++j)
         {
-            value(j, i).setRealValue(impl_->averagers_[i].average(j),
+            value(j, i).setValue(impl_->averagers_[i].average(j),
                                  std::sqrt(impl_->averagers_[i].variance(j)));
         }
         for (; j < rowCount(); ++j)
         {
-            value(j, i).setRealValue(0.0, 0.0, false);
+            value(j, i).setValue(0.0, 0.0, false);
         }
     }
     valuesReady();
@@ -174,7 +174,7 @@ real AnalysisDataAverageModule::average(int dataSet, int column) const
                    "Column should be zero with setAverageDataSets(true)");
         std::swap(dataSet, column);
     }
-    return value(column, dataSet).value();
+    return value(column, dataSet).valueAsVariant().cast<real>();
 }
 
 real AnalysisDataAverageModule::standardDeviation(int dataSet, int column) const
@@ -185,7 +185,7 @@ real AnalysisDataAverageModule::standardDeviation(int dataSet, int column) const
                    "Column should be zero with setAverageDataSets(true)");
         std::swap(dataSet, column);
     }
-    return value(column, dataSet).error();
+    return value(column, dataSet).errorAsVariant().cast<real>();
 }
 
 int AnalysisDataAverageModule::sampleCount(int dataSet, int column) const
@@ -250,7 +250,7 @@ AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &head
     for (int i = 0; i < columnCount(); ++i)
     {
         impl_->sampleCount_[i] = 0;
-        frame.setRealValue(i, 0.0);
+        frame.setValue(i, Variant::create<real>(0.0));
     }
 }
 
@@ -265,10 +265,10 @@ AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &point
         if (points.present(i))
         {
             // TODO: Consider using AnalysisDataFrameAverager
-            const real y     = points.y(i);
-            const real delta = y - frame.value(dataSet);
+            const real y     = points.y(i).cast<real>();
+            const real delta = y - frame.value(dataSet).cast<real>();
             impl_->sampleCount_[dataSet] += 1;
-            frame.value(dataSet)         += delta / impl_->sampleCount_[dataSet];
+            frame.value(dataSet).castRef<real>()         += delta / impl_->sampleCount_[dataSet];
         }
     }
 }

@@ -152,9 +152,9 @@ AnalysisDataLifetimeModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     if (header.index() == 0)
     {
-        impl_->firstx_ = header.x();
+        impl_->firstx_ = header.x().cast<real>();
     }
-    impl_->lastx_ = header.x();
+    impl_->lastx_ = header.x().cast<real>();
     ++impl_->frameCount_;
     // TODO: Check the input for even spacing.
 }
@@ -171,7 +171,7 @@ AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef &points)
     for (int i = 0; i < points.columnCount(); ++i)
     {
         // TODO: Perhaps add control over how this is determined?
-        const bool bPresent = points.present(i) && points.y(i) > 0.0;
+        const bool bPresent = points.present(i) && points.y(i).cast<real>() > 0.0;
         if (bPresent)
         {
             ++impl_->currentLifetimes_[dataSet][i];
@@ -262,13 +262,13 @@ AnalysisDataLifetimeModule::dataFinished()
             // N-1 last frames).  row is always smaller than frameCount_
             // because of the histograms have at most frameCount_ entries.
             const real normalized = *i / static_cast<real>(impl_->frameCount_ - row);
-            value(row, column).setRealValue(normalized);
+            value(row, column).setValue(normalized);
         }
         // Pad the rest of the histogram with zeros to match the longest
         // histogram.
         for (; row < rowCount(); ++row)
         {
-            value(row, column).setRealValue(0.0);
+            value(row, column).setValue(0.0);
         }
     }
     impl_->lifetimeHistograms_.clear();

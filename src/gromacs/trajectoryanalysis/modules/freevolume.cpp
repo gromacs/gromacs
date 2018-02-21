@@ -320,7 +320,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
     // Analysis framework magic
-    dh.startRealFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
 
     // Compute volume and number of insertions to perform
     real V       = det(fr.box);
@@ -373,9 +373,9 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         frac = (100.0*NinsTot)/Ninsert;
     }
     // Add the free volume fraction to the data set in column 0
-    dh.setRealPoint(0, frac);
+    dh.setPoint(0, frac);
     // Add the total volume to the data set in column 1
-    dh.setRealPoint(1, V);
+    dh.setPoint(1, V);
 
     // Magic
     dh.finishFrame();

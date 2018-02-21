@@ -249,14 +249,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startRealFrame(frnr, fr.time);
+            dh.startFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setRealPoints(i*3, 3, pos.x(), pos.selected());
+                    dh.setPoints(i*3, 3, pos.x(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -267,14 +267,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startRealFrame(frnr, fr.time);
+            dh.startFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setRealPoints(i*3, 3, pos.v(), pos.selected());
+                    dh.setPoints(i*3, 3, pos.v(), pos.selected());
                 }
             }
             dh.finishFrame();
@@ -285,14 +285,14 @@ Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         AnalysisDataHandle dh = pdata->dataHandle(xdata_);
         if (dh.isValid())
         {
-            dh.startRealFrame(frnr, fr.time);
+            dh.startFrame(frnr, fr.time);
             for (size_t g = 0; g < sel.size(); ++g)
             {
                 dh.selectDataSet(g);
                 for (int i = 0; i < sel[g].posCount(); ++i)
                 {
                     const SelectionPosition &pos = sel[g].position(i);
-                    dh.setRealPoints(i*3, 3, pos.f(), pos.selected());
+                    dh.setPoints(i*3, 3, pos.f(), pos.selected());
                 }
             }
             dh.finishFrame();

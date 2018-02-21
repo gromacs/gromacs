@@ -206,7 +206,7 @@ AbstractWriteModule::pointsAdded(const AnalysisDataPointSetRef &points)
         {
             t_trxframe local;
             clear_trxframe(&local, true);
-            t_trxframe old = points.values()[i].coord();
+            t_trxframe old = points.values()[i].valueAsVariant().cast<t_trxframe>();
             impl_->framehandler_[points.dataSetIndex()].modifyFrame(&local,&old);
             handle.value(i) = local;
         }

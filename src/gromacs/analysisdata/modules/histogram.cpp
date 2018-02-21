@@ -301,19 +301,19 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
             real  e1, e2;
             if (bFirstHalfBin)
             {
-                v1 = value(0, c).value();
-                e1 = value(0, c).error();
+                v1 = value(0, c).value<real>();
+                e1 = value(0, c).error<real>();
                 v2 = 0;
                 e2 = 0;
             }
             else
             {
-                v1 = value(j, c).value();
-                e1 = value(j, c).error();
-                v2 = value(j + 1, c).value();
-                e2 = value(j + 1, c).error();
+                v1 = value(j, c).value<real>();
+                e1 = value(j, c).error<real>();
+                v2 = value(j + 1, c).value<real>();
+                e2 = value(j + 1, c).error<real>();
             }
-            dest->value(i, c).setRealValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
+            dest->value(i, c).setValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
         }
         if (bFirstHalfBin)
         {
@@ -346,7 +346,7 @@ AbstractAverageHistogram::normalizeProbability()
         double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
-            sum += value(i, c).value();
+            sum += value(i, c).valueAsVariant().cast<real>();
         }
         if (sum > 0.0)
         {
@@ -363,10 +363,10 @@ AbstractAverageHistogram::makeCumulative()
         double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
-            sum += value(i, c).value();
+            sum += value(i, c).valueAsVariant().cast<real>();
             // Clear the error, as we don't cumulate that.
             value(i, c).clear();
-            value(i, c).setRealValue(sum);
+            value(i, c).setValue(sum);
         }
     }
     setXAxis(settings().firstEdge() + settings().binWidth(),
@@ -379,8 +379,8 @@ AbstractAverageHistogram::scaleSingle(int index, real factor)
 {
     for (int i = 0; i < rowCount(); ++i)
     {
-        value(i, index).value() *= factor;
-        value(i, index).error() *= factor;
+        value(i, index).valueAsVariant().castRef<real>() *= factor;
+        value(i, index).errorAsVariant().castRef<real>() *= factor;
     }
 }
 
@@ -402,8 +402,8 @@ AbstractAverageHistogram::scaleAllByVector(real factor[])
     {
         for (int i = 0; i < rowCount(); ++i)
         {
-            value(i, c).value() *= factor[i];
-            value(i, c).error() *= factor[i];
+            value(i, c).valueAsVariant().castRef<real>() *= factor[i];
+            value(i, c).errorAsVariant().castRef<real>() *= factor[i];
         }
     }
 }
@@ -514,7 +514,7 @@ BasicAverageHistogramModule::dataFinished()
         averagers_[i].finish();
         for (int j = 0; j < rowCount(); ++j)
         {
-            value(j, i).setRealValue(averagers_[i].average(j),
+            value(j, i).setValue(averagers_[i].average(j),
                                  std::sqrt(averagers_[i].variance(j)));
         }
     }
@@ -704,7 +704,7 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
     {
         if (points.present(i))
         {
-            const int bin = settings().findBin(points.y(i));
+            const int bin = settings().findBin(points.y(i).cast<int>());
             if (bin != -1)
             {
                 handle.value(bin) += 1;
@@ -727,7 +727,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
         frame.selectDataSet(s);
         for (int i = 0; i < columnCount; ++i)
         {
-            frame.setRealValue(i, dataSet.value(i));
+            frame.setValue(i, Variant(dataSet.value(i)));
         }
     }
     frame.finishFrame();
@@ -875,14 +875,14 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
+    int bin = settings().findBin(points.y(0).cast<real>());
     if (bin != -1)
     {
         Impl::FrameLocalData::DataSetHandle  handle
             = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            handle.value(bin) += points.y(i);
+            handle.value(bin) += points.y(i).cast<real>();
         }
     }
 }
@@ -901,7 +901,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
         frame.selectDataSet(s);
         for (int i = 0; i < columnCount; ++i)
         {
-            frame.setRealValue(i, dataSet.value(i));
+            frame.setValue(i, Variant::create<real>(dataSet.value(i)));
         }
     }
     frame.finishFrame();
@@ -1026,13 +1026,13 @@ AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
+    int bin = settings().findBin(points.y(0).cast<real>());
     if (bin != -1)
     {
         AnalysisDataFrameAverager &averager = impl_->averagers_[points.dataSetIndex()];
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            averager.addValue(bin, points.y(i));
+            averager.addValue(bin, points.y(i).cast<real>());
         }
     }
 }
@@ -1054,7 +1054,7 @@ AnalysisDataBinAverageModule::dataFinished()
         averager.finish();
         for (int j = 0; j < rowCount(); ++j)
         {
-            value(j, i).setRealValue(averager.average(j),
+            value(j, i).setValue(averager.average(j),
                                  std::sqrt(averager.variance(j)));
         }
     }
