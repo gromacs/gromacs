@@ -33,59 +33,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_MDLIB_LINCS_H
-#define GMX_MDLIB_LINCS_H
+#ifndef GMX_MDLIB_CONSTRAINTRANGE_H
+#define GMX_MDLIB_CONSTRAINTRANGE_H
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct gmx_multisim_t;
-struct t_blocka;
-struct t_commrec;
-struct t_idef;
 struct t_inputrec;
-struct t_mdatoms;
-struct t_nrnb;
-struct t_pbc;
 
-/* Abstract type for LINCS that is defined only in the file that uses it */
-typedef struct gmx_lincsdata *gmx_lincsdata_t;
-
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
-/* Return the data for determining constraint RMS relative deviations */
-
-real lincs_rmsd(gmx_lincsdata_t lincsd);
-/* Return the RMSD of the constraint */
-
-gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                           int nflexcon_global, const t_blocka *at2con,
-                           gmx_bool bPLINCS, int nIter, int nProjOrder);
-/* Initializes and returns the lincs data struct */
-
-void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
-               gmx_lincsdata_t li);
-/* Initialize lincs stuff */
-
-gmx_bool
-constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                t_inputrec *ir,
-                gmx_int64_t step,
-                gmx_lincsdata_t lincsd, t_mdatoms *md,
-                t_commrec *cr,
-                const gmx_multisim_t *ms,
-                rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, t_pbc *pbc,
-                real lambda, real *dvdlambda,
-                real invdt, rvec *v,
-                gmx_bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
-                t_nrnb *nrnb,
-                int maxwarn, int *warncount);
-/* Returns if the constraining succeeded */
+/*! \brief Returns an estimate of the maximum distance between atoms
+ * required for LINCS. */
+real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 
 #endif
