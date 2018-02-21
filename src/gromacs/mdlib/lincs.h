@@ -40,6 +40,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -55,19 +56,25 @@ struct t_pbc;
 namespace gmx
 {
 
-/* Abstract type for LINCS that is defined only in the file that uses it */
-class Lincs;
+/*! \brief Implements LINCS and P-LINCS constraints.
+ */
+class Lincs
+{
+    //! Constructor
+    Lincs(FILE *fplog, const gmx_mtop_t *mtop,
+          int nflexcon_global, const t_blocka *at2con,
+          bool bPLINCS, int nIter, int nProjOrder);
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
 
 real *lincs_rmsd_data(Lincs *lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
 real lincs_rmsd(Lincs *lincsd);
 /* Return the RMSD of the constraint */
-
-Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                  int nflexcon_global, const t_blocka *at2con,
-                  bool bPLINCS, int nIter, int nProjOrder);
-/* Initializes and returns the lincs data struct */
 
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
                bool bDynamics, t_commrec *cr,
@@ -81,7 +88,7 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 
 bool
 constrain_lincs(FILE *log, bool bLog, bool bEner,
-                t_inputrec *ir,
+                const t_inputrec *ir,
                 gmx_int64_t step,
                 Lincs *lincsd, t_mdatoms *md,
                 t_commrec *cr,

@@ -44,7 +44,9 @@
 #include <cmath>
 
 #include <algorithm>
+#include <memory>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -79,39 +81,97 @@
 namespace gmx
 {
 
-class Constraints
+class Constraints::Impl
 {
     public:
-        int                ncon_tot;       /* The total number of constraints    */
-        int                nflexcon;       /* The number of flexible constraints */
-        int                n_at2con_mt;    /* The size of at2con = #moltypes     */
-        t_blocka          *at2con_mt;      /* A list of atoms to constraints     */
-        int                n_at2settle_mt; /* The size of at2settle = #moltypes  */
-        int              **at2settle_mt;   /* A list of atoms to settles         */
+        Impl(FILE             *log,
+             const gmx_mtop_t *mtop,
+             const t_inputrec *ir,
+             bool              doEssentialDynamics,
+             t_commrec        *cr,
+             int               nconstraints,
+             int               nsettles);
+        bool constrain(bool                  bLog,
+                       bool                  bEner,
+                       t_idef               *idef,
+                       const gmx_multisim_t *ms,
+                       gmx_int64_t           step,
+                       int                   delta_step,
+                       real                  step_scaling,
+                       t_mdatoms            *md,
+                       rvec                 *x,
+                       rvec                 *xprime,
+                       rvec                 *min_proj,
+                       bool                  bMolPBC,
+                       matrix                box,
+                       real                  lambda,
+                       real                 *dvdlambda,
+                       rvec                 *v,
+                       tensor               *vir,
+                       t_nrnb               *nrnb,
+                       int                   econq);
+        //! The total number of constraints.
+        int                ncon_tot;
+        //! The number of flexible constraints.
+        int                nflexcon;
+        //! The size of at2con = #moltypes.
+        int                n_at2con_mt;
+        //! A list of atoms to constraints.
+        t_blocka          *at2con_mt;
+        //! The size of at2settle = #moltypes
+        int                n_at2settle_mt;
+        //! A list of atoms to settles.
+        int              **at2settle_mt;
+        //! Whether any SETTLES cross charge-group boundaries.
         bool               bInterCGsettles;
-        Lincs             *lincsd;         /* LINCS data                         */
-        shakedata         *shaked;         /* SHAKE data                         */
-        settledata        *settled;        /* SETTLE data                        */
-        int                maxwarn;        /* The maximum number of warnings     */
+        //! LINCS data.
+        Lincs             *lincsd;
+        //! SHAKE data.
+        shakedata         *shaked;
+        //! SETTLE data.
+        settledata        *settled;
+        //! The maximum number of warnings.
+        int                maxwarn;
+        //! The number of warnings for LINCS.
         int                warncount_lincs;
+        //! The number of warnings for SETTLE.
         int                warncount_settle;
-        gmx_edsam_t        ed;         /* The essential dynamics data        */
+        //! The essential dynamics data.
+        gmx_edsam_t        ed;
 
-        /* Thread local working data */
-        tensor            *vir_r_m_dr_th;           /* Thread virial contribution */
-        bool              *bSettleErrorHasOccurred; /* Did a settle error occur?  */
+        //! Thread-local virial contribution.
+        tensor            *vir_r_m_dr_th;
+        //! Did a settle error occur?
+        bool              *bSettleErrorHasOccurred;
 
-        /* Only used for printing warnings */
-        const gmx_mtop_t  *warn_mtop; /* Pointer to the global topology     */
+        //! Pointer to the global topology - only used for printing warnings.
+        const gmx_mtop_t  *warn_mtop;
+
+        //! Logging support.
+        FILE      *log;
+        //! Communication support.
+        t_commrec *cr;
+        /*!\brief Input options.
+         *
+         * \todo Replace with IMdpOptions */
+        const t_inputrec *ir;
 };
 
-int n_flexible_constraints(Constraints *constr)
+Constraints::~Constraints() = default;
+
+struct  t_sortblock
+{
+    int iatom[3];
+    int blocknr;
+};
+
+int Constraints::n_flexible_constraints() const
 {
     int nflexcon;
 
-    if (constr)
+    if (impl_)
     {
-        nflexcon = constr->nflexcon;
+        nflexcon = impl_->nflexcon;
     }
     else
     {
@@ -202,7 +262,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_fio_fclose(out);
 }
 
-static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
+static void dump_confs(FILE *log, gmx_int64_t step, const gmx_mtop_t *mtop,
                        int start, int homenr, t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
@@ -220,26 +280,59 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
     sprintf(buf, "step%sc", gmx_step_str(step, buf2));
     write_constr_pdb(buf, "coordinates after constraining",
                      mtop, start, homenr, cr, xprime, box);
-    if (fplog)
+    if (log)
     {
-        fprintf(fplog, "Wrote pdb files with previous and current coordinates\n");
+        fprintf(log, "Wrote pdb files with previous and current coordinates\n");
     }
     fprintf(stderr, "Wrote pdb files with previous and current coordinates\n");
 }
 
-bool constrain(FILE *fplog, bool bLog, bool bEner,
-               Constraints *constr,
-               t_idef *idef, t_inputrec *ir,
-               t_commrec *cr,
-               const gmx_multisim_t *ms,
-               gmx_int64_t step, int delta_step,
-               real step_scaling,
-               t_mdatoms *md,
-               rvec *x, rvec *xprime, rvec *min_proj,
-               bool bMolPBC, matrix box,
-               real lambda, real *dvdlambda,
-               rvec *v, tensor *vir,
-               t_nrnb *nrnb, int econq)
+bool
+Constraints::constrain(bool                  bLog,
+                       bool                  bEner,
+                       t_idef               *idef,
+                       const gmx_multisim_t *ms,
+                       gmx_int64_t           step,
+                       int                   delta_step,
+                       real                  step_scaling,
+                       t_mdatoms            *md,
+                       rvec                 *x,
+                       rvec                 *xprime,
+                       rvec                 *min_proj,
+                       bool                  bMolPBC,
+                       matrix                box,
+                       real                  lambda,
+                       real                 *dvdlambda,
+                       rvec                 *v,
+                       tensor               *vir,
+                       t_nrnb               *nrnb,
+                       int                   econq)
+{
+    return impl_->constrain(bLog, bEner, idef, ms, step, delta_step,
+                            step_scaling, md, x, xprime, min_proj, bMolPBC,
+                            box, lambda, dvdlambda, v, vir, nrnb, econq);
+}
+
+bool
+Constraints::Impl::constrain(bool                  bLog,
+                             bool                  bEner,
+                             t_idef               *idef,
+                             const gmx_multisim_t *ms,
+                             gmx_int64_t           step,
+                             int                   delta_step,
+                             real                  step_scaling,
+                             t_mdatoms            *md,
+                             rvec                 *x,
+                             rvec                 *xprime,
+                             rvec                 *min_proj,
+                             bool                  bMolPBC,
+                             matrix                box,
+                             real                  lambda,
+                             real                 *dvdlambda,
+                             rvec                 *v,
+                             tensor               *vir,
+                             t_nrnb               *nrnb,
+                             int                   econq)
 {
     bool        bOK, bDump;
     int         start, homenr;
@@ -341,39 +434,39 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
         }
     }
 
-    if (constr->lincsd != nullptr)
+    if (lincsd != nullptr)
     {
-        bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr, ms,
+        bOK = constrain_lincs(log, bLog, bEner, ir, step, lincsd, md, cr, ms,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,
                               econq, nrnb,
-                              constr->maxwarn, &constr->warncount_lincs);
-        if (!bOK && constr->maxwarn < INT_MAX)
+                              maxwarn, &warncount_lincs);
+        if (!bOK && maxwarn < INT_MAX)
         {
-            if (fplog != nullptr)
+            if (log != nullptr)
             {
-                fprintf(fplog, "Constraint error in algorithm %s at step %s\n",
+                fprintf(log, "Constraint error in algorithm %s at step %s\n",
                         econstr_names[econtLINCS], gmx_step_str(step, buf));
             }
             bDump = TRUE;
         }
     }
 
-    if (constr->shaked != nullptr)
+    if (shaked != nullptr)
     {
-        bOK = constrain_shake(fplog, constr->shaked,
+        bOK = constrain_shake(log, shaked,
                               md->invmass,
                               idef, ir, x, xprime, min_proj, nrnb,
                               lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,
-                              constr->maxwarn < INT_MAX, econq);
+                              maxwarn < INT_MAX, econq);
 
-        if (!bOK && constr->maxwarn < INT_MAX)
+        if (!bOK && maxwarn < INT_MAX)
         {
-            if (fplog != nullptr)
+            if (log != nullptr)
             {
-                fprintf(fplog, "Constraint error in algorithm %s at step %s\n",
+                fprintf(log, "Constraint error in algorithm %s at step %s\n",
                         econstr_names[econtSHAKE], gmx_step_str(step, buf));
             }
             bDump = TRUE;
@@ -382,7 +475,7 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
 
     if (nsettle > 0)
     {
-        bool bSettleErrorHasOccurred = false;
+        bool bSettleErrorHasOccurred0 = false;
 
         switch (econq)
         {
@@ -394,17 +487,17 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
                     {
                         if (th > 0)
                         {
-                            clear_mat(constr->vir_r_m_dr_th[th]);
+                            clear_mat(vir_r_m_dr_th[th]);
                         }
 
-                        csettle(constr->settled,
+                        csettle(settled,
                                 nth, th,
                                 pbc_null,
                                 x[0], xprime[0],
                                 invdt, v ? v[0] : nullptr,
                                 vir != nullptr,
-                                th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
-                                th == 0 ? &bSettleErrorHasOccurred : &constr->bSettleErrorHasOccurred[th]);
+                                th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
+                                th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
@@ -440,7 +533,7 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
 
                         if (th > 0)
                         {
-                            clear_mat(constr->vir_r_m_dr_th[th]);
+                            clear_mat(vir_r_m_dr_th[th]);
                         }
 
                         int start_th = (nsettle* th   )/nth;
@@ -448,13 +541,13 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
 
                         if (start_th >= 0 && end_th - start_th > 0)
                         {
-                            settle_proj(constr->settled, econq,
+                            settle_proj(settled, econq,
                                         end_th-start_th,
                                         settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
                                         pbc_null,
                                         x,
                                         xprime, min_proj, calcvir_atom_end,
-                                        th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th]);
+                                        th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -474,7 +567,7 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
             /* Reduce the virial contributions over the threads */
             for (int th = 1; th < nth; th++)
             {
-                m_add(vir_r_m_dr, constr->vir_r_m_dr_th[th], vir_r_m_dr);
+                m_add(vir_r_m_dr, vir_r_m_dr_th[th], vir_r_m_dr);
             }
         }
 
@@ -482,25 +575,25 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
         {
             for (int th = 1; th < nth; th++)
             {
-                bSettleErrorHasOccurred = bSettleErrorHasOccurred || constr->bSettleErrorHasOccurred[th];
+                bSettleErrorHasOccurred0 = bSettleErrorHasOccurred0 || bSettleErrorHasOccurred[th];
             }
 
-            if (bSettleErrorHasOccurred)
+            if (bSettleErrorHasOccurred0)
             {
                 char buf[STRLEN];
                 sprintf(buf,
                         "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
                         "Check for bad contacts and/or reduce the timestep if appropriate.\n",
                         step);
-                if (fplog)
+                if (log)
                 {
-                    fprintf(fplog, "%s", buf);
+                    fprintf(log, "%s", buf);
                 }
                 fprintf(stderr, "%s", buf);
-                constr->warncount_settle++;
-                if (constr->warncount_settle > constr->maxwarn)
+                warncount_settle++;
+                if (warncount_settle > maxwarn)
                 {
-                    too_many_constraint_warnings(-1, constr->warncount_settle);
+                    too_many_constraint_warnings(-1, warncount_settle);
                 }
                 bDump = TRUE;
 
@@ -550,7 +643,7 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
 
     if (bDump)
     {
-        dump_confs(fplog, step, constr->warn_mtop, start, homenr, cr, x, xprime, box);
+        dump_confs(log, step, warn_mtop, start, homenr, cr, x, xprime, box);
     }
 
     if (econq == econqCoord)
@@ -568,10 +661,10 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
             set_pbc(&pbc, ir->ePBC, box);
             pull_constraint(ir->pull_work, md, &pbc, cr, ir->delta_t, t, x, xprime, v, *vir);
         }
-        if (constr->ed && delta_step > 0)
+        if (ed && delta_step > 0)
         {
             /* apply the essential dynamics constraints here */
-            do_edsam(ir, step, cr, xprime, v, box, constr->ed);
+            do_edsam(ir, step, cr, xprime, v, box, ed);
         }
     }
 
@@ -580,9 +673,9 @@ bool constrain(FILE *fplog, bool bLog, bool bEner,
 
 real *constr_rmsd_data(Constraints *constr)
 {
-    if (constr->lincsd)
+    if (impl_->lincsd)
     {
-        return lincs_rmsd_data(constr->lincsd);
+        return lincs_rmsd_data(impl_->lincsd);
     }
     else
     {
@@ -592,9 +685,9 @@ real *constr_rmsd_data(Constraints *constr)
 
 real constr_rmsd(Constraints *constr)
 {
-    if (constr->lincsd)
+    if (impl_->lincsd)
     {
-        return lincs_rmsd(constr->lincsd);
+        return lincs_rmsd(impl_->lincsd);
     }
     else
     {
@@ -748,10 +841,12 @@ void set_constraints(Constraints *constr,
     }
 }
 
-Constraints *init_constraints(FILE *fplog,
-                              const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              bool doEssentialDynamics,
-                              t_commrec *cr)
+Constraints::Constraints(FILE             *log,
+                         const gmx_mtop_t *mtop,
+                         const t_inputrec *ir,
+                         bool              doEssentialDynamics,
+                         t_commrec        *cr)
+    : impl_(nullptr)
 {
     int nconstraints =
         gmx_mtop_ftype_count(mtop, F_CONSTR) +
@@ -765,63 +860,77 @@ Constraints *init_constraints(FILE *fplog,
         !(ir->bPull && pull_have_constraint(ir->pull_work)) &&
         !doEssentialDynamics)
     {
-        return nullptr;
+        // No constraining work needs to be done
+        return;
     }
 
-    Constraints *constr;
+    if (nconstraints + nsettles > 0 && ir->epc == epcMTTK)
+    {
+        gmx_fatal(FARGS, "Constraints are not implemented with MTTK pressure control.");
+    }
+    // TODO refine?
+    auto tempImpl = compat::make_unique<Impl>(log, mtop, ir, doEssentialDynamics, cr, nconstraints, nsettles);
+    impl_.reset(tempImpl.release());
+}
 
-    snew(constr, 1);
-
-    constr->ncon_tot = nconstraints;
-    constr->nflexcon = 0;
+Constraints::Impl::Impl(FILE             *log,
+                        const gmx_mtop_t *mtop,
+                        const t_inputrec *ir,
+                        bool              doEssentialDynamics,
+                        t_commrec        *cr,
+                        int               nconstraints,
+                        int               nsettles)
+{
+    ncon_tot = nconstraints;
+    nflexcon = 0;
     if (nconstraints > 0)
     {
-        constr->n_at2con_mt = mtop->nmoltype;
-        snew(constr->at2con_mt, constr->n_at2con_mt);
+        n_at2con_mt = mtop->nmoltype;
+        snew(at2con_mt, n_at2con_mt);
         for (int mt = 0; mt < mtop->nmoltype; mt++)
         {
             int nflexcon;
-            constr->at2con_mt[mt] = make_at2con(0, mtop->moltype[mt].atoms.nr,
-                                                mtop->moltype[mt].ilist,
-                                                mtop->ffparams.iparams,
-                                                EI_DYNAMICS(ir->eI), &nflexcon);
+            at2con_mt[mt] = make_at2con(0, mtop->moltype[mt].atoms.nr,
+                                        mtop->moltype[mt].ilist,
+                                        mtop->ffparams.iparams,
+                                        EI_DYNAMICS(ir->eI), &nflexcon);
             for (int i = 0; i < mtop->nmolblock; i++)
             {
                 if (mtop->molblock[i].type == mt)
                 {
-                    constr->nflexcon += mtop->molblock[i].nmol*nflexcon;
+                    nflexcon += mtop->molblock[i].nmol*nflexcon;
                 }
             }
         }
 
-        if (constr->nflexcon > 0)
+        if (nflexcon > 0)
         {
-            if (fplog)
+            if (log)
             {
-                fprintf(fplog, "There are %d flexible constraints\n",
-                        constr->nflexcon);
+                fprintf(log, "There are %d flexible constraints\n",
+                        nflexcon);
                 if (ir->fc_stepsize == 0)
                 {
-                    fprintf(fplog, "\n"
+                    fprintf(log, "\n"
                             "WARNING: step size for flexible constraining = 0\n"
                             "         All flexible constraints will be rigid.\n"
                             "         Will try to keep all flexible constraints at their original length,\n"
                             "         but the lengths may exhibit some drift.\n\n");
-                    constr->nflexcon = 0;
+                    nflexcon = 0;
                 }
             }
-            if (constr->nflexcon > 0)
+            if (nflexcon > 0)
             {
-                please_cite(fplog, "Hess2002");
+                please_cite(log, "Hess2002");
             }
         }
 
         if (ir->eConstrAlg == econtLINCS)
         {
-            constr->lincsd = init_lincs(fplog, mtop,
-                                        constr->nflexcon, constr->at2con_mt,
-                                        DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
-                                        ir->nLincsIter, ir->nProjOrder);
+            lincsd = init_lincs(log, mtop,
+                                nflexcon, at2con_mt,
+                                DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
+                                ir->nLincsIter, ir->nProjOrder);
         }
 
         if (ir->eConstrAlg == econtSHAKE)
@@ -830,81 +939,76 @@ Constraints *init_constraints(FILE *fplog,
             {
                 gmx_fatal(FARGS, "SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
             }
-            if (constr->nflexcon)
+            if (nflexcon)
             {
                 gmx_fatal(FARGS, "For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
             }
-            please_cite(fplog, "Ryckaert77a");
+            please_cite(log, "Ryckaert77a");
             if (ir->bShakeSOR)
             {
-                please_cite(fplog, "Barth95a");
+                please_cite(log, "Barth95a");
             }
 
-            constr->shaked = shake_init();
+            shaked = shake_init();
         }
     }
 
     if (nsettles > 0)
     {
-        please_cite(fplog, "Miyamoto92a");
+        please_cite(log, "Miyamoto92a");
 
-        constr->bInterCGsettles = inter_charge_group_settles(mtop);
+        bInterCGsettles = inter_charge_group_settles(mtop);
 
-        constr->settled         = settle_init(mtop);
+        settled         = settle_init(mtop);
 
         /* Make an atom to settle index for use in domain decomposition */
-        constr->n_at2settle_mt = mtop->nmoltype;
-        snew(constr->at2settle_mt, constr->n_at2settle_mt);
+        n_at2settle_mt = mtop->nmoltype;
+        snew(at2settle_mt, n_at2settle_mt);
         for (int mt = 0; mt < mtop->nmoltype; mt++)
         {
-            constr->at2settle_mt[mt] =
+            at2settle_mt[mt] =
                 make_at2settle(mtop->moltype[mt].atoms.nr,
                                &mtop->moltype[mt].ilist[F_SETTLE]);
         }
 
         /* Allocate thread-local work arrays */
         int nthreads = gmx_omp_nthreads_get(emntSETTLE);
-        if (nthreads > 1 && constr->vir_r_m_dr_th == nullptr)
+        if (nthreads > 1 && vir_r_m_dr_th == nullptr)
         {
-            snew(constr->vir_r_m_dr_th, nthreads);
-            snew(constr->bSettleErrorHasOccurred, nthreads);
+            snew(vir_r_m_dr_th, nthreads);
+            snew(bSettleErrorHasOccurred, nthreads);
         }
     }
 
-    if (nconstraints + nsettles > 0 && ir->epc == epcMTTK)
-    {
-        gmx_fatal(FARGS, "Constraints are not implemented with MTTK pressure control.");
-    }
-
-    constr->maxwarn = 999;
+    maxwarn = 999;
     char *env       = getenv("GMX_MAXCONSTRWARN");
     if (env)
     {
-        constr->maxwarn = 0;
-        sscanf(env, "%8d", &constr->maxwarn);
-        if (constr->maxwarn < 0)
+        maxwarn = 0;
+        sscanf(env, "%8d", &maxwarn);
+        if (maxwarn < 0)
         {
-            constr->maxwarn = INT_MAX;
+            maxwarn = INT_MAX;
         }
-        if (fplog)
+        if (log)
         {
-            fprintf(fplog,
+            fprintf(log,
                     "Setting the maximum number of constraint warnings to %d\n",
-                    constr->maxwarn);
+                    maxwarn);
         }
         if (MASTER(cr))
         {
             fprintf(stderr,
                     "Setting the maximum number of constraint warnings to %d\n",
-                    constr->maxwarn);
+                    maxwarn);
         }
     }
-    constr->warncount_lincs  = 0;
-    constr->warncount_settle = 0;
+    warncount_lincs  = 0;
+    warncount_settle = 0;
 
-    constr->warn_mtop        = mtop;
+    warn_mtop        = mtop;
 
-    return constr;
+    return true;
 }
 
 /* Put a pointer to the essential dynamics constraints into the constr struct */

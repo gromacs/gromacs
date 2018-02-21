@@ -42,6 +42,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_edsam;
@@ -59,10 +60,79 @@ struct t_pbc;
 union t_iparams;
 class t_state;
 
+
 namespace gmx
 {
 
-class Constraints;
+/*! \brief Handles constraints */
+class Constraints
+{
+    public:
+        Constraints(FILE *log,
+                    const gmx_mtop_t *mtop, const t_inputrec *ir,
+                    bool doEssentialDynamics,
+                    t_commrec *cr);
+        ~Constraints();
+
+        int n_flexible_constraints() const;
+
+        void set_constraints(gmx_localtop_t          *top,
+                             const t_mdatoms         *md);
+        /* Set up all the local constraints for the node */
+
+        /*
+         * When econq=econqCoord constrains coordinates xprime using th
+         * directions in x, min_proj is not used.
+         *
+         * When econq=econqDeriv, calculates the components xprime in
+         * the constraint directions and subtracts these components from min_proj.
+         * So when min_proj=xprime, the constraint components are projected out.
+         *
+         * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
+         * but only the components of the flexible constraints are stored.
+         *
+         * When bMolPBC=TRUE, assume that molecules might be broken: correct PBC.
+         *
+         * delta_step is used for determining the constraint reference lengths
+         * when lenA != lenB or will the pull code with a pulling rate.
+         * step + delta_step is the step at which the final configuration
+         * is meant to be; for update delta_step = 1.
+         *
+         * step_scaling can be used to update coordinates based on the time
+         * step multiplied by this factor. Thus, normally 1.0 is passed. The
+         * SD1 integrator uses 0.5 in one of its calls, to correct positions
+         * for half a step of changed velocities.
+         *
+         * If v!=NULL also constrain v by adding the constraint corrections / dt.
+         *
+         * If vir!=NULL calculate the constraint virial.
+         *
+         * Return TRUE if OK, FALSE in case of shake error
+         *
+         */
+        bool constrain(bool                  bLog,
+                       bool                  bEner,
+                       t_idef               *idef,
+                       const gmx_multisim_t *ms,
+                       gmx_int64_t           step,
+                       int                   delta_step,
+                       real                  step_scaling,
+                       t_mdatoms            *md,
+                       rvec                 *x,
+                       rvec                 *xprime,
+                       rvec                 *min_proj,
+                       bool                  bMolPBC,
+                       matrix                box,
+                       real                  lambda,
+                       real                 *dvdlambda,
+                       rvec                 *v,
+                       tensor               *vir,
+                       t_nrnb               *nrnb,
+                       int                   econq);
+    private:
+        class Impl;
+        PrivateImplPointer<Impl> impl_;
+};
 
 enum
 {

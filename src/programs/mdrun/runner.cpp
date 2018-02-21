@@ -54,6 +54,7 @@
 
 #include <algorithm>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -1303,9 +1304,11 @@ int Mdrunner::mdrunner()
         /* Let init_constraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
-        bool         doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
+        bool        doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
 
-        Constraints *constr = init_constraints(fplog, mtop, inputrec, doEdsam, cr);
+        //std::unique_ptr<Constraints> constr(new Constraints(fplog, mtop, inputrec, doEdsam, cr));
+        //auto constr = compat::make_unique<Constraints>(fplog, mtop, inputrec, doEdsam, cr);
+        Constraints constr(fplog, mtop, inputrec, doEdsam, cr);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1322,7 +1325,7 @@ int Mdrunner::mdrunner()
         my_integrator(inputrec->eI) (fplog, cr, ms, mdlog, nfile, fnm,
                                      oenv,
                                      mdrunOptions,
-                                     vsite, constr,
+                                     vsite, &constr,
                                      mdModules->outputProvider(),
                                      inputrec, mtop,
                                      fcd,
