@@ -59,8 +59,10 @@ struct t_pbc;
 union t_iparams;
 class t_state;
 
-/* Abstract type for constraints */
-typedef struct gmx_constr *gmx_constr_t;
+namespace gmx
+{
+
+class Constraints;
 
 enum
 {
@@ -74,27 +76,27 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-int n_flexible_constraints(gmx_constr *constr);
+int n_flexible_constraints(Constraints *constr);
 /* Returns the total number of flexible constraints in the system */
 
 void too_many_constraint_warnings(int eConstrAlg, int warncount);
 /* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
 
-gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                   gmx_constr_t constr,
-                   t_idef *idef,
-                   t_inputrec *ir,
-                   t_commrec *cr,
-                   const gmx_multisim_t *ms,
-                   gmx_int64_t step, int delta_step,
-                   real step_scaling,
-                   t_mdatoms *md,
-                   rvec *x, rvec *xprime, rvec *min_proj,
-                   gmx_bool bMolPBC, matrix box,
-                   real lambda, real *dvdlambda,
-                   rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq);
+bool constrain(FILE *log, bool bLog, bool bEner,
+               Constraints *constr,
+               t_idef *idef,
+               t_inputrec *ir,
+               t_commrec *cr,
+               const gmx_multisim_t *ms,
+               gmx_int64_t step, int delta_step,
+               real step_scaling,
+               t_mdatoms *md,
+               rvec *x, rvec *xprime, rvec *min_proj,
+               bool bMolPBC, matrix box,
+               real lambda, real *dvdlambda,
+               rvec *v, tensor *vir,
+               t_nrnb *nrnb, int econq);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -126,17 +128,17 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  *
  */
 
-gmx_constr_t init_constraints(FILE *log,
+Constraints *init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
                               t_commrec *cr);
 /* Initialize constraints stuff */
 
-void saveEdsamPointer(gmx_constr_t      constr,
+void saveEdsamPointer(Constraints      *constr,
                       gmx_edsam        *ed);
 /* Put a pointer to the essential dynamics constraints into the constr struct */
 
-void set_constraints(gmx_constr_t             constr,
+void set_constraints(Constraints             *constr,
                      gmx_localtop_t          *top,
                      const t_inputrec        *ir,
                      const t_mdatoms         *md,
@@ -151,13 +153,13 @@ void set_constraints(gmx_constr_t             constr,
 
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons);
+                     bool bDynamics, int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
-const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
+const t_blocka *atom2constraints_moltype(Constraints *constr);
 /* Returns the an array of atom to constraints lists for the moltypes */
 
-const int **atom2settle_moltype(gmx_constr_t constr);
+const int **atom2settle_moltype(Constraints *constr);
 /* Returns the an array of atom to settle for the moltypes */
 
 #define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
@@ -166,18 +168,20 @@ const int **atom2settle_moltype(gmx_constr_t constr);
  * are concatenated.
  */
 
-gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
+bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
 
-gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
+bool inter_charge_group_settles(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group settles */
 
-real *constr_rmsd_data(gmx_constr_t constr);
+real *constr_rmsd_data(Constraints *constr);
 /* Return the data for determining constraint RMS relative deviations.
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr);
+real constr_rmsd(Constraints *constr);
 /* Return the RMSD of the constraint */
+
+} // namespace
 
 #endif

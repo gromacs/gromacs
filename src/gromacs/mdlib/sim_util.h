@@ -45,7 +45,6 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_constr;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
 struct gmx_output_env_t;
@@ -57,6 +56,7 @@ struct t_nrnb;
 
 namespace gmx
 {
+class Constraints;
 class IMDOutputProvider;
 class MDLogger;
 }
@@ -92,7 +92,7 @@ void global_stat(gmx_global_stat_t gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 gmx_constr *constr, t_vcm *vcm,
+                 gmx::Constraints *constr, t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
@@ -137,7 +137,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
 
-void do_constrain_first(FILE *log, gmx_constr *constr,
+void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
                         t_state *state, t_commrec *cr,
                         const gmx_multisim_t *ms,

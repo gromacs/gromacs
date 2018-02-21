@@ -45,7 +45,6 @@
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
-struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
@@ -61,6 +60,11 @@ class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;
+
+namespace gmx
+{
+class Constraints;
+}
 
 /* Initialize the stochastic dynamics struct */
 gmx_update_t *init_update(const t_inputrec *ir);
@@ -127,11 +131,11 @@ void update_coords(FILE                          *fplog,
                    gmx_update_t                  *upd,
                    int                            bUpdatePart,
                    t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr                    *constr);
+                   gmx::Constraints              *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr);
 
 void update_constraints(FILE                    *fplog,
                         gmx_int64_t              step,
@@ -149,7 +153,7 @@ void update_constraints(FILE                    *fplog,
                         t_nrnb                  *nrnb,
                         gmx_wallcycle_t          wcycle,
                         gmx_update_t            *upd,
-                        gmx_constr              *constr,
+                        gmx::Constraints        *constr,
                         gmx_bool                 bFirstHalf,
                         gmx_bool                 bCalcVir);
 

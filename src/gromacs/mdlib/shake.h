@@ -43,24 +43,27 @@
 struct gmx_domdec_t;
 struct t_inputrec;
 
-/* Abstract type for SHAKE that is defined only in the file that uses it */
-typedef struct gmx_shakedata *gmx_shakedata_t;
+namespace gmx
+{
 
-gmx_shakedata_t shake_init();
+/* Abstract type for SHAKE that is defined only in the file that uses it */
+struct shakedata;
+
+shakedata *shake_init();
 /* Initializes and return the SHAKE data structure */
 
 void
-make_shake_sblock_serial(gmx_shakedata *shaked,
+make_shake_sblock_serial(shakedata *shaked,
                          t_idef *idef, const t_mdatoms *md);
 
 void
-make_shake_sblock_dd(gmx_shakedata *shaked,
+make_shake_sblock_dd(shakedata *shaked,
                      const t_ilist *ilcon, const t_block *cgs,
                      const gmx_domdec_t *dd);
 
 bool
 constrain_shake(FILE             *log,          /* Log file			*/
-                gmx_shakedata_t   shaked,       /* Total number of atoms	*/
+                shakedata        *shaked,       /* Total number of atoms	*/
                 real              invmass[],    /* Atomic masses		*/
                 t_idef           *idef,         /* The interaction def		*/
                 const t_inputrec *ir,           /* Input record		        */
@@ -72,9 +75,9 @@ constrain_shake(FILE             *log,          /* Log file			*/
                 real             *dvdlambda,    /* FEP force                    */
                 real              invdt,        /* 1/delta_t                    */
                 rvec             *v,            /* Also constrain v if v!=NULL  */
-                gmx_bool          bCalcVir,     /* Calculate r x m delta_r      */
+                bool              bCalcVir,     /* Calculate r x m delta_r      */
                 tensor            vir_r_m_dr,   /* sum r x m delta_r            */
-                gmx_bool          bDumpOnError, /* Dump debugging stuff on error*/
+                bool              bDumpOnError, /* Dump debugging stuff on error*/
                 int               econq);       /* which type of constraint is occurring */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
@@ -89,5 +92,7 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real dist2[], real xp[], const real rij[], const real m2[], real omega,
             const real invmass[], const real tt[], real lagr[], int *nerror);
 /* Regular iterative shake */
+
+} // namespace
 
 #endif

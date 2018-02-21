@@ -52,7 +52,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct gmx_shakedata
+namespace gmx
+{
+
+struct shakedata
 {
     rvec *rij;
     real *half_of_reduced_mass;
@@ -72,11 +75,11 @@ typedef struct gmx_shakedata
      * constraint distance. */
     real *scaled_lagrange_multiplier;
     int   lagr_nalloc;    /* The allocation size of scaled_lagrange_multiplier */
-} t_gmx_shakedata;
+};
 
-gmx_shakedata_t shake_init()
+shakedata *shake_init()
 {
-    gmx_shakedata_t d;
+    shakedata *d;
 
     snew(d, 1);
 
@@ -141,7 +144,7 @@ static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
     }
 }
 
-static void resizeLagrangianData(gmx_shakedata *shaked, int ncons)
+static void resizeLagrangianData(shakedata *shaked, int ncons)
 {
     if (ncons > shaked->lagr_nalloc)
     {
@@ -151,7 +154,7 @@ static void resizeLagrangianData(gmx_shakedata *shaked, int ncons)
 }
 
 void
-make_shake_sblock_serial(gmx_shakedata *shaked,
+make_shake_sblock_serial(shakedata *shaked,
                          t_idef *idef, const t_mdatoms *md)
 {
     int          i, j, m, ncons;
@@ -266,7 +269,7 @@ make_shake_sblock_serial(gmx_shakedata *shaked,
 }
 
 void
-make_shake_sblock_dd(gmx_shakedata *shaked,
+make_shake_sblock_dd(shakedata *shaked,
                      const t_ilist *ilcon, const t_block *cgs,
                      const gmx_domdec_t *dd)
 {
@@ -504,13 +507,13 @@ crattle(int iatom[], int ncon, int *nnit, int maxnit,
     *nerror = error;
 }
 
-static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
+static int vec_shakef(FILE *fplog, shakedata *shaked,
                       real invmass[], int ncon,
                       t_iparams ip[], t_iatom *iatom,
                       real tol, rvec x[], rvec prime[], real omega,
-                      gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
+                      bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                       real invdt, rvec *v,
-                      gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
+                      bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -692,13 +695,13 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
     }
 }
 
-static gmx_bool
-bshakef(FILE *log, gmx_shakedata_t shaked,
+static bool
+bshakef(FILE *log, shakedata *shaked,
         real invmass[],
         t_idef *idef, const t_inputrec *ir, rvec x_s[], rvec prime[],
         t_nrnb *nrnb, real lambda, real *dvdlambda,
-        real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-        gmx_bool bDumpOnError, int econq)
+        real invdt, rvec *v, bool bCalcVir, tensor vir_r_m_dr,
+        bool bDumpOnError, int econq)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -798,7 +801,7 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
 
 bool
 constrain_shake(FILE             *log,
-                gmx_shakedata_t   shaked,
+                shakedata        *shaked,
                 real              invmass[],
                 t_idef           *idef,
                 const t_inputrec *ir,
@@ -810,9 +813,9 @@ constrain_shake(FILE             *log,
                 real             *dvdlambda,
                 real              invdt,
                 rvec             *v,
-                gmx_bool          bCalcVir,
+                bool              bCalcVir,
                 tensor            vir_r_m_dr,
-                gmx_bool          bDumpOnError,
+                bool              bDumpOnError,
                 int               econq)
 {
     if (shaked->nblocks == 0)
@@ -844,3 +847,5 @@ constrain_shake(FILE             *log,
     }
     return bOK;
 }
+
+} // namespace

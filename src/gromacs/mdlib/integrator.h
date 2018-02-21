@@ -68,6 +68,7 @@ class t_state;
 namespace gmx
 {
 
+class Constraints;
 class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
@@ -83,7 +84,7 @@ class MDAtoms;
  * \param[in] oenv                Output information
  * \param[in] mdrunOptions        Options for mdrun
  * \param[in] vsite               Virtual site information
- * \param[in] constr              Constraint information
+ * \param[in] constr              Constraint handler.
  * \param[in] outputProvider      Additional output provider
  * \param[in] inputrec            Input record with mdp options
  * \param[in] top_global          Molecular topology for the whole system
@@ -104,7 +105,7 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv,
                              const MdrunOptions &mdrunOptions,
-                             gmx_vsite_t *vsite, gmx_constr_t constr,
+                             gmx_vsite_t *vsite, Constraints *constr,
                              gmx::IMDOutputProvider *outputProvider,
                              t_inputrec *inputrec,
                              gmx_mtop_t *top_global, t_fcdata *fcd,

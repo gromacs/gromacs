@@ -1558,7 +1558,7 @@ void update_constraints(FILE                          *fplog,
                         t_nrnb                        *nrnb,
                         gmx_wallcycle_t                wcycle,
                         gmx_update_t                  *upd,
-                        gmx_constr_t                   constr,
+                        gmx::Constraints              *constr,
                         gmx_bool                       bFirstHalf,
                         gmx_bool                       bCalcVir)
 {
@@ -1889,7 +1889,7 @@ void update_coords(FILE                          *fplog,
                    gmx_update_t                  *upd,
                    int                            UpdatePart,
                    t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr_t                   constr)
+                   gmx::Constraints              *constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);
 
@@ -2071,7 +2071,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
 }
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,
-                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr_t constr)
+                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];

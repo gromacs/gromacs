@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,7 +140,7 @@ void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, gmx_constr_t constr,
+                 gmx_ekindata_t *ekind, gmx::Constraints *constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
@@ -241,7 +241,7 @@ void global_stat(gmx_global_stat_t gs,
         where();
         if (constr)
         {
-            rmsd_data = constr_rmsd_data(constr);
+            rmsd_data = gmx::constr_rmsd_data(constr);
             if (rmsd_data)
             {
                 irmsd = add_binr(rb, 2, rmsd_data);

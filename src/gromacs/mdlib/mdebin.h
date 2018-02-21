@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 
 class energyhistory_t;
-struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -57,6 +56,7 @@ class t_state;
 namespace gmx
 {
 class Awh;
+class Constraints;
 }
 
 /* The functions & data structures here determine the content for outputting
@@ -147,7 +147,7 @@ void upd_mdebin(t_mdebin                 *md,
                 tensor                    pres,
                 gmx_ekindata_t           *ekind,
                 rvec                      mu_tot,
-                gmx_constr               *constr);
+                gmx::Constraints         *constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */

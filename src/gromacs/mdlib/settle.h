@@ -44,20 +44,23 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
-/* Abstract type for SETTLE that is defined only in the file that uses it */
-typedef struct gmx_settledata *gmx_settledata_t;
+namespace gmx
+{
 
-gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
+/* Abstract type for SETTLE that is defined only in the file that uses it */
+struct settledata;
+
+settledata *settle_init(const gmx_mtop_t *mtop);
 /* Initializes and returns a structure with SETTLE parameters */
 
-void settle_free(gmx_settledata_t settled);
+void settle_free(settledata *settled);
 
-void settle_set_constraints(gmx_settledata_t  settled,
+void settle_set_constraints(settledata       *settled,
                             const t_ilist    *il_settle,
                             const t_mdatoms  *mdatoms);
 /* Set up the indices for the settle constraints */
 
-void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
+void csettle(settledata         *settled,          /* The SETTLE structure */
              int                 nthread,          /* The number of threads used */
              int                 thread,           /* Our thread index */
              const t_pbc        *pbc,              /* PBC data pointer, can be NULL */
@@ -73,7 +76,7 @@ void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
  * Can be called on any number of threads.
  */
 
-void settle_proj(gmx_settledata_t settled, int econq,
+void settle_proj(settledata *settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
@@ -82,5 +85,7 @@ void settle_proj(gmx_settledata_t settled, int econq,
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
+
+} // namespace
 
 #endif

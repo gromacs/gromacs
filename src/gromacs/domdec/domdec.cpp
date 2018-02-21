@@ -9201,7 +9201,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
+                         gmx::Constraints    *constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle       *wcycle,
                          gmx_bool             bVerbose)

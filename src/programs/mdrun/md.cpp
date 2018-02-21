@@ -279,6 +279,9 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
+namespace gmx
+{
+
 /*! \libinternal
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            const gmx_multisim_t *ms,
@@ -286,7 +289,7 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv,
                            const MdrunOptions &mdrunOptions,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
+                           gmx_vsite_t *vsite, Constraints *constr,
                            gmx::IMDOutputProvider *outputProvider,
                            t_inputrec *inputrec,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -298,25 +301,25 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
                            gmx_membed_t *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double gmx::do_md(FILE *fplog, t_commrec *cr,
-                  const gmx_multisim_t *ms,
-                  const gmx::MDLogger &mdlog,
-                  int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv,
-                  const MdrunOptions &mdrunOptions,
-                  gmx_vsite_t *vsite, gmx_constr_t constr,
-                  gmx::IMDOutputProvider *outputProvider,
-                  t_inputrec *ir,
-                  gmx_mtop_t *top_global,
-                  t_fcdata *fcd,
-                  t_state *state_global,
-                  ObservablesHistory *observablesHistory,
-                  gmx::MDAtoms *mdAtoms,
-                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  t_forcerec *fr,
-                  const ReplicaExchangeParameters &replExParams,
-                  gmx_membed_t *membed,
-                  gmx_walltime_accounting_t walltime_accounting)
+double do_md(FILE *fplog, t_commrec *cr,
+             const gmx_multisim_t *ms,
+             const gmx::MDLogger &mdlog,
+             int nfile, const t_filenm fnm[],
+             const gmx_output_env_t *oenv,
+             const MdrunOptions &mdrunOptions,
+             gmx_vsite_t *vsite, Constraints *constr,
+             gmx::IMDOutputProvider *outputProvider,
+             t_inputrec *ir,
+             gmx_mtop_t *top_global,
+             t_fcdata *fcd,
+             t_state *state_global,
+             ObservablesHistory *observablesHistory,
+             gmx::MDAtoms *mdAtoms,
+             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+             t_forcerec *fr,
+             const ReplicaExchangeParameters &replExParams,
+             gmx_membed_t *membed,
+             gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t    outf = nullptr;
     gmx_int64_t     step, step_rel;
@@ -2031,3 +2034,5 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
 
     return 0;
 }
+
+} // namespace

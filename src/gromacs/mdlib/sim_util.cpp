@@ -2120,7 +2120,7 @@ void do_force(FILE *fplog, t_commrec *cr,
 }
 
 
-void do_constrain_first(FILE *fplog, gmx_constr_t constr,
+void do_constrain_first(FILE *fplog, Constraints *constr,
                         t_inputrec *ir, t_mdatoms *md,
                         t_state *state, t_commrec *cr,
                         const gmx_multisim_t *ms,

@@ -52,23 +52,26 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 
-/* Abstract type for LINCS that is defined only in the file that uses it */
-typedef struct gmx_lincsdata *gmx_lincsdata_t;
+namespace gmx
+{
 
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
+/* Abstract type for LINCS that is defined only in the file that uses it */
+class Lincs;
+
+real *lincs_rmsd_data(Lincs *lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
-real lincs_rmsd(gmx_lincsdata_t lincsd);
+real lincs_rmsd(Lincs *lincsd);
 /* Return the RMSD of the constraint */
 
-gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                           int nflexcon_global, const t_blocka *at2con,
-                           gmx_bool bPLINCS, int nIter, int nProjOrder);
+Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+                  int nflexcon_global, const t_blocka *at2con,
+                  bool bPLINCS, int nIter, int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
-               gmx_lincsdata_t li);
+               bool bDynamics, t_commrec *cr,
+               Lincs *li);
 /* Initialize lincs stuff */
 
 real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
@@ -76,21 +79,23 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
  * required for LINCS.
  */
 
-gmx_bool
-constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
+bool
+constrain_lincs(FILE *log, bool bLog, bool bEner,
                 t_inputrec *ir,
                 gmx_int64_t step,
-                gmx_lincsdata_t lincsd, t_mdatoms *md,
+                Lincs *lincsd, t_mdatoms *md,
                 t_commrec *cr,
                 const gmx_multisim_t *ms,
                 rvec *x, rvec *xprime, rvec *min_proj,
                 matrix box, t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
-                gmx_bool bCalcVir, tensor vir_r_m_dr,
+                bool bCalcVir, tensor vir_r_m_dr,
                 int econ,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
 /* Returns if the constraining succeeded */
+
+} // namespace
 
 #endif
