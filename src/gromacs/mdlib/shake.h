@@ -37,8 +37,10 @@
 #define GMX_MDLIB_SHAKE_H
 
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 
+struct gmx_domdec_t;
 struct t_inputrec;
 
 /* Abstract type for SHAKE that is defined only in the file that uses it */
@@ -47,25 +49,33 @@ typedef struct gmx_shakedata *gmx_shakedata_t;
 gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
-gmx_bool bshakef(FILE           *log,          /* Log file			*/
-                 gmx_shakedata_t shaked,       /* Total number of atoms	*/
-                 real            invmass[],    /* Atomic masses		*/
-                 int             nblocks,      /* The number of shake blocks	*/
-                 int             sblock[],     /* The shake blocks             */
-                 t_idef         *idef,         /* The interaction def		*/
-                 t_inputrec     *ir,           /* Input record		        */
-                 rvec            x_s[],        /* Coords before update		*/
-                 rvec            prime[],      /* Output coords		*/
-                 t_nrnb         *nrnb,         /* Performance measure          */
-                 real * const    lagr,         /* The Lagrange multipliers     */
-                 real            lambda,       /* FEP lambda                   */
-                 real           *dvdlambda,    /* FEP force                    */
-                 real            invdt,        /* 1/delta_t                    */
-                 rvec           *v,            /* Also constrain v if v!=NULL  */
-                 gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
-                 tensor          vir_r_m_dr,   /* sum r x m delta_r            */
-                 gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
-                 int             econq);       /* which type of constraint is occurring */
+void
+make_shake_sblock_serial(gmx_shakedata *shaked,
+                         t_idef *idef, const t_mdatoms *md);
+
+void
+make_shake_sblock_dd(gmx_shakedata *shaked,
+                     const t_ilist *ilcon, const t_block *cgs,
+                     const gmx_domdec_t *dd);
+
+bool
+constrain_shake(FILE             *log,          /* Log file			*/
+                gmx_shakedata_t   shaked,       /* Total number of atoms	*/
+                real              invmass[],    /* Atomic masses		*/
+                t_idef           *idef,         /* The interaction def		*/
+                const t_inputrec *ir,           /* Input record		        */
+                rvec              x_s[],        /* Coords before update		*/
+                rvec              xprime[],     /* Output coords when constraining x */
+                rvec              vprime[],     /* Output coords when constraining v */
+                t_nrnb           *nrnb,         /* Performance measure          */
+                real              lambda,       /* FEP lambda                   */
+                real             *dvdlambda,    /* FEP force                    */
+                real              invdt,        /* 1/delta_t                    */
+                rvec             *v,            /* Also constrain v if v!=NULL  */
+                gmx_bool          bCalcVir,     /* Calculate r x m delta_r      */
+                tensor            vir_r_m_dr,   /* sum r x m delta_r            */
+                gmx_bool          bDumpOnError, /* Dump debugging stuff on error*/
+                int               econq);       /* which type of constraint is occurring */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0
