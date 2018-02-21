@@ -80,8 +80,4 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real invmass[], const real tt[], real lagr[], int *nerror);
 /* Regular iterative shake */
 
-void crattle(int iatom[], int ncon, int *nnit, int maxnit,
-             real dist2[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real tt[], real lagr[], int *nerror, real invdt);
-
 #endif
