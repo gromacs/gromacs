@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/trajectorydata/trajectoryframe.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
@@ -74,7 +73,7 @@ namespace gmx
 {
 
 Framehandler::Framehandler(){}
-Framehandler::Framehandler(const TrajectoryDataWriteSettings &settings)
+Framehandler::Framehandler(TrajectoryDataWriteSettings *settings)
 : settings_(settings)
 {}
 
@@ -83,7 +82,7 @@ Framehandler::~Framehandler()
 
 
 void
-Framehandler::setSettings(const TrajectoryDataWriteSettings &settings)
+Framehandler::setSettings(TrajectoryDataWriteSettings *settings)
 {
     settings_ = settings;
 }
@@ -91,19 +90,19 @@ Framehandler::setSettings(const TrajectoryDataWriteSettings &settings)
 void
 Framehandler::modifyFrame(t_trxframe *newFrame, const t_trxframe *oldFrame)
 {
-    const Selection *sel = settings_.getInputSel();
+    const Selection *sel = settings_->getInputSel();
     int natoms = sel->atomCount();
 
     *newFrame = *oldFrame;
 
-    newFrame->time   = settings_.getTime();
-    newFrame->bV     = (oldFrame->bV && settings_.getbVel());
-    newFrame->bF     = (oldFrame->bF && settings_.getbForce());
+    newFrame->time   = settings_->getTime();
+    newFrame->bV     = (oldFrame->bV && settings_->getbVel());
+    newFrame->bF     = (oldFrame->bF && settings_->getbForce());
     newFrame->natoms = natoms;
-    newFrame->bPrec  = (oldFrame->bPrec && settings_.getbPrec());
-    newFrame->prec   = settings_.getPrecision();
-    newFrame->atoms  = settings_.getAtoms();
-    newFrame->bAtoms = settings_.getbAtoms();
+    newFrame->bPrec  = (oldFrame->bPrec && settings_->getbPrec());
+    newFrame->prec   = settings_->getPrecision();
+    newFrame->atoms  = settings_->getAtoms();
+    newFrame->bAtoms = settings_->getbAtoms();
 
     rvec *xmem = nullptr;
     rvec *vmem = nullptr;

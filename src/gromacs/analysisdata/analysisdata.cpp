@@ -55,64 +55,6 @@ namespace gmx
 {
 
 /********************************************************************
- * AnalysisDataHandleImpl
- */
-
-namespace internal
-{
-
-/*! \internal \brief
- * Private implementation class for AnalysisDataHandle.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisDataHandleImpl
-{
-    public:
-        //! Creates a handle associated with the given data object.
-        explicit AnalysisDataHandleImpl(AnalysisData *data)
-            : data_(*data), currentFrame_(nullptr)
-        {
-        }
-
-        //! The data object that this handle belongs to.
-        AnalysisData             &data_;
-        //! Current storage frame object, or NULL if no current frame.
-        AnalysisDataStorageFrame *currentFrame_;
-};
-
-}   // namespace internal
-
-/********************************************************************
- * AnalysisData::Impl
- */
-
-/*! \internal \brief
- * Private implementation class for AnalysisData.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisData::Impl
-{
-    public:
-        //! Smart pointer type to manage a data handle implementation.
-        typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
-            HandlePointer;
-        //! Shorthand for a list of data handles.
-        typedef std::vector<HandlePointer> HandleList;
-
-        //! Storage implementation.
-        AnalysisDataStorage     storage_;
-        /*! \brief
-         * List of handles for this data object.
-         *
-         * Note that AnalysisDataHandle objects also contain (raw) pointers
-         * to these objects.
-         */
-        HandleList              handles_;
-};
-
-/********************************************************************
  * AnalysisData
  */
 
@@ -239,90 +181,12 @@ AnalysisDataHandle::AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl)
 
 
 void
-AnalysisDataHandle::startRealFrame(int index, real x, real dx)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
-                       "startFrame() called twice without calling finishFrame()");
-    impl_->currentFrame_ =
-        &impl_->data_.impl_->storage_.startFrame(index, x, dx);
-}
-
-void
-AnalysisDataHandle::startCoordFrame(int index, t_trxframe coord)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
-                       "startFrame() called twice without calling finishFrame()");
-    impl_->currentFrame_ =
-        &impl_->data_.impl_->storage_.startFrame(index, coord);
-}
-
-
-void
 AnalysisDataHandle::selectDataSet(int index)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "selectDataSet() called without calling startFrame()");
     impl_->currentFrame_->selectDataSet(index);
-}
-
-
-void
-AnalysisDataHandle::setRealPoint(int column, real value, bool bPresent)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
-                       "setPoint() called without calling startFrame()");
-    impl_->currentFrame_->setRealValue(column, value, bPresent);
-}
-
-
-void
-AnalysisDataHandle::setRealPoint(int column, real value, real error, bool bPresent)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
-                       "setPoint() called without calling startFrame()");
-    impl_->currentFrame_->setRealValue(column, value, error, bPresent);
-}
-
-
-void
-AnalysisDataHandle::setRealPoints(int firstColumn, int count, const real *values,
-                              bool bPresent)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
-                       "setPoints() called without calling startFrame()");
-    for (int i = 0; i < count; ++i)
-    {
-        impl_->currentFrame_->setRealValue(firstColumn + i, values[i], bPresent);
-    }
-}
-
-void
-AnalysisDataHandle::setCoordPoint(int column, t_trxframe value, bool bPresent)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
-                       "setPoint() called without calling startFrame()");
-    impl_->currentFrame_->setCoordValue(column, value, bPresent);
-}
-
-
-void
-AnalysisDataHandle::setCoordPoints(int firstColumn, int count, const t_trxframe *values,
-                              bool bPresent)
-{
-    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
-                       "setPoints() called without calling startFrame()");
-    for (int i = 0; i < count; ++i)
-    {
-        impl_->currentFrame_->setCoordValue(firstColumn + i, values[i], bPresent);
-    }
 }
 
 

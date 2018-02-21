@@ -136,7 +136,6 @@ TrajectoryAnalysisSettings::frflags() const
     return impl_->frflags;
 }
 
-
 void
 TrajectoryAnalysisSettings::setFlags(unsigned long flags)
 {
@@ -186,7 +185,6 @@ TrajectoryAnalysisSettings::setHelpText(const ArrayRef<const char *const> &help)
     impl_->optionsModuleSettings_->setHelpText(help);
 }
 
-
 /********************************************************************
  * TopologyInformation
  */
@@ -212,6 +210,8 @@ t_topology *TopologyInformation::topology() const
     if (top_ == nullptr && mtop_ != nullptr)
     {
         snew(top_, 1);
+        // this causes valgrind to complain about lost memory?
+        // it should be freed correctly above
         *top_ = gmx_mtop_t_to_t_topology(mtop_, false);
     }
     return top_;

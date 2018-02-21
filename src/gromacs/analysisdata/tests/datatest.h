@@ -106,7 +106,7 @@ class AnalysisDataTestInputPointSet
         AnalysisDataValue value(int i) const
         {
             AnalysisDataValue result;
-            result.setRealValue(values_[i].y);
+            result.setValue(values_[i].y);
             if (values_[i].bError)
             {
                 result.setError(values_[i].error);
@@ -482,7 +482,8 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
     for (int row = 0; row < input.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame    &frame = input.frame(row);
-        EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
+        Variant tmp = data->xvalueAsVariant(row);
+        EXPECT_FLOAT_EQ(frame.x(), tmp.cast<real>());
         GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
                            "Multiple point sets not supported by array data");
         const AnalysisDataTestInputPointSet &points = frame.pointSet(0);

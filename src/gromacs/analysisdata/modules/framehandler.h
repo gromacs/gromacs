@@ -93,20 +93,20 @@ class Framehandler
     public:
         virtual ~Framehandler();
 
-        explicit Framehandler(const TrajectoryDataWriteSettings &settings);
+        explicit Framehandler(TrajectoryDataWriteSettings *settings);
         Framehandler();
 
 
         /*! \brief
          * Set common settings for the plotting.
          */
-        void setSettings(const TrajectoryDataWriteSettings &settings);
+        void setSettings(TrajectoryDataWriteSettings *settings);
 
         void modifyFrame(t_trxframe *newFrame, const t_trxframe *oldFrame);
 
 
     private:
-        TrajectoryDataWriteSettings settings_;
+        TrajectoryDataWriteSettings *settings_;
 };
 
 

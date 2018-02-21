@@ -53,6 +53,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/topology/topology.h"
@@ -112,15 +113,17 @@ class TrajectoryDataWriteSettings
         {
             sel_ = sel;
         }
-        void setTopology(const gmx_mtop_t *mtop)
+        void setTopology(const gmx_mtop_t *mtop, const t_topology *top)
         {
             mtop_ = mtop;
+            top_ = top;
+
         }
         void setFiletype()
         {
             filetype_ = fn2ftp(name_.c_str());
         }
-        void setbgenCon(bool bgenCon)
+        void setbGC(bool bgenCon)
         {
             bgenCon_ = bgenCon;
         }
@@ -148,9 +151,13 @@ class TrajectoryDataWriteSettings
         {
             bAtoms_ = bAtoms;
         }
-        void setAtoms(t_atoms atoms)
+        void setAtoms(t_atoms *atoms)
         {
-            atoms_ = atoms;
+            atoms_ = *atoms;
+        }
+        void setConnections()
+        {
+            connections_ = gmx_conect_generate(top_);
         }
 
         const gmx_mtop_t *getMtop() const
@@ -169,7 +176,7 @@ class TrajectoryDataWriteSettings
         {
             return filetype_;
         }
-        bool getbgenCon() const
+        bool getbGC() const
         {
             return bgenCon_;
         }
@@ -207,6 +214,11 @@ class TrajectoryDataWriteSettings
             return &atoms_;
         }
 
+        gmx_conect getConnections()
+        {
+            return connections_;
+        }
+
 
     private:
         const SelectionCollection *selections_;
@@ -214,6 +226,7 @@ class TrajectoryDataWriteSettings
         const Selection *sel_;
         int filetype_;
         const gmx_mtop_t *mtop_;
+        const t_topology *top_;
         bool    bgenCon_;
         double prec_;
         bool bPrec_;
@@ -223,9 +236,7 @@ class TrajectoryDataWriteSettings
         bool bForce_;
         bool bAtoms_;
         t_atoms atoms_;
-
-
-
+        gmx_conect connections_;
 };
 
 } // namespace gmx

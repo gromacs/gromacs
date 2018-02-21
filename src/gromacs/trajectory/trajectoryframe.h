@@ -86,4 +86,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
 
 void done_frame(t_trxframe *frame);
 
+void done_coord(t_trxframe *frame);
+
 #endif

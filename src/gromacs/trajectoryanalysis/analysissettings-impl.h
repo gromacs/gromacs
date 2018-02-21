@@ -49,6 +49,8 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
+struct t_trxstatus;
+
 namespace gmx
 {
 

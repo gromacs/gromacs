@@ -190,11 +190,11 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Initialize times.
     if (_impl->bFirst)
     {
-        _impl->t0 = header.x();
+        _impl->t0 = header.x().cast<real>();
     }
     else if (_impl->dt <= 0)
     {
-        _impl->dt = header.x() - _impl->t0;
+        _impl->dt = header.x().cast<real>() - _impl->t0;
         if (_impl->dt < 0 || gmx_within_tol(_impl->dt, 0.0, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Identical or decreasing frame times"));
@@ -202,12 +202,12 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     }
     else
     {
-        if (!gmx_within_tol(header.x() - _impl->t, _impl->dt, GMX_REAL_EPS))
+        if (!gmx_within_tol(header.x().cast<real>() - _impl->t, _impl->dt, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Frames not evenly spaced"));
         }
     }
-    _impl->t = header.x();
+    _impl->t = header.x().cast<real>();
 
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
@@ -244,7 +244,7 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
     }
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i);
+        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i).cast<real>();
     }
 }
 
@@ -268,7 +268,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
         }
         moduleManager().notifyDataStart(this);
     }
-    AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
+    AnalysisDataFrameHeader header(_impl->nstored - 2, Variant::create<real>(_impl->t), Variant::create<real>(0.0));
     moduleManager().notifyFrameStart(header);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
@@ -280,7 +280,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             i += _impl->max_store;
         }
         _impl->currValues_.clear();
-        _impl->currValues_.emplace_back(step * _impl->dt);
+        _impl->currValues_.emplace_back(Variant::create<real>(step * _impl->dt));
         int k = 1;
         for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
         {
@@ -292,7 +292,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
                     - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
-            _impl->currValues_.emplace_back(dist2);
+            _impl->currValues_.emplace_back(Variant::create<real>(dist2));
         }
         moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }

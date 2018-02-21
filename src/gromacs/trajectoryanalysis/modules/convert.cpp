@@ -125,9 +125,9 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
 
     settings->setHelpText(desc);
 
-    options->addOption(SelectionOption("Output").store(&sel_).dynamicMask()
-                            .required()
-                           .description("Selection to write out"));
+    options->addOption(SelectionOption("output").store(&sel_).dynamicMask()
+                            .required().onlyAtoms()
+                            .description("Selection to write out"));
 
     options->addOption(FileNameOption("o").filetype(eftTrajectory).outputFile()
                             .store(&fnOutput_).defaultBasename("trajout")
@@ -154,7 +154,7 @@ Convert::initAnalysis(const TrajectoryAnalysisSettings &settings,
             new TrajectoryDataWriteModule(writeSettings_));
     writeModule_ = writeModule;
     // initialize the write with the minimal info needed in one function instead of five
-    writeModule_->setExternal(&sel_, fnOutput_, top.mtop());
+    writeModule_->setExternal(&sel_, fnOutput_, top.mtop(), top.topology());
 
     write_.addModule(writeModule_);
 
@@ -169,11 +169,11 @@ Convert::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle  dh = pdata->dataHandle(write_);
-    dh.startCoordFrame(frnr, fr);
+    dh.startFrame(frnr, fr);
     // work on frame time data set
     dh.selectDataSet(0);
     // set data point with frame time for each frame
-    dh.setCoordPoint(0, fr, true);
+    dh.setPoint(0, fr, true);
     // writeModule_->writeFrame(&fr);
     dh.finishFrame();
     // can have the write method in the writetrj class now?

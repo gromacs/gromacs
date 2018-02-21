@@ -101,3 +101,10 @@ void done_frame(t_trxframe *frame)
     sfree(frame->v);
     sfree(frame->f);
 }
+
+void done_coord(t_trxframe *frame)
+{
+    sfree(frame->x);
+    sfree(frame->v);
+    sfree(frame->f);
+}

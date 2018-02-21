@@ -144,10 +144,10 @@ void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
 {
     TestReferenceChecker compound(checker->checkCompound("DataValue", nullptr));
-    compound.checkReal(value.value(), "Value");
+    compound.checkReal(value.valueAsVariant().cast<real>(), "Value");
     if (compound.checkPresent(value.hasError(), "Error"))
     {
-        compound.checkReal(value.error(), "Error");
+        compound.checkReal(value.errorAsVariant().cast<real>(), "Error");
     }
     if (compound.checkPresent(!value.isPresent(), "Present"))
     {
@@ -180,7 +180,7 @@ MockAnalysisDataModule::Impl::startReferenceFrame(
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_ = rootChecker_.checkCompound("DataFrame",
                                                formatString("Frame%d", frameIndex_).c_str());
-    frameChecker_.checkReal(header.x(), "X");
+    frameChecker_.checkReal(header.x().cast<real>(), "X");
 }
 
 
@@ -252,8 +252,8 @@ void checkHeader(const AnalysisDataFrameHeader    &header,
                  const AnalysisDataTestInputFrame &refFrame)
 {
     EXPECT_EQ(refFrame.index(), header.index());
-    EXPECT_FLOAT_EQ(refFrame.x(), header.x());
-    EXPECT_FLOAT_EQ(refFrame.dx(), header.dx());
+    EXPECT_FLOAT_EQ(refFrame.x(), header.x().cast<real>());
+    EXPECT_FLOAT_EQ(refFrame.dx(), header.dx().cast<real>());
 }
 
 /*! \brief
@@ -271,7 +271,7 @@ void checkPoints(const AnalysisDataPointSetRef       &points,
     {
         const int column = points.firstColumn() - refPoints.firstColumn() + i + columnOffset;
         EXPECT_FLOAT_EQ(refPoints.y(column),
-                        points.y(i))
+                        points.y(i).cast<real>())
         << "  Column: " << i+1 << " / " << points.columnCount()
         << " (+" << points.firstColumn() << ")\n"
         << "Ref. col: " << column+1 << " / " << refPoints.size()

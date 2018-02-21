@@ -383,7 +383,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
     }
     if (!impl_->bOmitX_)
     {
-        std::fprintf(impl_->fp_, impl_->xformat_, frame.x() * impl_->xscale_);
+        std::fprintf(impl_->fp_, impl_->xformat_, frame.x().cast<real>() * impl_->xscale_);
     }
 }
 
@@ -417,11 +417,11 @@ void
 AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
-    const real y = value.isSet() ? value.value() : 0.0;
+    const real y = value.isSet() ? value.valueAsVariant().cast<real>() : 0.0;
     std::fprintf(impl_->fp_, impl_->yformat_, y);
     if (impl_->bErrorsAsSeparateColumn_)
     {
-        const real dy = value.isSet() ? value.error() : 0.0;
+        const real dy = value.isSet() ? value.errorAsVariant().cast<real>() : 0.0;
         std::fprintf(impl_->fp_, impl_->yformat_, dy);
     }
 }
@@ -542,8 +542,8 @@ AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
         }
         if (bWrite_[DIM])
         {
-            const rvec        y = { points.y(i), points.y(i + 1), points.y(i + 2) };
-            AnalysisDataValue value(norm(y));
+            const rvec        y = { points.y(i).cast<real>(), points.y(i + 1).cast<real>(), points.y(i + 2).cast<real>() };
+            AnalysisDataValue value(Variant::create<real>(norm(y)));
             writeValue(value);
         }
     }

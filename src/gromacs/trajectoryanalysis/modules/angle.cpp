@@ -700,7 +700,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     checkSelections(sel1, sel2);
 
-    dh.startRealFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
 
     AnglePositionIterator iter1(sel1, natoms1_);
     AnglePositionIterator iter2(sel2, natoms2_);
@@ -831,7 +831,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            dh.setRealPoint(n, angle * RAD2DEG, bPresent);
+            dh.setPoint(n, angle * RAD2DEG, bPresent);
         }
     }
     dh.finishFrame();

@@ -158,12 +158,11 @@ AbstractWriteModule::setSettings(const TrajectoryDataWriteSettings &settings)
 }
 
 void
-AbstractWriteModule::setExternal(const Selection *sel, std::string name, const gmx_mtop_t *mtop)
+AbstractWriteModule::setExternal(const Selection *sel, std::string name, const gmx_mtop_t *mtop, const t_topology *top)
 {
     impl_->settings_.setName(name);
     impl_->settings_.setInputSel(sel);
-    impl_->settings_.setTopology(mtop);
-    impl_->settings_.setAtoms(gmx_mtop_global_atoms(mtop));
+    impl_->settings_.setTopology(mtop, top);
 }
 
 bool
@@ -178,10 +177,10 @@ AbstractWriteModule::parallelDataStarted(AbstractAnalysisData *data,
     // reset info in those new objects
     for (int i = 0; i < data->dataSetCount(); ++i)
     {
-        impl_->filehandler_[i].setSettings(impl_->settings_);
+        impl_->filehandler_[i].setSettings(&impl_->settings_);
         impl_->filehandler_[i].openFile();
         // openFile needs to throw so that no checks are needed later
-        impl_->framehandler_[i].setSettings(impl_->settings_);
+        impl_->framehandler_[i].setSettings(&impl_->settings_);
         impl_->coordinate_.setColumnCount(i,1);
     }
     impl_->coordinate_.init(options);
@@ -206,7 +205,7 @@ AbstractWriteModule::pointsAdded(const AnalysisDataPointSetRef &points)
         {
             t_trxframe local;
             clear_trxframe(&local, true);
-            t_trxframe old = points.values()[i].coord();
+            t_trxframe old = points.values()[i].valueAsVariant().cast<t_trxframe>();
             impl_->framehandler_[points.dataSetIndex()].modifyFrame(&local,&old);
             handle.value(i) = local;
         }
@@ -228,7 +227,7 @@ AbstractWriteModule::frameFinished(const AnalysisDataFrameHeader &header)
 }
 
 void
-AbstractWriteModule::frameFinishedSerial(int frameIndex)
+AbstractWriteModule::frameFinishedSerial(int /*frameIndex*/)
 {
 }
 

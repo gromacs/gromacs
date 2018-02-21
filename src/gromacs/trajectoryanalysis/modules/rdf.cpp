@@ -481,7 +481,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
     const real inverseVolume = 1.0 / det(boxForVolume);
 
-    nh.startRealFrame(frnr, fr.time);
+    nh.startFrame(frnr, fr.time);
     // Compute the normalization factor for the number of reference positions.
     if (bSurface)
     {
@@ -501,19 +501,19 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     prevId = id;
                 }
             }
-            nh.setRealPoint(0, count);
+            nh.setPoint(0, count);
         }
         else
         {
-            nh.setRealPoint(0, surfaceGroupCount_);
+            nh.setPoint(0, surfaceGroupCount_);
         }
     }
     else
     {
-        nh.setRealPoint(0, refSel.posCount());
+        nh.setPoint(0, refSel.posCount());
     }
 
-    dh.startRealFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
     AnalysisNeighborhoodSearch    nbsearch = nb_.initSearch(pbc, refSel);
     for (size_t g = 0; g < sel.size(); ++g)
     {
@@ -550,7 +550,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     // surface positions.
                     if (r2 > cut2_ && r2 <= rmax2_)
                     {
-                        dh.setRealPoint(0, std::sqrt(r2));
+                        dh.setPoint(0, std::sqrt(r2));
                         dh.finishPointSet();
                     }
                 }
@@ -569,14 +569,14 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 {
                     // TODO: Consider whether the histogramming could be done with
                     // less overhead (after first measuring the overhead).
-                    dh.setRealPoint(0, std::sqrt(r2));
+                    dh.setPoint(0, std::sqrt(r2));
                     dh.finishPointSet();
                 }
             }
         }
         // Normalization factor for the number density (only used without
         // -surf, but does not hurt to populate otherwise).
-        nh.setRealPoint(g + 1, sel[g].posCount() * inverseVolume);
+        nh.setPoint(g + 1, sel[g].posCount() * inverseVolume);
     }
     dh.finishFrame();
     nh.finishFrame();

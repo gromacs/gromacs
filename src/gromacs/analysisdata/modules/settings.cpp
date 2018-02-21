@@ -55,6 +55,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -73,12 +74,23 @@ class Selection;
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-TrajectoryDataWriteSettings::TrajectoryDataWriteSettings()
+TrajectoryDataWriteSettings::TrajectoryDataWriteSettings() : selections_(nullptr),
+    sel_(nullptr), filetype_(efNR), mtop_(nullptr), top_(nullptr), bgenCon_(false), prec_(1000),
+    bPrec_(false), time_(0), bTime_(false), bVel_(false), bForce_(false), bAtoms_(false)
 {
+    init_atom(&atoms_);
 }
 
 TrajectoryDataWriteSettings::~TrajectoryDataWriteSettings()
 {
+    if (bgenCon_)
+    {
+        gmx_conect_done(connections_);
+    }
+    if (bAtoms_)
+    {
+        done_atom(&atoms_);
+    }
 }
 
 
@@ -98,7 +110,6 @@ TrajectoryDataWriteSettings::initOptions(IOptionsContainer *options)
             .description("Set custom start time")
             .storeIsSet(&bTime_));
 }
-
 
 } // namespace gmx
 

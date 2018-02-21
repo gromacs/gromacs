@@ -57,7 +57,7 @@ AbstractAnalysisArrayData::AbstractAnalysisArrayData()
     : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0),
       bUniformX_(true), bReady_(false)
 {
-    xvalue_.push_back(0);
+    xvalue_.push_back(Variant());
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
@@ -73,7 +73,7 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
         return AnalysisDataFrameRef();
     }
     return AnalysisDataFrameRef(
-            AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+            AnalysisDataFrameHeader(index, xvalueAsVariant(index)),
             makeConstArrayRef(value_).
                 subArray(index * columnCount(), columnCount()),
             constArrayRefFromArray(&pointSetInfo_, 1));
@@ -109,9 +109,11 @@ AbstractAnalysisArrayData::setRowCount(int rowCount)
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)
     {
+        // check if we are operating on the corret data type
+        GMX_RELEASE_ASSERT(!xvalue_[0].isType<t_trxframe>(), "Can not have Uniform data for not supported data types");
         for (int i = rowCount_; i < rowCount; ++i)
         {
-            xvalue_[i] = xvalue_[0] + i * xstep_;
+            xvalue_[i] = Variant::create<real>(xvalue_[0].cast<real>() + i * xstep_);
         }
     }
     rowCount_ = rowCount;
@@ -128,7 +130,7 @@ AbstractAnalysisArrayData::allocateValues()
     std::vector<AnalysisDataValue>::iterator i;
     for (i = value_.begin(); i != value_.end(); ++i)
     {
-        i->setRealValue(0.0);
+        i->setValue(nullptr);
     }
 }
 
@@ -137,12 +139,12 @@ void
 AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
-    xvalue_[0] = start;
+    xvalue_[0] = Variant::create<real>(start);
     xstep_     = step;
     bUniformX_ = true;
     for (int i = 0; i < rowCount_; ++i)
     {
-        xvalue_[i] = start + i * xstep_;
+        xvalue_[i] = Variant::create<real>(start + i * xstep_);
     }
 }
 
@@ -161,7 +163,7 @@ AbstractAnalysisArrayData::setXAxisValue(int row, real value)
     }
     bUniformX_   = false;
     xstep_       = 0.0;
-    xvalue_[row] = value;
+    xvalue_[row] = Variant::create<real>(value);
 }
 
 
@@ -179,7 +181,7 @@ AbstractAnalysisArrayData::valuesReady()
     modules.notifyDataStart(this);
     for (int i = 0; i < rowCount(); ++i)
     {
-        AnalysisDataFrameHeader header(i, xvalue(i), 0);
+        AnalysisDataFrameHeader header(i, xvalueAsVariant(i));
         modules.notifyFrameStart(header);
         modules.notifyPointsAdd(
                 AnalysisDataPointSetRef(

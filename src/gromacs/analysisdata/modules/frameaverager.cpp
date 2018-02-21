@@ -75,7 +75,7 @@ void AnalysisDataFrameAverager::addPoints(const AnalysisDataPointSetRef &points)
     {
         if (points.present(i))
         {
-            addValue(firstColumn + i, points.y(i));
+            addValue(firstColumn + i, points.y(i).cast<real>());
         }
     }
 

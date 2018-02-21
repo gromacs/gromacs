@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/trajectorydata/trajectoryframe.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
@@ -74,7 +73,7 @@
 
 namespace gmx
 {
-Filehandler::Filehandler(const TrajectoryDataWriteSettings &settings) : settings_(settings)
+Filehandler::Filehandler(TrajectoryDataWriteSettings *settings) : settings_(settings)
 {
 strcpy(filemode_, "w");
 }
@@ -98,34 +97,42 @@ Filehandler::closeFile()
 }
 
 void
-Filehandler::setLegacyInformation(t_atoms *local)
+Filehandler::setLegacyInformation()
 {
     const Selection *sel = sel_;
-    const gmx_mtop_t *mtop =  settings_.getMtop();
+    const gmx_mtop_t *mtop =  settings_->getMtop();
+    // get pointer to storage of atoms data in settings
+    t_atoms *local = settings_->getAtoms();
     t_atoms inputAtoms = gmx_mtop_global_atoms(mtop);
-    init_t_atoms(&local_,inputAtoms.nr,inputAtoms.havePdbInfo);
+    init_t_atoms(local,inputAtoms.nr,inputAtoms.havePdbInfo);
     sfree(local->resinfo);
-    local->resinfo = inputAtoms.resinfo;
     int natoms = sel->atomCount();
+    snew(local->resinfo, natoms);
     for (int i = 0; (i < natoms); i++)
     {
-        local->atomname[i] = inputAtoms.atomname[sel->position(i).refId()];
-        local->atom[i] = inputAtoms.atom[sel->position(i).refId()];
+        int pos = sel->position(i).refId();
+        local->atomname[i] = inputAtoms.atomname[pos];
+        local->atom[i] = inputAtoms.atom[pos];
+        int localResind = local->atom[i].resind;
+        int inputResind = inputAtoms.atom[pos].resind;
+        local->resinfo[localResind] = inputAtoms.resinfo[inputResind];
         if (inputAtoms.havePdbInfo)
         {
-            local->pdbinfo[i] = inputAtoms.pdbinfo[sel->position(i).refId()];
+            local->pdbinfo[i] = inputAtoms.pdbinfo[pos];
         }
         local->nres = std::max(local->nres, local->atom[i].resind+1);
     }
     local->nr = sel->atomCount();
-    settings_.setbAtoms(true);
+    settings_->setbAtoms(true);
+    settings_->setAtoms(local);
+    done_atom(&inputAtoms);
 }
 
 void
-Filehandler::setSettings(const TrajectoryDataWriteSettings &settings)
+Filehandler::setSettings(TrajectoryDataWriteSettings *settings)
 {
     settings_ = settings;
-    sel_ = settings_.getInputSel();
+    sel_ = settings_->getInputSel();
 }
 
 void
@@ -145,7 +152,7 @@ Filehandler::trjOpenTng(const char *filename, const char *mode, t_trxstatus *out
         localindex[runner++] = *ai;
     }
 
-    gmx_mtop_t mtop = (*const_cast<gmx_mtop_t*>(settings_.getMtop()));
+    gmx_mtop_t mtop = (*const_cast<gmx_mtop_t*>(settings_->getMtop()));
 
 //    t_trxstatus &localInput = impl_->infile_;
     trjtools_gmx_prepare_tng_writing(filename,
@@ -168,39 +175,39 @@ Filehandler::trjOpenTrr(const char *filename, const char *mode) const
 void
 Filehandler::setConnections()
 {
-    gmx_mtop_t *mtop = const_cast<gmx_mtop_t*>(settings_.getMtop());
-    t_topology top = gmx_mtop_t_to_t_topology(mtop, false);
-    connections_ = gmx_conect(&top);
+    settings_->setConnections();
 }
 
 
 void
 Filehandler::openFile()
 {
-    std::string name = settings_.getName();
+    std::string name = settings_->getName();
     if (!name.empty())
     {
-        int filetype = settings_.getFiletype();
+        int filetype = settings_->getFiletype();
 
         switch(filetype)
         {
         case(efTNG):
+            trr_ = nullptr;
             trjOpenTng(name.c_str(), filemode_, trr_);
             break;
-        case(efTRR):
-        case(efXTC):
         case(efPDB):
         case(efGRO):
+            settings_->setbGC(true);
+        case(efTRR):
+        case(efXTC):
         case(efG96):
             trr_ = trjOpenTrr(name.c_str(), filemode_);
-            setLegacyInformation(&local_);
+            setLegacyInformation();
             break;
         default:
             gmx_incons("Invalid file type");
             // handle this error
         }
     }
-    if (settings_.getbgenCon())
+    if (settings_->getbGC())
     {
         setConnections();
     }
@@ -215,28 +222,26 @@ Filehandler::isFileOpen() const
 
 
 void
-Filehandler::writeValue(const t_trxframe &coord) const
+Filehandler::writeValue(t_trxframe &coord) const
 {
-    const t_trxframe *plocal = &coord;
-    t_trxframe local = (*const_cast<t_trxframe*>(plocal));
-    int filetype = settings_.getFiletype();
+    t_trxframe *plocal = &coord;
+    int filetype = settings_->getFiletype();
     switch(filetype)
     {
         case(efTNG):
-            write_tng_frame(trr_, &local);//local);
-            break;
+//            write_tng_frame(trr_, plocal);//local);
+//            break;
         case(efTRR):
         case(efXTC):
         case(efPDB):
         case(efGRO):
         case(efG96):
-            write_trxframe(trr_,&local, connections_);
+            write_trxframe(trr_,plocal, settings_->getConnections());
             break;
         default:
             gmx_incons("Illegal output file format");
     }
+    done_coord(plocal);
 }
-
-//! \endcond
 
 } // namespace gmx

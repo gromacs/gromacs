@@ -809,6 +809,7 @@ void gmx_conect_done(gmx_conect conect)
     gmx_conect_t *gc = conect;
 
     sfree(gc->conect);
+    sfree(gc);
 }
 
 gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)

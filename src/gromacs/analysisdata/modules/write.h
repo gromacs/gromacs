@@ -105,8 +105,7 @@ class AbstractWriteModule : public AbstractAnalysisArrayData,
         virtual void frameFinishedSerial(int frameIndex);
         virtual void dataFinished();
 
-        void setExternal(const Selection *sel, std::string name, const gmx_mtop_t *mtop);
-
+        void setExternal(const Selection *sel, std::string name, const gmx_mtop_t *mtop, const t_topology *top);
 
     protected:
         /*! \cond libapi */

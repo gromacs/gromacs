@@ -51,6 +51,7 @@
 
 struct gmx_mtop_t;
 struct t_topology;
+struct t_trxstatus;
 
 namespace gmx
 {

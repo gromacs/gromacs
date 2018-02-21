@@ -55,8 +55,6 @@
 struct t_atoms;
 struct t_topology;
 struct gmx_mtop_t;
-struct t_trxstatus;
-struct t_trxframe;
 
 namespace gmx
 {
@@ -91,13 +89,13 @@ class Selection;
 class Filehandler
 {
     public:
-        Filehandler(const TrajectoryDataWriteSettings &settings);
+        Filehandler(TrajectoryDataWriteSettings *settings);
         Filehandler();
         virtual ~Filehandler();
 
-        void setSettings(const TrajectoryDataWriteSettings &settings);
+        void setSettings(TrajectoryDataWriteSettings *settings);
         void closeFile();
-        void setLegacyInformation(t_atoms *local);
+        void setLegacyInformation();
         void writeLegacyHeaders();
         void setConnections();
         void setInputIndexName(const char *name);
@@ -112,17 +110,15 @@ class Filehandler
 
         void setInputFile(t_trxstatus * /*infile*/){}
         bool isFileOpen() const;
-        void writeValue(const t_trxframe &coord) const;
+        void writeValue(t_trxframe &coord) const;
 
 
-        TrajectoryDataWriteSettings  settings_;
+        TrajectoryDataWriteSettings  *settings_;
         const Selection                   *sel_;
         t_trxstatus              *trr_;
 
         char                      filemode_[5];
         t_trxstatus             *infile_;
-        gmx_conect              connections_;
-        t_atoms                 local_;
 
 
 

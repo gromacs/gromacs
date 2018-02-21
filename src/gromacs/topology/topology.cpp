@@ -175,6 +175,10 @@ void done_top(t_topology *top)
 {
     sfree(top->idef.functype);
     sfree(top->idef.iparams);
+    if (top->idef.iparams_posres != nullptr)
+    {
+        sfree(top->idef.iparams_posres);
+    }
     for (int f = 0; f < F_NRE; ++f)
     {
         sfree(top->idef.il[f].iatoms);
@@ -199,6 +203,10 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
     {
         if (top != nullptr)
         {
+            if (top->idef.iparams_posres != nullptr)
+            {
+                sfree(top->idef.iparams_posres);
+            }
             for (int f = 0; f < F_NRE; ++f)
             {
                 sfree(top->idef.il[f].iatoms);

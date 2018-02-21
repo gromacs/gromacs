@@ -854,7 +854,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
         totalArea += atomArea;
         if (bResAt)
         {
-            atomAreaHandle.setRealPoint(ii, atomArea);
+            atomAreaHandle.setPoint(ii, atomArea);
             (*resAreaWork)[ri] += atomArea;
         }
         if (bDGsolv)
@@ -866,7 +866,7 @@ void computeAreas(const Selection &surfaceSel, const Selection &sel,
     {
         for (size_t i = 0; i < (*resAreaWork).size(); ++i)
         {
-            resAreaHandle.setRealPoint(i, (*resAreaWork)[i]);
+            resAreaHandle.setPoint(i, (*resAreaWork)[i]);
         }
     }
     *totalAreaOut = totalArea;
@@ -967,18 +967,18 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                       &top_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
     }
 
-    ah.startRealFrame(frnr, fr.time);
+    ah.startFrame(frnr, fr.time);
     if (bResAt)
     {
-        aah.startRealFrame(frnr, fr.time);
-        rah.startRealFrame(frnr, fr.time);
+        aah.startFrame(frnr, fr.time);
+        rah.startFrame(frnr, fr.time);
     }
     if (bDGsol)
     {
-        dgh.startRealFrame(frnr, fr.time);
+        dgh.startFrame(frnr, fr.time);
     }
 
-    ah.setRealPoint(0, totarea);
+    ah.setPoint(0, totarea);
 
     real totalArea, dgsolv;
     if (bResAt || bDGsol)
@@ -987,7 +987,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
         if (bDGsol)
         {
-            dgh.setRealPoint(0, dgsolv);
+            dgh.setPoint(0, dgsolv);
         }
     }
     for (size_t g = 0; g < outputSel.size(); ++g)
@@ -999,10 +999,10 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         computeAreas(surfaceSel, outputSel[g], frameData.atomAreas_, dgsFactor_,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
-        ah.setRealPoint(g + 1, totalArea);
+        ah.setPoint(g + 1, totalArea);
         if (bDGsol)
         {
-            dgh.setRealPoint(g + 1, dgsolv);
+            dgh.setPoint(g + 1, dgsolv);
         }
     }
 
@@ -1025,9 +1025,9 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             totmass += surfaceSel.position(i).mass();
         }
         const real density = totmass*AMU/(totvolume*NANO*NANO*NANO);
-        vh.startRealFrame(frnr, fr.time);
-        vh.setRealPoint(0, totvolume);
-        vh.setRealPoint(1, density);
+        vh.startFrame(frnr, fr.time);
+        vh.setPoint(0, totvolume);
+        vh.setPoint(1, density);
         vh.finishFrame();
     }
 }
