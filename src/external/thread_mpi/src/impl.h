@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2018, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -440,11 +440,11 @@ struct tmpi_thread
 #endif
     /* The start function (or NULL, if a main()-style start function is to
        be called) */
-    void  (*start_fn)(void*);
+    void  (*start_fn)(const void*);
     /* The main()-style start function */
     int   (*start_fn_main)(int, char**);
     /* the argument to the start function, if it's not main()*/
-    void *start_arg;
+    const void *start_arg;
 
     /* we copy these for each thread (providing these to main() is not
        required by the MPI standard, but it's convenient). Note that we copy,

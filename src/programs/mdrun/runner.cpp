@@ -140,6 +140,15 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 namespace gmx
 {
 
+// Barrier to ensure that the master thread does not modify mdrunner
+// during copy on the spawned threads.
+static void threadMpiMdrunnerAccessBarrier()
+{
+#if GMX_THREAD_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+}
+
 void Mdrunner::reinitializeOnSpawnedThread()
 {
     // TODO This duplication is formally necessary if any thread might
@@ -150,13 +159,14 @@ void Mdrunner::reinitializeOnSpawnedThread()
     // Mdrunner.
     fnm = dup_tfn(nfile, fnm);
 
+    threadMpiMdrunnerAccessBarrier();
+
     cr  = reinitialize_commrec_for_this_thread(cr, ms);
 
-    if (!MASTER(cr))
-    {
-        // Only the master rank writes to the log files
-        fplog = nullptr;
-    }
+    GMX_RELEASE_ASSERT(!MASTER(cr), "reinitializeOnSpawnedThread should only be called on spawned threads");
+
+    // Only the master rank writes to the log file
+    fplog = nullptr;
 }
 
 /*! \brief The callback used for running on spawned threads.
@@ -165,14 +175,14 @@ void Mdrunner::reinitializeOnSpawnedThread()
  * argument permitted to the thread-launch API call, copies it to make
  * a new runner for this thread, reinitializes necessary data, and
  * proceeds to the simulation. */
-static void mdrunner_start_fn(void *arg)
+static void mdrunner_start_fn(const void *arg)
 {
     try
     {
         auto masterMdrunner = reinterpret_cast<const gmx::Mdrunner *>(arg);
         /* copy the arg list to make sure that it's thread-local. This
-           doesn't copy pointed-to items, of course, but those are all
-           const. */
+           doesn't copy pointed-to items, of course; fnm, cr and fplog
+           are reset in the call below, all others should be const. */
         gmx::Mdrunner mdrunner = *masterMdrunner;
         mdrunner.reinitializeOnSpawnedThread();
         mdrunner.mdrunner();
@@ -187,7 +197,7 @@ static void mdrunner_start_fn(void *arg)
  * (including the main thread) for thread-parallel runs. This in turn
  * calls mdrunner() for each thread. All options are the same as for
  * mdrunner(). */
-t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
+t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch) const
 {
 
     /* first check whether we even need to start tMPI */
@@ -196,23 +206,16 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
         return cr;
     }
 
-    gmx::Mdrunner spawnedMdrunner = *this;
-    // TODO This duplication is formally necessary if any thread might
-    // modify any memory in fnm or the pointers it contains. If the
-    // contents are ever provably const, then we can remove this
-    // allocation (and memory leak).
-    // TODO This should probably become part of a copy constructor for
-    // Mdrunner.
-    spawnedMdrunner.fnm = dup_tfn(this->nfile, fnm);
-
 #if GMX_THREAD_MPI
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
     if (tMPI_Init_fn(TRUE, numThreadsToLaunch, TMPI_AFFINITY_NONE,
-                     mdrunner_start_fn, static_cast<void*>(&spawnedMdrunner)) != TMPI_SUCCESS)
+                     mdrunner_start_fn, static_cast<const void*>(this)) != TMPI_SUCCESS)
     {
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
+
+    threadMpiMdrunnerAccessBarrier();
 #else
     GMX_UNUSED_VALUE(mdrunner_start_fn);
 #endif
