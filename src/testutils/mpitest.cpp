@@ -77,9 +77,9 @@ GMX_TEST_OPTIONS(ThreadMpiTestOptions, options)
 //! \endcond
 
 //! Thread entry function for other thread-MPI threads.
-void threadStartFunc(void *data)
+void threadStartFunc(const void *data)
 {
-    std::function<void()> &testBody = *reinterpret_cast<std::function<void()> *>(data);
+    const std::function<void()> &testBody = *reinterpret_cast<const std::function<void()> *>(data);
     try
     {
         testBody();

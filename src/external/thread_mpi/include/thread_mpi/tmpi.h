@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009,2016, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2016,2018, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -392,7 +392,7 @@ int tMPI_Init(int *argc, char ***argv,
 TMPI_EXPORT
 int tMPI_Init_fn(int main_thread_returns, int N,
                  tMPI_Affinity_strategy aff_strategy,
-                 void (*start_function)(void*), void *arg);
+                 void (*start_function)(const void*), const void *arg);
 
 
 

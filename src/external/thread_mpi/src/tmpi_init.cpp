@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2018, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -103,7 +103,7 @@ static
 int tMPI_Start_threads(tmpi_bool main_returns, int N,
                        tMPI_Affinity_strategy aff_strategy,
                        int *argc, char ***argv,
-                       void (*start_fn)(void*), void *start_arg,
+                       void (*start_fn)(const void*), const void *start_arg,
                        int (*start_fn_main)(int, char**));
 
 /* starter function for threads; takes a void pointer to a
@@ -410,7 +410,7 @@ static void* tMPI_Thread_starter(void *arg)
 int tMPI_Start_threads(tmpi_bool main_returns, int N,
                        tMPI_Affinity_strategy aff_strategy,
                        int *argc, char ***argv,
-                       void (*start_fn)(void*), void *start_arg,
+                       void (*start_fn)(const void*), const void *start_arg,
                        int (*start_fn_main)(int, char**))
 {
     int ret;
@@ -575,7 +575,7 @@ int tMPI_Init(int *argc, char ***argv,
 
 int tMPI_Init_fn(int main_thread_returns, int N,
                  tMPI_Affinity_strategy aff_strategy,
-                 void (*start_function)(void*), void *arg)
+                 void (*start_function)(const void*), const void *arg)
 {
     int ret;
 #ifdef TMPI_TRACE
