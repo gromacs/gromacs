@@ -170,7 +170,7 @@ class Mdrunner
         /*! \brief Driver routine, that calls the different simulation methods. */
         int mdrunner();
         //! Called when thread-MPI spawns threads.
-        t_commrec *spawnThreads(int numThreadsToLaunch);
+        t_commrec *spawnThreads(int numThreadsToLaunch) const;
         /*! \brief Re-initializes the object after threads spawn.
          *
          * \todo Can this be refactored so that the Mdrunner on a spawned thread is
