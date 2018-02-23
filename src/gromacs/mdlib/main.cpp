@@ -239,7 +239,8 @@ void gmx_log_close(FILE *fp)
 }
 
 // TODO move this to multi-sim module
-gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs)
+gmx_multisim_t *init_multisystem(MPI_Comm comm,
+                                 const std::vector<std::string> &multidirs)
 {
     gmx_multisim_t *ms;
 #if GMX_MPI
@@ -247,36 +248,35 @@ gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs)
     int            *rank;
 #endif
 
-    if (nsim <= 1)
+    if (multidirs.size() <= 1)
     {
         return nullptr;
     }
-    if (!GMX_LIB_MPI && nsim > 1)
+    if (!GMX_LIB_MPI && multidirs.size() > 1)
     {
         gmx_fatal(FARGS, "mdrun -multidir is only supported when GROMACS has been "
                   "configured with a proper external MPI library.");
     }
-    GMX_RELEASE_ASSERT(multidirs, "Must have multiple directories for -multisim");
 
 #if GMX_MPI
     int numRanks;
     MPI_Comm_size(comm, &numRanks);
-    if (numRanks % nsim != 0)
+    if (numRanks % multidirs.size() != 0)
     {
-        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", numRanks, nsim);
+        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%zu)", numRanks, multidirs.size());
     }
 
-    int numRanksPerSim = numRanks/nsim;
+    int numRanksPerSim = numRanks/multidirs.size();
     int rankWithinComm;
     MPI_Comm_rank(comm, &rankWithinComm);
 
     if (debug)
     {
-        fprintf(debug, "We have %d simulations, %d ranks per simulation, local simulation is %d\n", nsim, numRanksPerSim, rankWithinComm/numRanksPerSim);
+        fprintf(debug, "We have %zu simulations, %d ranks per simulation, local simulation is %d\n", multidirs.size(), numRanksPerSim, rankWithinComm/numRanksPerSim);
     }
 
     ms       = new gmx_multisim_t;
-    ms->nsim = nsim;
+    ms->nsim = multidirs.size();
     ms->sim  = rankWithinComm/numRanksPerSim;
     /* Create a communicator for the master nodes */
     snew(rank, ms->nsim);
@@ -304,7 +304,7 @@ gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs)
 #endif
 
     // TODO This should throw upon error
-    gmx_chdir(multidirs[ms->sim]);
+    gmx_chdir(multidirs[ms->sim].c_str());
 #else
     GMX_UNUSED_VALUE(comm);
     ms = nullptr;

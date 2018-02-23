@@ -50,6 +50,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -118,16 +119,12 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     return set;
 }
 
-static void sort_files(char **fnms, real *settime, int nfile)
+static void sort_files(gmx::ArrayRef<std::string> files, real *settime)
 {
-    int   i, j, minidx;
-    real  timeswap;
-    char *chptr;
-
-    for (i = 0; i < nfile; i++)
+    for (size_t i = 0; i < files.size(); i++)
     {
-        minidx = i;
-        for (j = i+1; j < nfile; j++)
+        size_t minidx = i;
+        for (size_t j = i + 1; j < files.size(); j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -136,22 +133,22 @@ static void sort_files(char **fnms, real *settime, int nfile)
         }
         if (minidx != i)
         {
-            timeswap        = settime[i];
+            real timeswap   = settime[i];
             settime[i]      = settime[minidx];
             settime[minidx] = timeswap;
-            chptr           = fnms[i];
-            fnms[i]         = fnms[minidx];
-            fnms[minidx]    = chptr;
+            std::string tmp = files[i];
+            files[i]        = files[minidx];
+            files[minidx]   = tmp;
         }
     }
 }
 
 
-static int scan_ene_files(char **fnms, int nfiles,
+static int scan_ene_files(const std::vector<std::string> &files,
                           real *readtime, real *timestep, int *nremax)
 {
     /* Check number of energy terms and start time of all files */
-    int          f, nre, nremin = 0, nresav = 0;
+    int          nre, nremin = 0, nresav = 0;
     ener_file_t  in;
     real         t1, t2;
     char         inputstring[STRLEN];
@@ -160,9 +157,9 @@ static int scan_ene_files(char **fnms, int nfiles,
 
     snew(fr, 1);
 
-    for (f = 0; f < nfiles; f++)
+    for (size_t f = 0; f < files.size(); f++)
     {
-        in  = open_enx(fnms[f], "r");
+        in  = open_enx(files[f].c_str(), "r");
         enm = nullptr;
         do_enxnms(in, &nre, &enm);
 
@@ -187,7 +184,7 @@ static int scan_ene_files(char **fnms, int nfiles,
             {
                 fprintf(stderr,
                         "Energy files don't match, different number of energies:\n"
-                        " %s: %d\n %s: %d\n", fnms[f-1], nresav, fnms[f], fr->nre);
+                        " %s: %d\n %s: %d\n", files[f - 1].c_str(), nresav, files[f].c_str(), fr->nre);
                 fprintf(stderr,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n", nremin);
@@ -217,16 +214,15 @@ static int scan_ene_files(char **fnms, int nfiles,
 }
 
 
-static void edit_files(char **fnms, int nfiles, real *readtime,
+static void edit_files(gmx::ArrayRef<std::string> files, real *readtime,
                        real *settime, int *cont_type, gmx_bool bSetTime, gmx_bool bSort)
 {
-    int      i;
     gmx_bool ok;
     char     inputstring[STRLEN], *chptr;
 
     if (bSetTime)
     {
-        if (nfiles == 1)
+        if (files.size() == 1)
         {
             fprintf(stderr, "\n\nEnter the new start time:\n\n");
         }
@@ -246,9 +242,9 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
         fprintf(stderr, "          File             Current start       New start\n"
                 "---------------------------------------------------------\n");
 
-        for (i = 0; i < nfiles; i++)
+        for (size_t i = 0; i < files.size(); i++)
         {
-            fprintf(stderr, "%25s   %10.3f             ", fnms[i], readtime[i]);
+            fprintf(stderr, "%25s   %10.3f             ", files[i].c_str(), readtime[i]);
             ok = FALSE;
             do
             {
@@ -297,15 +293,15 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
     }
     else
     {
-        for (i = 0; i < nfiles; i++)
+        for (size_t i = 0; i < files.size(); i++)
         {
             settime[i] = readtime[i];
         }
     }
 
-    if (bSort && (nfiles > 1))
+    if (bSort && files.size() > 1)
     {
-        sort_files(fnms, settime, nfiles);
+        sort_files(files, settime);
     }
     else
     {
@@ -317,26 +313,26 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
     fprintf(stderr, "\nSummary of files and start times used:\n\n"
             "          File                Start time\n"
             "-----------------------------------------\n");
-    for (i = 0; i < nfiles; i++)
+    for (size_t i = 0; i < files.size(); i++)
     {
         switch (cont_type[i])
         {
             case TIME_EXPLICIT:
-                fprintf(stderr, "%25s   %10.3f\n", fnms[i], settime[i]);
+                fprintf(stderr, "%25s   %10.3f\n", files[i].c_str(), settime[i]);
                 break;
             case TIME_CONTINUE:
-                fprintf(stderr, "%25s        Continue from end of last file\n", fnms[i]);
+                fprintf(stderr, "%25s        Continue from end of last file\n", files[i].c_str());
                 break;
             case TIME_LAST:
-                fprintf(stderr, "%25s        Change by same amount as last file\n", fnms[i]);
+                fprintf(stderr, "%25s        Change by same amount as last file\n", files[i].c_str());
                 break;
         }
     }
     fprintf(stderr, "\n");
 
-    settime[nfiles]   = FLT_MAX;
-    cont_type[nfiles] = TIME_EXPLICIT;
-    readtime[nfiles]  = FLT_MAX;
+    settime[files.size()]   = FLT_MAX;
+    cont_type[files.size()] = TIME_EXPLICIT;
+    readtime[files.size()]  = FLT_MAX;
 }
 
 
@@ -455,9 +451,8 @@ int gmx_eneconv(int argc, char *argv[])
     t_energy         *ee_sum;
     gmx_int64_t       lastfilestep, laststep, startstep_file = 0;
     int               noutfr;
-    int               nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = nullptr;
+    int               nre, nremax, this_nre, i, kkk, nset, *set = nullptr;
     double            last_t;
-    char            **fnms;
     real             *readtime, *settime, timestep, tadjust;
     char              buf[22], buf2[22];
     int              *cont_type;
@@ -512,23 +507,22 @@ int gmx_eneconv(int argc, char *argv[])
     nremax   = 0;
     nset     = 0;
     timestep = 0.0;
-    snew(fnms, argc);
     lastfilestep = 0;
     laststep     = 0;
 
-    nfile = opt2fns(&fnms, "-f", NFILE, fnm);
+    std::vector<std::string> files = opt2fns("-f", NFILE, fnm);
 
-    if (!nfile)
+    if (files.empty())
     {
         gmx_fatal(FARGS, "No input files!");
     }
 
-    snew(settime, nfile+1);
-    snew(readtime, nfile+1);
-    snew(cont_type, nfile+1);
+    snew(settime, files.size() + 1);
+    snew(readtime, files.size() + 1);
+    snew(cont_type, files.size() + 1);
 
-    nre = scan_ene_files(fnms, nfile, readtime, &timestep, &nremax);
-    edit_files(fnms, nfile, readtime, settime, cont_type, bSetTime, bSort);
+    nre = scan_ene_files(files, readtime, &timestep, &nremax);
+    edit_files(files, readtime, settime, cont_type, bSetTime, bSort);
 
     ee_sum_nsteps = 0;
     ee_sum_nsum   = 0;
@@ -544,11 +538,11 @@ int gmx_eneconv(int argc, char *argv[])
     bFirst = TRUE;
 
     last_t = fro->t;
-    for (f = 0; f < nfile; f++)
+    for (size_t f = 0; f < files.size(); f++)
     {
         bNewFile   = TRUE;
         bNewOutput = TRUE;
-        in         = open_enx(fnms[f], "r");
+        in         = open_enx(files[f].c_str(), "r");
         enm        = nullptr;
         do_enxnms(in, &this_nre, &enm);
         if (f == 0)
@@ -611,7 +605,7 @@ int gmx_eneconv(int argc, char *argv[])
             {
                 if ((end > 0) && (fro->t > end+GMX_REAL_EPS))
                 {
-                    f = nfile;
+                    f = files.size();
                     break;
                 }
             }
@@ -745,7 +739,7 @@ int gmx_eneconv(int argc, char *argv[])
                                                "         This is almost certainly not what you want.\n"
                                                "         Use the -rmdh option to throw all delta H samples away.\n"
                                                "         Use g_energy -odh option to extract these samples.\n",
-                                               fnms[f], size);
+                                               files[f].c_str(), size);
                                         warned_about_dh = TRUE;
                                         break;
                                     }
@@ -763,12 +757,12 @@ int gmx_eneconv(int argc, char *argv[])
                 noutfr++;
             }
         }
-        if (f == nfile)
+        if (f == files.size())
         {
             f--;
         }
         printf("\nLast step written from %s: t %g, step %s\n",
-               fnms[f], last_t, gmx_step_str(laststep, buf));
+               files[f].c_str(), last_t, gmx_step_str(laststep, buf));
         lastfilestep = laststep;
 
         /* set the next time from the last in previous file */
@@ -783,7 +777,7 @@ int gmx_eneconv(int argc, char *argv[])
             /* cont_type[f+1]==TIME_EXPLICIT; */
         }
 
-        if ((fro->t < end) && (f < nfile-1) &&
+        if ((fro->t < end) && (f < files.size() - 1) &&
             (fro->t < settime[f+1]-1.5*timestep))
         {
             fprintf(stderr,
