@@ -101,3 +101,11 @@ Used isfinite unambiguously
 Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`
+
+Detect correct AMD Zen SMT topology
+--------------------------------------------------------------------------
+On AMD Zen, mdrun would use the correct number of hardware threads
+per core to set the affinity of thread. This would lead to incorrect
+thread affinities when not using all hardware threads on a machine.
+
+:issue:`2388`
