@@ -75,7 +75,7 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
      */
     i = 0;
     while (i < nfile &&
-           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].fns[0]) == 0))
+           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].filenames[0].c_str()) == 0))
     {
         i++;
     }
