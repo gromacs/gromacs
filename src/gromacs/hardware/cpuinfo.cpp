@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -502,7 +502,8 @@ renumberIndex(std::vector<unsigned int> * v)
  *          for each logical processor.
  */
 std::vector<CpuInfo::LogicalProcessor>
-detectX86LogicalProcessors()
+detectX86LogicalProcessors(CpuInfo::Vendor vendor,
+                           int             family)
 {
     unsigned int   eax;
     unsigned int   ebx;
@@ -514,6 +515,13 @@ detectX86LogicalProcessors()
     bool           haveX2Apic;
 
     std::vector<CpuInfo::LogicalProcessor> logicalProcessors;
+
+    if (vendor != CpuInfo::Vendor::Intel &&
+        vendor != CpuInfo::Vendor::Amd)
+    {
+        // There are Intel and AMD specific instructions below, return empty
+        return logicalProcessors;
+    }
 
     // Find largest standard & extended level input values allowed
     executeX86CpuID(0x0, 0, &eax, &ebx, &ecx, &edx);
@@ -547,8 +555,29 @@ detectX86LogicalProcessors()
         }
         else    // haveApic
         {
-            // AMD without x2APIC does not support SMT - there are no hwthread bits in apic ID
+            // NOTE: Here we assume 1 thread per core,
+            //       unless we have AMD family >= 17h
             hwThreadBits = 0;
+            if (vendor == CpuInfo::Vendor::Amd && family >= 0x17 &&
+                maxExtLevel >= 0x8000001e)
+            {
+                executeX86CpuID(0x8000001e, 1, &eax, &ebx, &ecx, &edx);
+                int numThreadsPerCore = ((ebx >> 8) & 0xff) + 1;
+                // The AMD documentation only specifies what happens with
+                // 1 or 2 threads per core. When we have more (unlikely),
+                // we assign all threads to different cores.
+                if (numThreadsPerCore == 2)
+                {
+                    hwThreadBits = 1;
+                }
+                else if (numThreadsPerCore > 2)
+                {
+                    // At the time of writing this code we do not know what
+                    // to do with more than 2 threads, so return empty layout.
+                    return logicalProcessors;
+                }
+            }
+
             // Get number of core bits in apic ID - try modern extended method first
             executeX86CpuID(0x80000008, 0, &eax, &ebx, &ecx, &edx);
             coreBits = (ecx >> 12) & 0xf;
@@ -895,7 +924,7 @@ CpuInfo CpuInfo::detect()
         }
         detectX86Features(&result.brandString_, &result.family_, &result.model_,
                           &result.stepping_, &result.features_);
-        result.logicalProcessors_ = detectX86LogicalProcessors();
+        result.logicalProcessors_ = detectX86LogicalProcessors(result.vendor_, result.family_);
     }
     else
     {
