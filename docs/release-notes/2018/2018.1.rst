@@ -121,3 +121,10 @@ Used isfinite unambiguously
 Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`
+
+Detect correct AMD Zen SMT topology
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On recent AMD Zen processors, hardware thread detection and pinning
+handling have been fixed, improving performance.
+
+:issue:`2388`
