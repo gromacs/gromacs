@@ -58,13 +58,11 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 /* The source code in this file should be thread-safe.
@@ -419,12 +417,7 @@ void OptionsAdapter::copyValues()
         {
             file->fnm->flag |= ffSET;
         }
-        file->fnm->nfiles = file->values.size();
-        snew(file->fnm->fns, file->fnm->nfiles);
-        for (int i = 0; i < file->fnm->nfiles; ++i)
-        {
-            file->fnm->fns[i] = gmx_strdup(file->values[i].c_str());
-        }
+        file->fnm->filenames = file->values;
     }
     std::list<ProgramArgData>::const_iterator arg;
     for (arg = programArgs_.begin(); arg != programArgs_.end(); ++arg)
