@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -492,6 +492,84 @@ renumberIndex(std::vector<unsigned int> * v)
     }
 }
 
+/*! \brief The layout of the bits in the APIC ID */
+struct ApicIdLayout
+{
+    unsigned int hwThreadBits; //!< The number of least significant bits for hw-threads
+    unsigned int coreBits;     //!< The number of core bits following the  hw-thread bits
+};
+
+/*! \brief Detect the APIC ID layout for x2APIC
+ */
+ApicIdLayout
+detectX2ApicIdLayout()
+{
+    ApicIdLayout    layout;
+
+    unsigned int    eax;
+    unsigned int    ebx;
+    unsigned int    ecx;
+    unsigned int    edx;
+    executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
+    layout.hwThreadBits = eax & 0x1f;
+    executeX86CpuID(0xb, 1, &eax, &ebx, &ecx, &edx);
+    layout.coreBits     = (eax & 0x1f) - layout.hwThreadBits;
+
+    return layout;
+}
+
+/*! \brief Detect the APIC ID layout for standard APIC or xAPIC
+ *
+ * \param[in] maxExtLevel  The largest CPUID extended function input value supported by the processor implementation
+ */
+ApicIdLayout
+detectApicIdLayout(unsigned int maxExtLevel)
+{
+    ApicIdLayout    layout;
+
+    CpuInfo::Vendor vendor = detectX86Vendor();
+    unsigned int    eax;
+    unsigned int    ebx;
+    unsigned int    ecx;
+    unsigned int    edx;
+    executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
+    int             family = ((eax & 0x0ff00000) >> 20) + ((eax & 0x00000f00) >> 8);
+    executeX86CpuID(0x80000001, 0, &eax, &ebx, &ecx, &edx);
+    bool            haveExtendedTopology = (ecx & (1 << 22));
+
+    // NOTE: Here we assume 1 thread per core,
+    //       unless we have AMD family >= 17h
+    layout.hwThreadBits = 0;
+    if (vendor == CpuInfo::Vendor::Amd &&
+        family >= 0x17 &&
+        haveExtendedTopology &&
+        maxExtLevel >= 0x8000001e)
+    {
+        executeX86CpuID(0x8000001e, 1, &eax, &ebx, &ecx, &edx);
+        int numThreadsPerCore = ((ebx >> 8) & 0xff) + 1;
+        // NOTE: The AMD documentation only specifies the layout of apicid
+        //       when we have 1 or 2 threads per core.
+        while (numThreadsPerCore > (1 << layout.hwThreadBits))
+        {
+            layout.hwThreadBits++;
+        }
+    }
+
+    // Get number of core bits in apic ID - try modern extended method first
+    executeX86CpuID(0x80000008, 0, &eax, &ebx, &ecx, &edx);
+    layout.coreBits = (ecx >> 12) & 0xf;
+    if (layout.coreBits == 0)
+    {
+        // Legacy method for old single/dual core AMD CPUs
+        int i = ecx & 0xf;
+        while (i >> layout.coreBits)
+        {
+            layout.coreBits++;
+        }
+    }
+
+    return layout;
+}
 
 /*! \brief Try to detect basic CPU topology information using x86 cpuid
  *
@@ -535,31 +613,21 @@ detectX86LogicalProcessors()
 
     if (haveX2Apic || haveApic)
     {
-        unsigned int   hwThreadBits;
-        unsigned int   coreBits;
+        ApicIdLayout layout;
         // Get bits for cores and hardware threads
         if (haveX2Apic)
         {
-            executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
-            hwThreadBits    = eax & 0x1f;
-            executeX86CpuID(0xb, 1, &eax, &ebx, &ecx, &edx);
-            coreBits        = (eax & 0x1f) - hwThreadBits;
+            layout = detectX2ApicIdLayout();
         }
         else    // haveApic
         {
-            // AMD without x2APIC does not support SMT - there are no hwthread bits in apic ID
-            hwThreadBits = 0;
-            // Get number of core bits in apic ID - try modern extended method first
-            executeX86CpuID(0x80000008, 0, &eax, &ebx, &ecx, &edx);
-            coreBits = (ecx >> 12) & 0xf;
-            if (coreBits == 0)
+            layout = detectApicIdLayout(maxExtLevel);
+
+            if (layout.hwThreadBits > 1)
             {
-                // Legacy method for old single/dual core AMD CPUs
-                int i = ecx & 0xf;
-                while (i >> coreBits)
-                {
-                    coreBits++;
-                }
+                // At the time of writing this code we do not know what
+                // to do with more than 2 threads, so return empty layout.
+                return logicalProcessors;
             }
         }
 
@@ -570,8 +638,8 @@ detectX86LogicalProcessors()
             // APIC IDs can be buggy, and it is always a mess. Typically more bits are
             // reserved than needed, and the numbers might not increment by 1 even in
             // a single socket or core. Extract, renumber, and check that things make sense.
-            unsigned int               hwThreadMask  = (1 << hwThreadBits) - 1;
-            unsigned int               coreMask      = (1 << coreBits) - 1;
+            unsigned int               hwThreadMask  = (1 << layout.hwThreadBits) - 1;
+            unsigned int               coreMask      = (1 << layout.coreBits) - 1;
             std::vector<unsigned int>  hwThreadRanks;
             std::vector<unsigned int>  coreRanks;
             std::vector<unsigned int>  socketRanks;
@@ -579,8 +647,8 @@ detectX86LogicalProcessors()
             for (auto a : apicID)
             {
                 hwThreadRanks.push_back( static_cast<int>( a & hwThreadMask ) );
-                coreRanks.push_back( static_cast<int>( ( a >> hwThreadBits ) & coreMask ) );
-                socketRanks.push_back( static_cast<int>( a >> ( coreBits + hwThreadBits ) ) );
+                coreRanks.push_back( static_cast<int>( ( a >> layout.hwThreadBits ) & coreMask ) );
+                socketRanks.push_back( static_cast<int>( a >> ( layout.coreBits + layout.hwThreadBits ) ) );
             }
 
             renumberIndex(&hwThreadRanks);
