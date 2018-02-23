@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,11 @@
 #ifndef _powerspect_h
 #define _powerspect_h
 
+#include <string>
+#include <vector>
+
 #include "gromacs/gmxana/interf.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
@@ -45,10 +49,11 @@ extern "C"
 #endif
 
 extern void powerspectavg(real ***interface, int t, int xbins, int ybins,
-                          char **outfiles);
+                          gmx::ArrayRef<const std::string> outfiles);
 
 extern void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t,
-                               int xbins, int ybins, char **outfiles);
+                               int xbins, int ybins,
+                               gmx::ArrayRef<const std::string> outfiles);
 
 #ifdef __cplusplus
 }

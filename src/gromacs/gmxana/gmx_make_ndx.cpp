@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1553,12 +1553,10 @@ int gmx_make_ndx(int argc, char *argv[])
 #define NPA asize(pa)
 
     gmx_output_env_t *oenv;
-    int               nndxin;
     const char       *stxfile;
-    char            **ndxinfiles;
     const char       *ndxoutfile;
     gmx_bool          bNatoms;
-    int               i, j;
+    int               j;
     t_atoms          *atoms;
     rvec             *x, *v;
     int               ePBC;
@@ -1579,18 +1577,11 @@ int gmx_make_ndx(int argc, char *argv[])
     }
 
     stxfile = ftp2fn_null(efSTX, NFILE, fnm);
-    if (opt2bSet("-n", NFILE, fnm))
-    {
-        nndxin = opt2fns(&ndxinfiles, "-n", NFILE, fnm);
-    }
-    else
-    {
-        nndxin = 0;
-    }
+    gmx::ArrayRef<const std::string> ndxInFiles = opt2fnsIfOptionSet("-n", NFILE, fnm);
     ndxoutfile = opt2fn("-o", NFILE, fnm);
     bNatoms    = opt2parg_bSet("-natoms", NPA, pa);
 
-    if (!stxfile && !nndxin)
+    if (!stxfile && ndxInFiles.empty())
     {
         gmx_fatal(FARGS, "No input files (structure or index)");
     }
@@ -1618,12 +1609,12 @@ int gmx_make_ndx(int argc, char *argv[])
     /* read input file(s) */
     block  = new_blocka();
     gnames = nullptr;
-    printf("Going to read %d old index file(s)\n", nndxin);
-    if (nndxin)
+    printf("Going to read %zu old index file(s)\n", ndxInFiles.size());
+    if (!ndxInFiles.empty())
     {
-        for (i = 0; i < nndxin; i++)
+        for (const std::string &ndxInFile : ndxInFiles)
         {
-            block2 = init_index(ndxinfiles[i], &gnames2);
+            block2 = init_index(ndxInFile.c_str(), &gnames2);
             srenew(gnames, block->nr+block2->nr);
             for (j = 0; j < block2->nr; j++)
             {
