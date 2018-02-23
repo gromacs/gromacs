@@ -37,7 +37,10 @@
 #ifndef GMX_MDLIB_MAIN_H
 #define GMX_MDLIB_MAIN_H
 
-#include <stdio.h>
+#include <cstdio>
+
+#include <string>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -67,8 +70,9 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
  * no output is written.
  */
 
-gmx_multisim_t *init_multisystem(MPI_Comm comm, int nsim, char **multidirs);
-/* Splits the communication into nsim separate simulations
+gmx_multisim_t *init_multisystem(MPI_Comm                        comm,
+                                 const std::vector<std::string> &multidirs);
+/* Splits the communication into multidirs.size() separate simulations, if >1,
  * and creates a communication structure between the master
  * these simulations.
  */
