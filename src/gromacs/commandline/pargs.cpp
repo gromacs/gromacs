@@ -316,22 +316,13 @@ class OptionsAdapter
 
 void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
 {
-    if (fnm->opt == nullptr)
-    {
-        // Existing code may use opt2fn() instead of ftp2fn() for
-        // options that use the default option name, so we need to
-        // keep the old behavior instead of fixing opt2fn().
-        // TODO: Check that this is not the case, remove this, and make
-        // opt2*() work even if fnm->opt is NULL for some options.
-        fnm->opt = ftp2defopt(fnm->ftp);
-    }
     const bool        bRead     = ((fnm->flag & ffREAD)  != 0);
     const bool        bWrite    = ((fnm->flag & ffWRITE) != 0);
     const bool        bOptional = ((fnm->flag & ffOPT)   != 0);
     const bool        bLibrary  = ((fnm->flag & ffLIB)   != 0);
     const bool        bMultiple = ((fnm->flag & ffMULT)  != 0);
     const bool        bMissing  = ((fnm->flag & ffALLOW_MISSING) != 0);
-    const char *const name      = &fnm->opt[1];
+    const char *const name      = (fnm->opt ? &fnm->opt[1] : &ftp2defopt(fnm->ftp)[1]);
     const char *      defName   = fnm->fn;
     int               defType   = -1;
     if (defName == nullptr)

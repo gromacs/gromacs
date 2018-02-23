@@ -48,8 +48,15 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Use bitflag ... */
-#define IS_SET(fn) ((fn.flag &ffSET) != 0)
-#define IS_OPT(fn) ((fn.flag &ffOPT) != 0)
+static bool IS_SET(const t_filenm &fileOption)
+{
+    return (fileOption.flag & ffSET) != 0;
+}
+
+static bool IS_OPT(const t_filenm &fileOption)
+{
+    return (fileOption.flag & ffOPT) != 0;
+}
 
 const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
 {
@@ -57,7 +64,8 @@ const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
 
     for (i = 0; (i < nfile); i++)
     {
-        if (strcmp(opt, fnm[i].opt) == 0)
+        if ((fnm[i].opt != nullptr && strcmp(opt, fnm[i].opt) == 0) ||
+            (fnm[i].opt == nullptr && strcmp(opt, ftp2defopt(fnm[i].ftp)) == 0))
         {
             return &fnm[i];
         }
@@ -68,14 +76,11 @@ const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
 {
-    int i;
+    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
 
-    for (i = 0; (i < nfile); i++)
+    if (fnm)
     {
-        if (std::strcmp(opt, fnm[i].opt) == 0)
-        {
-            return fnm[i].fns[0];
-        }
+        return fileOption->fns[0];
     }
 
     GMX_RELEASE_ASSERT(false, "opt2fn should be called with a valid option");
@@ -85,15 +90,12 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
 
 int opt2fns(char **fns[], const char *opt, int nfile, const t_filenm fnm[])
 {
-    int i;
+    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
 
-    for (i = 0; (i < nfile); i++)
+    if (fnm)
     {
-        if (strcmp(opt, fnm[i].opt) == 0)
-        {
-            *fns = fnm[i].fns;
-            return fnm[i].nfiles;
-        }
+        *fns = fileOption->fns;
+        return fileOption->nfiles;
     }
 
     GMX_RELEASE_ASSERT(false, "opt2fns should be called with a valid option");
@@ -155,14 +157,11 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
 
 gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 {
-    int i;
+    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
 
-    for (i = 0; (i < nfile); i++)
+    if (fileOption)
     {
-        if (std::strcmp(opt, fnm[i].opt) == 0)
-        {
-            return (gmx_bool) IS_SET(fnm[i]);
-        }
+        return (gmx_bool) IS_SET(*fileOption);
     }
 
     GMX_RELEASE_ASSERT(false, "opt2bSet should be called with a valid option");
@@ -172,20 +171,17 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 
 const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[])
 {
-    int i;
+    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
 
-    for (i = 0; (i < nfile); i++)
+    if (fileOption)
     {
-        if (std::strcmp(opt, fnm[i].opt) == 0)
+        if (IS_OPT(*fileOption) && !IS_SET(*fileOption))
         {
-            if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
-            {
-                return nullptr;
-            }
-            else
-            {
-                return fnm[i].fns[0];
-            }
+            return nullptr;
+        }
+        else
+        {
+            return fileOption->fns[0];
         }
     }
 
