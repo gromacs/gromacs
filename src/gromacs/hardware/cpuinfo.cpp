@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -511,6 +511,7 @@ detectX86LogicalProcessors()
     unsigned int   maxStdLevel;
     unsigned int   maxExtLevel;
     bool           haveApic;
+    bool           haveXApic;
     bool           haveX2Apic;
 
     std::vector<CpuInfo::LogicalProcessor> logicalProcessors;
@@ -526,11 +527,14 @@ detectX86LogicalProcessors()
         executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
         haveX2Apic = (ecx & (1 << 21)) && maxStdLevel >= 0xb;
         haveApic   = (edx & (1 <<  9)) && maxExtLevel >= 0x80000008;
+        executeX86CpuID(0x80000001, 0, &eax, &ebx, &ecx, &edx);
+        haveXApic  = haveApic && (ecx & (1 << 3));
     }
     else
     {
         haveX2Apic = false,
         haveApic   = false;
+        haveXApic  = false;
     }
 
     if (haveX2Apic || haveApic)
@@ -547,8 +551,27 @@ detectX86LogicalProcessors()
         }
         else    // haveApic
         {
-            // AMD without x2APIC does not support SMT - there are no hwthread bits in apic ID
+            // NOTE: The use of CPUID results in this branch is AMD specific
+
+            // xAPIC on AMD supports 1 or 2 threads per core.
+            // From the documentation it is not clear if the specification
+            // is AMD specific or standard APIC. But since each hw-thread
+            // will have a different apic ID, the only sensible option
+            // is to have threads on the same core only differ in the last bit.
             hwThreadBits = 0;
+            if (haveXApic)
+            {
+                executeX86CpuID(0x8000001e, 1, &eax, &ebx, &ecx, &edx);
+                int numThreadsPerCore = ((ebx >> 8) & 0xff) + 1;
+                // The AMD documentation only specifies what happens with
+                // 1 or 2 threads per core. When we have more (unlikely),
+                // we assign all threads to different cores.
+                if (numThreadsPerCore == 2)
+                {
+                    hwThreadBits = 1;
+                }
+            }
+
             // Get number of core bits in apic ID - try modern extended method first
             executeX86CpuID(0x80000008, 0, &eax, &ebx, &ecx, &edx);
             coreBits = (ecx >> 12) & 0xf;
