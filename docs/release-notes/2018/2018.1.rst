@@ -26,6 +26,13 @@ system.
 
 :issue:`2381`
 
+Fixed handling of mdp ``define`` statement assigning preprocessor values
+-------------------------------------------------------------------------
+Now .mdp files can configure the topology with values, as originally
+intended, e.g. ``"define = -DBOOL -DVAR=VALUE"``.
+
+:issue:`2392`
+
 Added check in grompp to avoid assertion failure
 --------------------------------------------------------------------------
 With an mdp file with a parameter present with both the current name
