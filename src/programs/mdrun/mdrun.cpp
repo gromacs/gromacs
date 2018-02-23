@@ -369,7 +369,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
     int               rc;
-    char            **multidir = nullptr;
 
     cr = init_commrec();
 
@@ -432,14 +431,9 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
     // now check for a multi-simulation
-    int nmultisim = 1;
-    if (opt2bSet("-multidir", nfile, fnm))
-    {
-        nmultisim = opt2fns(&multidir, "-multidir", nfile, fnm);
-    }
+    const std::vector<std::string> &multidir = opt2fnsIfOptionSet("-multidir", nfile, fnm);
 
-
-    if (replExParams.exchangeInterval != 0 && nmultisim < 2)
+    if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
     {
         gmx_fatal(FARGS, "Need at least two replicas for replica exchange (use option -multidir)");
     }
@@ -449,7 +443,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    ms = init_multisystem(MPI_COMM_WORLD, nmultisim, multidir);
+    ms = init_multisystem(MPI_COMM_WORLD, multidir);
 
     /* Prepare the intra-simulation communication */
     // TODO consolidate this with init_commrec, after changing the
@@ -457,7 +451,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 #if GMX_MPI
     if (ms != nullptr)
     {
-        cr->nnodes = cr->nnodes / nmultisim;
+        cr->nnodes = cr->nnodes / ms->nsim;
         MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
         cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
         MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);

@@ -323,16 +323,14 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgs)
     parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("out1.xvg", opt2fn_null("-o1", nfile(), fnm));
     EXPECT_STREQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
-    char **files;
-    EXPECT_EQ(2, opt2fns(&files, "-om", nfile(), fnm));
-    EXPECT_TRUE(files != nullptr);
-    if (files != nullptr)
+    const std::vector<std::string> &files = opt2fns("-om", nfile(), fnm);
+    EXPECT_EQ(2, files.size());
+    if (files.size() != 2)
     {
-        EXPECT_STREQ("test1.xvg", files[0]);
-        EXPECT_STREQ("test2.xvg", files[1]);
+        EXPECT_STREQ("test1.xvg", files[0].c_str());
+        EXPECT_STREQ("test2.xvg", files[1].c_str());
     }
     EXPECT_STREQ("outm2.xvg", opt2fn("-om2", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
@@ -354,7 +352,6 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
     EXPECT_STREQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
     EXPECT_STREQ("out.xvg", opt2fn("-o", nfile(), fnm));
     EXPECT_STREQ("outm.xvg", opt2fn("-om", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
@@ -375,7 +372,6 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
     EXPECT_STREQ("def.xtc", opt2fn("-f3", nfile(), fnm));
     EXPECT_STREQ("def.xvg", opt2fn("-o", nfile(), fnm));
     EXPECT_STREQ("def.xvg", opt2fn("-om", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
@@ -392,7 +388,6 @@ TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
     EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
     EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
     EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 /********************************************************************
@@ -421,7 +416,6 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     EXPECT_STREQ("trj.gro", opt2fn("-f4", nfile(), fnm));
     EXPECT_STREQ("cnf.gro", opt2fn("-g", nfile(), fnm));
     EXPECT_STREQ("foo.gro", opt2fn("-g2", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
@@ -436,7 +430,6 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
     parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
@@ -457,7 +450,6 @@ TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
     EXPECT_STREQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
     EXPECT_STREQ("nonexistent.cpt", opt2fn("-c4", nfile(), fnm));
     EXPECT_STREQ("nonexistent.xtc", opt2fn("-f", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
@@ -474,7 +466,6 @@ TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
     EXPECT_EQ(expectedF, opt2fn("-f", nfile(), fnm));
     EXPECT_EQ(expectedG, opt2fn("-g", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)
@@ -486,7 +477,6 @@ TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)
     std::string       expected = addFileArg("-f", ".foo", efFull);
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
     EXPECT_EQ(expected, opt2fn("-f", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
@@ -498,18 +488,18 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
         { efTRX, "-f4", nullptr, ffREAD }
     };
     args_.append("test");
-    std::string       expected1 = addFileArg("-f1", "1.xtc", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", "2.gro", efNoExtension);
-    std::string       expected3 = addFileArg("-f3", "3.tng", efNoExtension);
-    std::string       expected4 = addFileArg("-f4", ".gro", efEmptyValue);
-    std::string       def4      = gmx::Path::stripExtension(expected4);
-    fnm[3].fn = def4.c_str();
+    std::string         expected1 = addFileArg("-f1", "1.xtc", efNoExtension);
+    std::string         expected2 = addFileArg("-f2", "2.gro", efNoExtension);
+    std::string         expected3 = addFileArg("-f3", "3.tng", efNoExtension);
+    std::string         expected4 = addFileArg("-f4", ".gro", efEmptyValue);
+    std::string         def4      = gmx::Path::stripExtension(expected4);
+    const char * const &deffnm    = fnm[3].fn;
+    const_cast<const char * &>(deffnm) = def4.c_str();
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
     EXPECT_EQ(expected1, opt2fn("-f1", nfile(), fnm));
     EXPECT_EQ(expected2, opt2fn("-f2", nfile(), fnm));
     EXPECT_EQ(expected3, opt2fn("-f3", nfile(), fnm));
     EXPECT_EQ(expected4, opt2fn("-f4", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileName)
@@ -533,7 +523,6 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     EXPECT_EQ(expected2, opt2fn("-f2", nfile(), fnm));
     EXPECT_EQ(expected3, opt2fn("-f3", nfile(), fnm));
     EXPECT_EQ(expected4, opt2fn("-f4", nfile(), fnm));
-    done_filenms(nfile(), fnm);
 }
 
 // This is needed e.g. for tune_pme, which passes unknown arguments on
@@ -566,7 +555,6 @@ TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
     EXPECT_STREQ(cmdline[4],  args_.arg(3));
     EXPECT_STREQ(cmdline[9],  args_.arg(4));
     EXPECT_STREQ(cmdline[11], args_.arg(5));
-    done_filenms(nfile(), fnm);
 }
 
 } // namespace

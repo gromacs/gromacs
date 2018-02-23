@@ -46,6 +46,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Use bitflag ... */
 static bool IS_SET(const t_filenm &fileOption)
@@ -58,7 +59,7 @@ static bool IS_OPT(const t_filenm &fileOption)
     return (fileOption.flag & ffOPT) != 0;
 }
 
-const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
+static const t_filenm *getFileOption(const char *opt, int nfile, const t_filenm fnm[])
 {
     int i;
 
@@ -76,11 +77,11 @@ const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
 {
-    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
+    const t_filenm *fileOption = getFileOption(opt, nfile, fnm);
 
     if (fnm)
     {
-        return fileOption->fns[0];
+        return fileOption->filenames[0].c_str();
     }
 
     GMX_RELEASE_ASSERT(false, "opt2fn should be called with a valid option");
@@ -88,19 +89,34 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
     return nullptr;
 }
 
-int opt2fns(char **fns[], const char *opt, int nfile, const t_filenm fnm[])
+static const std::vector<std::string> emptyFilenames;
+
+const std::vector<std::string> &
+opt2fns(const char *opt, int nfile, const t_filenm fnm[])
 {
-    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
+    const t_filenm *fileOption = getFileOption(opt, nfile, fnm);
 
     if (fnm)
     {
-        *fns = fileOption->fns;
-        return fileOption->nfiles;
+        return fileOption->filenames;
     }
 
     GMX_RELEASE_ASSERT(false, "opt2fns should be called with a valid option");
 
-    return 0;
+    return emptyFilenames;
+}
+
+const std::vector<std::string> &
+opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[])
+{
+    if (opt2bSet(opt, nfile, fnm))
+    {
+        return opt2fns(opt, nfile, fnm);
+    }
+    else
+    {
+        return emptyFilenames;
+    }
 }
 
 const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[])
@@ -111,7 +127,7 @@ const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[])
     {
         if (ftp == fnm[i].ftp)
         {
-            return fnm[i].fns[0];
+            return fnm[i].filenames[0].c_str();
         }
     }
 
@@ -120,22 +136,20 @@ const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[])
     return nullptr;
 }
 
-int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[])
+const std::vector<std::string> &
+ftp2fns(int ftp, int nfile, const t_filenm fnm[])
 {
-    int i;
-
-    for (i = 0; (i < nfile); i++)
+    for (int i = 0; (i < nfile); i++)
     {
         if (ftp == fnm[i].ftp)
         {
-            *fns = fnm[i].fns;
-            return fnm[i].nfiles;
+            return fnm[i].filenames;
         }
     }
 
     GMX_RELEASE_ASSERT(false, "ftp2fns should be called with a valid option");
 
-    return 0;
+    return emptyFilenames;
 }
 
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
@@ -157,7 +171,7 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
 
 gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 {
-    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
+    const t_filenm *fileOption = getFileOption(opt, nfile, fnm);
 
     if (fileOption)
     {
@@ -171,7 +185,7 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 
 const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[])
 {
-    const t_filenm *fileOption = getFilenm(opt, nfile, fnm);
+    const t_filenm *fileOption = getFileOption(opt, nfile, fnm);
 
     if (fileOption)
     {
@@ -181,7 +195,7 @@ const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[])
         }
         else
         {
-            return fileOption->fns[0];
+            return fileOption->filenames[0].c_str();
         }
     }
 
@@ -204,7 +218,7 @@ const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[])
             }
             else
             {
-                return fnm[i].fns[0];
+                return fnm[i].filenames[0].c_str();
             }
         }
     }
@@ -231,80 +245,23 @@ gmx_bool is_set(const t_filenm *fnm)
 
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
-    int   i, j;
-    char  buf[STRLEN], newname[STRLEN];
+    char  buf[STRLEN];
     char *extpos;
 
-    for (i = 0; i < nfile; i++)
+    for (int i = 0; i < nfile; i++)
     {
         if (is_output(&fnm[i]) && fnm[i].ftp != efCPT)
         {
             /* We never use multiple _outputs_, but we might as well check
                for it, just in case... */
-            for (j = 0; j < fnm[i].nfiles; j++)
+            for (std::string &filename : fnm[i].filenames)
             {
-                std::strncpy(buf, fnm[i].fns[j], STRLEN - 1);
+                std::strncpy(buf, filename.c_str(), STRLEN - 1);
                 extpos  = strrchr(buf, '.');
                 *extpos = '\0';
-                sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
-                sfree(fnm[i].fns[j]);
-                fnm[i].fns[j] = gmx_strdup(newname);
+                filename = gmx::formatString("%s%s.%s", buf, suffix, extpos + 1);
             }
         }
     }
     return 0;
-}
-
-t_filenm *dup_tfn(int nf, const t_filenm tfn[])
-{
-    int       i, j;
-    t_filenm *ret;
-
-    snew(ret, nf);
-    for (i = 0; i < nf; i++)
-    {
-        ret[i] = tfn[i]; /* just directly copy all non-string fields */
-        if (tfn[i].opt)
-        {
-            ret[i].opt = gmx_strdup(tfn[i].opt);
-        }
-        else
-        {
-            ret[i].opt = nullptr;
-        }
-
-        if (tfn[i].fn)
-        {
-            ret[i].fn = gmx_strdup(tfn[i].fn);
-        }
-        else
-        {
-            ret[i].fn = nullptr;
-        }
-
-        if (tfn[i].nfiles > 0)
-        {
-            snew(ret[i].fns, tfn[i].nfiles);
-            for (j = 0; j < tfn[i].nfiles; j++)
-            {
-                ret[i].fns[j] = gmx_strdup(tfn[i].fns[j]);
-            }
-        }
-    }
-    return ret;
-}
-
-void done_filenms(int nf, t_filenm fnm[])
-{
-    int i, j;
-
-    for (i = 0; i < nf; ++i)
-    {
-        for (j = 0; j < fnm[i].nfiles; ++j)
-        {
-            sfree(fnm[i].fns[j]);
-        }
-        sfree(fnm[i].fns);
-        fnm[i].fns = nullptr;
-    }
 }

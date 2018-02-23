@@ -419,12 +419,7 @@ void OptionsAdapter::copyValues()
         {
             file->fnm->flag |= ffSET;
         }
-        file->fnm->nfiles = file->values.size();
-        snew(file->fnm->fns, file->fnm->nfiles);
-        for (int i = 0; i < file->fnm->nfiles; ++i)
-        {
-            file->fnm->fns[i] = gmx_strdup(file->values[i].c_str());
-        }
+        file->fnm->filenames = file->values;
     }
     std::list<ProgramArgData>::const_iterator arg;
     for (arg = programArgs_.begin(); arg != programArgs_.end(); ++arg)

@@ -153,14 +153,6 @@ static void threadMpiMdrunnerAccessBarrier()
 
 void Mdrunner::reinitializeOnSpawnedThread()
 {
-    // TODO This duplication is formally necessary if any thread might
-    // modify any memory in fnm or the pointers it contains. If the
-    // contents are ever provably const, then we can remove this
-    // allocation (and memory leak).
-    // TODO This should probably become part of a copy constructor for
-    // Mdrunner.
-    fnm = dup_tfn(nfile, fnm);
-
     threadMpiMdrunnerAccessBarrier();
 
     cr  = reinitialize_commrec_for_this_thread(cr, ms);
@@ -1161,7 +1153,7 @@ int Mdrunner::mdrunner()
                       inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
-                      getFilenm("-tableb", nfile, fnm),
+                      opt2fns("-tableb", nfile, fnm),
                       *hwinfo, nonbondedDeviceInfo,
                       FALSE,
                       pforce);
