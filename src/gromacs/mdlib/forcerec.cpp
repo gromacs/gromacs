@@ -1435,7 +1435,7 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
 static bondedtable_t *make_bonded_tables(FILE *fplog,
                                          int ftype1, int ftype2,
                                          const gmx_mtop_t *mtop,
-                                         const t_filenm *tabbfnm,
+                                         const std::vector<std::string> &tabbfnm,
                                          const char *tabext)
 {
     int            ncount, *count;
@@ -1462,13 +1462,12 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                 // being recognized and used for table 1.
                 std::string patternToFind = gmx::formatString("_%s%d.%s", tabext, i, ftp2ext(efXVG));
                 bool        madeTable     = false;
-                for (int j = 0; j < tabbfnm->nfiles && !madeTable; ++j)
+                for (size_t j = 0; j < tabbfnm.size() && !madeTable; ++j)
                 {
-                    std::string filename(tabbfnm->fns[j]);
-                    if (gmx::endsWith(filename, patternToFind))
+                    if (gmx::endsWith(tabbfnm[j].c_str(), patternToFind))
                     {
                         // Finally read the table from the file found
-                        tab[i]    = make_bonded_table(fplog, tabbfnm->fns[j], NRAL(ftype1)-2);
+                        tab[i]    = make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1)-2);
                         madeTable = true;
                     }
                 }
@@ -2307,21 +2306,21 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE                    *fp,
-                   const gmx::MDLogger     &mdlog,
-                   t_forcerec              *fr,
-                   t_fcdata                *fcd,
-                   const t_inputrec        *ir,
-                   const gmx_mtop_t        *mtop,
-                   const t_commrec         *cr,
-                   matrix                   box,
-                   const char              *tabfn,
-                   const char              *tabpfn,
-                   const t_filenm          *tabbfnm,
-                   const gmx_hw_info_t     &hardwareInfo,
-                   const gmx_device_info_t *deviceInfo,
-                   gmx_bool                 bNoSolvOpt,
-                   real                     print_force)
+void init_forcerec(FILE                           *fp,
+                   const gmx::MDLogger            &mdlog,
+                   t_forcerec                     *fr,
+                   t_fcdata                       *fcd,
+                   const t_inputrec               *ir,
+                   const gmx_mtop_t               *mtop,
+                   const t_commrec                *cr,
+                   matrix                          box,
+                   const char                     *tabfn,
+                   const char                     *tabpfn,
+                   const std::vector<std::string> &tabbfnm,
+                   const gmx_hw_info_t            &hardwareInfo,
+                   const gmx_device_info_t        *deviceInfo,
+                   gmx_bool                        bNoSolvOpt,
+                   real                            print_force)
 {
     int            m, negp_pp, negptable, egi, egj;
     real           rtab;
@@ -2983,7 +2982,7 @@ void init_forcerec(FILE                    *fp,
         make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
     }
 
-    if (fcd && tabbfnm)
+    if (fcd && !tabbfnm.empty())
     {
         // Need to catch std::bad_alloc
         // TODO Don't need to catch this here, when merging with master branch

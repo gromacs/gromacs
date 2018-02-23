@@ -44,6 +44,9 @@
 #ifndef GMX_COMMANDLINE_FILENM_H
 #define GMX_COMMANDLINE_FILENM_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -56,13 +59,13 @@
  *
  * \inpublicapi
  */
-struct t_filenm {
-    int           ftp;    //!< File type (see enum in filetypes.h)
-    const char   *opt;    //!< Command line option
-    const char   *fn;     //!< File name (as set in source code)
-    unsigned long flag;   //!< Flag for all kinds of info (see defs)
-    int           nfiles; //!< number of files
-    char        **fns;    //!< File names
+struct t_filenm
+{
+    int                      ftp;       //!< File type, see enum in filetypes.h
+    const char * const       opt;       //!< Command line option
+    const char * const       fn;        //!< File name as set in source code
+    unsigned long            flag;      //!< Flag for all kinds of info (see defs)
+    std::vector<std::string> filenames; //!< File names
 };
 
 //! Whether a file name option is set.
@@ -106,18 +109,22 @@ struct t_filenm {
  */
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 
-/*! \brief Sets in \c fns the filenames belonging to cmd-line option
- * opt, or NULL when no such option. Returns the number of filenames
- * found.
+/*! \brief
+ * Returns the filenames belonging to cmd-line option opt.
+ *
+ * An assertion will fail when the option does not exist.
  */
-int opt2fns(char **fns[], const char *opt, int nfile,
-            const t_filenm fnm[]);
+const std::vector<std::string> &
+opt2fns(const char *opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Return a pointer to the t_filenm data structure of filenames belonging to
- * command-line option opt, or NULL when no such option was used.
+ * Returns the filenames belonging to cmd-line option opt when set,
+ * returns an empty vector when the option is not set.
+ *
+ * An assertion will fail when the option does not exist.
  */
-const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[]);
+const std::vector<std::string> &
+opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the filename.
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
@@ -126,10 +133,12 @@ const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[]);
 const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Returns the number of files for the first option with type ftp
- * and the files in **fns[] (will be allocated), or NULL when none found.
+ * Returns the filenames for the first option with type ftp.
+ *
+ * An assertion will fail when when none found.
  */
-int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[]);
+const std::vector<std::string> &
+ftp2fns(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the file type.
 #define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
@@ -169,15 +178,6 @@ gmx_bool is_set(const t_filenm *fnm);
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
-
-/*! \brief
- * Duplicates the filename list (to make a private copy for each thread,
- * for example).
- */
-t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
-
-//! Frees memory allocated for file names by parse_common_args().
-void done_filenms(int nf, t_filenm fnm[]);
 
 //! \}
 
