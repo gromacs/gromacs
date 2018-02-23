@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,8 @@ static void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
 }
 
 
-void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **outfiles)
+void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins,
+                   gmx::ArrayRef<const std::string> outfiles)
 {
     /*Fourier plans and output;*/
     gmx_fft_t  fftp;
@@ -97,8 +98,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     }
     /*Print out average energy-spectrum to outfiles[0] and outfiles[1];*/
 
-    datfile1 = gmx_ffopen(outfiles[0], "w");
-    datfile2 = gmx_ffopen(outfiles[1], "w");
+    datfile1 = gmx_ffopen(outfiles[0].c_str(), "w");
+    datfile2 = gmx_ffopen(outfiles[1].c_str(), "w");
 
 /*Filling dat files with spectral data*/
     fprintf(datfile1, "%s\n", "kx\t ky\t\tPower(kx,ky)");
@@ -116,7 +117,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
 
 }
 
-void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb, char **fnms)
+void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb,
+                        gmx::ArrayRef<const std::string> outfiles)
 {
     real ***surf;
 
@@ -136,5 +138,5 @@ void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb,
             surf[1][n][i] = if2[n][i]->Z;
         }
     }
-    powerspectavg(surf, t, xb, yb, fnms);
+    powerspectavg(surf, t, xb, yb, outfiles);
 }

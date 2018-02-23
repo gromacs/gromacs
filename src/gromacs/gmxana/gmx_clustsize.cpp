@@ -552,7 +552,6 @@ int gmx_clustsize(int argc, char *argv[])
                bMol, bPBC, fnTPR,
                cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
 
-    done_filenms(NFILE, fnm);
     output_env_done(oenv);
 
     return 0;
