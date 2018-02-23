@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2845,7 +2845,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
     }
 }
 
-static void read_bar_xvg(char *fn, real *temp, sim_data_t *sd)
+static void read_bar_xvg(const char *fn, real *temp, sim_data_t *sd)
 {
     xvg_t     *barsim;
     samples_t *s;
@@ -3145,7 +3145,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 }
 
 
-static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
+static void read_barsim_edr(const char *fn, real *temp, sim_data_t *sd)
 {
     int            i, j;
     ener_file_t    fp;
@@ -3576,13 +3576,9 @@ int gmx_bar(int argc, char *argv[])
     int               f;
     int               nf = 0;    /* file counter */
     int               nfile_tot; /* total number of input files */
-    int               nxvgfile = 0;
-    int               nedrfile = 0;
-    char            **fxvgnms;
-    char            **fedrnms;
-    sim_data_t        sim_data; /* the simulation data */
-    barres_t         *results;  /* the results */
-    int               nresults; /* number of results in results array */
+    sim_data_t        sim_data;  /* the simulation data */
+    barres_t         *results;   /* the results */
+    int               nresults;  /* number of results in results array */
 
     double           *partsum;
     double            prec, dg_tot;
@@ -3608,14 +3604,8 @@ int gmx_bar(int argc, char *argv[])
         return 0;
     }
 
-    if (opt2bSet("-f", NFILE, fnm))
-    {
-        nxvgfile = opt2fns(&fxvgnms, "-f", NFILE, fnm);
-    }
-    if (opt2bSet("-g", NFILE, fnm))
-    {
-        nedrfile = opt2fns(&fedrnms, "-g", NFILE, fnm);
-    }
+    gmx::ArrayRef<const std::string> xvgFiles = opt2fnsIfOptionSet("-f", NFILE, fnm);
+    gmx::ArrayRef<const std::string> edrFiles = opt2fnsIfOptionSet("-g", NFILE, fnm);
 
     sim_data_init(&sim_data);
 #if 0
@@ -3627,7 +3617,7 @@ int gmx_bar(int argc, char *argv[])
 #endif
 
 
-    nfile_tot = nxvgfile + nedrfile;
+    nfile_tot = xvgFiles.size() + edrFiles.size();
 
     if (nfile_tot == 0)
     {
@@ -3644,15 +3634,15 @@ int gmx_bar(int argc, char *argv[])
     nf = 0;
 
     /* read in all files. First xvg files */
-    for (f = 0; f < nxvgfile; f++)
+    for (const std::string &filenm : xvgFiles)
     {
-        read_bar_xvg(fxvgnms[f], &temp, &sim_data);
+        read_bar_xvg(filenm.c_str(), &temp, &sim_data);
         nf++;
     }
     /* then .edr files */
-    for (f = 0; f < nedrfile; f++)
+    for (const std::string &filenm : edrFiles)
     {
-        read_barsim_edr(fedrnms[f], &temp, &sim_data);;
+        read_barsim_edr(filenm.c_str(), &temp, &sim_data);;
         nf++;
     }
 

@@ -42,6 +42,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_device_info_t;
 struct gmx_hw_info_t;
@@ -113,21 +114,21 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
-void init_forcerec(FILE                    *fplog,
-                   const gmx::MDLogger     &mdlog,
-                   t_forcerec              *fr,
-                   t_fcdata                *fcd,
-                   const t_inputrec        *ir,
-                   const gmx_mtop_t        *mtop,
-                   const t_commrec         *cr,
-                   matrix                   box,
-                   const char              *tabfn,
-                   const char              *tabpfn,
-                   const t_filenm          *tabbfnm,
-                   const gmx_hw_info_t     &hardwareInfo,
-                   const gmx_device_info_t *deviceInfo,
-                   gmx_bool                 bNoSolvOpt,
-                   real                     print_force);
+void init_forcerec(FILE                             *fplog,
+                   const gmx::MDLogger              &mdlog,
+                   t_forcerec                       *fr,
+                   t_fcdata                         *fcd,
+                   const t_inputrec                 *ir,
+                   const gmx_mtop_t                 *mtop,
+                   const t_commrec                  *cr,
+                   matrix                            box,
+                   const char                       *tabfn,
+                   const char                       *tabpfn,
+                   gmx::ArrayRef<const std::string>  tabbfnm,
+                   const gmx_hw_info_t              &hardwareInfo,
+                   const gmx_device_info_t          *deviceInfo,
+                   gmx_bool                          bNoSolvOpt,
+                   real                              print_force);
 
 /*! \brief Divide exclusions over threads
  *

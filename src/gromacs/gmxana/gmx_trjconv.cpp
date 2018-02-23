@@ -1985,7 +1985,6 @@ int gmx_trjconv(int argc, char *argv[])
     sfree(grpnm);
     sfree(index);
     sfree(cindex);
-    done_filenms(NFILE, fnm);
     done_frame(&fr);
 
     do_view(oenv, out_file, nullptr);
