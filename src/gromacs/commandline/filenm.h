@@ -56,10 +56,11 @@
  *
  * \inpublicapi
  */
-struct t_filenm {
+struct t_filenm
+{
     int           ftp;    //!< File type (see enum in filetypes.h)
-    const char   *opt;    //!< Command line option
-    const char   *fn;     //!< File name (as set in source code)
+    const char   *opt;    //!< Command line option, can be nullptr in which case the commandline module, including all opt2??? functions below, will use the default option for the file type
+    const char   *fn;     //!< File name (as set in source code), can be nullptr in which case the commandline module will use the default file name for the file type
     unsigned long flag;   //!< Flag for all kinds of info (see defs)
     int           nfiles; //!< number of files
     char        **fns;    //!< File names
