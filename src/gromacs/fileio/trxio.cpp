@@ -463,39 +463,36 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     return 0;
 }
 
-void trjtools_gmx_prepare_tng_writing(const char       *filename,
-                                      char              filemode,
-                                      t_trxstatus      *in,
-                                      t_trxstatus     **out,
-                                      const char       *infile,
-                                      const int         natoms,
-                                      const gmx_mtop_t *mtop,
-                                      const int        *index,
-                                      const char       *index_group_name)
+t_trxstatus *
+trjtools_gmx_prepare_tng_writing(const char       *filename,
+                                 char              filemode,
+                                 t_trxstatus      *in,
+                                 const char       *infile,
+                                 const int         natoms,
+                                 const gmx_mtop_t *mtop,
+                                 const int        *index,
+                                 const char       *index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
     {
         gmx_incons("Sorry, can only prepare for TNG output.");
     }
-
-    if (*out == nullptr)
-    {
-        snew((*out), 1);
-    }
-    status_init(*out);
+    t_trxstatus *out;
+    snew(out, 1);
+    status_init(out);
 
     if (in != nullptr)
     {
         gmx_prepare_tng_writing(filename,
                                 filemode,
                                 &in->tng,
-                                &(*out)->tng,
+                                &out->tng,
                                 natoms,
                                 mtop,
                                 index,
                                 index_group_name);
     }
-    else if (efTNG == fn2ftp(infile))
+    else if ((infile) && (efTNG == fn2ftp(infile)))
     {
         gmx_tng_trajectory_t tng_in;
         gmx_tng_open(infile, 'r', &tng_in);
@@ -503,12 +500,26 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
         gmx_prepare_tng_writing(filename,
                                 filemode,
                                 &tng_in,
-                                &(*out)->tng,
+                                &out->tng,
                                 natoms,
                                 mtop,
                                 index,
                                 index_group_name);
     }
+    else
+    {
+        // we start from a file that is not a tng file or have been unable to load the
+        // input file, so we need to populate the fields independently of it
+        gmx_prepare_tng_writing(filename,
+                                filemode,
+                                nullptr,
+                                &out->tng,
+                                natoms,
+                                mtop,
+                                index,
+                                index_group_name);
+    }
+    return out;
 }
 
 void write_tng_frame(t_trxstatus *status,
