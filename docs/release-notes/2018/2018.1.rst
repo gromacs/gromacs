@@ -30,6 +30,13 @@ system.
 
 :issue:`2381`
 
+Fixed handling of mdp ``define`` statement assigning preprocessor values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Now .mdp files can configure the topology with values, as originally
+intended, e.g. ``"define = -DBOOL -DVAR=VALUE"``.
+
+:issue:`2392`
+
 Prevented log file energy average printing dividing by zero
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 If very few simulation frames have computed energies, then there may
