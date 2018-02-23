@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,7 +116,7 @@ class CpuInfo
             X86_Fma,         //!< Fused-multiply add support (mainly for AVX)
             X86_Fma4,        //!< 4-operand FMA, only on AMD for now
             X86_Hle,         //!< Hardware lock elision
-            X86_Htt,         //!< Hyper-Threading supported (but maybe not enabled)
+            X86_Htt,         //!< Hyper-Threading enabled (NOTE: might not match the CPUID HTT support flag)
             X86_Intel,       //!< This is an Intel x86 processor
             X86_Lahf,        //!< LAHF/SAHF support in 64 bits
             X86_MisalignSse, //!< Support for misaligned SSE data instructions
