@@ -203,7 +203,7 @@ set(GMX_VERSION_SUFFIX "")
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
 set(LIBRARY_SOVERSION_MAJOR 3)
-set(LIBRARY_SOVERSION_MINOR 0)
+set(LIBRARY_SOVERSION_MINOR 1)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
 #####################################################################
@@ -226,7 +226,7 @@ endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
 set(REGRESSIONTEST_BRANCH "refs/heads/release-2018")
-set(REGRESSIONTEST_MD5SUM "5a609bea6b6777072063be9e665121ef" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "1a94916e2cf90e34fddb3514a65e0154" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
