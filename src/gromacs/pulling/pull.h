@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,7 +185,7 @@ void clear_pull_forces(struct pull_t *pull);
  * \returns The pull potential energy.
  */
 real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
-                    t_commrec *cr, double t, real lambda,
+                    const t_commrec *cr, double t, real lambda,
                     rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
 
 
@@ -204,7 +204,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
 void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
-                     t_commrec *cr, double dt, double t,
+                     const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
 
@@ -215,7 +215,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param pull           The pull group.
  * \param md             All atoms.
  */
-void dd_make_local_pull_groups(t_commrec *cr,
+void dd_make_local_pull_groups(const t_commrec *cr,
                                struct pull_t *pull, t_mdatoms *md);
 
 
@@ -239,7 +239,7 @@ struct pull_t *init_pull(FILE                      *fplog,
                          int                        nfile,
                          const t_filenm             fnm[],
                          const gmx_mtop_t          *mtop,
-                         t_commrec                * cr,
+                         const t_commrec           *cr,
                          const gmx_output_env_t    *oenv,
                          real                       lambda,
                          gmx_bool                   bOutFile,
@@ -273,7 +273,7 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(t_commrec        *cr,
+void pull_calc_coms(const t_commrec  *cr,
                     struct pull_t    *pull,
                     t_mdatoms        *md,
                     struct t_pbc     *pbc,

@@ -1777,7 +1777,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
 
 
 void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
-                      FILE *fplog, t_commrec *cr,
+                      FILE *fplog, const t_commrec *cr,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,

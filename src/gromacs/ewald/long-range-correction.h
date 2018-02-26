@@ -69,7 +69,7 @@ struct t_inputrec;
  * calculates correction for surface dipole terms. */
 void
 ewald_LRcorrection(int numAtomsLocal,
-                   t_commrec *cr,
+                   const t_commrec *cr,
                    int numThreads, int thread,
                    t_forcerec *fr,
                    const t_inputrec *ir,

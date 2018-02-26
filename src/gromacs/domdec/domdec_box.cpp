@@ -60,7 +60,7 @@
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */
 static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
                                 rvec av, rvec stddev,
-                                t_commrec *cr_sum)
+                                const t_commrec *cr_sum)
 {
     int   *cgindex;
     dvec   s1, s2;
@@ -240,7 +240,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
 static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
                           gmx_bool bCalcUnboundedSize, int ncg, const t_block *cgs, const rvec *x,
-                          t_commrec *cr_sum,
+                          const t_commrec *cr_sum,
                           gmx_ddbox_t *ddbox)
 {
     rvec av, stddev;
@@ -281,7 +281,7 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
     set_tric_dir(dd_nc, ddbox, box);
 }
 
-void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, const t_commrec *cr_sum,
                const t_inputrec *ir, const matrix box,
                gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox)
@@ -300,7 +300,7 @@ void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
     }
 }
 
-void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
+void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
                   const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox)

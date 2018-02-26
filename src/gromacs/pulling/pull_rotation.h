@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ extern "C" {
  * \param mdrunOptions  Options for mdrun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     struct t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions);
 
 
@@ -116,7 +116,7 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
+extern void do_rotation(const t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
                         gmx_int64_t step, gmx_bool bNS);
 
 
@@ -137,7 +137,7 @@ extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-extern real add_rot_forces(t_rot *rot, rvec f[], struct t_commrec *cr, gmx_int64_t step, real t);
+extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_t step, real t);
 
 
 /*! \brief Close the enforced rotation output files.

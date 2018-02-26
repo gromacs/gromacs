@@ -118,7 +118,7 @@ typedef struct {
 
 //! Print the EM starting conditions
 static void print_em_start(FILE                     *fplog,
-                           t_commrec                *cr,
+                           const t_commrec          *cr,
                            gmx_walltime_accounting_t walltime_accounting,
                            gmx_wallcycle_t           wcycle,
                            const char               *name)
@@ -218,7 +218,7 @@ static void print_converged(FILE *fp, const char *alg, real ftol,
 }
 
 //! Compute the norm and max of the force array in parallel
-static void get_f_norm_max(t_commrec *cr,
+static void get_f_norm_max(const t_commrec *cr,
                            t_grpopts *opts, t_mdatoms *mdatoms, const rvec *f,
                            real *fnorm, real *fmax, int *a_fmax)
 {
@@ -312,7 +312,7 @@ static void get_f_norm_max(t_commrec *cr,
 }
 
 //! Compute the norm of the force
-static void get_state_f_norm_max(t_commrec *cr,
+static void get_state_f_norm_max(const t_commrec *cr,
                                  t_grpopts *opts, t_mdatoms *mdatoms,
                                  em_state_t *ems)
 {
@@ -322,7 +322,7 @@ static void get_state_f_norm_max(t_commrec *cr,
 
 //! Initialize the energy minimization
 static void init_em(FILE *fplog, const char *title,
-                    t_commrec *cr,
+                    const t_commrec *cr,
                     const gmx_multisim_t *ms,
                     gmx::IMDOutputProvider *outputProvider,
                     t_inputrec *ir,
@@ -478,7 +478,7 @@ static void init_em(FILE *fplog, const char *title,
 }
 
 //! Finalize the minimization
-static void finish_em(t_commrec *cr, gmx_mdoutf_t outf,
+static void finish_em(const t_commrec *cr, gmx_mdoutf_t outf,
                       gmx_walltime_accounting_t walltime_accounting,
                       gmx_wallcycle_t wcycle)
 {
@@ -504,7 +504,7 @@ static void swap_em_state(em_state_t **ems1, em_state_t **ems2)
 }
 
 //! Save the EM trajectory
-static void write_em_traj(FILE *fplog, t_commrec *cr,
+static void write_em_traj(FILE *fplog, const t_commrec *cr,
                           gmx_mdoutf_t outf,
                           gmx_bool bX, gmx_bool bF, const char *confout,
                           gmx_mtop_t *top_global,
@@ -562,7 +562,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 //! \brief Do one minimization step
 //
 // \returns true when the step succeeded, false when a constraint error occurred
-static bool do_em_step(t_commrec *cr,
+static bool do_em_step(const t_commrec *cr,
                        const gmx_multisim_t *ms,
                        t_inputrec *ir, t_mdatoms *md,
                        gmx_bool bMolPBC,
@@ -696,7 +696,7 @@ static bool do_em_step(t_commrec *cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
+static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    gmx::MDAtoms *mdAtoms, t_forcerec *fr,
@@ -848,7 +848,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
 }
 
 //! Parallel utility summing energies and forces
-static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
+static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
                               gmx_mtop_t *top_global,
                               em_state_t *s_min, em_state_t *s_b)
 {
@@ -926,7 +926,7 @@ static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms
 }
 
 //! Print some stuff, like beta, whatever that means.
-static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
+static real pr_beta(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
                     gmx_mtop_t *top_global,
                     em_state_t *s_min, em_state_t *s_b)
 {

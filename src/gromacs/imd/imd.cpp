@@ -808,7 +808,7 @@ static void output_imd_forces(t_inputrec *ir, double time)
 
 
 /*! \brief Synchronize the nodes. */
-static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
+static void imd_sync_nodes(t_inputrec *ir, const t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
@@ -1227,7 +1227,7 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
 
 
 /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
-static void init_imd_prepare_for_x_assembly(t_commrec *cr, rvec x[], t_gmx_IMD_setup *IMDsetup)
+static void init_imd_prepare_for_x_assembly(const t_commrec *cr, rvec x[], t_gmx_IMD_setup *IMDsetup)
 {
     int i, ii;
 
@@ -1273,7 +1273,7 @@ static void init_imd_prepare_for_x_assembly(t_commrec *cr, rvec x[], t_gmx_IMD_s
 
 
 /*! \brief Check for non-working integrator / parallel options. */
-static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
+static void imd_check_integrator_parallel(t_inputrec *ir, const t_commrec *cr)
 {
     if (PAR(cr))
     {
@@ -1286,7 +1286,7 @@ static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
 }
 
 void init_IMD(t_inputrec             *ir,
-              t_commrec              *cr,
+              const t_commrec        *cr,
               const gmx_multisim_t   *ms,
               gmx_mtop_t             *top_global,
               FILE                   *fplog,
@@ -1477,15 +1477,15 @@ void init_IMD(t_inputrec             *ir,
 }
 
 
-gmx_bool do_IMD(gmx_bool        bIMD,
-                gmx_int64_t     step,
-                t_commrec      *cr,
-                gmx_bool        bNS,
-                matrix          box,
-                rvec            x[],
-                t_inputrec     *ir,
-                double          t,
-                gmx_wallcycle  *wcycle)
+gmx_bool do_IMD(gmx_bool         bIMD,
+                gmx_int64_t      step,
+                const t_commrec *cr,
+                gmx_bool         bNS,
+                matrix           box,
+                rvec             x[],
+                t_inputrec      *ir,
+                double           t,
+                gmx_wallcycle   *wcycle)
 {
     gmx_bool         imdstep = FALSE;
     t_gmx_IMD_setup *IMDsetup;
@@ -1662,7 +1662,7 @@ int IMD_get_step(t_gmx_IMD *IMDsetup)
 }
 
 
-void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
+void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, const t_commrec *cr, rvec *f,
                       gmx_wallcycle *wcycle)
 {
     int              i, j;

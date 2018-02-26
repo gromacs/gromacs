@@ -88,7 +88,7 @@ gmx_global_stat_t global_stat_init(t_inputrec *ir);
 void global_stat_destroy(gmx_global_stat_t gs);
 
 void global_stat(gmx_global_stat_t gs,
-                 t_commrec *cr, gmx_enerdata_t *enerd,
+                 const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
@@ -104,7 +104,7 @@ int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
 /* ROUTINES from sim_util.c */
 
 void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
-                gmx_int64_t step, t_inputrec *ir, t_commrec *cr);
+                gmx_int64_t step, t_inputrec *ir, const t_commrec *cr);
 
 /*! \brief Print date, time, MPI rank and a description of this point
  * in time.
@@ -117,11 +117,11 @@ void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
 void print_date_and_time(FILE *log, int rank, const char *title,
                          double the_time);
 
-void print_start(FILE *fplog, t_commrec *cr,
+void print_start(FILE *fplog, const t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
                  const char *name);
 
-void finish_run(FILE *log, const gmx::MDLogger &mdlog, t_commrec *cr,
+void finish_run(FILE *log, const gmx::MDLogger &mdlog, const t_commrec *cr,
                 const t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -139,13 +139,13 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayR
 
 void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
-                        t_state *state, t_commrec *cr,
+                        t_state *state, const t_commrec *cr,
                         const gmx_multisim_t *ms,
                         t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top);
 
 void init_md(FILE *fplog,
-             t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
