@@ -825,14 +825,14 @@ void MyMol::addShells(const Poldata          &pd,
         gmx_fatal(FARGS, "No such polarizability unit '%s'", pd.getPolarUnit().c_str());
     }
     
-    /*Calculate the total number of particles.*/
+    /*Calculate the total number of Atom and Vsite particles.*/
     auto nParticles = topology_->atoms.nr;    
     for(int i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom ||
             topology_->atoms.atom[i].ptype == eptVSite)
         {
-            nParticles++; // We add 1 particle as shell per Atom and Vsite
+            nParticles++; // We add 1 shell particle per Atom and Vsite particles
         }
     }               
     state_change_natoms(state_, nParticles);
@@ -889,7 +889,7 @@ void MyMol::addShells(const Poldata          &pd,
             }
             else
             {
-                printf("Can not find atomtype %s in poldata\n", atomtype.c_str());
+                printf("Cannot find atomtype %s in poldata\n", atomtype.c_str());
             }
         }
     }

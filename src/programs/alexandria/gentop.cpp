@@ -149,6 +149,7 @@ int alex_gentop(int argc, char *argv[])
     static int                       nsymm          = 0;
     static int                       qcycle         = 1000;
     static int                       nmol           = 1;
+    static int                       nexcl          = 2;
     static real                      kb             = 4e5;
     static real                      kt             = 400;
     static real                      kp             = 5;
@@ -318,6 +319,8 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENAngle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
+        { "-nexcl",    FALSE, etINT, {&nexcl},
+          "HIDDENNumber of exclusion" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
         { "-efield",  FALSE, etREAL, {&efield},
@@ -376,6 +379,11 @@ int alex_gentop(int argc, char *argv[])
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    if (pd.getNexcl() != nexcl)
+    {
+        printf("Exclusion number changed from %d to %d.\n", pd.getNexcl(), nexcl);
+        pd.setNexcl(nexcl);
+    }
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",

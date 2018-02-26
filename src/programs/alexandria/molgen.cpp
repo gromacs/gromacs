@@ -300,6 +300,7 @@ MolGen::MolGen()
     qtol_      = 1e-6;
     qcycle_    = 1000;
     mindata_   = 3;
+    nexcl_     = 2;
     hfac_      = 0;
     maxESP_    = 100;
     fixchi_    = (char *)"";
@@ -374,6 +375,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs)
           "Max number of tries for optimizing the charges." },
         { "-hfac",  FALSE, etREAL, {&hfac_},
           "[HIDDEN]Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
+        { "-nexcl",  FALSE, etINT, {&nexcl_},
+          "[HIDDEN]Exclusion number." },
         { "-opthfac",  FALSE, etBOOL, {&bOptHfac_},
           "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
@@ -484,6 +487,12 @@ void MolGen::Read(FILE            *fp,
             alexandria::readPoldata(pd_fn, pd_, atomprop_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        if (pd_.getNexcl() != nexcl_)
+        {
+            fprintf(fp, "Exclusion number changed from %d to %d read from the command line.\n", 
+                    pd_.getNexcl(), nexcl_);
+            pd_.setNexcl(nexcl_);
+        }
     }
     /*Broadcasting Force Field Data from Master to Slave nodes*/
     if (PAR(cr_))
