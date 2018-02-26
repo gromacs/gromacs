@@ -593,7 +593,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     return shfc;
 }
 
-void make_local_shells(t_commrec *cr, t_mdatoms *md,
+void make_local_shells(const t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t *shfc)
 {
     t_shell      *shell;
@@ -828,7 +828,7 @@ static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real 
 }
 
 
-static real rms_force(t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force, int ns, t_shell s[],
+static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force, int ns, t_shell s[],
                       int ndir, real *sf_dir, real *Epot)
 {
     double      buf[4];
@@ -894,7 +894,7 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
 
 static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
-                      t_commrec *cr,
+                      const t_commrec *cr,
                       const gmx_multisim_t *ms,
                       int dd_ac1,
                       gmx_int64_t step, t_mdatoms *md, int end,
@@ -976,7 +976,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
               nullptr, nullptr, nrnb, econqDeriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE *fplog, t_commrec *cr,
+void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
                          const gmx_multisim_t *ms,
                          gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,

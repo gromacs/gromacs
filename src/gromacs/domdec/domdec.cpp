@@ -1727,7 +1727,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
 }
 
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
-                  const gmx_mtop_t *mtop, t_commrec *cr,
+                  const gmx_mtop_t *mtop, const t_commrec *cr,
                   int natoms, rvec x[], matrix box)
 {
     char          fname[STRLEN], buf[22];
@@ -1877,7 +1877,7 @@ static int *dd_interleaved_pme_ranks(const gmx_domdec_t *dd)
     return pme_rank;
 }
 
-static int gmx_ddcoord2pmeindex(t_commrec *cr, int x, int y, int z)
+static int gmx_ddcoord2pmeindex(const t_commrec *cr, int x, int y, int z)
 {
     gmx_domdec_t *dd;
     ivec          coords;
@@ -1905,7 +1905,7 @@ static int gmx_ddcoord2pmeindex(t_commrec *cr, int x, int y, int z)
     return slab;
 }
 
-static int ddcoord2simnodeid(t_commrec *cr, int x, int y, int z)
+static int ddcoord2simnodeid(const t_commrec *cr, int x, int y, int z)
 {
     gmx_domdec_comm_t *comm;
     ivec               coords;
@@ -2019,7 +2019,7 @@ void get_pme_nnodes(const gmx_domdec_t *dd,
     }
 }
 
-std::vector<int> get_pme_ddranks(t_commrec *cr, int pmenodeid)
+std::vector<int> get_pme_ddranks(const t_commrec *cr, int pmenodeid)
 {
     gmx_domdec_t *dd;
     int           x, y, z;
@@ -6109,7 +6109,7 @@ static int dd_getenv(FILE *fplog, const char *env_var, int def)
     return nst;
 }
 
-static void dd_warning(t_commrec *cr, FILE *fplog, const char *warn_string)
+static void dd_warning(const t_commrec *cr, FILE *fplog, const char *warn_string)
 {
     if (MASTER(cr))
     {
@@ -6743,7 +6743,7 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 }
 
 
-static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
+static void turn_on_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6809,7 +6809,7 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
     }
 }
 
-static void turn_off_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
+static void turn_off_dlb(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
 {
     gmx_domdec_t *dd = cr->dd;
 
@@ -6821,7 +6821,7 @@ static void turn_off_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
     dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
 }
 
-static void turn_off_dlb_forever(FILE *fplog, t_commrec *cr, gmx_int64_t step)
+static void turn_off_dlb_forever(FILE *fplog, const t_commrec *cr, gmx_int64_t step)
 {
     GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == edlbsOffCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
     char buf[STRLEN];
@@ -9132,7 +9132,7 @@ void reset_dd_statistics_counters(gmx_domdec_t *dd)
     comm->load_pme = 0;
 }
 
-void print_dd_statistics(t_commrec *cr, const t_inputrec *ir, FILE *fplog)
+void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 {
     gmx_domdec_comm_t *comm;
     int                ddnat;
@@ -9190,7 +9190,7 @@ void print_dd_statistics(t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 
 void dd_partition_system(FILE                *fplog,
                          gmx_int64_t          step,
-                         t_commrec           *cr,
+                         const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
                          t_state             *state_global,

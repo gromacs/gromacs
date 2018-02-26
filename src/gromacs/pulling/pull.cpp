@@ -1710,7 +1710,7 @@ static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
 }
 
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
-                    t_commrec *cr, double t, real lambda,
+                    const t_commrec *cr, double t, real lambda,
                     rvec *x, gmx::ForceWithVirial *force, real *dvdlambda)
 {
     real V = 0;
@@ -1766,7 +1766,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 }
 
 void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
-                     t_commrec *cr, double dt, double t,
+                     const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir)
 {
     assert(pull != NULL);
@@ -1817,7 +1817,7 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
     }
 }
 
-void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
+void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
 {
     gmx_domdec_t   *dd;
     pull_comm_t    *comm;
@@ -1941,7 +1941,7 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
     pull->bSetPBCatoms = TRUE;
 }
 
-static void init_pull_group_index(FILE *fplog, t_commrec *cr,
+static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                                   int g, pull_group_work_t *pg,
                                   gmx_bool bConstraint, ivec pulldim_con,
                                   const gmx_mtop_t *mtop,
@@ -2117,7 +2117,7 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           int nfile, const t_filenm fnm[],
-          const gmx_mtop_t *mtop, t_commrec *cr,
+          const gmx_mtop_t *mtop, const t_commrec *cr,
           const gmx_output_env_t *oenv, real lambda,
           gmx_bool bOutFile,
           const ContinuationOptions &continuationOptions)
