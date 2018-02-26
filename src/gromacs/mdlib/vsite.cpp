@@ -633,7 +633,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec *v,
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      t_commrec *cr,
+                      const t_commrec *cr,
                       const matrix box)
 {
     const bool useDomdec = (vsite != nullptr && vsite->useDomdec);
@@ -1617,7 +1617,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr, gmx_wallcycle *wcycle)
+                    const t_commrec *cr, gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcVSITESPREAD);
     const bool useDomdec = vsite->useDomdec;
@@ -2016,7 +2016,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
 
 
 gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
-                       t_commrec        *cr)
+                       const t_commrec  *cr)
 {
     GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
 

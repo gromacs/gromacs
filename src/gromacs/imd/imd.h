@@ -140,7 +140,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param oenv         Output options.
  * \param mdrunOptions Options for mdrun.
  */
-void init_IMD(t_inputrec *ir, t_commrec *cr,
+void init_IMD(t_inputrec *ir, const t_commrec *cr,
               const gmx_multisim_t *ms,
               gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
@@ -164,7 +164,7 @@ void init_IMD(t_inputrec *ir, t_commrec *cr,
  *
  * \returns            Whether or not we have to do IMD communication at this step.
  */
-gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, t_commrec *cr,
+gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, const t_commrec *cr,
                 gmx_bool bNS,
                 matrix box, rvec x[], t_inputrec *ir, double t,
                 gmx_wallcycle *wcycle);
@@ -188,7 +188,7 @@ int IMD_get_step(t_gmx_IMD *IMDsetup);
  * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
  */
 void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
-                      t_commrec *cr, rvec *f,
+                      const t_commrec *cr, rvec *f,
                       gmx_wallcycle *wcycle);
 
 

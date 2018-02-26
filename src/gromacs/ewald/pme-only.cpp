@@ -129,7 +129,7 @@ struct gmx_pme_pp {
 };
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
-static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(t_commrec *cr)
+static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)
 {
     auto pme_pp = gmx::compat::make_unique<gmx_pme_pp>();
 
@@ -183,7 +183,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
 static gmx_pme_t *gmx_pmeonly_switch(std::vector<gmx_pme_t *> *pmedata,
                                      const ivec grid_size,
                                      real ewaldcoeff_q, real ewaldcoeff_lj,
-                                     t_commrec *cr, const t_inputrec *ir)
+                                     const t_commrec *cr, const t_inputrec *ir)
 {
     GMX_ASSERT(pmedata, "Bad PME tuning list pointer");
     for (auto &pme : *pmedata)
@@ -533,7 +533,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
 }
 
 int gmx_pmeonly(struct gmx_pme_t *pme,
-                t_commrec *cr,    t_nrnb *mynrnb,
+                const t_commrec *cr, t_nrnb *mynrnb,
                 gmx_wallcycle  *wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 t_inputrec *ir, PmeRunMode runMode)
