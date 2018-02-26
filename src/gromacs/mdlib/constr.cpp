@@ -142,7 +142,7 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
 
 static void write_constr_pdb(const char *fn, const char *title,
                              const gmx_mtop_t *mtop,
-                             int start, int homenr, t_commrec *cr,
+                             int start, int homenr, const t_commrec *cr,
                              rvec x[], matrix box)
 {
     char          fname[STRLEN];
@@ -198,7 +198,7 @@ static void write_constr_pdb(const char *fn, const char *title,
 }
 
 static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
-                       int start, int homenr, t_commrec *cr,
+                       int start, int homenr, const t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
     char  buf[STRLEN], buf2[22];
@@ -224,8 +224,8 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
 
 gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
-                   t_idef *idef, t_inputrec *ir,
-                   t_commrec *cr,
+                   t_idef *idef, const t_inputrec *ir,
+                   const t_commrec *cr,
                    const gmx_multisim_t *ms,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
@@ -702,7 +702,7 @@ static int *make_at2settle(int natoms, const t_ilist *ilist)
 
 void set_constraints(struct gmx_constr *constr,
                      gmx_localtop_t *top, const t_inputrec *ir,
-                     const t_mdatoms *md, t_commrec *cr)
+                     const t_mdatoms *md, const t_commrec *cr)
 {
     t_idef *idef = &top->idef;
 
@@ -746,7 +746,7 @@ void set_constraints(struct gmx_constr *constr,
 gmx_constr_t init_constraints(FILE *fplog,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
-                              t_commrec *cr)
+                              const t_commrec *cr)
 {
     int nconstraints =
         gmx_mtop_ftype_count(mtop, F_CONSTR) +

@@ -127,7 +127,7 @@ void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
                 gmx_int64_t               step,
                 t_inputrec               *ir,
-                t_commrec gmx_unused     *cr)
+                const t_commrec          *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
@@ -176,6 +176,8 @@ void print_time(FILE                     *out,
     {
         fprintf(out, "\n");
     }
+#else
+    GMX_UNUSED_VALUE(cr);
 #endif
 
     fflush(out);
@@ -207,7 +209,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     fprintf(fplog, "%s on rank %d %s\n", title, nodeid, time_string);
 }
 
-void print_start(FILE *fplog, t_commrec *cr,
+void print_start(FILE *fplog, const t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
                  const char *name)
 {
@@ -274,7 +276,7 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     }
 }
 
-static void pull_potential_wrapper(t_commrec *cr,
+static void pull_potential_wrapper(const t_commrec *cr,
                                    t_inputrec *ir,
                                    matrix box, rvec x[],
                                    ForceWithVirial *force,
@@ -300,7 +302,7 @@ static void pull_potential_wrapper(t_commrec *cr,
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
-static void pme_receive_force_ener(t_commrec       *cr,
+static void pme_receive_force_ener(const t_commrec *cr,
                                    ForceWithVirial *forceWithVirial,
                                    gmx_enerdata_t  *enerd,
                                    gmx_wallcycle_t  wcycle)
@@ -331,7 +333,7 @@ static void pme_receive_force_ener(t_commrec       *cr,
     wallcycle_stop(wcycle, ewcPP_PMEWAITRECVF);
 }
 
-static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
+static void print_large_forces(FILE *fp, t_mdatoms *md, const t_commrec *cr,
                                gmx_int64_t step, real forceTolerance,
                                const rvec *x, const rvec *f)
 {
@@ -362,7 +364,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     }
 }
 
-static void post_process_forces(t_commrec *cr,
+static void post_process_forces(const t_commrec *cr,
                                 gmx_int64_t step,
                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
@@ -814,7 +816,7 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
  */
 static void
 computeSpecialForces(FILE             *fplog,
-                     t_commrec        *cr,
+                     const t_commrec  *cr,
                      t_inputrec       *inputrec,
                      gmx_int64_t       step,
                      double            t,
@@ -1033,7 +1035,7 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     }
 }
 
-static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                                 const gmx_multisim_t *ms,
                                 t_inputrec *inputrec,
                                 gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1717,7 +1719,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 }
 
-static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
+static void do_force_cutsGROUP(FILE *fplog, const t_commrec *cr,
                                const gmx_multisim_t *ms,
                                t_inputrec *inputrec,
                                gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -2040,7 +2042,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
 }
 
-void do_force(FILE *fplog, t_commrec *cr,
+void do_force(FILE *fplog, const t_commrec *cr,
               const gmx_multisim_t *ms,
               t_inputrec *inputrec,
               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -2122,7 +2124,7 @@ void do_force(FILE *fplog, t_commrec *cr,
 
 void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_inputrec *ir, t_mdatoms *md,
-                        t_state *state, t_commrec *cr,
+                        t_state *state, const t_commrec *cr,
                         const gmx_multisim_t *ms,
                         t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top)
@@ -2655,7 +2657,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x
 }
 
 // TODO This can be cleaned up a lot, and move back to runner.cpp
-void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
+void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
                 const t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -2847,7 +2849,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
 
 
 void init_md(FILE *fplog,
-             t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
              t_inputrec *ir, const gmx_output_env_t *oenv,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,

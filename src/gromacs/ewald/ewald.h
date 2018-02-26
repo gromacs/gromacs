@@ -88,7 +88,7 @@ do_ewald(t_inputrec *ir,
          rvec x[],        rvec f[],
          real chargeA[],  real chargeB[],
          matrix box,
-         t_commrec *cr,  int natoms,
+         const t_commrec *cr, int natoms,
          matrix lrvir,   real ewaldcoeff,
          real lambda,    real *dvdlambda,
          struct gmx_ewald_tab_t *et);
@@ -98,7 +98,7 @@ do_ewald(t_inputrec *ir,
  *
  * Should only be called on one thread. */
 real
-ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
+ewald_charge_correction(const t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
                         real *dvdlambda, tensor vir);
 
 #endif

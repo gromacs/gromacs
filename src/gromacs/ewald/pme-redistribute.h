@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@ dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
                gmx_bool bAddF);
 
 void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
+do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int homenr,
                      gmx_bool bFirst, rvec x[], real *data);
 
 #endif

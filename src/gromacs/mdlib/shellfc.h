@@ -64,11 +64,11 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
-void make_local_shells(t_commrec *cr, t_mdatoms *md,
+void make_local_shells(const t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t *shfc);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE *log, t_commrec *cr,
+void relax_shell_flexcon(FILE *log, const t_commrec *cr,
                          const gmx_multisim_t *ms,
                          gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,

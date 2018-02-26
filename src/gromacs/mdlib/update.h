@@ -126,7 +126,7 @@ void update_coords(FILE                          *fplog,
                    matrix                         M,
                    gmx_update_t                  *upd,
                    int                            bUpdatePart,
-                   t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
+                   const t_commrec               *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr                    *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
@@ -136,7 +136,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 void update_constraints(FILE                    *fplog,
                         gmx_int64_t              step,
                         real                    *dvdlambda, /* FEP stuff */
-                        t_inputrec              *inputrec,  /* input record and box stuff	*/
+                        const t_inputrec        *inputrec,  /* input record and box stuff	*/
                         t_mdatoms               *md,
                         t_state                 *state,
                         gmx_bool                 bMolPBC,
@@ -144,7 +144,7 @@ void update_constraints(FILE                    *fplog,
                         gmx::ArrayRef<gmx::RVec> force, /* forces on home particles */
                         t_idef                  *idef,
                         tensor                   vir_part,
-                        t_commrec               *cr,
+                        const t_commrec         *cr,
                         const gmx_multisim_t    *ms,
                         t_nrnb                  *nrnb,
                         gmx_wallcycle_t          wcycle,
@@ -183,7 +183,7 @@ update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */
 void
-restore_ekinstate_from_state(t_commrec *cr,
+restore_ekinstate_from_state(const t_commrec *cr,
                              gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
