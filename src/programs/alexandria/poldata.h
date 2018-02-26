@@ -251,7 +251,7 @@ class Poldata
          */
         const std::string &ztype2elem(const std::string &ztype) const;
 
-        std::vector<const std::string> ztype_names() const;
+        std::vector<std::string> ztype_names() const;
 
         /*! \brief
          * Return the charge corresponding to the atyom type

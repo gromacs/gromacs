@@ -174,9 +174,9 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
 
-std::vector<const std::string> Poldata::ztype_names() const
+std::vector<std::string> Poldata::ztype_names() const
 {
-    std::vector<const std::string> ztype_names;   
+    std::vector<std::string> ztype_names;   
     for (auto atpi = alexandria_.begin(); atpi != alexandria_.end(); atpi++)
     { 
         if (std::find(ztype_names.begin(), ztype_names.end(), atpi->getZtype()) == ztype_names.end()) 
