@@ -712,20 +712,81 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
     dd_store_state(cr->dd, &ems->s);
 }
 
-//! De one energy evaluation
-static void evaluate_energy(FILE *fplog, t_commrec *cr,
-                            const gmx_multisim_t *ms,
-                            gmx_mtop_t *top_global,
-                            em_state_t *ems, gmx_localtop_t *top,
-                            t_inputrec *inputrec,
-                            t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                            gmx_global_stat_t gstat,
-                            gmx_vsite_t *vsite, gmx_constr_t constr,
-                            t_fcdata *fcd,
-                            t_graph *graph, gmx::MDAtoms *mdAtoms,
-                            t_forcerec *fr, rvec mu_tot,
-                            gmx_enerdata_t *enerd, tensor vir, tensor pres,
-                            gmx_int64_t count, gmx_bool bFirst)
+namespace
+{
+
+/*! \brief Class to handle the work of setting and doing an energy evaluation.
+ *
+ * This class is a mere aggregate of parameters to pass to evaluate an
+ * energy, so that future changes to names and types of them consume
+ * less time when refactoring other code.
+ *
+ * Aggregate initialization is used, for which the chief risk is that
+ * if a member is added at the end and not all initializer lists are
+ * updated, then the member will be value initialized, which will
+ * typically mean initialization to zero.
+ *
+ * We only want to construct one of these with an initializer list, so
+ * we explicitly delete the default constructor. */
+class EnergyEvaluator
+{
+    public:
+        //! We only intend to construct such objects with an initializer list.
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
+        // Aspects of the C++11 spec changed after GCC 4.8.5, and
+        // compilation of the initializer list construction in
+        // runner.cpp fails in GCC 4.8.5.
+        EnergyEvaluator() = delete;
+#endif
+        /*! \brief Evaluates an energy on the state in \c ems.
+         *
+         * \todo In practice, the same objects mu_tot, vir, and pres
+         * are always passed to this function, so we would rather have
+         * them as data members. However, their C-array types are
+         * unsuited for aggregate initialization. When the types
+         * improve, the call signature of this method can be reduced.
+         */
+        void run(em_state_t *ems, rvec mu_tot,
+                 tensor vir, tensor pres,
+                 gmx_int64_t count, gmx_bool bFirst);
+        //! Handles logging.
+        FILE                 *fplog;
+        //! Handles communication.
+        const t_commrec      *cr;
+        //! Coordinates multi-simulations.
+        const gmx_multisim_t *ms;
+        //! Holds the simulation topology.
+        gmx_mtop_t           *top_global;
+        //! Holds the domain topology.
+        gmx_localtop_t       *top;
+        //! User input options.
+        t_inputrec           *inputrec;
+        //! Manages flop accounting.
+        t_nrnb               *nrnb;
+        //! Manages wall cycle accounting.
+        gmx_wallcycle_t       wcycle;
+        //! Coordinates global reduction.
+        gmx_global_stat_t     gstat;
+        //! Handles virtual sites.
+        gmx_vsite_t          *vsite;
+        //! Handles constraints.
+        gmx_constr_t          constr;
+        //! Handles strange things.
+        t_fcdata             *fcd;
+        //! Molecular graph for SHAKE.
+        t_graph              *graph;
+        //! Per-atom data for this domain.
+        gmx::MDAtoms         *mdAtoms;
+        //! Handles how to calculate the forces.
+        t_forcerec           *fr;
+        //! Stores the computed energies.
+        gmx_enerdata_t       *enerd;
+};
+
+void
+EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
+                     tensor vir, tensor pres,
+                     gmx_int64_t count, gmx_bool bFirst)
 {
     real     t;
     gmx_bool bNS;
@@ -846,6 +907,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         get_state_f_norm_max(cr, &(inputrec->opts), mdAtoms->mdatoms(), ems);
     }
 }
+
+} // namespace
 
 //! Parallel utility summing energies and forces
 static double reorder_partsum(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
@@ -1037,15 +1100,18 @@ Integrator::do_cg()
         sp_header(fplog, CG, inputrec->em_tol, number_steps);
     }
 
+    EnergyEvaluator energyEvaluator {
+        fplog, cr, ms,
+        top_global, top,
+        inputrec, nrnb, wcycle, gstat,
+        vsite, constr, fcd, graph,
+        mdAtoms, fr, enerd
+    };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    evaluate_energy(fplog, cr, ms,
-                    top_global, s_min, top,
-                    inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdAtoms, fr,
-                    mu_tot, enerd, vir, pres, -1, TRUE);
+    energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE);
     where();
 
     if (MASTER(cr))
@@ -1219,11 +1285,7 @@ Integrator::do_cg()
 
         neval++;
         /* Calculate energy for the trial step */
-        evaluate_energy(fplog, cr, ms,
-                        top_global, s_c, top,
-                        inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdAtoms, fr,
-                        mu_tot, enerd, vir, pres, -1, FALSE);
+        energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE);
 
         /* Calc derivative along line */
         const rvec *pc  = as_rvec_array(s_c->s.cg_p.data());
@@ -1328,11 +1390,7 @@ Integrator::do_cg()
 
                 neval++;
                 /* Calculate energy for the trial step */
-                evaluate_energy(fplog, cr, ms,
-                                top_global, s_b, top,
-                                inputrec, nrnb, wcycle, gstat,
-                                vsite, constr, fcd, graph, mdAtoms, fr,
-                                mu_tot, enerd, vir, pres, -1, FALSE);
+                energyEvaluator.run(s_b, mu_tot, vir, pres, -1, FALSE);
 
                 /* p does not change within a step, but since the domain decomposition
                  * might change, we have to use cg_p of s_b here.
@@ -1713,11 +1771,14 @@ Integrator::do_lbfgs()
      * We do not unshift, so molecules are always whole
      */
     neval++;
-    evaluate_energy(fplog, cr, ms,
-                    top_global, &ems, top,
-                    inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdAtoms, fr,
-                    mu_tot, enerd, vir, pres, -1, TRUE);
+    EnergyEvaluator energyEvaluator {
+        fplog, cr, ms,
+        top_global, top,
+        inputrec, nrnb, wcycle, gstat,
+        vsite, constr, fcd, graph,
+        mdAtoms, fr, enerd
+    };
+    energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
     where();
 
     if (MASTER(cr))
@@ -1919,11 +1980,7 @@ Integrator::do_lbfgs()
 
         neval++;
         // Calculate energy for the trial step in position C
-        evaluate_energy(fplog, cr, ms,
-                        top_global, sc, top,
-                        inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdAtoms, fr,
-                        mu_tot, enerd, vir, pres, step, FALSE);
+        energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE);
 
         // Calc line gradient in position C
         real *fc = static_cast<real *>(as_rvec_array(sc->f.data())[0]);
@@ -2010,11 +2067,7 @@ Integrator::do_lbfgs()
 
                 neval++;
                 // Calculate energy for the trial step in point B
-                evaluate_energy(fplog, cr, ms,
-                                top_global, sb, top,
-                                inputrec, nrnb, wcycle, gstat,
-                                vsite, constr, fcd, graph, mdAtoms, fr,
-                                mu_tot, enerd, vir, pres, step, FALSE);
+                energyEvaluator.run(sb, mu_tot, vir, pres, step, FALSE);
                 fnorm = sb->fnorm;
 
                 // Calculate gradient in point B
@@ -2375,6 +2428,13 @@ Integrator::do_steep()
     {
         sp_header(fplog, SD, inputrec->em_tol, nsteps);
     }
+    EnergyEvaluator energyEvaluator {
+        fplog, cr, ms,
+        top_global, top,
+        inputrec, nrnb, wcycle, gstat,
+        vsite, constr, fcd, graph,
+        mdAtoms, fr, enerd
+    };
 
     /**** HERE STARTS THE LOOP ****
      * count is the counter for the number of steps
@@ -2401,11 +2461,7 @@ Integrator::do_steep()
 
         if (validStep)
         {
-            evaluate_energy(fplog, cr, ms,
-                            top_global, s_try, top,
-                            inputrec, nrnb, wcycle, gstat,
-                            vsite, constr, fcd, graph, mdAtoms, fr,
-                            mu_tot, enerd, vir, pres, count, count == 0);
+            energyEvaluator.run(s_try, mu_tot, vir, pres, count, count == 0);
         }
         else
         {
@@ -2669,11 +2725,14 @@ Integrator::do_nm()
 
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
-    evaluate_energy(fplog, cr, ms,
-                    top_global, &state_work, top,
-                    inputrec, nrnb, wcycle, gstat,
-                    vsite, constr, fcd, graph, mdAtoms, fr,
-                    mu_tot, enerd, vir, pres, -1, TRUE);
+    EnergyEvaluator energyEvaluator {
+        fplog, cr, ms,
+        top_global, top,
+        inputrec, nrnb, wcycle, gstat,
+        vsite, constr, fcd, graph,
+        mdAtoms, fr, enerd
+    };
+    energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
 
     /* if forces are not small, warn user */
@@ -2742,11 +2801,7 @@ Integrator::do_nm()
                 }
                 else
                 {
-                    evaluate_energy(fplog, cr, ms,
-                                    top_global, &state_work, top,
-                                    inputrec, nrnb, wcycle, gstat,
-                                    vsite, constr, fcd, graph, mdAtoms, fr,
-                                    mu_tot, enerd, vir, pres, atom*2+dx, FALSE);
+                    energyEvaluator.run(&state_work, mu_tot, vir, pres, atom*2+dx, FALSE);
                 }
 
                 cr->nnodes = nnodes;
