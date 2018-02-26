@@ -66,7 +66,7 @@ class MDAtoms;
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(t_commrec         *cr,
+void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,

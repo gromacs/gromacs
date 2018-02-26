@@ -86,7 +86,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec v[],
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      t_commrec *cr,
+                      const t_commrec *cr,
                       const matrix box);
 
 /*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
@@ -103,7 +103,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    t_commrec *cr, gmx_wallcycle *wcycle);
+                    const t_commrec *cr, gmx_wallcycle *wcycle);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
@@ -122,7 +122,7 @@ int count_intercg_vsites(const gmx_mtop_t *mtop);
  * \returns A valid vsite struct or nullptr when there are no virtual sites
  */
 gmx_vsite_t *initVsite(const gmx_mtop_t &mtop,
-                       t_commrec        *cr);
+                       const t_commrec  *cr);
 
 void split_vsites_over_threads(const t_ilist   *ilist,
                                const t_iparams *ip,

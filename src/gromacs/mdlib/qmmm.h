@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,10 +109,10 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
-void init_QMMMrec(t_commrec  *cr,
-                  gmx_mtop_t *mtop,
-                  t_inputrec *ir,
-                  t_forcerec *fr);
+void init_QMMMrec(const t_commrec *cr,
+                  gmx_mtop_t      *mtop,
+                  t_inputrec      *ir,
+                  t_forcerec      *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
  * topology->atoms.atomname and topology->atoms.atomtype the atom
@@ -121,7 +121,7 @@ void init_QMMMrec(t_commrec  *cr,
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
 
-void update_QMMMrec(t_commrec       *cr,
+void update_QMMMrec(const t_commrec *cr,
                     t_forcerec      *fr,
                     const rvec      *x,
                     const t_mdatoms *md,
@@ -133,9 +133,9 @@ void update_QMMMrec(t_commrec       *cr,
  * elements of the t_QMMMrec struct.
  */
 
-real calculate_QMMM(t_commrec  *cr,
-                    rvec        f[],
-                    t_forcerec *fr);
+real calculate_QMMM(const t_commrec *cr,
+                    rvec             f[],
+                    t_forcerec      *fr);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC

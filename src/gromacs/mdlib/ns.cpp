@@ -1668,7 +1668,7 @@ static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
     }
 }
 
-static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
+static int nsgrid_core(const t_commrec *cr, t_forcerec *fr,
                        matrix box, int ngid,
                        gmx_localtop_t *top,
                        t_grid *grid,
@@ -2162,7 +2162,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                       matrix box,
                       gmx_localtop_t *top,
                       gmx_groups_t *groups,
-                      t_commrec *cr,
+                      const t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
                       gmx_bool bFillGrid)
 {

@@ -100,7 +100,7 @@ static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 }
  * This is only called when the PME cut-off/grid size changes.
  */
 void gmx_pme_reinit(struct gmx_pme_t **pmedata,
-                    t_commrec *        cr,
+                    const t_commrec   *cr,
                     struct gmx_pme_t * pme_src,
                     const t_inputrec * ir,
                     const ivec         grid_size,
@@ -363,9 +363,9 @@ inline bool pme_gpu_active(const gmx_pme_t *pme)
 }
 
 /*! \brief Tell our PME-only node to switch to a new grid size */
-void gmx_pme_send_switchgrid(t_commrec *cr,
-                             ivec       grid_size,
-                             real       ewaldcoeff_q,
-                             real       ewaldcoeff_lj);
+void gmx_pme_send_switchgrid(const t_commrec *cr,
+                             ivec             grid_size,
+                             real             ewaldcoeff_q,
+                             real             ewaldcoeff_lj);
 
 #endif

@@ -67,16 +67,16 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 /* Initializes and returns the lincs data struct */
 
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
+               gmx_bool bDynamics, const t_commrec *cr,
                gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
 gmx_bool
 constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                t_inputrec *ir,
+                const t_inputrec *ir,
                 gmx_int64_t step,
                 gmx_lincsdata_t lincsd, t_mdatoms *md,
-                t_commrec *cr,
+                const t_commrec *cr,
                 const gmx_multisim_t *ms,
                 rvec *x, rvec *xprime, rvec *min_proj,
                 matrix box, t_pbc *pbc,

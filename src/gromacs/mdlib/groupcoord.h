@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,7 +127,7 @@ extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
  *                             the group becomes whole (optional).
  */
-extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
+extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
                                         ivec *extra_shifts, const gmx_bool bNS,
                                         rvec *x_loc, const int nr, const int nr_loc,
                                         int *anrs_loc, int *coll_ind, rvec *xcoll_old,
@@ -182,7 +182,7 @@ extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec d
  * \param[out]  center       The (weighted) center of all x_loc from all the
  *                           nodes.
  */
-extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
+extern void get_center_comm(const t_commrec *cr, rvec x_loc[], real weight_loc[],
                             int nr_loc, int nr_group, rvec center);
 
 

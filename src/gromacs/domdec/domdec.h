@@ -128,7 +128,7 @@ void get_pme_nnodes(const struct gmx_domdec_t *dd,
                     int *npmenodes_x, int *npmenodes_y);
 
 /*! \brief Returns the set of DD ranks that communicate with pme node cr->nodeid */
-std::vector<int> get_pme_ddranks(t_commrec *cr, int pmenodeid);
+std::vector<int> get_pme_ddranks(const t_commrec *cr, int pmenodeid);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
 int dd_pme_maxshift_x(const gmx_domdec_t *dd);
@@ -312,7 +312,7 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  */
 void dd_partition_system(FILE                *fplog,
                          gmx_int64_t          step,
-                         t_commrec           *cr,
+                         const t_commrec     *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
                          t_state             *state_global,
@@ -333,7 +333,7 @@ void dd_partition_system(FILE                *fplog,
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
 
 /*! \brief Print statistics for domain decomposition communication */
-void print_dd_statistics(struct t_commrec *cr, const t_inputrec *ir, FILE *fplog);
+void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog);
 
 /* In domdec_con.c */
 
@@ -413,7 +413,7 @@ void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
  */
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   const gmx_mtop_t *mtop,
-                  t_commrec *cr,
+                  const t_commrec *cr,
                   int natoms, rvec x[], matrix box);
 
 
@@ -441,13 +441,13 @@ real dd_choose_grid(FILE *fplog,
 /* In domdec_box.c */
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, const t_commrec *cr_sum,
                const t_inputrec *ir, const matrix box,
                gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
+void set_ddbox_cr(const t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
                   const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox);
