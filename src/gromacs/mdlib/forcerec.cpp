@@ -1531,7 +1531,7 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
+gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, const t_commrec *cr, FILE *fp)
 {
     gmx_bool bAllvsAll;
 

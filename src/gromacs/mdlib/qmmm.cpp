@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@
 /* GAMESS interface */
 
 void
-init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
+init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
 
 real
 call_gamess(t_forcerec *fr,
@@ -130,7 +130,7 @@ static int struct_comp(const void *a, const void *b)
 
 } /* struct_comp */
 
-static real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
+static real call_QMroutine(const t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
                            t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
@@ -183,7 +183,7 @@ static real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, 
     return (QMener);
 }
 
-static void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
+static void init_QMroutine(const t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
      */
@@ -360,10 +360,10 @@ t_QMMMrec *mk_QMMMrec(void)
 
 } /* mk_QMMMrec */
 
-void init_QMMMrec(t_commrec  *cr,
-                  gmx_mtop_t *mtop,
-                  t_inputrec *ir,
-                  t_forcerec *fr)
+void init_QMMMrec(const t_commrec *cr,
+                  gmx_mtop_t      *mtop,
+                  t_inputrec      *ir,
+                  t_forcerec      *fr)
 {
     /* we put the atomsnumbers of atoms that belong to the QMMM group in
      * an array that will be copied later to QMMMrec->indexQM[..]. Also
@@ -582,7 +582,7 @@ void init_QMMMrec(t_commrec  *cr,
     }
 } /* init_QMMMrec */
 
-void update_QMMMrec(t_commrec       *cr,
+void update_QMMMrec(const t_commrec *cr,
                     t_forcerec      *fr,
                     const rvec      *x,
                     const t_mdatoms *md,
@@ -852,9 +852,9 @@ void update_QMMMrec(t_commrec       *cr,
 } /* update_QMMM_rec */
 
 
-real calculate_QMMM(t_commrec  *cr,
-                    rvec        f[],
-                    t_forcerec *fr)
+real calculate_QMMM(const t_commrec *cr,
+                    rvec             f[],
+                    t_forcerec      *fr)
 {
     real
         QMener = 0.0;

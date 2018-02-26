@@ -79,7 +79,7 @@ void ns(FILE              *fp,
         gmx_groups_t      *groups,
         gmx_localtop_t    *top,
         t_mdatoms         *md,
-        t_commrec         *cr,
+        const t_commrec   *cr,
         t_nrnb            *nrnb,
         gmx_bool           bFillGrid)
 {
@@ -135,7 +135,7 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
 }
 
 void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
-                       t_idef     *idef,    t_commrec  *cr,
+                       t_idef     *idef,    const t_commrec *cr,
                        const gmx_multisim_t *ms,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
                        t_mdatoms  *md,
