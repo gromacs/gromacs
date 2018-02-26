@@ -109,7 +109,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
-                          gmx_bool bPrintNote, t_commrec *cr, FILE *fp);
+                          gmx_bool bPrintNote, const t_commrec *cr, FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
@@ -151,7 +151,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
-void do_force(FILE *log, t_commrec *cr,
+void do_force(FILE *log, const t_commrec *cr,
               const gmx_multisim_t *ms,
               t_inputrec *inputrec,
               gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -185,7 +185,7 @@ void ns(FILE              *fplog,
         gmx_groups_t      *groups,
         gmx_localtop_t    *top,
         t_mdatoms         *md,
-        t_commrec         *cr,
+        const t_commrec   *cr,
         t_nrnb            *nrnb,
         gmx_bool           bFillGrid);
 /* Call the neighborsearcher */
@@ -193,7 +193,7 @@ void ns(FILE              *fplog,
 void do_force_lowlevel(t_forcerec   *fr,
                        t_inputrec   *ir,
                        t_idef       *idef,
-                       t_commrec    *cr,
+                       const t_commrec *cr,
                        const gmx_multisim_t *ms,
                        t_nrnb       *nrnb,
                        gmx_wallcycle_t wcycle,

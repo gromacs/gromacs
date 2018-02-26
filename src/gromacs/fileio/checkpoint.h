@@ -62,7 +62,7 @@ struct t_trxframe;
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
 void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
-                      FILE *fplog, t_commrec *cr,
+                      FILE *fplog, const t_commrec *cr,
                       ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,

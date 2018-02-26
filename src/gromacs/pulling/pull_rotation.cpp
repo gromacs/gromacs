@@ -332,7 +332,7 @@ static inline gmx_bool bSlabTau(t_rot *rot, t_rotgrp *rotg, gmx_int64_t step)
 }
 
 /* Output rotation energy, torques, etc. for each rotation group */
-static void reduce_output(t_commrec *cr, t_rot *rot, real t, gmx_int64_t step)
+static void reduce_output(const t_commrec *cr, t_rot *rot, real t, gmx_int64_t step)
 {
     int             g, i, islab, nslabs = 0;
     int             count; /* MPI element counter                               */
@@ -491,7 +491,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t, gmx_int64_t step)
 
 /* Add the forces from enforced rotation potential to the local forces.
  * Should be called after the SR forces have been evaluated */
-extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_int64_t step, real t)
+extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_t step, real t)
 {
     int             g, l, ii;
     t_rotgrp       *rotg;
@@ -3386,7 +3386,7 @@ static inline void copy_correct_pbc_image(
 }
 
 
-static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
+static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *rotg,
                            rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, const matrix box,
                            t_inputrec *ir, gmx_bool bOutputCenters)
 {
@@ -3659,7 +3659,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions)
 {
     t_rot          *rot;
@@ -3885,13 +3885,13 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 
 
 extern void do_rotation(
-        t_commrec      *cr,
-        t_inputrec     *ir,
-        matrix          box,
-        rvec            x[],
-        real            t,
-        gmx_int64_t     step,
-        gmx_bool        bNS)
+        const t_commrec *cr,
+        t_inputrec      *ir,
+        matrix           box,
+        rvec             x[],
+        real             t,
+        gmx_int64_t      step,
+        gmx_bool         bNS)
 {
     int             g, i, ii;
     t_rot          *rot;

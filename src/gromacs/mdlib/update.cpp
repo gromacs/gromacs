@@ -1344,7 +1344,7 @@ void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind)
 
 }
 
-void restore_ekinstate_from_state(t_commrec *cr,
+void restore_ekinstate_from_state(const t_commrec *cr,
                                   gmx_ekindata_t *ekind, const ekinstate_t *ekinstate)
 {
     int i, n;
@@ -1556,7 +1556,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
 void update_constraints(FILE                          *fplog,
                         gmx_int64_t                    step,
                         real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        t_inputrec                    *inputrec,  /* input record and box stuff	*/
+                        const t_inputrec              *inputrec,  /* input record and box stuff	*/
                         t_mdatoms                     *md,
                         t_state                       *state,
                         gmx_bool                       bMolPBC,
@@ -1564,7 +1564,7 @@ void update_constraints(FILE                          *fplog,
                         gmx::PaddedArrayRef<gmx::RVec> force,     /* forces on home particles */
                         t_idef                        *idef,
                         tensor                         vir_part,
-                        t_commrec                     *cr,
+                        const t_commrec               *cr,
                         const gmx_multisim_t          *ms,
                         t_nrnb                        *nrnb,
                         gmx_wallcycle_t                wcycle,
@@ -1899,7 +1899,7 @@ void update_coords(FILE                          *fplog,
                    matrix                         M,
                    gmx_update_t                  *upd,
                    int                            UpdatePart,
-                   t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
+                   const t_commrec               *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr_t                   constr)
 {
     gmx_bool bDoConstr = (nullptr != constr);

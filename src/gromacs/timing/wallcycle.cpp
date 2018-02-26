@@ -497,7 +497,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
  * wcc_all are unused by the GPU reporting, but it is not satisfactory
  * for the future. Also, there's no need for MPI_Allreduce, since
  * only MASTERRANK uses any of the results. */
-WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
+WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
 {
     WallcycleCounts cycles_sum;
     wallcc_t       *wcc;

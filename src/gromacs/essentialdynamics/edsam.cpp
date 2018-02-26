@@ -390,7 +390,7 @@ static real calc_radius(t_eigvec *vec)
 
 /* Debug helper */
 #ifdef DEBUGHELPERS
-static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr,
+static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, const t_commrec *cr,
                        int step)
 {
     int   i;
@@ -476,7 +476,7 @@ static void dump_edi_eigenvecs(FILE *out, t_eigvec *ev,
 
 
 /* Debug helper */
-static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
+static void dump_edi(t_edpar *edpars, const t_commrec *cr, int nr_edi)
 {
     FILE  *out;
     char   fn[STRLEN];
@@ -962,14 +962,14 @@ static void update_adaption(t_edpar *edi)
 
 
 static void do_single_flood(
-        FILE           *edo,
-        rvec            x[],
-        rvec            force[],
-        t_edpar        *edi,
-        gmx_int64_t     step,
-        matrix          box,
-        t_commrec      *cr,
-        gmx_bool        bNS) /* Are we in a neighbor searching step? */
+        FILE            *edo,
+        rvec             x[],
+        rvec             force[],
+        t_edpar         *edi,
+        gmx_int64_t      step,
+        matrix           box,
+        const t_commrec *cr,
+        gmx_bool         bNS) /* Are we in a neighbor searching step? */
 {
     int                i;
     matrix             rotmat;   /* rotation matrix */
@@ -1066,7 +1066,7 @@ static void do_single_flood(
 
 
 /* Main flooding routine, called from do_force */
-extern void do_flood(t_commrec        *cr,
+extern void do_flood(const t_commrec  *cr,
                      const t_inputrec *ir,
                      rvec              x[],
                      rvec              force[],
@@ -1196,7 +1196,7 @@ static gmx_edsam_t ed_open(
         const char             *edoFileName,
         gmx_bool                bAppend,
         const gmx_output_env_t *oenv,
-        t_commrec              *cr)
+        const t_commrec        *cr)
 {
     gmx_edsam_t ed;
     int         nED;
@@ -1253,7 +1253,7 @@ static gmx_edsam_t ed_open(
 
 
 /* Broadcasts the structure data */
-static void bc_ed_positions(t_commrec *cr, struct gmx_edx *s, int stype)
+static void bc_ed_positions(const t_commrec *cr, struct gmx_edx *s, int stype)
 {
     snew_bc(cr, s->anrs, s->nr   );    /* Index numbers     */
     snew_bc(cr, s->x, s->nr   );       /* Positions         */
@@ -1292,7 +1292,7 @@ static void bc_ed_positions(t_commrec *cr, struct gmx_edx *s, int stype)
 
 
 /* Broadcasts the eigenvector data */
-static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length, gmx_bool bHarmonic)
+static void bc_ed_vecs(const t_commrec *cr, t_eigvec *ev, int length, gmx_bool bHarmonic)
 {
     int i;
 
@@ -1328,7 +1328,7 @@ static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length, gmx_bool bHarmon
 
 /* Broadcasts the ED / flooding data to other nodes
  * and allocates memory where needed */
-static void broadcast_ed_data(t_commrec *cr, gmx_edsam_t ed, int numedis)
+static void broadcast_ed_data(const t_commrec *cr, gmx_edsam_t ed, int numedis)
 {
     int      nr;
     t_edpar *edi;
@@ -2664,7 +2664,7 @@ gmx_edsam_t init_edsam(
         const char             *edoFileName,
         const gmx_mtop_t       *mtop,
         const t_inputrec       *ir,
-        t_commrec              *cr,
+        const t_commrec        *cr,
         gmx_constr             *constr,
         const t_state          *globalState,
         ObservablesHistory     *oh,
@@ -3025,7 +3025,7 @@ gmx_edsam_t init_edsam(
 
 void do_edsam(const t_inputrec *ir,
               gmx_int64_t       step,
-              t_commrec        *cr,
+              const t_commrec  *cr,
               rvec              xs[],
               rvec              v[],
               matrix            box,

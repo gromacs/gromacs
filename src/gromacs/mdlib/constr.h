@@ -84,8 +84,8 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount);
 gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_constr_t constr,
                    t_idef *idef,
-                   t_inputrec *ir,
-                   t_commrec *cr,
+                   const t_inputrec *ir,
+                   const t_commrec *cr,
                    const gmx_multisim_t *ms,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
@@ -129,7 +129,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
-                              t_commrec *cr);
+                              const t_commrec *cr);
 /* Initialize constraints stuff */
 
 void saveEdsamPointer(gmx_constr_t      constr,
@@ -140,7 +140,7 @@ void set_constraints(gmx_constr_t             constr,
                      gmx_localtop_t          *top,
                      const t_inputrec        *ir,
                      const t_mdatoms         *md,
-                     t_commrec               *cr);
+                     const t_commrec         *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
