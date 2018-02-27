@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,11 +190,11 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Initialize times.
     if (_impl->bFirst)
     {
-        _impl->t0 = header.x();
+        _impl->t0 = header.x().cast<real>();
     }
     else if (_impl->dt <= 0)
     {
-        _impl->dt = header.x() - _impl->t0;
+        _impl->dt = header.x().cast<real>() - _impl->t0;
         if (_impl->dt < 0 || gmx_within_tol(_impl->dt, 0.0, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Identical or decreasing frame times"));
@@ -202,12 +202,12 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     }
     else
     {
-        if (!gmx_within_tol(header.x() - _impl->t, _impl->dt, GMX_REAL_EPS))
+        if (!gmx_within_tol(header.x().cast<real>() - _impl->t, _impl->dt, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Frames not evenly spaced"));
         }
     }
-    _impl->t = header.x();
+    _impl->t = header.x().cast<real>();
 
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
@@ -244,7 +244,7 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
     }
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i);
+        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i).cast<real>();
     }
 }
 
@@ -268,7 +268,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
         }
         moduleManager().notifyDataStart(this);
     }
-    AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
+    AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, (real)(0.0));
     moduleManager().notifyFrameStart(header);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
