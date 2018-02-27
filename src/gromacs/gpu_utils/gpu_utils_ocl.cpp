@@ -38,6 +38,8 @@
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
  */
 
 #include "gmxpre.h"
@@ -56,6 +58,7 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/ocl_compiler.h"
+#include "gromacs/gpu_utils/oclraii.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/cstringutil.h"
@@ -97,15 +100,131 @@ runningOnCompatibleOSForAmd()
 #endif
 }
 
-/*! \brief Returns true if the gpu characterized by the device properties is
- *  supported by the native gpu acceleration.
- * \returns             true if the GPU properties passed indicate a compatible
- *                      GPU, otherwise false.
- */
-static int is_gmx_supported_gpu_id(gmx_device_info_t *ocl_gpu_device)
+namespace gmx
 {
-    if ((getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK")) != nullptr)
+
+/*! \brief Make an error string followign an OpenCL API call.
+ *
+ *  It is meant to be called with \p status != CL_SUCCESS, but it will
+ *  work correctly even if it is called with no OpenCL failure.
+ *
+ * \param[in]  message  Supplies context, e.g. the name of the API call that returned the error.
+ * \param[in]  status   OpenCL API status code
+ * \returns             A string describing the OpenCL error.
+ */
+static std::string
+makeOpenClInternalErrorString(const char *message, cl_int status)
+{
+    if (message != nullptr)
     {
+        return formatString("%s did %ssucceed %d: %s",
+                            message,
+                            ((status != CL_SUCCESS) ? "not " : ""),
+                            status, ocl_get_error_string(status).c_str());
+    }
+    else
+    {
+        return formatString("%sOpenCL error encountered %d: %s",
+                            ((status != CL_SUCCESS) ? "" : "No "),
+                            status, ocl_get_error_string(status).c_str());
+    }
+}
+
+/*!
+ * \brief Checks that device \c devInfo is sane (ie can run a kernel).
+ *
+ * Compiles and runs a dummy kernel to determine whether the given
+ * OpenCL device functions properly.
+ *
+ * \todo Because this code is running a check, part of its core
+ * behaviour is that an OpenCL API call might not return CL_SUCCESS,
+ * so formally using exceptions to handle such non-exceptional cases
+ * is questionable. A better approach might be to return a pair
+ * containing bool and error string.
+ *
+ * \param[in]  devInfo         The device info pointer.
+ * \param[out] errorMessage    An error message related to a failing OpenCL API call.
+ * \throws     std::bad_alloc  When out of memory.
+ * \returns                    Whether the device passed sanity checks
+ */
+static bool isDeviceSane(const gmx_device_info_t *devInfo,
+                         std::string             *errorMessage)
+{
+    cl_context_properties properties[] = {
+        CL_CONTEXT_PLATFORM,
+        (cl_context_properties) devInfo->ocl_gpu_id.ocl_platform_id,
+        0
+    };
+    // uncrustify spacing
+
+    cl_int    status;
+    auto      deviceId = devInfo->ocl_gpu_id.ocl_device_id;
+    ClContext context(clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status));
+    if (status != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clCreateContext", status));
+        return false;
+    }
+    ClCommandQueue commandQueue(clCreateCommandQueue(context, deviceId, 0, &status));
+    if (status != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clCreateCommandQueue", status));
+        return false;
+    }
+
+    const char *lines[] = { "__kernel void dummyKernel(){}XXX" };
+    ClProgram   program(clCreateProgramWithSource(context, 1, lines, nullptr, &status));
+    if (status != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clCreateProgramWithSource", status));
+        return false;
+    }
+
+    if ((status = clBuildProgram(program, 0, nullptr, nullptr, nullptr, nullptr)) != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clBuildProgram", status));
+        return false;
+    }
+
+    ClKernel kernel(clCreateKernel(program, "dummyKernel", &status));
+    if (status != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clCreateKernel", status));
+        return false;
+    }
+
+    const size_t localWorkSize = 1, globalWorkSize = 1;
+    if ((status =
+             clEnqueueNDRangeKernel(commandQueue, kernel, 1, nullptr,
+                                    &globalWorkSize, &localWorkSize, 0, nullptr, nullptr)) != CL_SUCCESS)
+    {
+        errorMessage->assign(makeOpenClInternalErrorString("clEnqueueNDRangeKernel", status));
+        return false;
+    }
+    return true;
+}
+
+/*! \brief Detect whether \c ocl_gpu_device is from a supported
+ * vendor, running on a supported OS, compatible for use by mdrun
+ * and can run a dummy kernel.
+ *
+ * \todo Check for the required OpenCL version here, before sanity checks.
+ *
+ * \returns  An e_gpu_detect_res_t to indicate how the GPU coped with
+ *           the sanity and compatibility check.
+ */
+static int checkGpu(const gmx_device_info_t *ocl_gpu_device, size_t deviceIndex)
+{
+    std::string errorMessage;
+    if (!isDeviceSane(ocl_gpu_device, &errorMessage))
+    {
+        gmx_warning((formatString("While sanity checking device #%zu, ", deviceIndex) + errorMessage).c_str());
+        return egpuInsane;
+    }
+
+    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    {
+        // Assume the device is compatible because checking has been disabled.
         return egpuCompatible;
     }
 
@@ -123,6 +242,7 @@ static int is_gmx_supported_gpu_id(gmx_device_info_t *ocl_gpu_device)
     }
 }
 
+} // namespace
 
 /*! \brief Returns an ocl_vendor_id_t value corresponding to the input OpenCL vendor name.
  *
@@ -290,7 +410,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
 
-                    gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
+                    gpu_info->gpu_dev[device_index].stat = gmx::checkGpu(gpu_info->gpu_dev + device_index, device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
                     {
