@@ -41,6 +41,7 @@ gmx_install_headers(
     arraydata.h
     dataframe.h
     datamodule.h
+    datastorage.h
     )
 
 add_subdirectory(modules)

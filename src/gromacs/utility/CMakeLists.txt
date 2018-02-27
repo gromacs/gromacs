@@ -60,6 +60,7 @@ gmx_install_headers(
     real.h
     smalloc.h
     stringutil.h
+    variant.h
     )
 
 if (BUILD_TESTING)

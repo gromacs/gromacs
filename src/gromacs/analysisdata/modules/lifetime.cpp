@@ -152,9 +152,9 @@ AnalysisDataLifetimeModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     if (header.index() == 0)
     {
-        impl_->firstx_ = header.x();
+        impl_->firstx_ = simpleValueToFloat(header.x());
     }
-    impl_->lastx_ = header.x();
+    impl_->lastx_ = simpleValueToFloat(header.x());
     ++impl_->frameCount_;
     // TODO: Check the input for even spacing.
 }
@@ -171,7 +171,7 @@ AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef &points)
     for (int i = 0; i < points.columnCount(); ++i)
     {
         // TODO: Perhaps add control over how this is determined?
-        const bool bPresent = points.present(i) && points.y(i) > 0.0;
+        const bool bPresent = points.present(i) && simpleValueToFloat(points.y(i)) > 0.0;
         if (bPresent)
         {
             ++impl_->currentLifetimes_[dataSet][i];

@@ -482,7 +482,7 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
     for (int row = 0; row < input.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame    &frame = input.frame(row);
-        EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
+        EXPECT_FLOAT_EQ(frame.x(), simpleValueToFloat(data->xvalueAsVariant(row)));
         GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
                            "Multiple point sets not supported by array data");
         const AnalysisDataTestInputPointSet &points = frame.pointSet(0);

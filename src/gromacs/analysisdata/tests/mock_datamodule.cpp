@@ -50,6 +50,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/variant.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/refdata.h"
@@ -144,10 +145,10 @@ void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
 {
     TestReferenceChecker compound(checker->checkCompound("DataValue", nullptr));
-    compound.checkReal(value.value(), "Value");
+    compound.checkReal(simpleValueToFloat(value.valueAsVariant()), "Value");
     if (compound.checkPresent(value.hasError(), "Error"))
     {
-        compound.checkReal(value.error(), "Error");
+        compound.checkReal(simpleValueToFloat(value.errorAsVariant()), "Error");
     }
     if (compound.checkPresent(!value.isPresent(), "Present"))
     {
@@ -180,7 +181,7 @@ MockAnalysisDataModule::Impl::startReferenceFrame(
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_ = rootChecker_.checkCompound("DataFrame",
                                                formatString("Frame%d", frameIndex_).c_str());
-    frameChecker_.checkReal(header.x(), "X");
+    frameChecker_.checkReal(simpleValueToFloat(header.x()), "X");
 }
 
 
@@ -252,8 +253,8 @@ void checkHeader(const AnalysisDataFrameHeader    &header,
                  const AnalysisDataTestInputFrame &refFrame)
 {
     EXPECT_EQ(refFrame.index(), header.index());
-    EXPECT_FLOAT_EQ(refFrame.x(), header.x());
-    EXPECT_FLOAT_EQ(refFrame.dx(), header.dx());
+    EXPECT_FLOAT_EQ(refFrame.x(), simpleValueToFloat(header.x()));
+    EXPECT_FLOAT_EQ(refFrame.dx(), simpleValueToFloat(header.dx()));
 }
 
 /*! \brief
@@ -271,7 +272,7 @@ void checkPoints(const AnalysisDataPointSetRef       &points,
     {
         const int column = points.firstColumn() - refPoints.firstColumn() + i + columnOffset;
         EXPECT_FLOAT_EQ(refPoints.y(column),
-                        points.y(i))
+                        simpleValueToFloat(points.y(i)))
         << "  Column: " << i+1 << " / " << points.columnCount()
         << " (+" << points.firstColumn() << ")\n"
         << "Ref. col: " << column+1 << " / " << refPoints.size()

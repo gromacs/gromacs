@@ -117,7 +117,8 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        void setValue(int column, real value, bool bPresent = true)
+        template <typename T>
+        void setValue(int column, T value, bool bPresent = true)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
@@ -137,7 +138,8 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        void setValue(int column, real value, real error, bool bPresent = true)
+        template <typename T>
+        void setValue(int column, T value, T error, bool bPresent = true)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
@@ -155,11 +157,11 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        real &value(int column)
+        Variant &value(int column)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[currentOffset_ + column].value();
+            return values_[currentOffset_ + column].valueAsVariant();
         }
         /*! \brief
          * Access value for a column.
@@ -171,11 +173,11 @@ class AnalysisDataStorageFrame
          *
          * Does not throw.
          */
-        real value(int column) const
+        Variant value(int column) const
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[currentOffset_ + column].value();
+            return values_[currentOffset_ + column].valueAsVariant();
         }
         /*! \brief
          * Mark point set as finished for multipoint data.
@@ -384,7 +386,25 @@ class AnalysisDataStorage
          *
          * Identical to \c startFrame(AnalysisDataFrameHeader(index, x, dx));
          */
-        AnalysisDataStorageFrame &startFrame(int index, real x, real dx);
+        template <typename T>
+        AnalysisDataStorageFrame &startFrame(int index, T x, T dx)
+        {
+            return startFrame(AnalysisDataFrameHeader(index, x, dx));
+        }
+        /*! \brief
+         * Convenience method to start storing a new frame for values.
+         *
+         * Identical to \c startFrame(AnalysisDataFrameHeader(index, x));
+         */
+        template <typename T>
+        AnalysisDataStorageFrame &startFrame(int index, T x)
+        {
+            return startFrame(AnalysisDataFrameHeader(index, x));
+        }
+
+
+
+
         /*! \brief
          * Obtains a frame object for an in-progress frame.
          *

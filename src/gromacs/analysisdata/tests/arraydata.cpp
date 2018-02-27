@@ -50,6 +50,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/variant.h"
+
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"
 
@@ -121,15 +123,15 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxis)
     gmx::AnalysisArrayData       data;
     data.setRowCount(5);
     data.setXAxis(1.0, 1.0);
-    EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
-    EXPECT_FLOAT_EQ(3.0, data.xvalue(2));
-    EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
+    EXPECT_FLOAT_EQ(1.0, simpleValueToFloat(data.xvalueAsVariant(0)));
+    EXPECT_FLOAT_EQ(3.0, simpleValueToFloat(data.xvalueAsVariant(2)));
+    EXPECT_FLOAT_EQ(5.0, simpleValueToFloat(data.xvalueAsVariant(4)));
     data.setXAxisValue(0, 3.0);
     data.setXAxisValue(2, 1.0);
-    EXPECT_FLOAT_EQ(3.0, data.xvalue(0));
-    EXPECT_FLOAT_EQ(2.0, data.xvalue(1));
-    EXPECT_FLOAT_EQ(1.0, data.xvalue(2));
-    EXPECT_FLOAT_EQ(4.0, data.xvalue(3));
+    EXPECT_FLOAT_EQ(3.0, simpleValueToFloat(data.xvalueAsVariant(0)));
+    EXPECT_FLOAT_EQ(2.0, simpleValueToFloat(data.xvalueAsVariant(1)));
+    EXPECT_FLOAT_EQ(1.0, simpleValueToFloat(data.xvalueAsVariant(2)));
+    EXPECT_FLOAT_EQ(4.0, simpleValueToFloat(data.xvalueAsVariant(3)));
 }
 
 TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
@@ -138,9 +140,9 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
         gmx::AnalysisArrayData       data;
         data.setXAxis(1.0, 1.0);
         data.setRowCount(5);
-        EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
-        EXPECT_FLOAT_EQ(3.0, data.xvalue(2));
-        EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
+        EXPECT_FLOAT_EQ(1.0, simpleValueToFloat(data.xvalueAsVariant(0)));
+        EXPECT_FLOAT_EQ(3.0, simpleValueToFloat(data.xvalueAsVariant(2)));
+        EXPECT_FLOAT_EQ(5.0, simpleValueToFloat(data.xvalueAsVariant(4)));
     }
     {
         gmx::AnalysisArrayData       data;
@@ -148,9 +150,9 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
         data.setXAxisValue(1, 3.0);
         data.setXAxisValue(2, 5.0);
         data.setRowCount(3);
-        EXPECT_FLOAT_EQ(2.0, data.xvalue(0));
-        EXPECT_FLOAT_EQ(3.0, data.xvalue(1));
-        EXPECT_FLOAT_EQ(5.0, data.xvalue(2));
+        EXPECT_FLOAT_EQ(2.0, simpleValueToFloat(data.xvalueAsVariant(0)));
+        EXPECT_FLOAT_EQ(3.0, simpleValueToFloat(data.xvalueAsVariant(1)));
+        EXPECT_FLOAT_EQ(5.0, simpleValueToFloat(data.xvalueAsVariant(2)));
     }
 }
 

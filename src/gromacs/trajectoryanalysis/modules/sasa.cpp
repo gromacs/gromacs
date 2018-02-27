@@ -977,12 +977,13 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     {
         dgh.startFrame(frnr, fr.time);
     }
-
     ah.setPoint(0, totarea);
 
     real totalArea, dgsolv;
     if (bResAt || bDGsol)
     {
+        aah.selectDataSet(0);
+        rah.selectDataSet(0);
         computeAreas(surfaceSel, surfaceSel, frameData.atomAreas_, dgsFactor_,
                      &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
         if (bDGsol)

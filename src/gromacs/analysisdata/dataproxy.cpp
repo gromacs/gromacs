@@ -176,7 +176,7 @@ AnalysisDataProxy::frameFinishedSerial(int frameIndex)
     if (bParallel_)
     {
         // The x and dx values are unused in this case.
-        AnalysisDataFrameHeader header(frameIndex, 0.0, 0.0);
+        AnalysisDataFrameHeader header(frameIndex);
         moduleManager().notifyFrameFinish(header);
     }
 }
