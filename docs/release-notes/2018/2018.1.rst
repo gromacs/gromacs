@@ -10,6 +10,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed leap-frog integrator with Nose-Hoover T coupling and Parrinello-Rahman P coupling
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With Parrinello-Rahman P coupling active, when applying Nose-Hoover T
+coupling at an MD step where no P coupling occured, the update phase
+could use outdated or garbage coupling data. Such simulations with
+:mdp:`nsttcoupl` equal to :mdp:`nstpcoupl` are unaffected
+by this issue, so few users will be impacted by this. Simulations
+using other coupling algorithms are unaffected.
+
+:issue:`2418`
+
 Used SIMD bondeds without perturbed interactions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 In free-energy calculations that lacked bonded interactions between
@@ -29,6 +41,13 @@ COMM removal requested for part of the system acted on the whole
 system.
 
 :issue:`2381`
+
+Fixed multi-simulations with multiple ranks per simulation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These used to crash or hang mysteriously before the simulation would
+start.
+
+:issue:`2403`
 
 Fixed handling of mdp ``define`` statement assigning preprocessor values
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -83,6 +102,9 @@ Also updated -multi to -multidir in an error message.
 
 :issue:`2377`
 
+Improved mdrun handling when GPUs are present but unavailable
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -94,11 +116,30 @@ would fail. Now a fatal error is issued.
 
 :issue:`2386`
 
+Fixed issue with adding selection groups for TNG output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When there were more molecule blocks than molecule types in the topology
+the output was wrong
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+PME on Fermi-era GPUs on large systems now works
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On older GPUs, it was possible to run into a hardware size limitation
+that has now been fixed.
+
+:issue:`2409`
+
 GoogleTest death tests are now used in a more portable way
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Tests for GPU utility functionality are now more robust
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Non-GPU builds, and GPU builds that find incompatible or otherwise
+unavailable devices will pass the tests in the manner intended.
+
+:issue:`2405`
 
 Used more portable python shebangs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
