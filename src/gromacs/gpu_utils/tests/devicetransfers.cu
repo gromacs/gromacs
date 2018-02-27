@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "devicetransfers.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -79,20 +80,21 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
                        ArrayRef<char>        output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
-    if (gpuInfo.n_dev == 0)
+    const auto compatibleGpus = getCompatibleGpus(gpuInfo);
+    if (compatibleGpus.empty())
     {
         std::copy(input.begin(), input.end(), output.begin());
         return;
     }
     cudaError_t status;
 
-    const auto &device = gpuInfo.gpu_dev[0];
+    const auto *device = getDeviceInfo(gpuInfo, compatibleGpus[0]);
     int         oldDeviceId;
 
     status = cudaGetDevice(&oldDeviceId);
     throwUponFailure(status, "getting old device id");
-    status = cudaSetDevice(device.id);
-    throwUponFailure(status, "setting device id to 0");
+    status = cudaSetDevice(device->id);
+    throwUponFailure(status, "setting device id to the first compatible GPU");
 
     void       *devicePointer;
     status = cudaMalloc(&devicePointer, input.size());

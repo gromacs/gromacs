@@ -157,6 +157,14 @@ TEST_F(GetIrTest, UserErrorsSilentlyTolerated)
     runTest(joinStrings(inputMdpFile, "\n"));
 }
 
+TEST_F(GetIrTest, DefineHandlesAssignmentOnRhs)
+{
+    const char *inputMdpFile[] = {
+        "define = -DBOOL -DVAR=VALUE",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
 TEST_F(GetIrTest, EmptyInputWorks)
 {
     const char *inputMdpFile = "";

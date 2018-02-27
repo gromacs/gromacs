@@ -1,41 +1,44 @@
 GROMACS 2018.1 release notes
-============================
+----------------------------
 
-This version was released on FIX ME WHEN RELEASING. These release
-notes document the changes that have taken place in GROMACS since the
+This version was released on February 23, 2018. These release notes
+document the changes that have taken place in GROMACS since the
 initial version 2018, to fix known issues. It also incorporates all
-fixes made in version 2016.5.
+fixes made in version 2016.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Used SIMD bondeds without perturbed interactions
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 In free-energy calculations that lacked bonded interactions between
 perturbed atom types, the SIMD-accelerated bonded functions were
 inadvertently disabled. This has been enabled, which will improve
 the performance of some kinds of free-energy calculations.
 
 Fixed bonds whose displacement was zero
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 We should allow overlapping atoms in harmonic bonds. But the former
 code would cause a floating point exception and incorrect free-energy
 derivatives.
 
 Fixed centre-of-mass motion removal on part of the system
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 COMM removal requested for part of the system acted on the whole
 system.
 
 :issue:`2381`
 
-Added check in grompp to avoid assertion failure
---------------------------------------------------------------------------
-With an mdp file with a parameter present with both the current name
-and the old name which automatically gets replaced, an assertion
-would fail. Now a fatal error is issued.
+Fixed handling of mdp ``define`` statement assigning preprocessor values
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Now .mdp files can configure the topology with values, as originally
+intended, e.g. ``"define = -DBOOL -DVAR=VALUE"``.
 
-:issue:`2386`
+:issue:`2392`
 
 Prevented log file energy average printing dividing by zero
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 If very few simulation frames have computed energies, then there may
 be insufficient data for averages. If so, skip the average printing
 entirely.
@@ -43,7 +46,7 @@ entirely.
 :issue:`2394`
 
 Correctly set cutoff modifiers in forcerec
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The cutoff modifiers were not copied from interaction_const_t
 to forcerec_t which meant only the generic kernels were used with
 the group scheme. This fix will restore the performance of the
@@ -52,36 +55,53 @@ group scheme.
 :issue:`2399`
 
 Fixed box scaling in PME mixed mode using both GPU and CPU
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2385`
 
 Re-enabled GPU support with walls and 1 energy group
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 With a single non-bonded energy group and walls, we can now use a GPU
 for non-bonded calculations.
 
 Removed tumbling ice-cube warning with SD integrator
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 With SD, there is friction, so ice cubes will not tumble.
 
 Fixed assertion failure in test-particle insertion
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Erroneous logic in the TPI meant that it always failed without producing
 any result.
 
 :issue:`2398`
 
 Avoided mdrun echoing "No option -multi"
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 mdrun would print as many messages "No option -multi" as there
 are MPI ranks to stderr.
 Also updated -multi to -multidir in an error message.
 
 :issue:`2377`
 
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Added check in grompp to avoid assertion failure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With an mdp file with a parameter present with both the current name
+and the old name which automatically gets replaced, an assertion
+would fail. Now a fatal error is issued.
+
+:issue:`2386`
+
+Fixes to improve portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+GoogleTest death tests are now used in a more portable way
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Used more portable python shebangs
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Per https://www.python.org/dev/peps/pep-0394/#recommendation, we
 should use env, and point it at python2. When we either make them 2/3
 or just-3 compatible, this should change.
@@ -92,12 +112,12 @@ we should choose to be explicit, and thus somewhat portable.
 :issue:`2401`
 
 Added work-around for GCC 5.3 targetting AVX512 hardware
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 GCC 5.3 has bug in overload resolution causing the AVX512
 and scalar function to become ambiguous.
 
 Used isfinite unambiguously
---------------------------------------------------------------------------
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`

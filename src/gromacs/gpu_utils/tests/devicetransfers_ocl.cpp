@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/arrayref.h"
@@ -74,22 +75,23 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
                        ArrayRef<char>        output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
-    if (gpuInfo.n_dev == 0)
+    const auto compatibleGpus = getCompatibleGpus(gpuInfo);
+    if (compatibleGpus.empty())
     {
         std::copy(input.begin(), input.end(), output.begin());
         return;
     }
     cl_int                status;
 
-    const auto           &device       = gpuInfo.gpu_dev[0];
+    const auto           *device       = getDeviceInfo(gpuInfo, compatibleGpus[0]);
     cl_context_properties properties[] = {
         CL_CONTEXT_PLATFORM,
-        (cl_context_properties) device.ocl_gpu_id.ocl_platform_id,
+        (cl_context_properties) device->ocl_gpu_id.ocl_platform_id,
         0
     };
     // Give uncrustify more space
 
-    auto deviceId = device.ocl_gpu_id.ocl_device_id;
+    auto deviceId = device->ocl_gpu_id.ocl_device_id;
     auto context  = clCreateContext(properties, 1, &deviceId, NULL, NULL, &status);
     throwUponFailure(status, "creating context");
     auto commandQueue = clCreateCommandQueue(context, deviceId, 0, &status);
