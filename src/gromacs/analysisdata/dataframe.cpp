@@ -53,13 +53,11 @@ namespace gmx
  */
 
 AnalysisDataFrameHeader::AnalysisDataFrameHeader()
-    : index_(-1), x_(0.0), dx_(0.0)
+    : index_(-1), x_(nullptr), dx_(nullptr)
 {
 }
-
-
-AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
-    : index_(index), x_(x), dx_(dx)
+AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index)
+    : index_(index), x_(nullptr), dx_(nullptr)
 {
     GMX_ASSERT(index >= 0, "Invalid frame index");
 }

@@ -45,10 +45,13 @@
 
 #include <vector>
 
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/flags.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/variant.h"
 
 namespace gmx
 {
@@ -68,43 +71,66 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataValue
+class AnalysisDataValue : public Variant
 {
     public:
         /*! \brief
          * Constructs an unset value.
+         * Will always be of type real.
          */
-        AnalysisDataValue() : value_(0.0), error_(0.0) {}
+        AnalysisDataValue() : value_(Variant::create<real>(0.0)), error_(Variant::create<real>(0.0))
+        {
+        }
         /*! \brief
          * Constructs a value object with the given value.
+         * No matter the type of T, the error is filled with a real value.
          *
          * The constructed object is marked as set and present.
          */
-        explicit AnalysisDataValue(real value)
-            : value_(value), error_(0.0)
+        template<typename T>
+        explicit AnalysisDataValue(T value)
+            : value_(Variant::create<T>(value)), error_(Variant::create<real>(0.0))
         {
             flags_.set(efSet);
             flags_.set(efPresent);
         }
 
         /*! \brief
-         * Direct access to the value.
+         * Direct access to the value converted from the type.
          *
          * Assigning a value to this does not mark the value as set; setValue()
          * must be used for this.
          */
-        real &value() { return value_; }
+        template <typename T>
+        T &value() { return value_.cast<T>(); }
         /*! \brief
          * Direct access to the error estimate.
          *
          * Assigning a value to this does not mark the error estimate as set;
          * setValue() must be used for this.
          */
-        real &error() { return error_; }
-        //! Returns the value for this value.
-        real value() const { return value_; }
+        template <typename T>
+        T &error() { return error_.castRef<T>(); }
+        /*! \brief Direct access to the value object for the data value
+         *
+         * When assigning data this way it does not mark the value as set.
+         */
+        Variant &valueAsVariant() { return value_; }
+        /*! \brief Direct access to the value object for the error estimate.
+         *
+         * Does not mark the data value as set.
+         */
+        Variant &errorAsVariant() { return error_; }
+        //! Returns the value converted to the type requested.
+        template <typename T>
+        T value() const { return value_.castRef<T>(); }
         //! Returns the error estimate for this value, or zero if not set.
-        real error() const { return error_; }
+        template <typename T>
+        T error() const { return error_.cast<T>(); }
+        //! Returns the Variant object for this entry
+        Variant valueAsVariant() const { return value_; }
+        //! Returns the Variant object for the error estimate
+        Variant errorAsVariant() const { return error_; }
         /*! \brief
          * Returns whether this value has been set.
          *
@@ -133,25 +159,28 @@ class AnalysisDataValue
             *this = AnalysisDataValue();
         }
         //! Sets this value.
-        void setValue(real value, bool bPresent = true)
+        template <typename T>
+        void setValue(T value, bool bPresent = true)
         {
-            value_ = value;
+            value_ = Variant::create<T>(value);
             flags_.set(efSet);
             flags_.set(efPresent, bPresent);
         }
         //! Sets this value and its error estimate.
-        void setValue(real value, real error, bool bPresent = true)
+        template <typename T>
+        void setValue(T value, T error, bool bPresent = true)
         {
-            value_ = value;
-            error_ = error;
+            value_ = Variant::create<T>(value);
+            error_ = Variant::create<T>(error);
             flags_.set(efSet);
             flags_.set(efErrorSet);
             flags_.set(efPresent, bPresent);
         }
         //! Set only error estimate for this value.
-        void setError(real error)
+        template <typename T>
+        void setError(T error)
         {
-            error_ = error;
+            error_ = Variant::create<T>(error);
             flags_.set(efErrorSet);
         }
 
@@ -165,9 +194,9 @@ class AnalysisDataValue
         };
 
         //! Value for this value.
-        real                    value_;
+        Variant                 value_;
         //! Error estimate for this value, zero if not set.
-        real                    error_;
+        Variant                 error_;
         //! Status flags for thise value.
         FlagsTemplate<Flag>     flags_;
 };
@@ -207,11 +236,34 @@ class AnalysisDataFrameHeader
          * Constructs a frame header from given values.
          *
          * \param[in] index  Index of the frame. Must be >= 0.
+         */
+        AnalysisDataFrameHeader(int index);
+        /*! \brief
+         * Constructs a frame header from given values.
+         *
+         * \param[in] index  Index of the frame. Must be >= 0.
          * \param[in] x      x coordinate for the frame.
          * \param[in] dx     Error estimate for x.
          */
-        AnalysisDataFrameHeader(int index, real x, real dx);
-
+        template <typename T>
+        AnalysisDataFrameHeader(int index, T x, T dx) : index_(index)
+        {
+            GMX_ASSERT(index >= 0, "Invalid frame index");
+            x_  = Variant::create<T>(x);
+            dx_ = Variant::create<T>(dx);
+        }
+        /*! \brief
+         * Constructs a frame header from given values.
+         *
+         * \param[in] index  Index of the frame. Must be >= 0.
+         * \param[in] x      value for the frame.
+         */
+        template <typename T>
+        AnalysisDataFrameHeader(int index, T x) : index_(index), dx_(Variant::create<real>(0.0))
+        {
+            GMX_ASSERT(index >= 0, "Invalid frame index");
+            x_ = Variant::create<T>(x);
+        }
         /*! \brief
          * Returns whether the frame header corresponds to a valid frame.
          *
@@ -237,7 +289,7 @@ class AnalysisDataFrameHeader
          *
          * Should not be called for invalid frames.
          */
-        real x() const
+        Variant x() const
         {
             GMX_ASSERT(isValid(), "Tried to access invalid frame header");
             return x_;
@@ -250,7 +302,7 @@ class AnalysisDataFrameHeader
          *
          * Should not be called for invalid frames.
          */
-        real dx() const
+        Variant dx() const
         {
             GMX_ASSERT(isValid(), "Tried to access invalid frame header");
             return dx_;
@@ -258,8 +310,8 @@ class AnalysisDataFrameHeader
 
     private:
         int                     index_;
-        real                    x_;
-        real                    dx_;
+        Variant                 x_;
+        Variant                 dx_;
 };
 
 
@@ -409,12 +461,12 @@ class AnalysisDataPointSetRef
             return header_.index();
         }
         //! \copydoc AnalysisDataFrameHeader::x()
-        real x() const
+        Variant x() const
         {
             return header_.x();
         }
         //! \copydoc AnalysisDataFrameHeader::dx()
-        real dx() const
+        Variant dx() const
         {
             return header_.dx();
         }
@@ -453,10 +505,10 @@ class AnalysisDataPointSetRef
          * \param[in] i  Zero-based column index relative to firstColumn().
          *     Should be >= 0 and < columnCount().
          */
-        real y(int i) const
+        Variant y(int i) const
         {
             GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
-            return values()[i].value();
+            return values()[i].valueAsVariant();
         }
         /*! \brief
          * Returns error estimate for a column in this set if applicable.
@@ -467,10 +519,10 @@ class AnalysisDataPointSetRef
          * Currently, this method returns zero if the source data does not
          * specify errors.
          */
-        real dy(int i) const
+        Variant dy(int i) const
         {
             GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
-            return values()[i].error();
+            return values()[i].errorAsVariant();
         }
         /*! \brief
          * Returns whether a column is present in this set.
@@ -584,12 +636,12 @@ class AnalysisDataFrameRef
             return header().index();
         }
         //! \copydoc AnalysisDataFrameHeader::x()
-        real x() const
+        Variant x() const
         {
             return header().x();
         }
         //! \copydoc AnalysisDataFrameHeader::dx()
-        real dx() const
+        Variant dx() const
         {
             return header().dx();
         }
@@ -619,9 +671,9 @@ class AnalysisDataFrameRef
          *
          * \copydetails AnalysisDataPointSetRef::y()
          */
-        real y(int i) const
+        Variant y(int i) const
         {
-            return singleColumnValue(i).value();
+            return singleColumnValue(i).valueAsVariant();
         }
         /*! \brief
          * Convenience method for accessing error for a column value in simple
@@ -629,9 +681,9 @@ class AnalysisDataFrameRef
          *
          * \copydetails AnalysisDataPointSetRef::dy()
          */
-        real dy(int i) const
+        Variant dy(int i) const
         {
-            return singleColumnValue(i).error();
+            return singleColumnValue(i).errorAsVariant();
         }
         /*! \brief
          * Convenience method for accessing present status for a column in

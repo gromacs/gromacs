@@ -231,7 +231,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
             {
                 std::fprintf(fp_, "\n");
             }
-            std::fprintf(fp_, "%4d ", static_cast<int>(points.y(0)));
+            std::fprintf(fp_, "%4d ", (simpleValueToInt(points.y(0))));
             ++currentSize_;
         }
     }
