@@ -165,9 +165,10 @@ void OptZeta::polData2TuneZeta()
     {
         if (!ai->isConst())
         {
-            auto ei   = pd.findEem(iChargeDistributionModel(), ai->name());
+            auto ei    = pd.findEem(iChargeDistributionModel(), ai->name());
             GMX_RELEASE_ASSERT(ei != pd.EndEemprops(), "Cannot find eemprops");
-            auto zeta = ei->getZeta(0);
+            auto nzeta = ei->getNzeta();
+            auto zeta  = ei->getZeta(nzeta-1);
             if (0 != zeta)
             {
                 param_.push_back(std::move(zeta));
@@ -219,8 +220,8 @@ void OptZeta::tuneZeta2PolData()
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';
-            auto nzeta = ei->getNzeta();
-            double zeta  = 100;
+            auto nzeta   = ei->getNzeta();
+            double zeta  = ei->getZeta(0);
             double sigma = 0;
             for (auto i = 0; i < nzeta; i++)
             {
@@ -238,7 +239,6 @@ void OptZeta::tuneZeta2PolData()
             ei->setZetastr(zstr);
             ei->setZeta_sigma(z_sig);
 
-
             if (bFitAlpha_)
             {
                 std::string ptype;
@@ -249,8 +249,7 @@ void OptZeta::tuneZeta2PolData()
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "No Ptype for atom type %s\n",
-                              ai->name().c_str());
+                    gmx_fatal(FARGS, "No Ptype for atom type %s\n", ai->name().c_str());
                 }
             }
         }
