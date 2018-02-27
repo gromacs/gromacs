@@ -95,28 +95,121 @@ runningOnCompatibleOSForAmd()
 #endif
 }
 
+//! \brief Throws \p status if it indicates OpenCL error
+static void throwUponFailure(cl_int status)
+{
+    if (status != CL_SUCCESS)
+    {
+        throw status;
+    }
+}
+
+/*!
+ * \brief Runs GPU sanity checks.
+ *
+ * Compiles and runs a dummy kernel to determine whether
+ * the given OpenCL device functions properly.
+ *
+ * \param[in]  devInfo          The device info pointer.
+ * \param[out] errorStringPtr   Optional pointer to the string to print an error message into
+ *                              (if any error occured at all).
+ * \returns                     e_gpu_detect_res_t device status (0 if the device looks OK)
+ */
+static int do_sanity_checks(const gmx_device_info_t *devInfo, std::string *errorStringPtr)
+{
+    auto             result = egpuInsane;
+
+    cl_context       context      = nullptr;
+    cl_command_queue commandQueue = nullptr;
+    cl_program       program      = nullptr;
+    cl_kernel        kernel       = nullptr;
+
+    try
+    {
+        cl_context_properties properties[] = {
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties) devInfo->ocl_gpu_id.ocl_platform_id,
+            0
+        };
+        //uncrustify spacing
+
+        cl_int status;
+        auto   deviceId = devInfo->ocl_gpu_id.ocl_device_id;
+        context = clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status);
+        throwUponFailure(status);
+        commandQueue = clCreateCommandQueue(context, deviceId, 0, &status);
+        throwUponFailure(status);
+        const std::string dummyKernel = "__kernel void dummyKernel(){}";
+        const char       *lines[]     = {dummyKernel.c_str()};
+        program = clCreateProgramWithSource(context, 1, lines, nullptr, &status);
+        throwUponFailure(status);
+        status = clBuildProgram(program, 0, nullptr, nullptr, nullptr, nullptr);
+        throwUponFailure(status);
+        kernel = clCreateKernel(program, "dummyKernel", &status);
+        throwUponFailure(status);
+        const size_t localWorkSize = 1, globalWorkSize = 1;
+        status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, nullptr,
+                                        &globalWorkSize, &localWorkSize, 0, nullptr, nullptr);
+        throwUponFailure(status);
+        // Phew?
+        result = egpuCompatible;
+    }
+    catch (const cl_int &error)
+    {
+        if  (errorStringPtr != nullptr)
+        {
+            *errorStringPtr = ocl_get_error_string(error);
+        }
+    }
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseCommandQueue(commandQueue);
+    clReleaseContext(context);
+
+    return result;
+}
+
 /*! \brief Returns true if the gpu characterized by the device properties is
  *  supported by the native gpu acceleration.
+ *  TODO: check for the required OpenCL version here, before sanity checks.
+ *
  * \returns             true if the GPU properties passed indicate a compatible
  *                      GPU, otherwise false.
  */
-static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
+static int is_gmx_supported_gpu_id(const gmx_device_info_t *ocl_gpu_device, size_t deviceIndex)
 {
-    if ((getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK")) != NULL)
+    int result = egpuIncompatible;
+    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
-        return egpuCompatible;
+        result = egpuCompatible;
+    }
+    else
+    {
+        /* Only AMD and NVIDIA GPUs are supported for now */
+        switch (ocl_gpu_device->vendor_e)
+        {
+            case OCL_VENDOR_NVIDIA:
+                result = egpuCompatible;
+                break;
+            case OCL_VENDOR_AMD:
+                result = runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
+                break;
+            default:
+                result = egpuIncompatible;
+        }
     }
 
-    /* Only AMD and NVIDIA GPUs are supported for now */
-    switch (ocl_gpu_device->vendor_e)
+    if (result == egpuCompatible)
     {
-        case OCL_VENDOR_NVIDIA:
-            return egpuCompatible;
-        case OCL_VENDOR_AMD:
-            return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
-        default:
-            return egpuIncompatible;
+        std::string errorString;
+        result = do_sanity_checks(ocl_gpu_device, &errorString);
+        if (result != egpuCompatible)
+        {
+            gmx_warning((gmx::formatString("An error occurred while sanity checking device #%zu; ",
+                                           deviceIndex) + errorString).c_str());
+        }
     }
+    return result;
 }
 
 
@@ -282,7 +375,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
                     gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
-                    gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
+                    gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index, device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
                     {
