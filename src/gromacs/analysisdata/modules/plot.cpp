@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -383,7 +383,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
     }
     if (!impl_->bOmitX_)
     {
-        std::fprintf(impl_->fp_, impl_->xformat_, frame.x() * impl_->xscale_);
+        std::fprintf(impl_->fp_, impl_->xformat_, simpleValueToFloat(frame.x()) * impl_->xscale_);
     }
 }
 
@@ -417,11 +417,11 @@ void
 AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
-    const real y = value.isSet() ? value.value() : 0.0;
+    const real y = value.isSet() ? simpleValueToFloat(value.valueAsVariant()) : 0.0;
     std::fprintf(impl_->fp_, impl_->yformat_, y);
     if (impl_->bErrorsAsSeparateColumn_)
     {
-        const real dy = value.isSet() ? value.error() : 0.0;
+        const real dy = value.isSet() ? simpleValueToFloat(value.errorAsVariant()) : 0.0;
         std::fprintf(impl_->fp_, impl_->yformat_, dy);
     }
 }
@@ -542,7 +542,7 @@ AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
         }
         if (bWrite_[DIM])
         {
-            const rvec        y = { points.y(i), points.y(i + 1), points.y(i + 2) };
+            const rvec        y = { simpleValueToFloat(points.y(i)), simpleValueToFloat(points.y(i + 1)), simpleValueToFloat(points.y(i + 2)) };
             AnalysisDataValue value(norm(y));
             writeValue(value);
         }

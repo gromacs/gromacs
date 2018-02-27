@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,10 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         //! Returns true if values have been allocated.
         bool isAllocated() const { return !value_.empty(); }
         //! Returns the x value of the first frame.
-        real xstart() const { return xvalue_[0]; }
+        template <typename T>
+        T xstart() const { return xvalue_[0].cast<T>; }
+        //! Returns the x value as Variant for the first frame.
+        Variant xstartAsVariant() const { return xvalue_[0]; }
         //! Returns the step between frame x values.
         real xstep() const
         {
@@ -98,7 +101,14 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             return xstep_;
         }
         //! Returns the x value of a row.
-        real xvalue(int row) const
+        template <typename T>
+        T xvalue(int row) const
+        {
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+            return xvalue_[row].cast<T>();
+        }
+        //! Returns the xvalue as Variant for a row
+        Variant xvalueAsVariant(int row) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             return xvalue_[row];
@@ -212,7 +222,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         int                            rowCount_;
         AnalysisDataPointSetInfo       pointSetInfo_;
         std::vector<AnalysisDataValue> value_;
-        std::vector<real>              xvalue_;
+        std::vector<Variant>           xvalue_;
         real                           xstep_;
         bool                           bUniformX_;
         bool                           bReady_;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,11 @@
 #define GMX_ANALYSISDATA_ANALYSISDATA_H
 
 #include "gromacs/analysisdata/abstractdata.h"
-#include "gromacs/utility/real.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datastorage.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -206,8 +210,51 @@ class AnalysisData : public AbstractAnalysisData
 
 namespace internal
 {
-class AnalysisDataHandleImpl;
+class AnalysisDataHandleImpl
+{
+    public:
+        //! Creates a handle associated with the given data object.
+        explicit AnalysisDataHandleImpl(AnalysisData *data)
+            : data_(*data), currentFrame_(nullptr)
+        {
+        }
+
+        //! The data object that this handle belongs to.
+        AnalysisData             &data_;
+        //! Current storage frame object, or NULL if no current frame.
+        AnalysisDataStorageFrame *currentFrame_;
+};
+
 }   // namespace internal
+
+/********************************************************************
+ * AnalysisData::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for AnalysisData.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisData::Impl
+{
+    public:
+        //! Smart pointer type to manage a data handle implementation.
+        typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
+            HandlePointer;
+        //! Shorthand for a list of data handles.
+        typedef std::vector<HandlePointer> HandleList;
+
+        //! Storage implementation.
+        AnalysisDataStorage     storage_;
+        /*! \brief
+         * List of handles for this data object.
+         *
+         * Note that AnalysisDataHandle objects also contain (raw) pointers
+         * to these objects.
+         */
+        HandleList              handles_;
+};
 
 /*! \brief
  * Handle for inserting data into AnalysisData.
@@ -279,7 +326,40 @@ class AnalysisDataHandle
          * the index can be in the future (as counted from the first frame that
          * is not finished).
          */
-        void startFrame(int index, real x, real dx = 0.0);
+        template <typename T>
+        void startFrame(int index, T x, T dx)
+        {
+            GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+            GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
+                               "startFrame() called twice without calling finishFrame()");
+            impl_->currentFrame_ =
+                &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+        }
+        /*! \brief
+         * Start data for a new frame.
+         *
+         * \param[in] index  Zero-based index for the frame to start.
+         * \param[in] x      x value for the frame.
+         *
+         * \throws    unspecified  Any exception thrown by attached data
+         *      modules in IAnalysisDataModule::frameStarted().
+         *
+         * Each \p index value 0, 1, ..., N (where N is the total number of
+         * frames) should be started exactly once by exactly one handle of an
+         * AnalysisData object.  The frames may be started out of order, but
+         * currently the implementation places some limitations on how far
+         * the index can be in the future (as counted from the first frame that
+         * is not finished).
+         */
+        template <typename T>
+        void startFrame(int index, T x)
+        {
+            GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+            GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
+                               "startFrame() called twice without calling finishFrame()");
+            impl_->currentFrame_ =
+                &impl_->data_.impl_->storage_.startFrame(index, x);
+        }
         /*! \brief
          * Selects a data set for subsequent setPoint()/setPoints() calls.
          *
@@ -304,7 +384,14 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoint(int column, real value, bool bPresent = true);
+        template <typename T>
+        void setPoint(int column, T value, bool bPresent = true)
+        {
+            GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+            GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
+                               "setPoint() called without calling startFrame()");
+            impl_->currentFrame_->setValue(column, value, bPresent);
+        }
         /*! \brief
          * Set a value and its error estimate for a single column for the
          * current frame.
@@ -319,7 +406,14 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoint(int column, real value, real error, bool bPresent = true);
+        template <typename T>
+        void setPoint(int column, T value, T error, bool bPresent = true)
+        {
+            GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+            GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
+                               "setPoint() called without calling startFrame()");
+            impl_->currentFrame_->setValue(column, value, error, bPresent);
+        }
         /*! \brief
          * Set values for consecutive columns for the current frame.
          *
@@ -333,7 +427,17 @@ class AnalysisDataHandle
          *
          * Does not throw.
          */
-        void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
+        template <typename T>
+        void setPoints(int firstColumn, int count, const T *values, bool bPresent = true)
+        {
+            GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+            GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
+                               "setPoints() called without calling startFrame()");
+            for (int i = 0; i < count; ++i)
+            {
+                impl_->currentFrame_->setValue(firstColumn + i, values[i], bPresent);
+            }
+        }
         /*! \brief
          * Finish data for the current point set.
          *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ AbstractAnalysisArrayData::AbstractAnalysisArrayData()
     : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0),
       bUniformX_(true), bReady_(false)
 {
-    xvalue_.push_back(0);
+    xvalue_.push_back(Variant::create<real>(0));
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
@@ -73,7 +73,7 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
         return AnalysisDataFrameRef();
     }
     return AnalysisDataFrameRef(
-            AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+            AnalysisDataFrameHeader(index, simpleValueToFloat(xvalueAsVariant(index)), (float)0.0),
             makeConstArrayRef(value_).
                 subArray(index * columnCount(), columnCount()),
             constArrayRefFromArray(&pointSetInfo_, 1));
@@ -111,7 +111,8 @@ AbstractAnalysisArrayData::setRowCount(int rowCount)
     {
         for (int i = rowCount_; i < rowCount; ++i)
         {
-            xvalue_[i] = xvalue_[0] + i * xstep_;
+            real test = simpleValueToFloat(xvalue_[0]);
+            xvalue_[i] = Variant::create<real>(test + i * xstep_);
         }
     }
     rowCount_ = rowCount;
@@ -128,7 +129,7 @@ AbstractAnalysisArrayData::allocateValues()
     std::vector<AnalysisDataValue>::iterator i;
     for (i = value_.begin(); i != value_.end(); ++i)
     {
-        i->setValue(0.0);
+        i->setValue(Variant::create<real>(0.0));
     }
 }
 
@@ -137,12 +138,12 @@ void
 AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
-    xvalue_[0] = start;
+    xvalue_[0] = Variant::create<real>(start);
     xstep_     = step;
     bUniformX_ = true;
     for (int i = 0; i < rowCount_; ++i)
     {
-        xvalue_[i] = start + i * xstep_;
+        xvalue_[i] = Variant::create<real>(start + i * xstep_);
     }
 }
 
@@ -161,7 +162,7 @@ AbstractAnalysisArrayData::setXAxisValue(int row, real value)
     }
     bUniformX_   = false;
     xstep_       = 0.0;
-    xvalue_[row] = value;
+    xvalue_[row] = Variant::create<real>(value);
 }
 
 
@@ -179,7 +180,7 @@ AbstractAnalysisArrayData::valuesReady()
     modules.notifyDataStart(this);
     for (int i = 0; i < rowCount(); ++i)
     {
-        AnalysisDataFrameHeader header(i, xvalue(i), 0);
+        AnalysisDataFrameHeader header(i, simpleValueToFloat(xvalueAsVariant(i)), (float)0.0);
         modules.notifyFrameStart(header);
         modules.notifyPointsAdd(
                 AnalysisDataPointSetRef(

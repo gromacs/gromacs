@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <string>
 
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 
 namespace gmx
@@ -80,9 +81,81 @@ std::string simpleValueToString(const Variant &value)
     {
         return value.cast<std::string>();
     }
+    else if (value.isEmpty())
+    {
+        printf("Value is empty!\n");
+    }
     GMX_RELEASE_ASSERT(false, "Unknown value type");
     return std::string();
 }
+
+
+int simpleValueToInt(const Variant &value)
+{
+    if (value.isType<bool>())
+    {
+        return static_cast<int>(value.cast<bool>());
+    }
+    else if (value.isType<float>())
+    {
+        return static_cast<int>(value.cast<float>());
+    }
+    else if (value.isType<double>())
+    {
+        return static_cast<int>(value.cast<double>());
+    }
+    else if (value.isType<int>())
+    {
+        return value.cast<int>();
+    }
+    else if (value.isType<gmx_int64_t>())
+    {
+        return static_cast<int>(value.cast<gmx_int64_t>());
+    }
+    else if (value.isEmpty())
+    {
+        printf("Value is empty!\n");
+    }
+    GMX_RELEASE_ASSERT(false, "Unknown value type");
+    return -1;
+}
+
+float simpleValueToFloat(const Variant &value)
+{
+    if (value.isType<bool>())
+    {
+        return static_cast<float>(value.cast<bool>());
+    }
+    else if (value.isType<float>())
+    {
+        return (value.cast<float>());
+    }
+    else if (value.isType<double>())
+    {
+        return static_cast<float>(value.cast<double>());
+    }
+    else if (value.isType<real>())
+    {
+        return static_cast<float>(value.cast<real>());
+    }
+    else if (value.isType<int>())
+    {
+        return static_cast<float>(value.cast<int>());
+    }
+    else if (value.isType<gmx_int64_t>())
+    {
+        return static_cast<float>(value.cast<gmx_int64_t>());
+    }
+    else if (value.isEmpty())
+    {
+        printf("Value is empty!\n");
+    }
+    GMX_RELEASE_ASSERT(false, "Unknown value type");
+    return -1;
+}
+
+
+
 //! \endcond
 
 } // namespace gmx

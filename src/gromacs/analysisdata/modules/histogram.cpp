@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -301,17 +301,17 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
             real  e1, e2;
             if (bFirstHalfBin)
             {
-                v1 = value(0, c).value();
-                e1 = value(0, c).error();
+                v1 = simpleValueToFloat(value(0, c).valueAsVariant());
+                e1 = simpleValueToFloat(value(0, c).errorAsVariant());
                 v2 = 0;
                 e2 = 0;
             }
             else
             {
-                v1 = value(j, c).value();
-                e1 = value(j, c).error();
-                v2 = value(j + 1, c).value();
-                e2 = value(j + 1, c).error();
+                v1 = simpleValueToFloat(value(j, c).valueAsVariant());
+                e1 = simpleValueToFloat(value(j, c).errorAsVariant());
+                v2 = simpleValueToFloat(value(j + 1, c).valueAsVariant());
+                e2 = simpleValueToFloat(value(j + 1, c).errorAsVariant());
             }
             dest->value(i, c).setValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
         }
@@ -346,7 +346,7 @@ AbstractAverageHistogram::normalizeProbability()
         double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
-            sum += value(i, c).value();
+            sum += simpleValueToFloat(value(i, c).valueAsVariant());
         }
         if (sum > 0.0)
         {
@@ -363,7 +363,7 @@ AbstractAverageHistogram::makeCumulative()
         double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
-            sum += value(i, c).value();
+            sum += simpleValueToFloat(value(i, c).valueAsVariant());
             // Clear the error, as we don't cumulate that.
             value(i, c).clear();
             value(i, c).setValue(sum);
@@ -379,8 +379,10 @@ AbstractAverageHistogram::scaleSingle(int index, real factor)
 {
     for (int i = 0; i < rowCount(); ++i)
     {
-        value(i, index).value() *= factor;
-        value(i, index).error() *= factor;
+        real multiplier = simpleValueToFloat(value(i, index).valueAsVariant()) * factor;
+        value(i, index).setValue(multiplier);
+        multiplier = simpleValueToFloat(value(i, index).errorAsVariant()) * factor;
+        value(i, index).setError(multiplier);
     }
 }
 
@@ -402,8 +404,10 @@ AbstractAverageHistogram::scaleAllByVector(real factor[])
     {
         for (int i = 0; i < rowCount(); ++i)
         {
-            value(i, c).value() *= factor[i];
-            value(i, c).error() *= factor[i];
+            real multiplier = simpleValueToFloat(value(i, c).valueAsVariant()) * factor[i];
+            value(i, c).setValue(multiplier);
+            multiplier = simpleValueToFloat(value(i, c).errorAsVariant()) * factor[i];
+            value(i, c).setError(multiplier);
         }
     }
 }
@@ -704,7 +708,7 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
     {
         if (points.present(i))
         {
-            const int bin = settings().findBin(points.y(i));
+            const int bin = settings().findBin(simpleValueToFloat(points.y(i)));
             if (bin != -1)
             {
                 handle.value(bin) += 1;
@@ -875,14 +879,14 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
+    int bin = settings().findBin(simpleValueToFloat(points.y(0)));
     if (bin != -1)
     {
         Impl::FrameLocalData::DataSetHandle  handle
             = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            handle.value(bin) += points.y(i);
+            handle.value(bin) += simpleValueToFloat(points.y(i));
         }
     }
 }
@@ -1026,13 +1030,13 @@ AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
+    int bin = settings().findBin(simpleValueToFloat(points.y(0)));
     if (bin != -1)
     {
         AnalysisDataFrameAverager &averager = impl_->averagers_[points.dataSetIndex()];
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            averager.addValue(bin, points.y(i));
+            averager.addValue(bin, simpleValueToFloat(points.y(i)));
         }
     }
 }

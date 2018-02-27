@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -559,7 +559,7 @@ AnalysisDataStorageImpl::finishFrameSerial(int index)
 AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
         AnalysisDataStorageImpl *storageImpl,
         int                      index)
-    : storageImpl_(*storageImpl), header_(index, 0.0, 0.0), status_(eMissing)
+    : storageImpl_(*storageImpl), header_(index), status_(eMissing)
 {
     GMX_RELEASE_ASSERT(storageImpl->data_ != nullptr,
                        "Storage frame constructed before data started");
@@ -583,7 +583,7 @@ AnalysisDataStorageFrameData::clearFrame(int newIndex)
 {
     GMX_RELEASE_ASSERT(!builder_, "Should not clear an in-progress frame");
     status_ = eMissing;
-    header_ = AnalysisDataFrameHeader(newIndex, 0.0, 0.0);
+    header_ = AnalysisDataFrameHeader(newIndex);
     values_.clear();
     if (baseData().isMultipoint())
     {
@@ -890,13 +890,6 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
         impl_->modules_->notifyFrameStart(header);
     }
     return storedFrame->builder();
-}
-
-
-AnalysisDataStorageFrame &
-AnalysisDataStorage::startFrame(int index, real x, real dx)
-{
-    return startFrame(AnalysisDataFrameHeader(index, x, dx));
 }
 
 
