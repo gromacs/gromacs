@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,15 +36,13 @@ if(GMX_DOUBLE)
     message(FATAL_ERROR "OpenCL not available in double precision - Yet!")
 endif()
 
-# Look for OpenCL
-# TODO: FindOpenCL module is available in cmake starting with version 3.1.0.
-# A modified version of that module is used here.
-# Remove FindOpenCL.cmake file when GROMACS switches to cmake 3.1.0 or higher.
+# for some reason FindOpenCL checks CUDA_PATH but not CUDA_HOME
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};$ENV{CUDA_HOME})
 find_package(OpenCL)
 
-if (OPENCL_FOUND)
-    if (OPENCL_VERSION_STRING VERSION_LESS REQUIRED_OPENCL_MIN_VERSION)
-        message(FATAL_ERROR "OpenCL " "${OPENCL_VERSION_STRING}" " is not supported. OpenCL version " "${REQUIRED_OPENCL_MIN_VERSION}" " or newer is required.")
+if (OpenCL_FOUND)
+    if (OpenCL_VERSION_STRING VERSION_LESS REQUIRED_OPENCL_MIN_VERSION)
+        message(FATAL_ERROR "OpenCL " "${OpenCL_VERSION_STRING}" " is not supported. OpenCL version " "${REQUIRED_OPENCL_MIN_VERSION}" " or newer is required.")
         return ()
     endif()
 else ()
@@ -54,7 +52,7 @@ endif()
 
 # Tell compiler to hide warnings for comments caused by cl_gl_ext.h on Linux
 if (UNIX)
-    set(OPENCL_DEFINITIONS ${OPENCL_DEFINITIONS} " -Wno-comment")
+    set(OpenCL_DEFINITIONS ${OpenCL_DEFINITIONS} " -Wno-comment")
 endif()
 
 # Yes Virginia, Darwin kernel version 14.4 corresponds to OS X 10.4.
@@ -62,9 +60,9 @@ if(APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
         message(WARNING "OS X prior to version 10.10.4 produces incorrect AMD OpenCL code at runtime. You will not be able to use AMD GPUs on this host unless you upgrade your operating system.")
 endif()
 
-add_definitions(${OPENCL_DEFINITIONS})
+add_definitions(${OpenCL_DEFINITIONS})
 
-include_directories(SYSTEM ${OPENCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${OpenCL_INCLUDE_DIRS})
 
 macro(gmx_gpu_setup)
     # no OpenMP is no good!
