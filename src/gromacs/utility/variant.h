@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include <utility>
 
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
@@ -259,6 +260,22 @@ class Variant
  * \ingroup module_utility
  */
 std::string simpleValueToString(const Variant &value);
+/*! \brief Converts simple Variant value to an Integer.
+ *
+ * Tries different casts of the stored data and returns them as Integers
+ * if possible. Will fail for more complex types, same as the string variant.
+ *
+ * \ingroup module_utility
+ */
+int simpleValueToInt(const Variant &value);
+/*! \brief Converts simple Variant value to a Float.
+ *
+ * Tries different casts of the stored data and returns them as Float
+ * if possible. Will fail for more complex types, same as the string variant.
+ *
+ * \ingroup module_utility
+ */
+float simpleValueToFloat(const Variant &value);
 //! \endcond
 
 } // namespace gmx

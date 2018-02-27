@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -482,7 +482,7 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
     for (int row = 0; row < input.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame    &frame = input.frame(row);
-        EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
+        EXPECT_FLOAT_EQ(frame.x(), simpleValueToFloat(data->xvalueAsVariant(row)));
         GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
                            "Multiple point sets not supported by array data");
         const AnalysisDataTestInputPointSet &points = frame.pointSet(0);
