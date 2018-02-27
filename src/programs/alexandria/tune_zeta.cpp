@@ -219,11 +219,16 @@ void OptZeta::tuneZeta2PolData()
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
             z_sig[0] = '\0';
-            auto nzeta  = ei->getNzeta();
-            auto zeta   = param_[n];
-            auto sigma  = psigma_[n++];
+            auto nzeta = ei->getNzeta();
+            double zeta  = 100;
+            double sigma = 0;
             for (auto i = 0; i < nzeta; i++)
             {
+                if (i > 0)
+                {
+                    zeta   = param_[n];
+                    sigma  = psigma_[n++];
+                }
                 sprintf(buf, "%g ", zeta);
                 sprintf(buf_sig, "%g ", sigma);
                 strcat(zstr, buf);
