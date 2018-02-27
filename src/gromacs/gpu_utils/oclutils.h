@@ -44,6 +44,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/utility/gmxassert.h"
 
 enum class GpuApiCallBehavior;
