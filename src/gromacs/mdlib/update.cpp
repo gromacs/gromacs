@@ -549,23 +549,34 @@ static void do_update_md(int                         start,
 
     if (doNoseHoover || doPROffDiagonal || doAcceleration)
     {
+        matrix stepM;
+        if (!doParrinelloRahman)
+        {
+            /* We should not apply PR scaling at this step */
+            clear_mat(stepM);
+        }
+        else
+        {
+            copy_mat(M, stepM);
+        }
+
         if (!doAcceleration)
         {
             updateMDLeapfrogGeneral<AccelerationType::none>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
         else if (ekind->bNEMD)
         {
             updateMDLeapfrogGeneral<AccelerationType::group>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
         else
         {
             updateMDLeapfrogGeneral<AccelerationType::cosine>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, stepM);
         }
     }
     else

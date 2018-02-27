@@ -1041,7 +1041,14 @@ int Mdrunner::mdrunner()
     }
     if (isMultiSim(ms))
     {
-        MPI_Barrier(ms->mpi_comm_masters);
+        if (MASTER(cr))
+        {
+            MPI_Barrier(ms->mpi_comm_masters);
+        }
+        /* We need another barrier to prevent non-master ranks from contiuing
+         * when an error occured in a different simulation.
+         */
+        MPI_Barrier(cr->mpi_comm_mysim);
     }
 #endif
 

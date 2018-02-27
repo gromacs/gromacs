@@ -95,12 +95,15 @@ t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
         }
         if (tokens.size() > 2)
         {
-            // TODO ignoring such lines does not seem like good behaviour
-            if (debug)
-            {
-                fprintf(debug, "Multiple equals signs on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
-            }
-            continue;
+            // More than one equals symbol in the original line is
+            // valid if the RHS is a free string, and needed for
+            // "define = -DBOOLVAR -DVAR=VALUE".
+            //
+            // First, drop all the fields on the RHS of the first equals symbol.
+            tokens.resize(1);
+            // This find cannot return std::string::npos.
+            auto firstEqualsPos = line.find('=');
+            tokens.emplace_back(gmx::stripString(line.substr(firstEqualsPos + 1)));
         }
         if (tokens[0].empty())
         {

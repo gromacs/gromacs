@@ -96,6 +96,11 @@ bool canDetectGpus(std::string *GPU_FUNC_ARGUMENT(errorMessage)) GPU_FUNC_TERM_W
  *  gpu_info->gpu_dev array with the required information on each the
  *  device: ID, device properties, status.
  *
+ *  Note that this function leaves the GPU runtime API error state clean;
+ *  this is implemented ATM in the CUDA flavor.
+ *  TODO: check if errors do propagate in OpenCL as they do in CUDA and
+ *  whether there is a mechanism to "clear" them.
+ *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
  *
  *  \throws                InternalError if a GPU API returns an unexpected failure (because
