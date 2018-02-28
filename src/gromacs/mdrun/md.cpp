@@ -34,6 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief Implements the integrator for normal molecular dynamics simulations
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_mdrun
+ */
 #include "gmxpre.h"
 
 #include "md.h"
@@ -71,6 +78,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/deform.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
@@ -82,9 +90,11 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdsetup.h"
+#include "gromacs/mdlib/membed.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
+#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -125,10 +135,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "deform.h"
-#include "membed.h"
-#include "repl_ex.h"
-
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -162,6 +168,7 @@ static void checkNumberOfBondedInteractions(FILE *fplog, t_commrec *cr, int tota
     }
 }
 
+//! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                                gmx_int64_t step,
                                gmx_int64_t *step_rel, t_inputrec *ir,

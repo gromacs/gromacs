@@ -35,10 +35,10 @@
 /*! \brief Declares the integrator type for mdrun
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
-#ifndef GMX_MDLIB_INTEGRATOR_H
-#define GMX_MDLIB_INTEGRATOR_H
+#ifndef GMX_MDRUN_INTEGRATOR_H
+#define GMX_MDRUN_INTEGRATOR_H
 
 #include <cstdio>
 
@@ -119,4 +119,4 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr,
 
 }      // namespace gmx
 
-#endif // GMX_MDLIB_INTEGRATOR_H
+#endif // GMX_MDRUN_INTEGRATOR_H

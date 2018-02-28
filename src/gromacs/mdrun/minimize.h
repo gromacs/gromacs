@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,12 +35,12 @@
 /*! \brief Declares the integrators for energy minimization and NMA
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
-#ifndef GMX_MDLIB_MINIMIZE_H
-#define GMX_MDLIB_MINIMIZE_H
+#ifndef GMX_MDRUN_MINIMIZE_H
+#define GMX_MDRUN_MINIMIZE_H
 
-#include "gromacs/mdlib/integrator.h"
+#include "integrator.h"
 
 namespace gmx
 {
@@ -59,4 +59,4 @@ integrator_t do_nm;
 
 }      // namespace gmx
 
-#endif // GMX_MDLIB_MINIMIZE_H
+#endif // GMX_MDRUN_MINIMIZE_H
