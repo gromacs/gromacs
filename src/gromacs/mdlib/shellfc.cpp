@@ -890,7 +890,7 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
 }
 
 static void init_adir(FILE *log, gmx_shellfc_t *shfc,
-                      gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
+                      gmx::Constraints *constr, t_idef *idef, t_inputrec *ir,
                       const t_commrec *cr,
                       const gmx_multisim_t *ms,
                       int dd_ac1,
@@ -949,11 +949,11 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x, xnold, nullptr, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, econqCoord);
+              nullptr, nullptr, nrnb, gmx::econqCoord);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x, xnew, nullptr, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, econqCoord);
+              nullptr, nullptr, nrnb, gmx::econqCoord);
 
     for (n = 0; n < end; n++)
     {
@@ -970,7 +970,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, econqDeriv_FlexCon);
+              nullptr, nullptr, nrnb, gmx::econqDeriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
@@ -979,7 +979,7 @@ void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,
-                         gmx_constr_t constr,
+                         gmx::Constraints *constr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          t_state *state, PaddedRVecVector *f,
                          tensor force_vir,

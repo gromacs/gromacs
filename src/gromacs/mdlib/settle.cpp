@@ -34,6 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief Defines SETTLE code.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdlib
+ */
 #include "gmxpre.h"
 
 #include "settle.h"
@@ -62,9 +69,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+namespace gmx
+{
 
-typedef struct
+struct settleparam_t
 {
     real   mO;
     real   mH;
@@ -81,9 +89,9 @@ typedef struct
     real   invdOH;
     real   invdHH;
     matrix invmat;
-} settleparam_t;
+};
 
-typedef struct gmx_settledata
+struct settledata
 {
     settleparam_t massw;    /* Parameters for SETTLE for coordinates */
     settleparam_t mass1;    /* Parameters with all masses 1, for forces */
@@ -96,9 +104,10 @@ typedef struct gmx_settledata
     int           nalloc;   /* Allocation size of ow1, hw2, hw3, virfac */
 
     bool          bUseSimd; /* Use SIMD intrinsics code, if possible */
-} t_gmx_settledata;
+};
 
 
+//! Initializes a projection matrix.
 static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH,
                              matrix inverseCouplingMatrix)
 {
@@ -127,6 +136,7 @@ static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH,
     msmul(inverseCouplingMatrix, 1/invmO, inverseCouplingMatrix);
 }
 
+//! Initializes settle parameters.
 static void settleparam_init(settleparam_t *p,
                              real mO, real mH, real invmO, real invmH,
                              real dOH, real dHH)
@@ -169,7 +179,7 @@ static void settleparam_init(settleparam_t *p,
     }
 }
 
-gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
+settledata *settle_init(const gmx_mtop_t *mtop)
 {
     /* Check that we have only one settle type */
     int                   settle_type = -1;
@@ -199,7 +209,7 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     }
     GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
 
-    gmx_settledata_t settled;
+    settledata *settled;
 
     snew(settled, 1);
 
@@ -225,7 +235,7 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     return settled;
 }
 
-void settle_free(gmx_settledata_t settled)
+void settle_free(settledata *settled)
 {
     sfree_aligned(settled->ow1);
     sfree_aligned(settled->hw2);
@@ -234,7 +244,7 @@ void settle_free(gmx_settledata_t settled)
     sfree(settled);
 }
 
-void settle_set_constraints(gmx_settledata_t  settled,
+void settle_set_constraints(settledata       *settled,
                             const t_ilist    *il_settle,
                             const t_mdatoms  *mdatoms)
 {
@@ -305,7 +315,7 @@ void settle_set_constraints(gmx_settledata_t  settled,
     }
 }
 
-void settle_proj(gmx_settledata_t settled, int econq,
+void settle_proj(settledata *settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,
                  rvec x[],
@@ -411,12 +421,12 @@ void settle_proj(gmx_settledata_t settled, int econq,
 }
 
 
-/* The actual settle code, templated for real/SimdReal and for optimization */
+/*! \brief The actual settle code, templated for real/SimdReal and for optimization */
 template<typename T, typename TypeBool, int packSize,
          typename TypePbc,
          bool bCorrectVelocity,
          bool bCalcVirial>
-static void settleTemplate(const gmx_settledata_t settled,
+static void settleTemplate(const settledata *settled,
                            int settleStart, int settleEnd,
                            const TypePbc pbc,
                            const real *x, real *xprime,
@@ -442,20 +452,20 @@ static void settleTemplate(const gmx_settledata_t settled,
     assert(settleStart % packSize == 0);
     assert(settleEnd   % packSize == 0);
 
-    TypeBool       bError = TypeBool(false);
+    TypeBool             bError = TypeBool(false);
 
-    settleparam_t *p    = &settled->massw;
-    T              wh   = T(p->wh);
-    T              rc   = T(p->rc);
-    T              ra   = T(p->ra);
-    T              rb   = T(p->rb);
-    T              irc2 = T(p->irc2);
-    T              mO   = T(p->mO);
-    T              mH   = T(p->mH);
+    const settleparam_t *p    = &settled->massw;
+    T                    wh   = T(p->wh);
+    T                    rc   = T(p->rc);
+    T                    ra   = T(p->ra);
+    T                    rb   = T(p->rb);
+    T                    irc2 = T(p->irc2);
+    T                    mO   = T(p->mO);
+    T                    mH   = T(p->mH);
 
-    T              almost_zero = T(1e-12);
+    T                    almost_zero = T(1e-12);
 
-    T              sum_r_m_dr[DIM][DIM];
+    T                    sum_r_m_dr[DIM][DIM];
 
     if (bCalcVirial)
     {
@@ -760,11 +770,11 @@ static void settleTemplate(const gmx_settledata_t settled,
     *bErrorHasOccurred = anyTrue(bError);
 }
 
-/* Wrapper template function that divides the settles over threads
+/*! \brief Wrapper template function that divides the settles over threads
  * and instantiates the core template with instantiated booleans.
  */
 template<typename T, typename TypeBool, int packSize, typename TypePbc>
-static void settleTemplateWrapper(gmx_settledata_t settled,
+static void settleTemplateWrapper(settledata *settled,
                                   int nthread, int thread,
                                   TypePbc pbc,
                                   const real x[], real xprime[],
@@ -838,7 +848,7 @@ static void settleTemplateWrapper(gmx_settledata_t settled,
     }
 }
 
-void csettle(gmx_settledata_t settled,
+void csettle(settledata *settled,
              int nthread, int thread,
              const t_pbc *pbc,
              const real x[], real xprime[],
@@ -891,3 +901,5 @@ void csettle(gmx_settledata_t settled,
                                              bErrorHasOccurred);
     }
 }
+
+} // namespace

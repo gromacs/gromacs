@@ -34,6 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief Defines SHAKE code.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdlib
+ */
 #include "gmxpre.h"
 
 #include "shake.h"
@@ -46,6 +53,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -54,7 +62,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct gmx_shakedata
+namespace gmx
+{
+
+struct shakedata
 {
     rvec *rij;
     real *half_of_reduced_mass;
@@ -74,11 +85,11 @@ typedef struct gmx_shakedata
      * constraint distance. */
     real *scaled_lagrange_multiplier;
     int   lagr_nalloc;    /* The allocation size of scaled_lagrange_multiplier */
-} t_gmx_shakedata;
+};
 
-gmx_shakedata_t shake_init()
+shakedata *shake_init()
 {
-    gmx_shakedata_t d;
+    shakedata *d;
 
     snew(d, 1);
 
@@ -101,6 +112,7 @@ typedef struct {
     int blocknr;
 } t_sortblock;
 
+//! Compares sort blocks.
 static int pcomp(const void *p1, const void *p2)
 {
     int          db;
@@ -130,6 +142,7 @@ static int pcomp(const void *p1, const void *p2)
     }
 }
 
+//! Prints sortblocks
 static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
 {
     int i;
@@ -143,7 +156,8 @@ static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
     }
 }
 
-static void resizeLagrangianData(gmx_shakedata *shaked, int ncons)
+//! Reallocates a vector.
+static void resizeLagrangianData(shakedata *shaked, int ncons)
 {
     if (ncons > shaked->lagr_nalloc)
     {
@@ -153,7 +167,7 @@ static void resizeLagrangianData(gmx_shakedata *shaked, int ncons)
 }
 
 void
-make_shake_sblock_serial(gmx_shakedata *shaked,
+make_shake_sblock_serial(shakedata *shaked,
                          const t_idef *idef, const t_mdatoms *md)
 {
     int          i, j, m, ncons;
@@ -262,7 +276,7 @@ make_shake_sblock_serial(gmx_shakedata *shaked,
 }
 
 void
-make_shake_sblock_dd(gmx_shakedata *shaked,
+make_shake_sblock_dd(shakedata *shaked,
                      const t_ilist *ilcon, const t_block *cgs,
                      const gmx_domdec_t *dd)
 {
@@ -418,6 +432,7 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
     *nerror = error;
 }
 
+//! Implements RATTLE (ie. SHAKE for velocity verlet integrators)
 static void
 crattle(int iatom[], int ncon, int *nnit, int maxnit,
         real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
@@ -500,13 +515,14 @@ crattle(int iatom[], int ncon, int *nnit, int maxnit,
     *nerror = error;
 }
 
-static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
+//! Applies SHAKE
+static int vec_shakef(FILE *fplog, shakedata *shaked,
                       const real invmass[], int ncon,
                       t_iparams ip[], t_iatom *iatom,
                       real tol, rvec x[], rvec prime[], real omega,
-                      gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
+                      bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                       real invdt, rvec *v,
-                      gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
+                      bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -646,6 +662,7 @@ static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     return nit;
 }
 
+//! Check that constraints are satisfied.
 static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                        t_iparams ip[], t_iatom *iatom,
                        const real invmass[], int econq)
@@ -688,13 +705,14 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
     }
 }
 
-static gmx_bool
-bshakef(FILE *log, gmx_shakedata_t shaked,
+//! Applies SHAKE.
+static bool
+bshakef(FILE *log, shakedata *shaked,
         const real invmass[],
         const t_idef *idef, const t_inputrec *ir, rvec x_s[], rvec prime[],
         t_nrnb *nrnb, real lambda, real *dvdlambda,
-        real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-        gmx_bool bDumpOnError, int econq)
+        real invdt, rvec *v, bool bCalcVir, tensor vir_r_m_dr,
+        bool bDumpOnError, int econq)
 {
     t_iatom *iatoms;
     real    *lam, dt_2, dvdl;
@@ -787,7 +805,7 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
 
 bool
 constrain_shake(FILE             *log,
-                gmx_shakedata_t   shaked,
+                shakedata        *shaked,
                 const real        invmass[],
                 const t_idef     *idef,
                 const t_inputrec *ir,
@@ -799,9 +817,9 @@ constrain_shake(FILE             *log,
                 real             *dvdlambda,
                 real              invdt,
                 rvec             *v,
-                gmx_bool          bCalcVir,
+                bool              bCalcVir,
                 tensor            vir_r_m_dr,
-                gmx_bool          bDumpOnError,
+                bool              bDumpOnError,
                 int               econq)
 {
     if (shaked->nblocks == 0)
@@ -833,3 +851,5 @@ constrain_shake(FILE             *log,
     }
     return bOK;
 }
+
+} // namespace

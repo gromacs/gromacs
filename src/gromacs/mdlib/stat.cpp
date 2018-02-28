@@ -140,7 +140,7 @@ void global_stat(gmx_global_stat_t gs,
                  const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, gmx_constr_t constr,
+                 gmx_ekindata_t *ekind, gmx::Constraints *constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
@@ -234,7 +234,7 @@ void global_stat(gmx_global_stat_t gs,
         ie  = add_binr(rb, nener, copyenerd);
         if (constr)
         {
-            rmsd_data = constr_rmsd_data(constr);
+            rmsd_data = gmx::constr_rmsd_data(constr);
             if (rmsd_data)
             {
                 irmsd = add_binr(rb, 2, rmsd_data);
