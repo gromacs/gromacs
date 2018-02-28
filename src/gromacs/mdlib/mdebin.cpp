@@ -899,23 +899,23 @@ static void copy_energy(t_mdebin *md, real e[], real ecpy[])
     }
 }
 
-void upd_mdebin(t_mdebin       *md,
-                gmx_bool        bDoDHDL,
-                gmx_bool        bSum,
-                double          time,
-                real            tmass,
-                gmx_enerdata_t *enerd,
-                t_state        *state,
-                t_lambda       *fep,
-                t_expanded     *expand,
-                matrix          box,
-                tensor          svir,
-                tensor          fvir,
-                tensor          vir,
-                tensor          pres,
-                gmx_ekindata_t *ekind,
-                rvec            mu_tot,
-                gmx_constr_t    constr)
+void upd_mdebin(t_mdebin               *md,
+                gmx_bool                bDoDHDL,
+                gmx_bool                bSum,
+                double                  time,
+                real                    tmass,
+                gmx_enerdata_t         *enerd,
+                t_state                *state,
+                t_lambda               *fep,
+                t_expanded             *expand,
+                matrix                  box,
+                tensor                  svir,
+                tensor                  fvir,
+                tensor                  vir,
+                tensor                  pres,
+                gmx_ekindata_t         *ekind,
+                rvec                    mu_tot,
+                const gmx::Constraints *constr)
 {
     int    i, j, k, kk, n, gid;
     real   crmsd[2], tmp6[6];
@@ -934,7 +934,7 @@ void upd_mdebin(t_mdebin       *md,
     add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
     if (md->nCrmsd)
     {
-        crmsd[0] = constr_rmsd(constr);
+        crmsd[0] = gmx::constr_rmsd(constr);
         add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
     }
     if (md->bDynBox)

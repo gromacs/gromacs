@@ -48,6 +48,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -227,8 +229,8 @@ class ShakeTest : public ::testing::Test
             {
                 // We need to allow for the requested tolerance plus rounding
                 // errors due to the absolute size of the coordinate values
-                gmx::test::FloatingPointTolerance constraintTolerance =
-                    gmx::test::absoluteTolerance(std::sqrt(constrainedDistancesSquared[i])*ShakeTest::tolerance_ + coordMax*GMX_REAL_EPS);
+                test::FloatingPointTolerance constraintTolerance =
+                    test::absoluteTolerance(std::sqrt(constrainedDistancesSquared[i])*ShakeTest::tolerance_ + coordMax*GMX_REAL_EPS);
                 // Assert that the constrained distances are within the required tolerance
                 EXPECT_FLOAT_EQ_TOL(std::sqrt(constrainedDistancesSquared[i]),
                                     std::sqrt(finalDistancesSquared[i]),
@@ -356,4 +358,5 @@ TEST_F(ShakeTest, ConstrainsThreeBondsWithCommonAtoms)
     runTest(numAtoms, numConstraints, iatom, constrainedDistances, inverseMasses, positions);
 }
 
+} // namespace
 } // namespace

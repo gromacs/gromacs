@@ -40,7 +40,6 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
@@ -56,6 +55,7 @@ struct t_trxframe;
 
 namespace gmx
 {
+class Constraints;
 class MDLogger;
 class SimulationSignaller;
 }
@@ -123,7 +123,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx_constr *constr,
+                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);

@@ -316,7 +316,8 @@ documentation.
 
 One or more contact persons who know about the contents of the module should be
 listed using ``\author`` commands.  This provides a point of contact if one
-has questions.
+has questions. Authors should be listed in chronological order of contributions,
+where possible.
 
 Classes/structs
 ^^^^^^^^^^^^^^^

@@ -48,7 +48,6 @@
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;
-struct gmx_constr;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_multisim_t;
@@ -70,6 +69,7 @@ class t_state;
 namespace gmx
 {
 
+class Constraints;
 class IMDOutputProvider;
 class MDLogger;
 class MDAtoms;
@@ -123,7 +123,7 @@ struct Integrator
     //! Handles virtual sites.
     gmx_vsite_t                     *vsite;
     //! Handles constraints.
-    gmx_constr                      *constr;
+    Constraints                     *constr;
     //! Handles writing output files.
     IMDOutputProvider               *outputProvider;
     //! Contains user input mdp options.
