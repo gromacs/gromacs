@@ -32,6 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares interface to SETTLE code.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 
 #ifndef GMX_MDLIB_SETTLE_H
 #define GMX_MDLIB_SETTLE_H
@@ -44,20 +52,27 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
+namespace gmx
+{
+
 /* Abstract type for SETTLE that is defined only in the file that uses it */
-typedef struct gmx_settledata *gmx_settledata_t;
+struct settledata;
 
-gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
-/* Initializes and returns a structure with SETTLE parameters */
+/*! \brief Initializes and returns a structure with SETTLE parameters */
+settledata *settle_init(const gmx_mtop_t *mtop);
 
-void settle_free(gmx_settledata_t settled);
+//! Cleans up.
+void settle_free(settledata *settled);
 
-void settle_set_constraints(gmx_settledata_t  settled,
+/*! \brief Set up the indices for the settle constraints */
+void settle_set_constraints(settledata       *settled,
                             const t_ilist    *il_settle,
                             const t_mdatoms  *mdatoms);
-/* Set up the indices for the settle constraints */
 
-void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
+/*! \brief Constrain coordinates using SETTLE.
+ * Can be called on any number of threads.
+ */
+void csettle(settledata         *settled,          /* The SETTLE structure */
              int                 nthread,          /* The number of threads used */
              int                 thread,           /* Our thread index */
              const t_pbc        *pbc,              /* PBC data pointer, can be NULL */
@@ -69,18 +84,17 @@ void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
              tensor              vir_r_m_dr,       /* sum r x m delta_r */
              bool               *bErrorHasOccurred /* True if a settle error occurred */
              );
-/* Constrain coordinates using SETTLE.
- * Can be called on any number of threads.
- */
 
-void settle_proj(gmx_settledata_t settled, int econq,
+/*! \brief Analytical algorithm to subtract the components of derivatives
+ * of coordinates working on settle type constraint.
+ */
+void settle_proj(settledata *settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
                  rvec *der, rvec *derp,
                  int CalcVirAtomEnd, tensor vir_r_m_dder);
-/* Analytical algorithm to subtract the components of derivatives
- * of coordinates working on settle type constraint.
- */
+
+} // namespace
 
 #endif

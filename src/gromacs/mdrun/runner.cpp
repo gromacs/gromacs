@@ -386,12 +386,11 @@ int Mdrunner::mdrunner()
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
     t_nrnb                   *nrnb;
-    t_forcerec               *fr            = nullptr;
-    t_fcdata                 *fcd           = nullptr;
-    real                      ewaldcoeff_q  = 0;
-    real                      ewaldcoeff_lj = 0;
-    gmx_vsite_t              *vsite         = nullptr;
-    gmx_constr_t              constr;
+    t_forcerec               *fr               = nullptr;
+    t_fcdata                 *fcd              = nullptr;
+    real                      ewaldcoeff_q     = 0;
+    real                      ewaldcoeff_lj    = 0;
+    gmx_vsite_t              *vsite            = nullptr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
@@ -1284,9 +1283,9 @@ int Mdrunner::mdrunner()
         /* Let init_constraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
-        bool doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
+        bool         doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
 
-        constr = init_constraints(fplog, &mtop, inputrec, doEdsam, cr);
+        Constraints *constr = init_constraints(fplog, &mtop, inputrec, doEdsam, cr);
 
         if (DOMAINDECOMP(cr))
         {

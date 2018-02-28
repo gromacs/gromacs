@@ -34,9 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares interface to constraint code.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 
-#ifndef GMX_MBLIB_CONSTR_H
-#define GMX_MBLIB_CONSTR_H
+#ifndef GMX_MDLIB_CONSTR_H
+#define GMX_MDLIB_CONSTR_H
 
 #include <cstdio>
 
@@ -59,8 +67,10 @@ struct t_pbc;
 union t_iparams;
 class t_state;
 
-/* Abstract type for constraints */
-typedef struct gmx_constr *gmx_constr_t;
+namespace gmx
+{
+
+class Constraints;
 
 enum
 {
@@ -74,28 +84,14 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-int n_flexible_constraints(gmx_constr *constr);
-/* Returns the total number of flexible constraints in the system */
+/*! \brief Returns the total number of flexible constraints in the system. */
+int n_flexible_constraints(Constraints *constr);
 
+/*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
 void too_many_constraint_warnings(int eConstrAlg, int warncount);
-/* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
-
-gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                   gmx_constr_t constr,
-                   t_idef *idef,
-                   const t_inputrec *ir,
-                   const t_commrec *cr,
-                   const gmx_multisim_t *ms,
-                   gmx_int64_t step, int delta_step,
-                   real step_scaling,
-                   t_mdatoms *md,
-                   rvec *x, rvec *xprime, rvec *min_proj,
-                   gmx_bool bMolPBC, matrix box,
-                   real lambda, real *dvdlambda,
-                   rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq);
-/*
+/*! \brief Applies constraints to coordinates.
+ *
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
  *
@@ -125,23 +121,37 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  * Return TRUE if OK, FALSE in case of shake error
  *
  */
+bool constrain(FILE *log, bool bLog, bool bEner,
+               Constraints *constr,
+               t_idef *idef,
+               const t_inputrec *ir,
+               const t_commrec *cr,
+               const gmx_multisim_t *ms,
+               gmx_int64_t step, int delta_step,
+               real step_scaling,
+               t_mdatoms *md,
+               rvec *x, rvec *xprime, rvec *min_proj,
+               bool bMolPBC, matrix box,
+               real lambda, real *dvdlambda,
+               rvec *v, tensor *vir,
+               t_nrnb *nrnb, int econq);
 
-gmx_constr_t init_constraints(FILE *log,
+/*! \brief Initialize constraints stuff */
+Constraints *init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
                               const t_commrec *cr);
-/* Initialize constraints stuff */
 
-void saveEdsamPointer(gmx_constr_t      constr,
+/*! \brief Put a pointer to the essential dynamics constraints into the constr struct. */
+void saveEdsamPointer(Constraints      *constr,
                       gmx_edsam        *ed);
-/* Put a pointer to the essential dynamics constraints into the constr struct */
 
-void set_constraints(gmx_constr_t             constr,
+/*! \brief Set up all the local constraints for this rank. */
+void set_constraints(Constraints             *constr,
                      gmx_localtop_t          *top,
                      const t_inputrec        *ir,
                      const t_mdatoms         *md,
                      const t_commrec         *cr);
-/* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
  * contains a list of constraints per atom.
@@ -149,35 +159,35 @@ void set_constraints(gmx_constr_t             constr,
  * after the F_CONSTR constraints.
  */
 
+/*! \brief Returns a block struct to go from atoms to constraints */
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons);
-/* Returns a block struct to go from atoms to constraints */
+                     bool bDynamics, int *nflexiblecons);
 
-const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
-/* Returns the an array of atom to constraints lists for the moltypes */
+/*! \brief Returns the an array of atom to constraints lists for the moltypes */
+const t_blocka *atom2constraints_moltype(Constraints *constr);
 
-const int **atom2settle_moltype(gmx_constr_t constr);
-/* Returns the an array of atom to settle for the moltypes */
+/*! \brief Returns the an array of atom to settle for the moltypes */
+const int **atom2settle_moltype(Constraints *constr);
 
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
-/* Macro for getting the constraint iatoms for a constraint number con
+/*! \brief Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
- * are concatenated.
- */
+ * are concatenated. */
+#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
 
-gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
-/* Returns if there are inter charge group constraints */
+/*! \brief Returns whether there are inter charge group constraints */
+bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
 
-gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
-/* Returns if there are inter charge group settles */
+/*! \brief Returns whether there are inter charge group settles */
+bool inter_charge_group_settles(const gmx_mtop_t *mtop);
 
-real *constr_rmsd_data(gmx_constr_t constr);
-/* Return the data for determining constraint RMS relative deviations.
- * Returns NULL when LINCS is not used.
- */
+/*! \brief Return the data for determining constraint RMS relative deviations.
+ * Returns NULL when LINCS is not used. */
+real *constr_rmsd_data(Constraints *constr);
 
-real constr_rmsd(gmx_constr_t constr);
-/* Return the RMSD of the constraint */
+/*! \brief Return the RMSD of the constraint */
+real constr_rmsd(Constraints *constr);
+
+} // namespace
 
 #endif
