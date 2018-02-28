@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,19 +32,64 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \brief Declares the integrators for energy minimization and NMA
+/*! \internal
+ * \brief Defines the dispatch function for the .mdp integrator field.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#ifndef GMX_MDRUN_MINIMIZE_H
-#define GMX_MDRUN_MINIMIZE_H
+#include "gmxpre.h"
 
 #include "integrator.h"
+
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
-}      // namespace gmx
+//! \brief Run the correct integrator function.
+void Integrator::run(unsigned int ei)
+{
+    switch (ei)
+    {
+        case eiMD:
+        case eiBD:
+        case eiSD1:
+        case eiVV:
+        case eiVVAK:
+            if (!EI_DYNAMICS(ei))
+            {
+                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
+            }
+            do_md();
+            break;
+        case eiSteep:
+            do_steep();
+            break;
+        case eiCG:
+            do_cg();
+            break;
+        case eiNM:
+            do_nm();
+            break;
+        case eiLBFGS:
+            do_lbfgs();
+            break;
+        case eiTPI:
+        case eiTPIC:
+            if (!EI_TPI(ei))
+            {
+                GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
+            }
+            do_tpi();
+            break;
+        case eiSD2_REMOVED:
+            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
+        default:
+            GMX_THROW(APIError("Non existing integrator selected"));
+    }
+}
 
-#endif // GMX_MDRUN_MINIMIZE_H
+} // namespace

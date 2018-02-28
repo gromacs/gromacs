@@ -43,8 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "md.h"
-
 #include "config.h"
 
 #include <stdio.h>
@@ -134,6 +132,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "integrator.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -286,46 +286,16 @@ static void prepareRerunState(const t_trxframe  &rerunFrame,
     }
 }
 
-/*! \libinternal
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
-                           const gmx_multisim_t *ms,
-                           const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv,
-                           const MdrunOptions &mdrunOptions,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           t_mdatoms *mdatoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           t_forcerec *fr,
-                           const ReplicaExchangeParameters &replExParams,
-                           gmx_membed_t *membed,
-                           gmx_walltime_accounting_t walltime_accounting)
- */
-double gmx::do_md(FILE *fplog, t_commrec *cr,
-                  const gmx_multisim_t *ms,
-                  const gmx::MDLogger &mdlog,
-                  int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv,
-                  const MdrunOptions &mdrunOptions,
-                  gmx_vsite_t *vsite, gmx_constr_t constr,
-                  gmx::IMDOutputProvider *outputProvider,
-                  t_inputrec *ir,
-                  gmx_mtop_t *top_global,
-                  t_fcdata *fcd,
-                  t_state *state_global,
-                  ObservablesHistory *observablesHistory,
-                  gmx::MDAtoms *mdAtoms,
-                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  t_forcerec *fr,
-                  const ReplicaExchangeParameters &replExParams,
-                  gmx_membed_t *membed,
-                  gmx_walltime_accounting_t walltime_accounting)
+void gmx::Integrator::do_md()
 {
-    gmx_mdoutf_t    outf = nullptr;
+    // TODO Historically, the EM and MD "integrators" used different
+    // names for the t_inputrec *parameter, but these must have the
+    // same name, now that it's a member of a struct. We use this ir
+    // alias to avoid a large ripple of nearly useless changes.
+    // t_inputrec is being replaced by IMdpOptionsProvider, so this
+    // will go away eventually.
+    t_inputrec     *ir   = inputrec;
+    gmx_mdoutf     *outf = nullptr;
     gmx_int64_t     step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
@@ -2035,6 +2005,4 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
     {
         walltime_accounting_set_valid_finish(walltime_accounting);
     }
-
-    return 0;
 }
