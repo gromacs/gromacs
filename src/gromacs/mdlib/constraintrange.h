@@ -43,8 +43,13 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 
+namespace gmx
+{
+
 /*! \brief Returns an estimate of the maximum distance between atoms
  * required for LINCS. */
 real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
+
+} // namespace
 
 #endif

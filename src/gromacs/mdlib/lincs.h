@@ -32,6 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares interface to LINCS code.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
 
 #ifndef GMX_MDLIB_LINCS_H
 #define GMX_MDLIB_LINCS_H
@@ -52,40 +60,47 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 
+namespace gmx
+{
+
 /* Abstract type for LINCS that is defined only in the file that uses it */
-typedef struct gmx_lincsdata *gmx_lincsdata_t;
+class Lincs;
 
-real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
-/* Return the data for determining constraint RMS relative deviations */
+/*! \brief Return the data for determining constraint RMS relative deviations. */
+real *lincs_rmsd_data(Lincs *lincsd);
 
-real lincs_rmsd(gmx_lincsdata_t lincsd);
-/* Return the RMSD of the constraint */
+/*! \brief Return the RMSD of the constraint. */
+real lincs_rmsd(const Lincs *lincsd);
 
-gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
-                           int nflexcon_global, const t_blocka *at2con,
-                           gmx_bool bPLINCS, int nIter, int nProjOrder);
-/* Initializes and returns the lincs data struct */
+/*! \brief Initializes and returns the lincs data struct. */
+Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+                  int nflexcon_global, const t_blocka *at2con,
+                  bool bPLINCS, int nIter, int nProjOrder);
 
+/*! \brief Initialize lincs stuff */
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, const t_commrec *cr,
-               gmx_lincsdata_t li);
-/* Initialize lincs stuff */
+               bool bDynamics, const t_commrec *cr,
+               Lincs *li);
 
-gmx_bool
-constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
+/*! \brief Applies LINCS constraints.
+ *
+ * \returns true if the constraining succeeded. */
+bool
+constrain_lincs(FILE *log, bool bLog, bool bEner,
                 const t_inputrec *ir,
                 gmx_int64_t step,
-                gmx_lincsdata_t lincsd, t_mdatoms *md,
+                Lincs *lincsd, t_mdatoms *md,
                 const t_commrec *cr,
                 const gmx_multisim_t *ms,
                 rvec *x, rvec *xprime, rvec *min_proj,
                 matrix box, t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
-                gmx_bool bCalcVir, tensor vir_r_m_dr,
+                bool bCalcVir, tensor vir_r_m_dr,
                 int econ,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
-/* Returns if the constraining succeeded */
+
+} // namespace
 
 #endif

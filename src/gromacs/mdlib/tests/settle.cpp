@@ -240,7 +240,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mdatoms.homenr  = numSettles * atomsPerSettle;
 
     // Finally make the settle data structures
-    gmx_settledata_t settled = settle_init(&mtop);
+    settledata *settled = settle_init(&mtop);
     settle_set_constraints(settled, &mtop.moltype[0].ilist[F_SETTLE], &mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals

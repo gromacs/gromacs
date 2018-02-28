@@ -34,6 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief Defines the high-level constraint code.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdlib
+ */
 #include "gmxpre.h"
 
 #include "constr.h"
@@ -76,31 +83,36 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-typedef struct gmx_constr {
-    int                ncon_tot;       /* The total number of constraints    */
-    int                nflexcon;       /* The number of flexible constraints */
-    int                n_at2con_mt;    /* The size of at2con = #moltypes     */
-    t_blocka          *at2con_mt;      /* A list of atoms to constraints     */
-    int                n_at2settle_mt; /* The size of at2settle = #moltypes  */
-    int              **at2settle_mt;   /* A list of atoms to settles         */
-    gmx_bool           bInterCGsettles;
-    gmx_lincsdata_t    lincsd;         /* LINCS data                         */
-    gmx_shakedata_t    shaked;         /* SHAKE data                         */
-    gmx_settledata_t   settled;        /* SETTLE data                        */
-    int                maxwarn;        /* The maximum number of warnings     */
-    int                warncount_lincs;
-    int                warncount_settle;
-    gmx_edsam_t        ed;             /* The essential dynamics data        */
+namespace gmx
+{
 
-    /* Thread local working data */
-    tensor            *vir_r_m_dr_th;           /* Thread virial contribution */
-    bool              *bSettleErrorHasOccurred; /* Did a settle error occur?  */
+class Constraints
+{
+    public:
+        int                ncon_tot;       /* The total number of constraints    */
+        int                nflexcon;       /* The number of flexible constraints */
+        int                n_at2con_mt;    /* The size of at2con = #moltypes     */
+        t_blocka          *at2con_mt;      /* A list of atoms to constraints     */
+        int                n_at2settle_mt; /* The size of at2settle = #moltypes  */
+        int              **at2settle_mt;   /* A list of atoms to settles         */
+        bool               bInterCGsettles;
+        Lincs             *lincsd;         /* LINCS data                         */
+        shakedata         *shaked;         /* SHAKE data                         */
+        settledata        *settled;        /* SETTLE data                        */
+        int                maxwarn;        /* The maximum number of warnings     */
+        int                warncount_lincs;
+        int                warncount_settle;
+        gmx_edsam_t        ed;         /* The essential dynamics data        */
 
-    /* Only used for printing warnings */
-    const gmx_mtop_t  *warn_mtop;     /* Pointer to the global topology     */
-} t_gmx_constr;
+        /* Thread local working data */
+        tensor            *vir_r_m_dr_th;           /* Thread virial contribution */
+        bool              *bSettleErrorHasOccurred; /* Did a settle error occur?  */
 
-int n_flexible_constraints(struct gmx_constr *constr)
+        /* Only used for printing warnings */
+        const gmx_mtop_t  *warn_mtop; /* Pointer to the global topology     */
+};
+
+int n_flexible_constraints(const Constraints *constr)
 {
     int nflexcon;
 
@@ -116,6 +128,7 @@ int n_flexible_constraints(struct gmx_constr *constr)
     return nflexcon;
 }
 
+//! Clears constraint quantities for atoms in nonlocal region.
 static void clear_constraint_quantity_nonlocal(gmx_domdec_t *dd, rvec *q)
 {
     int nonlocal_at_start, nonlocal_at_end, at;
@@ -140,6 +153,7 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
               "adjust the lincs warning threshold in your mdp file\nor " : "\n");
 }
 
+//! Writes out coordinates.
 static void write_constr_pdb(const char *fn, const char *title,
                              const gmx_mtop_t *mtop,
                              int start, int homenr, const t_commrec *cr,
@@ -197,6 +211,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_fio_fclose(out);
 }
 
+//! Writes out domain contents to help diagnose crashes.
 static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
                        int start, int homenr, const t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
@@ -222,21 +237,21 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
     fprintf(stderr, "Wrote pdb files with previous and current coordinates\n");
 }
 
-gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
-                   struct gmx_constr *constr,
-                   t_idef *idef, const t_inputrec *ir,
-                   const t_commrec *cr,
-                   const gmx_multisim_t *ms,
-                   gmx_int64_t step, int delta_step,
-                   real step_scaling,
-                   t_mdatoms *md,
-                   rvec *x, rvec *xprime, rvec *min_proj,
-                   gmx_bool bMolPBC, matrix box,
-                   real lambda, real *dvdlambda,
-                   rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq)
+bool constrain(FILE *fplog, bool bLog, bool bEner,
+               Constraints *constr,
+               t_idef *idef, const t_inputrec *ir,
+               const t_commrec *cr,
+               const gmx_multisim_t *ms,
+               gmx_int64_t step, int delta_step,
+               real step_scaling,
+               t_mdatoms *md,
+               rvec *x, rvec *xprime, rvec *min_proj,
+               bool bMolPBC, matrix box,
+               real lambda, real *dvdlambda,
+               rvec *v, tensor *vir,
+               t_nrnb *nrnb, int econq)
 {
-    gmx_bool    bOK, bDump;
+    bool        bOK, bDump;
     int         start, homenr;
     tensor      vir_r_m_dr;
     real        scaled_delta_t;
@@ -571,7 +586,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     return bOK;
 }
 
-real *constr_rmsd_data(struct gmx_constr *constr)
+real *constr_rmsd_data(Constraints *constr)
 {
     if (constr->lincsd)
     {
@@ -583,7 +598,7 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     }
 }
 
-real constr_rmsd(struct gmx_constr *constr)
+real constr_rmsd(const Constraints *constr)
 {
     if (constr->lincsd)
     {
@@ -597,12 +612,12 @@ real constr_rmsd(struct gmx_constr *constr)
 
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     gmx_bool bDynamics, int *nflexiblecons)
+                     bool bDynamics, int *nflexiblecons)
 {
     int      *count, ncon, con, con_tot, nflexcon, ftype, i, a;
     t_iatom  *ia;
     t_blocka  at2con;
-    gmx_bool  bFlexCon;
+    bool      bFlexCon;
 
     snew(count, natoms);
     nflexcon = 0;
@@ -674,6 +689,7 @@ t_blocka make_at2con(int start, int natoms,
     return at2con;
 }
 
+//! Returns the index of the settle to which each atom belongs.
 static int *make_at2settle(int natoms, const t_ilist *ilist)
 {
     int *at2s;
@@ -698,7 +714,7 @@ static int *make_at2settle(int natoms, const t_ilist *ilist)
     return at2s;
 }
 
-void set_constraints(struct gmx_constr *constr,
+void set_constraints(Constraints *constr,
                      gmx_localtop_t *top, const t_inputrec *ir,
                      const t_mdatoms *md, const t_commrec *cr)
 {
@@ -741,7 +757,7 @@ void set_constraints(struct gmx_constr *constr,
     }
 }
 
-gmx_constr_t init_constraints(FILE *fplog,
+Constraints *init_constraints(FILE *fplog,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               bool doEssentialDynamics,
                               const t_commrec *cr)
@@ -761,7 +777,7 @@ gmx_constr_t init_constraints(FILE *fplog,
         return nullptr;
     }
 
-    struct gmx_constr *constr;
+    Constraints *constr;
 
     snew(constr, 1);
 
@@ -900,30 +916,29 @@ gmx_constr_t init_constraints(FILE *fplog,
     return constr;
 }
 
-/* Put a pointer to the essential dynamics constraints into the constr struct */
-void saveEdsamPointer(gmx_constr_t constr, gmx_edsam_t ed)
+void saveEdsamPointer(Constraints *constr, gmx_edsam *ed)
 {
     constr->ed = ed;
 }
 
-const t_blocka *atom2constraints_moltype(gmx_constr_t constr)
+const t_blocka *atom2constraints_moltype(const Constraints *constr)
 {
     return constr->at2con_mt;
 }
 
-const int **atom2settle_moltype(gmx_constr_t constr)
+const int **atom2settle_moltype(const Constraints *constr)
 {
     return (const int **)constr->at2settle_mt;
 }
 
 
-gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
+bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
 {
     const gmx_moltype_t *molt;
     const t_block       *cgs;
     const t_ilist       *il;
     int                 *at2cg, cg, a, ftype, i;
-    gmx_bool             bInterCG;
+    bool                 bInterCG;
 
     bInterCG = FALSE;
     for (size_t mb = 0; mb < mtop->molblock.size() && !bInterCG; mb++)
@@ -963,13 +978,13 @@ gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
     return bInterCG;
 }
 
-gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop)
+bool inter_charge_group_settles(const gmx_mtop_t *mtop)
 {
     const gmx_moltype_t *molt;
     const t_block       *cgs;
     const t_ilist       *il;
     int                 *at2cg, cg, a, ftype, i;
-    gmx_bool             bInterCG;
+    bool                 bInterCG;
 
     bInterCG = FALSE;
     for (size_t mb = 0; mb < mtop->molblock.size() && !bInterCG; mb++)
@@ -1007,3 +1022,5 @@ gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop)
 
     return bInterCG;
 }
+
+} // namespace
