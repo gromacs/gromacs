@@ -121,3 +121,12 @@ Used isfinite unambiguously
 Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`
+
+Work around gcc-6 bug in tabulated group non-bonded kernels
+--------------------------------------------------------------------------
+With the gcc-6 compiler, AVX and -O3, which is the default,
+the tabulated non-bonded kernels of the (deprecated) group
+cutoff-scheme produced incorrect energies and forces.
+The errors are so large that they will not cause silent issues.
+
+:issue:`2424`
