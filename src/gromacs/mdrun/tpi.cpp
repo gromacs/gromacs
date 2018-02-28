@@ -43,8 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "tpi.h"
-
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -91,6 +89,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "integrator.h"
+
 //! Global max algorithm
 static void global_max(t_commrec *cr, int *n)
 {
@@ -126,44 +126,8 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
 namespace gmx
 {
 
-/*! \brief Do test particle insertion.
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
-                           const gmx_multi_sim_t *,
-                           const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv,
-                           const MdrunOptions &mdrunOptions,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           gmx::MDAtoms *mdAtoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
-                           t_forcerec *fr,
-                           const ReplicaExchangeParameters &replExParams,
-                           gmx_membed_t gmx_unused *membed,
-                           gmx_walltime_accounting_t walltime_accounting)
- */
-double do_tpi(FILE *fplog, t_commrec *cr,
-              const gmx_multisim_t *ms,
-              const gmx::MDLogger gmx_unused &mdlog,
-              int nfile, const t_filenm fnm[],
-              const gmx_output_env_t *oenv,
-              const MdrunOptions &mdrunOptions,
-              gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
-              gmx::IMDOutputProvider *outputProvider,
-              t_inputrec *inputrec,
-              gmx_mtop_t *top_global, t_fcdata *fcd,
-              t_state *state_global,
-              ObservablesHistory gmx_unused *observablesHistory,
-              gmx::MDAtoms *mdAtoms,
-              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-              t_forcerec *fr,
-              const ReplicaExchangeParameters gmx_unused &replExParams,
-              gmx_membed_t gmx_unused *membed,
-              gmx_walltime_accounting_t walltime_accounting)
+void
+Integrator::do_tpi()
 {
     gmx_localtop_t  *top;
     gmx_groups_t    *groups;
@@ -890,8 +854,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     sfree(sum_UgembU);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, frame*inputrec->nsteps);
-
-    return 0;
 }
 
 } // namespace gmx

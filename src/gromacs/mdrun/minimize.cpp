@@ -44,8 +44,6 @@
  */
 #include "gmxpre.h"
 
-#include "minimize.h"
-
 #include "config.h"
 
 #include <cmath>
@@ -99,6 +97,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "integrator.h"
 
 //! Utility structure for manipulating states during EM
 typedef struct {
@@ -979,44 +979,8 @@ static real pr_beta(const t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
 namespace gmx
 {
 
-/*! \brief Do conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
-                           const gmx_multi_sim_t *,
-                           const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv,
-                           const MdrunOptions &mdrunOptions,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           gmx::MDAtoms *mdAtoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
-                           t_forcerec *fr,
-                           const ReplicaExchangeParameters &replExParams,
-                           gmx_membed_t gmx_unused *membed,
-                           gmx_walltime_accounting_t walltime_accounting)
- */
-double do_cg(FILE *fplog, t_commrec *cr,
-             const gmx_multisim_t *ms,
-             const gmx::MDLogger gmx_unused &mdlog,
-             int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv,
-             const MdrunOptions &mdrunOptions,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
-             gmx::IMDOutputProvider *outputProvider,
-             t_inputrec *inputrec,
-             gmx_mtop_t *top_global, t_fcdata *fcd,
-             t_state *state_global,
-             ObservablesHistory *observablesHistory,
-             gmx::MDAtoms *mdAtoms,
-             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             t_forcerec *fr,
-             const ReplicaExchangeParameters gmx_unused &replExParams,
-             gmx_membed_t gmx_unused *membed,
-             gmx_walltime_accounting_t walltime_accounting)
+void
+Integrator::do_cg()
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
 
@@ -1623,49 +1587,11 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
-
-    return 0;
-}   /* That's all folks */
+}
 
 
-/*! \brief Do L-BFGS conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
-                          const gmx_multi_sim_t *,
-                          const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv,
-                          const MdrunOptions &mdrunOptions,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          gmx::MDAtoms *mdAtoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          gmx_membed_t gmx_unused *membed,
-                          gmx_walltime_accounting_t walltime_accounting)
- */
-double do_lbfgs(FILE *fplog, t_commrec *cr,
-                const gmx_multisim_t *ms,
-                const gmx::MDLogger gmx_unused &mdlog,
-                int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv,
-                const MdrunOptions &mdrunOptions,
-                gmx_vsite_t *vsite, gmx_constr_t constr,
-                gmx::IMDOutputProvider *outputProvider,
-                t_inputrec *inputrec,
-                gmx_mtop_t *top_global, t_fcdata *fcd,
-                t_state *state_global,
-                ObservablesHistory *observablesHistory,
-                gmx::MDAtoms *mdAtoms,
-                t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                t_forcerec *fr,
-                const ReplicaExchangeParameters gmx_unused &replExParams,
-                gmx_membed_t gmx_unused *membed,
-                gmx_walltime_accounting_t walltime_accounting)
+void
+Integrator::do_lbfgs()
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
@@ -2394,47 +2320,10 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
+}
 
-    return 0;
-}   /* That's all folks */
-
-/*! \brief Do steepest descents minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
-                          const gmx_multi_sim_t *,
-                          const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv,
-                          const MdrunOptions &mdrunOptions,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          gmx::MDAtoms *mdAtoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          gmx_walltime_accounting_t walltime_accounting)
- */
-double do_steep(FILE *fplog, t_commrec *cr,
-                const gmx_multisim_t *ms,
-                const gmx::MDLogger gmx_unused &mdlog,
-                int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv,
-                const MdrunOptions &mdrunOptions,
-                gmx_vsite_t *vsite, gmx_constr_t constr,
-                gmx::IMDOutputProvider *outputProvider,
-                t_inputrec *inputrec,
-                gmx_mtop_t *top_global, t_fcdata *fcd,
-                t_state *state_global,
-                ObservablesHistory *observablesHistory,
-                gmx::MDAtoms *mdAtoms,
-                t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                t_forcerec *fr,
-                const ReplicaExchangeParameters gmx_unused &replExParams,
-                gmx_membed_t gmx_unused *membed,
-                gmx_walltime_accounting_t walltime_accounting)
+void
+Integrator::do_steep()
 {
     const char       *SD = "Steepest Descents";
     gmx_localtop_t   *top;
@@ -2664,47 +2553,10 @@ double do_steep(FILE *fplog, t_commrec *cr,
     inputrec->nsteps = count;
 
     walltime_accounting_set_nsteps_done(walltime_accounting, count);
+}
 
-    return 0;
-}   /* That's all folks */
-
-/*! \brief Do normal modes analysis
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
-                          const gmx_multi_sim_t *,
-                          const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv,
-                          const MdrunOptions &mdrunOptions,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          gmx::MDAtoms *mdAtoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          gmx_walltime_accounting_t walltime_accounting)
- */
-double do_nm(FILE *fplog, t_commrec *cr,
-             const gmx_multisim_t *ms,
-             const gmx::MDLogger &mdlog,
-             int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv,
-             const MdrunOptions &mdrunOptions,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
-             gmx::IMDOutputProvider *outputProvider,
-             t_inputrec *inputrec,
-             gmx_mtop_t *top_global, t_fcdata *fcd,
-             t_state *state_global,
-             ObservablesHistory gmx_unused *observablesHistory,
-             gmx::MDAtoms *mdAtoms,
-             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             t_forcerec *fr,
-             const ReplicaExchangeParameters gmx_unused &replExParams,
-             gmx_membed_t gmx_unused *membed,
-             gmx_walltime_accounting_t walltime_accounting)
+void
+Integrator::do_nm()
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t         outf;
@@ -2991,8 +2843,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     finish_em(cr, outf, walltime_accounting, wcycle);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size()*2);
-
-    return 0;
 }
 
 } // namespace gmx

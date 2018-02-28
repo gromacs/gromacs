@@ -63,6 +63,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -122,9 +123,6 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "integrator.h"
-#include "md.h"
-#include "minimize.h"
-#include "tpi.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -345,43 +343,6 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
         return false;
     }
     return true;
-}
-
-//! \brief Return the correct integrator function.
-static integrator_t *my_integrator(unsigned int ei)
-{
-    switch (ei)
-    {
-        case eiMD:
-        case eiBD:
-        case eiSD1:
-        case eiVV:
-        case eiVVAK:
-            if (!EI_DYNAMICS(ei))
-            {
-                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
-            }
-            return do_md;
-        case eiSteep:
-            return do_steep;
-        case eiCG:
-            return do_cg;
-        case eiNM:
-            return do_nm;
-        case eiLBFGS:
-            return do_lbfgs;
-        case eiTPI:
-        case eiTPIC:
-            if (!EI_TPI(ei))
-            {
-                GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
-            }
-            return do_tpi;
-        case eiSD2_REMOVED:
-            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
-        default:
-            GMX_THROW(APIError("Non existing integrator selected"));
-    }
 }
 
 //! Initializes the logger for mdrun.
@@ -1332,20 +1293,22 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, ms, mdlog, nfile, fnm,
-                                     oenv,
-                                     mdrunOptions,
-                                     vsite, constr,
-                                     mdModules->outputProvider(),
-                                     inputrec, mtop,
-                                     fcd,
-                                     globalState.get(),
-                                     &observablesHistory,
-                                     mdAtoms.get(), nrnb, wcycle, fr,
-                                     replExParams,
-                                     membed,
-                                     walltime_accounting);
-
+        Integrator integrator {
+            fplog, cr, ms, mdlog, nfile, fnm,
+            oenv,
+            mdrunOptions,
+            vsite, constr,
+            mdModules->outputProvider(),
+            inputrec, mtop,
+            fcd,
+            globalState.get(),
+            &observablesHistory,
+            mdAtoms.get(), nrnb, wcycle, fr,
+            replExParams,
+            membed,
+            walltime_accounting
+        };
+        integrator.run(inputrec->eI);
         if (inputrec->bRot)
         {
             finish_rot(inputrec->rot);
