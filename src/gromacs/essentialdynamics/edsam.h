@@ -67,6 +67,11 @@ struct t_filenm;
 struct t_inputrec;
 class t_state;
 
+namespace gmx
+{
+class Constraints;
+}
+
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
  *
  * \param ir                MD input parameter record.
@@ -102,7 +107,7 @@ gmx_edsam_t init_edsam(
         const gmx_mtop_t       *mtop,
         const t_inputrec       *ir,
         const t_commrec        *cr,
-        struct gmx_constr      *constr,
+        gmx::Constraints       *constr,
         const t_state          *globalState,
         ObservablesHistory     *oh,
         const gmx_output_env_t *oenv,

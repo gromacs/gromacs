@@ -52,6 +52,10 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
+//! Recursing function to help find all adjacent constraints.
 static void constr_recur(const t_blocka *at2con,
                          const t_ilist *ilist, const t_iparams *iparams,
                          gmx_bool bTopB,
@@ -148,6 +152,7 @@ static void constr_recur(const t_blocka *at2con,
     }
 }
 
+//! Find the interaction radius needed for constraints for this molecule type.
 static real constr_r_max_moltype(const gmx_moltype_t *molt,
                                  const t_iparams     *iparams,
                                  const t_inputrec    *ir)
@@ -234,3 +239,5 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 
     return rmax;
 }
+
+} // namespace

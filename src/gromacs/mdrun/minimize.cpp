@@ -332,7 +332,7 @@ static void init_em(FILE *fplog, const char *title,
                     t_nrnb *nrnb, rvec mu_tot,
                     t_forcerec *fr, gmx_enerdata_t **enerd,
                     t_graph **graph, gmx::MDAtoms *mdAtoms, gmx_global_stat_t *gstat,
-                    gmx_vsite_t *vsite, gmx_constr_t constr, gmx_shellfc_t **shellfc,
+                    gmx_vsite_t *vsite, gmx::Constraints *constr, gmx_shellfc_t **shellfc,
                     int nfile, const t_filenm fnm[],
                     gmx_mdoutf_t *outf, t_mdebin **mdebin,
                     gmx_wallcycle_t wcycle)
@@ -365,7 +365,7 @@ static void init_em(FILE *fplog, const char *title,
 
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
-                                      n_flexible_constraints(constr),
+                                      gmx::n_flexible_constraints(constr),
                                       ir->nstcalcenergy,
                                       DOMAINDECOMP(cr));
     }
@@ -448,7 +448,7 @@ static void init_em(FILE *fplog, const char *title,
                       nullptr,
                       fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      nullptr, nullptr, nrnb, econqCoord);
+                      nullptr, nullptr, nrnb, gmx::econqCoord);
         }
     }
 
@@ -568,7 +568,7 @@ static bool do_em_step(const t_commrec *cr,
                        gmx_bool bMolPBC,
                        em_state_t *ems1, real a, const PaddedRVecVector *force,
                        em_state_t *ems2,
-                       gmx_constr_t constr, gmx_localtop_t *top,
+                       gmx::Constraints *constr, gmx_localtop_t *top,
                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                        gmx_int64_t count)
 
@@ -681,7 +681,7 @@ static bool do_em_step(const t_commrec *cr,
                       as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
                       nullptr, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
-                      nullptr, nullptr, nrnb, econqCoord);
+                      nullptr, nullptr, nrnb, gmx::econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -700,7 +700,7 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
                                    gmx_mtop_t *top_global, t_inputrec *ir,
                                    em_state_t *ems, gmx_localtop_t *top,
                                    gmx::MDAtoms *mdAtoms, t_forcerec *fr,
-                                   gmx_vsite_t *vsite, gmx_constr_t constr,
+                                   gmx_vsite_t *vsite, gmx::Constraints *constr,
                                    t_nrnb *nrnb, gmx_wallcycle_t wcycle)
 {
     /* Repartition the domain decomposition */
@@ -770,7 +770,7 @@ class EnergyEvaluator
         //! Handles virtual sites.
         gmx_vsite_t          *vsite;
         //! Handles constraints.
-        gmx_constr_t          constr;
+        gmx::Constraints     *constr;
         //! Handles strange things.
         t_fcdata             *fcd;
         //! Molecular graph for SHAKE.
@@ -886,7 +886,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
                   as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  nullptr, &shake_vir, nrnb, econqForceDispl);
+                  nullptr, &shake_vir, nrnb, gmx::econqForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);

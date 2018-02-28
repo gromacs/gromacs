@@ -44,7 +44,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_constr;
 struct gmx_enerdata_t;
 struct gmx_groups_t;
 struct gmx_multisim_t;
@@ -55,6 +54,11 @@ struct t_fcdata;
 struct t_graph;
 struct t_inputrec;
 class t_state;
+
+namespace gmx
+{
+class Constraints;
+}
 
 /* Initialization function, also predicts the initial shell postions.
  */
@@ -74,7 +78,7 @@ void relax_shell_flexcon(FILE *log, const t_commrec *cr,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,
-                         gmx_constr *constr,
+                         gmx::Constraints *constr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          t_state *state, PaddedRVecVector *f,
                          tensor force_vir,
