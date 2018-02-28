@@ -39,7 +39,7 @@
  * \brief Implements the MD runner routine calling all integrators.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
 #include "gmxpre.h"
 
@@ -74,23 +74,23 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/deform.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/integrator.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/minimize.h"
+#include "gromacs/mdlib/membed.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/tpi.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -123,10 +123,10 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "deform.h"
+#include "integrator.h"
 #include "md.h"
-#include "membed.h"
-#include "repl_ex.h"
+#include "minimize.h"
+#include "tpi.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

@@ -37,10 +37,10 @@
  * \brief Declares the routine running the inetgrators.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
-#ifndef GMX_MDLIB_RUNNER_H
-#define GMX_MDLIB_RUNNER_H
+#ifndef GMX_MDRUN_RUNNER_H
+#define GMX_MDRUN_RUNNER_H
 
 #include <cstdio>
 
@@ -51,10 +51,9 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#include "repl_ex.h"
 
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
@@ -180,4 +179,4 @@ class Mdrunner
 
 }      // namespace gmx
 
-#endif // GMX_MDLIB_RUNNER_H
+#endif // GMX_MDRUN_RUNNER_H

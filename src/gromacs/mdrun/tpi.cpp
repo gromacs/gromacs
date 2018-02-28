@@ -39,7 +39,7 @@
  * \brief This file defines the integrator for test particle insertion
  *
  * \author Berk Hess <hess@kth.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
 #include "gmxpre.h"
 
