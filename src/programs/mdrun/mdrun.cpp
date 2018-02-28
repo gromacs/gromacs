@@ -64,6 +64,8 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/repl_ex.h"
+#include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
@@ -71,8 +73,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "mdrun_main.h"
-#include "repl_ex.h"
-#include "runner.h"
 
 /*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,22 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \brief Declares the integrator for test particle insertion
- *
- * \author Berk Hess <hess@kth.se>
- * \ingroup module_mdlib
- */
-#ifndef GMX_MDLIB_TPI_H
-#define GMX_MDLIB_TPI_H
 
-#include "gromacs/mdlib/integrator.h"
+#ifndef _gmx_membed_h
+#define _gmx_membed_h
 
-namespace gmx
-{
+#include <cstdio>
 
-//! Test particle insertion.
-integrator_t do_tpi;
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
-}      // namespace gmx
+struct gmx_membed_t;
+struct gmx_mtop_t;
+struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
+class t_state;
 
-#endif // GMX_MDLIB_TPI_H
+/* initialisation of membed code */
+gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
+                          t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt);
+
+/* rescaling the coordinates voor de membed code */
+void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x);
+
+void free_membed(gmx_membed_t *membed);
+
+#endif

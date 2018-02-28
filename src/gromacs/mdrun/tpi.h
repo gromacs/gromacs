@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,24 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \brief Declares the integrator for test particle insertion
  *
- * \brief Declares the integrators for molecular dynamics simulations
- *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_mdlib
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdrunx
  */
-#ifndef GMX_MDLIB_MD_H
-#define GMX_MDLIB_MD_H
+#ifndef GMX_MDRUN_TPI_H
+#define GMX_MDRUN_TPI_H
 
-#include "gromacs/mdlib/integrator.h"
+#include "integrator.h"
 
 namespace gmx
 {
 
-//! MD simulations
-integrator_t do_md;
+//! Test particle insertion.
+integrator_t do_tpi;
 
 }      // namespace gmx
 
-#endif // GMX_MDLIB_MD_H
+#endif // GMX_MDRUN_TPI_H

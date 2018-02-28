@@ -40,7 +40,7 @@
  *
  * \author Berk Hess <hess@kth.se>
  * \author Erik Lindahl <erik@kth.se>
- * \ingroup module_mdlib
+ * \ingroup module_mdrun
  */
 #include "gmxpre.h"
 
