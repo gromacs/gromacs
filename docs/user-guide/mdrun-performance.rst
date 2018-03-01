@@ -255,13 +255,17 @@ behavior.
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by mdrun. This is useful
     when sharing a node with other computations, or if a GPU
-    is best used to support a display. If many GPUs are
+    is best used to support a display.  Without specifying this
+    parameter, mdrun will utilize all GPUs. If many GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to mdrun.
     It could be necessary to use different GPUs on different
     nodes of a simulation, in which case the environment
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
+    In |Gromacs| versions preceding 2018, this parameter used to
+    specify both GPU availability and GPU task assignment.
+    The latter is now done by ``-gputasks`` parameter.
 
 ``-gputasks``
     A string that specifies the ID numbers of the GPUs to be
@@ -270,7 +274,17 @@ behavior.
     and the other two use GPU 1. When using this option, the
     number of ranks must be known to mdrun, as well as where
     tasks of different types should be run, such as by using
-    ``-nb gpu``.
+    ``-nb gpu`` - only the tasks which are set to run on GPUs
+    count for parsing the mapping.
+    In |Gromacs| versions preceding 2018, only a single type
+    of GPU task could be run on any rank. This is now changing
+    with limited support of PME running on GPUs, so that the
+    number of GPU tasks (and a number of GPU IDs expected
+    in ``-gputasks`` string) can actually be 2 for a single-rank
+    simulation. The IDs still have to be the same in this case,
+    as using multiple GPUs per rank is not yet implemented.
+    The order of GPU tasks in the string is PP first, PME
+    second (which relates to the ``-ddorder`` parameter).
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
