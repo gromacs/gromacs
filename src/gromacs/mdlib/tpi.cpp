@@ -718,7 +718,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             }
             else
             {
-                embU      = exp(-beta*epot);
+                // Exponent argument is fine in SP range, but output can be in DP range
+                embU      = exp(static_cast<double>(-beta*epot));
                 sum_embU += embU;
                 /* Determine the weighted energy contributions of each energy group */
                 e                = 0;
