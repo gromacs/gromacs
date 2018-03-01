@@ -1,7 +1,7 @@
 .. _gmx-performance:
 
-Getting good performance from mdrun
-===================================
+Getting good performance from :ref:`mdrun <gmx mdrun>`
+======================================================
 The |Gromacs| build system and the :ref:`gmx mdrun` tool has a lot of built-in
 and configurable intelligence to detect your hardware and make pretty
 effective use of that hardware. For a lot of casual and serious use of
@@ -137,7 +137,7 @@ see the Reference Manual. The most important of these are
         members of its domain. A GPU may perform work for more than
         one PP rank, but it is normally most efficient to use a single
         PP rank per GPU and for that rank to have thousands of
-        particles. When the work of a PP rank is done on the CPU, mdrun
+        particles. When the work of a PP rank is done on the CPU, :ref:`mdrun <gmx mdrun>`
         will make extensive use of the SIMD capabilities of the
         core. There are various `command-line options
         <controlling-the-domain-decomposition-algorithm` to control
@@ -156,8 +156,8 @@ see the Reference Manual. The most important of these are
         there are separate PME ranks, then the remaining ranks handle
         the PP work. Otherwise, all ranks do both PP and PME work.
 
-Running mdrun within a single node
-----------------------------------
+Running :ref:`mdrun <gmx mdrun>` within a single node
+-----------------------------------------------------
 
 :ref:`gmx mdrun` can be configured and compiled in several different ways that
 are efficient to use within a single :term:`node`. The default configuration
@@ -193,7 +193,7 @@ behavior.
 ``-ntomp``
     The total number of OpenMP threads per rank to start. The
     default, 0, will start one thread on each available core.
-    Alternatively, mdrun will honor the appropriate system
+    Alternatively, :ref:`mdrun <gmx mdrun>` will honor the appropriate system
     environment variable (e.g. ``OMP_NUM_THREADS``) if set.
 
 ``-npme``
@@ -209,25 +209,25 @@ behavior.
 
 ``-pin``
     Can be set to "auto," "on" or "off" to control whether
-    mdrun will attempt to set the affinity of threads to cores.
-    Defaults to "auto," which means that if mdrun detects that all the
-    cores on the node are being used for mdrun, then it should behave
+    :ref:`mdrun <gmx mdrun>` will attempt to set the affinity of threads to cores.
+    Defaults to "auto," which means that if :ref:`mdrun <gmx mdrun>` detects that all the
+    cores on the node are being used for :ref:`mdrun <gmx mdrun>`, then it should behave
     like "on," and attempt to set the affinities (unless they are
     already set by something else).
 
 ``-pinoffset``
     If ``-pin on``, specifies the logical core number to
-    which mdrun should pin the first thread. When running more than
-    one instance of mdrun on a node, use this option to to avoid
-    pinning threads from different mdrun instances to the same core.
+    which :ref:`mdrun <gmx mdrun>` should pin the first thread. When running more than
+    one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option to to avoid
+    pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the same core.
 
 ``-pinstride``
     If ``-pin on``, specifies the stride in logical core
-    numbers for the cores to which mdrun should pin its threads. When
-    running more than one instance of mdrun on a node, use this option
-    to to avoid pinning threads from different mdrun instances to the
+    numbers for the cores to which :ref:`mdrun <gmx mdrun>` should pin its threads. When
+    running more than one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option
+    to to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
     same core.  Use the default, 0, to minimize the number of threads
-    per physical core - this lets mdrun manage the hardware-, OS- and
+    per physical core - this lets :ref:`mdrun <gmx mdrun>` manage the hardware-, OS- and
     configuration-specific details of how to map logical cores to
     physical cores.
 
@@ -253,33 +253,71 @@ behavior.
     A string that specifies the ID numbers of the GPUs that
     are available to be used by ranks on this node. For example,
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
-    by the GPU runtime) can be used by mdrun. This is useful
+    by the GPU runtime) can be used by :ref:`mdrun <gmx mdrun>`. This is useful
     when sharing a node with other computations, or if a GPU
-    is best used to support a display. If many GPUs are
+    is best used to support a display.  Without specifying this
+    parameter, :ref:`mdrun <gmx mdrun>` will utilize all GPUs. When many GPUs are
     present, a comma may be used to separate the IDs, so
-    "12,13" would make GPUs 12 and 13 available to mdrun.
+    "12,13" would make GPUs 12 and 13 available to :ref:`mdrun <gmx mdrun>`.
     It could be necessary to use different GPUs on different
     nodes of a simulation, in which case the environment
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
+    In |Gromacs| versions preceding 2018 this parameter used to
+    specify both GPU availability and GPU task assignment.
+    The latter is now done with the ``-gputasks`` parameter.
 
 ``-gputasks``
     A string that specifies the ID numbers of the GPUs to be
     used by corresponding GPU tasks on this node. For example,
     "0011" specifies that the first two GPU tasks will use GPU 0,
     and the other two use GPU 1. When using this option, the
-    number of ranks must be known to mdrun, as well as where
+    number of ranks must be known to :ref:`mdrun <gmx mdrun>`, as well as where
     tasks of different types should be run, such as by using
-    ``-nb gpu``.
+    ``-nb gpu`` - only the tasks which are set to run on GPUs
+    count for parsing the mapping.
+    In |Gromacs| versions preceding 2018 only a single type
+    of GPU task could be run on any rank. Now that there is some
+    support for running PME on GPUs, the number of GPU tasks
+    (and the number of GPU IDs expected in the ``-gputasks`` string)
+    can actually be 2 for a single-rank simulation. The IDs
+    still have to be the same in this case, as using multiple GPUs
+    per single rank is not yet implemented.
+    The order of GPU tasks per rank in the string is short-range first,
+    PME second. The order of ranks with different kinds of GPU tasks
+    is the same by deafult, but can be influenced with the ``-ddorder``
+    option and gets quite complex when using multiple nodes.
+    The GPU task assignment (whether manually set, or automated),
+    will be reported in the :ref:`mdrun <gmx mdrun>` output on
+    the first physical node of the simulation. For example:
 
-Examples for mdrun on one node
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ::
+
+      gmx mdrun -gputasks 0001 -nb gpu -pme gpu -npme 1 -ntmpi 4
+
+    will produce the following output in the log file/terminal:
+
+    ::
+
+      On host tcbl14 2 GPUs user-selected for this run.
+      Mapping of GPU IDs to the 4 GPU tasks in the 4 ranks on this node:
+      PP:0,PP:0,PP:0,PME:1
+
+    In this case, 3 ranks are set by user to compute short-range work
+    on GPU 0, and 1 rank to compute PME on GPU 1.
+    The detailed indexing of the GPUs is also reported in the log file.
+
+    For more information about GPU tasks, please refer to
+    :ref:`Types of GPU tasks<gmx-gpu-tasks>`.
+
+Examples for :ref:`mdrun <gmx mdrun>` on one node
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
     gmx mdrun
 
-Starts mdrun using all the available resources. mdrun
+Starts :ref:`mdrun <gmx mdrun>` using all the available resources. :ref:`mdrun <gmx mdrun>`
 will automatically choose a fairly efficient division
 into thread-MPI ranks, OpenMP threads and assign work
 to compatible GPUs. Details will vary with hardware
@@ -289,7 +327,7 @@ and the kind of simulation being run.
 
     gmx mdrun -nt 8
 
-Starts mdrun using 8 threads, which might be thread-MPI
+Starts :ref:`mdrun <gmx mdrun>` using 8 threads, which might be thread-MPI
 or OpenMP threads depending on hardware and the kind
 of simulation being run.
 
@@ -297,7 +335,7 @@ of simulation being run.
 
     gmx mdrun -ntmpi 2 -ntomp 4
 
-Starts mdrun using eight total threads, with four thread-MPI
+Starts :ref:`mdrun <gmx mdrun>` using eight total threads, with four thread-MPI
 ranks and two OpenMP threads per core. You should only use
 these options when seeking optimal performance, and
 must take care that the ranks you create can have
@@ -310,7 +348,7 @@ a multiple of the number of threads per rank.
 
     gmx mdrun -gpu_id 12
 
-Starts mdrun using GPUs with IDs 1 and 2 (e.g. because
+Starts :ref:`mdrun <gmx mdrun>` using GPUs with IDs 1 and 2 (e.g. because
 GPU 0 is dedicated to running a display). This requires
 two thread-MPI ranks, and will split the available
 CPU cores between them using OpenMP threads.
@@ -319,7 +357,7 @@ CPU cores between them using OpenMP threads.
 
     gmx mdrun -ntmpi 4 -nb gpu -gputasks 1122
 
-Starts mdrun using four thread-MPI ranks, and maps them
+Starts :ref:`mdrun <gmx mdrun>` using four thread-MPI ranks, and maps them
 to GPUs with IDs 1 and 2. The CPU cores available will
 be split evenly between the ranks using OpenMP threads.
 
@@ -328,13 +366,13 @@ be split evenly between the ranks using OpenMP threads.
     gmx mdrun -nt 6 -pin on -pinoffset 0
     gmx mdrun -nt 6 -pin on -pinoffset 3
 
-Starts two mdrun processes, each with six total threads.
+Starts two :ref:`mdrun <gmx mdrun>` processes, each with six total threads.
 Threads will have their affinities set to particular
 logical cores, beginning from the logical core
 with rank 0 or 3, respectively. The above would work
 well on an Intel CPU with six physical cores and
 hyper-threading enabled. Use this kind of setup only
-if restricting mdrun to a subset of cores to share a
+if restricting :ref:`mdrun <gmx mdrun>` to a subset of cores to share a
 node with other processes.
 
 ::
@@ -347,12 +385,12 @@ as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
 
-Running mdrun on more than one node
------------------------------------
+Running :ref:`mdrun <gmx mdrun>` on more than one node
+------------------------------------------------------
 This requires configuring |Gromacs| to build with an external MPI
-library. By default, this mdrun executable is run with
+library. By default, this :ref:`mdrun <gmx mdrun>` executable is run with
 :ref:`mdrun_mpi`. All of the considerations for running single-node
-mdrun still apply, except that ``-ntmpi`` and ``-nt`` cause a fatal
+:ref:`mdrun <gmx mdrun>` still apply, except that ``-ntmpi`` and ``-nt`` cause a fatal
 error, and instead the number of ranks is controlled by the
 MPI environment.
 Settings such as ``-npme`` are much more important when
@@ -373,7 +411,7 @@ cases.
     Defaults to "on." If "on," a Verlet-scheme simulation will
     optimize various aspects of the PME and DD algorithms, shifting
     load between ranks and/or GPUs to maximize throughput. Some
-    mdrun features are not compatible with this, and these ignore
+    :ref:`mdrun <gmx mdrun>` features are not compatible with this, and these ignore
     this option.
 
 ``-dlb``
@@ -419,9 +457,9 @@ It is only aware of the number of ranks created by
 the MPI environment, and does not explicitly manage
 any aspect of OpenMP during the optimization.
 
-Examples for mdrun on more than one node
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The examples and explanations for for single-node mdrun are
+Examples for :ref:`mdrun <gmx mdrun>` on more than one node
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The examples and explanations for for single-node :ref:`mdrun <gmx mdrun>` are
 still relevant, but ``-nt`` is no longer the way
 to choose the number of MPI ranks.
 
@@ -491,7 +529,7 @@ across ranks each to one OpenMP thread. This setup is likely to be
 suitable when there are ten nodes, each with two GPUs, but another
 job on each node is using GPU 0. The job scheduler should set the
 affinity of threads of both jobs to their allocated cores, or the
-performance of mdrun will suffer greatly.
+performance of :ref:`mdrun <gmx mdrun>` will suffer greatly.
 
 ::
 
@@ -551,8 +589,8 @@ parallel hardware.
     of ``-dds`` might need to be adjusted to account for high or low
     spatial inhomogeneity of the system.
 
-Finding out how to run mdrun better
------------------------------------
+Finding out how to run :ref:`mdrun <gmx mdrun>` better
+------------------------------------------------------
 
 The Wallcycle module is used for runtime performance measurement of :ref:`gmx mdrun`.
 At the end of the log file of each run, the "Real cycle and time accounting" section
@@ -650,8 +688,8 @@ maybe elsewhere
 
 .. _gmx-mdrun-on-gpu:
 
-Running mdrun with GPUs
------------------------
+Running :ref:`mdrun <gmx mdrun>` with GPUs
+------------------------------------------
 
 NVIDIA GPUs from the professional line (Tesla or Quadro) starting with
 the Kepler generation (compute capability 3.5 and later) support changing the
@@ -746,20 +784,21 @@ of the short range interactions on the same GPU as the short range interactions.
 Known limitations
 .................
 
-**Please note again the limitations outlined above!**
+**Please note again the limitations outlined below!**
 
 - Only compilation with CUDA is supported.
 
-- Only a PME order of 4 is supported in GPU.
+- Only a PME order of 4 is supported on GPUs.
 
 - PME will run on a GPU only when exactly one rank has a
   PME task, ie. decompositions with multiple ranks doing PME are not supported.
 
 - Only single precision is supported.
 
-- Free energy calculations are not supported, because only single PME grids can be calculated.
+- Free energy calculations where charges are perturbed are not supported,
+  because only single PME grids can be calculated.
 
-- LJ PME is not supported on GPU.
+- LJ PME is not supported on GPUs.
 
 Assigning tasks to GPUs
 .......................
