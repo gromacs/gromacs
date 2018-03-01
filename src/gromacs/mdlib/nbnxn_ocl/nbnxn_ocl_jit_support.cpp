@@ -161,7 +161,7 @@ makeDefinesForKernelTypes(bool bFastGen,
 
 /*! \brief Compiles nbnxn kernels for OpenCL GPU given by \p mygpu
  *
- * With OpenCL, a call to this function must precede nbnxn_gpu_init().
+ * With OpenCL, a call to this function must not precede nbnxn_gpu_init() (which also calls it).
  *
  * Doing bFastGen means only the requested kernels are compiled,
  * significantly reducing the total compilation time. If false, all
