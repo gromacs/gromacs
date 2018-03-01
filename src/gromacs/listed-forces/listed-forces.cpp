@@ -386,7 +386,7 @@ calc_one_bond(int thread,
            extended to support calling from multiple threads. */
         do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
                  pbc, g, lambda, dvdl, md, fr,
-                 bCalcEnerVir, grpp, global_atom_index);
+                 computeForcesOnly, grpp, global_atom_index);
         v = 0;
     }
 

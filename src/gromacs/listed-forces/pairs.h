@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[
          const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          const real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+         const gmx_bool computeForcesOnly, gmx_grppairener_t *grppener,
          int *global_atom_index);
 
 #endif
