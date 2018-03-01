@@ -255,13 +255,17 @@ behavior.
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by mdrun. This is useful
     when sharing a node with other computations, or if a GPU
-    is best used to support a display. If many GPUs are
+    is best used to support a display.  Without specifying this
+    parameter, mdrun will utilize all GPUs. If many GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to mdrun.
     It could be necessary to use different GPUs on different
     nodes of a simulation, in which case the environment
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
+    In |Gromacs| versions preceding 2018, this parameter used to
+    specify both GPU availability and GPU task assignment.
+    The latter is now done by ``-gputasks`` parameter.
 
 ``-gputasks``
     A string that specifies the ID numbers of the GPUs to be
@@ -270,7 +274,36 @@ behavior.
     and the other two use GPU 1. When using this option, the
     number of ranks must be known to mdrun, as well as where
     tasks of different types should be run, such as by using
-    ``-nb gpu``.
+    ``-nb gpu`` - only the tasks which are set to run on GPUs
+    count for parsing the mapping.
+    In |Gromacs| versions preceding 2018, only a single type
+    of GPU task could be run on any rank. Now that there is some
+    support for running PME on GPUs, the number of GPU tasks
+    (and the number of GPU IDs expected in the ``-gputasks`` string)
+    can actually be 2 for a single-rank simulation. The IDs
+    still have to be the same in this case, as using multiple GPUs
+    per single rank is not yet implemented.
+    The order of GPU tasks per rank in the string is short-range first,
+    PME second. This treatment can be influenced by ``-ddorder``
+    option, and gets quite complex when using multiple nodes.
+    The GPU task assignment (whether manually set, or automated),
+    will be reported in the mdrun output on the first physical node
+    of the simulation. For example:
+
+    gmx mdrun -gputasks 0001 -nb gpu -pme gpu -npme 1 -ntmpi 4
+
+    will produce the following output in the log file/terminal:
+
+    On host tcbl14 2 GPUs user-selected for this run.
+    Mapping of GPU IDs to the 4 GPU tasks in the 4 ranks on this node:
+    PP:0,PP:0,PP:0,PME:1
+
+    In this case, 3 ranks are set by user to compute short-range work
+    on GPU 0, and 1 rank to compute PME on GPU 1.
+    The detailed indexing of the GPUs is also reported in the log file.
+
+    For more information about GPU tasks, please refer to
+    :ref:`Types of GPU tasks<gmx-gpu-tasks>`.
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
