@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,7 @@ gmx::ArrayRef<const double>
 Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
                              double               *awhPotential,
                              double               *potentialJump,
+                             const t_commrec      *commRecord,
                              const gmx_multisim_t *ms,
                              double                t,
                              gmx_int64_t           step,
@@ -186,7 +187,8 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     {
         state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid_,
                                                         params_,
-                                                        ms, t, step, fplog,
+                                                        commRecord, ms,
+                                                        t, step, fplog,
                                                         &updateList_);
 
         if (params_.convolveForce)

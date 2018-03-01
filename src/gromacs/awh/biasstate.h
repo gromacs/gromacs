@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -342,12 +342,14 @@ class BiasState
          * \param[in] params        The bias parameters.
          * \param[in] dimParams     Bias dimension parameters.
          * \param[in] grid          The grid.
+         * \param[in] commRecord    Struct for intra-simulation communication.
          * \param[in] multiSimComm  Struct for multi-simulation communication.
          * \returns true if covered.
          */
         bool isSamplingRegionCovered(const BiasParams             &params,
                                      const std::vector<DimParams> &dimParams,
                                      const Grid                   &grid,
+                                     const t_commrec              *commRecord,
                                      const gmx_multisim_t         *multiSimComm) const;
 
         /*! \brief
@@ -396,6 +398,7 @@ class BiasState
          * \param[in]     dimParams   The dimension parameters.
          * \param[in]     grid        The grid.
          * \param[in]     params      The bias parameters.
+         * \param[in]     commRecord  Struct for intra-simulation communication.
          * \param[in]     ms          Struct for multi-simulation communication.
          * \param[in]     t           Time.
          * \param[in]     step        Time step.
@@ -405,6 +408,7 @@ class BiasState
         void updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams> &dimParams,
                                                       const Grid                   &grid,
                                                       const BiasParams             &params,
+                                                      const t_commrec              *commRecord,
                                                       const gmx_multisim_t         *ms,
                                                       double                        t,
                                                       gmx_int64_t                   step,
