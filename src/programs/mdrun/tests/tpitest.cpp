@@ -84,16 +84,33 @@ void TpiTest::runTest()
 
     gmx_feenableexcept();
 
-    std::string logFileContexts = TextReader::readFileToString(runner_.logFileName_);
-    std::string tpiOutputs      = logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));
-    auto        startIndex      = tpiOutputs.find("  <V>");
-    auto        endIndex        = tpiOutputs.find("Finished mdrun");
-    std::string expectedOutput  = tpiOutputs.substr(startIndex, endIndex - startIndex);
-
+    std::string          logFileContexts = TextReader::readFileToString(runner_.logFileName_);
+    std::string          tpiOutputs      = logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));
+    auto                 startIndex      = tpiOutputs.find("  <V>");
+    auto                 endIndex        = tpiOutputs.find("Finished mdrun");
+    std::string          expectedOutput  = tpiOutputs.substr(startIndex, endIndex - startIndex);
 
     TestReferenceData    refData;
     TestReferenceChecker checker(refData.rootChecker());
-    checker.checkString(expectedOutput, "ExpectedOutput");
+
+    // Output values, their output patterns and relative tolerances
+    const std::map<std::string, std::pair<std::string, double> > valuesToCheck = {
+        {"V", {"<V>  =", 1e-8}},
+        {"mu", {"<mu> =", 1e-3}}
+    };
+
+    for (const auto &valueDesc : valuesToCheck)
+    {
+        const auto &name              = valueDesc.first;
+        const auto &pattern           = valueDesc.second.first;
+        const auto &relativeTolerance = valueDesc.second.second;
+        auto        startIndex        = tpiOutputs.find(pattern);
+        ASSERT_NE(startIndex, std::string::npos);
+        startIndex += pattern.size();
+        double actualValue = std::stod(tpiOutputs.substr(startIndex));
+        //        checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
+        checker.checkDouble(actualValue, name.c_str());
+    }
 }
 
 TEST_F(TpiTest, ReproducesOutput)
