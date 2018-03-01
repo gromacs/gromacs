@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,6 +195,7 @@ class Bias
          * \param[in]     coordValue     The current coordinate value(s).
          * \param[out]    awhPotential   Bias potential.
          * \param[out]    potentialJump  Change in bias potential for this bias.
+         * \param[in]     commRecord     Struct for intra-simulation communication.
          * \param[in]     ms             Struct for multi-simulation communication.
          * \param[in]     t              Time.
          * \param[in]     step           Time step.
@@ -206,6 +207,7 @@ class Bias
         calcForceAndUpdateBias(const awh_dvec        coordValue,
                                double               *awhPotential,
                                double               *potentialJump,
+                               const t_commrec      *commRecord,
                                const gmx_multisim_t *ms,
                                double                t,
                                gmx_int64_t           step,
