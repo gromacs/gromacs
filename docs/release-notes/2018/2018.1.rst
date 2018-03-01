@@ -128,3 +128,11 @@ On recent AMD Zen processors, hardware thread detection and pinning
 handling have been fixed, improving performance.
 
 :issue:`2388`
+
+Fix sharing of the AWH bias over multiple simulations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Sharing the AWH bias over multiple simulations only worked when
+each simulation was running on a single MPI rank. When a simulation
+itself used multiple MPI ranks, the run would stop with an MPI error.
+
+:issue:`2433`
