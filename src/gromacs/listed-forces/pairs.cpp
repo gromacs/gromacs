@@ -646,12 +646,13 @@ do_pairs(int ftype, int nbonds,
          const real *lambda, real *dvdl,
          const t_mdatoms *md,
          const t_forcerec *fr,
-         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+         const gmx_bool computeForcesOnly,
+         gmx_grppairener_t *grppener,
          int *global_atom_index)
 {
     if (ftype == F_LJ14 &&
         fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
-        !bCalcEnergyAndVirial && fr->efep == efepNO)
+        computeForcesOnly)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *
