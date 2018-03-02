@@ -284,8 +284,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         clear_mat(vir_r_m_dr);
     }
 
-    where();
-
     settle  = &idef->il[F_SETTLE];
     nsettle = settle->nr/(1+NRAL(F_SETTLE));
 

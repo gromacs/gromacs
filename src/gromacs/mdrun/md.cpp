@@ -1222,14 +1222,14 @@ void gmx::Integrator::do_md()
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
-                update_constraints(fplog, step, nullptr, ir, mdatoms,
+                update_constraints(step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, ms, nrnb, wcycle, upd, constr,
@@ -1484,7 +1484,7 @@ void gmx::Integrator::do_md()
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
-                update_constraints(fplog, step, nullptr, ir, mdatoms,
+                update_constraints(step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, ms, nrnb, wcycle, upd, constr,
@@ -1524,7 +1524,7 @@ void gmx::Integrator::do_md()
             if (EI_VV(ir->eI))
             {
                 /* velocity half-step update */
-                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                update_coords(step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, etrtVELOCITY2,
                               cr, constr);
             }
@@ -1545,11 +1545,11 @@ void gmx::Integrator::do_md()
                 copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+            update_coords(step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
+            update_constraints(step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, ms, nrnb, wcycle, upd, constr,
@@ -1570,7 +1570,7 @@ void gmx::Integrator::do_md()
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
-                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                update_coords(step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1579,7 +1579,7 @@ void gmx::Integrator::do_md()
                  * to numerical errors, or are they important
                  * physically? I'm thinking they are just errors, but not completely sure.
                  * For now, will call without actually constraining, constr=NULL*/
-                update_constraints(fplog, step, nullptr, ir, mdatoms,
+                update_constraints(step, nullptr, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, ms, nrnb, wcycle, upd, nullptr,

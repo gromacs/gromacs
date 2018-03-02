@@ -198,7 +198,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
-    where();
     /* We only do non-bonded calculation with group scheme here, the verlet
      * calls are done from do_force_cutsVERLET(). */
     if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
@@ -249,7 +248,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-        where();
     }
 
 #if GMX_MPI
@@ -334,7 +332,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr,
                     flags);
 
-    where();
 
     *cycles_pme = 0;
 
@@ -554,7 +551,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
     }
-    where();
 
     if (debug)
     {

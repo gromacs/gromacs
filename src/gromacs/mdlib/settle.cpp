@@ -341,10 +341,6 @@ void settle_proj(gmx_settledata_t settled, int econq,
     invdOH = p->invdOH;
     invdHH = p->invdHH;
 
-#ifdef PRAGMAS
-#pragma ivdep
-#endif
-
     const int nral1 = 1 + NRAL(F_SETTLE);
 
     for (i = 0; i < nsettle; i++)

@@ -235,14 +235,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         }
     }
 
-    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
-    {
-        correct_ekin(debug,
-                     0, mdatoms->homenr,
-                     as_rvec_array(state->v.data()), vcm->group_p[0],
-                     mdatoms->massT, mdatoms->tmass, ekind->ekin);
-    }
-
     /* Do center of mass motion removal */
     if (bStopCM)
     {
