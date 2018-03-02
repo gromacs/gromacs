@@ -2606,7 +2606,8 @@ gmx_edsam_t init_edsam(
 
     /* Open input and output files, allocate space for ED data structure */
     gmx_edsam_t ed = ed_open(mtop->natoms, oh, ediFileName, edoFileName, bAppend, oenv, cr);
-    saveEdsamPointer(constr, ed);
+    GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
+    constr->saveEdsamPointer(ed);
 
     /* Needed for initializing radacc radius in do_edsam */
     ed->bFirst = TRUE;

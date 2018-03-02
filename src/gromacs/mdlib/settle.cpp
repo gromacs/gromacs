@@ -179,7 +179,7 @@ static void settleparam_init(settleparam_t *p,
     }
 }
 
-settledata *settle_init(const gmx_mtop_t *mtop)
+settledata *settle_init(const gmx_mtop_t &mtop)
 {
     /* Check that we have only one settle type */
     int                   settle_type = -1;
@@ -219,8 +219,8 @@ settledata *settle_init(const gmx_mtop_t *mtop)
      */
     settled->massw.mO = -1;
 
-    real dOH = mtop->ffparams.iparams[settle_type].settle.doh;
-    real dHH = mtop->ffparams.iparams[settle_type].settle.dhh;
+    real dOH = mtop.ffparams.iparams[settle_type].settle.doh;
+    real dHH = mtop.ffparams.iparams[settle_type].settle.dhh;
     settleparam_init(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
 
     settled->ow1    = nullptr;
@@ -246,7 +246,7 @@ void settle_free(settledata *settled)
 
 void settle_set_constraints(settledata       *settled,
                             const t_ilist    *il_settle,
-                            const t_mdatoms  *mdatoms)
+                            const t_mdatoms  &mdatoms)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;
@@ -268,10 +268,10 @@ void settle_set_constraints(settledata       *settled,
             int firstO = iatoms[1];
             int firstH = iatoms[2];
             settleparam_init(&settled->massw,
-                             mdatoms->massT[firstO],
-                             mdatoms->massT[firstH],
-                             mdatoms->invmass[firstO],
-                             mdatoms->invmass[firstH],
+                             mdatoms.massT[firstO],
+                             mdatoms.massT[firstH],
+                             mdatoms.invmass[firstO],
+                             mdatoms.invmass[firstH],
                              settled->mass1.dOH,
                              settled->mass1.dHH);
         }
@@ -298,7 +298,7 @@ void settle_set_constraints(settledata       *settled,
              * SETTLEs that appear in multiple DD domains, so we only count
              * the contribution on the home range of the oxygen atom.
              */
-            settled->virfac[i] = (iatoms[i*nral1 + 1] < mdatoms->homenr ? 1 : 0);
+            settled->virfac[i] = (iatoms[i*nral1 + 1] < mdatoms.homenr ? 1 : 0);
         }
 
         /* Pack the index array to the full SIMD width with copies from
@@ -315,10 +315,10 @@ void settle_set_constraints(settledata       *settled,
     }
 }
 
-void settle_proj(settledata *settled, int econq,
+void settle_proj(settledata *settled, ConstraintVariable econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,
-                 rvec x[],
+                 const rvec x[],
                  rvec *der, rvec *derp,
                  int calcvir_atom_end, tensor vir_r_m_dder)
 {
@@ -335,7 +335,7 @@ void settle_proj(settledata *settled, int econq,
 
     calcvir_atom_end *= DIM;
 
-    if (econq == econqForce)
+    if (econq == ConstraintVariable::Force)
     {
         p = &settled->mass1;
     }

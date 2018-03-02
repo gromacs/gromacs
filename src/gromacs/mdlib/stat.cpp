@@ -233,7 +233,7 @@ void global_stat(gmx_global_stat_t gs,
         ie  = add_binr(rb, nener, copyenerd);
         if (constr)
         {
-            rmsd_data = gmx::constr_rmsd_data(constr);
+            rmsd_data = constr->rmsdData();
             if (rmsd_data)
             {
                 irmsd = add_binr(rb, 2, rmsd_data);
