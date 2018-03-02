@@ -250,27 +250,32 @@ behavior.
     that a compatible GPU be available and will be used.
 
 ``-gpu_id``
-    A string that specifies the ID numbers of the GPUs that
-    are available to be used by ranks on this node. For example,
+    A string that specifies the ID numbers of the GPUs (as assigned to devices by the GPU runtime)
+    to be used by ranks on this node. For example,
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by :ref:`mdrun <gmx mdrun>`. This is useful
+    to select a subset of GPUs for a run for instance,
     when sharing a node with other computations, or if a GPU
     is best used to support a display.  Without specifying this
-    parameter, :ref:`mdrun <gmx mdrun>` will utilize all GPUs. If many GPUs are
+    parameter, :ref:`mdrun <gmx mdrun>` will utilize all GPUs. If more than 9 GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to :ref:`mdrun <gmx mdrun>`.
-    It could be necessary to use different GPUs on different
+    It could be necessary to use different sets of GPUs on different
     nodes of a simulation, in which case the environment
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
-    In |Gromacs| versions preceding 2018, this parameter used to
-    specify both GPU availability and GPU task assignment.
-    The latter is now done by ``-gputasks`` parameter.
+    In earlier versions the ``-gpu_id`` option had two roles
+    specifying the GPUs to use in the run and mapping GPUs to
+    tasks/ranks.
+    |Gromacs| 2018 separates the two roles and while the former
+    remains the job of ``-gpu_id``, the latter is assumed by the
+    ``-gputasks`` option. Note that as a consequence, the
+    ``-gpu_id`` string can contain a device ID only once.
 
 ``-gputasks``
-    A string that specifies the ID numbers of the GPUs to be
-    used by corresponding GPU tasks on this node. For example,
-    "0011" specifies that the first two GPU tasks will use GPU 0,
+    A string that specifies GPU task assignment, mapping
+    the GPU ID numbers to GPU tasks within ranks on this node.
+    For example, "0011" specifies that the first two GPU tasks will use GPU 0,
     and the other two use GPU 1. When using this option, the
     number of ranks must be known to :ref:`mdrun <gmx mdrun>`, as well as where
     tasks of different types should be run, such as by using
