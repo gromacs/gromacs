@@ -1229,11 +1229,11 @@ void gmx::Integrator::do_md()
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
-                update_constraints(step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
-                                   &top->idef, shake_vir,
-                                   cr, ms, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                constrain_velocities(step, nullptr, ir, mdatoms,
+                                     state, fr->bMolPBC,
+                                     &top->idef, shake_vir,
+                                     cr, ms, nrnb, wcycle, constr,
+                                     bCalcVir, do_log, do_ene);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
             else if (graph)
@@ -1484,11 +1484,11 @@ void gmx::Integrator::do_md()
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
-                update_constraints(step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
-                                   &top->idef, tmp_vir,
-                                   cr, ms, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                constrain_velocities(step, nullptr, ir, mdatoms,
+                                     state, fr->bMolPBC,
+                                     &top->idef, tmp_vir,
+                                     cr, ms, nrnb, wcycle, constr,
+                                     bCalcVir, do_log, do_ene);
             }
         }
         /* Box is changed in update() when we do pressure coupling,
@@ -1549,11 +1549,18 @@ void gmx::Integrator::do_md()
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            update_constraints(step, &dvdl_constr, ir, mdatoms, state,
-                               fr->bMolPBC, graph, f,
-                               &top->idef, shake_vir,
-                               cr, ms, nrnb, wcycle, upd, constr,
-                               FALSE, bCalcVir);
+            constrain_coordinates(step, &dvdl_constr, ir, mdatoms, state,
+                                  fr->bMolPBC,
+                                  &top->idef, shake_vir,
+                                  cr, ms, nrnb, wcycle, upd, constr,
+                                  bCalcVir, do_log, do_ene);
+            update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
+                                  fr->bMolPBC, f,
+                                  &top->idef,
+                                  cr, ms, nrnb, wcycle, upd, constr);
+            finish_update(ir, mdatoms,
+                          state, graph,
+                          nrnb, wcycle, upd, constr);
 
             if (ir->eI == eiVVAK)
             {
@@ -1579,11 +1586,9 @@ void gmx::Integrator::do_md()
                  * to numerical errors, or are they important
                  * physically? I'm thinking they are just errors, but not completely sure.
                  * For now, will call without actually constraining, constr=NULL*/
-                update_constraints(step, nullptr, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
-                                   &top->idef, tmp_vir,
-                                   cr, ms, nrnb, wcycle, upd, nullptr,
-                                   FALSE, bCalcVir);
+                finish_update(ir, mdatoms,
+                              state, graph,
+                              nrnb, wcycle, upd, nullptr);
             }
             if (EI_VV(ir->eI))
             {
