@@ -113,6 +113,7 @@ void printCopyright(gmx::TextWriter *writer)
         "Rudi van Drunen",
         "Anton Feenstra",
         "Gerrit Groenhof",
+        "Aleksei Iupinov",
         "Christoph Junghans",
         "Anca Hamuraru",
         "Vincent Hindriksen",
