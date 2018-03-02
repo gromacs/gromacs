@@ -1528,85 +1528,92 @@ void update_pcouple_before_coordinates(FILE             *fplog,
     }
 }
 
-void update_constraints(gmx_int64_t                    step,
-                        real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        const t_inputrec              *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms                     *md,
-                        t_state                       *state,
-                        gmx_bool                       bMolPBC,
-                        t_graph                       *graph,
-                        gmx::PaddedArrayRef<gmx::RVec> force,     /* forces on home particles */
-                        t_idef                        *idef,
-                        tensor                         vir_part,
-                        const t_commrec               *cr,
-                        const gmx_multisim_t          *ms,
-                        t_nrnb                        *nrnb,
-                        gmx_wallcycle_t                wcycle,
-                        gmx_update_t                  *upd,
-                        gmx::Constraints              *constr,
-                        gmx_bool                       bFirstHalf,
-                        gmx_bool                       bCalcVir)
+void constrain_velocities(gmx_int64_t                    step,
+                          real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                          const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                          t_mdatoms                     *md,
+                          t_state                       *state,
+                          gmx_bool                       bMolPBC,
+                          t_idef                        *idef,
+                          tensor                         vir_part,
+                          const t_commrec               *cr,
+                          const gmx_multisim_t          *ms,
+                          t_nrnb                        *nrnb,
+                          gmx_wallcycle_t                wcycle,
+                          gmx::Constraints              *constr,
+                          gmx_bool                       bCalcVir,
+                          bool                           do_log,
+                          bool                           do_ene)
 {
-    gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
-    tensor               vir_con;
-    int                  nth, th;
-
-    if (constr)
+    if (!constr)
     {
-        bDoConstr = TRUE;
+        return;
     }
-    if (bFirstHalf && !EI_VV(inputrec->eI))
-    {
-        bDoConstr = FALSE;
-    }
-
-    /* for now, SD update is here -- though it really seems like it
-       should be reformulated as a velocity verlet method, since it has two parts */
-
-    int  homenr = md->homenr;
-
-    /* Cast delta_t from double to real to make the integrators faster.
-     * The only reason for having delta_t double is to get accurate values
-     * for t=delta_t*step when step is larger than float precision.
-     * For integration dt the accuracy of real suffices, since with
-     * integral += dt*integrand the increment is nearly always (much) smaller
-     * than the integral (and the integrand has real precision).
-     */
-    real dt     = inputrec->delta_t;
 
     /*
      *  Steps (7C, 8C)
      *  APPLY CONSTRAINTS:
      *  BLOCK SHAKE
-
-     * When doing PR pressure coupling we have to constrain the
-     * bonds in each iteration. If we are only using Nose-Hoover tcoupling
-     * it is enough to do this once though, since the relative velocities
-     * after this will be normal to the bond vector
      */
 
-    if (bDoConstr)
     {
+        tensor vir_con;
+
         /* clear out constraints before applying */
         clear_mat(vir_part);
 
-        bLastStep = (step == inputrec->init_step+inputrec->nsteps);
-        bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
-        bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
         /* Constrain the coordinates upd->xp */
         wallcycle_start(wcycle, ewcCONSTR);
-        if (EI_VV(inputrec->eI) && bFirstHalf)
         {
-            constrain(nullptr, bLog, bEner, constr, idef,
+            constrain(nullptr, do_log, do_ene, constr, idef,
                       inputrec, cr, ms, step, 1, 1.0, md,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       nullptr, bCalcVir ? &vir_con : nullptr, nrnb, econqVeloc);
         }
-        else
+        wallcycle_stop(wcycle, ewcCONSTR);
+
+        if (bCalcVir)
         {
-            constrain(nullptr, bLog, bEner, constr, idef,
+            m_add(vir_part, vir_con, vir_part);
+        }
+    }
+}
+
+void constrain_coordinates(gmx_int64_t                    step,
+                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                           t_mdatoms                     *md,
+                           t_state                       *state,
+                           gmx_bool                       bMolPBC,
+                           t_idef                        *idef,
+                           tensor                         vir_part,
+                           const t_commrec               *cr,
+                           const gmx_multisim_t          *ms,
+                           t_nrnb                        *nrnb,
+                           gmx_wallcycle_t                wcycle,
+                           gmx_update_t                  *upd,
+                           gmx::Constraints              *constr,
+                           gmx_bool                       bCalcVir,
+                           bool                           do_log,
+                           bool                           do_ene)
+{
+    if (!constr)
+    {
+        return;
+    }
+
+    {
+        tensor vir_con;
+
+        /* clear out constraints before applying */
+        clear_mat(vir_part);
+
+        /* Constrain the coordinates upd->xp */
+        wallcycle_start(wcycle, ewcCONSTR);
+        {
+            constrain(nullptr, do_log, do_ene, constr, idef,
                       inputrec, cr, ms, step, 1, 1.0, md,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
@@ -1618,16 +1625,44 @@ void update_constraints(gmx_int64_t                    step,
         if (bCalcVir)
         {
             m_add(vir_part, vir_con, vir_part);
-            if (debug)
-            {
-                pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
-            }
         }
     }
+}
 
-
-    if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
+void
+update_sd_second_half(gmx_int64_t                    step,
+                      real                          *dvdlambda,   /* the contribution to be added to the bonded interactions */
+                      const t_inputrec              *inputrec,    /* input record and box stuff	*/
+                      t_mdatoms                     *md,
+                      t_state                       *state,
+                      gmx_bool                       bMolPBC,
+                      gmx::PaddedArrayRef<gmx::RVec> force,       /* forces on home particles */
+                      t_idef                        *idef,
+                      const t_commrec               *cr,
+                      const gmx_multisim_t          *ms,
+                      t_nrnb                        *nrnb,
+                      gmx_wallcycle_t                wcycle,
+                      gmx_update_t                  *upd,
+                      gmx::Constraints              *constr)
+{
+    if (!constr)
     {
+        return;
+    }
+    if (inputrec->eI == eiSD1)
+    {
+        int nth, th;
+        int homenr = md->homenr;
+
+        /* Cast delta_t from double to real to make the integrators faster.
+         * The only reason for having delta_t double is to get accurate values
+         * for t=delta_t*step when step is larger than float precision.
+         * For integration dt the accuracy of real suffices, since with
+         * integral += dt*integrand the increment is nearly always (much) smaller
+         * than the integral (and the integrand has real precision).
+         */
+        real dt     = inputrec->delta_t;
+
         wallcycle_start(wcycle, ewcUPDATE);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1641,13 +1676,15 @@ void update_constraints(gmx_int64_t                    step,
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
                 /* The second part of the SD integration */
+                // TODO this just does an update of friction and
+                // noise, so extract that and make it obvious.
                 do_update_sd1(upd->sd,
                               start_th, end_th, dt,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array(force.data()),
-                              bDoConstr, FALSE,
+                              TRUE, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
             }
@@ -1656,11 +1693,15 @@ void update_constraints(gmx_int64_t                    step,
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
-        if (bDoConstr)
         {
             /* Constrain the coordinates upd->xp for half a time step */
             wallcycle_start(wcycle, ewcCONSTR);
 
+            // TODO This logic should be handled in do_md, because the
+            // last step happens for multiple reasons.
+            gmx_bool bLastStep = (step == inputrec->init_step+inputrec->nsteps);
+            gmx_bool bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
+            gmx_bool bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
             constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, ms, step, 1, 0.5, md,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
@@ -1671,23 +1712,31 @@ void update_constraints(gmx_int64_t                    step,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
+}
+
+void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                   t_mdatoms                     *md,
+                   t_state                       *state,
+                   t_graph                       *graph,
+                   t_nrnb                        *nrnb,
+                   gmx_wallcycle_t                wcycle,
+                   gmx_update_t                  *upd,
+                   gmx::Constraints              *constr)
+{
+    int homenr = md->homenr;
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
 
-    if (!(bFirstHalf)) /* in the first half of vv, no shift. */
+    /* NOTE Currently we always integrate to a temporary buffer and
+     * then copy the results back. */
     {
-        /* NOTE This part of the update actually does not belong with
-         * the constraints, since we also call it without constraints.
-         * But currently we always integrate to a temporary buffer and
-         * then copy the results back here.
-         */
         wallcycle_start_nocount(wcycle, ewcUPDATE);
 
         if (md->cFREEZE != nullptr && constr != nullptr)
         {
             /* If we have atoms that are frozen along some, but not all
-             * dimensions, the constraints will have moved them also along
+             * dimensions, then any constraints will have moved them also along
              * the frozen dimensions. To freeze such degrees of freedom
              * we copy them back here to later copy them forward. It would
              * be more elegant and slightly more efficient to copies zero
@@ -1738,7 +1787,7 @@ void update_constraints(gmx_int64_t                    step,
             rvec *xp = as_rvec_array(upd->xp.data());
 #ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
-            nth = gmx_omp_nthreads_get(emntUpdate);
+            int nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (int i = 0; i < homenr; i++)
@@ -1749,7 +1798,7 @@ void update_constraints(gmx_int64_t                    step,
         }
         wallcycle_stop(wcycle, ewcUPDATE);
     }
-/* ############# END the update of velocities and positions ######### */
+    /* ############# END the update of velocities and positions ######### */
 }
 
 void update_pcouple_after_coordinates(FILE             *fplog,
