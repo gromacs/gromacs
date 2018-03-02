@@ -124,6 +124,7 @@ void printCopyright(gmx::TextWriter *writer)
         "Justin A. Lemkul",
         "Viveca Lindahl",
         "Magnus Lundborg",
+        "Aleksei Iupinov",
         "Pieter Meulenhoff",
         "Erik Marklund",
         "Teemu Murtola",
