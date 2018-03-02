@@ -115,8 +115,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
-void update_coords(FILE                          *fplog,
-                   gmx_int64_t                    step,
+void update_coords(gmx_int64_t                    step,
                    t_inputrec                    *inputrec, /* input record and box stuff	*/
                    t_mdatoms                     *md,
                    t_state                       *state,
@@ -133,8 +132,7 @@ void update_coords(FILE                          *fplog,
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
 
-void update_constraints(FILE                    *fplog,
-                        gmx_int64_t              step,
+void update_constraints(gmx_int64_t              step,
                         real                    *dvdlambda, /* FEP stuff */
                         const t_inputrec        *inputrec,  /* input record and box stuff	*/
                         t_mdatoms               *md,

@@ -85,9 +85,6 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-/*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
-/*#define STARTFROMDT2*/
-
 typedef struct {
     double em;
 } gmx_sd_const_t;
@@ -1087,28 +1084,6 @@ static void do_update_bd(int start, int nrend, real dt,
     }
 }
 
-static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
-                        int gmx_unused natoms,
-                        gmx::PaddedArrayRef<gmx::RVec> gmx_unused x,
-                        gmx::PaddedArrayRef<gmx::RVec> gmx_unused xp,
-                        gmx::PaddedArrayRef<gmx::RVec> gmx_unused v,
-                        gmx::PaddedArrayRef<gmx::RVec> gmx_unused f)
-{
-#ifdef DEBUG
-    if (fp)
-    {
-        fprintf(fp, "%s\n", title);
-        pr_rvecs(fp, 0, "x", as_rvec_array(x->data()), natoms);
-        pr_rvecs(fp, 0, "xp", as_rvec_array(xp->data()), natoms);
-        pr_rvecs(fp, 0, "v", as_rvec_array(v->data()), natoms);
-        if (f != NULL)
-        {
-            pr_rvecs(fp, 0, "f", as_rvec_array(f->data()), natoms);
-        }
-    }
-#endif
-}
-
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
                                 gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
@@ -1553,8 +1528,7 @@ void update_pcouple_before_coordinates(FILE             *fplog,
     }
 }
 
-void update_constraints(FILE                          *fplog,
-                        gmx_int64_t                    step,
+void update_constraints(gmx_int64_t                    step,
                         real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                         const t_inputrec              *inputrec,  /* input record and box stuff	*/
                         t_mdatoms                     *md,
@@ -1641,11 +1615,6 @@ void update_constraints(FILE                          *fplog,
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
-        where();
-
-        dump_it_all(fplog, "After Shake",
-                    state->natoms, state->x, upd->xp, state->v, force);
-
         if (bCalcVir)
         {
             m_add(vir_part, vir_con, vir_part);
@@ -1656,7 +1625,6 @@ void update_constraints(FILE                          *fplog,
         }
     }
 
-    where();
 
     if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
     {
@@ -1780,9 +1748,6 @@ void update_constraints(FILE                          *fplog,
             }
         }
         wallcycle_stop(wcycle, ewcUPDATE);
-
-        dump_it_all(fplog, "After unshift",
-                    state->natoms, state->x, upd->xp, state->v, force);
     }
 /* ############# END the update of velocities and positions ######### */
 }
@@ -1805,7 +1770,6 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     /* Cast to real for faster code, no loss in precision (see comment above) */
     real dt     = inputrec->delta_t;
 
-    where();
 
     /* now update boxes */
     switch (inputrec->epc)
@@ -1883,13 +1847,9 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     {
         deform(upd, start, homenr, as_rvec_array(state->x.data()), state->box, inputrec, step);
     }
-    where();
-    dump_it_all(fplog, "After update",
-                state->natoms, state->x, upd->xp, state->v, gmx::EmptyArrayRef());
 }
 
-void update_coords(FILE                          *fplog,
-                   gmx_int64_t                    step,
+void update_coords(gmx_int64_t                    step,
                    t_inputrec                    *inputrec, /* input record and box stuff	*/
                    t_mdatoms                     *md,
                    t_state                       *state,
@@ -1927,10 +1887,6 @@ void update_coords(FILE                          *fplog,
     }
 
     /* ############# START The update of velocities and positions ######### */
-    where();
-    dump_it_all(fplog, "Before update",
-                state->natoms, state->x, upd->xp, state->v, f);
-
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
@@ -1941,7 +1897,6 @@ void update_coords(FILE                          *fplog,
             int start_th, end_th;
             getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
-#ifndef NDEBUG
             /* Strictly speaking, we would only need this check with SIMD
              * and for the actual SIMD width. But since the code currently
              * always adds padding for GMX_REAL_MAX_SIMD_WIDTH, we check that.
@@ -1951,7 +1906,6 @@ void update_coords(FILE                          *fplog,
             GMX_ASSERT(upd->xp.size()  >= homenrSimdPadded, "upd->xp needs to be padded for SIMD access");
             GMX_ASSERT(state->v.size() >= homenrSimdPadded, "state->v needs to be padded for SIMD access");
             GMX_ASSERT(f.size()        >= homenrSimdPadded, "f needs to be padded for SIMD access");
-#endif
 
             const rvec *x_rvec  = as_rvec_array(state->x.data());
             rvec       *xp_rvec = as_rvec_array(upd->xp.data());
@@ -2024,61 +1978,6 @@ void update_coords(FILE                          *fplog,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
-}
-
-
-void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[],
-                  real tmass, tensor ekin)
-{
-    /*
-     * This is a debugging routine. It should not be called for production code
-     *
-     * The kinetic energy should calculated according to:
-     *   Ekin = 1/2 m (v-vcm)^2
-     * However the correction is not always applied, since vcm may not be
-     * known in time and we compute
-     *   Ekin' = 1/2 m v^2 instead
-     * This can be corrected afterwards by computing
-     *   Ekin = Ekin' + 1/2 m ( -2 v vcm + vcm^2)
-     * or in hsorthand:
-     *   Ekin = Ekin' - m v vcm + 1/2 m vcm^2
-     */
-    int    i, j, k;
-    real   m, tm;
-    rvec   hvcm, mv;
-    tensor dekin;
-
-    /* Local particles */
-    clear_rvec(mv);
-
-    /* Processor dependent part. */
-    tm = 0;
-    for (i = start; (i < end); i++)
-    {
-        m      = mass[i];
-        tm    += m;
-        for (j = 0; (j < DIM); j++)
-        {
-            mv[j] += m*v[i][j];
-        }
-    }
-    /* Shortcut */
-    svmul(1/tmass, vcm, vcm);
-    svmul(0.5, vcm, hvcm);
-    clear_mat(dekin);
-    for (j = 0; (j < DIM); j++)
-    {
-        for (k = 0; (k < DIM); k++)
-        {
-            dekin[j][k] += vcm[k]*(tm*hvcm[j]-mv[j]);
-        }
-    }
-    pr_rvecs(log, 0, "dekin", dekin, DIM);
-    pr_rvecs(log, 0, " ekin", ekin, DIM);
-    fprintf(log, "dekin = %g, ekin = %g  vcm = (%8.4f %8.4f %8.4f)\n",
-            trace(dekin), trace(ekin), vcm[XX], vcm[YY], vcm[ZZ]);
-    fprintf(log, "mv = (%8.4f %8.4f %8.4f)\n",
-            mv[XX], mv[YY], mv[ZZ]);
 }
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,

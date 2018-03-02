@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,10 +100,6 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
 {
     int i;
     int nthread, thread;
-#ifdef DEBUG
-    fprintf(log, "ngtc: %d, ngacc: %d, ngener: %d\n", opts->ngtc, opts->ngacc,
-            opts->ngener);
-#endif
 
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
@@ -179,24 +175,6 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
     }
     destroy_bin(rb);
 }
-
-/* I don't think accumulate_ekin is used anymore? */
-
-#if 0
-static void accumulate_ekin(t_commrec *cr, t_grpopts *opts,
-                            gmx_ekindata_t *ekind)
-{
-    int g;
-
-    if (PAR(cr))
-    {
-        for (g = 0; (g < opts->ngtc); g++)
-        {
-            gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
-        }
-    }
-}
-#endif
 
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
                      t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
