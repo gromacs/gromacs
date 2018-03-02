@@ -250,27 +250,29 @@ behavior.
     that a compatible GPU be available and will be used.
 
 ``-gpu_id``
-    A string that specifies the ID numbers of the GPUs that
-    are available to be used by ranks on this node. For example,
+    A string that specifies the ID numbers (as assigned to devices by the GPU runtime)
+    of the GPUs to be used by ranks on this node. For example,
     "12" specifies that the GPUs with IDs 1 and 2 (as reported
     by the GPU runtime) can be used by mdrun. This is useful
+    to select a subset of GPUs for a run for instance,
     when sharing a node with other computations, or if a GPU
     is best used to support a display.  Without specifying this
-    parameter, mdrun will utilize all GPUs. If many GPUs are
+    parameter, mdrun will utilize all GPUs. If more than 9 GPUs are
     present, a comma may be used to separate the IDs, so
     "12,13" would make GPUs 12 and 13 available to mdrun.
-    It could be necessary to use different GPUs on different
+    It could be necessary to use different sets of GPUs on different
     nodes of a simulation, in which case the environment
     variable ``GMX_GPU_ID`` can be set differently for the ranks
     on different nodes to achieve that result.
-    In |Gromacs| versions preceding 2018, this parameter used to
-    specify both GPU availability and GPU task assignment.
-    The latter is now done by ``-gputasks`` parameter.
+    Note that in unlike in earlier versions, |Gromacs| 2018
+    separates the two roles the ``-gpu_id`` option,
+    now only specifying the GPUs to use in the run while the
+    task asssignment role is assumed by the ``-gputasks`` option.
 
 ``-gputasks``
-    A string that specifies the ID numbers of the GPUs to be
-    used by corresponding GPU tasks on this node. For example,
-    "0011" specifies that the first two GPU tasks will use GPU 0,
+    A string that specifies GPU task assignment, mapping
+    the GPU ID numbers to GPU tasks within ranks on this node.
+    For example, "0011" specifies that the first two GPU tasks will use GPU 0,
     and the other two use GPU 1. When using this option, the
     number of ranks must be known to mdrun, as well as where
     tasks of different types should be run, such as by using
@@ -294,7 +296,7 @@ behavior.
 
     will produce the following output in the log file/terminal:
 
-    On host tcbl14 2 GPUs user-selected for this run.
+    On host HOSTNAME 2 GPUs user-selected for this run.
     Mapping of GPU IDs to the 4 GPU tasks in the 4 ranks on this node:
     PP:0,PP:0,PP:0,PME:1
 
