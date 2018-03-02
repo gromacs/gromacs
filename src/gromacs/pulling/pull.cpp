@@ -1768,7 +1768,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     return (MASTER(cr) ? V : 0.0);
 }
 
-void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
+void pull_constraint(struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc,
                      const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir)
 {

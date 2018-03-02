@@ -473,7 +473,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     ilc_local->nr = 0;
     if (dd->constraint_comm)
     {
-        at2con_mt = atom2constraints_moltype(constr);
+        // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
+        GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
+        at2con_mt = constr->atom2constraints_moltype();
         ireq      = &dd->constraint_comm->ireq[0];
         ireq->n   = 0;
     }
@@ -486,7 +488,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
     if (dd->bInterCGsettles)
     {
-        at2settle_mt  = atom2settle_moltype(constr);
+        // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
+        GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
+        at2settle_mt  = constr->atom2settle_moltype();
         ils_local->nr = 0;
     }
     else

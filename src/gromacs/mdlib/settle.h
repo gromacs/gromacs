@@ -55,11 +55,13 @@ struct t_pbc;
 namespace gmx
 {
 
+enum class ConstraintVariable : int;
+
 /* Abstract type for SETTLE that is defined only in the file that uses it */
 struct settledata;
 
 /*! \brief Initializes and returns a structure with SETTLE parameters */
-settledata *settle_init(const gmx_mtop_t *mtop);
+settledata *settle_init(const gmx_mtop_t &mtop);
 
 //! Cleans up.
 void settle_free(settledata *settled);
@@ -67,7 +69,7 @@ void settle_free(settledata *settled);
 /*! \brief Set up the indices for the settle constraints */
 void settle_set_constraints(settledata       *settled,
                             const t_ilist    *il_settle,
-                            const t_mdatoms  *mdatoms);
+                            const t_mdatoms  &mdatoms);
 
 /*! \brief Constrain coordinates using SETTLE.
  * Can be called on any number of threads.
@@ -88,7 +90,7 @@ void csettle(settledata         *settled,          /* The SETTLE structure */
 /*! \brief Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
-void settle_proj(settledata *settled, int econq,
+void settle_proj(settledata *settled, ConstraintVariable econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],

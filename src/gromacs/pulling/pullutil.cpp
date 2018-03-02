@@ -183,7 +183,7 @@ static void pull_set_pbcatoms(const t_commrec *cr, struct pull_t *pull,
     }
 }
 
-static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
+static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, const t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x)
 {
     /* The size and stride per coord for the reduction buffer */
@@ -538,7 +538,7 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
 
 /* calculates center of mass of selection index from all coordinates x */
 void pull_calc_coms(const t_commrec *cr,
-                    struct pull_t *pull, t_mdatoms *md, t_pbc *pbc, double t,
+                    struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
     int          g;

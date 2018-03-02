@@ -934,7 +934,7 @@ void upd_mdebin(t_mdebin               *md,
     add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
     if (md->nCrmsd)
     {
-        crmsd[0] = gmx::constr_rmsd(constr);
+        crmsd[0] = constr->rmsd();
         add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
     }
     if (md->bDynBox)
