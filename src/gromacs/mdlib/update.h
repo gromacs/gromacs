@@ -136,24 +136,64 @@ void update_coords(gmx_int64_t                    step,
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx::Constraints *constr);
 
-void update_constraints(gmx_int64_t              step,
-                        real                    *dvdlambda, /* FEP stuff */
-                        const t_inputrec        *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms               *md,
-                        t_state                 *state,
-                        gmx_bool                 bMolPBC,
-                        t_graph                 *graph,
-                        gmx::ArrayRef<gmx::RVec> force, /* forces on home particles */
-                        t_idef                  *idef,
-                        tensor                   vir_part,
-                        const t_commrec         *cr,
-                        const gmx_multisim_t    *ms,
-                        t_nrnb                  *nrnb,
-                        gmx_wallcycle_t          wcycle,
-                        gmx_update_t            *upd,
-                        gmx::Constraints        *constr,
-                        gmx_bool                 bFirstHalf,
-                        gmx_bool                 bCalcVir);
+void constrain_velocities(gmx_int64_t                    step,
+                          real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                          const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                          t_mdatoms                     *md,
+                          t_state                       *state,
+                          gmx_bool                       bMolPBC,
+                          t_idef                        *idef,
+                          tensor                         vir_part,
+                          const t_commrec               *cr,
+                          const gmx_multisim_t          *ms,
+                          t_nrnb                        *nrnb,
+                          gmx_wallcycle_t                wcycle,
+                          gmx::Constraints              *constr,
+                          gmx_bool                       bCalcVir,
+                          bool                           do_log,
+                          bool                           do_ene);
+
+void constrain_coordinates(gmx_int64_t                    step,
+                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                           t_mdatoms                     *md,
+                           t_state                       *state,
+                           gmx_bool                       bMolPBC,
+                           t_idef                        *idef,
+                           tensor                         vir_part,
+                           const t_commrec               *cr,
+                           const gmx_multisim_t          *ms,
+                           t_nrnb                        *nrnb,
+                           gmx_wallcycle_t                wcycle,
+                           gmx_update_t                  *upd,
+                           gmx::Constraints              *constr,
+                           gmx_bool                       bCalcVir,
+                           bool                           do_log,
+                           bool                           do_ene);
+
+void update_sd_second_half(gmx_int64_t                    step,
+                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
+                           const t_inputrec              *inputrec,  /* input record and box stuff	*/
+                           t_mdatoms                     *md,
+                           t_state                       *state,
+                           gmx_bool                       bMolPBC,
+                           gmx::PaddedArrayRef<gmx::RVec> force,  /* forces on home particles */
+                           t_idef                        *idef,
+                           const t_commrec               *cr,
+                           const gmx_multisim_t          *ms,
+                           t_nrnb                        *nrnb,
+                           gmx_wallcycle_t                wcycle,
+                           gmx_update_t                  *upd,
+                           gmx::Constraints              *constr);
+
+void finish_update(const t_inputrec              *inputrec,
+                   t_mdatoms                     *md,
+                   t_state                       *state,
+                   t_graph                       *graph,
+                   t_nrnb                        *nrnb,
+                   gmx_wallcycle_t                wcycle,
+                   gmx_update_t                  *upd,
+                   gmx::Constraints              *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
