@@ -52,6 +52,10 @@ struct t_block;
 struct t_ilist;
 struct t_symtab;
 
+// TODO All of the functions taking a const gmx_mtop * are deprecated
+// and should be replaced by versions taking const gmx_mtop & when
+// their callers are refactored similarly.
+
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
  * N^2 operations later on.
@@ -159,6 +163,9 @@ typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
 gmx_mtop_ilistloop_t
 gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
 
+/* Initialize an ilist loop over all molecule types in the system. */
+gmx_mtop_ilistloop_t
+gmx_mtop_ilistloop_init(const gmx_mtop_t &mtop);
 
 /* Loop to the next molecule,
  * When not at the end:
@@ -197,6 +204,9 @@ gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 int
 gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 
+/* Returns the total number of interactions in the system of type ftype */
+int
+gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 
 /* Returns a charge group index for the whole system */
 t_block

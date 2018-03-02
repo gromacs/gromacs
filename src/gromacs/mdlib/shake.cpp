@@ -169,7 +169,7 @@ static void resizeLagrangianData(shakedata *shaked, int ncons)
 
 void
 make_shake_sblock_serial(shakedata *shaked,
-                         const t_idef *idef, const t_mdatoms *md)
+                         const t_idef *idef, const t_mdatoms &md)
 {
     int          i, j, m, ncons;
     int          bstart, bnr;
@@ -184,7 +184,7 @@ make_shake_sblock_serial(shakedata *shaked,
     ncons = idef->il[F_CONSTR].nr/3;
 
     init_blocka(&sblocks);
-    gen_sblocks(nullptr, 0, md->homenr, idef, &sblocks, FALSE);
+    gen_sblocks(nullptr, 0, md.homenr, idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -199,7 +199,7 @@ make_shake_sblock_serial(shakedata *shaked,
     }
 
     /* Calculate block number for each atom */
-    inv_sblock = make_invblocka(&sblocks, md->nr);
+    inv_sblock = make_invblocka(&sblocks, md.nr);
 
     done_blocka(&sblocks);
 
@@ -520,10 +520,10 @@ crattle(int iatom[], int ncon, int *nnit, int maxnit,
 static int vec_shakef(FILE *fplog, shakedata *shaked,
                       const real invmass[], int ncon,
                       t_iparams ip[], t_iatom *iatom,
-                      real tol, rvec x[], rvec prime[], real omega,
+                      real tol, const rvec x[], rvec prime[], real omega,
                       bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                       real invdt, rvec *v,
-                      bool bCalcVir, tensor vir_r_m_dr, int econq)
+                      bool bCalcVir, tensor vir_r_m_dr, ConstraintVariable econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -575,12 +575,14 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
 
     switch (econq)
     {
-        case econqCoord:
+        case ConstraintVariable::Positions:
             cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error);
             break;
-        case econqVeloc:
+        case ConstraintVariable::Velocities:
             crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error, invdt);
             break;
+        default:
+            gmx_incons("Unknown constraint quantity for SHAKE");
     }
 
     if (nit >= maxnit)
@@ -616,7 +618,7 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
         i     = ia[1];
         j     = ia[2];
 
-        if ((econq == econqCoord) && v != nullptr)
+        if ((econq == ConstraintVariable::Positions) && v != nullptr)
         {
             /* Correct the velocities */
             mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt;
@@ -664,9 +666,9 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
 }
 
 //! Check that constraints are satisfied.
-static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
+static void check_cons(FILE *log, int nc, const rvec x[], rvec prime[], rvec v[],
                        t_iparams ip[], t_iatom *iatom,
-                       const real invmass[], int econq)
+                       const real invmass[], ConstraintVariable econq)
 {
     t_iatom *ia;
     int      ai, aj;
@@ -686,14 +688,14 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 
         switch (econq)
         {
-            case econqCoord:
+            case ConstraintVariable::Positions:
                 rvec_sub(prime[ai], prime[aj], dx);
                 dp = norm(dx);
                 fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
                         ai+1, 1.0/invmass[ai],
                         aj+1, 1.0/invmass[aj], d, dp, ip[ia[0]].constr.dA);
                 break;
-            case econqVeloc:
+            case ConstraintVariable::Velocities:
                 rvec_sub(v[ai], v[aj], dv);
                 d = iprod(dx, dv);
                 rvec_sub(prime[ai], prime[aj], dv);
@@ -702,6 +704,8 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                         ai+1, 1.0/invmass[ai],
                         aj+1, 1.0/invmass[aj], d, dp, 0.);
                 break;
+            default:
+                gmx_incons("Unknown constraint quantity for SHAKE");
         }
     }
 }
@@ -710,17 +714,17 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 static bool
 bshakef(FILE *log, shakedata *shaked,
         const real invmass[],
-        const t_idef *idef, const t_inputrec *ir, rvec x_s[], rvec prime[],
+        const t_idef &idef, const t_inputrec &ir, const rvec x_s[], rvec prime[],
         t_nrnb *nrnb, real lambda, real *dvdlambda,
         real invdt, rvec *v, bool bCalcVir, tensor vir_r_m_dr,
-        bool bDumpOnError, int econq)
+        bool bDumpOnError, ConstraintVariable econq)
 {
     t_iatom *iatoms;
     real    *lam, dt_2, dvdl;
     int      i, n0, ncon, blen, type, ll;
     int      tnit = 0, trij = 0;
 
-    ncon = idef->il[F_CONSTR].nr/3;
+    ncon = idef.il[F_CONSTR].nr/3;
 
     for (ll = 0; ll < ncon; ll++)
     {
@@ -730,15 +734,15 @@ bshakef(FILE *log, shakedata *shaked,
     // TODO Rewrite this block so that it is obvious that i, iatoms
     // and lam are all iteration variables. Is this easier if the
     // sblock data structure is organized differently?
-    iatoms = &(idef->il[F_CONSTR].iatoms[shaked->sblock[0]]);
+    iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
     lam    = shaked->scaled_lagrange_multiplier;
     for (i = 0; (i < shaked->nblocks); )
     {
         blen  = (shaked->sblock[i+1]-shaked->sblock[i]);
         blen /= 3;
-        n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
-                           iatoms, ir->shake_tol, x_s, prime, shaked->omega,
-                           ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
+        n0    = vec_shakef(log, shaked, invmass, blen, idef.iparams,
+                           iatoms, ir.shake_tol, x_s, prime, shaked->omega,
+                           ir.efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
                            econq);
 
         if (n0 == 0)
@@ -746,7 +750,7 @@ bshakef(FILE *log, shakedata *shaked,
             if (bDumpOnError && log)
             {
                 {
-                    check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
+                    check_cons(log, blen, x_s, prime, v, idef.iparams, iatoms, invmass, econq);
                 }
             }
             return FALSE;
@@ -758,30 +762,30 @@ bshakef(FILE *log, shakedata *shaked,
         i++;
     }
     /* only for position part? */
-    if (econq == econqCoord)
+    if (econq == ConstraintVariable::Positions)
     {
-        if (ir->efep != efepNO)
+        if (ir.efep != efepNO)
         {
             real bondA, bondB;
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dt_2 = 1/gmx::square(ir->delta_t);
+            dt_2 = 1/gmx::square(ir.delta_t);
             dvdl = 0;
             for (ll = 0; ll < ncon; ll++)
             {
-                type  = idef->il[F_CONSTR].iatoms[3*ll];
+                type  = idef.il[F_CONSTR].iatoms[3*ll];
 
                 /* Per equations in the manual, dv/dl = -2 \sum_ll lagrangian_ll * r_ll * (d_B - d_A) */
                 /* The vector scaled_lagrange_multiplier[ll] contains the value -2 r_ll eta_ll (eta_ll is the
                    estimate of the Langrangian, definition on page 336 of Ryckaert et al 1977),
                    so the pre-factors are already present. */
-                bondA = idef->iparams[type].constr.dA;
-                bondB = idef->iparams[type].constr.dB;
+                bondA = idef.iparams[type].constr.dA;
+                bondB = idef.iparams[type].constr.dB;
                 dvdl += shaked->scaled_lagrange_multiplier[ll] * dt_2 * (bondB - bondA);
             }
             *dvdlambda += dvdl;
         }
     }
-    if (ir->bShakeSOR)
+    if (ir.bShakeSOR)
     {
         if (tnit > shaked->gamma)
         {
@@ -805,23 +809,23 @@ bshakef(FILE *log, shakedata *shaked,
 }
 
 bool
-constrain_shake(FILE             *log,
-                shakedata        *shaked,
-                const real        invmass[],
-                const t_idef     *idef,
-                const t_inputrec *ir,
-                rvec              x_s[],
-                rvec              xprime[],
-                rvec              vprime[],
-                t_nrnb           *nrnb,
-                real              lambda,
-                real             *dvdlambda,
-                real              invdt,
-                rvec             *v,
-                bool              bCalcVir,
-                tensor            vir_r_m_dr,
-                bool              bDumpOnError,
-                int               econq)
+constrain_shake(FILE              *log,
+                shakedata         *shaked,
+                const real         invmass[],
+                const t_idef      &idef,
+                const t_inputrec  &ir,
+                const rvec         x_s[],
+                rvec               xprime[],
+                rvec               vprime[],
+                t_nrnb            *nrnb,
+                real               lambda,
+                real              *dvdlambda,
+                real               invdt,
+                rvec              *v,
+                bool               bCalcVir,
+                tensor             vir_r_m_dr,
+                bool               bDumpOnError,
+                ConstraintVariable econq)
 {
     if (shaked->nblocks == 0)
     {
@@ -830,7 +834,7 @@ constrain_shake(FILE             *log,
     bool bOK;
     switch (econq)
     {
-        case (econqCoord):
+        case (ConstraintVariable::Positions):
             bOK = bshakef(log, shaked,
                           invmass,
                           idef, ir, x_s, xprime, nrnb,
@@ -838,7 +842,7 @@ constrain_shake(FILE             *log,
                           invdt, v, bCalcVir, vir_r_m_dr,
                           bDumpOnError, econq);
             break;
-        case (econqVeloc):
+        case (ConstraintVariable::Velocities):
             bOK = bshakef(log, shaked,
                           invmass,
                           idef, ir, x_s, vprime, nrnb,

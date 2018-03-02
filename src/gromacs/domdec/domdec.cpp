@@ -3885,8 +3885,8 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    dd->bInterCGcons    = inter_charge_group_constraints(mtop);
-    dd->bInterCGsettles = inter_charge_group_settles(mtop);
+    dd->bInterCGcons    = inter_charge_group_constraints(*mtop);
+    dd->bInterCGsettles = inter_charge_group_settles(*mtop);
 
     if (ir->rlist == 0)
     {
@@ -7255,9 +7255,12 @@ void dd_partition_system(FILE                *fplog,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }
 
+    // TODO constr should probably be a member of the object that
+    // manages work on a PP rank. Or this and similar code should be
+    // structured as callbacks.
     if (constr)
     {
-        set_constraints(constr, top_local, ir, mdatoms, cr);
+        constr->setConstraints(*top_local, *mdatoms);
     }
 
     if (ir->bPull)
