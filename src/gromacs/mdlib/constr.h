@@ -96,7 +96,7 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
                  rvec            x_s[],        /* Coords before update		*/
                  rvec            prime[],      /* Output coords		*/
                  t_nrnb         *nrnb,         /* Performance measure          */
-                 real           *lagr,         /* The Lagrange multipliers     */
+                 real * const    lagr,         /* The Lagrange multipliers     */
                  real            lambda,       /* FEP lambda                   */
                  real           *dvdlambda,    /* FEP force                    */
                  real            invdt,        /* 1/delta_t                    */
