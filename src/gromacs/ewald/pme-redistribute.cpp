@@ -466,7 +466,6 @@ do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int 
             srenew(atc->pd, atc->pd_nalloc);
         }
         pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
-        where();
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
         if (DOMAINDECOMP(cr))
         {

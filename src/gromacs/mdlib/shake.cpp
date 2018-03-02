@@ -192,9 +192,6 @@ make_shake_sblock_serial(gmx_shakedata *shaked,
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "Before Sort", idef);
-#endif
     iatom = idef->il[F_CONSTR].iatoms;
     snew(sb, ncons);
     for (i = 0; (i < ncons); i++, iatom += 3)
@@ -228,9 +225,6 @@ make_shake_sblock_serial(gmx_shakedata *shaked,
             iatom[m] = sb[i].iatom[m];
         }
     }
-#ifdef DEBUGIDEF
-    pr_idef(fplog, 0, "After Sort", idef);
-#endif
 
     j = 0;
     snew(shaked->sblock, shaked->nblocks+1);
@@ -707,10 +701,6 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
     int      i, n0, ncon, blen, type, ll;
     int      tnit = 0, trij = 0;
 
-#ifdef DEBUG
-    fprintf(log, "nblocks=%d, sblock[0]=%d\n", shaked->nblocks, shaked->sblock[0]);
-#endif
-
     ncon = idef->il[F_CONSTR].nr/3;
 
     for (ll = 0; ll < ncon; ll++)
@@ -731,10 +721,6 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
                            econq);
-
-#ifdef DEBUGSHAKE
-        check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
-#endif
 
         if (n0 == 0)
         {
@@ -776,9 +762,6 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
             *dvdlambda += dvdl;
         }
     }
-#ifdef DEBUG
-    fprintf(log, "tnit: %5d  omega: %10.5f\n", tnit, omega);
-#endif
     if (ir->bShakeSOR)
     {
         if (tnit > shaked->gamma)
