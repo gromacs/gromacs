@@ -108,6 +108,25 @@ class GpuParallel3dFft;
  */
 #define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
+/*! \internal \brief
+ * Gets an index to the spline parameter. Only used in the tests.
+ * \tparam    order            PME order
+ * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
+ * \param[in] dimIndex         Dimension index (from 0 to 2)
+ * \param[in] warpIndex        Warp index wrt the block.
+ * \param[in] atomWarpIndex    Atom index wrp to warp (0 or 1).
+ *
+ * \returns Index into theta or dtheta array using GPU layout.
+ */
+template <int order>
+int __host__ __device__ __forceinline__ getSplineParamIndex(int splineIndex, int dimIndex, int warpIndex, int atomWarpIndex)
+{
+    assert((splineIndex >= 0) && (splineIndex < order));
+    assert((dimIndex >= XX) && (dimIndex < DIM));
+    assert((atomWarpIndex >= 0) && (atomWarpIndex < PME_SPREADGATHER_ATOMS_PER_WARP));
+    return PME_SPLINE_THETA_STRIDE * (((splineIndex + order * warpIndex) * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex);
+}
+
 /*! \brief \internal
  * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
  *

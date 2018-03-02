@@ -630,6 +630,22 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm
                                         PmeSplineDataType type, int dimIndex, PmeLayoutTransform transform);
 
 /*! \libinternal \brief
+ * Gets an index to the spline parameter. Only used in the tests.
+ * \param[in] order            PME order
+ * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
+ * \param[in] dimIndex         Dimension index (from 0 to 2)
+ * \param[in] warpIndex        Warp index wrt the block.
+ * \param[in] atomWarpIndex    Atom index wrp to warp (0 or 1).
+ *
+ * \returns Index into theta or dtheta array using GPU layout.
+ */
+CUDA_FUNC_QUALIFIER int getSplineParamIndex(int CUDA_FUNC_ARGUMENT(order),
+                                            int CUDA_FUNC_ARGUMENT(splineIndex),
+                                            int CUDA_FUNC_ARGUMENT(dimIndex),
+                                            int CUDA_FUNC_ARGUMENT(warpIndex),
+                                            int CUDA_FUNC_ARGUMENT(atomWarpIndex)) CUDA_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.
  *
  * \param[in] pmeGpu             The PME GPU structure.
