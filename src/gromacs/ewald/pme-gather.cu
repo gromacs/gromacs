@@ -319,17 +319,14 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
         const int    pny       = kernelParams.grid.realGridSizePadded[YY];
         const int    pnz       = kernelParams.grid.realGridSizePadded[ZZ];
 
-        const int    particleWarpIndex = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    warpIndex         = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    warpIndex     = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
 
-        const int    thetaOffsetBase = PME_SPLINE_THETA_STRIDE * order * warpIndex * DIM * PME_SPREADGATHER_ATOMS_PER_WARP + particleWarpIndex;
-        const int    orderStride     = PME_SPLINE_THETA_STRIDE * DIM * PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    dimStride       = PME_SPLINE_THETA_STRIDE * PME_SPREADGATHER_ATOMS_PER_WARP;
-
-        const int    thetaOffsetY = thetaOffsetBase + ithy * orderStride + YY * dimStride;
-        const float2 tdy          = sm_splineParams[thetaOffsetY];
-        const int    thetaOffsetZ = thetaOffsetBase + ithz * orderStride + ZZ * dimStride;
-        const float2 tdz          = sm_splineParams[thetaOffsetZ];
+        const int    splineIndexBase = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
+        const int    splineIndexY    = getSplineParamIndex<order>(splineIndexBase, YY, ithy);
+        const float2 tdy             = sm_splineParams[splineIndexY];
+        const int    splineIndexZ    = getSplineParamIndex<order>(splineIndexBase, ZZ, ithz);
+        const float2 tdz             = sm_splineParams[splineIndexZ];
 
         const int    ixBase         = sm_gridlineIndices[atomIndexLocal * DIM + XX];
         int          iy             = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
@@ -356,8 +353,8 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
             assert(gridIndexGlobal >= 0);
             const float   gridValue    = gm_grid[gridIndexGlobal];
             assert(isfinite(gridValue));
-            const int     thetaOffsetX = thetaOffsetBase + ithx * orderStride + XX * dimStride;
-            const float2  tdx          = sm_splineParams[thetaOffsetX];
+            const int     splineIndexX = getSplineParamIndex<order>(splineIndexBase, XX, ithx);
+            const float2  tdx          = sm_splineParams[splineIndexX];
             const float   fxy1         = tdz.x * gridValue;
             const float   fz1          = tdz.y * gridValue;
             fx += tdx.y * tdy.x * fxy1;

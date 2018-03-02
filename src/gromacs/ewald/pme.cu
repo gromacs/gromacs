@@ -493,3 +493,15 @@ void pme_gpu_destroy_3dfft(const PmeGpu *pmeGpu)
 {
     pmeGpu->archSpecific->fftSetup.resize(0);
 }
+
+int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int warpIndex, int atomWarpIndex)
+{
+    if (order != 4)
+    {
+        throw order;
+    }
+    constexpr int fixedOrder = 4;
+    GMX_UNUSED_VALUE(fixedOrder);
+    const int     indexBase  = getSplineParamIndexBase<fixedOrder>(warpIndex, atomWarpIndex);
+    return getSplineParamIndex<fixedOrder>(indexBase, dimIndex, splineIndex);
+}
