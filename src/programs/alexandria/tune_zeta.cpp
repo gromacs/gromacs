@@ -219,26 +219,44 @@ void OptZeta::tuneZeta2PolData()
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
             zstr[0]  = '\0';
-            z_sig[0] = '\0';
-            auto nzeta   = ei->getNzeta();
-            double zeta  = ei->getZeta(0);
-            double sigma = 0;
-            for (auto i = 0; i < nzeta; i++)
+            z_sig[0] = '\0';            
+            if (iChargeDistributionModel() == eqdAXps)
             {
-                if (i > 0)
+                auto nzeta   = ei->getNzeta();
+                double zeta  = ei->getZeta(0);
+                double sigma = 0;
+                for (auto i = 0; i < nzeta; i++)
                 {
-                    zeta   = param_[n];
-                    sigma  = psigma_[n++];
+                    if (i > 0)
+                    {
+                        zeta   = param_[n];
+                        sigma  = psigma_[n++];
+                    }
+                    sprintf(buf, "%g ", zeta);
+                    sprintf(buf_sig, "%g ", sigma);
+                    strcat(zstr, buf);
+                    strcat(z_sig, buf_sig);
                 }
-                sprintf(buf, "%g ", zeta);
-                sprintf(buf_sig, "%g ", sigma);
-                strcat(zstr, buf);
-                strcat(z_sig, buf_sig);
+                ei->setRowZetaQ(rowstr, zstr, qstr);
+                ei->setZetastr(zstr);
+                ei->setZeta_sigma(z_sig);
             }
-            ei->setRowZetaQ(rowstr, zstr, qstr);
-            ei->setZetastr(zstr);
-            ei->setZeta_sigma(z_sig);
-
+            else
+            {
+                auto nzeta  = ei->getNzeta();
+                auto zeta   = param_[n];
+                auto sigma  = psigma_[n++];
+                for (auto i = 0; i < nzeta; i++)
+                {
+                    sprintf(buf, "%g ", zeta);
+                    sprintf(buf_sig, "%g ", sigma);
+                    strcat(zstr, buf);
+                    strcat(z_sig, buf_sig);
+                }
+                ei->setRowZetaQ(rowstr, zstr, qstr);
+                ei->setZetastr(zstr);
+                ei->setZeta_sigma(z_sig);
+            }
             if (bFitAlpha_)
             {
                 std::string ptype;

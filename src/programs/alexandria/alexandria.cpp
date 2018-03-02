@@ -36,7 +36,6 @@
  * Implements the alexandria wrapper binary.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <cstdlib>
 
@@ -46,8 +45,11 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/utility/exceptions.h"
+#include "gmxpre.h"
+
 
 #include "alex_modules.h"
+
 
 int
 main(int argc, char *argv[])
@@ -64,7 +66,7 @@ main(int argc, char *argv[])
         if (MASTER(cr))
         {
             printf("\n                   Welcome to Alexandria\n\n");
-            printf("                  Copyright (c) 2014-2017\n\n");
+            printf("                  Copyright (c) 2014-2018\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
             printf("See http://folding.bmc.uu.se/ for details.\n\n");
             printf("Alexandria is free software under the Gnu Public License v 2.\n");
