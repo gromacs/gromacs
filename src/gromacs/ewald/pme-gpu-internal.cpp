@@ -346,7 +346,7 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm
         auto warpIndex     = atomIndex / atomsPerWarp;
         for (auto orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
         {
-            const auto gpuValueIndex = ((pmeOrder * warpIndex + orderIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex;
+            const auto gpuValueIndex = getSplineParamFullIndex(pmeOrder, orderIndex, dimIndex, warpIndex, atomWarpIndex);
             const auto cpuValueIndex = atomIndex * pmeOrder + orderIndex;
             GMX_ASSERT(cpuValueIndex < atomCount * pmeOrder, "Atom spline data index out of bounds (while transforming GPU data layout for host)");
             switch (transform)
