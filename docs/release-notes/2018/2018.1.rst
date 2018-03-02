@@ -30,6 +30,13 @@ system.
 
 :issue:`2381`
 
+Fixed FEP calculations with SHAKE
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+All SHAKE + FEP calculations accumulated wrong values to dH/dl output,
+but in some cases the result will look the same.
+
+:issue:`2434`
+
 Fixed handling of mdp ``define`` statement assigning preprocessor values
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Now .mdp files can configure the topology with values, as originally
