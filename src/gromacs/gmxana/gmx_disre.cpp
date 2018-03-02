@@ -484,7 +484,7 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             drs[i].bCore  = is_core(i, isize, index);
             drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
             drs[i].r      = dr[k].aver1[i]/dr[k].nframes;
-            if ((dr[k].aver_3[i] <= 0) || (dr[k].aver_3[i] != dr[k].aver_3[i]))
+            if ((dr[k].aver_3[i] <= 0) || !std::isfinite(dr[k].aver_3[i]))
             {
                 gmx_fatal(FARGS, "dr[%d].aver_3[%d] = %f", k, i, dr[k].aver_3[i]);
             }
