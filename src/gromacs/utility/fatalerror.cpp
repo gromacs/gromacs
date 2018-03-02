@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,50 +90,6 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile)
 gmx_bool bDebugMode(void)
 {
     return bDebug;
-}
-
-void _where(const char *file, int line)
-{
-    static gmx_bool bFirst = TRUE;
-    static int      nskip  = -1;
-    static int      nwhere =  0;
-    FILE           *fp;
-    char           *temp;
-
-    if (bFirst)
-    {
-        Lock lock(where_mutex);
-        if (bFirst) /* we repeat the check in the locked section because things
-                       might have changed */
-        {
-            if ((temp = getenv("GMX_PRINT_DEBUG_LINES")) != nullptr)
-            {
-                nskip = strtol(temp, nullptr, 10);
-            }
-            bFirst = FALSE;
-        }
-    }
-
-    // TODO None of this is thread safe, and presumably it was only
-    // meant to run when debugging. But it runs many times every MD
-    // step. Nice. See Redmine #2122.
-    if (nskip >= 0)
-    {
-        /* Skip the first n occasions, this allows to see where it goes wrong */
-        if (nwhere >= nskip)
-        {
-            if (log_file)
-            {
-                fp = log_file;
-            }
-            else
-            {
-                fp = stderr;
-            }
-            fprintf(fp, "WHERE %d, file %s - line %d\n", nwhere, file, line);
-        }
-        nwhere++;
-    }
 }
 
 void gmx_fatal_set_log_file(FILE *fp)

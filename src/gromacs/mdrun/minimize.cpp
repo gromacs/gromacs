@@ -1112,7 +1112,6 @@ Integrator::do_cg()
      * We do not unshift, so molecules are always whole in congrad.c
      */
     energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE);
-    where();
 
     if (MASTER(cr))
     {
@@ -1125,7 +1124,6 @@ Integrator::do_cg()
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
     }
-    where();
 
     /* Estimate/guess the initial stepsize */
     stepsize = inputrec->em_stepsize/s_min->fnorm;
@@ -1779,7 +1777,6 @@ Integrator::do_lbfgs()
         mdAtoms, fr, enerd
     };
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
-    where();
 
     if (MASTER(cr))
     {
@@ -1792,7 +1789,6 @@ Integrator::do_lbfgs()
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts), nullptr);
     }
-    where();
 
     /* Set the initial step.
      * since it will be multiplied by the non-normalized search direction
@@ -2707,7 +2703,6 @@ Integrator::do_nm()
 
     init_nrnb(nrnb);
 
-    where();
 
     /* Write start time and temperature */
     print_em_start(fplog, cr, walltime_accounting, wcycle, NM);
