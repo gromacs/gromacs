@@ -2163,10 +2163,7 @@ void do_force(FILE                                     *fplog,
 
 void do_constrain_first(FILE *fplog, Constraints *constr,
                         t_inputrec *ir, t_mdatoms *md,
-                        t_state *state, const t_commrec *cr,
-                        const gmx_multisim_t *ms,
-                        t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top)
+                        t_state *state)
 {
     int             i, m, start, end;
     gmx_int64_t     step;
@@ -2198,22 +2195,22 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
     dvdl_dum = 0;
 
     /* constrain the current position */
-    constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-              ir, cr, ms, step, 0, 1.0, md,
-              as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
-              fr->bMolPBC, state->box,
-              state->lambda[efptBONDED], &dvdl_dum,
-              nullptr, nullptr, nrnb, econqCoord);
+    constr->apply(TRUE, FALSE,
+                  step, 0, 1.0,
+                  as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), nullptr,
+                  state->box,
+                  state->lambda[efptBONDED], &dvdl_dum,
+                  nullptr, nullptr, ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-                  ir, cr, ms, step, 0, 1.0, md,
-                  as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
-                  fr->bMolPBC, state->box,
-                  state->lambda[efptBONDED], &dvdl_dum,
-                  nullptr, nullptr, nrnb, econqVeloc);
+        constr->apply(TRUE, FALSE,
+                      step, 0, 1.0,
+                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
+                      state->box,
+                      state->lambda[efptBONDED], &dvdl_dum,
+                      nullptr, nullptr, ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -2238,12 +2235,12 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
                     gmx_step_str(step, buf));
         }
         dvdl_dum = 0;
-        constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
-                  ir, cr, ms, step, -1, 1.0, md,
-                  as_rvec_array(state->x.data()), savex, nullptr,
-                  fr->bMolPBC, state->box,
-                  state->lambda[efptBONDED], &dvdl_dum,
-                  as_rvec_array(state->v.data()), nullptr, nrnb, econqCoord);
+        constr->apply(TRUE, FALSE,
+                      step, -1, 1.0,
+                      as_rvec_array(state->x.data()), savex, nullptr,
+                      state->box,
+                      state->lambda[efptBONDED], &dvdl_dum,
+                      as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {

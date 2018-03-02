@@ -47,12 +47,10 @@
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
-struct gmx_multisim_t;
 struct t_extmass;
 struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
-struct t_idef;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
@@ -138,15 +136,8 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
 void constrain_velocities(gmx_int64_t                    step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                          const t_inputrec              *inputrec,  /* input record and box stuff */
-                          t_mdatoms                     *md,
                           t_state                       *state,
-                          gmx_bool                       bMolPBC,
-                          t_idef                        *idef,
                           tensor                         vir_part,
-                          const t_commrec               *cr,
-                          const gmx_multisim_t          *ms,
-                          t_nrnb                        *nrnb,
                           gmx_wallcycle_t                wcycle,
                           gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
@@ -155,15 +146,8 @@ void constrain_velocities(gmx_int64_t                    step,
 
 void constrain_coordinates(gmx_int64_t                    step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           const t_inputrec              *inputrec,  /* input record and box stuff */
-                           t_mdatoms                     *md,
                            t_state                       *state,
-                           gmx_bool                       bMolPBC,
-                           t_idef                        *idef,
                            tensor                         vir_part,
-                           const t_commrec               *cr,
-                           const gmx_multisim_t          *ms,
-                           t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
                            gmx::Constraints              *constr,
@@ -176,10 +160,7 @@ void update_sd_second_half(gmx_int64_t                    step,
                            const t_inputrec              *inputrec,  /* input record and box stuff */
                            t_mdatoms                     *md,
                            t_state                       *state,
-                           gmx_bool                       bMolPBC,
-                           t_idef                        *idef,
                            const t_commrec               *cr,
-                           const gmx_multisim_t          *ms,
                            t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,

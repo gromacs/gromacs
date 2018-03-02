@@ -45,8 +45,6 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_localtop_t;
-struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct gmx_update_t;
 struct MdrunOptions;
@@ -139,10 +137,7 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayR
 
 void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
-                        t_state *state, const t_commrec *cr,
-                        const gmx_multisim_t *ms,
-                        t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top);
+                        t_state *state);
 
 void init_md(FILE *fplog,
              const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
