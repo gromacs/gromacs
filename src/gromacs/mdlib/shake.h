@@ -56,6 +56,8 @@ struct t_nrnb;
 namespace gmx
 {
 
+enum class ConstraintVariable : int;
+
 /* Abstract type for SHAKE that is defined only in the file that uses it */
 struct shakedata;
 
@@ -65,7 +67,7 @@ shakedata *shake_init();
 //! Make SHAKE blocks when not using DD.
 void
 make_shake_sblock_serial(shakedata *shaked,
-                         const t_idef *idef, const t_mdatoms *md);
+                         const t_idef *idef, const t_mdatoms &md);
 
 //! Make SHAKE blocks when using DD.
 void
@@ -82,23 +84,23 @@ make_shake_sblock_dd(shakedata *shaked,
  * Return TRUE when OK, FALSE when shake-error
  */
 bool
-constrain_shake(FILE             *log,          /* Log file			*/
-                shakedata        *shaked,       /* Total number of atoms	*/
-                const real        invmass[],    /* Atomic masses		*/
-                const t_idef     *idef,         /* The interaction def		*/
-                const t_inputrec *ir,           /* Input record		        */
-                rvec              x_s[],        /* Coords before update		*/
-                rvec              xprime[],     /* Output coords when constraining x */
-                rvec              vprime[],     /* Output coords when constraining v */
-                t_nrnb           *nrnb,         /* Performance measure          */
-                real              lambda,       /* FEP lambda                   */
-                real             *dvdlambda,    /* FEP force                    */
-                real              invdt,        /* 1/delta_t                    */
-                rvec             *v,            /* Also constrain v if v!=NULL  */
-                bool              bCalcVir,     /* Calculate r x m delta_r      */
-                tensor            vir_r_m_dr,   /* sum r x m delta_r            */
-                bool              bDumpOnError, /* Dump debugging stuff on error*/
-                int               econq);       /* which type of constraint is occurring */
+constrain_shake(FILE              *log,          /* Log file			*/
+                shakedata         *shaked,       /* Total number of atoms	*/
+                const real         invmass[],    /* Atomic masses		*/
+                const t_idef      &idef,         /* The interaction def		*/
+                const t_inputrec  &ir,           /* Input record		        */
+                rvec               x_s[],        /* Coords before update		*/
+                rvec               xprime[],     /* Output coords when constraining x */
+                rvec               vprime[],     /* Output coords when constraining v */
+                t_nrnb            *nrnb,         /* Performance measure          */
+                real               lambda,       /* FEP lambda                   */
+                real              *dvdlambda,    /* FEP force                    */
+                real               invdt,        /* 1/delta_t                    */
+                rvec              *v,            /* Also constrain v if v!=NULL  */
+                bool               bCalcVir,     /* Calculate r x m delta_r      */
+                tensor             vir_r_m_dr,   /* sum r x m delta_r            */
+                bool               bDumpOnError, /* Dump debugging stuff on error*/
+                ConstraintVariable econq);       /* which type of constraint is occurring */
 
 /*! \brief Regular iterative shake */
 void cshake(const int iatom[], int ncon, int *nnit, int maxnit,

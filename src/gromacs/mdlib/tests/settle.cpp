@@ -240,8 +240,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mdatoms.homenr  = numSettles * atomsPerSettle;
 
     // Finally make the settle data structures
-    settledata *settled = settle_init(&mtop);
-    settle_set_constraints(settled, &mtop.moltype[0].ilist[F_SETTLE], &mdatoms);
+    settledata *settled = settle_init(mtop);
+    settle_set_constraints(settled, &mtop.moltype[0].ilist[F_SETTLE], mdatoms);
 
     // Copy the original positions from the array of doubles to a vector of reals
     std::vector<real> startingPositions(std::begin(g_positions), std::end(g_positions));

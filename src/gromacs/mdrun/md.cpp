@@ -438,7 +438,7 @@ void gmx::Integrator::do_md()
 
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
-                                 top_global, n_flexible_constraints(constr),
+                                 top_global, constr ? constr->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
     if (shellfc && ir->nstcalcenergy != 1)
@@ -562,10 +562,10 @@ void gmx::Integrator::do_md()
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
     }
 
-    /* Initialize constraints */
+    /* Initialize constraints (when DD is inactive, this is only done once). */
     if (constr && !DOMAINDECOMP(cr))
     {
-        set_constraints(constr, top, ir, mdatoms, cr);
+        constr->setConstraints(*top, *mdatoms);
     }
 
     /* Initialize AWH and restore state from history in checkpoint if needed. */
@@ -631,8 +631,7 @@ void gmx::Integrator::do_md()
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
-            do_constrain_first(fplog, constr, ir, mdatoms, state,
-                               cr, ms, nrnb, fr, top);
+            do_constrain_first(fplog, constr, ir, mdatoms, state);
         }
         if (vsite)
         {
@@ -733,7 +732,7 @@ void gmx::Integrator::do_md()
             {
                 fprintf(fplog,
                         "RMS relative constraint deviation after constraining: %.2e\n",
-                        constr_rmsd(constr));
+                        constr->rmsd());
             }
             if (EI_STATE_VELOCITY(ir->eI))
             {
@@ -1229,10 +1228,10 @@ void gmx::Integrator::do_md()
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
-                constrain_velocities(step, nullptr, ir, mdatoms,
-                                     state, fr->bMolPBC,
-                                     &top->idef, shake_vir,
-                                     cr, ms, nrnb, wcycle, constr,
+                constrain_velocities(step, nullptr,
+                                     state,
+                                     shake_vir,
+                                     wcycle, constr,
                                      bCalcVir, do_log, do_ene);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
@@ -1484,10 +1483,10 @@ void gmx::Integrator::do_md()
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
-                constrain_velocities(step, nullptr, ir, mdatoms,
-                                     state, fr->bMolPBC,
-                                     &top->idef, tmp_vir,
-                                     cr, ms, nrnb, wcycle, constr,
+                constrain_velocities(step, nullptr,
+                                     state,
+                                     tmp_vir,
+                                     wcycle, constr,
                                      bCalcVir, do_log, do_ene);
             }
         }
@@ -1549,14 +1548,12 @@ void gmx::Integrator::do_md()
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            constrain_coordinates(step, &dvdl_constr, ir, mdatoms, state,
-                                  fr->bMolPBC,
-                                  &top->idef, shake_vir,
-                                  cr, ms, nrnb, wcycle, upd, constr,
+            constrain_coordinates(step, &dvdl_constr, state,
+                                  shake_vir,
+                                  wcycle, upd, constr,
                                   bCalcVir, do_log, do_ene);
             update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
-                                  fr->bMolPBC, &top->idef, cr, ms,
-                                  nrnb, wcycle, upd, constr, do_log, do_ene);
+                                  cr, nrnb, wcycle, upd, constr, do_log, do_ene);
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);

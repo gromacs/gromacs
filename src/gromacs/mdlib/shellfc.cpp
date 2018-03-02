@@ -889,17 +889,15 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
     }
 }
 
-static void init_adir(FILE *log, gmx_shellfc_t *shfc,
-                      gmx::Constraints *constr, t_idef *idef, t_inputrec *ir,
+static void init_adir(gmx_shellfc_t *shfc,
+                      gmx::Constraints *constr, t_inputrec *ir,
                       const t_commrec *cr,
-                      const gmx_multisim_t *ms,
                       int dd_ac1,
                       gmx_int64_t step, t_mdatoms *md, int end,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
-                      gmx_bool bMolPBC, matrix box,
-                      gmx::ArrayRef<const real> lambda, real *dvdlambda,
-                      t_nrnb *nrnb)
+                      matrix box,
+                      gmx::ArrayRef<const real> lambda, real *dvdlambda)
 {
     rvec           *xnold, *xnew;
     double          dt, w_dt;
@@ -946,14 +944,14 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
             }
         }
     }
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
-              x, xnold, nullptr, bMolPBC, box,
-              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, gmx::econqCoord);
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
-              x, xnew, nullptr, bMolPBC, box,
-              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, gmx::econqCoord);
+    constr->apply(FALSE, FALSE, step, 0, 1.0,
+                  x, xnold, nullptr, box,
+                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(FALSE, FALSE, step, 0, 1.0,
+                  x, xnew, nullptr, box,
+                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
 
     for (n = 0; n < end; n++)
     {
@@ -967,10 +965,10 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constrain(log, FALSE, FALSE, constr, idef, ir, cr, ms, step, 0, 1.0, md,
-              x_old, xnew, acc_dir, bMolPBC, box,
-              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              nullptr, nullptr, nrnb, gmx::econqDeriv_FlexCon);
+    constr->apply(FALSE, FALSE, step, 0, 1.0,
+                  x_old, xnew, acc_dir, box,
+                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+                  nullptr, nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
@@ -1129,11 +1127,11 @@ void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
     sf_dir = 0;
     if (nflexcon)
     {
-        init_adir(fplog, shfc,
-                  constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
+        init_adir(shfc,
+                  constr, inputrec, cr, dd_ac1, mdstep, md, end,
                   shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min].data()),
                   shfc->acc_dir,
-                  fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
+                  state->box, state->lambda, &dum);
 
         for (i = 0; i < end; i++)
         {
@@ -1198,10 +1196,10 @@ void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
 
         if (nflexcon)
         {
-            init_adir(fplog, shfc,
-                      constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
+            init_adir(shfc,
+                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
-                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
+                      state->box, state->lambda, &dum);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
         }
@@ -1237,10 +1235,10 @@ void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
         sf_dir = 0;
         if (nflexcon)
         {
-            init_adir(fplog, shfc,
-                      constr, idef, inputrec, cr, ms, dd_ac1, mdstep, md, end,
+            init_adir(shfc,
+                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
-                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
+                      state->box, state->lambda, &dum);
 
             for (i = 0; i < end; i++)
             {

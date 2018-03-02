@@ -51,6 +51,10 @@
 
 struct t_atom;
 
+// TODO All of the functions taking a const gmx_mtop * are deprecated
+// and should be replaced by versions taking const gmx_mtop & when
+// their callers are refactored similarly.
+
 /*! \brief Look up the molecule block and other indices of a global atom index
  *
  * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
@@ -239,6 +243,20 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     {
         *globalResidueIndex = indices.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
     }
+}
+
+//! \copydoc mtopGetAtomAndResidueName()
+static inline void
+mtopGetAtomAndResidueName(const gmx_mtop_t  &mtop,
+                          int                globalAtomIndex,
+                          int               *moleculeBlock,
+                          const char       **atomName,
+                          int               *residueNumber,
+                          const char       **residueName,
+                          int               *globalResidueIndex)
+{
+    mtopGetAtomAndResidueName(&mtop, globalAtomIndex, moleculeBlock,
+                              atomName, residueNumber, residueName, globalResidueIndex);
 }
 
 /*! \brief Returns residue information for an atom based on global atom index
