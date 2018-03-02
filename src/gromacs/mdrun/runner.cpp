@@ -1280,12 +1280,7 @@ int Mdrunner::mdrunner()
             init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
         }
 
-        /* Let init_constraints know whether we have essential dynamics constraints.
-         * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
-         */
-        bool         doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
-
-        Constraints *constr = init_constraints(fplog, &mtop, inputrec, doEdsam, cr);
+        Constraints constr(fplog, &mtop, mdAtoms->mdatoms(), inputrec, cr, ms, nrnb, fr->bMolPBC);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1303,7 +1298,7 @@ int Mdrunner::mdrunner()
             fplog, cr, ms, mdlog, nfile, fnm,
             oenv,
             mdrunOptions,
-            vsite, constr,
+            vsite, &constr,
             mdModules->outputProvider(),
             inputrec, &mtop,
             fcd,

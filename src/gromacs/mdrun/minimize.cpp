@@ -365,7 +365,7 @@ static void init_em(FILE *fplog, const char *title,
 
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
-                                      gmx::n_flexible_constraints(constr),
+                                      constr->numFlexibleConstraints(),
                                       ir->nstcalcenergy,
                                       DOMAINDECOMP(cr));
     }
@@ -423,8 +423,12 @@ static void init_em(FILE *fplog, const char *title,
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[efptMASS]);
 
-    if (constr)
+    // TODO constr should probably be a member of the object that manages
+    // work on a PP rank.
+    GMX_ASSERT(constr != nullptr, "Must have a valid constrainer");
+    // TODO remove braces
     {
+        // TODO how should this cross-module support dependency be managed?
         if (ir->eConstrAlg == econtSHAKE &&
             gmx_mtop_ftype_count(top_global, F_CONSTR) > 0)
         {
@@ -434,21 +438,21 @@ static void init_em(FILE *fplog, const char *title,
 
         if (!DOMAINDECOMP(cr))
         {
-            set_constraints(constr, *top, ir, mdatoms, cr);
+            constr->setConstraints(*top, mdatoms);
         }
 
         if (!ir->bContinuation)
         {
             /* Constrain the starting coordinates */
             dvdl_constr = 0;
-            constrain(PAR(cr) ? nullptr : fplog, TRUE, TRUE, constr, &(*top)->idef,
-                      ir, cr, ms, -1, 0, 1.0, mdatoms,
-                      as_rvec_array(ems->s.x.data()),
-                      as_rvec_array(ems->s.x.data()),
-                      nullptr,
-                      fr->bMolPBC, ems->s.box,
-                      ems->s.lambda[efptFEP], &dvdl_constr,
-                      nullptr, nullptr, nrnb, gmx::econqCoord);
+            constr->apply(TRUE, TRUE,
+                          -1, 0, 1.0,
+                          as_rvec_array(ems->s.x.data()),
+                          as_rvec_array(ems->s.x.data()),
+                          nullptr,
+                          ems->s.box,
+                          ems->s.lambda[efptFEP], &dvdl_constr,
+                          nullptr, nullptr, gmx::ConstraintCoord::Positions);
         }
     }
 
@@ -563,13 +567,11 @@ static void write_em_traj(FILE *fplog, const t_commrec *cr,
 //
 // \returns true when the step succeeded, false when a constraint error occurred
 static bool do_em_step(const t_commrec *cr,
-                       const gmx_multisim_t *ms,
                        t_inputrec *ir, t_mdatoms *md,
-                       gmx_bool bMolPBC,
                        em_state_t *ems1, real a, const PaddedRVecVector *force,
                        em_state_t *ems2,
-                       gmx::Constraints *constr, gmx_localtop_t *top,
-                       t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                       gmx::Constraints *constr,
+                       gmx_wallcycle_t wcycle,
                        gmx_int64_t count)
 
 {
@@ -676,12 +678,12 @@ static bool do_em_step(const t_commrec *cr,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         validStep   =
-            constrain(nullptr, TRUE, TRUE, constr, &top->idef,
-                      ir, cr, ms, count, 0, 1.0, md,
-                      as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
-                      nullptr, bMolPBC, s2->box,
-                      s2->lambda[efptBONDED], &dvdl_constr,
-                      nullptr, nullptr, nrnb, gmx::econqCoord);
+            constr->apply(TRUE, TRUE,
+                          count, 0, 1.0,
+                          as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
+                          nullptr, s2->box,
+                          s2->lambda[efptBONDED], &dvdl_constr,
+                          nullptr, nullptr, gmx::ConstraintCoord::Positions);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -881,12 +883,12 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         rvec *f_rvec = as_rvec_array(ems->f.data());
-        constrain(nullptr, FALSE, FALSE, constr, &top->idef,
-                  inputrec, cr, ms, count, 0, 1.0, mdAtoms->mdatoms(),
-                  as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
-                  fr->bMolPBC, ems->s.box,
-                  ems->s.lambda[efptBONDED], &dvdl_constr,
-                  nullptr, &shake_vir, nrnb, gmx::econqForceDispl);
+        constr->apply(FALSE, FALSE,
+                      count, 0, 1.0,
+                      as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
+                      ems->s.box,
+                      ems->s.lambda[efptBONDED], &dvdl_constr,
+                      nullptr, &shake_vir, gmx::ConstraintCoord::ForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);
@@ -1278,8 +1280,8 @@ Integrator::do_cg()
         }
 
         /* Take a trial step (new coords in s_c) */
-        do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC, s_min, c, &s_min->s.cg_p, s_c,
-                   constr, top, nrnb, wcycle, -1);
+        do_em_step(cr, inputrec, mdatoms, s_min, c, &s_min->s.cg_p, s_c,
+                   constr, wcycle, -1);
 
         neval++;
         /* Calculate energy for the trial step */
@@ -1383,8 +1385,8 @@ Integrator::do_cg()
                 }
 
                 /* Take a trial step to this new point - new coords in s_b */
-                do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC, s_min, b, &s_min->s.cg_p, s_b,
-                           constr, top, nrnb, wcycle, -1);
+                do_em_step(cr, inputrec, mdatoms, s_min, b, &s_min->s.cg_p, s_b,
+                           constr, wcycle, -1);
 
                 neval++;
                 /* Calculate energy for the trial step */
@@ -2450,9 +2452,9 @@ Integrator::do_steep()
         if (count > 0)
         {
             validStep =
-                do_em_step(cr, ms, inputrec, mdatoms, fr->bMolPBC,
+                do_em_step(cr, inputrec, mdatoms,
                            s_min, stepsize, &s_min->f, s_try,
-                           constr, top, nrnb, wcycle, count);
+                           constr, wcycle, count);
         }
 
         if (validStep)

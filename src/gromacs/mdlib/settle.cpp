@@ -315,7 +315,7 @@ void settle_set_constraints(settledata       *settled,
     }
 }
 
-void settle_proj(settledata *settled, int econq,
+void settle_proj(settledata *settled, ConstraintCoord econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,
                  rvec x[],
@@ -335,7 +335,7 @@ void settle_proj(settledata *settled, int econq,
 
     calcvir_atom_end *= DIM;
 
-    if (econq == econqForce)
+    if (econq == ConstraintCoord::Force)
     {
         p = &settled->mass1;
     }

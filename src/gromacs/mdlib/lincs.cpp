@@ -577,7 +577,7 @@ calc_dr_x_f_simd(int                       b0,
 static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
                       Lincs *lincsd, int th,
                       real *invmass,
-                      int econq, bool bCalcDHDL,
+                      ConstraintCoord econq, bool bCalcDHDL,
                       bool bCalcVir, tensor rmdf)
 {
     int      b0, b1, b;
@@ -592,7 +592,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     r      = lincsd->tmpv;
     blnr   = lincsd->blnr;
     blbnb  = lincsd->blbnb;
-    if (econq != econqForce)
+    if (econq != ConstraintCoord::Force)
     {
         /* Use mass-weighted parameters */
         blc  = lincsd->blc;
@@ -690,7 +690,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
     /* nrec*(ncons+2*nrtot) flops */
 
-    if (econq == econqDeriv_FlexCon)
+    if (econq == ConstraintCoord::Deriv_FlexCon)
     {
         /* We only want to constraint the flexible constraints,
          * so we mask out the normal ones by setting sol to 0.
@@ -714,7 +714,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      * so we pass invmass=NULL, which results in the use of 1 for all atoms.
      */
     lincs_update_atoms(lincsd, th, 1.0, sol, r,
-                       (econq != econqForce) ? invmass : nullptr, fp);
+                       (econq != ConstraintCoord::Force) ? invmass : nullptr, fp);
 
     if (bCalcDHDL)
     {
@@ -2402,7 +2402,7 @@ static void cconerr(const Lincs *lincsd,
 bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                      const t_inputrec *ir,
                      gmx_int64_t step,
-                     Lincs *lincsd, t_mdatoms *md,
+                     Lincs *lincsd, const t_mdatoms *md,
                      const t_commrec *cr,
                      const gmx_multisim_t *ms,
                      rvec *x, rvec *xprime, rvec *min_proj,
@@ -2410,7 +2410,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                      real lambda, real *dvdlambda,
                      real invdt, rvec *v,
                      bool bCalcVir, tensor vir_r_m_dr,
-                     int econq,
+                     ConstraintCoord econq,
                      t_nrnb *nrnb,
                      int maxwarn, int *warncount)
 {
@@ -2440,7 +2440,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         return bOK;
     }
 
-    if (econq == econqCoord)
+    if (econq == ConstraintCoord::Positions)
     {
         /* We can't use bCalcDHDL here, since NULL can be passed for dvdlambda
          * also with efep!=fepNO.
@@ -2620,7 +2620,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         {
             dhdlambda += lincsd->task[th].dhdlambda;
         }
-        if (econq == econqCoord)
+        if (econq == ConstraintCoord::Positions)
         {
             /* dhdlambda contains dH/dlambda*dt^2, correct for this */
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */

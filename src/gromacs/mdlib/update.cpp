@@ -1530,15 +1530,8 @@ void update_pcouple_before_coordinates(FILE             *fplog,
 
 void constrain_velocities(gmx_int64_t                    step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                          const t_inputrec              *inputrec,  /* input record and box stuff	*/
-                          t_mdatoms                     *md,
                           t_state                       *state,
-                          gmx_bool                       bMolPBC,
-                          t_idef                        *idef,
                           tensor                         vir_part,
-                          const t_commrec               *cr,
-                          const gmx_multisim_t          *ms,
-                          t_nrnb                        *nrnb,
                           gmx_wallcycle_t                wcycle,
                           gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
@@ -1565,12 +1558,12 @@ void constrain_velocities(gmx_int64_t                    step,
         /* Constrain the coordinates upd->xp */
         wallcycle_start(wcycle, ewcCONSTR);
         {
-            constrain(nullptr, do_log, do_ene, constr, idef,
-                      inputrec, cr, ms, step, 1, 1.0, md,
-                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
-                      bMolPBC, state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      nullptr, bCalcVir ? &vir_con : nullptr, nrnb, econqVeloc);
+            constr->apply(do_log, do_ene,
+                          step, 1, 1.0,
+                          as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
+                          state->box,
+                          state->lambda[efptBONDED], dvdlambda,
+                          nullptr, bCalcVir ? &vir_con : nullptr, ConstraintCoord::Veloc);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1583,15 +1576,8 @@ void constrain_velocities(gmx_int64_t                    step,
 
 void constrain_coordinates(gmx_int64_t                    step,
                            real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
-                           const t_inputrec              *inputrec,  /* input record and box stuff	*/
-                           t_mdatoms                     *md,
                            t_state                       *state,
-                           gmx_bool                       bMolPBC,
-                           t_idef                        *idef,
                            tensor                         vir_part,
-                           const t_commrec               *cr,
-                           const gmx_multisim_t          *ms,
-                           t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
                            gmx::Constraints              *constr,
@@ -1613,12 +1599,12 @@ void constrain_coordinates(gmx_int64_t                    step,
         /* Constrain the coordinates upd->xp */
         wallcycle_start(wcycle, ewcCONSTR);
         {
-            constrain(nullptr, do_log, do_ene, constr, idef,
-                      inputrec, cr, ms, step, 1, 1.0, md,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
-                      bMolPBC, state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, nrnb, econqCoord);
+            constr->apply(do_log, do_ene,
+                          step, 1, 1.0,
+                          as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                          state->box,
+                          state->lambda[efptBONDED], dvdlambda,
+                          as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintCoord::Positions);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1635,11 +1621,8 @@ update_sd_second_half(gmx_int64_t                    step,
                       const t_inputrec              *inputrec,    /* input record and box stuff	*/
                       t_mdatoms                     *md,
                       t_state                       *state,
-                      gmx_bool                       bMolPBC,
                       gmx::PaddedArrayRef<gmx::RVec> force,       /* forces on home particles */
-                      t_idef                        *idef,
                       const t_commrec               *cr,
-                      const gmx_multisim_t          *ms,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
                       gmx_update_t                  *upd,
@@ -1702,12 +1685,12 @@ update_sd_second_half(gmx_int64_t                    step,
             gmx_bool bLastStep = (step == inputrec->init_step+inputrec->nsteps);
             gmx_bool bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
             gmx_bool bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
-            constrain(nullptr, bLog, bEner, constr, idef,
-                      inputrec, cr, ms, step, 1, 0.5, md,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
-                      bMolPBC, state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), nullptr, nrnb, econqCoord);
+            constr->apply(bLog, bEner,
+                          step, 1, 0.5,
+                          as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+                          state->box,
+                          state->lambda[efptBONDED], dvdlambda,
+                          as_rvec_array(state->v.data()), nullptr, ConstraintCoord::Positions);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }

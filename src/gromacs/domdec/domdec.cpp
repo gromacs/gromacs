@@ -9778,10 +9778,11 @@ void dd_partition_system(FILE                *fplog,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }
 
-    if (constr)
-    {
-        set_constraints(constr, top_local, ir, mdatoms, cr);
-    }
+    // TODO constr should probably be a member of the object that
+    // manages work on a PP rank. Or this and similar code should be
+    // structured as callbacks.
+    GMX_ASSERT(constr != nullptr, "Must have a valid constrainer");
+    constr->setConstraints(top_local, mdatoms);
 
     if (ir->bPull)
     {

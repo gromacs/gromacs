@@ -523,7 +523,7 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
                       real tol, rvec x[], rvec prime[], real omega,
                       bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                       real invdt, rvec *v,
-                      bool bCalcVir, tensor vir_r_m_dr, int econq)
+                      bool bCalcVir, tensor vir_r_m_dr, ConstraintCoord econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -575,12 +575,14 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
 
     switch (econq)
     {
-        case econqCoord:
+        case ConstraintCoord::Positions:
             cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error);
             break;
-        case econqVeloc:
+        case ConstraintCoord::Veloc:
             crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error, invdt);
             break;
+        default:
+            gmx_incons("Unknown constraint quantity for SHAKE");
     }
 
     if (nit >= maxnit)
@@ -616,7 +618,7 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
         i     = ia[1];
         j     = ia[2];
 
-        if ((econq == econqCoord) && v != nullptr)
+        if ((econq == ConstraintCoord::Positions) && v != nullptr)
         {
             /* Correct the velocities */
             mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt;
@@ -666,7 +668,7 @@ static int vec_shakef(FILE *fplog, shakedata *shaked,
 //! Check that constraints are satisfied.
 static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                        t_iparams ip[], t_iatom *iatom,
-                       const real invmass[], int econq)
+                       const real invmass[], ConstraintCoord econq)
 {
     t_iatom *ia;
     int      ai, aj;
@@ -686,14 +688,14 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 
         switch (econq)
         {
-            case econqCoord:
+            case ConstraintCoord::Positions:
                 rvec_sub(prime[ai], prime[aj], dx);
                 dp = norm(dx);
                 fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
                         ai+1, 1.0/invmass[ai],
                         aj+1, 1.0/invmass[aj], d, dp, ip[ia[0]].constr.dA);
                 break;
-            case econqVeloc:
+            case ConstraintCoord::Veloc:
                 rvec_sub(v[ai], v[aj], dv);
                 d = iprod(dx, dv);
                 rvec_sub(prime[ai], prime[aj], dv);
@@ -702,6 +704,8 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                         ai+1, 1.0/invmass[ai],
                         aj+1, 1.0/invmass[aj], d, dp, 0.);
                 break;
+            default:
+                gmx_incons("Unknown constraint quantity for SHAKE");
         }
     }
 }
@@ -713,7 +717,7 @@ bshakef(FILE *log, shakedata *shaked,
         const t_idef *idef, const t_inputrec *ir, rvec x_s[], rvec prime[],
         t_nrnb *nrnb, real lambda, real *dvdlambda,
         real invdt, rvec *v, bool bCalcVir, tensor vir_r_m_dr,
-        bool bDumpOnError, int econq)
+        bool bDumpOnError, ConstraintCoord econq)
 {
     t_iatom *iatoms;
     real    *lam, dt_2, dvdl;
@@ -758,7 +762,7 @@ bshakef(FILE *log, shakedata *shaked,
         i++;
     }
     /* only for position part? */
-    if (econq == econqCoord)
+    if (econq == ConstraintCoord::Positions)
     {
         if (ir->efep != efepNO)
         {
@@ -821,7 +825,7 @@ constrain_shake(FILE             *log,
                 bool              bCalcVir,
                 tensor            vir_r_m_dr,
                 bool              bDumpOnError,
-                int               econq)
+                ConstraintCoord   econq)
 {
     if (shaked->nblocks == 0)
     {
@@ -830,7 +834,7 @@ constrain_shake(FILE             *log,
     bool bOK;
     switch (econq)
     {
-        case (econqCoord):
+        case (ConstraintCoord::Positions):
             bOK = bshakef(log, shaked,
                           invmass,
                           idef, ir, x_s, xprime, nrnb,
@@ -838,7 +842,7 @@ constrain_shake(FILE             *log,
                           invdt, v, bCalcVir, vir_r_m_dr,
                           bDumpOnError, econq);
             break;
-        case (econqVeloc):
+        case (ConstraintCoord::Veloc):
             bOK = bshakef(log, shaked,
                           invmass,
                           idef, ir, x_s, vprime, nrnb,

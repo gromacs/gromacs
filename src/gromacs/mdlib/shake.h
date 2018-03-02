@@ -56,6 +56,8 @@ struct t_nrnb;
 namespace gmx
 {
 
+enum class ConstraintCoord : int;
+
 /* Abstract type for SHAKE that is defined only in the file that uses it */
 struct shakedata;
 
@@ -98,7 +100,7 @@ constrain_shake(FILE             *log,          /* Log file			*/
                 bool              bCalcVir,     /* Calculate r x m delta_r      */
                 tensor            vir_r_m_dr,   /* sum r x m delta_r            */
                 bool              bDumpOnError, /* Dump debugging stuff on error*/
-                int               econq);       /* which type of constraint is occurring */
+                ConstraintCoord   econq);       /* which type of constraint is occurring */
 
 /*! \brief Regular iterative shake */
 void cshake(const int iatom[], int ncon, int *nnit, int maxnit,

@@ -55,6 +55,8 @@ struct t_pbc;
 namespace gmx
 {
 
+enum class ConstraintCoord : int;
+
 /* Abstract type for SETTLE that is defined only in the file that uses it */
 struct settledata;
 
@@ -88,7 +90,7 @@ void csettle(settledata         *settled,          /* The SETTLE structure */
 /*! \brief Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
-void settle_proj(settledata *settled, int econq,
+void settle_proj(settledata *settled, ConstraintCoord econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],

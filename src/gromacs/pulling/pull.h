@@ -203,7 +203,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
+void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
                      const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
@@ -281,7 +281,7 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
  */
 void pull_calc_coms(const t_commrec  *cr,
                     struct pull_t    *pull,
-                    t_mdatoms        *md,
+                    const t_mdatoms  *md,
                     struct t_pbc     *pbc,
                     double            t,
                     rvec              x[],

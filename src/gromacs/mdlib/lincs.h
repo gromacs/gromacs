@@ -63,6 +63,8 @@ struct t_pbc;
 namespace gmx
 {
 
+enum class ConstraintCoord : int;
+
 /* Abstract type for LINCS that is defined only in the file that uses it */
 class Lincs;
 
@@ -86,10 +88,10 @@ void set_lincs(const t_idef *idef, const t_mdatoms *md,
  *
  * \returns true if the constraining succeeded. */
 bool
-constrain_lincs(FILE *log, bool bLog, bool bEner,
+constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 const t_inputrec *ir,
                 gmx_int64_t step,
-                Lincs *lincsd, t_mdatoms *md,
+                Lincs *lincsd, const t_mdatoms *md,
                 const t_commrec *cr,
                 const gmx_multisim_t *ms,
                 rvec *x, rvec *xprime, rvec *min_proj,
@@ -97,7 +99,7 @@ constrain_lincs(FILE *log, bool bLog, bool bEner,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
+                ConstraintCoord econq,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
 
