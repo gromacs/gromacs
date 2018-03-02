@@ -273,6 +273,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                 *SPLINE_DATA_PTR(0) = div * (1.0f - dr) * SPLINE_DATA(0);
             }
 
+            const int thetaIndexBase        = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
             const int thetaGlobalOffsetBase = atomIndexOffset * DIM * order;
 
             /* Differentiation and storing the spline derivatives (dtheta) */
@@ -283,7 +284,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             for (o = 0; o < order; o++)
 #endif
             {
-                const int   thetaIndex       = PME_SPLINE_THETA_STRIDE * (((o + order * warpIndex) * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex);
+                const int   thetaIndex       = getSplineParamIndex<order>(thetaIndexBase, dimIndex, o);
                 const int   thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;
 
                 const float dtheta = ((o > 0) ? SPLINE_DATA(o - 1) : 0.0f) - SPLINE_DATA(o);
@@ -307,7 +308,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             for (o = 0; o < order; o++)
 #endif
             {
-                const int thetaIndex       = PME_SPLINE_THETA_STRIDE * (((o + order * warpIndex) * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex);
+                const int thetaIndex       = getSplineParamIndex<order>(thetaIndexBase, dimIndex, o);
                 const int thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;
 
                 sm_theta[thetaIndex]       = SPLINE_DATA(o);
@@ -375,19 +376,18 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
         }
 
         /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-        const int    atomWarpIndex     = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex   = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
         /* Warp index w.r.t. block - could probably be obtained easier? */
-        const int    warpIndex         = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    dimStride         = PME_SPLINE_THETA_STRIDE * PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    orderStride       = dimStride * DIM;
-        const int    thetaOffsetBase   = orderStride * order * warpIndex + atomWarpIndex;
+        const int    warpIndex       = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
 
-        const float  thetaZ         = sm_theta[thetaOffsetBase + ithz * orderStride + ZZ * dimStride];
-        const float  thetaY         = sm_theta[thetaOffsetBase + ithy * orderStride + YY * dimStride];
-        const float  constVal       = thetaZ * thetaY * sm_coefficients[atomIndexLocal];
+        const int    splineIndexBase = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
+        const int    splineIndexZ    = getSplineParamIndex<order>(splineIndexBase, ZZ, ithz);
+        const float  thetaZ          = sm_theta[splineIndexZ];
+        const int    splineIndexY    = getSplineParamIndex<order>(splineIndexBase, YY, ithy);
+        const float  thetaY          = sm_theta[splineIndexY];
+        const float  constVal        = thetaZ * thetaY * sm_coefficients[atomIndexLocal];
         assert(isfinite(constVal));
-        const int    constOffset       = iy * pnz + iz;
-        const float *sm_thetaX         = sm_theta + (thetaOffsetBase + XX * dimStride);
+        const int    constOffset     = iy * pnz + iz;
 
 #pragma unroll
         for (int ithx = 0; (ithx < order); ithx++)
@@ -397,10 +397,12 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
             {
                 ix -= nx;
             }
-            const int gridIndexGlobal = ix * pny * pnz + constOffset;
-            assert(isfinite(sm_thetaX[ithx * orderStride]));
+            const int   gridIndexGlobal = ix * pny * pnz + constOffset;
+            const int   splineIndexX    = getSplineParamIndex<order>(splineIndexBase, XX, ithx);
+            const float thetaX          = sm_theta[splineIndexX];
+            assert(isfinite(thetaX));
             assert(isfinite(gm_grid[gridIndexGlobal]));
-            atomicAdd(gm_grid + gridIndexGlobal, sm_thetaX[ithx * orderStride] * constVal);
+            atomicAdd(gm_grid + gridIndexGlobal, thetaX * constVal);
         }
     }
 }
