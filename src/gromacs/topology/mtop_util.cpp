@@ -387,6 +387,12 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop)
     return iloop;
 }
 
+gmx_mtop_ilistloop_t
+gmx_mtop_ilistloop_init(const gmx_mtop_t &mtop)
+{
+    return gmx_mtop_ilistloop_init(&mtop);
+}
+
 static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
 {
     sfree(iloop);
@@ -518,6 +524,11 @@ int gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype)
     }
 
     return n;
+}
+
+int gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype)
+{
+    return gmx_mtop_ftype_count(&mtop, ftype);
 }
 
 t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)

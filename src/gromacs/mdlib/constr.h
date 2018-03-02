@@ -50,15 +50,16 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct gmx_wallcycle;
 struct t_blocka;
 struct t_commrec;
-struct t_idef;
 struct t_ilist;
 struct t_inputrec;
 struct t_mdatoms;
@@ -70,88 +71,128 @@ class t_state;
 namespace gmx
 {
 
-class Constraints;
-
-enum
+//! Describes supported flavours of constrained updates.
+enum class ConstraintVariable : int
 {
-    econqCoord,         /* Constrain coordinates (mass weighted)           */
-    econqVeloc,         /* Constrain velocities (mass weighted)            */
-    econqDeriv,         /* Constrain a derivative (mass weighted),         *
-                         * for instance velocity or acceleration,          *
-                         * constraint virial can not be calculated.        */
-    econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con.       */
-    econqForce,         /* Constrain forces (non mass-weighted)            */
-    econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
+    Positions,         /* Constrain positions (mass weighted)             */
+    Velocities,        /* Constrain velocities (mass weighted)            */
+    Derivative,        /* Constrain a derivative (mass weighted),         *
+                        * for instance velocity or acceleration,          *
+                        * constraint virial can not be calculated.        */
+    Deriv_FlexCon,     /* As Derivative, but only output flex. con.       */
+    Force,             /* Constrain forces (non mass-weighted)            */
+    // TODO What does this do? Improve the comment.
+    ForceDispl         /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
-/*! \brief Returns the total number of flexible constraints in the system. */
-int n_flexible_constraints(const Constraints *constr);
+/*! \libinternal
+ * \brief Handles constraints */
+class Constraints
+{
+    private:
+        /*! \brief Constructor
+         *
+         * Private to enforce use of makeConstraints() factory
+         * function. */
+        Constraints(const gmx_mtop_t     &mtop,
+                    const t_inputrec     &ir,
+                    FILE                 *log,
+                    const t_mdatoms      &md,
+                    const t_commrec      *cr,
+                    const gmx_multisim_t &ms,
+                    t_nrnb               *nrnb,
+                    gmx_wallcycle        *wcycle,
+                    bool                  pbcHandlingRequired,
+                    int                   numConstraints,
+                    int                   numSettles);
+    public:
+        /*! \brief This member type helps implement a factory
+         * function, because its objects can access the private
+         * constructor. */
+        struct CreationHelper;
+
+        //! Destructor.
+        ~Constraints();
+
+        /*! \brief Returns the total number of flexible constraints in the system. */
+        int numFlexibleConstraints() const;
+
+        /*! \brief Set up all the local constraints for the domain.
+         *
+         * \todo Make this a callback that is called automatically
+         * once a new domain has been made. */
+        void setConstraints(const gmx_localtop_t &top,
+                            const t_mdatoms      &md);
+
+        /*! \brief Applies constraints to coordinates.
+         *
+         * When econq=ConstraintVariable::Positions constrains
+         * coordinates xprime using th directions in x, min_proj is
+         * not used.
+         *
+         * When econq=ConstraintVariable::Derivative, calculates the
+         * components xprime in the constraint directions and
+         * subtracts these components from min_proj.  So when
+         * min_proj=xprime, the constraint components are projected
+         * out.
+         *
+         * When econq=ConstraintVariable::Deriv_FlexCon, the same is
+         * done as with ConstraintVariable::Derivative, but only the
+         * components of the flexible constraints are stored.
+         *
+         * delta_step is used for determining the constraint reference lengths
+         * when lenA != lenB or will the pull code with a pulling rate.
+         * step + delta_step is the step at which the final configuration
+         * is meant to be; for update delta_step = 1.
+         *
+         * step_scaling can be used to update coordinates based on the time
+         * step multiplied by this factor. Thus, normally 1.0 is passed. The
+         * SD1 integrator uses 0.5 in one of its calls, to correct positions
+         * for half a step of changed velocities.
+         *
+         * If v!=NULL also constrain v by adding the constraint corrections / dt.
+         *
+         * If vir!=NULL calculate the constraint virial.
+         *
+         * Return whether the application of constraints succeeded without error.
+         */
+        bool apply(bool                  bLog,
+                   bool                  bEner,
+                   gmx_int64_t           step,
+                   int                   delta_step,
+                   real                  step_scaling,
+                   rvec                 *x,
+                   rvec                 *xprime,
+                   rvec                 *min_proj,
+                   matrix                box,
+                   real                  lambda,
+                   real                 *dvdlambda,
+                   rvec                 *v,
+                   tensor               *vir,
+                   ConstraintVariable    econq);
+        //! Links the essentialdynamics and constraint code.
+        void saveEdsamPointer(gmx_edsam *ed);
+        //! Getter for use by domain decomposition.
+        const t_blocka *atom2constraints_moltype() const;
+        //! Getter for use by domain decomposition.
+        const int **atom2settle_moltype() const;
+
+        /*! \brief Return the data for reduction for determining
+         * constraint RMS relative deviations, or nullptr when not
+         * supported for any active constraints. */
+        real *rmsdData() const;
+        /*! \brief Return the RMSD of the constraints when available. */
+        real rmsd() const;
+
+    private:
+        //! Implementation type.
+        class Impl;
+        //! Implementation object.
+        PrivateImplPointer<Impl> impl_;
+};
 
 /*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
 void too_many_constraint_warnings(int eConstrAlg, int warncount);
-
-/*! \brief Applies constraints to coordinates.
- *
- * When econq=econqCoord constrains coordinates xprime using th
- * directions in x, min_proj is not used.
- *
- * When econq=econqDeriv, calculates the components xprime in
- * the constraint directions and subtracts these components from min_proj.
- * So when min_proj=xprime, the constraint components are projected out.
- *
- * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
- * but only the components of the flexible constraints are stored.
- *
- * When bMolPBC=TRUE, assume that molecules might be broken: correct PBC.
- *
- * delta_step is used for determining the constraint reference lengths
- * when lenA != lenB or will the pull code with a pulling rate.
- * step + delta_step is the step at which the final configuration
- * is meant to be; for update delta_step = 1.
- *
- * step_scaling can be used to update coordinates based on the time
- * step multiplied by this factor. Thus, normally 1.0 is passed. The
- * SD1 integrator uses 0.5 in one of its calls, to correct positions
- * for half a step of changed velocities.
- *
- * If v!=NULL also constrain v by adding the constraint corrections / dt.
- *
- * If vir!=NULL calculate the constraint virial.
- *
- * Return TRUE if OK, FALSE in case of shake error
- *
- */
-bool constrain(FILE *log, bool bLog, bool bEner,
-               Constraints *constr,
-               const t_idef *idef,
-               const t_inputrec *ir,
-               const t_commrec *cr,
-               const gmx_multisim_t *ms,
-               gmx_int64_t step, int delta_step,
-               real step_scaling,
-               const t_mdatoms *md,
-               rvec *x, rvec *xprime, rvec *min_proj,
-               bool bMolPBC, matrix box,
-               real lambda, real *dvdlambda,
-               rvec *v, tensor *vir,
-               t_nrnb *nrnb, int econq);
-
-/*! \brief Initialize constraints stuff */
-Constraints *init_constraints(FILE *log,
-                              const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              bool doEssentialDynamics,
-                              const t_commrec *cr);
-
-/*! \brief Put a pointer to the essential dynamics constraints into the constr struct. */
-void saveEdsamPointer(Constraints      *constr,
-                      gmx_edsam        *ed);
-
-/*! \brief Set up all the local constraints for this rank. */
-void set_constraints(Constraints             *constr,
-                     gmx_localtop_t          *top,
-                     const t_inputrec        *ir,
-                     const t_mdatoms         *md,
-                     const t_commrec         *cr);
 
 /* The at2con t_blocka struct returned by the routines below
  * contains a list of constraints per atom.
@@ -164,29 +205,16 @@ t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
                      bool bDynamics, int *nflexiblecons);
 
-/*! \brief Returns an array of atom to constraints lists for the moltypes */
-const t_blocka *atom2constraints_moltype(const Constraints *constr);
-
-/*! \brief Returns an array of atom to settles lists for the moltypes */
-const int **atom2settle_moltype(const Constraints *constr);
-
 /*! \brief Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated. */
 #define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
 
 /*! \brief Returns whether there are inter charge group constraints */
-bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
+bool inter_charge_group_constraints(const gmx_mtop_t &mtop);
 
 /*! \brief Returns whether there are inter charge group settles */
-bool inter_charge_group_settles(const gmx_mtop_t *mtop);
-
-/*! \brief Return the data for determining constraint RMS relative deviations.
- * Returns NULL when LINCS is not used. */
-real *constr_rmsd_data(Constraints *constr);
-
-/*! \brief Return the RMSD of the constraint */
-real constr_rmsd(const Constraints *constr);
+bool inter_charge_group_settles(const gmx_mtop_t &mtop);
 
 } // namespace
 

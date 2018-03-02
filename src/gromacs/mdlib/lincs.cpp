@@ -577,7 +577,7 @@ calc_dr_x_f_simd(int                       b0,
 static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
                       Lincs *lincsd, int th,
                       real *invmass,
-                      int econq, bool bCalcDHDL,
+                      ConstraintVariable econq, bool bCalcDHDL,
                       bool bCalcVir, tensor rmdf)
 {
     int      b0, b1, b;
@@ -592,7 +592,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     r      = lincsd->tmpv;
     blnr   = lincsd->blnr;
     blbnb  = lincsd->blbnb;
-    if (econq != econqForce)
+    if (econq != ConstraintVariable::Force)
     {
         /* Use mass-weighted parameters */
         blc  = lincsd->blc;
@@ -690,7 +690,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
     /* nrec*(ncons+2*nrtot) flops */
 
-    if (econq == econqDeriv_FlexCon)
+    if (econq == ConstraintVariable::Deriv_FlexCon)
     {
         /* We only want to constraint the flexible constraints,
          * so we mask out the normal ones by setting sol to 0.
@@ -714,7 +714,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      * so we pass invmass=NULL, which results in the use of 1 for all atoms.
      */
     lincs_update_atoms(lincsd, th, 1.0, sol, r,
-                       (econq != econqForce) ? invmass : nullptr, fp);
+                       (econq != ConstraintVariable::Force) ? invmass : nullptr, fp);
 
     if (bCalcDHDL)
     {
@@ -1485,7 +1485,7 @@ static int int_comp(const void *a, const void *b)
     return (*(int *)a) - (*(int *)b);
 }
 
-Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
                   int nflexcon_global, const t_blocka *at2con,
                   bool bPLINCS, int nIter, int nProjOrder)
 {
@@ -1509,9 +1509,9 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
     li->nOrder = nProjOrder;
 
     li->max_connect = 0;
-    for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
+    for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
     {
-        for (int a = 0; a < mtop->moltype[mt].atoms.nr; a++)
+        for (int a = 0; a < mtop.moltype[mt].atoms.nr; a++)
         {
             li->max_connect = std::max(li->max_connect,
                                        at2con[mt].index[a + 1] - at2con[mt].index[a]);
@@ -1520,9 +1520,9 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 
     li->ncg_triangle = 0;
     bMoreThanTwoSeq  = FALSE;
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    for (const gmx_molblock_t &molb : mtop.molblock)
     {
-        const gmx_moltype_t &molt = mtop->moltype[molb.type];
+        const gmx_moltype_t &molt = mtop.moltype[molb.type];
 
         li->ncg_triangle +=
             molb.nmol*
@@ -1772,7 +1772,7 @@ static void assign_constraint(Lincs *li,
  * to other constraints, and if so add those connected constraints to our task. */
 static void check_assign_connected(Lincs *li,
                                    const t_iatom *iatom,
-                                   const t_idef *idef,
+                                   const t_idef &idef,
                                    int bDynamics,
                                    int a1, int a2,
                                    const t_blocka *at2con)
@@ -1804,8 +1804,8 @@ static void check_assign_connected(Lincs *li,
                 real lenA, lenB;
 
                 type = iatom[cc*3];
-                lenA = idef->iparams[type].constr.dA;
-                lenB = idef->iparams[type].constr.dB;
+                lenA = idef.iparams[type].constr.dA;
+                lenB = idef.iparams[type].constr.dB;
 
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {
@@ -1821,7 +1821,7 @@ static void check_assign_connected(Lincs *li,
  * in the triangle to our task. */
 static void check_assign_triangle(Lincs *li,
                                   const t_iatom *iatom,
-                                  const t_idef *idef,
+                                  const t_idef &idef,
                                   int bDynamics,
                                   int constraint_index,
                                   int a1, int a2,
@@ -1907,8 +1907,8 @@ static void check_assign_triangle(Lincs *li,
 
                 i    = c_triangle[end]*3;
                 type = iatom[i];
-                lenA = idef->iparams[type].constr.dA;
-                lenB = idef->iparams[type].constr.dB;
+                lenA = idef.iparams[type].constr.dA;
+                lenB = idef.iparams[type].constr.dB;
 
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {
@@ -1965,8 +1965,8 @@ static void set_matrix_indices(Lincs                *li,
     }
 }
 
-void set_lincs(const t_idef         *idef,
-               const t_mdatoms      *md,
+void set_lincs(const t_idef         &idef,
+               const t_mdatoms      &md,
                bool                  bDynamics,
                const t_commrec      *cr,
                Lincs                *li)
@@ -1994,7 +1994,7 @@ void set_lincs(const t_idef         *idef,
     }
 
     /* This is the local topology, so there are only F_CONSTR constraints */
-    if (idef->il[F_CONSTR].nr == 0)
+    if (idef.il[F_CONSTR].nr == 0)
     {
         /* There are no constraints,
          * we do not need to fill any data structures.
@@ -2022,12 +2022,12 @@ void set_lincs(const t_idef         *idef,
     }
     else
     {
-        natoms = md->homenr;
+        natoms = md.homenr;
     }
-    at2con = make_at2con(0, natoms, idef->il, idef->iparams, bDynamics,
+    at2con = make_at2con(0, natoms, idef.il, idef.iparams, bDynamics,
                          &nflexcon);
 
-    ncon_tot = idef->il[F_CONSTR].nr/3;
+    ncon_tot = idef.il[F_CONSTR].nr/3;
 
     /* Ensure we have enough padding for aligned loads for each thread */
     if (ncon_tot + li->ntask*simd_width > li->nc_alloc || li->nc_alloc == 0)
@@ -2053,7 +2053,7 @@ void set_lincs(const t_idef         *idef,
         resize_real_aligned(&li->mlambda, li->nc_alloc);
     }
 
-    iatom = idef->il[F_CONSTR].iatoms;
+    iatom = idef.il[F_CONSTR].iatoms;
 
     ncc_alloc_old = li->ncc_alloc;
     li->blnr[0]   = li->ncc;
@@ -2127,8 +2127,8 @@ void set_lincs(const t_idef         *idef,
                 type   = iatom[3*con];
                 a1     = iatom[3*con + 1];
                 a2     = iatom[3*con + 2];
-                lenA   = idef->iparams[type].constr.dA;
-                lenB   = idef->iparams[type].constr.dB;
+                lenA   = idef.iparams[type].constr.dA;
+                lenB   = idef.iparams[type].constr.dB;
                 /* Skip the flexible constraints when not doing dynamics */
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {
@@ -2268,10 +2268,10 @@ void set_lincs(const t_idef         *idef,
 
     if (li->ntask > 1)
     {
-        lincs_thread_setup(li, md->nr);
+        lincs_thread_setup(li, md.nr);
     }
 
-    set_lincs_matrix(li, md->invmass, md->lambda);
+    set_lincs_matrix(li, md.invmass, md.lambda);
 }
 
 //! Issues a warning when LINCS constraints cannot be satisfied.
@@ -2400,17 +2400,17 @@ static void cconerr(const Lincs *lincsd,
 }
 
 bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
-                     const t_inputrec *ir,
+                     const t_inputrec &ir,
                      gmx_int64_t step,
-                     Lincs *lincsd, const t_mdatoms *md,
+                     Lincs *lincsd, const t_mdatoms &md,
                      const t_commrec *cr,
-                     const gmx_multisim_t *ms,
+                     const gmx_multisim_t &ms,
                      rvec *x, rvec *xprime, rvec *min_proj,
                      matrix box, t_pbc *pbc,
                      real lambda, real *dvdlambda,
                      real invdt, rvec *v,
                      bool bCalcVir, tensor vir_r_m_dr,
-                     int econq,
+                     ConstraintVariable econq,
                      t_nrnb *nrnb,
                      int maxwarn, int *warncount)
 {
@@ -2427,7 +2427,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
      * We can also easily check if any constraint length is changed,
      * if not dH/dlambda=0 and we can also set the boolean to FALSE.
      */
-    bCalcDHDL = (ir->efep != efepNO && dvdlambda != nullptr);
+    bCalcDHDL = (ir.efep != efepNO && dvdlambda != nullptr);
 
     if (lincsd->nc == 0 && cr->dd == nullptr)
     {
@@ -2440,16 +2440,16 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         return bOK;
     }
 
-    if (econq == econqCoord)
+    if (econq == ConstraintVariable::Positions)
     {
         /* We can't use bCalcDHDL here, since NULL can be passed for dvdlambda
          * also with efep!=fepNO.
          */
-        if (ir->efep != efepNO)
+        if (ir.efep != efepNO)
         {
-            if (md->nMassPerturbed && lincsd->matlam != md->lambda)
+            if (md.nMassPerturbed && lincsd->matlam != md.lambda)
             {
-                set_lincs_matrix(lincsd, md->invmass, md->lambda);
+                set_lincs_matrix(lincsd, md.invmass, md.lambda);
             }
 
             for (i = 0; i < lincsd->nc; i++)
@@ -2508,9 +2508,9 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 clear_mat(lincsd->task[th].vir_r_m_dr);
 
                 do_lincs(x, xprime, box, pbc, lincsd, th,
-                         md->invmass, cr,
+                         md.invmass, cr,
                          bCalcDHDL,
-                         ir->LincsWarnAngle, &bWarn,
+                         ir.LincsWarnAngle, &bWarn,
                          invdt, v, bCalcVir,
                          th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
@@ -2553,9 +2553,9 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
             {
                 cconerr(lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
-                if (isMultiSim(ms))
+                if (isMultiSim(&ms))
                 {
-                    sprintf(buf3, " in simulation %d", ms->sim);
+                    sprintf(buf3, " in simulation %d", ms.sim);
                 }
                 else
                 {
@@ -2564,7 +2564,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 sprintf(buf, "\nStep %s, time %g (ps)  LINCS WARNING%s\n"
                         "relative constraint deviation after LINCS:\n"
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
-                        gmx_step_str(step, buf2), ir->init_t+step*ir->delta_t,
+                        gmx_step_str(step, buf2), ir.init_t+step*ir.delta_t,
                         buf3,
                         std::sqrt(p_ssd/ncons_loc), p_max,
                         ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
@@ -2576,7 +2576,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 fprintf(stderr, "%s", buf);
                 lincs_warning(fplog, cr->dd, x, xprime, pbc,
                               lincsd->nc, lincsd->bla, lincsd->bllen,
-                              ir->LincsWarnAngle, maxwarn, warncount);
+                              ir.LincsWarnAngle, maxwarn, warncount);
             }
             bOK = (p_max < 0.5);
         }
@@ -2602,7 +2602,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
                 int th = gmx_omp_get_thread_num();
 
                 do_lincsp(x, xprime, min_proj, pbc, lincsd, th,
-                          md->invmass, econq, bCalcDHDL,
+                          md.invmass, econq, bCalcDHDL,
                           bCalcVir, th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -2620,11 +2620,11 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         {
             dhdlambda += lincsd->task[th].dhdlambda;
         }
-        if (econq == econqCoord)
+        if (econq == ConstraintVariable::Positions)
         {
             /* dhdlambda contains dH/dlambda*dt^2, correct for this */
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dhdlambda /= ir->delta_t*ir->delta_t;
+            dhdlambda /= ir.delta_t*ir.delta_t;
         }
         *dvdlambda += dhdlambda;
     }

@@ -63,6 +63,8 @@ struct t_pbc;
 namespace gmx
 {
 
+enum class ConstraintVariable : int;
+
 /* Abstract type for LINCS that is defined only in the file that uses it */
 class Lincs;
 
@@ -73,12 +75,12 @@ real *lincs_rmsd_data(Lincs *lincsd);
 real lincs_rmsd(const Lincs *lincsd);
 
 /*! \brief Initializes and returns the lincs data struct. */
-Lincs *init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
                   int nflexcon_global, const t_blocka *at2con,
                   bool bPLINCS, int nIter, int nProjOrder);
 
 /*! \brief Initialize lincs stuff */
-void set_lincs(const t_idef *idef, const t_mdatoms *md,
+void set_lincs(const t_idef &idef, const t_mdatoms &md,
                bool bDynamics, const t_commrec *cr,
                Lincs *li);
 
@@ -86,18 +88,18 @@ void set_lincs(const t_idef *idef, const t_mdatoms *md,
  *
  * \returns true if the constraining succeeded. */
 bool
-constrain_lincs(FILE *log, bool bLog, bool bEner,
-                const t_inputrec *ir,
+constrain_lincs(FILE *fplog, bool bLog, bool bEner,
+                const t_inputrec &ir,
                 gmx_int64_t step,
-                Lincs *lincsd, const t_mdatoms *md,
+                Lincs *lincsd, const t_mdatoms &md,
                 const t_commrec *cr,
-                const gmx_multisim_t *ms,
+                const gmx_multisim_t &ms,
                 rvec *x, rvec *xprime, rvec *min_proj,
                 matrix box, t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
+                ConstraintVariable econq,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
 
