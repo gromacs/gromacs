@@ -330,7 +330,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 static void atoms_to_constraints(gmx_domdec_t *dd,
                                  const gmx_mtop_t *mtop,
                                  const int *cginfo,
-                                 const t_blocka *at2con_mt, int nrec,
+                                 gmx::ArrayRef<const t_blocka> at2con_mt, int nrec,
                                  t_ilist *ilc_local,
                                  ind_req_t *ireq)
 {
@@ -443,14 +443,14 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               gmx::Constraints *constr, int nrec,
                               t_ilist *il_local)
 {
-    gmx_domdec_constraints_t   *dc;
-    t_ilist                    *ilc_local, *ils_local;
-    ind_req_t                  *ireq;
-    const t_blocka             *at2con_mt;
-    const int                 **at2settle_mt;
-    gmx_hash_t                 *ga2la_specat;
+    gmx_domdec_constraints_t     *dc;
+    t_ilist                      *ilc_local, *ils_local;
+    ind_req_t                    *ireq;
+    gmx::ArrayRef<const t_blocka> at2con_mt;
+    const int                   **at2settle_mt;
+    gmx_hash_t                   *ga2la_specat;
     int at_end, i, j;
-    t_iatom                    *iap;
+    t_iatom                      *iap;
 
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
@@ -482,7 +482,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         // Currently unreachable
-        at2con_mt = nullptr;
+        at2con_mt = gmx::EmptyArrayRef();
         ireq      = nullptr;
     }
 
@@ -512,14 +512,14 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         /* Do the constraints, if present, on the first thread.
          * Do the settles on all other threads.
          */
-        t0_set = ((at2con_mt != nullptr && dc->nthread > 1) ? 1 : 0);
+        t0_set = ((!at2con_mt.empty() && dc->nthread > 1) ? 1 : 0);
 
 #pragma omp parallel for num_threads(dc->nthread) schedule(static)
         for (thread = 0; thread < dc->nthread; thread++)
         {
             try
             {
-                if (at2con_mt && thread == 0)
+                if (!at2con_mt.empty() && thread == 0)
                 {
                     atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
                                          ilc_local, ireq);

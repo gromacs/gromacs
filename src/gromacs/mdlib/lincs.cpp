@@ -74,6 +74,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/cstringutil.h"
@@ -208,9 +209,9 @@ class Lincs
         real           *tmp4;
         /*! @} */
         //! The Lagrange multipliers times -1.
-        real           *mlambda;
+        real               *mlambda;
         //! Storage for the constraint RMS relative deviation output.
-        real            rmsd_data[3];
+        std::array<real, 2> rmsdData;
 };
 
 /*! \brief Define simd_width for memory allocation used for SIMD code */
@@ -224,16 +225,16 @@ static const int simd_width = 1;
    AlignedAllocator, which currently forces 128 byte alignment. */
 static const int align_bytes = 128;
 
-real *lincs_rmsd_data(Lincs *lincsd)
+ArrayRef<real> lincs_rmsdData(Lincs *lincsd)
 {
-    return lincsd->rmsd_data;
+    return lincsd->rmsdData;
 }
 
 real lincs_rmsd(const Lincs *lincsd)
 {
-    if (lincsd->rmsd_data[0] > 0)
+    if (lincsd->rmsdData[0] > 0)
     {
-        return std::sqrt(lincsd->rmsd_data[1]/lincsd->rmsd_data[0]);
+        return std::sqrt(lincsd->rmsdData[1]/lincsd->rmsdData[0]);
     }
     else
     {
@@ -1385,7 +1386,7 @@ static void set_lincs_matrix(Lincs *li, real *invmass, real lambda)
 
 //! Finds all triangles of atoms that share constraints to a central atom.
 static int count_triangle_constraints(const t_ilist  *ilist,
-                                      const t_blocka *at2con)
+                                      const t_blocka &at2con)
 {
     int      ncon1, ncon_tot;
     int      c0, a00, a01, n1, c1, a10, a11, ac1, n2, c2, a20, a21;
@@ -1406,9 +1407,9 @@ static int count_triangle_constraints(const t_ilist  *ilist,
         iap       = constr_iatomptr(ncon1, ia1, ia2, c0);
         a00       = iap[1];
         a01       = iap[2];
-        for (n1 = at2con->index[a01]; n1 < at2con->index[a01+1]; n1++)
+        for (n1 = at2con.index[a01]; n1 < at2con.index[a01+1]; n1++)
         {
-            c1 = at2con->a[n1];
+            c1 = at2con.a[n1];
             if (c1 != c0)
             {
                 iap = constr_iatomptr(ncon1, ia1, ia2, c1);
@@ -1422,9 +1423,9 @@ static int count_triangle_constraints(const t_ilist  *ilist,
                 {
                     ac1 = a10;
                 }
-                for (n2 = at2con->index[ac1]; n2 < at2con->index[ac1+1]; n2++)
+                for (n2 = at2con.index[ac1]; n2 < at2con.index[ac1+1]; n2++)
                 {
-                    c2 = at2con->a[n2];
+                    c2 = at2con.a[n2];
                     if (c2 != c0 && c2 != c1)
                     {
                         iap = constr_iatomptr(ncon1, ia1, ia2, c2);
@@ -1449,7 +1450,7 @@ static int count_triangle_constraints(const t_ilist  *ilist,
 
 //! Finds sequences of sequential constraints.
 static bool more_than_two_sequential_constraints(const t_ilist  *ilist,
-                                                 const t_blocka *at2con)
+                                                 const t_blocka &at2con)
 {
     t_iatom  *ia1, *ia2, *iap;
     int       ncon1, ncon_tot, c;
@@ -1469,8 +1470,8 @@ static bool more_than_two_sequential_constraints(const t_ilist  *ilist,
         a1  = iap[1];
         a2  = iap[2];
         /* Check if this constraint has constraints connected at both atoms */
-        if (at2con->index[a1+1] - at2con->index[a1] > 1 &&
-            at2con->index[a2+1] - at2con->index[a2] > 1)
+        if (at2con.index[a1+1] - at2con.index[a1] > 1 &&
+            at2con.index[a2+1] - at2con.index[a2] > 1)
         {
             bMoreThanTwoSequentialConstraints = TRUE;
         }
@@ -1486,7 +1487,7 @@ static int int_comp(const void *a, const void *b)
 }
 
 Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
-                  int nflexcon_global, const t_blocka *at2con,
+                  int nflexcon_global, ArrayRef<const t_blocka> at2con,
                   bool bPLINCS, int nIter, int nProjOrder)
 {
     Lincs                *li;
@@ -1526,10 +1527,10 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
 
         li->ncg_triangle +=
             molb.nmol*
-            count_triangle_constraints(molt.ilist, &at2con[molb.type]);
+            count_triangle_constraints(molt.ilist, at2con[molb.type]);
 
         if (!bMoreThanTwoSeq &&
-            more_than_two_sequential_constraints(molt.ilist, &at2con[molb.type]))
+            more_than_two_sequential_constraints(molt.ilist, at2con[molb.type]))
         {
             bMoreThanTwoSeq = TRUE;
         }
@@ -2434,8 +2435,7 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
     {
         if (bLog || bEner)
         {
-            lincsd->rmsd_data[0] = 0;
-            lincsd->rmsd_data[1] = 0;
+            lincsd->rmsdData = {{0}};
         }
 
         return bOK;
@@ -2530,14 +2530,12 @@ bool constrain_lincs(FILE *fplog, bool bLog, bool bEner,
         {
             cconerr(lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
-            lincsd->rmsd_data[0] = ncons_loc;
-            lincsd->rmsd_data[1] = p_ssd;
+            lincsd->rmsdData[0] = ncons_loc;
+            lincsd->rmsdData[1] = p_ssd;
         }
         else
         {
-            lincsd->rmsd_data[0] = 0;
-            lincsd->rmsd_data[1] = 0;
-            lincsd->rmsd_data[2] = 0;
+            lincsd->rmsdData = {{0}};
         }
         if (bLog && fplog && lincsd->nc > 0)
         {

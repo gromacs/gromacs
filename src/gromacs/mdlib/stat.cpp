@@ -155,7 +155,6 @@ void global_stat(gmx_global_stat_t gs,
     int        inn[egNR];
     real       copyenerd[F_NRE];
     int        nener, j;
-    real      *rmsd_data = nullptr;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
     bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
@@ -227,16 +226,16 @@ void global_stat(gmx_global_stat_t gs,
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
 
-
+    gmx::ArrayRef<real> rmsdData;
     if (bEner)
     {
         ie  = add_binr(rb, nener, copyenerd);
         if (constr)
         {
-            rmsd_data = constr->rmsdData();
-            if (rmsd_data)
+            rmsdData = constr->rmsdData();
+            if (!rmsdData.empty())
             {
-                irmsd = add_binr(rb, 2, rmsd_data);
+                irmsd = add_binr(rb, 2, rmsdData.data());
             }
         }
         if (!inputrecNeedMutot(inputrec))
@@ -331,9 +330,9 @@ void global_stat(gmx_global_stat_t gs,
     if (bEner)
     {
         extract_binr(rb, ie, nener, copyenerd);
-        if (rmsd_data)
+        if (!rmsdData.empty())
         {
-            extract_binr(rb, irmsd, 2, rmsd_data);
+            extract_binr(rb, irmsd, rmsdData);
         }
         if (!inputrecNeedMutot(inputrec))
         {
