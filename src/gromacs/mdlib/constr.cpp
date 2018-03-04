@@ -77,6 +77,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -127,33 +128,31 @@ class Constraints::Impl
                    tensor               *vir,
                    ConstraintVariable    econq);
         //! The total number of constraints.
-        int                ncon_tot = 0;
+        int                   ncon_tot = 0;
         //! The number of flexible constraints.
-        int                nflexcon = 0;
-        //! The size of at2con = number of moltypes.
-        int                n_at2con_mt = 0;
-        //! A list of atoms to constraints.
-        t_blocka          *at2con_mt = nullptr;
+        int                   nflexcon = 0;
+        //! A list of atoms to constraints for each moleculetype.
+        std::vector<t_blocka> at2con_mt;
         //! The size of at2settle = number of moltypes
-        int                n_at2settle_mt = 0;
+        int                   n_at2settle_mt = 0;
         //! A list of atoms to settles.
-        int              **at2settle_mt = nullptr;
+        int                 **at2settle_mt = nullptr;
         //! Whether any SETTLES cross charge-group boundaries.
-        bool               bInterCGsettles = false;
+        bool                  bInterCGsettles = false;
         //! LINCS data.
-        Lincs             *lincsd = nullptr;
+        Lincs                *lincsd = nullptr;
         //! SHAKE data.
-        shakedata         *shaked = nullptr;
+        shakedata            *shaked = nullptr;
         //! SETTLE data.
-        settledata        *settled = nullptr;
+        settledata           *settled = nullptr;
         //! The maximum number of warnings.
-        int                maxwarn = 0;
+        int                   maxwarn = 0;
         //! The number of warnings for LINCS.
-        int                warncount_lincs = 0;
+        int                   warncount_lincs = 0;
         //! The number of warnings for SETTLE.
-        int                warncount_settle = 0;
+        int                   warncount_settle = 0;
         //! The essential dynamics data.
-        gmx_edsam_t        ed = nullptr;
+        gmx_edsam_t           ed = nullptr;
 
         //! Thread-local virial contribution.
         tensor            *vir_r_m_dr_th = {0};
@@ -685,15 +684,15 @@ Constraints::Impl::apply(bool                  bLog,
     return bOK;
 }
 
-real *Constraints::rmsdData() const
+ArrayRef<real> Constraints::rmsdData() const
 {
     if (impl_->lincsd)
     {
-        return lincs_rmsd_data(impl_->lincsd);
+        return lincs_rmsdData(impl_->lincsd);
     }
     else
     {
-        return nullptr;
+        return EmptyArrayRef();
     }
 }
 
@@ -886,6 +885,26 @@ Constraints::setConstraints(const gmx_localtop_t &top,
     impl_->setConstraints(top, md);
 }
 
+/*! \brief Makes a per-moleculetype container of mappings from atom
+ * indices to constraint indices.
+ *
+ * Note that flexible constraints are only enabled with a dynamical integrator. */
+static std::vector<t_blocka>
+makeAtomToConstraintMappings(const gmx_mtop_t            &mtop,
+                             FlexibleConstraintTreatment  flexibleConstraintTreatment)
+{
+    std::vector<t_blocka> mapping;
+    mapping.reserve(mtop.moltype.size());
+    for (const gmx_moltype_t &moltype : mtop.moltype)
+    {
+        mapping.push_back(make_at2con(moltype.atoms.nr,
+                                      moltype.ilist,
+                                      mtop.ffparams.iparams,
+                                      flexibleConstraintTreatment));
+    }
+    return mapping;
+}
+
 Constraints::Constraints(const gmx_mtop_t     &mtop,
                          const t_inputrec     &ir,
                          FILE                 *log,
@@ -941,15 +960,8 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
     nflexcon = 0;
     if (numConstraints > 0)
     {
-        n_at2con_mt = mtop.moltype.size();
-        snew(at2con_mt, n_at2con_mt);
-        for (int mt = 0; mt < static_cast<int>(mtop.moltype.size()); mt++)
-        {
-            at2con_mt[mt] = make_at2con(mtop.moltype[mt].atoms.nr,
-                                        mtop.moltype[mt].ilist,
-                                        mtop.ffparams.iparams,
-                                        flexibleConstraintTreatment(EI_DYNAMICS(ir_p.eI)));
-        }
+        auto at2con_mt = makeAtomToConstraintMappings(mtop,
+                                                      flexibleConstraintTreatment(EI_DYNAMICS(ir.eI)));
 
         for (const gmx_molblock_t &molblock : mtop.molblock)
         {
@@ -1067,7 +1079,8 @@ void Constraints::saveEdsamPointer(gmx_edsam_t ed)
     impl_->ed = ed;
 }
 
-const t_blocka *Constraints::atom2constraints_moltype() const
+const ArrayRef<const t_blocka>
+Constraints::atom2constraints_moltype() const
 {
     return impl_->at2con_mt;
 }
