@@ -40,6 +40,7 @@
 #include "rbin.h"
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
 t_bin *mk_bin(void)
@@ -66,7 +67,7 @@ void reset_bin(t_bin *b)
     b->nreal = 0;
 }
 
-int add_binr(t_bin *b, int nr, real r[])
+int add_binr(t_bin *b, int nr, const real r[])
 {
 #define MULT 4
     int     i, rest, index;
@@ -97,6 +98,11 @@ int add_binr(t_bin *b, int nr, real r[])
     b->nreal += nr;
 
     return index;
+}
+
+int add_binr(t_bin *b, gmx::ArrayRef<const real> r)
+{
+    return add_binr(b, r.size(), r.data());
 }
 
 int add_bind(t_bin *b, int nr, double r[])
@@ -149,6 +155,11 @@ void extract_binr(t_bin *b, int index, int nr, real r[])
     {
         r[i] = rbuf[i];
     }
+}
+
+void extract_binr(t_bin *b, int index, gmx::ArrayRef<real> r)
+{
+    extract_binr(b, index, r.size(), r.data());
 }
 
 void extract_bind(t_bin *b, int index, int nr, double r[])

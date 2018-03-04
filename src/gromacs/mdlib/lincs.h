@@ -47,6 +47,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -69,14 +70,14 @@ enum class ConstraintVariable : int;
 class Lincs;
 
 /*! \brief Return the data for determining constraint RMS relative deviations. */
-real *lincs_rmsd_data(Lincs *lincsd);
+ArrayRef<real> lincs_rmsdData(Lincs *lincsd);
 
 /*! \brief Return the RMSD of the constraint. */
 real lincs_rmsd(const Lincs *lincsd);
 
 /*! \brief Initializes and returns the lincs data struct. */
 Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
-                  int nflexcon_global, const t_blocka *at2con,
+                  int nflexcon_global, ArrayRef<const t_blocka> at2con,
                   bool bPLINCS, int nIter, int nProjOrder);
 
 /*! \brief Initialize lincs stuff */
