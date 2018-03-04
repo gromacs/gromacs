@@ -710,45 +710,39 @@ real Constraints::rmsd() const
 
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     bool bDynamics, int *nflexiblecons)
+                     bool bDynamics)
 {
-    int      *count, ncon, con, con_tot, nflexcon, ftype, i, a;
-    t_iatom  *ia;
+    int      *count;
     t_blocka  at2con;
-    bool      bFlexCon;
 
     snew(count, natoms);
-    nflexcon = 0;
-    for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        ncon = ilist[ftype].nr/3;
-        ia   = ilist[ftype].iatoms;
-        for (con = 0; con < ncon; con++)
+        int      ncon    = ilist[ftype].nr/3;
+        t_iatom *ia      = ilist[ftype].iatoms;
+        for (int con = 0; con < ncon; con++)
         {
-            bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-                        iparams[ia[0]].constr.dB == 0);
-            if (bFlexCon)
-            {
-                nflexcon++;
-            }
+            bool bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
+                             iparams[ia[0]].constr.dB == 0);
+            // Flexible constraints are only applied with dynamical
+            // integrators, not e.g. energy minimization.
             if (bDynamics || !bFlexCon)
             {
-                for (i = 1; i < 3; i++)
+                for (int i = 1; i < 3; i++)
                 {
-                    a = ia[i] - start;
+                    int a = ia[i] - start;
                     count[a]++;
                 }
             }
             ia += 3;
         }
     }
-    *nflexiblecons = nflexcon;
 
     at2con.nr           = natoms;
     at2con.nalloc_index = at2con.nr+1;
     snew(at2con.index, at2con.nalloc_index);
     at2con.index[0] = 0;
-    for (a = 0; a < natoms; a++)
+    for (int a = 0; a < natoms; a++)
     {
         at2con.index[a+1] = at2con.index[a] + count[a];
         count[a]          = 0;
@@ -760,20 +754,20 @@ t_blocka make_at2con(int start, int natoms,
     /* The F_CONSTRNC constraints have constraint numbers
      * that continue after the last F_CONSTR constraint.
      */
-    con_tot = 0;
-    for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    int con_tot = 0;
+    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        ncon = ilist[ftype].nr/3;
-        ia   = ilist[ftype].iatoms;
-        for (con = 0; con < ncon; con++)
+        int      ncon = ilist[ftype].nr/3;
+        t_iatom *ia   = ilist[ftype].iatoms;
+        for (int con = 0; con < ncon; con++)
         {
-            bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-                        iparams[ia[0]].constr.dB == 0);
+            bool bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
+                             iparams[ia[0]].constr.dB == 0);
             if (bDynamics || !bFlexCon)
             {
-                for (i = 1; i < 3; i++)
+                for (int i = 1; i < 3; i++)
                 {
-                    a = ia[i] - start;
+                    int a = ia[i] - start;
                     at2con.a[at2con.index[a]+count[a]++] = con_tot;
                 }
             }
@@ -785,6 +779,29 @@ t_blocka make_at2con(int start, int natoms,
     sfree(count);
 
     return at2con;
+}
+
+int countFlexibleConstraints(const t_ilist   *ilist,
+                             const t_iparams *iparams)
+{
+    int nflexcon = 0;
+    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    {
+        const int numIatomsPerConstraint = 3;
+        int       ncon                   = ilist[ftype].nr /  numIatomsPerConstraint;
+        t_iatom  *ia                     = ilist[ftype].iatoms;
+        for (int con = 0; con < ncon; con++)
+        {
+            if (iparams[ia[0]].constr.dA == 0 &&
+                iparams[ia[0]].constr.dB == 0)
+            {
+                nflexcon++;
+            }
+            ia += numIatomsPerConstraint;
+        }
+    }
+
+    return nflexcon;
 }
 
 //! Returns the index of the settle to which each atom belongs.
@@ -921,18 +938,17 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
         snew(at2con_mt, n_at2con_mt);
         for (int mt = 0; mt < static_cast<int>(mtop.moltype.size()); mt++)
         {
-            int nflexcon;
             at2con_mt[mt] = make_at2con(0, mtop.moltype[mt].atoms.nr,
                                         mtop.moltype[mt].ilist,
                                         mtop.ffparams.iparams,
-                                        EI_DYNAMICS(ir.eI), &nflexcon);
-            for (const gmx_molblock_t &molblock : mtop.molblock)
-            {
-                if (molblock.type == mt)
-                {
-                    nflexcon += molblock.nmol*nflexcon;
-                }
-            }
+                                        EI_DYNAMICS(ir.eI));
+        }
+
+        for (const gmx_molblock_t &molblock : mtop.molblock)
+        {
+            int count = countFlexibleConstraints(mtop.moltype[molblock.type].ilist,
+                                                 mtop.ffparams.iparams);
+            nflexcon += molblock.nmol*count;
         }
 
         if (nflexcon > 0)

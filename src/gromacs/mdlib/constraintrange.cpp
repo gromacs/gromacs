@@ -157,7 +157,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
                                  const t_iparams     *iparams,
                                  const t_inputrec    *ir)
 {
-    int      natoms, nflexcon, *path, at, count;
+    int      natoms, *path, at, count;
 
     t_blocka at2con;
     real     r0, r1, r2maxA, r2maxB, rmax, lam0, lam1;
@@ -171,7 +171,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
     natoms = molt->atoms.nr;
 
     at2con = make_at2con(0, natoms, molt->ilist, iparams,
-                         EI_DYNAMICS(ir->eI), &nflexcon);
+                         EI_DYNAMICS(ir->eI));
     snew(path, 1+ir->nProjOrder);
     for (at = 0; at < 1+ir->nProjOrder; at++)
     {
