@@ -1971,7 +1971,7 @@ void set_lincs(const t_idef         &idef,
                const t_commrec      *cr,
                Lincs                *li)
 {
-    int          natoms, nflexcon;
+    int          natoms;
     t_blocka     at2con;
     t_iatom     *iatom;
     int          i, ncc_alloc_old, ncon_tot;
@@ -2024,8 +2024,7 @@ void set_lincs(const t_idef         &idef,
     {
         natoms = md.homenr;
     }
-    at2con = make_at2con(0, natoms, idef.il, idef.iparams, bDynamics,
-                         &nflexcon);
+    at2con = make_at2con(0, natoms, idef.il, idef.iparams, bDynamics);
 
     ncon_tot = idef.il[F_CONSTR].nr/3;
 
@@ -2073,7 +2072,7 @@ void set_lincs(const t_idef         &idef,
         /* With energy minimization, flexible constraints are ignored
          * (and thus minimized, as they should be).
          */
-        ncon_assign -= nflexcon;
+        ncon_assign -= countFlexibleConstraints(idef.il, idef.iparams);
     }
 
     /* Set the target constraint count per task to exactly uniform,

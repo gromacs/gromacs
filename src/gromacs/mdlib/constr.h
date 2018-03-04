@@ -204,7 +204,11 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount);
 /*! \brief Returns a block struct to go from atoms to constraints */
 t_blocka make_at2con(int start, int natoms,
                      const t_ilist *ilist, const t_iparams *iparams,
-                     bool bDynamics, int *nflexiblecons);
+                     bool bDynamics);
+
+//! Return the number of flexible constraints in the \c ilist and \c iparams.
+int countFlexibleConstraints(const t_ilist   *ilist,
+                             const t_iparams *iparams);
 
 /*! \brief Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
