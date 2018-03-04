@@ -50,6 +50,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
@@ -175,14 +176,14 @@ class Constraints
         //! Links the essentialdynamics and constraint code.
         void saveEdsamPointer(gmx_edsam *ed);
         //! Getter for use by domain decomposition.
-        const t_blocka *atom2constraints_moltype() const;
+        const ArrayRef<const t_blocka> atom2constraints_moltype() const;
         //! Getter for use by domain decomposition.
         const int **atom2settle_moltype() const;
 
         /*! \brief Return the data for reduction for determining
-         * constraint RMS relative deviations, or nullptr when not
-         * supported for any active constraints. */
-        real *rmsdData() const;
+         * constraint RMS relative deviations, or an empty ArrayRef
+         * when not supported for any active constraints. */
+        ArrayRef<real> rmsdData() const;
         /*! \brief Return the RMSD of the constraints when available. */
         real rmsd() const;
 
