@@ -631,10 +631,11 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
+                real angleX = 2*M_PI*dist(rng);
+                real angleY = 2*M_PI*dist(rng);
+                real angleZ = 2*M_PI*dist(rng);
                 rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, nullptr,
-                            2*M_PI*dist(rng),
-                            2*M_PI*dist(rng),
-                            2*M_PI*dist(rng));
+                            angleX, angleY, angleZ);
                 /* Shift to the insertion location */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
