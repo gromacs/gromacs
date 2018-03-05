@@ -145,3 +145,9 @@ each simulation was running on a single MPI rank. When a simulation
 itself used multiple MPI ranks, the run would stop with an MPI error.
 
 :issue:`2433`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Made multi-atom TPI reproducible with different compilers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
