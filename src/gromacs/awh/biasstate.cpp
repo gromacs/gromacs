@@ -352,6 +352,7 @@ int BiasState::warnForHistogramAnomalies(const Grid  &grid,
                                          FILE        *fplog,
                                          int          maxNumWarnings) const
 {
+    GMX_ASSERT(fplog != nullptr, "Warnings can only be issued if there is log file.");
     const double maxHistogramRatio = 0.5;  /* Tolerance for printing a warning about the histogram ratios */
 
     /* Sum up the histograms and get their normalization */
