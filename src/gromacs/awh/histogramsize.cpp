@@ -223,15 +223,18 @@ double HistogramSize::newHistogramSize(const BiasParams              &params,
             /* The histogram is equilibrated at most once. */
             equilibrateHistogram_ = !histogramIsEquilibrated(pointStates);
 
-            std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
-            if (!equilibrateHistogram_)
+            if (fplog != nullptr)
             {
-                fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);
-            }
-            else if (!havePrintedAboutCovering_)
-            {
-                fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
-                havePrintedAboutCovering_ = true; /* Just print once. */
+                std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
+                if (!equilibrateHistogram_)
+                {
+                    fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);
+                }
+                else if (!havePrintedAboutCovering_)
+                {
+                    fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
+                    havePrintedAboutCovering_ = true; /* Just print once. */
+                }
             }
         }
 
