@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,15 +223,18 @@ double HistogramSize::newHistogramSize(const BiasParams              &params,
             /* The histogram is equilibrated at most once. */
             equilibrateHistogram_ = !histogramIsEquilibrated(pointStates);
 
-            std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
-            if (!equilibrateHistogram_)
+            if (fplog != nullptr)
             {
-                fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);
-            }
-            else if (!havePrintedAboutCovering_)
-            {
-                fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
-                havePrintedAboutCovering_ = true; /* Just print once. */
+                std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
+                if (!equilibrateHistogram_)
+                {
+                    fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);
+                }
+                else if (!havePrintedAboutCovering_)
+                {
+                    fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
+                    havePrintedAboutCovering_ = true; /* Just print once. */
+                }
             }
         }
 
