@@ -53,6 +53,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -93,29 +94,29 @@ namespace gmx
 struct Task
 {
     //! First constraint for this task.
-    int    b0;
+    int    b0 = 0;
     //! b1-1 is the last constraint for this task.
-    int    b1;
+    int    b1 = 0;
     //! The number of constraints in triangles.
-    int    ntriangle;
+    int    ntriangle = 0;
     //! The list of triangle constraints.
-    int   *triangle;
+    int   *triangle = nullptr;
     //! The bits tell if the matrix element should be used.
-    int   *tri_bits;
+    int   *tri_bits = nullptr;
     //! Allocation size of triangle and tri_bits.
-    int    tri_alloc;
+    int    tri_alloc = 0;
     //! Number of indices.
-    int    nind;
+    int    nind = 0;
     //! Constraint index for updating atom data.
-    int   *ind;
+    int   *ind = nullptr;
     //! Number of indices.
-    int    nind_r;
+    int    nind_r = 0;
     //! Constraint index for updating atom data.
-    int   *ind_r;
+    int   *ind_r = nullptr;
     //! Allocation size of ind and ind_r.
-    int    ind_nalloc;
+    int    ind_nalloc = 0;
     //! Temporary variable for virial calculation.
-    tensor vir_r_m_dr;
+    tensor vir_r_m_dr = {{0}};
     //! Temporary variable for lambda derivative.
     real   dhdlambda;
 };
@@ -126,60 +127,60 @@ class Lincs
 {
     public:
         //! The global number of constraints.
-        int             ncg;
+        int             ncg = 0;
         //! The global number of flexible constraints.
-        int             ncg_flex;
+        int             ncg_flex = 0;
         //! The global number of constraints in triangles.
-        int             ncg_triangle;
+        int             ncg_triangle = 0;
         //! The number of iterations.
-        int             nIter;
+        int             nIter = 0;
         //! The order of the matrix expansion.
-        int             nOrder;
+        int             nOrder = 0;
         //! The maximum number of constraints connected to a single atom.
-        int             max_connect;
+        int             max_connect = 0;
 
         //! The number of real constraints.
-        int             nc_real;
+        int             nc_real = 0;
         //! The number of constraints including padding for SIMD.
-        int             nc;
+        int             nc = 0;
         //! The number we allocated memory for.
-        int             nc_alloc;
+        int             nc_alloc = 0;
         //! The number of constraint connections.
-        int             ncc;
+        int             ncc = 0;
         //! The number we allocated memory for.
-        int             ncc_alloc;
+        int             ncc_alloc = 0;
         //! The FE lambda value used for filling blc and blmf.
-        real            matlam;
+        real            matlam = 0;
         //! mapping from topology to LINCS constraints.
-        int            *con_index;
+        int            *con_index = nullptr;
         //! The reference distance in topology A.
-        real           *bllen0;
+        real           *bllen0 = nullptr;
         //! The reference distance in top B - the r.d. in top A.
-        real           *ddist;
+        real           *ddist = nullptr;
         //! The atom pairs involved in the constraints.
-        int            *bla;
+        int            *bla = nullptr;
         //! 1/sqrt(invmass1  invmass2).
-        real           *blc;
+        real           *blc = nullptr;
         //! As blc, but with all masses 1.
-        real           *blc1;
+        real           *blc1 = nullptr;
         //! Index into blbnb and blmf.
-        int            *blnr;
+        int            *blnr = nullptr;
         //! List of constraint connections.
-        int            *blbnb;
+        int            *blbnb = nullptr;
         //! The local number of constraints in triangles.
-        int             ntriangle;
+        int             ntriangle = 0;
         //! The number of constraint connections in triangles.
-        int             ncc_triangle;
+        int             ncc_triangle = 0;
         //! Communicate before each LINCS interation.
-        bool            bCommIter;
+        bool            bCommIter = false;
         //! Matrix of mass factors for constraint connections.
-        real           *blmf;
+        real           *blmf = nullptr;
         //! As blmf, but with all masses 1.
-        real           *blmf1;
+        real           *blmf1 = nullptr;
         //! The reference bond length.
-        real           *bllen;
+        real           *bllen = nullptr;
         //! The local atom count per constraint, can be NULL.
-        int            *nlocat;
+        int            *nlocat = nullptr;
 
         /*! \brief The number of tasks used for LINCS work.
          *
@@ -188,30 +189,30 @@ class Lincs
          * index is used for constructing bit masks and organizing the
          * virial output buffer, so other things need to change,
          * first. */
-        int             ntask;
+        int               ntask = 0;
         /*! \brief LINCS thread division */
-        Task           *task;
+        std::vector<Task> task;
         //! Atom flags for thread parallelization.
-        gmx_bitmask_t  *atf;
+        gmx_bitmask_t    *atf = nullptr;
         //! Allocation size of atf
-        int             atf_nalloc;
+        int               atf_nalloc = 0;
         //! Are the LINCS tasks interdependent?
-        bool            bTaskDep;
+        bool              bTaskDep = false;
         //! Are there triangle constraints that cross task borders?
-        bool            bTaskDepTri;
+        bool              bTaskDepTri = false;
         //! Arrays for temporary storage in the LINCS algorithm.
         /*! @{ */
-        rvec           *tmpv;
-        real           *tmpncc;
-        real           *tmp1;
-        real           *tmp2;
-        real           *tmp3;
-        real           *tmp4;
+        rvec           *tmpv   = nullptr;
+        real           *tmpncc = nullptr;
+        real           *tmp1   = nullptr;
+        real           *tmp2   = nullptr;
+        real           *tmp3   = nullptr;
+        real           *tmp4   = nullptr;
         /*! @} */
         //! The Lagrange multipliers times -1.
-        real               *mlambda;
+        real               *mlambda = nullptr;
         //! Storage for the constraint RMS relative deviation output.
-        std::array<real, 2> rmsdData;
+        std::array<real, 2> rmsdData = {{0}};
 };
 
 /*! \brief Define simd_width for memory allocation used for SIMD code */
@@ -1499,7 +1500,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
                 bPLINCS ? " Parallel" : "");
     }
 
-    snew(li, 1);
+    li = new Lincs;
 
     li->ncg      =
         gmx_mtop_ftype_count(mtop, F_CONSTR) +
@@ -1566,12 +1567,12 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
     }
     if (li->ntask == 1)
     {
-        snew(li->task, 1);
+        li->task.resize(1);
     }
     else
     {
         /* Allocate an extra elements for "task-overlap" constraints */
-        snew(li->task, li->ntask + 1);
+        li->task.resize(li->ntask + 1);
     }
 
     if (bPLINCS || li->ncg_triangle > 0)
