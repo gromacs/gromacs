@@ -30,6 +30,13 @@ system.
 
 :issue:`2381`
 
+Fixed FEP calculations with SHAKE
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+All SHAKE + FEP calculations accumulated wrong values to dH/dl output,
+but in some cases the result will look the same.
+
+:issue:`2434`
+
 Fixed handling of mdp ``define`` statement assigning preprocessor values
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Now .mdp files can configure the topology with values, as originally
@@ -121,3 +128,33 @@ Used isfinite unambiguously
 Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`
+
+Work around gcc-6 bug in tabulated group non-bonded kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With the gcc-6 compiler, AVX and -O3, which is the default,
+the tabulated non-bonded kernels of the (deprecated) group
+cutoff-scheme produced incorrect energies and forces.
+The errors are so large that they could not have caused latent issues.
+
+:issue:`2424`
+
+Detect correct AMD Zen SMT topology
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On recent AMD Zen processors, hardware thread detection and pinning
+handling have been fixed, improving performance.
+
+:issue:`2388`
+
+Fix sharing of the AWH bias over multiple simulations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Sharing the AWH bias over multiple simulations only worked when
+each simulation was running on a single MPI rank. When a simulation
+itself used multiple MPI ranks, the run would stop with an MPI error.
+
+:issue:`2433`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Made multi-atom TPI reproducible with different compilers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

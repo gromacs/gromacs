@@ -242,6 +242,7 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
         gmx::ArrayRef<const double> biasForce =
             biasCts.bias.calcForceAndUpdateBias(coordValue,
                                                 &biasPotential, &biasPotentialJump,
+                                                commRecord_,
                                                 multiSimRecord_,
                                                 t, step, seed_, fplog);
 

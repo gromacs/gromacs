@@ -476,12 +476,12 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
-                 t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
+                 t_nrnb *nrnb, real * const scaled_lagrange_multiplier, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
                  gmx_bool bDumpOnError, int econq)
 {
     t_iatom *iatoms;
-    real     dt_2, dvdl;
+    real    *lam, dt_2, dvdl;
     int      i, n0, ncon, blen, type, ll;
     int      tnit = 0, trij = 0;
 
@@ -496,7 +496,11 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         scaled_lagrange_multiplier[ll] = 0;
     }
 
+    // TODO Rewrite this block so that it is obvious that i, iatoms
+    // and lam are all iteration variables. Is this easier if the
+    // sblock data structure is organized differently?
     iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
+    lam    = scaled_lagrange_multiplier;
     for (i = 0; (i < nblocks); )
     {
         blen  = (sblock[i+1]-sblock[i]);
@@ -523,7 +527,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         tnit                       += n0*blen;
         trij                       += blen;
         iatoms                     += 3*blen; /* Increment pointer! */
-        scaled_lagrange_multiplier += blen;
+        lam                        += blen;
         i++;
     }
     /* only for position part? */

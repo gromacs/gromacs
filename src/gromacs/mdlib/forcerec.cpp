@@ -1350,12 +1350,18 @@ static void make_nbf_tables(FILE *fp,
     nbl->table_vdw->stride        = nbl->table_vdw->formatsize * nbl->table_vdw->ninteractions;
     snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride*(nbl->table_vdw->n+1), 32);
 
+    /* NOTE: Using a single i-loop here leads to mix-up of data in table_vdw
+     *       with (at least) gcc 6.2, 6.3 and 6.4 when compiled with -O3 and AVX
+     */
     for (i = 0; i <= nbl->table_elec_vdw->n; i++)
     {
         for (j = 0; j < 4; j++)
         {
             nbl->table_elec->data[4*i+j] = nbl->table_elec_vdw->data[12*i+j];
         }
+    }
+    for (i = 0; i <= nbl->table_elec_vdw->n; i++)
+    {
         for (j = 0; j < 8; j++)
         {
             nbl->table_vdw->data[8*i+j] = nbl->table_elec_vdw->data[12*i+4+j];
