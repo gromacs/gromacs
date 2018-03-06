@@ -80,6 +80,9 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
                   int nflexcon_global, ArrayRef<const t_blocka> at2con,
                   bool bPLINCS, int nIter, int nProjOrder);
 
+/*! \brief Destructs the lincs object when it is not nullptr. */
+void done_lincs(Lincs *li);
+
 /*! \brief Initialize lincs stuff */
 void set_lincs(const t_idef &idef, const t_mdatoms &md,
                bool bDynamics, const t_commrec *cr,
