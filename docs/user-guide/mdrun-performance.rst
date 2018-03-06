@@ -582,18 +582,24 @@ The performance counters are:
 * Waiting + Communication of force
 * Particle mesh Ewald
 * PME redist. X/F
-* PME spread/gather
+* PME spread
+* PME gather
 * PME 3D-FFT
 * PME 3D-FFT Communication
 * PME solve Lennard-Jones
+* PME solve LJ
 * PME solve Elec
 * PME wait for particle-particle
 * Wait + Receive PME force
 * Wait GPU nonlocal
 * Wait GPU local
+* Wait PME GPU spread
+* Wait PME GPU gather
+* Reduce PME GPU Force
 * Non-bonded position/force buffer operations
 * Virtual site spread
 * COM pull force
+* AWH (accelerated weight histogram method)
 * Write trajectory
 * Update
 * Constraints
@@ -633,7 +639,10 @@ An additional set of subcounters can offer more fine-grained inspection of perfo
 * Bonded-FEP force
 * Restraints force
 * Listed buffer operations
+* Nonbonded pruning
 * Nonbonded force
+* Launch non-bonded GPU tasks
+* Launch PME GPU tasks
 * Ewald force correction
 * Non-bonded position buffer operations
 * Non-bonded force buffer operations
