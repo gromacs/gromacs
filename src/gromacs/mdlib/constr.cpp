@@ -111,6 +111,7 @@ class Constraints::Impl
              bool                  pbcHandlingRequired,
              int                   numConstraints,
              int                   numSettles);
+        ~Impl();
         void setConstraints(const gmx_localtop_t &top,
                             const t_mdatoms      &md);
         bool apply(bool                  bLog,
@@ -140,7 +141,7 @@ class Constraints::Impl
         //! Whether any SETTLES cross charge-group boundaries.
         bool                  bInterCGsettles = false;
         //! LINCS data.
-        Lincs                *lincsd = nullptr;
+        Lincs                *lincsd = nullptr; // TODO this should become a unique_ptr
         //! SHAKE data.
         shakedata            *shaked = nullptr;
         //! SETTLE data.
@@ -1072,6 +1073,11 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
     }
     warncount_lincs  = 0;
     warncount_settle = 0;
+}
+
+Constraints::Impl::~Impl()
+{
+    done_lincs(lincsd);
 }
 
 void Constraints::saveEdsamPointer(gmx_edsam_t ed)
