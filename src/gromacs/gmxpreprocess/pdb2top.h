@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
-                        int *rn, int *rc);
+                        int *rn, int *rc,
+                        gmx_bool bAllowMissing);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */

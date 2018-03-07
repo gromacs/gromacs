@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1022,7 +1022,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
-                        int *rn, int *rc)
+                        int *rn, int *rc,
+                        gmx_bool bAllowMissing)
 {
     int         i, j, k, l;
     char       *key;
@@ -1085,12 +1086,28 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
         if (bRM && ((tern >= 0 && ntdb[tern] == nullptr) ||
                     (terc >= 0 && ctdb[terc] == nullptr)))
         {
-            gmx_fatal(FARGS, "There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Fix your terminal residues so that they match the residue database (.rtp) entries, or provide terminal database entries (.tdb).");
+            const char *errString = "There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Fix your terminal residues so that they match the residue database (.rtp) entries, or provide terminal database entries (.tdb).";
+            if (bAllowMissing)
+            {
+                fprintf(stderr, "%s\n", errString);
+            }
+            else
+            {
+                gmx_fatal(FARGS, errString);
+            }
         }
-        if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
-                    (terc >= 0 && ctdb[terc]->nhack == 0)))
+        else if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
+                         (terc >= 0 && ctdb[terc]->nhack == 0)))
         {
-            gmx_fatal(FARGS, "There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.");
+            const char *errString = "There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.";
+            if (bAllowMissing)
+            {
+                fprintf(stderr, "%s\n", errString);
+            }
+            else
+            {
+                gmx_fatal(FARGS, errString);
+            }
         }
     }
 
