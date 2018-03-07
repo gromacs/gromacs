@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -989,7 +989,7 @@ static int get_group_apm_check(
      * first solvent atom: */
     int molb = 0;
     mtopGetMolblockIndex(mtop, ind[0], &molb, nullptr, nullptr);
-    int apm = mtop->molblock[molb].natoms_mol;
+    int apm = mtop->moleculeBlockIndices[molb].numAtomsPerMolecule;
 
     if (bVerbose)
     {
@@ -1001,7 +1001,7 @@ static int get_group_apm_check(
     for (int i = 1; i < nat; i++)
     {
         mtopGetMolblockIndex(mtop, ind[i], &molb, nullptr, nullptr);
-        if (apm != mtop->molblock[molb].natoms_mol)
+        if (apm != mtop->moleculeBlockIndices[molb].numAtomsPerMolecule)
         {
             gmx_fatal(FARGS, "Not all molecules of swap group %d consist of %d atoms.",
                       igroup, apm);
