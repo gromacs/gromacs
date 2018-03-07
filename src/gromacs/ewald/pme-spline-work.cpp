@@ -84,3 +84,11 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
 
     return work;
 }
+
+void destroy_pme_spline_work(pme_spline_work *work)
+{
+    if (work != nullptr)
+    {
+        gmx::AlignedAllocationPolicy::free(work);
+    }
+}

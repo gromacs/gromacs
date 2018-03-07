@@ -1723,6 +1723,8 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
 
+    destroy_pme_spline_work(pme->spline_work);
+
     if (pme_gpu_active(pme) && pme->gpu)
     {
         pme_gpu_destroy(pme->gpu);
