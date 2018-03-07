@@ -1508,7 +1508,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         { "-ignh",   FALSE, etBOOL, {&bRemoveH},
           "Ignore hydrogen atoms that are in the coordinate file" },
         { "-missing", FALSE, etBOOL, {&bAllowMissing},
-          "Continue when atoms are missing, dangerous" },
+          "Continue when atoms are missing and bonds cannot be made, dangerous" },
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Be slightly more verbose in messages" },
         { "-posrefc", FALSE, etREAL, {&posre_fc},
@@ -2081,7 +2081,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
         /* lookup hackblocks and rtp for all residues */
         get_hackblocks_rtp(&hb_chain, &restp_chain,
                            nrtp, restp, pdba->nres, pdba->resinfo,
-                           cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end);
+                           cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end,
+                           bAllowMissing);
         /* ideally, now we would not need the rtp itself anymore, but do
            everything using the hb and restp arrays. Unfortunately, that
            requires some re-thinking of code in gen_vsite.c, which I won't
