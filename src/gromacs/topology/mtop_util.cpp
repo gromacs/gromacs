@@ -89,9 +89,10 @@ static void buildMolblockIndices(gmx_mtop_t *mtop)
         const gmx_molblock_t &molb    = mtop->molblock[mb];
         MolblockIndices      &indices = mtop->molblockIndices[mb];
         const int numResPerMol        = mtop->moltype[molb.type].atoms.nres;
+        indices.numAtomsPerMolecule   = mtop->moltype[molb.type].atoms.nr;
         indices.globalAtomStart       = atomIndex;
         indices.globalResidueStart    = residueIndex;
-        atomIndex                    += molb.nmol*molb.natoms_mol;
+        atomIndex                    += molb.nmol*indices.numAtomsPerMolecule;
         residueIndex                 += molb.nmol*numResPerMol;
         indices.globalAtomEnd         = atomIndex;
         indices.residueNumberStart    = residueNumberStart;
@@ -459,7 +460,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 
     if (iloop->mol >= 0)
     {
-        iloop->a_offset += iloop->mtop->molblock[iloop->mblock].natoms_mol;
+        iloop->a_offset += iloop->mtop->molblockIndices[iloop->mblock].numAtomsPerMolecule;
     }
 
     iloop->mol++;
@@ -971,9 +972,10 @@ static void fillMoleculeIndices(const gmx_mtop_t  &mtop,
     index[globalMolIndex] = globalAtomIndex;
     for (const gmx_molblock_t &molb : mtop.molblock)
     {
+        int numAtomsPerMolecule = mtop.moltype[molb.type].atoms.nr;
         for (int mol = 0; mol < molb.nmol; mol++)
         {
-            globalAtomIndex       += molb.natoms_mol;
+            globalAtomIndex       += numAtomsPerMolecule;
             globalMolIndex        += 1;
             index[globalMolIndex]  = globalAtomIndex;
         }
@@ -1068,11 +1070,10 @@ void convertAtomsToMtop(t_symtab    *symtab,
     mtop->molblock.resize(1);
     mtop->molblock[0].type       = 0;
     mtop->molblock[0].nmol       = 1;
-    mtop->molblock[0].natoms_mol = mtop->moltype[mtop->molblock[0].type].atoms.nr;
 
     mtop->bIntermolecularInteractions = FALSE;
 
-    mtop->natoms                 = mtop->molblock[0].natoms_mol;
+    mtop->natoms                 = atoms->nr;
 
     mtop->haveMoleculeIndices    = false;
 

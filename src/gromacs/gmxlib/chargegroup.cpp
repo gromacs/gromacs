@@ -128,7 +128,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                     }
                 }
             }
-            a_mol += molb.natoms_mol;
+            a_mol += molt->atoms.nr;
         }
     }
 

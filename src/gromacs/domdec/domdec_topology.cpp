@@ -88,10 +88,12 @@
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
 
-typedef struct {
-    int  *index;  /* Index for each atom into il                  */
-    int  *il;     /* ftype|type|a0|...|an|ftype|...               */
-} reverse_ilist_t;
+struct reverse_ilist_t
+{
+    int  *index;              /* Index for each atom into il          */
+    int  *il;                 /* ftype|type|a0|...|an|ftype|...       */
+    int   numAtomsInMolecule; /* The number of atoms in this molecule */
+};
 
 typedef struct {
     int  a_start;
@@ -320,13 +322,14 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
     int a_end = 0;
     for (const gmx_molblock_t &molb :  mtop->molblock)
     {
-        int a_start = a_end;
-        a_end       = a_start + molb.nmol*molb.natoms_mol;
+        const gmx_moltype_t &moltype = mtop->moltype[molb.type];
+        int                 a_start  = a_end;
+        a_end                        = a_start + molb.nmol*moltype.atoms.nr;
 
         print_missing_interactions_mb(fplog, cr, rt,
-                                      *(mtop->moltype[molb.type].name),
+                                      *(moltype.name),
                                       &rt->ril_mt[molb.type],
-                                      a_start, a_end, molb.natoms_mol,
+                                      a_start, a_end, moltype.atoms.nr,
                                       molb.nmol,
                                       idef);
     }
@@ -645,6 +648,8 @@ static int make_reverse_ilist(const t_ilist *ilist,
 
     sfree(count);
 
+    ril_mt->numAtomsInMolecule = atoms->nr;
+
     return nint_mt;
 }
 
@@ -739,11 +744,13 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     int i         = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
-        rt->mbi[mb].a_start    = i;
-        i += mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
-        rt->mbi[mb].a_end      = i;
-        rt->mbi[mb].natoms_mol = mtop->molblock[mb].natoms_mol;
-        rt->mbi[mb].type       = mtop->molblock[mb].type;
+        const gmx_molblock_t &molb           = mtop->molblock[mb];
+        int                   numAtomsPerMol = mtop->moltype[molb.type].atoms.nr;
+        rt->mbi[mb].a_start                  = i;
+        i                                   += molb.nmol*numAtomsPerMol;
+        rt->mbi[mb].a_end                    = i;
+        rt->mbi[mb].natoms_mol               = numAtomsPerMol;
+        rt->mbi[mb].type                     = molb.type;
     }
 
     rt->nthread = gmx_omp_nthreads_get(emntDomdec);
@@ -916,7 +923,8 @@ static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 }
 
 /*! \brief Store a position restraint in idef and iatoms, complex because the parameters are different for each entry */
-static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
+static void add_posres(int mol, int a_mol, int numAtomsInMolecule,
+                       const gmx_molblock_t *molb,
                        t_iatom *iatoms, const t_iparams *ip_in,
                        t_idef *idef)
 {
@@ -937,11 +945,8 @@ static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
     *ip = ip_in[iatoms[0]];
 
     /* Get the position restraint coordinates from the molblock */
-    a_molb = mol*molb->natoms_mol + a_mol;
-    if (a_molb >= static_cast<int>(molb->posres_xA.size()))
-    {
-        gmx_incons("Not enough position restraint coordinates");
-    }
+    a_molb = mol*numAtomsInMolecule + a_mol;
+    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
     ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
     ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
     ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
@@ -962,7 +967,8 @@ static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
 }
 
 /*! \brief Store a flat-bottomed position restraint in idef and iatoms, complex because the parameters are different for each entry */
-static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
+static void add_fbposres(int mol, int a_mol, int numAtomsInMolecule,
+                         const gmx_molblock_t *molb,
                          t_iatom *iatoms, const t_iparams *ip_in,
                          t_idef *idef)
 {
@@ -982,12 +988,9 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
     /* Copy the force constants */
     *ip = ip_in[iatoms[0]];
 
-    /* Get the position restriant coordinats from the molblock */
-    a_molb = mol*molb->natoms_mol + a_mol;
-    if (a_molb >= static_cast<int>(molb->posres_xA.size()))
-    {
-        gmx_incons("Not enough position restraint coordinates");
-    }
+    /* Get the position restraint coordinats from the molblock */
+    a_molb = mol*numAtomsInMolecule + a_mol;
+    GMX_ASSERT(a_molb < static_cast<int>(molb->posres_xA.size()), "We need a sufficient number of position restraint coordinates");
     /* Take reference positions from A position of normal posres */
     ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
     ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
@@ -1279,6 +1282,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 static inline void
 check_assign_interactions_atom(int i, int i_gl,
                                int mol, int i_mol,
+                               int numAtomsInMolecule,
                                const int *index, const int *rtil,
                                gmx_bool bInterMolInteractions,
                                int ind_start, int ind_end,
@@ -1358,13 +1362,13 @@ check_assign_interactions_atom(int i, int i_gl,
                     tiatoms[1] = i;
                     if (ftype == F_POSRES)
                     {
-                        add_posres(mol, i_mol, molb, tiatoms, ip_in,
-                                   idef);
+                        add_posres(mol, i_mol, numAtomsInMolecule,
+                                   molb, tiatoms, ip_in, idef);
                     }
                     else if (ftype == F_FBPOSRES)
                     {
-                        add_fbposres(mol, i_mol, molb, tiatoms, ip_in,
-                                     idef);
+                        add_fbposres(mol, i_mol, numAtomsInMolecule,
+                                     molb, tiatoms, ip_in, idef);
                     }
                 }
                 else
@@ -1557,6 +1561,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
         rtil  = rt->ril_mt[mt].il;
 
         check_assign_interactions_atom(i, i_gl, mol, i_mol,
+                                       rt->ril_mt[mt].numAtomsInMolecule,
                                        index, rtil, FALSE,
                                        index[i_mol], index[i_mol+1],
                                        dd, zones,
@@ -1579,6 +1584,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
             rtil  = rt->ril_intermol.il;
 
             check_assign_interactions_atom(i, i_gl, mol, i_mol,
+                                           rt->ril_mt[mt].numAtomsInMolecule,
                                            index, rtil, TRUE,
                                            index[i_gl], index[i_gl + 1],
                                            dd, zones,

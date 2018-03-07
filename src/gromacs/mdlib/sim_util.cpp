@@ -2591,17 +2591,18 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
     as = 0;
     for (const gmx_molblock_t &molb : mtop->molblock)
     {
-        if (molb.natoms_mol == 1 ||
-            (!bFirst && mtop->moltype[molb.type].cgs.nr == 1))
+        const gmx_moltype_t &moltype = mtop->moltype[molb.type];
+        if (moltype.atoms.nr == 1 ||
+            (!bFirst && moltype.cgs.nr == 1))
         {
             /* Just one atom or charge group in the molecule, no PBC required */
-            as += molb.nmol*molb.natoms_mol;
+            as += molb.nmol*moltype.atoms.nr;
         }
         else
         {
             /* Pass NULL iso fplog to avoid graph prints for each molecule type */
-            mk_graph_ilist(nullptr, mtop->moltype[molb.type].ilist,
-                           0, molb.natoms_mol, FALSE, FALSE, graph);
+            mk_graph_ilist(nullptr, moltype.ilist,
+                           0, moltype.atoms.nr, FALSE, FALSE, graph);
 
             for (mol = 0; mol < molb.nmol; mol++)
             {
@@ -2613,7 +2614,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, const matrix box,
                  * since we no longer need this graph.
                  */
 
-                as += molb.natoms_mol;
+                as += moltype.atoms.nr;
             }
             done_graph(graph);
         }

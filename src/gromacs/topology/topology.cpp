@@ -361,7 +361,6 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
     fprintf(fp, "%-20s = %d \"%s\"\n",
             "moltype", molb->type, *(molt[molb->type].name));
     pr_int(fp, indent, "#molecules", molb->nmol);
-    pr_int(fp, indent, "#atoms_mol", molb->natoms_mol);
     pr_int(fp, indent, "#posres_xA", molb->posres_xA.size());
     if (!molb->posres_xA.empty())
     {
