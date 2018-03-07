@@ -85,19 +85,17 @@ struct gmx_molblock_t
     int                    nmol = 0;  /**< The number of molecules in this block    */
     std::vector<gmx::RVec> posres_xA; /**< Position restraint coordinates for top A */
     std::vector<gmx::RVec> posres_xB; /**< Position restraint coordinates for top B */
-
-    /* Convenience information, derived from other gmx_mtop_t contents */
-    int     natoms_mol = 0;           /**< The number of atoms in one molecule      */
 };
 
 /*! \brief Indices for a gmx_molblock_t, derived from other gmx_mtop_t contents */
 struct MoleculeBlockIndices
 {
-    int     globalAtomStart;    /**< Global atom index of the first atom in the block */
-    int     globalAtomEnd;      /**< Global atom index + 1 of the last atom in the block */
-    int     globalResidueStart; /**< Global residue index of the first residue in the block */
-    int     residueNumberStart; /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
-    int     moleculeIndexStart; /**< Global molecule indexing starts from this value */
+    int     numAtomsPerMolecule; /**< Number of atoms in a molecule in the block */
+    int     globalAtomStart;     /**< Global atom index of the first atom in the block */
+    int     globalAtomEnd;       /**< Global atom index + 1 of the last atom in the block */
+    int     globalResidueStart;  /**< Global residue index of the first residue in the block */
+    int     residueNumberStart;  /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
+    int     moleculeIndexStart;  /**< Global molecule indexing starts from this value */
 };
 
 typedef struct gmx_groups_t
