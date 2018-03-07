@@ -83,10 +83,10 @@ void LongTable::printHeader()
     {
         fprintf(fp_, "\\begin{%s}\n", font_);
     }
+    fprintf(fp_, "\\begin{spacing}{1}\n");
     fprintf(fp_, "\\begin{longtable}{%s}\n", columns_.c_str());
-    //printHLine();
-    fprintf(fp_, "\\caption{%s}\n", caption_.c_str());
-    fprintf(fp_, "\\label{%s}\\\\\n", label_.c_str());
+    fprintf(fp_, "\\caption{%s}\n",          caption_.c_str());
+    fprintf(fp_, "\\label{%s}\\\\\n",        label_.c_str());
     printHLine();
     for (unsigned int i = 0; (i < headLines_.size()); i++)
     {
@@ -108,6 +108,7 @@ void LongTable::printHeader()
 void LongTable::printFooter()
 {
     fprintf(fp_, "\\end{longtable}\n");
+    fprintf(fp_, "\\end{spacing}\n");
     if (nullptr != font_)
     {
         fprintf(fp_, "\\end{%s}\n", font_);
