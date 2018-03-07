@@ -158,7 +158,6 @@ void TopologyManager::initAtoms(int count)
     mtop_->molblock.resize(1);
     mtop_->molblock[0].type            = 0;
     mtop_->molblock[0].nmol            = 1;
-    mtop_->molblock[0].natoms_mol      = count;
     mtop_->natoms                      = count;
     mtop_->maxres_renum                = 0;
     gmx_mtop_finalize(mtop_.get());
@@ -237,8 +236,8 @@ void TopologyManager::initUniformMolecules(int moleculeSize)
     GMX_RELEASE_ASSERT(atoms.atom[atoms.nr-1].resind != nres,
                        "The residues should break at molecule boundaries");
     atoms.nres                 = nres;
-    molblock.natoms_mol        = moleculeSize;
     mtop_->haveMoleculeIndices = true;
+    gmx_mtop_finalize(mtop_.get());
 }
 
 void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)
