@@ -2418,11 +2418,17 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
     do_blocka(fio, &molt->excls, bRead);
 }
 
-static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
+static void do_molblock(t_fileio *fio, gmx_molblock_t *molb,
+                        const std::vector<gmx_moltype_t> &moltype,
+                        gmx_bool bRead)
 {
     gmx_fio_do_int(fio, molb->type);
     gmx_fio_do_int(fio, molb->nmol);
-    gmx_fio_do_int(fio, molb->natoms_mol);
+    /* For backward compatibility without changing the file format.
+     * TODO: Remove this at the tpx file format change.
+     */
+    int numAtomsPerMolecule = moltype[molb->type].atoms.nr;
+    gmx_fio_do_int(fio, numAtomsPerMolecule);
     /* Position restraint coordinates */
     int numPosres_xA = molb->posres_xA.size();
     gmx_fio_do_int(fio, numPosres_xA);
@@ -2511,7 +2517,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
     for (gmx_molblock_t &molblock : mtop->molblock)
     {
-        do_molblock(fio, &molblock, bRead);
+        do_molblock(fio, &molblock, mtop->moltype, bRead);
     }
     gmx_fio_do_int(fio, mtop->natoms);
 
