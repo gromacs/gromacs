@@ -443,7 +443,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     mem_p->zmed = (zmax-zmin)/2+zmin;
 
     /*number of membrane molecules in protein box*/
-    nmolbox = count/mtop->molblock[block].natoms_mol;
+    nmolbox = count/mtop->moltype[mtop->molblock[block].type].atoms.nr;
     /*membrane area within the box defined by the min and max coordinates of the embedded molecule*/
     mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
     /*rough estimate of area per lipid, assuming there is only one type of lipid in the membrane*/
@@ -583,7 +583,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                             {
                                 z_lip += r[k][ZZ];
                             }
-                            z_lip /= mtop->molblock[block].natoms_mol;
+                            z_lip /=  molecules.index[mol_id+1] - molecules.index[mol_id];
                             if (z_lip < mem_p->zmed)
                             {
                                 nlower++;
@@ -653,7 +653,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                 {
                     z_lip += r[k][ZZ];
                 }
-                z_lip /= mtop->molblock[block].natoms_mol;
+                z_lip /= molecules.index[mol_id+1] - molecules.index[mol_id];
                 if (nupper > nlower && z_lip < mem_p->zmed)
                 {
                     rm_p->mol[nrm]   = mol_id;
@@ -709,7 +709,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         at     = molecules.index[mol_id];
         block  = rm_p->block[i];
         mtop->molblock[block].nmol--;
-        for (j = 0; j < mtop->molblock[block].natoms_mol; j++)
+        for (j = 0; j < mtop->moltype[mtop->molblock[block].type].atoms.nr; j++)
         {
             list[n] = at+j;
             n++;
@@ -832,7 +832,7 @@ static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
     {
         /*loop over molecule blocks*/
         type         = mtop->molblock[i].type;
-        natom        = mtop->molblock[i].natoms_mol;
+        natom        = mtop->moltype[type].atoms.nr;
         nmol         = mtop->molblock[i].nmol;
 
         for (j = 0; j < natom*nmol && bRM[type] == TRUE; j++)

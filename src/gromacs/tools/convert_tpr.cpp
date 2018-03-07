@@ -300,11 +300,10 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->moltype[0].excls = top.excls;
 
     mtop->molblock.resize(1);
-    mtop->molblock[0].type       = 0;
-    mtop->molblock[0].nmol       = 1;
-    mtop->molblock[0].natoms_mol = top.atoms.nr;
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
 
-    mtop->natoms                 = top.atoms.nr;
+    mtop->natoms           = top.atoms.nr;
 }
 
 static void zeroq(int index[], gmx_mtop_t *mtop)

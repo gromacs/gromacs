@@ -769,7 +769,6 @@ static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
     block_bc(cr, molb->nmol);
     bc_vector_of_rvec(cr, &molb->posres_xA);
     bc_vector_of_rvec(cr, &molb->posres_xB);
-    block_bc(cr, molb->natoms_mol);
     if (debug)
     {
         fprintf(debug, "after bc_molblock\n");
