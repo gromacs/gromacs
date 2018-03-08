@@ -43,6 +43,7 @@
  * Assigning of atom types, derivation of charges, and generation of
  * molecular topology files (or objects) is implemented.
  *
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@gmail.com>
  * \ingroup module_alexandria
  */
@@ -79,15 +80,24 @@ enum MolPropObservable {
     MPO_NR
 };
 
-//! Enum to select either QM or Experimental data or either
+/*! \brief
+ * Enum to select either QM or Experimental data or either
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 enum iqmType {
     iqmExp, iqmBoth, iqmQM, iqmNR
 };
 
-//! Strings describing the MolPropObservable enum elements
+/*! \breif
+ * Strings describing the MolPropObservable enum elements
+ */
 extern const char *mpo_name[MPO_NR];
 
-//! Strings describing the MolPropObservable enum units
+/*! \brief
+ * Strings describing the MolPropObservable enum units
+ */
 extern const char *mpo_unit[MPO_NR];
 
 /*! \brief
@@ -99,6 +109,9 @@ extern const char *mpo_unit[MPO_NR];
 namespace alexandria
 {
 
+/*! \brief
+ * Enum describing the type of the QM job computed by the Gaussian software
+ */
 enum jobType {
     JOB_OPT       = 0,
     JOB_POP       = 1,
@@ -114,12 +127,32 @@ enum jobType {
     JOB_NR        = 11,
 };
 
+/*! \brief
+ * Return string corresponding to the job type
+ */
 const char *jobType2string(alexandria::jobType jType);
 
 /*! \brief
- * Convert string to job type
+ * Strings describing the job type
  */
 jobType string2jobType(const std::string &str);
+
+/*! \brief
+ * Enum describing the source of the data
+ */
+enum DataSource {
+    dsExperiment, dsTheory
+};
+
+/*! \brief
+ * Return string corresponding to the data source
+ */
+const char *dataSourceName(DataSource ds);
+
+/*! \brief
+ * Return DataSource corresponding to the data source string
+ */
+DataSource dataSourceFromName(const std::string &name);
 
 /*! \brief
  * Specifies the name of an atom type and the number in a molecular composition
@@ -130,10 +163,16 @@ jobType string2jobType(const std::string &str);
 class AtomNum
 {
     private:
+        /*! \brief
+         * Atom name
+         */
         std::string _catom;
+        /*! \brief
+         * Atom number
+         */
         int         _cnumber;
     public:
-        //! Empty constructor
+        //! Default constructor
         AtomNum() {};
 
         /*! \brief
@@ -152,19 +191,29 @@ class AtomNum
          */
         AtomNum(std::string catom, int cnumber) { SetAtom(catom); SetNumber(cnumber); }
 
-        //! Return the name of the atom for this AtomNum
+        /*! \brief
+         * Return the name of the atom for this AtomNum
+         */
         const std::string &getAtom() const { return _catom; }
 
-        //! Set the name of the atom for this AtomNum
+        /*! \brief
+         * Set the name of the atom for this AtomNum
+         */
         void SetAtom(std::string catom) { _catom = catom; }
 
-        //! Set the name of the atom for this AtomNum
+        /*! \brief
+         * Set the name of the atom for this AtomNum
+         */
         void SetAtom(const char *catom) { _catom.assign(catom); }
 
-        //! Return the number of atoms for this AtomNum
+        /*! \brief
+         * Return the number of atoms for this AtomNum
+         */
         int getNumber() const { return _cnumber; }
 
-        //! Set the number of atoms for this AtomNum
+        /*! \brief
+         * Set the number of atoms for this AtomNum
+         */
         void SetNumber(int cnumber) { _cnumber = cnumber; }
 
         /*! \brief
@@ -186,7 +235,8 @@ class AtomNum
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over a vector of AtomNum
-using  AtomNumIterator = typename std::vector<AtomNum>::iterator;
+using  AtomNumIterator      = typename std::vector<AtomNum>::iterator;
+using  AtomNumConstIterator = typename std::vector<AtomNum>::const_iterator;
 
 /*! \brief
  * Contains the molecular composition in terms of atoms
@@ -197,10 +247,16 @@ using  AtomNumIterator = typename std::vector<AtomNum>::iterator;
 class MolecularComposition
 {
     private:
+        /*! \brief
+         * Composition name
+         */
         std::string          _compname;
+        /*! \brief
+         * A vector of AtomNum object
+         */
         std::vector<AtomNum> _atomnum;
     public:
-        //! Empty constructor
+        //! Defult constructor
         MolecularComposition() {}
 
         /*! \brief
@@ -217,51 +273,98 @@ class MolecularComposition
          */
         MolecularComposition(std::string compname) { _compname = compname; }
 
-        //! Return the composition name
+        /*! \brief 
+         * Return the composition name
+         */
         const std::string &getCompName() const { return _compname; }
 
-        //! Set the composition name
+        /*! \brief
+         * Set the composition name
+         */
         void SetCompName(std::string compname) { _compname = compname; }
 
-        //! Set the composition name
+        /*! \brief
+         * Set the composition name
+         */
         void SetCompName(char *compname) { _compname.assign(compname); }
 
-        //! Add an AtomNum struct to the composition
+        /*! \brief
+         * Add an AtomNum object to the composition
+         *
+         * \param[in] an  Atom number
+         */
         void AddAtom(AtomNum an);
 
-        //! Remove the atom with name catom from the composition
+        /*! \brief
+         * Remove the atom with name catom from the composition
+         *
+         *\param[in] catom   Atom name
+         */
         void DeleteAtom(const char *catom)
         {
             std::string _str(catom); DeleteAtom(_str);
         }
 
-        //! Remove the atom with name catom from the composition
+        /*! \brief 
+         * Remove the atom with name catom from the composition
+         *
+         * \param[in] catom Atom name
+         */
         void DeleteAtom(std::string catom);
 
-        //! Replace the oldatom by newatom
+        /*! \brief 
+         * Replace the oldatom by newatom
+         *
+         * \param[in] oldatom   Name of the old atom
+         * \param[in] newatom   Name of the new atom
+         */
         void ReplaceAtom(const char *oldatom, const char *newatom)
         {
             std::string so(oldatom), sn(newatom); ReplaceAtom(so, sn);
         }
-        //! Replace the oldatom by newatom
+        
+        /*! \brief 
+         * Replace the oldatom by newatom
+         *
+         * \param[in] oldatom   Name of the old atom
+         * \param[in] newatom   Name of the new atom
+         */
         void ReplaceAtom(std::string oldatom, std::string newatom);
 
-        //! Return iterator to begin looping over AtomNum
+        /*! \brief
+         * Return iterator to begin looping over AtomNum
+         */
         AtomNumIterator BeginAtomNum() { return _atomnum.begin(); }
-
-        //! Return iterator to end looping over AtomNum
+        
+        /*! \brief
+         * Return iterator to end looping over AtomNum
+         */
         AtomNumIterator EndAtomNum() { return _atomnum.end(); }
 
-        //! Return iterator pointing to a specific atom or EndAtomNum if not found
+        /*! \brief
+         * Return iterator pointing to a specific atom or EndAtomNum if not found
+         *
+         * \param[in] an Atom number
+         */
         AtomNumIterator SearchAtom(std::string an);
 
-        //! Return the number of atoms of a certain type
+        /*! \brief
+         * Return the number of atoms of a certain type
+         *
+         *\param[in] atom Atom name
+         */
         int CountAtoms(const char *atom);
 
-        //! Return the number of atoms of a certain type
+        /*! \brief
+         * Return the number of atoms of a certain type
+         *
+         *\param[in] atom Atom name
+         */
         int CountAtoms(std::string atom);
 
-        //! Return the total number of atoms
+        /*! \brief
+         * Return the total number of atoms
+         */
         int CountAtoms();
 
         /*! \brief
@@ -283,7 +386,7 @@ class MolecularComposition
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularComposition items
-using MolecularCompositionIterator = typename std::vector<MolecularComposition>::iterator;
+using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
 using MolecularCompositionConstIterator = typename std::vector<MolecularComposition>::const_iterator;
 
 /*! \brief
@@ -295,11 +398,24 @@ using MolecularCompositionConstIterator = typename std::vector<MolecularComposit
 class GenericProperty
 {
     private:
-        std::string type_, unit_;
+        /*! \brief
+         * Type of the property
+         */
+        std::string type_;
+        /*! \brief
+         * Unit of the property
+         */
+        std::string unit_;
+        /*! \brief
+         * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
+         */
         ePhase      eP_;
+        /*! \brief
+         * Temperature at which the property is measured or computed.
+         */
         double      T_;
     public:
-        //! Empty constructor
+        //! Default constructor
         GenericProperty() { T_ = 0; eP_ = epNR; };
 
         /*! \brief
@@ -312,27 +428,52 @@ class GenericProperty
         GenericProperty(std::string type, std::string unit, double T, ePhase ep)
         { SetType(type); SetUnit(unit); setTemperature(T); setPhase(ep); }
 
-        //! Return the property type
+        /*! \brief
+         * Return the property type
+         */
         const std::string &getType() const { return type_; }
-
-        //! Return the unit of the property
+        
+        /*! \brief
+         * Return the unit of the property
+         */
         const std::string &getUnit() const { return unit_; }
-
-        //! Return the temperature
+        
+        /*! \brief
+         * Return the temperature
+         */
         double getTemperature() const { return T_; }
 
-        //! Return the phase
+        /*! \brief 
+         * Return the phase
+         */
         ePhase getPhase() const { return eP_; }
 
-        //! Set the type of the property
+        /*! \brief
+         * Set the type of the property
+         *
+         *\param[in] type  Type of property
+         */
         void SetType(std::string type);
 
-        //! Set the unit of the property
+        /*! \brief
+         * Set the unit of the property
+         *
+         *\param[in] unit Unit of the property
+         */
         void SetUnit(std::string unit);
 
-        //! Set the temperature of the property
+        /*! \brief
+         * Set the temperature of the property
+         *
+         *\param[in] T Temperature
+         */
         void setTemperature(double T) { T_ = T; }
 
+        /*! \brief
+         * Set the phase of the property
+         *
+         *\param[in] ep Phase of the property
+         */
         void setPhase(ePhase ep) { eP_ = ep; }
 
         /*! \brief
@@ -370,7 +511,7 @@ class MolecularQuadrupole : public GenericProperty
     private:
         double xx_, yy_, zz_, xy_, xz_, yz_;
     public:
-        //! Empty constructor
+        //! Default constructor
         MolecularQuadrupole() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
@@ -425,7 +566,8 @@ class MolecularQuadrupole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularQuadrupole items
-using MolecularQuadrupoleIterator = typename std::vector<MolecularQuadrupole>::iterator;
+using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
+using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
 
 /*! \brief
  * Contains the elements of the molecular polarizability tensor
@@ -442,7 +584,7 @@ class MolecularPolarizability : public GenericProperty
     private:
         double xx_, yy_, zz_, xy_, xz_, yz_, _average, _error;
     public:
-        //! Empty constructor
+        //! Default constructor
         MolecularPolarizability() {}
 
         //! Constructor initiating all elements of the quadrupole tensor
@@ -511,7 +653,8 @@ class MolecularPolarizability : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularPolarizability items
-using  MolecularPolarizabilityIterator = typename std::vector<MolecularPolarizability>::iterator;
+using  MolecularPolarizabilityIterator      = typename std::vector<MolecularPolarizability>::iterator;
+using  MolecularPolarizabilityConstIterator = typename std::vector<MolecularPolarizability>::const_iterator;
 
 /*! \brief
  * Contains a molecular energy
@@ -528,7 +671,7 @@ class MolecularEnergy : public GenericProperty
     private:
         double _value, _error;
     public:
-        //! Empty constructor
+        //! Default constructor
         MolecularEnergy() {};
 
         //! Constructor storing all properties related to this energy term
@@ -574,7 +717,8 @@ class MolecularEnergy : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularEnergy items
-using  MolecularEnergyIterator = typename std::vector<MolecularEnergy>::iterator;
+using  MolecularEnergyIterator      = typename std::vector<MolecularEnergy>::iterator;
+using  MolecularEnergyConstIterator = typename std::vector<MolecularEnergy>::const_iterator;
 
 /*! \brief
  * Contains the dipole vector
@@ -588,7 +732,7 @@ class MolecularDipole : public GenericProperty
         double _x, _y, _z;
         double _aver, _error;
     public:
-        //! Empty constructor
+        //! Default constructor
         MolecularDipole() {}
 
         //! Constructor storing all properties related to this dipole
@@ -639,7 +783,8 @@ class MolecularDipole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over a vector of MolecularDipole
-using MolecularDipoleIterator = typename std::vector<MolecularDipole>::iterator;
+using MolecularDipoleIterator      = typename std::vector<MolecularDipole>::iterator;
+using MolecularDipoleConstIterator = typename std::vector<MolecularDipole>::const_iterator;
 
 /*! \brief
  * Contains the electrostatic potential in a coordinate close to a molecule.
@@ -657,7 +802,7 @@ class ElectrostaticPotential
         int         espID_;
         double      x_, y_, z_, V_;
     public:
-        //! Empty constructor
+        //! Default constructor
         ElectrostaticPotential() {}
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
@@ -730,7 +875,8 @@ class ElectrostaticPotential
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over ElectrostaticPotential items
-using ElectrostaticPotentialIterator = typename std::vector<ElectrostaticPotential>::iterator;
+using ElectrostaticPotentialIterator      = typename std::vector<ElectrostaticPotential>::iterator;
+using ElectrostaticPotentialConstIterator = typename std::vector<ElectrostaticPotential>::const_iterator;
 
 /*! \brief
  * Chemical bond in a molecule with associated bond order.
@@ -747,7 +893,7 @@ class Bond
     private:
         int _ai, _aj, _bondorder;
     public:
-        //! Empty constructor
+        //! Default constructor
         Bond() {}
 
         //! Constructor setting the ids of the atoms and the bondorder
@@ -788,7 +934,8 @@ class Bond
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over Bond items
-using BondIterator = typename std::vector<Bond>::iterator;
+using BondIterator      = typename std::vector<Bond>::iterator;
+using BondConstIterator = typename std::vector<Bond>::const_iterator;
 
 /*! \brief
  * Contains the charge of an atom
@@ -804,7 +951,7 @@ class AtomicCharge : public GenericProperty
     private:
         double _q;
     public:
-        //! Empty constructor
+        //! Default constructor
         AtomicCharge() {}
 
         //! Constructor setting type, unit and charge itself
@@ -836,7 +983,8 @@ class AtomicCharge : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over AtomicCharge items
-using  AtomicChargeIterator = typename std::vector<AtomicCharge>::iterator;
+using  AtomicChargeIterator      = typename std::vector<AtomicCharge>::iterator;
+using  AtomicChargeConstIterator = typename std::vector<AtomicCharge>::const_iterator;
 
 /*! \brief
  * Contains data on an atom based on a calculation.
@@ -855,7 +1003,7 @@ class CalcAtom
         int                       atomID_;
         std::vector<AtomicCharge> q_;
     public:
-        //! Empty constructor
+        //! Default constructor
         CalcAtom() {}
 
         //! Constructor initiating the name, type and atomid
@@ -936,15 +1084,8 @@ class CalcAtom
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over CalcAtom items
-using  CalcAtomIterator = typename std::vector<CalcAtom>::iterator;
-
-enum DataSource {
-    dsExperiment, dsTheory
-};
-
-const char *dataSourceName(DataSource ds);
-
-DataSource dataSourceFromName(const std::string &name);
+using  CalcAtomIterator      = typename std::vector<CalcAtom>::iterator;
+using  CalcAtomConstIterator = typename std::vector<CalcAtom>::const_iterator;
 
 /*! \brief
  * Contains molecular data based on experiments
@@ -960,7 +1101,7 @@ DataSource dataSourceFromName(const std::string &name);
 class Experiment
 {
     public:
-        //! Empty constructor
+        //! Default constructor
         Experiment() { }
 
         //! Constructor initiating an Experiment with reference and conformation
@@ -1095,6 +1236,9 @@ class Experiment
                     double             vec[3],
                     tensor             quadrupole);
 
+        /*! \brief
+         * Return the HF energy of the molecule
+         */
         bool getHF(double *value);
 
         //! Merge in another object. Return number of warnings.
@@ -1126,7 +1270,7 @@ class Experiment
         std::string                          method_;
         std::string                          basisset_;
         std::string                          datafile_;
-	      jobType                              jobtype_;
+        jobType                              jobtype_;
         std::vector<CalcAtom>                catom_;
         std::vector<ElectrostaticPotential>  potential_;
         std::vector<MolecularDipole>         dipole_;
@@ -1136,6 +1280,7 @@ class Experiment
 };
 //! Iterates over Experiment items
 using  ExperimentIterator = typename std::vector<Experiment>::iterator;
+using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterator;
 
 /*! \brief
  * Contains molecular properties from a range of sources.
@@ -1411,13 +1556,13 @@ class MolProp
         ExperimentIterator getLotPropType(const char       *lot,
                                           MolPropObservable mpo,
                                           const char       *type);
-/*! \brief
- * Sends this object over an MPI connection
- *
- * \param[in] commrec   GROMACS data structure for MPI communication
- * \param[in] dest      Destination processor
- * \return the CommunicationStatus of the operation
- */
+        /*! \brief
+         * Sends this object over an MPI connection
+         *
+         * \param[in] commrec   GROMACS data structure for MPI communication
+         * \param[in] dest      Destination processor
+         * \return the CommunicationStatus of the operation
+         */
         CommunicationStatus Send(t_commrec *cr, int dest);
 
         /*! \brief
@@ -1430,7 +1575,7 @@ class MolProp
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolProp items
-using  MolPropIterator = typename std::vector<MolProp>::iterator;
+using  MolPropIterator      = typename std::vector<MolProp>::iterator;
 using  MolPropConstIterator = typename std::vector<MolProp>::const_iterator;
 
 /*! \brief Utility to compare temperatures
