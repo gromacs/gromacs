@@ -507,13 +507,14 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
     
     if (strlen(fixchi()) != 0)
     {
-        ref_chi  = pd.getChi0(iChargeDistributionModel(), fixchi());
+        ref_chi = pd.getChi0(iChargeDistributionModel(), fixchi());
     }
      
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
     auto ai_elem = pd.ztype2elem(ei->getName());
     auto ai_row  = ei->getRow(0);
     auto ai_chi  = ei->getChi0();
+    auto ai_J0   = ei->getJ0();
     auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
     if (ai_chi < ref_chi)
@@ -534,17 +535,17 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
             if ((ai_row == aj_row) && (ai_atn != aj_atn))
             {
                 auto aj_chi = ej->getChi0();
-                
+                auto aj_J0  = ej->getJ0();
                 if (ai_atn > aj_atn)
                 {
-                    if (ai_chi < aj_chi)
+                    if (ai_chi <= aj_chi || ai_J0 <= aj_J0)
                     {
                         penalty += 1e5;
                     }
                 }
                 else if (aj_atn > ai_atn)
                 {
-                    if (aj_chi < ai_chi)
+                    if (aj_chi <= ai_chi || aj_J0 <= ai_J0)
                     {
                         penalty += 1e5;
                     }
@@ -599,12 +600,9 @@ double OptEEM::objFunction(const double v[])
         setHfac(param_[n++]);
         bound += 100*gmx::square(hfacDiff());
     }
-    calcDeviation();
-    if (TuneEEM_.bounds())
-    {
-        increaseEnergy(ermsBOUNDS, bound);
-        increaseEnergy(ermsTOT, bound);
-    }
+    calcDeviation(); 
+    increaseEnergy(ermsBOUNDS, bound);
+    increaseEnergy(ermsTOT, bound);
     increaseEnergy(ermsTOT, penalty);
     return energy(ermsTOT);
 }
