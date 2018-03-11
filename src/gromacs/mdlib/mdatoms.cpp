@@ -65,6 +65,39 @@ MDAtoms::MDAtoms()
 {
 }
 
+MDAtoms::~MDAtoms()
+{
+    if (mdatoms_ == nullptr)
+    {
+        return;
+    }
+    sfree(mdatoms_->massA);
+    sfree(mdatoms_->massB);
+    sfree(mdatoms_->massT);
+    gmx::AlignedAllocationPolicy::free(mdatoms_->invmass);
+    sfree(mdatoms_->invMassPerDim);
+    sfree(mdatoms_->typeA);
+    sfree(mdatoms_->chargeB);
+    sfree(mdatoms_->typeB);
+    sfree(mdatoms_->sqrt_c6A);
+    sfree(mdatoms_->sigmaA);
+    sfree(mdatoms_->sigma3A);
+    sfree(mdatoms_->sqrt_c6B);
+    sfree(mdatoms_->sigmaB);
+    sfree(mdatoms_->sigma3B);
+    sfree(mdatoms_->ptype);
+    sfree(mdatoms_->cTC);
+    sfree(mdatoms_->cENER);
+    sfree(mdatoms_->cACC);
+    sfree(mdatoms_->cFREEZE);
+    sfree(mdatoms_->cVCM);
+    sfree(mdatoms_->cORF);
+    sfree(mdatoms_->bPerturbed);
+    sfree(mdatoms_->cU1);
+    sfree(mdatoms_->cU2);
+    sfree(mdatoms_->bQM);
+}
+
 void MDAtoms::resize(int newSize)
 {
     chargeA_.resize(newSize);
