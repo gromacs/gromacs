@@ -1989,7 +1989,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
                        eprAVER, mdebin, fcd, groups, &(ir->opts), ir->awh);
         }
     }
-    done_ebin(mdebin->ebin);
+    done_mdebin(mdebin);
     done_mdoutf(outf);
 
     if (bPMETune)
@@ -2029,5 +2029,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
         walltime_accounting_set_valid_finish(walltime_accounting);
     }
 
+    destroy_enerdata(enerd);
+    sfree(enerd);
+    mdAlgorithmsTearDownAtomData(fr->bonded_threading, top);
+    fr->bonded_threading = nullptr;
+    sfree(top);
     return 0;
 }

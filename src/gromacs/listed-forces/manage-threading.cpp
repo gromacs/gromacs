@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ static void divide_bondeds_over_threads(t_idef *idef,
     if (F_NRE*(nthread + 1) > idef->il_thread_division_nalloc)
     {
         idef->il_thread_division_nalloc = F_NRE*(nthread + 1);
-        snew(idef->il_thread_division, idef->il_thread_division_nalloc);
+        srenew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
     *haveBondeds = false;
@@ -475,6 +475,22 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
                 ctot*reduction_block_size/(double)fr->natoms_force,
                 ctot/(double)bt->nblock_used);
     }
+}
+
+void tear_down_bonded_threading(bonded_threading_t *bt,
+                                t_idef             *idef)
+{
+    for (int th = 0; th < bt->nthreads; th++)
+    {
+        sfree(bt->f_t[th].fshift);
+        for (int i = 0; i < egNR; i++)
+        {
+            sfree(bt->f_t[th].grpp.ener[i]);
+        }
+    }
+    sfree(bt->f_t);
+    sfree(bt);
+    sfree(idef->il_thread_division);
 }
 
 void init_bonded_threading(FILE *fplog, int nenergrp,
