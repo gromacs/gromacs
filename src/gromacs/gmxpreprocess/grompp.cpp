@@ -479,6 +479,7 @@ static void renumber_moltypes(gmx_mtop_t *sys,
             minew[i] = (*molinfo)[mi];
         }
     }
+    sfree(order);
     sfree(*molinfo);
 
     *nmolinfo = norder;
@@ -2328,8 +2329,15 @@ int gmx_grompp(int argc, char *argv[])
     /* Output IMD group, if bIMD is TRUE */
     write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
+    sfree(opts->define);
+    sfree(opts->include);
+    sfree(opts);
+    done_plist(plist);
+    sfree(plist);
+    sfree(mi);
     done_atomtype(atype);
     done_mtop(sys);
+    sfree(sys);
     done_inputrec_strings();
 
     return 0;

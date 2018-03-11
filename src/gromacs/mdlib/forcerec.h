@@ -59,6 +59,9 @@ class MDLogger;
 /*! \brief Create a new forcerec structure */
 t_forcerec *mk_forcerec(void);
 
+//! Destroy a forcerec.
+void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
+
 /*! \brief Print the contents of the forcerec to a file
  *
  * \param[in] fplog The log file to print to
