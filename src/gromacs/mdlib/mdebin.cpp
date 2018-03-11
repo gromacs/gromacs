@@ -135,7 +135,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         "Barostat"
     };
 
-    char              **grpnms;
     const gmx_groups_t *groups;
     char              **gnm;
     char                buf[256];
@@ -453,8 +452,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     snew(md->tmp_r, md->mde_n);
     snew(md->tmp_v, md->mde_n);
-    snew(md->grpnms, md->mde_n);
-    grpnms = md->grpnms;
+    char **grpnms;
+    snew(grpnms, md->mde_n);
 
     for (i = 0; (i < md->nTC); i++)
     {
@@ -587,6 +586,19 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
     return md;
+}
+
+void done_mdebin(t_mdebin *mdebin)
+{
+    sfree(mdebin->igrp);
+    sfree(mdebin->tmp_r);
+    sfree(mdebin->tmp_v);
+    sfree(mdebin->grpnms);
+    done_ebin(mdebin->ebin);
+    done_mde_delta_h_coll(mdebin->dhc);
+    sfree(mdebin->dE);
+    sfree(mdebin->temperatures);
+    sfree(mdebin);
 }
 
 /* print a lambda vector to a string
