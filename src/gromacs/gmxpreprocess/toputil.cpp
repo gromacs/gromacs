@@ -131,6 +131,17 @@ void init_plist(t_params plist[])
     }
 }
 
+void done_plist(t_params *plist)
+{
+    for (int i = 0; i < F_NRE; i++)
+    {
+        t_params *pl = &plist[i];
+        sfree(pl->param);
+        sfree(pl->cmap);
+        sfree(pl->cmap_types);
+    }
+}
+
 void cp_param(t_param *dest, t_param *src)
 {
     int j;
@@ -182,22 +193,12 @@ void init_molinfo(t_molinfo *mol)
 
 /* FREEING MEMORY */
 
-static void done_bt (t_params *pl)
-{
-    sfree(pl->param);
-}
-
 void done_mi(t_molinfo *mi)
 {
-    int i;
-
     done_atom (&(mi->atoms));
     done_block(&(mi->cgs));
     done_block(&(mi->mols));
-    for (i = 0; (i < F_NRE); i++)
-    {
-        done_bt(&(mi->plist[i]));
-    }
+    done_plist(mi->plist);
 }
 
 /* PRINTING STRUCTURES */

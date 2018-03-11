@@ -35,6 +35,7 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
+struct bonded_threading_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_shellfc_t;
@@ -75,5 +76,13 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                gmx::MDAtoms      *mdAtoms,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
+
+/*! \brief Clean up after MD algorithms.
+ *
+ * \param[out] bt            Manages the bonded threading.
+ * \param[out] top           The local topology
+ */
+void mdAlgorithmsTearDownAtomData(bonded_threading_t *bt,
+                                  gmx_localtop_t     *top);
 
 #endif

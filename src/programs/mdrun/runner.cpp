@@ -1399,6 +1399,9 @@ int Mdrunner::mdrunner()
     free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
+    done_forcerec(fr, mtop->nmolblock, mtop->groups.grps[egcENER].nr);
+    done_mtop(mtop);
+    sfree(fcd);
 
     if (doMembed)
     {
@@ -1410,6 +1413,7 @@ int Mdrunner::mdrunner()
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
+    sfree(nrnb);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && continuationOptions.appendFiles)

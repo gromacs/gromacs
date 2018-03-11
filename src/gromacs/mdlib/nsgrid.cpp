@@ -409,6 +409,10 @@ t_grid *init_grid(FILE *fplog, t_forcerec *fr)
 
 void done_grid(t_grid *grid)
 {
+    if (grid == nullptr)
+    {
+        return;
+    }
     grid->nr      = 0;
     clear_ivec(grid->n);
     grid->ncells  = 0;
@@ -426,6 +430,7 @@ void done_grid(t_grid *grid)
     {
         fprintf(debug, "Successfully freed memory for grid pointers.");
     }
+    sfree(grid);
 }
 
 int xyz2ci_(int nry, int nrz, int x, int y, int z)
