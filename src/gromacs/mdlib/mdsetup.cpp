@@ -149,3 +149,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
      * TODO: this also does not account for TPI.
      */
 }
+
+void mdAlgorithmsTearDownAtomData(bonded_threading_t *bt,
+                                  gmx_localtop_t     *top)
+{
+    tear_down_bonded_threading(bt, &top->idef);
+}

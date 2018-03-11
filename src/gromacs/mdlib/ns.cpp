@@ -2157,6 +2157,22 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     }
 }
 
+void done_ns(gmx_ns_t *ns, int numEnergyGroups)
+{
+    sfree(ns->bExcludeAlleg);
+    if (ns->ns_buf)
+    {
+        for (int i = 0; i < numEnergyGroups; i++)
+        {
+            sfree(ns->ns_buf[i]);
+        }
+        sfree(ns->ns_buf);
+    }
+    sfree(ns->simple_aaj);
+    sfree(ns->bHaveVdW);
+    done_grid(ns->grid);
+    sfree(ns);
+}
 
 int search_neighbours(FILE *log, t_forcerec *fr,
                       matrix box,

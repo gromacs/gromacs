@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,6 @@ typedef struct t_mdebin {
     int                 ivcos, ivisc;
     int                 nE, nEg, nEc, nTC, nTCP, nU, nNHC;
     int                *igrp;
-    char              **grpnms;
     int                 mde_n, mdeb_n;
     real               *tmp_r;
     rvec               *tmp_v;
@@ -124,6 +123,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const t_inputrec *ir,
                       FILE             *fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
+
+//! Destroy mdebin
+void done_mdebin(t_mdebin *mdebin);
 
 FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                 const gmx_output_env_t *oenv);

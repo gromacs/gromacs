@@ -864,6 +864,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         cg_offset += molb->nmol*cgs->nr;
         a_offset  += molb->nmol*cgs->index[cgs->nr];
     }
+    sfree(type_VDW);
     sfree(bExcl);
 
     /* the solvent optimizer is called after the QM is initialized,
@@ -919,6 +920,19 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
     }
 
     return cginfo;
+}
+
+static void done_cginfo_mb(cginfo_mb_t *cginfo_mb, int numMolBlocks)
+{
+    if (cginfo_mb == nullptr)
+    {
+        return;
+    }
+    for (int mb = 0; mb < numMolBlocks; ++mb)
+    {
+        sfree(cginfo_mb[mb].cginfo);
+    }
+    sfree(cginfo_mb);
 }
 
 /* Sets the sum of charges (squared) and C6 in the system in fr.
@@ -2147,6 +2161,15 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
+static void
+done_interaction_const(interaction_const_t *interaction_const)
+{
+    sfree_aligned(interaction_const->tabq_coul_FDV0);
+    sfree_aligned(interaction_const->tabq_coul_F);
+    sfree_aligned(interaction_const->tabq_coul_V);
+    sfree(interaction_const);
+}
+
 static void init_nb_verlet(const gmx::MDLogger     &mdlog,
                            nonbonded_verlet_t     **nb_verlet,
                            gmx_bool                 bFEP_NonBonded,
@@ -3137,4 +3160,22 @@ void free_gpu_resources(const t_forcerec                    *fr,
     {
         physicalNodeCommunicator.barrier();
     }
+}
+
+void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
+{
+    if (fr == nullptr)
+    {
+        // PME-only ranks don't have a forcerec
+        return;
+    }
+    done_cginfo_mb(fr->cginfo_mb, numMolBlocks);
+    sfree(fr->nbfp);
+    done_interaction_const(fr->ic);
+    sfree(fr->shift_vec);
+    sfree(fr->fshift);
+    sfree(fr->nblists);
+    done_ns(fr->ns, numEnergyGroups);
+    sfree(fr->ewc_t);
+    sfree(fr);
 }
