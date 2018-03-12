@@ -95,6 +95,7 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/awh-history.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -919,13 +920,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     bUsingEnsembleRestraints = (fcd->disres.nsystems > 1) || (cr->ms && fcd->orires.nr);
 
     {
-        // Replica exchange and ensemble restraints need all
+        // Replica exchange, ensemble restraints and AWH need all
         // simulations to remain synchronized, so they need
         // checkpoints and stop conditions to act on the same step, so
         // the propagation of such signals must take place between
         // simulations, not just within simulations.
-        bool checkpointIsLocal    = !useReplicaExchange && !bUsingEnsembleRestraints;
-        bool stopConditionIsLocal = !useReplicaExchange && !bUsingEnsembleRestraints;
+        // TODO: Make algorithm initializers set these flags.
+        bool awhUsesMultiSim      = (ir->bDoAwh && ir->awhParams->shareBiasMultisim);
+        bool checkpointIsLocal    = !useReplicaExchange && !bUsingEnsembleRestraints && !awhUsesMultiSim;
+        bool stopConditionIsLocal = !useReplicaExchange && !bUsingEnsembleRestraints && !awhUsesMultiSim;
         bool resetCountersIsLocal = true;
         signals[eglsCHKPT]         = SimulationSignal(checkpointIsLocal);
         signals[eglsSTOPCOND]      = SimulationSignal(stopConditionIsLocal);
