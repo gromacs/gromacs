@@ -2480,9 +2480,13 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     comm = &pull->comm;
 
 #if GMX_MPI
-    /* Use a sub-communicator when we have more than 32 ranks */
+    /* Use a sub-communicator when we have more than 32 ranks, but not
+     * when we have an external pull potential, since then the external
+     * potential provider expects each rank to have the coordinate.
+     */
     comm->bParticipateAll = (cr == nullptr || !DOMAINDECOMP(cr) ||
                              cr->dd->nnodes <= 32 ||
+                             pull->numCoordinatesWithExternalPotential > 0 ||
                              getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
      * so we can always initialize it to NULL.
