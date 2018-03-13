@@ -938,9 +938,12 @@ static double get_pull_coord_deviation(struct pull_t *pull,
 
     pcrd = &pull->coord[coord_ind];
 
-    get_pull_coord_distance(pull, coord_ind, pbc);
-
+    /* Update the reference value before computing the distance,
+     * since it is used in the distance computation with periodic pulling.
+     */
     update_pull_coord_reference_value(pcrd, coord_ind, t);
+
+    get_pull_coord_distance(pull, coord_ind, pbc);
 
     /* Determine the deviation */
     dev = pcrd->value - pcrd->value_ref;
