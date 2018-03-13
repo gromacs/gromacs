@@ -42,10 +42,14 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cstdio>
 #ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
@@ -171,7 +175,6 @@ static int do_sanity_checks(const gmx_device_info_t *devInfo, std::string *error
 
 /*! \brief Returns true if the gpu characterized by the device properties is
  *  supported by the native gpu acceleration.
- *  TODO: check for the required OpenCL version here, before sanity checks.
  *
  * \returns             true if the GPU properties passed indicate a compatible
  *                      GPU, otherwise false.
@@ -194,6 +197,23 @@ static int is_gmx_supported_gpu_id(const gmx_device_info_t *ocl_gpu_device, size
             default:
                 return egpuIncompatible;
         }
+    }
+
+    // OpenCL version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+    constexpr unsigned int minVersionMajor = REQUIRED_OPENCL_MIN_VERSION_MAJOR;
+    constexpr unsigned int minVersionMinor = REQUIRED_OPENCL_MIN_VERSION_MINOR;
+
+    // Based on the OpenCL spec we're checking the version supported by
+    // the device which has the following format:
+    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    unsigned int deviceVersionMinor, deviceVersionMajor;
+    const int    valuesScanned      = std::sscanf(ocl_gpu_device->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough = ((valuesScanned == 2) &&
+                                       ((deviceVersionMajor > minVersionMajor) ||
+                                        (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    if (!versionLargeEnough)
+    {
+        return egpuIncompatible;
     }
 
     std::string errorString;
