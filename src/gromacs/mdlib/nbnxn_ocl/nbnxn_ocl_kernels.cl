@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,29 +35,6 @@
 #define __IN_OPENCL_KERNEL__
 
 /* Auxiliary kernels */
-__kernel void
-memset_f3(__global float3 *buf,const float value,const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
-        buf[tidx] = value;
-}
-
-__kernel void
-memset_f2(__global float2 *buf,const float value,const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
-        buf[tidx] = value;
-}
-
-__kernel void
-memset_f(__global float *buf,const float value,const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
-        buf[tidx] = value;
-}
 
 /* Very few data */
 __kernel void
