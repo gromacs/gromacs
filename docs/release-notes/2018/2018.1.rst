@@ -166,6 +166,15 @@ And continuation from checkpoints could be refused.
 :issue:`2441`
 :issue:`2444`
 
+Fixed restart bug with pull geometry direction-periodic
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With COM pulling with geometry direction-periodic, (only) at the step
+of continuing from checkpoint the closest PBC image would be used
+instead of the of the one closest to the reference value. This could
+lead to a sharp spike in the pull force at the continuation step.
+
+:issue:`2446`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
