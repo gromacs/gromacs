@@ -263,6 +263,10 @@
 /* Define relative path to OpenCL kernels */
 #define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 
+/* Minimum required OpenCL version support (both API and device) - split into integer components for convenience */
+#define REQUIRED_OPENCL_MIN_VERSION_MAJOR @REQUIRED_OPENCL_MIN_VERSION_MAJOR@
+#define REQUIRED_OPENCL_MIN_VERSION_MINOR @REQUIRED_OPENCL_MIN_VERSION_MINOR@
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine01 HAVE_FSEEKO
 

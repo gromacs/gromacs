@@ -50,6 +50,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cstdio>
 #ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
@@ -199,32 +201,42 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
     return true;
 }
 
-/*! \brief Detect whether \c ocl_gpu_device is from a supported
- * vendor, running on a supported OS, compatible for use by mdrun
- * and can run a dummy kernel.
+/*!
+ * \brief Checks that device \c devInfo is compatible with GROMACS.
  *
- * \todo Check for the required OpenCL version here, before sanity checks.
+ *  Vendor and OpenCL version support checks are executed an the result
+ *  of these returned.
  *
- * \returns  An e_gpu_detect_res_t to indicate how the GPU coped with
- *           the sanity and compatibility check.
+ * \param[in]  devInfo         The device info pointer.
+ * \returns                    The result of the compatibility checks.
  */
-static int checkGpu(const gmx_device_info_t *ocl_gpu_device, size_t deviceIndex)
+static int isDeviceSupported(const gmx_device_info_t *devInfo)
 {
-    std::string errorMessage;
-    if (!isDeviceSane(ocl_gpu_device, &errorMessage))
-    {
-        gmx_warning((formatString("While sanity checking device #%zu, ", deviceIndex) + errorMessage).c_str());
-        return egpuInsane;
-    }
-
     if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         // Assume the device is compatible because checking has been disabled.
         return egpuCompatible;
     }
 
+    // OpenCL device version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+    constexpr unsigned int minVersionMajor = REQUIRED_OPENCL_MIN_VERSION_MAJOR;
+    constexpr unsigned int minVersionMinor = REQUIRED_OPENCL_MIN_VERSION_MINOR;
+
+    // Based on the OpenCL spec we're checking the version supported by
+    // the device which has the following format:
+    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    unsigned int deviceVersionMinor, deviceVersionMajor;
+    const int    valuesScanned      = std::sscanf(devInfo->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough = ((valuesScanned == 2) &&
+                                       ((deviceVersionMajor > minVersionMajor) ||
+                                        (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    if (!versionLargeEnough)
+    {
+        return egpuIncompatible;
+    }
+
     /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
-    switch (ocl_gpu_device->vendor_e)
+    switch (devInfo->vendor_e)
     {
         case OCL_VENDOR_NVIDIA:
             return egpuCompatible;
@@ -235,6 +247,40 @@ static int checkGpu(const gmx_device_info_t *ocl_gpu_device, size_t deviceIndex)
         default:
             return egpuIncompatible;
     }
+}
+
+
+
+/*! \brief Check whether the \c ocl_gpu_device is suitable for use by mdrun
+ *
+ * Runs sanity checks: checking that the runtime can compile a dummy kernel
+ * and this can be executed;
+ * Runs compatibility checks verifying the device OpenCL version requirement
+ * and vendor/OS support.
+ *
+ * \param[in]  deviceId      The runtime-reported numeric ID of the device.
+ * \param[in]  deviceInfo    The device info pointer.
+ * \returns  An e_gpu_detect_res_t to indicate how the GPU coped with
+ *           the sanity and compatibility check.
+ */
+static int checkGpu(size_t                   deviceId,
+                    const gmx_device_info_t *deviceInfo)
+{
+
+    int supportStatus = isDeviceSupported(deviceInfo);
+    if (supportStatus != egpuCompatible)
+    {
+        return supportStatus;
+    }
+
+    std::string errorMessage;
+    if (!isDeviceSane(deviceInfo, &errorMessage))
+    {
+        gmx_warning((formatString("While sanity checking device #%zu, ", deviceId) + errorMessage).c_str());
+        return egpuInsane;
+    }
+
+    return egpuCompatible;
 }
 
 } // namespace
@@ -405,7 +451,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
 
-                    gpu_info->gpu_dev[device_index].stat = gmx::checkGpu(gpu_info->gpu_dev + device_index, device_index);
+                    gpu_info->gpu_dev[device_index].stat = gmx::checkGpu(device_index, gpu_info->gpu_dev + device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
                     {
