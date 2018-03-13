@@ -342,12 +342,7 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     cl_int gmx_unused cl_error;
 
     /* Enqueue wait */
-#ifdef CL_VERSION_1_2
     cl_error = clEnqueueBarrierWithWaitList(stream, 1, ocl_event, NULL);
-#else
-    cl_error = clEnqueueWaitForEvents(stream, 1, ocl_event);
-#endif
-
     GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
@@ -449,11 +444,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     {
         if (iloc == eintLocal)
         {
-#ifdef CL_VERSION_1_2
             cl_error = clEnqueueMarkerWithWaitList(stream, 0, NULL, &(nb->misc_ops_and_local_H2D_done));
-#else
-            cl_error = clEnqueueMarker(stream, &(nb->misc_ops_and_local_H2D_done));
-#endif
             assert(CL_SUCCESS == cl_error);
 
             /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
@@ -798,11 +789,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
        data back first. */
     if (iloc == eintNonlocal)
     {
-#ifdef CL_VERSION_1_2
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, NULL, &(nb->nonlocal_done));
-#else
-        cl_error = clEnqueueMarker(stream, &(nb->nonlocal_done));
-#endif
         assert(CL_SUCCESS == cl_error);
         nb->bNonLocalStreamActive = true;
     }

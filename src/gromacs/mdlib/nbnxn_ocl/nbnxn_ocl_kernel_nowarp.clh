@@ -39,7 +39,7 @@
  *  This kernel is use by default on all architectures other than the ones we
  *  explicitly support/optimize for.
  *
- *  OpenCL 1.1 support is expected.
+ *  OpenCL 1.2 support is expected.
  *
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Szilárd Páll <pall.szilard@gmail.com>
