@@ -214,8 +214,8 @@ else()
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 
-# OpenCL required version: 1.1 or newer
-set(REQUIRED_OPENCL_MIN_VERSION 1.1)
+# OpenCL required version: 1.2 or newer
+set(REQUIRED_OPENCL_MIN_VERSION 1.2)
 
 if(NOT GMX_USE_OPENCL)
     # CUDA detection is done only if GMX_USE_OPENCL is OFF.
