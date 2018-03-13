@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,8 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -95,12 +97,9 @@ typedef struct
 }
 pull_group_work_t;
 
-typedef struct
+/* Struct describing the instantaneous spatial layout of a pull coordinate */
+struct PullCoordSpatialData
 {
-    t_pull_coord  params;     /* Pull coordinate (constant) parameters */
-
-    double        value_ref;  /* The reference value, usually init+rate*t, units of nm or rad */
-    double        value;      /* The current value of the coordinate, units of nm or rad */
     dvec          dr01;       /* The direction vector of group 1 relative to group 0 */
     dvec          dr23;       /* The direction vector of group 3 relative to group 2 */
     dvec          dr45;       /* The direction vector of group 5 relative to group 4 */
@@ -108,17 +107,44 @@ typedef struct
     double        vec_len;    /* Length of vec for direction-relative */
     dvec          ffrad;      /* conversion factor from vec to radial force */
     double        cyl_dev;    /* The deviation from the reference position */
-    double        f_scal;     /* Scalar force for directional pulling */
-    dvec          f01;        /* Force due to the pulling/constraining for groups 0, 1 */
-    dvec          f23;        /* Force for groups 2 and 3 */
-    dvec          f45;        /* Force for groups 4 and 5 */
     dvec          planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
     dvec          planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
 
+    double        value;      /* The current value of the coordinate, units of nm or rad */
+};
+
+/* Struct with parameters and force evaluation local data for a pull coordinate */
+struct pull_coord_work_t
+{
+    /* Constructor */
+    pull_coord_work_t(const t_pull_coord &params) :
+        params(params),
+        value_ref(0),
+        spatialData(),
+        scalarForce(0),
+        bExternalPotentialProviderHasBeenRegistered(false)
+    {
+    };
+
+    const t_pull_coord    params;      /* Pull coordinate parameters */
+
+    double                value_ref;   /* The reference value, usually init+rate*t, units of nm or rad */
+
+    PullCoordSpatialData  spatialData; /* Data defining the current geometry */
+
+    double                scalarForce; /* Scalar force for this cooordinate */
+
     /* For external-potential coordinates only, for checking if a provider has been registered */
     bool          bExternalPotentialProviderHasBeenRegistered;
-}
-pull_coord_work_t;
+};
+
+/* Struct for storing vectorial forces for a pull coordinate */
+struct PullCoordVectorForces
+{
+    dvec force01; /* Force due to the pulling/constraining for groups 0, 1 */
+    dvec force23; /* Force for groups 2 and 3 */
+    dvec force45; /* Force for groups 4 and 5 */
+};
 
 /* Struct for sums over (local) atoms in a pull group */
 struct pull_sum_com_t {
@@ -163,6 +189,7 @@ pull_comm_t;
 
 struct pull_t
 {
+    /* Global parameters */
     pull_params_t      params;       /* The pull parameters, from inputrec */
 
     gmx_bool           bPotential;   /* Are there coordinates with potential? */
@@ -173,15 +200,17 @@ struct pull_t
     int                npbcdim;      /* do pbc in dims 0 <= dim < npbcdim */
     gmx_bool           bRefAt;       /* do we need reference atoms for a group COM ? */
     int                cosdim;       /* dimension for cosine weighting, -1 if none */
-
-    int                ngroup;       /* Number of pull groups */
-    int                ncoord;       /* Number of pull coordinates */
-    pull_group_work_t *group;        /* The pull group param and work data */
-    pull_group_work_t *dyna;         /* Dynamic groups for geom=cylinder */
-    pull_coord_work_t *coord;        /* The pull group param and work data */
-
     gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
 
+    /* Parameters + dynamic data for groups */
+    int                ngroup;       /* Number of pull groups */
+    pull_group_work_t *group;        /* The pull group param and work data */
+    pull_group_work_t *dyna;         /* Dynamic groups for geom=cylinder */
+
+    /* Parameters + dynamic data for coordinates */
+    std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
+
+    /* Global dynamic data */
     gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
     int                nthreads;     /* Number of threads used by the pull code */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,13 +90,14 @@ class PullTest : public ::testing::Test
             }
 
             {
-                pull_coord_work_t           pcrd;
                 // Distance pulling in all 3 dimensions
-                pcrd.params.eGeom   = epullgDIST;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
+                t_pull_coord params;
+                params.eGeom   = epullgDIST;
+                params.dim[XX] = 1;
+                params.dim[YY] = 1;
+                params.dim[ZZ] = 1;
+                pull_coord_work_t pcrd(params);
+                clear_dvec(pcrd.spatialData.vec);
 
                 real minBoxSize2 = GMX_REAL_MAX;
                 for (int d = 0; d < pbc.ndim_ePBC; d++)
@@ -109,41 +110,44 @@ class PullTest : public ::testing::Test
             }
 
             {
-                pull_coord_work_t           pcrd;
                 // Distance pulling along Z
-                pcrd.params.eGeom   = epullgDIST;
-                pcrd.params.dim[XX] = 0;
-                pcrd.params.dim[YY] = 0;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
+                t_pull_coord params;
+                params.eGeom   = epullgDIST;
+                params.dim[XX] = 0;
+                params.dim[YY] = 0;
+                params.dim[ZZ] = 1;
+                pull_coord_work_t pcrd(params);
+                clear_dvec(pcrd.spatialData.vec);
                 EXPECT_REAL_EQ_TOL(0.25*boxSizeZSquared,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }
 
             {
-                pull_coord_work_t           pcrd;
                 // Directional pulling along Z
-                pcrd.params.eGeom   = epullgDIR;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-                pcrd.vec[ZZ] = 1;
+                t_pull_coord params;
+                params.eGeom   = epullgDIR;
+                params.dim[XX] = 1;
+                params.dim[YY] = 1;
+                params.dim[ZZ] = 1;
+                pull_coord_work_t pcrd(params);
+                clear_dvec(pcrd.spatialData.vec);
+                pcrd.spatialData.vec[ZZ] = 1;
                 EXPECT_REAL_EQ_TOL(0.25*boxSizeZSquared,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }
 
             {
-                pull_coord_work_t           pcrd;
                 // Directional pulling along X
-                pcrd.params.eGeom   = epullgDIR;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-                pcrd.vec[XX] = 1;
+                t_pull_coord params;
+                params.eGeom   = epullgDIR;
+                params.dim[XX] = 1;
+                params.dim[YY] = 1;
+                params.dim[ZZ] = 1;
+                pull_coord_work_t pcrd(params);
+                clear_dvec(pcrd.spatialData.vec);
+                pcrd.spatialData.vec[XX] = 1;
 
                 real minDist2 = square(box[XX][XX]);
                 for (int d = XX + 1; d < DIM; d++)
