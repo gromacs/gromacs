@@ -42,10 +42,14 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cstdio>
 #ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
@@ -171,7 +175,6 @@ static int do_sanity_checks(const gmx_device_info_t *devInfo, std::string *error
 
 /*! \brief Returns true if the gpu characterized by the device properties is
  *  supported by the native gpu acceleration.
- *  TODO: check for the required OpenCL version here, before sanity checks.
  *
  * \returns             true if the GPU properties passed indicate a compatible
  *                      GPU, otherwise false.
@@ -194,6 +197,27 @@ static int is_gmx_supported_gpu_id(const gmx_device_info_t *ocl_gpu_device, size
             default:
                 return egpuIncompatible;
         }
+    }
+
+    // OpenCL version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+    // We expect REQUIRED_OPENCL_MIN_VERSION to have the MAJOR.MINOR format
+    const char  *minOpenclVersion = REQUIRED_OPENCL_MIN_VERSION;
+    unsigned int minVersionMinor, minVersionMajor;
+    int          valuesScanned;
+    valuesScanned = std::sscanf(minOpenclVersion, "%u.%u", &minVersionMajor, &minVersionMinor);
+    GMX_RELEASE_ASSERT(valuesScanned == 2, "Error while parsing REQUIRED_OPENCL_MIN_VERSION");
+
+    // Based on the OpenCL spec we're checking the version supported by
+    // the device which has the following format:
+    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    unsigned int deviceVersionMinor, deviceVersionMajor;
+    valuesScanned = std::sscanf(ocl_gpu_device->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough = ((valuesScanned == 2) &&
+                                       ((deviceVersionMajor > minVersionMajor) ||
+                                        (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    if (!versionLargeEnough)
+    {
+        return egpuIncompatible;
     }
 
     std::string errorString;

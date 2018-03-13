@@ -247,6 +247,9 @@
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
+/* Minimum required OpenCL version support (both API and device) */
+#define REQUIRED_OPENCL_MIN_VERSION "@REQUIRED_OPENCL_MIN_VERSION@"
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine01 HAVE_FSEEKO
 
