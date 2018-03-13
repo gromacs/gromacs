@@ -123,6 +123,7 @@
 
 #include "deform.h"
 #include "md.h"
+#include "rerun.h"
 #include "membed.h"
 #include "repl_ex.h"
 
@@ -340,7 +341,7 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
 }
 
 //! \brief Return the correct integrator function.
-static integrator_t *my_integrator(unsigned int ei)
+static integrator_t *my_integrator(unsigned int ei, bool rerun=false)
 {
     switch (ei)
     {
@@ -352,6 +353,10 @@ static integrator_t *my_integrator(unsigned int ei)
             if (!EI_DYNAMICS(ei))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
+            }
+            if (rerun)
+            {
+                return do_rerun;
             }
             return do_md;
         case eiSteep:
@@ -545,6 +550,13 @@ int Mdrunner::mdrunner()
 
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), mtop);
+
+        if (doRerun) {
+            for (int i = 0; i < globalState->natoms; i++)
+            {
+                clear_rvec(globalState->v[i]);
+            }
+        }
 
         if (inputrec->cutoff_scheme != ecutsVERLET)
         {
@@ -1324,19 +1336,19 @@ int Mdrunner::mdrunner()
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, ms, mdlog, nfile, fnm,
-                                     oenv,
-                                     mdrunOptions,
-                                     vsite, constr,
-                                     mdModules->outputProvider(),
-                                     inputrec, mtop,
-                                     fcd,
-                                     globalState.get(),
-                                     &observablesHistory,
-                                     mdAtoms.get(), nrnb, wcycle, fr,
-                                     replExParams,
-                                     membed,
-                                     walltime_accounting);
+        my_integrator(inputrec->eI, doRerun) (fplog, cr, ms, mdlog, nfile, fnm,
+                                              oenv,
+                                              mdrunOptions,
+                                              vsite, constr,
+                                              mdModules->outputProvider(),
+                                              inputrec, mtop,
+                                              fcd,
+                                              globalState.get(),
+                                              &observablesHistory,
+                                              mdAtoms.get(), nrnb, wcycle, fr,
+                                              replExParams,
+                                              membed,
+                                              walltime_accounting);
 
         if (inputrec->bRot)
         {
