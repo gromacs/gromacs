@@ -654,9 +654,6 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
     nb->kernel_pruneonly[epruneRolling] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
 
     /* Init auxiliary kernels */
-    nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
-    nb->kernel_memset_f2     = nbnxn_gpu_create_kernel(nb, "memset_f2");
-    nb->kernel_memset_f3     = nbnxn_gpu_create_kernel(nb, "memset_f3");
     nb->kernel_zero_e_fshift = nbnxn_gpu_create_kernel(nb, "zero_e_fshift");
 }
 
@@ -803,33 +800,16 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
         return;
     }
 
-    cl_int               cl_error;
-    cl_atomdata_t *      adat     = nb->atdat;
-    cl_command_queue     ls       = nb->stream[eintLocal];
-    cl_float             value    = 0.0f;
+    cl_int            cl_error;
+    GMX_UNUSED_VALUE(cl_error);
+    cl_atomdata_t    *atomData = nb->atdat;
+    cl_command_queue  ls       = nb->stream[eintLocal];
+    cl_float          value    = 0.0f;
 
-    size_t               local_work_size[3]  = {1, 1, 1};
-    size_t               global_work_size[3] = {1, 1, 1};
-
-    cl_int               arg_no;
-
-    cl_kernel            memset_f = nb->kernel_memset_f;
-
-    cl_uint              natoms_flat = natoms_clear * (sizeof(rvec)/sizeof(real));
-
-    local_work_size[0]  = 64;
-    // Round the total number of threads up from the array size
-    global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
-
-
-    arg_no    = 0;
-    cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
-    cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_float), &value);
-    cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_uint), &natoms_flat);
-    assert(cl_error == CL_SUCCESS);
-
-    cl_error = clEnqueueNDRangeKernel(ls, memset_f, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    assert(cl_error == CL_SUCCESS);
+    cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float),
+                                   0, natoms_clear*sizeof(rvec), 0, NULL, NULL);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ("nbnxn_ocl_clear_f failed: " +
+                                        ocl_get_error_string(cl_error)).c_str());
 }
 
 //! This function is documented in the header file
@@ -1113,9 +1093,6 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
     free_kernels((cl_kernel*)nb->kernel_noener_prune_ptr, kernel_count);
 
-    free_kernel(&(nb->kernel_memset_f));
-    free_kernel(&(nb->kernel_memset_f2));
-    free_kernel(&(nb->kernel_memset_f3));
     free_kernel(&(nb->kernel_zero_e_fshift));
 
     /* Free atdat */
