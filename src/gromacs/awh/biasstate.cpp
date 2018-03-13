@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,14 +93,64 @@ namespace
 {
 
 /*! \brief
+ * Sum an array over all simulations on the master rank of each simulation.
+ *
+ * \param[in,out] arrayRef      The data to sum.
+ * \param[in]     multiSimComm  Struct for multi-simulation communication.
+ */
+void sumOverSimulations(gmx::ArrayRef<int>    arrayRef,
+                        const gmx_multisim_t *multiSimComm)
+{
+    gmx_sumi_sim(arrayRef.size(), arrayRef.data(), multiSimComm);
+}
+
+/*! \brief
+ * Sum an array over all simulations on the master rank of each simulation.
+ *
+ * \param[in,out] arrayRef      The data to sum.
+ * \param[in]     multiSimComm  Struct for multi-simulation communication.
+ */
+void sumOverSimulations(gmx::ArrayRef<double> arrayRef,
+                        const gmx_multisim_t *multiSimComm)
+{
+    gmx_sumd_sim(arrayRef.size(), arrayRef.data(), multiSimComm);
+}
+
+/*! \brief
+ * Sum an array over all simulations on all ranks of each simulation.
+ *
+ * This assumes the data is identical on all ranks within each simulation.
+ *
+ * \param[in,out] arrayRef      The data to sum.
+ * \param[in]     commRecord    Struct for intra-simulation communication.
+ * \param[in]     multiSimComm  Struct for multi-simulation communication.
+ */
+template<typename T>
+void sumOverSimulations(gmx::ArrayRef<T>      arrayRef,
+                        const t_commrec      *commRecord,
+                        const gmx_multisim_t *multiSimComm)
+{
+    if (MASTER(commRecord))
+    {
+        sumOverSimulations(arrayRef, multiSimComm);
+    }
+    if (commRecord->nnodes > 1)
+    {
+        gmx_bcast(arrayRef.size()*sizeof(T), arrayRef.data(), commRecord);
+    }
+}
+
+/*! \brief
  * Sum PMF over multiple simulations, when requested.
  *
  * \param[in,out] pointState         The state of the points in the bias.
  * \param[in]     numSharedUpdate    The number of biases sharing the histogram.
+ * \param[in]     commRecord         Struct for intra-simulation communication.
  * \param[in]     multiSimComm       Struct for multi-simulation communication.
  */
 void sumPmf(gmx::ArrayRef<PointState>  pointState,
             int                        numSharedUpdate,
+            const t_commrec           *commRecord,
             const gmx_multisim_t      *multiSimComm)
 {
     if (numSharedUpdate == 1)
@@ -118,7 +168,7 @@ void sumPmf(gmx::ArrayRef<PointState>  pointState,
         buffer[i] = pointState[i].inTargetRegion() ? std::exp(static_cast<float>(pointState[i].logPmfSum())) : 0;
     }
 
-    gmx_sumd_sim(buffer.size(), buffer.data(), multiSimComm);
+    sumOverSimulations(gmx::ArrayRef<double>(buffer), commRecord, multiSimComm);
 
     /* Take log again to get (non-normalized) PMF */
     double normFac = 1.0/numSharedUpdate;
@@ -302,6 +352,7 @@ int BiasState::warnForHistogramAnomalies(const Grid  &grid,
                                          FILE        *fplog,
                                          int          maxNumWarnings) const
 {
+    GMX_ASSERT(fplog != nullptr, "Warnings can only be issued if there is log file.");
     const double maxHistogramRatio = 0.5;  /* Tolerance for printing a warning about the histogram ratios */
 
     /* Sum up the histograms and get their normalization */
@@ -567,10 +618,12 @@ namespace
  *
  * \param[in,out] updateList    Update list for this simulation (assumed >= npoints long).
  * \param[in]     numPoints     Total number of points.
+ * \param[in]     commRecord    Struct for intra-simulation communication.
  * \param[in]     multiSimComm  Struct for multi-simulation communication.
  */
 void mergeSharedUpdateLists(std::vector<int>     *updateList,
                             int                   numPoints,
+                            const t_commrec      *commRecord,
                             const gmx_multisim_t *multiSimComm)
 {
     std::vector<int> numUpdatesOfPoint;
@@ -584,7 +637,7 @@ void mergeSharedUpdateLists(std::vector<int>     *updateList,
     }
 
     /* Sum over the sims to get all the flagged points */
-    gmx_sumi_sim(numPoints, numUpdatesOfPoint.data(), multiSimComm);
+    sumOverSimulations(arrayRefFromArray(numUpdatesOfPoint.data(), numPoints), commRecord, multiSimComm);
 
     /* Collect the indices of the flagged points in place. The resulting array will be the merged update list.*/
     updateList->clear();
@@ -664,12 +717,14 @@ namespace
  * \param[in,out] pointState         The state of the points in the bias.
  * \param[in,out] weightSumCovering  The weights for checking covering.
  * \param[in]     numSharedUpdate    The number of biases sharing the histrogram.
+ * \param[in]     commRecord         Struct for intra-simulation communication.
  * \param[in]     multiSimComm       Struct for multi-simulation communication.
  * \param[in]     localUpdateList    List of points with data.
  */
 void sumHistograms(gmx::ArrayRef<PointState>  pointState,
                    gmx::ArrayRef<double>      weightSumCovering,
                    int                        numSharedUpdate,
+                   const t_commrec           *commRecord,
                    const gmx_multisim_t      *multiSimComm,
                    const std::vector<int>    &localUpdateList)
 {
@@ -701,8 +756,8 @@ void sumHistograms(gmx::ArrayRef<PointState>  pointState,
             coordVisits[localIndex] = ps.numVisitsIteration();
         }
 
-        gmx_sumd_sim(weightSum.size(), weightSum.data(), multiSimComm);
-        gmx_sumd_sim(coordVisits.size(), coordVisits.data(), multiSimComm);
+        sumOverSimulations(gmx::ArrayRef<double>(weightSum), commRecord, multiSimComm);
+        sumOverSimulations(gmx::ArrayRef<double>(coordVisits), commRecord, multiSimComm);
 
         /* Transfer back the result */
         for (size_t localIndex = 0; localIndex < localUpdateList.size(); localIndex++)
@@ -831,6 +886,7 @@ void labelCoveredPoints(const std::vector<bool> &visited,
 bool BiasState::isSamplingRegionCovered(const BiasParams             &params,
                                         const std::vector<DimParams> &dimParams,
                                         const Grid                   &grid,
+                                        const t_commrec              *commRecord,
                                         const gmx_multisim_t         *multiSimComm) const
 {
     /* Allocate and initialize arrays: one for checking visits along each dimension,
@@ -917,7 +973,7 @@ bool BiasState::isSamplingRegionCovered(const BiasParams             &params,
         /* For multiple dimensions this may not be the best way to do it. */
         for (int d = 0; d < grid.numDimensions(); d++)
         {
-            gmx_sumi_sim(grid.axis(d).numPoints(), checkDim[d].covered.data(), multiSimComm);
+            sumOverSimulations(gmx::arrayRefFromArray(checkDim[d].covered.data(), grid.axis(d).numPoints()), commRecord, multiSimComm);
         }
     }
 
@@ -952,6 +1008,7 @@ static void normalizeFreeEnergyAndPmfSum(std::vector<PointState> *pointState)
 void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams> &dimParams,
                                                          const Grid                   &grid,
                                                          const BiasParams             &params,
+                                                         const t_commrec              *commRecord,
                                                          const gmx_multisim_t         *multiSimComm,
                                                          double                        t,
                                                          gmx_int64_t                   step,
@@ -972,7 +1029,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
                         updateList);
     if (params.numSharedUpdate > 1)
     {
-        mergeSharedUpdateLists(updateList, points_.size(), multiSimComm);
+        mergeSharedUpdateLists(updateList, points_.size(), commRecord, multiSimComm);
     }
 
     /* Reset the range for the next update */
@@ -980,9 +1037,9 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* Add samples to histograms for all local points and sync simulations if needed */
     sumHistograms(points_, weightSumCovering_,
-                  params.numSharedUpdate, multiSimComm, *updateList);
+                  params.numSharedUpdate, commRecord, multiSimComm, *updateList);
 
-    sumPmf(points_, params.numSharedUpdate, multiSimComm);
+    sumPmf(points_, params.numSharedUpdate, commRecord, multiSimComm);
 
     /* Renormalize the free energy if values are too large. */
     bool needToNormalizeFreeEnergy = false;
@@ -1010,7 +1067,8 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     if (inInitialStage())
     {
         detectedCovering = (params.isCheckStep(points_.size(), step) &&
-                            isSamplingRegionCovered(params, dimParams, grid, multiSimComm));
+                            isSamplingRegionCovered(params, dimParams, grid,
+                                                    commRecord, multiSimComm));
     }
 
     /* The weighthistogram size after this update. */
