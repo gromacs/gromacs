@@ -43,6 +43,7 @@
 #include "gmxpre.h"
 
 #include <assert.h>
+#include <cstdio>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -198,6 +199,35 @@ static int is_gmx_supported_gpu_id(const gmx_device_info_t *ocl_gpu_device, size
                 result = egpuIncompatible;
         }
     }
+
+    if (result == egpuCompatible)
+    {
+        // OpenCL version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+        // We expect REQUIRED_OPENCL_MIN_VERSION to have the MAJOR.MINOR format
+        const char  *minOpenclVersion = REQUIRED_OPENCL_MIN_VERSION;
+        unsigned int minVersionMinor, minVersionMajor;
+        int          success;
+        success = std::sscanf(minOpenclVersion, "%u.%u", &minVersionMajor, &minVersionMinor);
+        GMX_RELEASE_ASSERT(success == 2, "Error while parsing REQUIRED_OPENCL_MIN_VERSION");
+
+        // Based on the OpenCL spec we're checking the version supported by
+        // the device which has the following format:
+        //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+        unsigned int deviceVersionMinor, deviceVersionMajor;
+        success = std::sscanf(ocl_gpu_device->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+        GMX_RELEASE_ASSERT(success == 2, "Error while parsing OpenCL device version string");
+
+        if (deviceVersionMajor > minVersionMajor ||
+            (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor))
+        {
+            result = egpuCompatible;
+        }
+        else
+        {
+            result = egpuIncompatible;
+        }
+    }
+
 
     if (result == egpuCompatible)
     {
