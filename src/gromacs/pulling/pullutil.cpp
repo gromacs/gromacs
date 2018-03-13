@@ -198,7 +198,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 {
     /* The size and stride per coord for the reduction buffer */
     const int       stride = 9;
-    int             c, i, ii, m, start, end;
+    int             i, ii, m, start, end;
     rvec            g_x, dx, dir;
     double          inv_cyl_r2;
     pull_comm_t    *comm;
@@ -208,7 +208,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 
     if (comm->dbuf_cyl == nullptr)
     {
-        snew(comm->dbuf_cyl, pull->ncoord*stride);
+        snew(comm->dbuf_cyl, pull->coord.size()*stride);
     }
 
     if (cr && DOMAINDECOMP(cr))
@@ -222,7 +222,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
     inv_cyl_r2 = 1.0/gmx::square(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
-    for (c = 0; c < pull->ncoord; c++)
+    for (size_t c = 0; c < pull->coord.size(); c++)
     {
         pull_coord_work_t *pcrd;
         double             sum_a, wmass, wwmass;
@@ -244,7 +244,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
             pref  = &pull->group[pcrd->params.group[0]];
             pgrp  = &pull->group[pcrd->params.group[1]];
             pdyna = &pull->dyna[c];
-            copy_dvec_to_rvec(pcrd->vec, dir);
+            copy_dvec_to_rvec(pcrd->geometry.vec, dir);
             pdyna->nat_loc = 0;
 
             /* We calculate distances with respect to the reference location
@@ -259,7 +259,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
             }
             for (m = 0; m < DIM; m++)
             {
-                g_x[m] = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
+                g_x[m] = pgrp->x[m] - pcrd->geometry.vec[m]*pcrd->value_ref;
             }
 
             /* loop over all atoms in the main ref group */
@@ -349,10 +349,10 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
     if (cr != nullptr && PAR(cr))
     {
         /* Sum the contributions over the ranks */
-        pull_reduce_double(cr, comm, pull->ncoord*stride, comm->dbuf_cyl);
+        pull_reduce_double(cr, comm, pull->coord.size()*stride, comm->dbuf_cyl);
     }
 
-    for (c = 0; c < pull->ncoord; c++)
+    for (size_t c = 0; c < pull->coord.size(); c++)
     {
         pull_coord_work_t *pcrd;
 
@@ -360,15 +360,13 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 
         if (pcrd->params.eGeom == epullgCYL)
         {
-            pull_group_work_t *pdyna, *pgrp;
-            double             wmass, wwmass, dist;
+            pull_group_work_t *pdyna    = &pull->dyna[c];
+            pull_group_work_t *pgrp     = &pull->group[pcrd->params.group[1]];
+            pullCoordGeometry &geometry = pcrd->geometry;
 
-            pdyna = &pull->dyna[c];
-            pgrp  = &pull->group[pcrd->params.group[1]];
-
-            wmass          = comm->dbuf_cyl[c*stride+0];
-            wwmass         = comm->dbuf_cyl[c*stride+1];
-            pdyna->mwscale = 1.0/wmass;
+            double             wmass    = comm->dbuf_cyl[c*stride+0];
+            double             wwmass   = comm->dbuf_cyl[c*stride+1];
+            pdyna->mwscale              = 1.0/wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
              */
@@ -379,13 +377,13 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
              * used above, since we need it when we apply the radial forces
              * to the atoms in the cylinder group.
              */
-            pcrd->cyl_dev  = 0;
+            geometry.cyl_dev = 0;
             for (m = 0; m < DIM; m++)
             {
-                g_x[m]         = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
-                dist           = -pcrd->vec[m]*comm->dbuf_cyl[c*stride+2]*pdyna->mwscale;
-                pdyna->x[m]    = g_x[m] - dist;
-                pcrd->cyl_dev += dist;
+                g_x[m]            = pgrp->x[m] - geometry.vec[m]*pcrd->value_ref;
+                double dist       = -geometry.vec[m]*comm->dbuf_cyl[c*stride+2]*pdyna->mwscale;
+                pdyna->x[m]       = g_x[m] - dist;
+                geometry.cyl_dev += dist;
             }
             /* Now we know the exact COM of the cylinder reference group,
              * we can determine the radial force factor (ffrad) that when
@@ -394,17 +392,17 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
              */
             for (m = 0; m < DIM; m++)
             {
-                pcrd->ffrad[m] = (comm->dbuf_cyl[c*stride+6+m] +
-                                  comm->dbuf_cyl[c*stride+3+m]*pcrd->cyl_dev)/wmass;
+                geometry.ffrad[m] = (comm->dbuf_cyl[c*stride+6+m] +
+                                     comm->dbuf_cyl[c*stride+3+m]*geometry.cyl_dev)/wmass;
             }
 
             if (debug)
             {
-                fprintf(debug, "Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
+                fprintf(debug, "Pull cylinder group %zu:%8.3f%8.3f%8.3f m:%8.3f\n",
                         c, pdyna->x[0], pdyna->x[1],
                         pdyna->x[2], 1.0/pdyna->invtm);
                 fprintf(debug, "ffrad %8.3f %8.3f %8.3f\n",
-                        pcrd->ffrad[XX], pcrd->ffrad[YY], pcrd->ffrad[ZZ]);
+                        geometry.ffrad[XX], geometry.ffrad[YY], geometry.ffrad[ZZ]);
             }
         }
     }
