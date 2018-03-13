@@ -33,35 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* Auxiliary kernels */
-__kernel void
-memset_f3(__global float3 *buf, const float value, const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if (tidx < Nbuf)
-    {
-        buf[tidx] = value;
-    }
-}
-
-__kernel void
-memset_f2(__global float2 *buf, const float value, const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if (tidx < Nbuf)
-    {
-        buf[tidx] = value;
-    }
-}
-
-__kernel void
-memset_f(__global float *buf, const float value, const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if (tidx < Nbuf)
-    {
-        buf[tidx] = value;
-    }
-}
 
 /* Very few data */
 __kernel void
