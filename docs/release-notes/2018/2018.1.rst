@@ -145,13 +145,26 @@ handling have been fixed, improving performance.
 
 :issue:`2388`
 
-Fix sharing of the AWH bias over multiple simulations
+Fixed crash with AWH and awh1-equilibrate-histogram=yes
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Sharing the AWH bias over multiple simulations only worked when
-each simulation was running on a single MPI rank. When a simulation
-itself used multiple MPI ranks, the run would stop with an MPI error.
+When running AWH with awh1-equilibrate-histogram=yes and multiple MPI
+ranks, the simulation would segmentation fault.
+
+:issue:`2436`
+
+Fixed issues with AWH and bias sharing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When sharing AWH biases between multiple simulations, there were four
+issues. An MPI error would occur when an individual simulation would
+use more than one rank. The deconvoluted PMF would be garbage (but
+the sampling was correct). with more than 32 MPI ranks for an individual
+simulation, an error about a coordinate being 0 could occur.
+And continuation from checkpoints could be refused.
 
 :issue:`2433`
+:issue:`2439`
+:issue:`2441`
+:issue:`2444`
 
 Miscellaneous
 ^^^^^^^^^^^^^
