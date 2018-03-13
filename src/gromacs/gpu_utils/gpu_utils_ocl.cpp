@@ -50,6 +50,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cstdio>
 #ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
@@ -204,6 +206,56 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
     return true;
 }
 
+/*!
+ * \brief Checks that device \c devInfo is compatible with GROMACS.
+ *
+ *  Vendor and OpenCL version support checks are executed an the result
+ *  of these returned.
+ *
+ * \param[in]  devInfo         The device info pointer.
+ * \returns                    The result of the compatibility checks.
+ */
+static int isDeviceSupported(const gmx_device_info_t *devInfo)
+{
+    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    {
+        // Assume the device is compatible because checking has been disabled.
+        return egpuCompatible;
+    }
+
+    // OpenCL device version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+    constexpr unsigned int minVersionMajor = REQUIRED_OPENCL_MIN_VERSION_MAJOR;
+    constexpr unsigned int minVersionMinor = REQUIRED_OPENCL_MIN_VERSION_MINOR;
+
+    // Based on the OpenCL spec we're checking the version supported by
+    // the device which has the following format:
+    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    unsigned int deviceVersionMinor, deviceVersionMajor;
+    const int    valuesScanned      = std::sscanf(devInfo->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough = ((valuesScanned == 2) &&
+                                       ((deviceVersionMajor > minVersionMajor) ||
+                                        (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    if (!versionLargeEnough)
+    {
+        return egpuIncompatible;
+    }
+
+    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
+    switch (devInfo->vendor_e)
+    {
+        case OCL_VENDOR_NVIDIA:
+            return egpuCompatible;
+        case OCL_VENDOR_AMD:
+            return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
+        case OCL_VENDOR_INTEL:
+            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
+        default:
+            return egpuIncompatible;
+    }
+}
+
+
+
 /*! \brief Detect whether \c ocl_gpu_device is from a supported
  * vendor, running on a supported OS, compatible for use by mdrun
  * and can run a dummy kernel.
@@ -222,24 +274,7 @@ static int checkGpu(const gmx_device_info_t *ocl_gpu_device, size_t deviceIndex)
         return egpuInsane;
     }
 
-    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
-    {
-        // Assume the device is compatible because checking has been disabled.
-        return egpuCompatible;
-    }
-
-    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
-    switch (ocl_gpu_device->vendor_e)
-    {
-        case OCL_VENDOR_NVIDIA:
-            return egpuCompatible;
-        case OCL_VENDOR_AMD:
-            return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
-        case OCL_VENDOR_INTEL:
-            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
-        default:
-            return egpuIncompatible;
-    }
+    return isDeviceSupported(ocl_gpu_device);
 }
 
 } // namespace
