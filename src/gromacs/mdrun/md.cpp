@@ -449,11 +449,6 @@ void gmx::Integrator::do_md()
         }
     }
 
-    /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, oenv, mdrunOptions);
-
     // Local state only becomes valid now.
     std::unique_ptr<t_state> stateInstance;
     t_state *                state;
