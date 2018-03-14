@@ -202,8 +202,8 @@ extern void communicate_group_positions(
         const rvec      *x_loc,        /* Local positions on this node */
         const int        nr,           /* Total number of atoms in the group */
         const int        nr_loc,       /* Local number of atoms in the group */
-        int             *anrs_loc,     /* Local atom numbers */
-        int             *coll_ind,     /* Collective index */
+        const int       *anrs_loc,     /* Local atom numbers */
+        const int       *coll_ind,     /* Collective index */
         rvec            *xcoll_old,    /* (optional) Positions from the last time step,
                                           used to make group whole */
         matrix           box)          /* (optional) The box */
