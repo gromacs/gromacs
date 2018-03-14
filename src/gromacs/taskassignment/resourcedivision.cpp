@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -889,7 +889,7 @@ void checkHardwareOversubscription(int                          numThreadsOnThis
     int numRanksOnThisNode   = 1;
     int numThreadsOnThisNode = numThreadsOnThisRank;
 #if GMX_MPI
-    if (PAR(cr) || MULTISIM(cr))
+    if (PAR(cr) || (MULTISIM(cr) && cr->ms->nsim > 1))
     {
         /* Count the threads within this physical node */
         MPI_Comm_size(cr->mpi_comm_physicalnode, &numRanksOnThisNode);
