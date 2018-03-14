@@ -375,11 +375,6 @@ static void init_em(FILE *fplog, const char *title,
 
     init_nrnb(nrnb);
 
-    /* Interactive molecular dynamics */
-    init_IMD(ir, cr, ms, top_global, fplog, 1,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, nullptr, mdrunOptions);
-
     if (ir->eI == eiNM)
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
