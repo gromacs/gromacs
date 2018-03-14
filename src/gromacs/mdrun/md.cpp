@@ -493,11 +493,6 @@ void gmx::Integrator::do_md()
         update_realloc(upd, state->natoms);
     }
 
-    /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, oenv, mdrunOptions);
-
     if (DOMAINDECOMP(cr))
     {
         /* Distribute the charge groups over the nodes from the master node */

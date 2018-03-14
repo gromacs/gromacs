@@ -60,7 +60,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -9803,9 +9802,6 @@ void dd_partition_system(FILE                *fplog,
         /* Update the local atom sets */
         dd->atomSets->setIndicesInDomainDecomposition(*(dd->ga2la));
     }
-
-    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
-    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
 
     add_dd_statistics(dd);
 
