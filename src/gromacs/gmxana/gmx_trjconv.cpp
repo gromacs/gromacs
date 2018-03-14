@@ -1976,8 +1976,14 @@ int gmx_trjconv(int argc, char *argv[])
         }
     }
 
-    sfree(mtop);
-    done_top(&top);
+    if (mtop)
+    {
+        sfree(mtop);
+    }
+    if (bTPS)
+    {
+        done_top(&top);
+    }
     sfree(xp);
     sfree(xmem);
     sfree(vmem);
