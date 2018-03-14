@@ -9794,12 +9794,6 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
-    if (ir->eSwapCoords != eswapNO)
-    {
-        /* Update the local groups needed for ion swapping */
-        dd_make_local_swap_groups(dd, ir->swap);
-    }
-
     if (ir->atomsets != nullptr)
     {
         ir->atomsets->setIndicesInDomainDecomposition(dd->ga2la);
