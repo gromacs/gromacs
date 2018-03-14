@@ -37,6 +37,7 @@
  * Declares gmx::LocalAtomSet.
  *
  * \author Christian Blau <cblau@gwdg.de>
+ * \inlibraryapi
  * \ingroup module_domdec
  */
 #ifndef GMX_LOCALATOMSET_H
