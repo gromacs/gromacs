@@ -82,7 +82,7 @@ typedef struct swaphistory_t
     gmx_bool         bFromCpt;                // Did we start from a checkpoint file?
     int              nat[eChanNR];            // Size of xc_old_whole, i.e. the number of atoms in each channel
     rvec            *xc_old_whole[eChanNR];   // Last known whole positions of the two channels (important for multimeric ch.!)
-    rvec           **xc_old_whole_p[eChanNR]; // Pointer to these positions
+    rvec            *xc_old_whole_p[eChanNR]; // Pointer to these positions
     swapstateIons_t *ionType;                 // History information for one ion type
 }
 swaphistory_t;

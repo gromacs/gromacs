@@ -48,8 +48,11 @@
 #include <time.h>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -110,10 +113,9 @@ typedef struct swap_compartment
     real               nMolAv;                /**< Time-averaged number of molecules matching
                                                    the compartment conditions.                   */
     int               *nMolPast;              /**< Past molecule counts for time-averaging.      */
-    int               *ind;                   /**< Indices to collective array of atoms.         */
-    real              *dist;                  /**< Distance of atom to bulk layer, which is
+    std::vector<int>   ind;                   /**< Indices to collective array of atoms.         */
+    std::vector<real>  dist;                  /**< Distance of atom to bulk layer, which is
                                                    normally the center layer of the compartment  */
-    int                nalloc;                /**< Allocation size for ind array.                */
     int                inflow_net;            /**< Net inflow of ions into this compartment.     */
 } t_compartment;
 
@@ -122,53 +124,49 @@ typedef struct swap_compartment
  * This structure contains data needed for the groups involved in swapping:
  * split group 0, split group 1, solvent group, ion groups.
  */
-typedef struct swap_group
+struct swap_group
 {
-    char             *molname;                /**< Name of the group or ion type                         */
-    int               nat;                    /**< Number of atoms in the group                          */
-    int               apm;                    /**< Number of atoms in each molecule                      */
-    int              *ind;                    /**< Global atom indices of the group (size nat)           */
-    int              *ind_loc;                /**< Local atom indices of the group                       */
-    int               nat_loc;                /**< Number of local group atoms                           */
-    int               nalloc_loc;             /**< Allocation size for ind_loc                           */
-    rvec             *xc;                     /**< Collective array of group atom positions (size nat)   */
-    ivec             *xc_shifts;              /**< Current (collective) shifts (size nat)                */
-    ivec             *xc_eshifts;             /**< Extra shifts since last DD step (size nat)            */
-    rvec             *xc_old;                 /**< Old (collective) positions (size nat)                 */
-    real              q;                      /**< Total charge of one molecule of this group            */
-    int              *c_ind_loc;              /**< Position of local atoms in the
-                                                   collective array, [0..nat_loc]                        */
-    real             *m;                      /**< Masses (can be omitted, size apm)                     */
-    unsigned char    *comp_from;              /**< (Collective) Stores from which compartment this
-                                                   molecule has come. This way we keep track of
-                                                   through which channel an ion permeates
-                                                   (size nMol = nat/apm)                                 */
-    unsigned char    *comp_now;               /**< In which compartment this ion is now (size nMol)      */
-    unsigned char    *channel_label;          /**< Which channel was passed at last by this ion?
-                                                   (size nMol)                                           */
-    rvec              center;                 /**< Center of the group; COM if masses are used           */
-    t_compartment     comp[eCompNR];          /**< Distribution of particles of this group across
-                                                    the two compartments                                 */
-    real              vacancy[eCompNR];       /**< How many molecules need to be swapped in?             */
-    int               fluxfromAtoB[eChanNR];  /**< Net flux of ions per channel                          */
-    int               nCyl[eChanNR];          /**< Number of ions residing in a channel                  */
-    int               nCylBoth;               /**< Ions assigned to cyl0 and cyl1. Not good.             */
-} t_swapgrp;
+    swap_group(const gmx::LocalAtomSet &set);
+    std::string                molname;               /**< Name of the group or ion type                         */
+    int                        apm;                   /**< Number of atoms in each molecule                      */
+    gmx::LocalAtomSet          localAtomSet;          /**< Externally managed local and global group indices     */
+    std::vector<gmx::RVec>     xc;                    /**< Collective array of group atom positions (size nat)   */
+    std::vector<gmx::IVec>     xc_shifts;             /**< Current (collective) shifts (size nat)                */
+    std::vector<gmx::IVec>     xc_eshifts;            /**< Extra shifts since last DD step (size nat)            */
+    std::vector<gmx::RVec>     xc_old;                /**< Old (collective) positions (size nat)                 */
+    real                       q;                     /**< Total charge of one molecule of this group            */
+    std::vector<real>          m;                     /**< Masses (can be omitted, size apm)                     */
+    std::vector<unsigned char> comp_from;             /**< (Collective) Stores from which compartment this
+                                                         molecule has come. This way we keep track of
+                                                         through which channel an ion permeates
+                                                         (size nMol = nat/apm)                                 */
+    std::vector<unsigned char> comp_now;              /**< In which compartment this ion is now (size nMol)      */
+    std::vector<unsigned char> channel_label;         /**< Which channel was passed at last by this ion?
+                                                         (size nMol)                                           */
+    rvec                       center;                /**< Center of the group; COM if masses are used           */
+    t_compartment              comp[eCompNR];         /**< Distribution of particles of this group across
+                                                            the two compartments                                 */
+    real                       vacancy[eCompNR];      /**< How many molecules need to be swapped in?             */
+    int                        fluxfromAtoB[eChanNR]; /**< Net flux of ions per channel                          */
+    int                        nCyl[eChanNR];         /**< Number of ions residing in a channel                  */
+    int                        nCylBoth;              /**< Ions assigned to cyl0 and cyl1. Not good.             */
+};
 
+swap_group::swap_group(const gmx::LocalAtomSet &set) : localAtomSet(set) { };
 
 /*! \internal \brief
  * Main (private) data structure for the position swapping protocol.
  */
-typedef struct t_swap
+struct t_swap
 {
-    int               swapdim;                       /**< One of XX, YY, ZZ                               */
-    t_pbc            *pbc;                           /**< Needed to make molecules whole.                 */
-    FILE             *fpout;                         /**< Output file.                                    */
-    int               ngrp;                          /**< Number of t_swapgrp groups                      */
-    t_swapgrp        *group;                         /**< Separate groups for channels, solvent, ions     */
-    int               fluxleak;                      /**< Flux not going through any of the channels.     */
-    real              deltaQ;                        /**< The charge imbalance between the compartments.  */
-} t_swap;
+    int                     swapdim;                 /**< One of XX, YY, ZZ                               */
+    t_pbc                  *pbc;                     /**< Needed to make molecules whole.                 */
+    FILE                   *fpout;                   /**< Output file.                                    */
+    int                     ngrp;                    /**< Number of swap_group groups                      */
+    std::vector<swap_group> group;                   /**< Separate groups for channels, solvent, ions     */
+    int                     fluxleak;                /**< Flux not going through any of the channels.     */
+    real                    deltaQ;                  /**< The charge imbalance between the compartments.  */
+};
 
 
 
@@ -270,7 +268,7 @@ static void print_ionlist(
     {
         for (int ig = eSwapFixedGrpNR; ig < s->ngrp; ig++)
         {
-            t_swapgrp *g = &s->group[ig];
+            swap_group *g = &s->group[ig];
             fprintf(s->fpout, "%10d", g->fluxfromAtoB[iChan]);
         }
     }
@@ -449,16 +447,8 @@ static void add_to_list(
         t_compartment *comp,
         real           distance)
 {
-    int nr = comp->nMol;
-
-    if (nr >= comp->nalloc)
-    {
-        comp->nalloc = over_alloc_dd(nr+1);
-        srenew(comp->ind, comp->nalloc);
-        srenew(comp->dist, comp->nalloc);
-    }
-    comp->ind[nr]  = ci;
-    comp->dist[nr] = distance;
+    comp->ind.push_back(ci);
+    comp->dist.push_back(distance);
     comp->nMol++;
 }
 
@@ -530,7 +520,7 @@ static void get_compartment_boundaries(
  * \endcode
  */
 static void detect_flux_per_channel(
-        t_swapgrp      *g,
+        swap_group     *g,
         int             iAtom,
         int             comp,
         rvec            atomPosition,
@@ -650,7 +640,7 @@ static void detect_flux_per_channel(
                 break;
             default:
                 gmx_fatal(FARGS, "%s Unknown channel history entry for ion type '%s'\n",
-                          SwS, g->molname);
+                          SwS, g->molname.c_str());
                 break;
         }
 
@@ -664,14 +654,14 @@ static void detect_flux_per_channel(
 
 /*! \brief Determines which ions or solvent molecules are in compartment A and B */
 static void sortMoleculesIntoCompartments(
-        t_swapgrp      *g,
-        t_commrec      *cr,
-        t_swapcoords   *sc,
-        const matrix    box,
-        gmx_int64_t     step,
-        FILE           *fpout,
-        gmx_bool        bRerun,
-        gmx_bool        bIsSolvent)
+        swap_group      *g,
+        t_commrec       *cr,
+        t_swapcoords    *sc,
+        const matrix     box,
+        gmx_int64_t      step,
+        FILE            *fpout,
+        gmx_bool         bRerun,
+        gmx_bool         bIsSolvent)
 {
     gmx_swapcoords_t s = sc->si_priv;
     int              nMolNotInComp[eCompNR]; /* consistency check */
@@ -690,10 +680,12 @@ static void sortMoleculesIntoCompartments(
 
         /* First clear the ion molecule lists */
         g->comp[comp].nMol  = 0;
+        g->comp[comp].ind.clear();
+        g->comp[comp].dist.clear();
         nMolNotInComp[comp] = 0; /* consistency check */
 
         /* Loop over the molecules and atoms of this group */
-        for (int iMol = 0, iAtom = 0; iAtom < g->nat; iAtom += g->apm, iMol++)
+        for (size_t iMol = 0, iAtom = 0; iAtom < g->localAtomSet.numAtomsGlobal(); iAtom += g->apm, iMol++)
         {
             real dist;
             int  sd = s->swapdim;
@@ -705,9 +697,9 @@ static void sortMoleculesIntoCompartments(
                 add_to_list(iAtom, &g->comp[comp], dist);
 
                 /* Master also checks for ion groups through which channel each ion has passed */
-                if (MASTER(cr) && (g->comp_now != nullptr) && !bIsSolvent)
+                if (MASTER(cr) && (!g->comp_now.empty()) && !bIsSolvent)
                 {
-                    int globalAtomNr = g->ind[iAtom] + 1; /* PDB index starts at 1 ... */
+                    int globalAtomNr = g->localAtomSet.globalIndex()[iAtom] + 1; /* PDB index starts at 1 ... */
                     detect_flux_per_channel(g, globalAtomNr, comp, g->xc[iAtom],
                                             &g->comp_now[iMol], &g->comp_from[iMol], &g->channel_label[iMol],
                                             sc, cyl0_r2, cyl1_r2, step, bRerun, fpout);
@@ -749,17 +741,17 @@ static void sortMoleculesIntoCompartments(
     }
 
     /* Consistency checks */
-    if (nMolNotInComp[eCompA] + nMolNotInComp[eCompB] != g->nat / g->apm)
+    if (nMolNotInComp[eCompA] + nMolNotInComp[eCompB] != static_cast<int>(g->localAtomSet.numAtomsGlobal()) / g->apm)
     {
-        fprintf(stderr, "%s Warning: Inconsistency while assigning '%s' molecules to compartments. !inA: %d, !inB: %d, total molecules %d\n",
-                SwS, g->molname, nMolNotInComp[eCompA], nMolNotInComp[eCompB], g->nat/g->apm);
+        fprintf(stderr, "%s Warning: Inconsistency while assigning '%s' molecules to compartments. !inA: %d, !inB: %d, total molecules %lu\n",
+                SwS, g->molname.c_str(), nMolNotInComp[eCompA], nMolNotInComp[eCompB], g->localAtomSet.numAtomsGlobal()/g->apm);
     }
 
     int sum = g->comp[eCompA].nMol + g->comp[eCompB].nMol;
-    if (sum != g->nat/g->apm)
+    if (sum != static_cast<int>(g->localAtomSet.numAtomsGlobal())/g->apm)
     {
-        fprintf(stderr, "%s Warning: %d molecules are in group '%s', but altogether %d have been assigned to the compartments.\n",
-                SwS, g->nat/g->apm, g->molname, sum);
+        fprintf(stderr, "%s Warning: %lu molecules are in group '%s', but altogether %d have been assigned to the compartments.\n",
+                SwS, g->localAtomSet.numAtomsGlobal()/g->apm, g->molname.c_str(), sum);
     }
 }
 
@@ -772,11 +764,11 @@ static void get_initial_ioncounts(
         t_commrec        *cr,
         gmx_bool          bRerun)
 {
-    t_swapcoords *sc;
-    t_swap       *s;
-    t_swapgrp    *g;
-    int           i, ind, ic, ig;
-    int           req, tot;
+    t_swapcoords  *sc;
+    t_swap        *s;
+    swap_group    *g;
+    int            i, ind, ic, ig;
+    int            req, tot;
 
 
     sc = ir->swap;
@@ -790,9 +782,9 @@ static void get_initial_ioncounts(
 
         /* Copy the initial positions of the atoms in the group
          * to the collective array so that we can compartmentalize */
-        for (i = 0; i < g->nat; i++)
+        for (size_t i = 0; i < g->localAtomSet.numAtomsGlobal(); i++)
         {
-            ind = g->ind[i];
+            ind = g->localAtomSet.globalIndex()[i];
             copy_rvec(x[ind], g->xc[i]);
         }
 
@@ -822,7 +814,7 @@ static void get_initial_ioncounts(
             gmx_fatal(FARGS, "Mismatch of the number of %s ions summed over both compartments.\n"
                       "You requested a total of %d ions (%d in A and %d in B),\n"
                       "but there are a total of %d ions of this type in the system.\n",
-                      g->molname, req, g->comp[eCompA].nMolReq,
+                      g->molname.c_str(), req, g->comp[eCompA].nMolReq,
                       g->comp[eCompB].nMolReq, tot);
         }
 
@@ -849,10 +841,10 @@ static void get_initial_ioncounts_from_cpt(
         t_inputrec *ir, swaphistory_t *swapstate,
         t_commrec *cr, gmx_bool bVerbose)
 {
-    t_swapcoords    *sc;
-    t_swap          *s;
-    t_swapgrp       *g;
-    swapstateIons_t *gs;
+    t_swapcoords     *sc;
+    t_swap           *s;
+    swap_group       *g;
+    swapstateIons_t  *gs;
 
     sc = ir->swap;
     s  = sc->si_priv;
@@ -904,9 +896,9 @@ static void bc_initial_concentrations(
         t_commrec    *cr,
         t_swapcoords *swap)
 {
-    int        ic, ig;
-    t_swap    *s;
-    t_swapgrp *g;
+    int         ic, ig;
+    t_swap     *s;
+    swap_group *g;
 
 
     s = swap->si_priv;
@@ -930,7 +922,6 @@ static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
 {
     int  *nGroup    = nullptr; /* This array counts for each atom in the MD system to
                                   how many swap groups it belongs (should be 0 or 1!) */
-    int   ind       = -1;
     int   nMultiple = 0;       /* Number of atoms belonging to multiple groups */
 
 
@@ -943,12 +934,10 @@ static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
     snew(nGroup, nat);
     for (int i = 0; i < s->ngrp; i++)
     {
-        t_swapgrp *g = &s->group[i];
-        for (int j = 0; j < g->nat; j++)
+        swap_group *g = &s->group[i];
+        for (auto globalIndex :  g->localAtomSet.globalIndex())
         {
-            /* Get the global index of this atom of this group: */
-            ind = g->ind[j];
-            nGroup[ind]++;
+            nGroup[globalIndex]++;
         }
     }
     /* Make sure each atom belongs to at most one of the groups: */
@@ -981,9 +970,9 @@ static int get_group_apm_check(
         gmx_bool                    bVerbose,
         gmx_mtop_t                 *mtop)
 {
-    t_swapgrp *g   = &s->group[igroup];
-    int       *ind = s->group[igroup].ind;
-    int        nat = s->group[igroup].nat;
+    swap_group      *g   = &s->group[igroup];
+    const int       *ind = s->group[igroup].localAtomSet.globalIndex().data();
+    int              nat = s->group[igroup].localAtomSet.numAtomsGlobal();
 
     /* Determine the number of solvent atoms per solvent molecule from the
      * first solvent atom: */
@@ -994,7 +983,7 @@ static int get_group_apm_check(
     if (bVerbose)
     {
         fprintf(stderr, "%s Checking whether all %s molecules consist of %d atom%s\n", SwS,
-                g->molname, apm, apm > 1 ? "s" : "");
+                g->molname.c_str(), apm, apm > 1 ? "s" : "");
     }
 
     /* Check whether this is also true for all other solvent atoms */
@@ -1050,9 +1039,9 @@ static void print_ionlist_legend(t_inputrec             *ir,
     }
 
     // Center of split groups
-    snprintf(buf, STRLEN, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (nullptr != s->group[eGrpSplit0].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (s->group[eGrpSplit0].m.size() != 0) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
-    snprintf(buf, STRLEN, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (nullptr != s->group[eGrpSplit1].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (s->group[eGrpSplit1].m.size() != 0) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
 
     // Ion flux for each channel and ion type
@@ -1096,8 +1085,8 @@ static void detect_flux_per_channel_init(
         swaphistory_t *swapstate,
         gmx_bool       bStartFromCpt)
 {
-    t_swapgrp       *g;
-    swapstateIons_t *gs;
+    swap_group       *g;
+    swapstateIons_t  *gs;
 
     /* All these flux detection routines run on the master only */
     if (swapstate == nullptr)
@@ -1115,20 +1104,20 @@ static void detect_flux_per_channel_init(
         /******************************************************/
         if (bStartFromCpt) /* set the pointers right */
         {
-            g->comp_from     = gs->comp_from;
-            g->channel_label = gs->channel_label;
+            g->comp_from.assign(gs->nMol, *gs->comp_from);
+            g->channel_label.assign(gs->nMol, *gs->channel_label);
         }
         else /* allocate memory for molecule counts */
         {
-            snew(g->comp_from, g->nat/g->apm);
-            gs->comp_from = g->comp_from;
-            snew(g->channel_label, g->nat/g->apm);
-            gs->channel_label = g->channel_label;
+            g->comp_from.resize(g->localAtomSet.numAtomsGlobal()/g->apm);
+            gs->comp_from = g->comp_from.data();
+            g->channel_label.resize(g->localAtomSet.numAtomsGlobal()/g->apm);
+            gs->channel_label = g->channel_label.data();
         }
-        snew(g->comp_now, g->nat/g->apm);
+        g->comp_now.resize(g->localAtomSet.numAtomsGlobal()/g->apm);
 
         /* Initialize the channel and domain history counters */
-        for (int i = 0; i < g->nat/g->apm; i++)
+        for (int i = 0; i < static_cast<int>(g->localAtomSet.numAtomsGlobal())/g->apm; i++)
         {
             g->comp_now[i] = eDomainNotset;
             if (!bStartFromCpt)
@@ -1160,7 +1149,7 @@ static void detect_flux_per_channel_init(
 
         for (int ic = 0; ic < eChanNR; ic++)
         {
-            fprintf(stderr, "%s Channel %d flux history for ion type %s (charge %g): ", SwS, ic, g->molname, g->q);
+            fprintf(stderr, "%s Channel %d flux history for ion type %s (charge %g): ", SwS, ic, g->molname.c_str(), g->q);
             if (bStartFromCpt)
             {
                 g->fluxfromAtoB[ic] = gs->fluxfromAtoB[ic];
@@ -1231,9 +1220,9 @@ static void init_swapstate(
         const matrix      box,
         t_inputrec       *ir)
 {
-    rvec      *x_pbc  = nullptr; /* positions of the whole MD system with molecules made whole */
-    t_swapgrp *g;
-    t_swap    *s;
+    rvec       *x_pbc  = nullptr; /* positions of the whole MD system with molecules made whole */
+    swap_group *g;
+    t_swap     *s;
 
 
     s = sc->si_priv;
@@ -1244,12 +1233,12 @@ static void init_swapstate(
     {
         /* Copy the last whole positions of each channel from .cpt */
         g = &(s->group[eGrpSplit0]);
-        for (int i = 0; i <  g->nat; i++)
+        for (size_t i = 0; i <  g->localAtomSet.numAtomsGlobal(); i++)
         {
             copy_rvec(swapstate->xc_old_whole[eChan0][i], g->xc_old[i]);
         }
         g = &(s->group[eGrpSplit1]);
-        for (int i = 0; i <  g->nat; i++)
+        for (size_t i = 0; i <  g->localAtomSet.numAtomsGlobal(); i++)
         {
             copy_rvec(swapstate->xc_old_whole[eChan1][i], g->xc_old[i]);
         }
@@ -1287,32 +1276,32 @@ static void init_swapstate(
         for (int ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
         {
             g = &(s->group[ig]);
-            for (int i = 0; i < g->nat; i++)
+            for (size_t i = 0; i < g->localAtomSet.numAtomsGlobal(); i++)
             {
-                copy_rvec(x_pbc[g->ind[i]], g->xc_old[i]);
+                copy_rvec(x_pbc[g->localAtomSet.globalIndex()[i]], g->xc_old[i]);
             }
         }
         sfree(x_pbc);
 
         /* Prepare swapstate arrays for later checkpoint writing */
-        swapstate->nat[eChan0] = s->group[eGrpSplit0].nat;
-        swapstate->nat[eChan1] = s->group[eGrpSplit1].nat;
+        swapstate->nat[eChan0] = s->group[eGrpSplit0].localAtomSet.numAtomsGlobal();
+        swapstate->nat[eChan1] = s->group[eGrpSplit1].localAtomSet.numAtomsGlobal();
     }
 
     /* For subsequent checkpoint writing, set the swapstate pointers to the xc_old
      * arrays that get updated at every swapping step */
-    swapstate->xc_old_whole_p[eChan0] = &s->group[eGrpSplit0].xc_old;
-    swapstate->xc_old_whole_p[eChan1] = &s->group[eGrpSplit1].xc_old;
+    swapstate->xc_old_whole_p[eChan0] = as_rvec_array(s->group[eGrpSplit0].xc_old.data());
+    swapstate->xc_old_whole_p[eChan1] = as_rvec_array(s->group[eGrpSplit1].xc_old.data());
 }
 
 /*! \brief Determine the total charge imbalance resulting from the swap groups */
 static real getRequestedChargeImbalance(t_swap *s)
 {
-    int        ig;
-    real       DeltaQ = 0.0;
-    t_swapgrp *g;
-    real       particle_charge;
-    real       particle_number[eCompNR];
+    int         ig;
+    real        DeltaQ = 0.0;
+    swap_group *g;
+    real        particle_charge;
+    real        particle_number[eCompNR];
 
     //        s->deltaQ =  ( (-1) * s->comp[eCompA][eIonNEG].nat_req + s->comp[eCompA][eIonPOS].nat_req )
     //                   - ( (-1) * s->comp[eCompB][eIonNEG].nat_req + s->comp[eCompB][eIonPOS].nat_req );
@@ -1461,8 +1450,7 @@ void init_swapcoords(
         const MdrunOptions     &mdrunOptions)
 {
     t_swapcoords          *sc;
-    t_swap                *s;
-    t_swapgrp             *g;
+    swap_group            *g;
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt;
     swaphistory_t         *swapstate = nullptr;
@@ -1476,8 +1464,10 @@ void init_swapcoords(
     bStartFromCpt = mdrunOptions.continuationOptions.startedFromCheckpoint;
 
     sc = ir->swap;
-    snew(sc->si_priv, 1);
-    s = sc->si_priv;
+    // until si_priv should be a unique_ptr which requires refactoring
+    // of t_swapcoords into a propoer C++ structure
+    sc->si_priv = std::unique_ptr<t_swap>(new t_swap).release();
+    auto s = sc->si_priv;
 
     if (mdrunOptions.rerun)
     {
@@ -1524,12 +1514,17 @@ void init_swapcoords(
     /* Copy some data and pointers to the group structures for convenience */
     /* Number of atoms in the group */
     s->ngrp = sc->ngrp;
-    snew(s->group, s->ngrp);
     for (int i = 0; i < s->ngrp; i++)
     {
-        s->group[i].nat     = sc->grp[i].nat;
-        s->group[i].ind     = sc->grp[i].ind;
-        s->group[i].molname = sc->grp[i].molname;
+        s->group.emplace_back(ir->atomsets->add(sc->grp[i].nat, sc->grp[i].ind));
+        if (sc->grp[i].molname != nullptr)
+        {
+            s->group[i].molname.assign(sc->grp[i].molname);
+        }
+        else
+        {
+            s->group[i].molname.clear();
+        }
     }
 
     /* Check for overlapping atoms */
@@ -1539,18 +1534,18 @@ void init_swapcoords(
     /* For the collective position array */
     for (int i = 0; i < s->ngrp; i++)
     {
-        g = &s->group[i];
-        snew(g->xc, g->nat);
-        snew(g->c_ind_loc, g->nat);
+        auto &g = s->group[i];
+        g.xc.resize(g.localAtomSet.numAtomsGlobal());
 
         /* For the split groups (the channels) we need some extra memory to
          * be able to make the molecules whole even if they span more than
          * half of the box size. */
         if ( (i == eGrpSplit0) || (i == eGrpSplit1) )
         {
-            snew(g->xc_shifts, g->nat);
-            snew(g->xc_eshifts, g->nat);
-            snew(g->xc_old, g->nat);
+            const gmx::IVec noShift({0, 0, 0});
+            g.xc_shifts.resize(g.localAtomSet.numAtomsGlobal(), noShift);
+            g.xc_eshifts.resize(g.localAtomSet.numAtomsGlobal(), noShift);
+            g.xc_old.resize(g.localAtomSet.numAtomsGlobal());
         }
     }
 
@@ -1572,7 +1567,7 @@ void init_swapcoords(
         for (int ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
         {
             g = &(s->group[ig]);
-            gmx_bcast((g->nat)*sizeof((g->xc_old)[0]), g->xc_old, (cr));
+            gmx_bcast((g->localAtomSet.numAtomsGlobal())*sizeof((g->xc_old)[0]), g->xc_old.data(), cr);
         }
     }
 
@@ -1587,13 +1582,13 @@ void init_swapcoords(
 
         /* Since all molecules of a group are equal, we only need enough space
          * to determine properties of a single molecule at at time */
-        snew(g->m, g->apm);  /* For the center of mass */
+        g->m.clear();
         charge = 0;          /* To determine the charge imbalance */
         int molb = 0;
-        for (int j = 0; j < g->apm; j++)
+        for (const auto j : g->localAtomSet.globalIndex())
         {
-            const t_atom &atom = mtopGetAtomParameters(mtop, g->ind[j], &molb);
-            g->m[j] = atom.m;
+            const t_atom &atom = mtopGetAtomParameters(mtop, j, &molb);
+            g->m.push_back(atom.m);
             charge += atom.q;
         }
         /* Total charge of one molecule of this group: */
@@ -1605,14 +1600,14 @@ void init_swapcoords(
     for (int j = eGrpSplit0; j <= eGrpSplit1; j++)
     {
         g = &(s->group[j]);
+        g->m.clear();
         if (TRUE == sc->massw_split[j])
         {
             /* Save the split group masses if mass-weighting is requested */
-            snew(g->m, g->nat);
             int molb = 0;
-            for (int i = 0; i < g->nat; i++)
+            for (const auto i : g->localAtomSet.globalIndex())
             {
-                g->m[i] = mtopGetAtomMass(mtop, g->ind[i], &molb);
+                g->m.push_back(mtopGetAtomMass(mtop, i, &molb));
             }
         }
     }
@@ -1620,6 +1615,7 @@ void init_swapcoords(
     /* Make a t_pbc struct on all nodes so that the molecules
      * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
+    set_pbc(s->pbc, ir->ePBC, globalState->box);
 
     if (MASTER(cr))
     {
@@ -1637,9 +1633,9 @@ void init_swapcoords(
             for (int ig = 0; ig < s->ngrp; ig++)
             {
                 g = &(s->group[ig]);
-                fprintf(s->fpout, "# %s group '%s' contains %d atom%s",
+                fprintf(s->fpout, "# %s group '%s' contains %lu atom%s",
                         ig < eSwapFixedGrpNR ? eSwapFixedGrp_names[ig] : "Ion",
-                        g->molname, g->nat, (g->nat > 1) ? "s" : "");
+                        g->molname.c_str(), g->localAtomSet.numAtomsGlobal(), (g->localAtomSet.numAtomsGlobal() > 1) ? "s" : "");
                 if (!(eGrpSplit0 == ig || eGrpSplit1 == ig) )
                 {
                     fprintf(s->fpout, " with %d atom%s in each molecule of charge %g",
@@ -1654,13 +1650,13 @@ void init_swapcoords(
         for (int j = eGrpSplit0; j <= eGrpSplit1; j++)
         {
             g = &(s->group[j]);
-            for (int i = 0; i < g->nat; i++)
+            for (size_t i = 0; i < g->localAtomSet.numAtomsGlobal(); i++)
             {
                 copy_rvec(globalState->x[sc->grp[j].ind[i]], g->xc[i]);
             }
             /* xc has the correct PBC representation for the two channels, so we do
              * not need to correct for that */
-            get_center(g->xc, g->m, g->nat, g->center);
+            get_center(as_rvec_array(g->xc.data()), g->m.data(),  g->localAtomSet.numAtomsGlobal(), g->center);
             if (!bAppend)
             {
                 fprintf(s->fpout, "# %s group %s-center %5f nm\n", eSwapFixedGrp_names[j],
@@ -1700,32 +1696,6 @@ void init_swapcoords(
     else
     {
         s->fpout = nullptr;
-    }
-
-    /* Prepare for parallel or serial run */
-    if (PAR(cr))
-    {
-        for (int ig = 0; ig < s->ngrp; ig++)
-        {
-            g             = &(s->group[ig]);
-            g->nat_loc    = 0;
-            g->nalloc_loc = 0;
-            g->ind_loc    = nullptr;
-        }
-    }
-    else
-    {
-        for (int ig = 0; ig < s->ngrp; ig++)
-        {
-            g          = &(s->group[ig]);
-            g->nat_loc = g->nat;
-            g->ind_loc = g->ind;
-            /* c_ind_loc needs to be set to identity in the serial case */
-            for (int i = 0; i < g->nat; i++)
-            {
-                g->c_ind_loc[i] = i;
-            }
-        }
     }
 
     /* Allocate memory to remember the past particle counts for time averaging */
@@ -1827,24 +1797,6 @@ void finish_swapcoords(t_swapcoords *sc)
     }
 }
 
-
-void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
-{
-    t_swapgrp *g;
-    int        ig;
-
-
-    /* Make split groups, solvent group, and user-defined groups of particles
-     * under control of the swap protocol */
-    for (ig = 0; ig < sc->ngrp; ig++)
-    {
-        g = &(sc->si_priv->group[ig]);
-        dd_make_local_group_indices(dd->ga2la, g->nat, g->ind,
-                                    &(g->nat_loc), &(g->ind_loc), &(g->nalloc_loc), g->c_ind_loc);
-    }
-}
-
-
 /*! \brief Do we need to swap a molecule in any of the ion groups with a water molecule at this step?
  *
  * From the requested and average molecule counts we determine whether a swap is needed
@@ -1852,9 +1804,9 @@ void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
  */
 static gmx_bool need_swap(t_swapcoords *sc)
 {
-    t_swap    *s;
-    int        ic, ig;
-    t_swapgrp *g;
+    t_swap     *s;
+    int         ic, ig;
+    swap_group *g;
 
     s = sc->si_priv;
 
@@ -1955,21 +1907,15 @@ static void translate_positions(
 
 /*! \brief Write back the the modified local positions from the collective array to the official positions. */
 static void apply_modified_positions(
-        t_swapgrp *g,
-        rvec       x[])
+        swap_group *g,
+        rvec        x[])
 {
-    int l, ii, cind;
-
-
-    for (l = 0; l < g->nat_loc; l++)
+    auto collectiveIndex = g->localAtomSet.collectiveIndex().begin();
+    for (const auto localIndex : g->localAtomSet.localIndex())
     {
-        /* Get the right local index to write to */
-        ii = g->ind_loc[l];
-        /* Where is the local atom in the collective array? */
-        cind = g->c_ind_loc[l];
-
         /* Copy the possibly modified position */
-        copy_rvec(g->xc[cind], x[ii]);
+        copy_rvec(g->xc[*collectiveIndex], x[localIndex]);
+        ++collectiveIndex;
     }
 }
 
@@ -1985,14 +1931,14 @@ gmx_bool do_swapcoords(
         gmx_bool          bVerbose,
         gmx_bool          bRerun)
 {
-    t_swapcoords         *sc;
-    t_swap               *s;
-    int                   j, ic, ig, nswaps;
-    int                   thisC, otherC; /* Index into this compartment and the other one */
-    gmx_bool              bSwap = FALSE;
-    t_swapgrp            *g, *gsol;
-    int                   isol, iion;
-    rvec                  com_solvent, com_particle; /* solvent and swap molecule's center of mass */
+    t_swapcoords          *sc;
+    t_swap                *s;
+    int                    j, ic, ig, nswaps;
+    int                    thisC, otherC; /* Index into this compartment and the other one */
+    gmx_bool               bSwap = FALSE;
+    swap_group            *g, *gsol;
+    int                    isol, iion;
+    rvec                   com_solvent, com_particle; /* solvent and swap molecule's center of mass */
 
 
     wallcycle_start(wcycle, ewcSWAP);
@@ -2009,10 +1955,10 @@ gmx_bool do_swapcoords(
     for (ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
     {
         g = &(s->group[ig]);
-        communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
-                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
+        communicate_group_positions(cr, as_rvec_array(g->xc.data()), as_vec_array(g->xc_shifts.data()), as_vec_array(g->xc_eshifts.data()), TRUE,
+                                    x, g->localAtomSet.numAtomsGlobal(), g->localAtomSet.localIndex().size(), g->localAtomSet.localIndex().data(), g->localAtomSet.collectiveIndex().data(), as_rvec_array(g->xc_old.data()), box);
 
-        get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
+        get_center(as_rvec_array(g->xc.data()), g->m.data(), g->localAtomSet.numAtomsGlobal(), g->center); /* center of split groups == channels */
     }
 
     /* Assemble the positions of the ions (ig = 3, 4, ...). These molecules should
@@ -2021,8 +1967,8 @@ gmx_bool do_swapcoords(
     for (ig = eSwapFixedGrpNR; ig < s->ngrp; ig++)
     {
         g = &(s->group[ig]);
-        communicate_group_positions(cr, g->xc, nullptr, nullptr, FALSE,
-                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
+        communicate_group_positions(cr, as_rvec_array(g->xc.data()), nullptr, nullptr, FALSE,
+                                    x, g->localAtomSet.numAtomsGlobal(), g->localAtomSet.localIndex().size(), g->localAtomSet.localIndex().data(), g->localAtomSet.collectiveIndex().data(), nullptr, nullptr);
 
         /* Determine how many ions of this type each compartment contains */
         sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, FALSE);
@@ -2048,8 +1994,8 @@ gmx_bool do_swapcoords(
         /* Since we here know that we have to perform ion/water position exchanges,
          * we now assemble the solvent positions */
         g = &(s->group[eGrpSolvent]);
-        communicate_group_positions(cr, g->xc, nullptr, nullptr, FALSE,
-                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
+        communicate_group_positions(cr, as_rvec_array(g->xc.data()), nullptr, nullptr, FALSE,
+                                    x, g->localAtomSet.numAtomsGlobal(), g->localAtomSet.localIndex().size(), g->localAtomSet.localIndex().data(), g->localAtomSet.collectiveIndex().data(), nullptr, nullptr);
 
         /* Determine how many molecules of solvent each compartment contains */
         sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, TRUE);
@@ -2088,18 +2034,18 @@ gmx_bool do_swapcoords(
                     /* Swap in an ion */
 
                     /* Get the xc-index of the first atom of a solvent molecule of this compartment */
-                    isol = get_index_of_distant_atom(&gsol->comp[thisC], gsol->molname);
+                    isol = get_index_of_distant_atom(&gsol->comp[thisC], gsol->molname.c_str());
 
                     /* Get the xc-index of a particle from the other compartment */
-                    iion = get_index_of_distant_atom(&g->comp[otherC], g->molname);
+                    iion = get_index_of_distant_atom(&g->comp[otherC], g->molname.c_str());
 
-                    get_molecule_center(&gsol->xc[isol], gsol->apm, gsol->m, com_solvent, s->pbc);
-                    get_molecule_center(&g->xc[iion], g->apm, g->m, com_particle, s->pbc);
+                    get_molecule_center(&(gsol->xc[isol].as_vec()), gsol->apm, gsol->m.data(), com_solvent, s->pbc);
+                    get_molecule_center(&(g->xc[iion].as_vec()), g->apm, g->m.data(), com_particle, s->pbc);
 
                     /* Subtract solvent molecule's center of mass and add swap particle's center of mass */
-                    translate_positions(&gsol->xc[isol], gsol->apm, com_solvent, com_particle, s->pbc);
+                    translate_positions(&(gsol->xc[isol].as_vec()), gsol->apm, com_solvent, com_particle, s->pbc);
                     /* Similarly for the swap particle, subtract com_particle and add com_solvent */
-                    translate_positions(&g->xc[iion], g->apm, com_particle, com_solvent, s->pbc);
+                    translate_positions(&(g->xc[iion].as_vec()), g->apm, com_particle, com_solvent, s->pbc);
 
                     /* Keep track of the changes */
                     g->vacancy[thisC ]--;
@@ -2131,7 +2077,7 @@ gmx_bool do_swapcoords(
             if (nswaps && bVerbose)
             {
                 fprintf(stderr, "%s Performed %d swap%s in step %" GMX_PRId64 " for iontype %s.\n",
-                        SwS, nswaps, nswaps > 1 ? "s" : "", step, g->molname);
+                        SwS, nswaps, nswaps > 1 ? "s" : "", step, g->molname.c_str());
             }
         }
 
