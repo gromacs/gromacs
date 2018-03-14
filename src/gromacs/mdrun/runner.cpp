@@ -105,6 +105,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/taskassignment/taskassignment.h"
@@ -1269,7 +1270,15 @@ int Mdrunner::mdrunner()
             init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
         }
 
-        /* Let makeConstraints know whether we have essential dynamics constraints.
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+                            &mtop, globalState.get(), &observablesHistory,
+                            cr, &atomSets, oenv, mdrunOptions);
+        }
+
+        /* Let init_constraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
          */
         bool doEssentialDynamics = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
