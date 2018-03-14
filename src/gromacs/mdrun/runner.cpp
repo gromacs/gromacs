@@ -106,6 +106,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/resourcedivision.h"
 #include "gromacs/taskassignment/taskassignment.h"
@@ -1275,6 +1276,14 @@ int Mdrunner::mdrunner()
         {
             /* Initialize enforced rotation code */
             enforcedRotation = init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
+        }
+
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+                            &mtop, globalState.get(), &observablesHistory,
+                            cr, &atomSets, oenv, mdrunOptions);
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints.

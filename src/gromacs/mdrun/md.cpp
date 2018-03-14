@@ -403,15 +403,6 @@ void gmx::Integrator::do_md()
                         oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
-    if (ir->eSwapCoords != eswapNO)
-    {
-        /* Initialize ion swapping code */
-        init_swapcoords(fplog, ir, opt2fn_master("-swap", nfile, fnm, cr),
-                        top_global,
-                        state_global, observablesHistory,
-                        cr, oenv, mdrunOptions);
-    }
-
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
             &t, &t0, state_global, lam0,
