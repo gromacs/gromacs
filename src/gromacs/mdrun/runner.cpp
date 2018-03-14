@@ -71,6 +71,7 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/printhardware.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
@@ -1268,6 +1269,11 @@ int Mdrunner::mdrunner()
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
         }
+
+        /* Set up interactive MD (IMD) */
+        init_IMD(inputrec, cr, &atomSets, ms, &mtop, fplog, inputrec->nstcalcenergy,
+                 MASTER(cr) ? as_rvec_array(globalState->x.data()) : nullptr,
+                 nfile, fnm, oenv, mdrunOptions);
 
         /* Let makeConstraints know whether we have essential dynamics constraints.
          * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
