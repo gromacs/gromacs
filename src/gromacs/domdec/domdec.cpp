@@ -92,7 +92,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -6814,12 +6813,6 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local rotation groups */
         dd_make_local_rotation_groups(dd, enforcedRotation);
-    }
-
-    if (ir->eSwapCoords != eswapNO)
-    {
-        /* Update the local groups needed for ion swapping */
-        dd_make_local_swap_groups(dd, ir->swap);
     }
 
     if (dd->atomSets != nullptr)
