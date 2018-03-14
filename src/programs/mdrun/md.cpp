@@ -463,7 +463,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
         init_swapcoords(fplog, ir, opt2fn_master("-swap", nfile, fnm, cr),
                         top_global,
                         state_global, observablesHistory,
-                        cr, oenv, mdrunOptions);
+                        cr, &atomSets, oenv, mdrunOptions);
     }
 
     /* Initial values */
