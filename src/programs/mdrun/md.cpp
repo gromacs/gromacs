@@ -918,7 +918,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     // TODO This implementation of ensemble orientation restraints is nasty because
     // a user can't just do multi-sim with single-sim orientation restraints.
     bUsingEnsembleRestraints = (fcd->disres.nsystems > 1) || (cr->ms && fcd->orires.nr);
-
+    bool awhUsesMultiSim     = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && cr->ms);
     {
         // Replica exchange, ensemble restraints and AWH need all
         // simulations to remain synchronized, so they need
@@ -926,7 +926,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         // the propagation of such signals must take place between
         // simulations, not just within simulations.
         // TODO: Make algorithm initializers set these flags.
-        bool awhUsesMultiSim      = (ir->bDoAwh && ir->awhParams->shareBiasMultisim);
         bool checkpointIsLocal    = !useReplicaExchange && !bUsingEnsembleRestraints && !awhUsesMultiSim;
         bool stopConditionIsLocal = !useReplicaExchange && !bUsingEnsembleRestraints && !awhUsesMultiSim;
         bool resetCountersIsLocal = true;
@@ -1684,7 +1683,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             // Organize to do inter-simulation signalling on steps if
             // and when algorithms require it.
-            bool doInterSimSignal = (!bFirstStep && bDoReplEx) || bUsingEnsembleRestraints;
+            bool doInterSimSignal = (!bFirstStep && bDoReplEx) || bUsingEnsembleRestraints || awhUsesMultiSim;
 
             if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)) || doInterSimSignal)
             {
