@@ -69,6 +69,10 @@ class t_state;
 struct t_swapcoords;
 struct ObservablesHistory;
 
+namespace gmx
+{
+class LocalAtomSetManager;
+}
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
@@ -87,15 +91,16 @@ struct ObservablesHistory;
  * \param[in] mdrunOptions  Options for mdrun.
  */
 void init_swapcoords(
-        FILE                   *fplog,
-        t_inputrec             *ir,
-        const char             *fn,
-        gmx_mtop_t             *mtop,
-        const t_state          *globalState,
-        ObservablesHistory     *oh,
-        t_commrec              *cr,
-        const gmx_output_env_t *oenv,
-        const MdrunOptions     &mdrunOptions);
+        FILE                     *fplog,
+        t_inputrec               *ir,
+        const char               *fn,
+        gmx_mtop_t               *mtop,
+        const t_state            *globalState,
+        ObservablesHistory       *oh,
+        t_commrec                *cr,
+        gmx::LocalAtomSetManager *atomSets,
+        const gmx_output_env_t   *oenv,
+        const MdrunOptions       &mdrunOptions);
 
 
 /*! \brief Finalizes ion / water position swapping.
@@ -103,16 +108,6 @@ void init_swapcoords(
  * \param[in] sc            Pointer to swap data.
  */
 void finish_swapcoords(t_swapcoords *sc);
-
-
-/*! \brief Make a selection of the home atoms for the swap groups. These are
- * the ions, the water, and the channels. This routine should be called at every
- * domain decomposition.
- *
- * \param[in] dd            Structure containing domain decomposition data.
- * \param[in] si_pub        Pointer to the swap data structure.
- */
-void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
