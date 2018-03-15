@@ -166,6 +166,12 @@ And continuation from checkpoints could be refused.
 :issue:`2441`
 :issue:`2444`
 
+Fixed virial with AWH and domain decomposiion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When running AWH with domain decomposition, the AWH/pull virial
+contribution would be multiplied with the number of MPI ranks.
+
+
 Fixed restart bug with pull geometry direction-periodic
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 With COM pulling with geometry direction-periodic, (only) at the step

@@ -1677,7 +1677,7 @@ void apply_external_pull_coord_force(struct pull_t        *pull,
         calc_pull_coord_vector_force(pcrd);
 
         /* Add the forces for this coordinate to the total virial and force */
-        if (forceWithVirial->computeVirial_)
+        if (forceWithVirial->computeVirial_ && pull->comm.isMasterRank)
         {
             matrix virial = { { 0 } };
             add_virial_coord(virial, pcrd);
@@ -2496,9 +2496,11 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
      */
     comm->mpi_comm_com    = MPI_COMM_NULL;
     comm->nparticipate    = 0;
+    comm->isMasterRank    = (cr == nullptr || MASTER(cr));
 #else
     /* No MPI: 1 rank: all ranks pull */
     comm->bParticipateAll = TRUE;
+    comm->isMasterRank    = true;
 #endif
     comm->bParticipate    = comm->bParticipateAll;
     comm->setup_count     = 0;
