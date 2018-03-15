@@ -932,8 +932,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         // TODO: Make algorithm initializers set these flags.
         simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
         bool resetCountersIsLocal = true;
-        signals[eglsCHKPT]         = SimulationSignal(simulationsShareState);
-        signals[eglsSTOPCOND]      = SimulationSignal(simulationsShareState);
+        signals[eglsCHKPT]         = SimulationSignal(!simulationsShareState);
+        signals[eglsSTOPCOND]      = SimulationSignal(!simulationsShareState);
         signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
 
         if (simulationsShareState)
