@@ -161,7 +161,9 @@ gmx_greatest_common_divisor(int p, int q);
 
 /*! \brief Enable floating-point exceptions if supported on OS
  *
- * Enables division-by-zero, invalid, and overflow.
+ * Enables division-by-zero, invalid value, and overflow.
+ *
+ * \returns 0 if successful in enabling exceptions, anything else in case of failure/unsupported OS.
  */
 int gmx_feenableexcept();
 
