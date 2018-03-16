@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,14 +121,22 @@ static inline SimdFloat gmx_simdcall
 simdLoadU(const float *m, SimdFloatTag = {})
 {
     return {
+#if __GNUC__ < 7
                *reinterpret_cast<const __vector float *>(m)
+#else
+               vec_xl(0, m)
+#endif
     };
 }
 
 static inline void gmx_simdcall
 storeU(float *m, SimdFloat a)
 {
+#if __GNUC__ < 7
     *reinterpret_cast<__vector float *>(m) = a.simdInternal_;
+#else
+    vec_xst(a.simdInternal_, 0, m);
+#endif
 }
 
 static inline SimdFloat gmx_simdcall
@@ -157,14 +165,22 @@ static inline SimdFInt32 gmx_simdcall
 simdLoadU(const std::int32_t *m, SimdFInt32Tag)
 {
     return {
+#if __GNUC__ < 7
                *reinterpret_cast<const __vector int *>(m)
+#else
+               vec_xl(0, m)
+#endif
     };
 }
 
 static inline void gmx_simdcall
 storeU(std::int32_t * m, SimdFInt32 a)
 {
+#if __GNUC__ < 7
     *reinterpret_cast<__vector int *>(m) = a.simdInternal_;
+#else
+    vec_xst(a.simdInternal_, 0, m);
+#endif
 }
 
 static inline SimdFInt32 gmx_simdcall
