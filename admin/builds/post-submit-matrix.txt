@@ -48,11 +48,11 @@ clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
 # Test clang + OpenMP
 clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 
-# Test non-default use of mdrun -gpu_id
 # Test SSE2 SIMD
 # Test CMAKE_BUILD_TYPE=Release
-gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
+gcc-4.8 gpu npme=1 nranks=2 cuda-7.5 simd=sse2 release
 
+# Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
 gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert
 
