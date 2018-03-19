@@ -1728,7 +1728,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
 
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   const gmx_mtop_t *mtop, const t_commrec *cr,
-                  int natoms, rvec x[], matrix box)
+                  int natoms, const rvec x[], const matrix box)
 {
     char          fname[STRLEN], buf[22];
     FILE         *out;
@@ -9847,4 +9847,23 @@ void dd_partition_system(FILE                *fplog,
     }
 
     wallcycle_stop(wcycle, ewcDOMDEC);
+}
+
+/*! \brief Check whether bonded interactions are missing, if appropriate */
+void checkNumberOfBondedInteractions(FILE                 *fplog,
+                                     t_commrec            *cr,
+                                     int                   totalNumberOfBondedInteractions,
+                                     const gmx_mtop_t     *top_global,
+                                     const gmx_localtop_t *top_local,
+                                     const t_state        *state,
+                                     bool                 *shouldCheckNumberOfBondedInteractions)
+{
+    if (*shouldCheckNumberOfBondedInteractions)
+    {
+        if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
+        {
+            dd_print_missing_interactions(fplog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
+        }
+        *shouldCheckNumberOfBondedInteractions = false;
+    }
 }
