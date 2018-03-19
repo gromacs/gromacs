@@ -335,6 +335,15 @@ void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
 /*! \brief Print statistics for domain decomposition communication */
 void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog);
 
+/*! \brief Check whether bonded interactions are missing, if appropriate */
+void checkNumberOfBondedInteractions(FILE *fplog,
+                                            t_commrec *cr,
+                                            int totalNumberOfBondedInteractions,
+                                            gmx_mtop_t *top_global,
+                                            gmx_localtop_t *top_local,
+                                            t_state *state,
+                                            bool *shouldCheckNumberOfBondedInteractions);
+
 /* In domdec_con.c */
 
 /*! \brief Communicates the virtual site forces, reduces the shift forces when \p fshift != NULL */
