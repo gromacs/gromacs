@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -254,6 +254,12 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
         gmx_fatal(FARGS, "This binary is compiled without MPI support, can not do multiple simulations.");
     }
 #endif
+
+    if (nsim == 1)
+    {
+        /* NOTE: It would be nice if this special case worked, but this requires checks/tests. */
+        gmx_fatal(FARGS, "To run mdrun in multiple simulation mode, more then one actual simulation is required. The single simulation case is not supported.");
+    }
 
     nnodes  = cr->nnodes;
     if (nnodes % nsim != 0)
