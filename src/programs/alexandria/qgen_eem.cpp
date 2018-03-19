@@ -444,7 +444,8 @@ void QgenEem::calcJcs(t_atoms *atoms,
                       int      top_ndx,
                       int      eem_ndx)
 {
-    auto l   = 0, k = 0;
+    auto l   = 0;
+    auto k   = 0;
     auto Jcs = 0.0;
     Jcs_     = 0;
     if (atoms->atom[top_ndx].ptype == eptAtom)
@@ -475,7 +476,8 @@ void QgenEem::calcJss(t_atoms *atoms,
                       int      top_ndx,
                       int      eem_ndx)
 {
-    auto l     = 0, k = 0;
+    auto l     = 0;
+    auto k     = 0;
     auto Jss   = 0.0;
     Jss_       = 0;
     if (atoms->atom[top_ndx].ptype == eptShell)

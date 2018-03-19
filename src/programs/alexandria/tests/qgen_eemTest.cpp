@@ -131,9 +131,11 @@ class EemTest : public gmx::test::CommandLineTestBase
             int            qcycle      = 1;
             real           qtol        = 1e-3;
 
-            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgEEM, watoms,
-                                hfac, lot, true, symm_string, cr,
-                                nullptr, hwinfo, qcycle, qtol, nullptr);
+            mp_.GenerateCharges(pd_, mdlog, aps_, model, 
+                                eqgEEM, watoms, hfac, lot, 
+                                true, symm_string, cr,
+                                nullptr, hwinfo, qcycle, 
+                                maxpot, qtol, nullptr);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)

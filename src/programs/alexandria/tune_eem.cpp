@@ -331,7 +331,7 @@ void OptEEM::calcDeviation()
                         if (bFullTensor_ || mm == nn)
                         {
                             increaseEnergy(ermsQUAD, 
-                                     gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                                           gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
@@ -495,6 +495,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
     double         ref_chi = 0;
+    const double         p = 1e3;
     const Poldata &pd      = poldata();
     
     if (strlen(fixchi()) != 0)
@@ -511,7 +512,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
 
     if (ai_chi < ref_chi)
     {
-        penalty += 1e5;
+        penalty += p;
     }
 
     auto *ic = indexCount();    
@@ -532,14 +533,14 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
                 {
                     if (ai_chi <= aj_chi || ai_J0 <= aj_J0)
                     {
-                        penalty += 1e5;
+                        penalty += p;
                     }
                 }
                 else if (aj_atn > ai_atn)
                 {
                     if (aj_chi <= ai_chi || aj_J0 <= ai_J0)
                     {
-                        penalty += 1e5;
+                        penalty += p;
                     }
                 }
             }
