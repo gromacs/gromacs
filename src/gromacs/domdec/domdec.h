@@ -335,6 +335,27 @@ void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
 /*! \brief Print statistics for domain decomposition communication */
 void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog);
 
+/*! \brief Check whether bonded interactions are missing, if appropriate
+ *
+ * \param[in]    fplog                                  Log file pointer
+ * \param[in]    cr                                     Communication object
+ * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
+ * \param[in]    top_global                             Global topology for the error message
+ * \param[in]    top_local                              Local topology for the error message
+ * \param[in]    state                                  Global state for the error message
+ * \param[inout] shouldCheckNumberOfBondedInteractions  Whether we should do the check.
+ *
+ * \return Nothing, except that shouldCheckNumberOfBondedInteractions
+ * is always set to false after exit.
+ */
+void checkNumberOfBondedInteractions(FILE *fplog,
+                                            t_commrec *cr,
+                                            int totalNumberOfBondedInteractions,
+                                            const gmx_mtop_t *top_global,
+                                            const gmx_localtop_t *top_local,
+                                            const t_state *state,
+                                            bool *shouldCheckNumberOfBondedInteractions);
+
 /* In domdec_con.c */
 
 /*! \brief Communicates the virtual site forces, reduces the shift forces when \p fshift != NULL */
@@ -365,7 +386,7 @@ void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
                                    int local_count,
                                    const gmx_mtop_t *top_global,
                                    const gmx_localtop_t *top_local,
-                                   t_state *state_local);
+                                   const t_state *state_local);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
@@ -414,7 +435,7 @@ void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   const gmx_mtop_t *mtop,
                   const t_commrec *cr,
-                  int natoms, rvec x[], matrix box);
+                  int natoms, const rvec x[], const matrix box);
 
 
 /* In domdec_setup.c */
