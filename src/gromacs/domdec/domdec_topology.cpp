@@ -341,7 +341,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
                                    int local_count,
                                    const gmx_mtop_t *top_global,
                                    const gmx_localtop_t *top_local,
-                                   t_state *state_local)
+                                   const t_state *state_local)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
