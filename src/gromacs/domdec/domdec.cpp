@@ -9848,3 +9848,30 @@ void dd_partition_system(FILE                *fplog,
 
     wallcycle_stop(wcycle, ewcDOMDEC);
 }
+
+/*! \brief Check whether bonded interactions are missing, if appropriate
+ *
+ * \param[in]    fplog                                  Log file pointer
+ * \param[in]    cr                                     Communication object
+ * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
+ * \param[in]    top_global                             Global topology for the error message
+ * \param[in]    top_local                              Local topology for the error message
+ * \param[in]    state                                  Global state for the error message
+ * \param[inout] shouldCheckNumberOfBondedInteractions  Whether we should do the check.
+ *
+ * \return Nothing, except that shouldCheckNumberOfBondedInteractions
+ * is always set to false after exit.
+ */
+void checkNumberOfBondedInteractions(FILE *fplog, t_commrec *cr, int totalNumberOfBondedInteractions,
+                                            gmx_mtop_t *top_global, gmx_localtop_t *top_local, t_state *state,
+                                            bool *shouldCheckNumberOfBondedInteractions)
+{
+    if (*shouldCheckNumberOfBondedInteractions)
+    {
+        if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
+        {
+            dd_print_missing_interactions(fplog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
+        }
+        *shouldCheckNumberOfBondedInteractions = false;
+    }
+}
