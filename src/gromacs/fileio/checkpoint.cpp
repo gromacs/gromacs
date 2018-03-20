@@ -181,7 +181,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_coordpoint", "awh_umbrellaGridpoint",
     "awh_updatelist",
     "awh_logScaledSampleWeight",
-    "awh_numupdates"
+    "awh_numupdates",
     "awh_forceCorrelationGrid"
 };
 
