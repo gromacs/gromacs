@@ -150,7 +150,11 @@ class linked_ptr {
   // Take over ownership of a raw pointer.  This should happen as soon as
   // possible after the object is created.
   explicit linked_ptr(T* ptr = NULL) { capture(ptr); }
-  ~linked_ptr() { depart(); }
+  ~linked_ptr() { 
+#ifndef __clang_analyzer__
+    depart(); 
+#endif
+    }
 
   // Copy an existing linked_ptr<>, adding ourselves to the list of references.
   template <typename U> linked_ptr(linked_ptr<U> const& ptr) { copy(&ptr); }
