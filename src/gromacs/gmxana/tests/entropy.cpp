@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,8 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxana/entropy.h"
+#include "gromacs/gmxana/thermochemistry.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -75,8 +76,7 @@ class Entropy : public ::testing::Test
             std::vector<real>   eigenvalue;
             std::copy(ev.begin(), ev.end(), std::back_inserter(eigenvalue));
 
-            real   S = calc_entropy_schlitter(eigenvalue.size(), eigenvalue.data(),
-                                              temperature, bLinear);
+            real   S = calcSchlitterEntropy(eigenvalue, temperature, bLinear);
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-7));
             checker_.checkReal(S, "entropy");
         }
@@ -93,8 +93,8 @@ class Entropy : public ::testing::Test
             std::vector<real>   eigenvalue;
             std::copy(ev.begin(), ev.end(), std::back_inserter(eigenvalue));
 
-            real S = calc_entropy_quasi_harmonic(eigenvalue.size(), eigenvalue.data(),
-                                                 temperature, bLinear);
+            real S = calcQuasiHarmonicEntropy(eigenvalue, temperature, bLinear, 1.0);
+
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-7));
             checker_.checkReal(S, "entropy");
         }
