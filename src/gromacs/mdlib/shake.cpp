@@ -652,15 +652,15 @@ static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     return nit;
 }
 
-static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
+static void check_cons(FILE *log, int nc, rvec x[], rvec prime[],
                        t_iparams ip[], t_iatom *iatom,
-                       const real invmass[], int econq)
+                       const real invmass[])
 {
     t_iatom *ia;
     int      ai, aj;
     int      i;
     real     d, dp;
-    rvec     dx, dv;
+    rvec     dx;
 
     fprintf(log,
             "    i     mi      j     mj      before       after   should be\n");
@@ -672,25 +672,11 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
         rvec_sub(x[ai], x[aj], dx);
         d = norm(dx);
 
-        switch (econq)
-        {
-            case econqCoord:
-                rvec_sub(prime[ai], prime[aj], dx);
-                dp = norm(dx);
-                fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
-                        ai+1, 1.0/invmass[ai],
-                        aj+1, 1.0/invmass[aj], d, dp, ip[ia[0]].constr.dA);
-                break;
-            case econqVeloc:
-                rvec_sub(v[ai], v[aj], dv);
-                d = iprod(dx, dv);
-                rvec_sub(prime[ai], prime[aj], dv);
-                dp = iprod(dx, dv);
-                fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
-                        ai+1, 1.0/invmass[ai],
-                        aj+1, 1.0/invmass[aj], d, dp, 0.);
-                break;
-        }
+        rvec_sub(prime[ai], prime[aj], dx);
+        dp = norm(dx);
+        fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
+                ai+1, 1.0/invmass[ai],
+                aj+1, 1.0/invmass[aj], d, dp, ip[ia[0]].constr.dA);
     }
 }
 
@@ -733,7 +719,7 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
                            econq);
 
 #ifdef DEBUGSHAKE
-        check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
+        check_cons(log, blen, x_s, prime, idef->iparams, iatoms, invmass);
 #endif
 
         if (n0 == 0)
@@ -741,7 +727,7 @@ bshakef(FILE *log, gmx_shakedata_t shaked,
             if (bDumpOnError && log)
             {
                 {
-                    check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
+                    check_cons(log, blen, x_s, prime, idef->iparams, iatoms, invmass);
                 }
             }
             return FALSE;

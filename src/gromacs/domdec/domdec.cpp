@@ -102,6 +102,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/real.h"
@@ -1071,8 +1072,8 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
     }
 }
 
-static void dd_collect_cg(gmx_domdec_t  *dd,
-                          const t_state *state_local)
+static void dd_collect_cg(const gmx_domdec_t  *dd,
+                          const t_state       *state_local)
 {
     gmx_domdec_master_t *ma = nullptr;
     int                  buf2[2], *ibuf, i, ncg_home = 0, nat_home = 0;
@@ -1165,7 +1166,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
     dd->comm->master_cg_ddp_count = state_local->ddp_count;
 }
 
-static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
+static void dd_collect_vec_sendrecv(const gmx_domdec_t            *dd,
                                     gmx::ArrayRef<const gmx::RVec> lv,
                                     gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -1214,6 +1215,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                 a = 0;
                 for (i = ma->index[n]; i < ma->index[n+1]; i++)
                 {
+                    GMX_ASSERT(buf, "Master rank must have a buffer for sendrecv");
                     for (c = cgs_gl->index[ma->cg[i]]; c < cgs_gl->index[ma->cg[i]+1]; c++)
                     {
                         copy_rvec(buf[a++], v[c]);
@@ -1225,7 +1227,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     }
 }
 
-static void get_commbuffer_counts(gmx_domdec_t *dd,
+static void get_commbuffer_counts(const gmx_domdec_t *dd,
                                   int **counts, int **disps)
 {
     gmx_domdec_master_t *ma;
@@ -1243,7 +1245,7 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     }
 }
 
-static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
+static void dd_collect_vec_gatherv(const gmx_domdec_t            *dd,
                                    gmx::ArrayRef<const gmx::RVec> lv,
                                    gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -1266,6 +1268,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v.data(), "Master rank must have a vector to gatherv");
+        GMX_ASSERT(buf, "Master rank must have an intermediate buffer to gatherv");
         cgs_gl = &dd->comm->cgs_gl;
 
         a = 0;
@@ -1282,7 +1286,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
     }
 }
 
-void dd_collect_vec(gmx_domdec_t                  *dd,
+void dd_collect_vec(const gmx_domdec_t            *dd,
                     const t_state                 *state_local,
                     gmx::ArrayRef<const gmx::RVec> lv,
                     gmx::ArrayRef<gmx::RVec>       v)
@@ -1300,7 +1304,7 @@ void dd_collect_vec(gmx_domdec_t                  *dd,
 }
 
 
-void dd_collect_state(gmx_domdec_t *dd,
+void dd_collect_state(const gmx_domdec_t *dd,
                       const t_state *state_local, t_state *state)
 {
     int nh = state_local->nhchainlength;
@@ -1403,7 +1407,7 @@ static void dd_check_alloc_ncg(t_forcerec       *fr,
     }
 }
 
-static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec_sendrecv(const gmx_domdec_t *dd, t_block *cgs,
                                        const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
@@ -1412,6 +1416,8 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "Master rank must have a vector to sendrecv");
+
         ma  = dd->ma;
 
         for (n = 0; n < dd->nnodes; n++)
@@ -1427,6 +1433,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
                 a = 0;
                 for (i = ma->index[n]; i < ma->index[n+1]; i++)
                 {
+                    GMX_ASSERT(buf, "Master rank must have a buffer for sendrecv");
                     for (c = cgs->index[ma->cg[i]]; c < cgs->index[ma->cg[i]+1]; c++)
                     {
                         copy_rvec(v[c], buf[a++]);
@@ -1464,7 +1471,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
     }
 }
 
-static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec_scatterv(const gmx_domdec_t *dd, t_block *cgs,
                                        const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
@@ -1474,6 +1481,7 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "Master rank must have a vector to scatterv");
         ma  = dd->ma;
 
         get_commbuffer_counts(dd, &scounts, &disps);
@@ -1495,7 +1503,7 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
     dd_scatterv(dd, scounts, disps, buf, dd->nat_home*sizeof(rvec), lv);
 }
 
-static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec(const gmx_domdec_t *dd, t_block *cgs,
                               const rvec *v, rvec *lv)
 {
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
@@ -1508,7 +1516,7 @@ static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs,
     }
 }
 
-static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
+static void dd_distribute_dfhist(const gmx_domdec_t *dd, df_history_t *dfhist)
 {
     if (dfhist == nullptr)
     {
@@ -1541,7 +1549,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
     }
 }
 
-static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_state(const gmx_domdec_t *dd, t_block *cgs,
                                 t_state *state, t_state *state_local,
                                 PaddedRVecVector *f)
 {

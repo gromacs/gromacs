@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -534,6 +534,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
     using ::testing::Property;
     using ::testing::Return;
 
+#ifndef __clang_analyzer__
     if (bParallel)
     {
         ::testing::Expectation init =
@@ -597,6 +598,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
         }
         EXPECT_CALL(*this, dataFinished());
     }
+#endif
 }
 
 
@@ -611,6 +613,7 @@ MockAnalysisDataModule::setupStaticColumnCheck(
     using ::testing::_;
     using ::testing::Invoke;
 
+#ifndef __clang_analyzer__
     setSerialExpectationForParallelDataStarted(this);
     EXPECT_CALL(*this, dataStarted(_));
     for (int row = 0; row < data.frameCount(); ++row)
@@ -633,6 +636,7 @@ MockAnalysisDataModule::setupStaticColumnCheck(
         EXPECT_CALL(*this, frameFinishedSerial(row));
     }
     EXPECT_CALL(*this, dataFinished());
+#endif
 }
 
 
@@ -649,6 +653,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
     using ::testing::_;
     using ::testing::Invoke;
 
+#ifndef __clang_analyzer__
     setSerialExpectationForParallelDataStarted(this);
     EXPECT_CALL(*this, dataStarted(source))
         .WillOnce(Invoke(DataStorageRequester(storageCount)));
@@ -668,6 +673,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
         EXPECT_CALL(*this, frameFinishedSerial(row));
     }
     EXPECT_CALL(*this, dataFinished());
+#endif
 }
 
 
@@ -688,6 +694,7 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Expectation;
     using ::testing::Invoke;
 
+#ifndef __clang_analyzer__
     setSerialExpectationForParallelDataStarted(this);
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
             .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
@@ -705,6 +712,7 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
             .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrameSerial));
     EXPECT_CALL(*this, dataFinished())
         .After(frameStart, pointsAdd, frameFinish, frameFinishSerial);
+#endif
 }
 
 } // namespace test

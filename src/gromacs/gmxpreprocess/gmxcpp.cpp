@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,11 @@ static const char *strstrw(const char *buf, const char *word)
     return nullptr;
 }
 
-static gmx_bool find_directive(char *buf, char **name, char **val)
+/* Finds a preprocessor directive, whose name (after the '#') is
+ * returned in *name, and the remainder of the line after leading
+ * whitespace is returned in *val (which can be nullptr). */
+static
+gmx_bool find_directive(char *buf, char **name, char **val)
 {
     /* Skip initial whitespace */
     while (isspace(*buf))
@@ -378,6 +382,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     return eCPP_OK;
 }
 
+/* Note that dval might be null, e.g. when handling a line like '#define */
 static int
 process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
 {
@@ -401,6 +406,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         }
         else
         {
+            // A bare '#ifdef' or '#ifndef' is invalid
+            if (dval == nullptr)
+            {
+                return eCPP_SYNTAX;
+            }
             snew(name, strlen(dval)+1);
             sscanf(dval, "%s", name);
             for (i = 0; (i < ndef); i++)
@@ -467,6 +477,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     {
         len = -1;
         i0  = 0;
+        // A bare '#include' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         for (i1 = 0; (i1 < strlen(dval)); i1++)
         {
             if ((dval[i1] == '"') || (dval[i1] == '<') || (dval[i1] == '>'))
@@ -516,6 +531,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #define statement */
     if (strcmp(dname, "define") == 0)
     {
+        // A bare '#define' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         /* Split it into name and value. */
         ptr = dval;
         while ((*ptr != '\0') && !isspace(*ptr))
@@ -537,6 +557,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #undef statement */
     if (strcmp(dname, "undef") == 0)
     {
+        // A bare '#undef' is an invalid line
+        if (dval == nullptr)
+        {
+            return eCPP_SYNTAX;
+        }
         snew(name, strlen(dval)+1);
         sscanf(dval, "%s", name);
         for (i = 0; (i < ndef); i++)
