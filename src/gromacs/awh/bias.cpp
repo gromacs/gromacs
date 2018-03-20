@@ -208,6 +208,59 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     return biasForce_;
 }
 
+/*! \brief
+ * Count the total number of visits to all grid points.
+ *
+ * \param[in] pointState  The state of the points in a bias.
+ * \returns the total visit count.
+ */
+static gmx_int64_t countVisits(const std::vector<PointState> &pointState)
+{
+    double visitSum = 0;
+    for (const PointState &point : pointState)
+    {
+        visitSum += point.numVisitsTot();
+    }
+
+    return static_cast<gmx_int64_t>(visitSum + 0.5);
+}
+
+/*! \brief
+ * Check if the state (loaded from checkpoint) and the run are consistent.
+ *
+ * When the state and the run setup are inconsistent, an exception is thrown.
+ *
+ * \param[in] params  The parameters of the bias.
+ * \param[in] state   The state of the bias.
+ */
+static void ensureStateAndRunConsistency(const BiasParams &params,
+                                         const BiasState  &state)
+{
+    gmx_int64_t numVisits            = countVisits(state.points());
+    gmx_int64_t numUpdatesFromVisits = numVisits/params.numSamplesUpdateFreeEnergy_;
+    gmx_int64_t numUpdatesExpected   = state.histogramSize().numUpdates()*params.numSharedUpdate;
+    if (numUpdatesFromVisits != numUpdatesExpected)
+    {
+        std::string mesg = gmx::formatString("The total number of AWH samples in the checkpoint file divided by the updates per sample (%ld/%ld=%ld) does not match the number of update steps (%ld).",
+                                             numVisits,
+                                             params.numSamplesUpdateFreeEnergy_,
+                                             numUpdatesFromVisits,
+                                             numUpdatesExpected);
+        mesg += " Maybe you changed AWH parameters.";
+        /* Unfortunately we currently do not store the number of walkers
+         * or the number of simulations sharing the state to checkpoint.
+         * But we can hint at a walker mismatch issue.
+         */
+        if (numUpdatesFromVisits % state.histogramSize().numUpdates() == 0)
+        {
+            mesg += gmx::formatString(" Or the run you continued from used %ld walkers, whereas you now specified %d walkers.",
+                                      numUpdatesFromVisits/state.histogramSize().numUpdates(),
+                                      params.numSharedUpdate);
+        }
+        GMX_THROW(InvalidInputError(mesg));
+    }
+}
+
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
                                    const t_commrec      *cr)
 {
@@ -217,6 +270,11 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
+
+        /* Ensure that the state is consistent with our current run setup,
+         * since the user could have changed AWH parameters or nr. of walkers.
+         */
+        ensureStateAndRunConsistency(params_, state_);
 
         if (forceCorrelationGrid_ != nullptr)
         {
