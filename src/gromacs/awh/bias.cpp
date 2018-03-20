@@ -216,7 +216,35 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     if (MASTER(cr))
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
-        state_.restoreFromHistory(*biasHistory, grid_);
+
+        /* Restore the state */
+        gmx_int64_t numVisits = state_.restoreFromHistory(*biasHistory, grid_);
+
+        /* Check that the state is consistent with our current run setup,
+         * since the user could have changed AWH parameters of nr. of walkers.
+         */
+        gmx_int64_t numUpdatesFromVisits = numVisits/params_.numSamplesUpdateFreeEnergy_;
+        gmx_int64_t numUpdatesExpected   = state_.histogramSize().numUpdates()*params_.numSharedUpdate;
+        if (numUpdatesFromVisits != numUpdatesExpected)
+        {
+            std::string mesg = gmx::formatString("The total number of AWH samples in the checkpoint file divided by the updates per sample (%ld/%ld=%ld) does not match the number of update steps (%ld).",
+                                                 numVisits,
+                                                 params_.numSamplesUpdateFreeEnergy_,
+                                                 numUpdatesFromVisits,
+                                                 numUpdatesExpected);
+            mesg += " Maybe you changed AWH parameters.";
+            /* Unfortunately we currently do not store the number of walkers
+             * or the number of simulations sharing the state to checkpoint.
+             * But we can hint at a walker mismatch issue.
+             */
+            if (numUpdatesFromVisits % state_.histogramSize().numUpdates() == 0)
+            {
+                mesg += gmx::formatString(" Or the run you continued from used %ld walkers, whereas you now specified %d walkers.",
+                                          numUpdatesFromVisits/state_.histogramSize().numUpdates(),
+                                          params_.numSharedUpdate);
+            }
+            GMX_THROW(InvalidInputError(mesg));
+        }
 
         if (forceCorrelationGrid_ != nullptr)
         {

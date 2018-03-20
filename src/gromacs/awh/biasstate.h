@@ -115,9 +115,10 @@ class BiasState
          *
          * \param[in] biasHistory  Bias history struct.
          * \param[in] grid         The bias grid.
+         * \returns the total number of visits summed over the grid.
          */
-        void restoreFromHistory(const AwhBiasHistory &biasHistory,
-                                const Grid           &grid);
+        gmx_int64_t restoreFromHistory(const AwhBiasHistory &biasHistory,
+                                       const Grid           &grid);
 
         /*! \brief
          * Broadcast the bias state over the MPI ranks in this simulation.
