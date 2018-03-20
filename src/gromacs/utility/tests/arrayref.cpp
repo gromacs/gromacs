@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -209,7 +209,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
     makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value,
                   std::vector<typename TestFixture::NonConstValueType> > v(a, a + aSize);
     typename TestFixture::ArrayRefType                                   arrayRef(v);
-    this->runTests(a, v.size(), v.data(), arrayRef);
+    this->runTests(a, aSize, v.data(), arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
@@ -217,7 +217,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
     DEFINE_ARRAY(a, aSize);
     std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
     typename TestFixture::ArrayRefType                   arrayRef(v);
-    this->runTests(a, v.size(), v.data(), arrayRef);
+    this->runTests(a, aSize, v.data(), arrayRef);
 }
 
 //! Helper struct for the case actually used in mdrun signalling

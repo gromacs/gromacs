@@ -199,7 +199,7 @@ static int find_next_match_res(int *rnr1, int isize1,
                                int *rnr2, int isize2,
                                const int index2[], t_resinfo *resinfo2)
 {
-    int      dx, dy, dmax, cmp, rr1, rr2;
+    int      dmax, cmp, rr1, rr2;
     gmx_bool bFW = FALSE, bFF = FALSE;
 
     rr1 = 0;
@@ -220,7 +220,8 @@ static int find_next_match_res(int *rnr1, int isize1,
         fprintf(debug, " R:%d-%d:%d-%d:%d ",
                 rr1, isize1, rr2, isize2, dmax);
     }
-    for (dx = 0; dx < dmax && cmp != 0; dx++)
+    int dx = 0, dy = 0;
+    for (; dx < dmax && cmp != 0; dx++)
     {
         for (dy = 0; dy <= dx && cmp != 0; dy++)
         {
