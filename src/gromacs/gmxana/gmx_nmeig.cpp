@@ -64,7 +64,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "entropy.h"
+#include "thermochemistry.h"
 
 static double cv_corr(double nu, double T)
 {
