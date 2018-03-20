@@ -67,7 +67,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "entropy.h"
+#include "thermochemistry.h"
 
 const char *proj_unit;
 

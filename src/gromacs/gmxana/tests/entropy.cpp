@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxana/entropy.h"
+#include "gromacs/gmxana/thermochemistry.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

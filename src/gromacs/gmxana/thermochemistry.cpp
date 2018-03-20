@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "entropy.h"
+#include "thermochemistry.h"
 
 #include <cmath>
 #include <cstdio>
