@@ -34,15 +34,77 @@
  */
 /*! \internal \file
  * \brief
- * Code for computing entropy from eigenvalues
+ * Code for computing entropy and heat capacity from eigenvalues
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GMXANA_ENTROPY_H
-#define GMXANA_ENTROPY_H
+#ifndef GMXANA_THERMOCHEMISTRY_H
+#define GMXANA_THERMOCHEMISTRY_H
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+
+/*! \brief Compute heat capacity due to vibrational motion
+ *
+ * \param[in] eigval       The eigenvalues
+ * \param[in] temperature  Temperature (K)
+ * \param[in] linear       TRUE if this is a linear molecule
+ * \param[in] scale_factor Factor to scale frequencies by before computing cv
+ * \return The heat capacity at constant volume
+ */
+double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
+                                   real                      temperature,
+                                   gmx_bool                  linear,
+                                   real                      scale_factor);
+
+/*! \brief Compute entropy due to translational motion
+ *
+ * Following the equations in J. W. Ochterski,
+ * Thermochemistry in Gaussian, Gaussian, Inc., 2000
+ * Pitssburg PA
+ *
+ * \param[in] mass         Molecular mass (Dalton)
+ * \param[in] temperature  Temperature (K)
+ * \param[in] pressure     Pressure (bar) at which to compute
+ * \returns The translational entropy
+ */
+double calcTranslationalEntropy(real mass,
+                                real temperature,
+                                real pressure);
+
+/*! \brief Compute entropy due to rotational motion
+ *
+ * Following the equations in J. W. Ochterski,
+ * Thermochemistry in Gaussian, Gaussian, Inc., 2000
+ * Pitssburg PA
+ *
+ * \param[in] temperature  Temperature (K)
+ * \param[in] natom        Number of atoms
+ * \param[in] linear       TRUE if this is a linear molecule
+ * \param[in] theta        The principal moments of inertia (unit of Energy)
+ * \param[in] sigma_r      Symmetry factor, should be >= 1
+ * \returns The rotational entropy
+ */
+double calcRotationalEntropy(real     temperature,
+                             int      natom,
+                             gmx_bool linear,
+                             rvec     theta,
+                             real     sigma_r);
+
+/*! \brief Compute internal energy due to vibrational motion
+ *
+ * \param[in] eigval       The eigenvalues
+ * \param[in] temperature  Temperature (K)
+ * \param[in] linear       TRUE if this is a linear molecule
+ * \param[in] scale_factor Factor to scale frequencies by before computing E
+ * \return The internal energy
+ */
+double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
+                                     real                      temperature,
+                                     gmx_bool                  linear,
+                                     real                      scale_factor);
 
 /*! \brief Compute entropy using Schlitter formula
  *
@@ -52,16 +114,14 @@
  * The input should be eigenvalues from a covariance analysis,
  * the units of the eigenvalues are those of energy.
  *
- * \param[in] n            Number of entries in the eigval array
  * \param[in] eigval       The eigenvalues
  * \param[in] temperature  Temperature (K)
  * \param[in] linear       True if this is a linear molecule (typically a diatomic molecule).
  * \return the entropy (J/mol K)
  */
-real calc_entropy_schlitter(int      n,
-                            real     eigval[],
-                            real     temperature,
-                            gmx_bool linear);
+double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval,
+                            real                      temperature,
+                            gmx_bool                  linear);
 
 /*! \brief Compute entropy using Quasi-Harmonic formula
  *
@@ -70,15 +130,15 @@ real calc_entropy_schlitter(int      n,
  * The input should be eigenvalues from a normal mode analysis.
  * In both cases the units of the eigenvalues are those of energy.
  *
- * \param[in] n            Number of entries in the eigval array
  * \param[in] eigval       The eigenvalues
  * \param[in] temperature  Temperature (K)
  * \param[in] linear       True if this is a linear molecule (typically a diatomic molecule).
+ * \param[in] scale_factor Factor to scale frequencies by before computing S0
  * \return the entropy (J/mol K)
  */
-real calc_entropy_quasi_harmonic(int      n,
-                                 real     eigval[],
-                                 real     temperature,
-                                 gmx_bool linear);
+double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval,
+                                real                      temperature,
+                                gmx_bool                  linear,
+                                real                      scale_factor);
 
 #endif
