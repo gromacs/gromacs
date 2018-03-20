@@ -215,7 +215,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
 #endif
 }
 
-void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *data)
+void dd_bcast(const gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *data)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)
@@ -226,7 +226,7 @@ void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unuse
 #endif
 }
 
-void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
+void dd_bcastc(const gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 {
     if (DDMASTER(dd) || dd->nnodes == 1)
     {
@@ -241,7 +241,7 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #endif
 }
 
-void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void *dest)
+void dd_scatter(const gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void *dest)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)
@@ -262,7 +262,7 @@ void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void g
     }
 }
 
-void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void gmx_unused *dest)
+void dd_gather(const gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void gmx_unused *dest)
 {
 #if GMX_MPI
     /* Some MPI implementions don't specify const */
@@ -272,7 +272,7 @@ void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gm
 #endif
 }
 
-void dd_scatterv(gmx_domdec_t gmx_unused *dd,
+void dd_scatterv(const gmx_domdec_t gmx_unused *dd,
                  int gmx_unused *scounts, int gmx_unused *disps, const void *sbuf,
                  int rcount, void *rbuf)
 {
@@ -302,7 +302,7 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
     }
 }
 
-void dd_gatherv(gmx_domdec_t gmx_unused *dd,
+void dd_gatherv(const gmx_domdec_t gmx_unused *dd,
                 int gmx_unused scount, const void gmx_unused *sbuf,
                 int gmx_unused *rcounts, int gmx_unused *disps, void gmx_unused *rbuf)
 {

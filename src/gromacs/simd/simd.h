@@ -519,17 +519,12 @@ loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
     return simdLoadU(m.data(), typename internal::SimdTraits<T>::tag());
 }
 
-class SimdSetZeroProxyInternal;
-
-static inline const SimdSetZeroProxyInternal gmx_simdcall
-setZero();
-
 /*! \libinternal \brief Proxy object to enable setZero() for SIMD and real types.
  *
  * This object is returned by setZero(), and depending on what type you assign
  * the result to the conversion method will call the right low-level function.
  */
-class SimdSetZeroProxyInternal
+class SimdSetZeroProxy
 {
     public:
         //!\brief Conversion method that returns 0.0 as float
@@ -558,24 +553,15 @@ class SimdSetZeroProxyInternal
         //!\brief Conversion method that will execute setZero() for Simd4Double
         operator Simd4Double() const { return simd4SetZeroD(); }
 #endif
-
-    private:
-        //! \brief Private constructor can only be called from setZero()
-        SimdSetZeroProxyInternal() {}
-
-        friend const SimdSetZeroProxyInternal gmx_simdcall
-        setZero();
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(SimdSetZeroProxyInternal);
 };
 
-/*! \brief Proxy object to set any SIMD or scalar variable to zero
+/*! \brief Helper function to set any SIMD or scalar variable to zero
  *
  * \return Proxy object that will call the actual function to set a SIMD/scalar
  *         variable to zero based on the conversion function called when you
  *         assign the result.
  */
-static inline const SimdSetZeroProxyInternal gmx_simdcall
+static inline const SimdSetZeroProxy gmx_simdcall
 setZero()
 {
     return {};
