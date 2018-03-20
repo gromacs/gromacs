@@ -892,7 +892,7 @@ static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *st
 
 
 /* Transfer what we need for parallelizing the reciprocal error estimate */
-static void bcast_info(t_inputinfo *info, t_commrec *cr)
+static void bcast_info(t_inputinfo *info, const t_commrec *cr)
 {
     nblock_bc(cr, info->n_entries, info->nkx);
     nblock_bc(cr, info->n_entries, info->nky);
@@ -1089,7 +1089,6 @@ int gmx_pme_error(int argc, char *argv[])
     t_inputinfo     info;
     t_state         state;        /* The state from the tpr input file */
     gmx_mtop_t      mtop;         /* The topology from the tpr input file */
-    t_inputrec     *ir = nullptr; /* The inputrec from the tpr file */
     FILE           *fp = nullptr;
     t_commrec      *cr;
     unsigned long   PCA_Flags;
@@ -1144,10 +1143,10 @@ int gmx_pme_error(int argc, char *argv[])
     create_info(&info);
     info.fourier_sp[0] = fs;
 
+    t_inputrec ir;
     if (MASTER(cr))
     {
-        ir = new t_inputrec();
-        read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
+        read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, &ir, user_beta, fracself);
         /* Open logfile for reading */
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");
 
@@ -1167,10 +1166,10 @@ int gmx_pme_error(int argc, char *argv[])
         info.nkz[0] = 0;
         calcFftGrid(stdout, state.box, info.fourier_sp[0], minimalPmeGridSize(info.pme_order[0]),
                     &(info.nkx[0]), &(info.nky[0]), &(info.nkz[0]));
-        if ( (ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]) )
+        if ( (ir.nkx != info.nkx[0]) || (ir.nky != info.nky[0]) || (ir.nkz != info.nkz[0]) )
         {
             gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d",
-                      fs, ir->nkx, ir->nky, ir->nkz, info.nkx[0], info.nky[0], info.nkz[0]);
+                      fs, ir.nkx, ir.nky, ir.nkz, info.nkx[0], info.nky[0], info.nkz[0]);
         }
     }
 
@@ -1189,8 +1188,8 @@ int gmx_pme_error(int argc, char *argv[])
         /* Write out optimized tpr file if requested */
         if (opt2bSet("-so", NFILE, fnm) || bTUNE)
         {
-            ir->ewald_rtol = info.ewald_rtol[0];
-            write_tpx_state(opt2fn("-so", NFILE, fnm), ir, &state, &mtop);
+            ir.ewald_rtol = info.ewald_rtol[0];
+            write_tpx_state(opt2fn("-so", NFILE, fnm), &ir, &state, &mtop);
         }
         please_cite(fp, "Wang2010");
         fclose(fp);

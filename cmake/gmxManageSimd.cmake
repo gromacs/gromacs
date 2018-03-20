@@ -381,10 +381,18 @@ if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
 int ${callconv} f(int i) {return i;} int main(void) {return f(0);}
 " ${callconv_compile_var})
         if(${callconv_compile_var})
-            set(GMX_SIMD_CALLING_CONVENTION "${callconv}" CACHE INTERNAL "Calling convention for SIMD routines" FORCE)
+            set(GMX_SIMD_CALLING_CONVENTION_VALUE "${callconv}" CACHE INTERNAL "Calling convention for SIMD routines" FORCE)
             break()
         endif()
     endforeach()
+    # If the build is not using SIMD, then we should not manage the
+    # calling convention. Doing so seems to confuse
+    # clang-static-analyzer in at least version 6.0.
+    if(GMX_SIMD_ACTIVE STREQUAL "NONE")
+        set(GMX_SIMD_CALLING_CONVENTION " ")
+    else()
+        set(GMX_SIMD_CALLING_CONVENTION ${GMX_SIMD_CALLING_CONVENTION_VALUE})
+    endif()
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
