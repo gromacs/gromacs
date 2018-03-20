@@ -32,9 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# These options need to match Jenkins labels on the slave where the
-# analysis is intended to run.
-build_options = ['clang-4', 'clang-static-analyzer-4']
+# These options need to match capabilities in releng/slaves.py for
+# the slave where the analysis is intended to run.
+build_options = ['clang-6', 'clang-static-analyzer-6']
 
 def do_build(context):
     cmake_opts = {
