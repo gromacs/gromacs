@@ -40,60 +40,166 @@
 #include <cstdio>
 
 #include "gromacs/math/units.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
-static real eigval_to_frequency(real eigval)
+static double eigval_to_frequency(double eigval)
 {
     double factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
     return std::sqrt(eigval*factor_gmx_to_omega2);
 }
 
-real calc_entropy_quasi_harmonic(int      n,
-                                 real     eigval[],
-                                 real     temperature,
-                                 gmx_bool bLinear)
+double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
+                                     real                      temperature,
+                                     gmx_bool                  linear,
+                                     real                      scale_factor)
 {
-    int    nskip = bLinear ? 5 : 6;
-    double S     = 0;
+    size_t nskip = linear ? 5 : 6;
+    double Evib  = 0;
     double hbar  = PLANCK1/(2*M_PI);
-    for (int i = nskip; (i < n); i++)
+    for (size_t i = nskip; i < eigval.size(); i++)
     {
         if (eigval[i] > 0)
         {
-            double omega  = eigval_to_frequency(eigval[i]);
+            double omega = scale_factor*eigval_to_frequency(eigval[i]);
+            double hwkT  = (hbar*omega)/(BOLTZMANN*temperature);
+            if (hwkT < 100)
+            {
+                double dEvib = hwkT*(0.5 + 1.0/(std::expm1(hwkT)));
+                if (debug)
+                {
+                    fprintf(debug, "i %d eigval %g omega %g hwkT %g dEvib %g\n",
+                            static_cast<int>(i+1), eigval[i], omega, hwkT, dEvib);
+                }
+                Evib += dEvib;
+            }
+        }
+    }
+    return temperature*BOLTZ*Evib;
+
+}
+
+double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
+                                   real                      temperature,
+                                   gmx_bool                  linear,
+                                   real                      scale_factor)
+{
+    size_t nskip = linear ? 5 : 6;
+    double cv    = 0;
+    double hbar  = PLANCK1/(2*M_PI);
+    for (size_t i = nskip; i < eigval.size(); i++)
+    {
+        if (eigval[i] > 0)
+        {
+            double omega = scale_factor*eigval_to_frequency(eigval[i]);
+            double hwkT  = (hbar*omega)/(BOLTZMANN*temperature);
+            if (hwkT < 100)
+            {
+                double dcv   = std::exp(hwkT)*gmx::square(hwkT/std::expm1(hwkT));
+                if (debug)
+                {
+                    fprintf(debug, "i %d eigval %g omega %g hwkT %g dcv %g\n",
+                            static_cast<int>(i+1), eigval[i], omega, hwkT, dcv);
+                }
+                cv += dcv;
+            }
+        }
+    }
+    return RGAS * cv;
+}
+
+real calcTranslationalEntropy(real mass,
+                              real temperature,
+                              real pressure)
+{
+    double kT = BOLTZ*temperature;
+
+    GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
+    GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
+    GMX_RELEASE_ASSERT(temperature > 0, "Temperature should be larger than zero");
+    // Convert bar to Pascal
+    double P  = pressure*1e5;
+    double qT = (std::pow(2*M_PI*mass*kT/gmx::square(PLANCK), 1.5) *
+                 (kT/P) * (1e30/AVOGADRO));
+    return RGAS*(std::log(qT) + 2.5);
+}
+
+real calcRotationalEntropy(real     temperature,
+                           int      natom,
+                           gmx_bool linear,
+                           rvec     theta,
+                           real     sigma_r)
+{
+    GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
+    GMX_RELEASE_ASSERT(temperature > 0, "Temperature should be larger than zero");
+
+    double sR = 0;
+    if (natom > 1)
+    {
+        if (linear)
+        {
+            GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
+            double qR = temperature/(sigma_r * theta[0]);
+            sR        = RGAS * (std::log(qR) + 1);
+        }
+        else
+        {
+            double Q  = theta[XX]*theta[YY]*theta[ZZ];
+            GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
+            double qR = std::sqrt(M_PI * std::pow(temperature, 3)/Q)/sigma_r;
+            sR        = RGAS * (std::log(qR) + 1.5);
+        }
+    }
+    return sR;
+}
+
+double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval,
+                                real                      temperature,
+                                gmx_bool                  bLinear,
+                                real                      scale_factor)
+{
+    size_t nskip = bLinear ? 5 : 6;
+    double S     = 0;
+    double hbar  = PLANCK1/(2*M_PI);
+    for (size_t i = nskip; (i < eigval.size()); i++)
+    {
+        if (eigval[i] > 0)
+        {
+            double omega  = scale_factor*eigval_to_frequency(eigval[i]);
             double hwkT   = (hbar*omega)/(BOLTZMANN*temperature);
             double dS     = (hwkT/std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
             S            += dS;
             if (debug)
             {
                 fprintf(debug, "i = %5d eigval = %10g w = %10g hwkT = %10g dS = %10g\n",
-                        i, eigval[i], omega, hwkT, dS);
+                        static_cast<int>(i+1), eigval[i], omega, hwkT, dS);
             }
         }
         else
         {
-            fprintf(stderr, "eigval[%d] = %g\n", i, eigval[i]);
+            fprintf(stderr, "eigval[%d] = %g\n", static_cast<int>(i+1), eigval[i]);
         }
     }
     return S*RGAS;
 }
 
-real calc_entropy_schlitter(int      n,
-                            real     eigval[],
-                            real     temperature,
-                            gmx_bool bLinear)
+double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval,
+                            real                      temperature,
+                            gmx_bool                  bLinear)
 {
-    int    nskip  = bLinear ? 5 : 6;
+    size_t nskip  = bLinear ? 5 : 6;
     double hbar   = PLANCK1/(2*M_PI);             // J s
     double kt     = BOLTZMANN*temperature;        // J
     double kteh   = kt*std::exp(2.0)/(hbar*hbar); // 1/(J s^2) = 1/(kg m^2)
     double evcorr = NANO*NANO*AMU;
     if (debug)
     {
-        fprintf(debug, "n = %d, kteh = %g evcorr = %g\n", n, kteh, evcorr);
+        fprintf(debug, "n = %d, kteh = %g evcorr = %g\n",
+                static_cast<int>(eigval.size()), kteh, evcorr);
     }
     double deter = 0;
-    for (int i = nskip; (i < n); i++)
+    for (size_t i = nskip; i < eigval.size(); i++)
     {
         double dd    = 1+kteh*eigval[i]*evcorr;
         deter       += std::log(dd);

@@ -49,11 +49,13 @@
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/princ.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -280,6 +282,136 @@ static real *allocateEigenvectors(int nrow, int first, int last,
     return eigenvectors;
 }
 
+/*! \brief Compute heat capacity due to translational motion
+ */
+static double calcTranslationalHeatCapacity()
+{
+    return RGAS*1.5;
+}
+
+/*! \brief Compute internal energy due to translational motion
+ */
+static double calcTranslationalInternalEnergy(double T)
+{
+    return BOLTZ*T*1.5;
+}
+
+/*! \brief Compute heat capacity due to rotational motion
+ *
+ * \param[in] linear Should be TRUE if this is a linear molecule
+ * \return The heat capacity at constant volume
+ */
+static double calcRotationalInternalEnergy(gmx_bool linear, double T)
+{
+    if (linear)
+    {
+        return BOLTZ*T;
+    }
+    else
+    {
+        return BOLTZ*T*1.5;
+    }
+}
+
+/*! \brief Compute heat capacity due to rotational motion
+ *
+ * \param[in] linear Should be TRUE if this is a linear molecule
+ * \return The heat capacity at constant volume
+ */
+static double calcRotationalHeatCapacity(gmx_bool linear)
+{
+    if (linear)
+    {
+        return RGAS;
+    }
+    else
+    {
+        return RGAS*1.5;
+    }
+}
+
+static void analyze_thermochemistry(FILE                      *fp,
+                                    const t_topology          &top,
+                                    rvec                       top_x[],
+                                    const std::vector<size_t> &atom_index,
+                                    real                       eigfreq[],
+                                    real                       T,
+                                    real                       P,
+                                    int                        sigma_r,
+                                    real                       scale_factor)
+{
+    std::vector<int> index;
+    for (auto &ai : atom_index)
+    {
+        index.push_back(static_cast<int>(ai));
+    }
+
+    rvec                   xcm;
+    double                 tmass = calc_xcm(top_x, index.size(),
+                                            index.data(), top.atoms.atom, xcm, FALSE);
+    double                 Strans = calcTranslationalEntropy(tmass, T, P);
+    std::vector<gmx::RVec> x_com;
+    x_com.resize(top.atoms.nr);
+    for (int i = 0; i < top.atoms.nr; i++)
+    {
+        copy_rvec(top_x[i], x_com[i]);
+    }
+    (void) sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(),
+                   top.atoms.atom, xcm, FALSE);
+
+    rvec   inertia;
+    matrix trans;
+    principal_comp(index.size(), index.data(), top.atoms.atom,
+                   as_rvec_array(x_com.data()), trans, inertia);
+    real   linear_toler = 1e-5;
+    bool   linear       = (inertia[XX]/inertia[YY] < linear_toler &&
+                           inertia[XX]/inertia[ZZ] < linear_toler);
+    // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
+    // KILO kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
+    // KILO^2 10^18 / 10^24 K = 1/K
+    double rot_const = gmx::square(PLANCK)/(8*gmx::square(M_PI)*BOLTZ);
+    // Rotational temperature (1/K)
+    rvec   theta = { 0, 0, 0 };
+    if (linear)
+    {
+        // For linear molecules the first element of the inertia
+        // vector is zero.
+        theta[0] = rot_const/inertia[1];
+    }
+    else
+    {
+        for (int m = 0; m < DIM; m++)
+        {
+            theta[m] = rot_const/inertia[m];
+        }
+    }
+    if (debug)
+    {
+        pr_rvec(debug, 0, "inertia", inertia, DIM, TRUE);
+        pr_rvec(debug, 0, "theta", theta, DIM, TRUE);
+        pr_rvecs(debug, 0, "trans", trans, DIM);
+        fprintf(debug, "linear molecule = %s\n", linear ? "true" : "no");
+    }
+    size_t nFreq  = index.size()*DIM;
+    auto   eFreq  = gmx::arrayRefFromArray(eigfreq, nFreq);
+    double Svib   = calcQuasiHarmonicEntropy(eFreq, T, linear, scale_factor);
+
+    double Srot   = calcRotationalEntropy(T, top.atoms.nr,
+                                          linear, theta, sigma_r);
+    fprintf(fp, "Translational entropy %g J/mol K\n", Strans);
+    fprintf(fp, "Rotational entropy    %g J/mol K\n", Srot);
+    fprintf(fp, "Vibrational entropy   %g J/mol K\n", Svib);
+    fprintf(fp, "Total entropy         %g J/mol K\n", Svib+Strans+Srot);
+    double cv     = (calcTranslationalHeatCapacity() +
+                     calcRotationalHeatCapacity(linear) +
+                     calcVibrationalHeatCapacity(eFreq, T, linear, scale_factor));
+    fprintf(fp, "Heat capacity         %g J/mol K\n", cv);
+    double Evib   = (calcTranslationalInternalEnergy(T) +
+                     calcRotationalInternalEnergy(linear, T) +
+                     calcVibrationalInternalEnergy(eFreq, T, linear, scale_factor));
+    fprintf(fp, "Internal energy       %g kJ/mol\n", Evib);
+}
+
 
 int gmx_nmeig(int argc, char *argv[])
 {
@@ -308,32 +440,38 @@ int gmx_nmeig(int argc, char *argv[])
         "you need to analyze the [TT]quant_corr.xvg[tt] file yourself.[PAR]",
         "To make things more flexible, the program can also take virtual sites into account",
         "when computing quantum corrections. When selecting [TT]-constr[tt] and",
-        "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.",
-        "Again, if you think you know it better, please check the [TT]eigenfreq.xvg[tt]",
-        "output."
+        "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.[PAR]",
+        "Based on a harmonic analysis of the normal mode frequencies,",
+        "thermochemical properties S0, Cv and the internal energy can be",
+        "computed, much in the same manner as popular quantum chemistry",
+        "programs."
     };
 
-    static gmx_bool        bM    = TRUE, bCons = FALSE, bLinear = FALSE;
-    static int             begin = 1, end = 50, maxspec = 4000;
-    static real            T     = 298.15, width = 1;
+    static gmx_bool        bM    = TRUE, bCons = FALSE;
+    static int             begin = 1, end = 50, maxspec = 4000, sigma_r = 1;
+    static real            T     = 298.15, width = 1, P = 1, scale_factor = 1;
     t_pargs                pa[]  =
     {
         { "-m",  FALSE, etBOOL, {&bM},
           "Divide elements of Hessian by product of sqrt(mass) of involved "
           "atoms prior to diagonalization. This should be used for 'Normal Modes' "
           "analysis" },
-        { "-linear",  FALSE, etBOOL, {&bLinear},
-          "This should be set in order to get correct entropies for linear molecules" },
         { "-first", FALSE, etINT, {&begin},
           "First eigenvector to write away" },
         { "-last",  FALSE, etINT, {&end},
-          "Last eigenvector to write away. -1 (default) is use all dimensions." },
+          "Last eigenvector to write away. -1 is use all dimensions." },
         { "-maxspec", FALSE, etINT, {&maxspec},
           "Highest frequency (1/cm) to consider in the spectrum" },
         { "-T",     FALSE, etREAL, {&T},
-          "Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
+          "Temperature for computing entropy, quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
+        { "-P",     FALSE, etREAL, {&P},
+          "Pressure (bar) when computing entropy" },
+        { "-sigma", FALSE, etINT, {&sigma_r},
+          "Intramolecular symmetry number used when computing entropy" },
+        { "-scale", FALSE, etREAL, {&scale_factor},
+          "Factor to scale frequencies before computing thermochemistry values" },
         { "-constr", FALSE, etBOOL, {&bCons},
-          "If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections." },
+          "If constraints were used in the simulation but not in the normal mode analysis you will need to set this for computing the quantum corrections." },
         { "-width",  FALSE, etREAL, {&width},
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
@@ -640,15 +778,13 @@ int gmx_nmeig(int argc, char *argv[])
 
     if (begin == 1)
     {
-        printf("The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
-               calc_entropy_quasi_harmonic(DIM*atom_index.size(),
-                                           eigenvalues, T, bLinear));
+        analyze_thermochemistry(stdout, top, top_x, atom_index, eigenvalues,
+                                T, P, sigma_r, scale_factor);
     }
     else
     {
         printf("Cannot compute entropy when -first = %d\n", begin);
     }
-
 
     return 0;
 }

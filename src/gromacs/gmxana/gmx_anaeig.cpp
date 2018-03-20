@@ -1144,7 +1144,8 @@ int gmx_anaeig(int argc, char *argv[])
             gmx_fatal(FARGS, "Can not calculate entropies from mass-weighted eigenvalues, redo the analysis without mass-weighting");
         }
         printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
-               calc_entropy_schlitter(neig1, eigval1, temp, FALSE));
+               calcSchlitterEntropy(gmx::arrayRefFromArray(eigval1, neig1),
+                                    temp, FALSE));
     }
 
     if (bVec2)
