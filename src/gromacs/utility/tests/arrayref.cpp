@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,12 +118,11 @@ class ArrayRefTest : public ::testing::Test
          * type-parameterized tests actually work. */
         void runTests(ValueType     *a,
                       size_t         aSize,
-                      ValueType     *aData,
                       ArrayRefType  &arrayRef)
         {
             ASSERT_EQ(aSize, arrayRef.size());
             ASSERT_FALSE(arrayRef.empty());
-            EXPECT_EQ(aData, arrayRef.data());
+            EXPECT_EQ(a, arrayRef.data());
             EXPECT_EQ(a[0], arrayRef.front());
             EXPECT_EQ(a[aSize-1], arrayRef.back());
             for (size_t i = 0; i != aSize; ++i)
@@ -162,42 +161,42 @@ TYPED_TEST(ArrayRefTest, MakeWithAssignmentWorks)
 {
     DEFINE_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef = a;
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, MakeWithNonConstAssignmentWorks)
 {
     DEFINE_NON_CONST_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef = a;
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructWithTemplateConstructorWorks)
 {
     DEFINE_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef(a);
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructWithNonConstTemplateConstructorWorks)
 {
     DEFINE_NON_CONST_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef(a);
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
 {
     DEFINE_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef(a, a + aSize);
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromNonConstPointersWorks)
 {
     DEFINE_NON_CONST_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef(a, a + aSize);
-    this->runTests(a, aSize, a, arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 template<bool c, typename T>
@@ -209,7 +208,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
     makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value,
                   std::vector<typename TestFixture::NonConstValueType> > v(a, a + aSize);
     typename TestFixture::ArrayRefType                                   arrayRef(v);
-    this->runTests(a, v.size(), v.data(), arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
@@ -217,7 +216,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
     DEFINE_ARRAY(a, aSize);
     std::vector<typename TestFixture::NonConstValueType> v(a, a + aSize);
     typename TestFixture::ArrayRefType                   arrayRef(v);
-    this->runTests(a, v.size(), v.data(), arrayRef);
+    this->runTests(a, aSize, arrayRef);
 }
 
 //! Helper struct for the case actually used in mdrun signalling
@@ -248,7 +247,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
         h.a[i] = a[i];
     }
     typename TestFixture::ArrayRefType arrayRef(h.a);
-    this->runTests(h.a, h.size, h.a, arrayRef);
+    this->runTests(h.a, h.size, arrayRef);
 }
 
 #else   // GTEST_HAS_TYPED_TEST
