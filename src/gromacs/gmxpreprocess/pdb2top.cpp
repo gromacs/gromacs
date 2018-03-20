@@ -505,7 +505,7 @@ static int name2type(t_atoms *at, int **cgnr,
             if (debug)
             {
                 fprintf(debug, "atom %d%s: curcg=%d, qt=%g, is_int=%d\n",
-                        i+1, *(at->atomname[i]), curcg, qt, is_int(qt));
+                        i+1, *(at->atomname[i]), curcg, qt, int{is_int(qt)});
             }
             cg = -1;
             if (is_int(qt))

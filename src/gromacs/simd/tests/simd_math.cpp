@@ -122,9 +122,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
     std::int64_t                 ulpDiff, maxUlpDiff;
     real                         maxUlpDiffPos;
     real                         refValMaxUlpDiff, simdValMaxUlpDiff;
-    bool                         absOk, signOk;
-    int                          i, iter;
-    int                          niter   = s_nPoints/GMX_SIMD_REAL_WIDTH;
+    const int                    niter   = s_nPoints/GMX_SIMD_REAL_WIDTH;
     int                          npoints = niter*GMX_SIMD_REAL_WIDTH;
 #    if GMX_DOUBLE
     union {
@@ -139,16 +137,17 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
     maxUlpDiff = 0;
     dx         = (range_.second-range_.first)/npoints;
 
-    for (iter = 0; iter < niter; iter++)
+    for (int iter = 0; iter < niter; iter++)
     {
-        for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+        for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
             vx[i]   = range_.first+dx*(iter*GMX_SIMD_REAL_WIDTH+i);
             vref[i] = refFunc(vx[i]);
         }
         vtst  = simdReal2Vector(simdFunc(vector2SimdReal(vx)));
 
-        for (i = 0, signOk = true, absOk = true; i < GMX_SIMD_REAL_WIDTH; i++)
+        bool absOk = true, signOk = true;
+        for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
             if (denormalsToZero)
             {
@@ -200,7 +199,7 @@ SimdMathTest::compareSimdMathFunction(const char              * refFuncExpr,
                    << "SIMD values: " << std::setprecision(20) << ::testing::PrintToString(vtst) << std::endl;
         }
     }
-
+    GMX_RELEASE_ASSERT(ulpTol_ >= 0, "Invalid ulp value.");
     if (maxUlpDiff <= ulpTol_)
     {
         return ::testing::AssertionSuccess();
