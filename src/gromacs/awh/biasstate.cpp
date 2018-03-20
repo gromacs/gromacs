@@ -1344,8 +1344,8 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
                                                                       endUpdatelist_);
 }
 
-void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
-                                   const Grid           &grid)
+gmx_int64_t BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
+                                          const Grid           &grid)
 {
     const AwhBiasStateHistory &stateHistory = biasHistory.state;
 
@@ -1355,8 +1355,11 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
     {
         GMX_THROW(InvalidInputError("Bias grid size in checkpoint and simulation do not match. Likely you provided a checkpoint from a different simulation."));
     }
+    double visitSum = 0;
     for (size_t m = 0; m < points_.size(); m++)
     {
+        visitSum += biasHistory.pointState[m].visits_tot;
+
         points_[m].setFromHistory(biasHistory.pointState[m]);
     }
 
@@ -1369,6 +1372,8 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
 
     linearGridindexToMultiDim(grid, stateHistory.origin_index_updatelist, originUpdatelist_);
     linearGridindexToMultiDim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
+
+    return static_cast<gmx_int64_t>(visitSum + 0.5);
 }
 
 void BiasState::broadcast(const t_commrec *commRecord)

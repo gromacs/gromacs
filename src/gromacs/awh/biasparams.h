@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -192,7 +192,9 @@ class BiasParams
         const double      invBeta;                     /**< 1/beta = kT in kJ/mol */
     private:
         const gmx_int64_t numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+    public:
         const int         numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
+    private:
         const gmx_int64_t numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
     public:
         const int         eTarget;                     /**< Type of target distribution. */
