@@ -214,7 +214,9 @@ class BiasParams
         const double      invBeta;                     /**< 1/beta = kT in kJ/mol */
     private:
         const gmx_int64_t numStepsSampleCoord_;        /**< Number of steps per coordinate value sample. */
+    public:
         const int         numSamplesUpdateFreeEnergy_; /**< Number of samples per free energy update. */
+    private:
         const gmx_int64_t numStepsUpdateTarget_;       /**< Number of steps per updating the target distribution. */
         const gmx_int64_t numStepsCheckCovering_;      /**< Number of steps per checking for covering. */
     public:
