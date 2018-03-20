@@ -35,7 +35,7 @@ clang-3.4 npme=1 nranks=2 mpi no-openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test SSE2 SIMD
-gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
+gcc-4.8 gpu npme=1 nranks=2 gpu_id=1 cuda-7.5 simd=sse2 release
 
 # Test oldest supported icc on Windows
 # Test newest supported icc on Windows
