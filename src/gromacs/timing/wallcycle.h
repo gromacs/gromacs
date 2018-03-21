@@ -43,10 +43,10 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "cyclecounter.h"
+#include "gromacs/utility/gmxmpi.h"
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct t_commrec;
-const gmx_wallcycle_t nullWallcycle = nullptr;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -80,6 +80,39 @@ enum {
     ewcsNB_F_BUF_OPS,
     ewcsNR
 };
+
+typedef struct
+{
+    int          n;
+    gmx_cycles_t c;
+    gmx_cycles_t start;
+} wallcc_t;
+
+struct gmx_wallcycle
+{
+    wallcc_t        *wcc;
+    /* did we detect one or more invalid cycle counts */
+    gmx_bool         haveInvalidCount;
+    /* variables for testing/debugging */
+    gmx_bool         wc_barrier;
+    wallcc_t        *wcc_all;
+    int              wc_depth;
+#ifdef DEBUG_WCYCLE
+    #define DEPTH_MAX 6
+    int               counterlist[DEPTH_MAX];
+    int               count_depth;
+#endif
+    int               ewc_prev;
+    gmx_cycles_t      cycle_prev;
+    gmx_int64_t       reset_counters;
+#if GMX_MPI
+    MPI_Comm          mpi_comm_mygroup;
+#endif
+    wallcc_t         *wcsc;
+} /*gmx_wallcycle_t_t*/;
+
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
+const gmx_wallcycle_t nullWallcycle = nullptr;
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
