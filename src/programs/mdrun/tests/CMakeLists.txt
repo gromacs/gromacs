@@ -40,7 +40,7 @@ add_library(mdrun_test_objlib OBJECT
     terminationhelper.cpp
     # PME tests
     pmetest.cpp
-    )
+        ../../../gromacs/mdtypes/forceschedule.h)
 
 set(testname "MdrunTests")
 set(exename "mdrun-test")

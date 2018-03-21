@@ -46,12 +46,10 @@
 #include <vector>
 
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -67,36 +65,6 @@ static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 #ifdef DEBUG_WCYCLE
 #include "gromacs/utility/fatalerror.h"
 #endif
-
-typedef struct
-{
-    int          n;
-    gmx_cycles_t c;
-    gmx_cycles_t start;
-} wallcc_t;
-
-struct gmx_wallcycle
-{
-    wallcc_t        *wcc;
-    /* did we detect one or more invalid cycle counts */
-    gmx_bool         haveInvalidCount;
-    /* variables for testing/debugging */
-    gmx_bool         wc_barrier;
-    wallcc_t        *wcc_all;
-    int              wc_depth;
-#ifdef DEBUG_WCYCLE
-#define DEPTH_MAX 6
-    int               counterlist[DEPTH_MAX];
-    int               count_depth;
-#endif
-    int               ewc_prev;
-    gmx_cycles_t      cycle_prev;
-    gmx_int64_t       reset_counters;
-#if GMX_MPI
-    MPI_Comm          mpi_comm_mygroup;
-#endif
-    wallcc_t         *wcsc;
-} gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */

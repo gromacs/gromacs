@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(LIBGROMACS_SOURCES)
+set(LIBGROMACS_SOURCES mdtypes/forceschedule.h mdtypes/forceschedule.cpp)
 
 if (GMX_CLANG_CUDA)
     include(gmxClangCudaUtils)

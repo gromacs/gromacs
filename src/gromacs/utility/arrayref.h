@@ -316,22 +316,6 @@ void swap(ArrayRef<T> &a, ArrayRef<T> &b)
     a.swap(b);
 }
 
-/*! \brief Return a vector that is a copy of an ArrayRef.
- *
- * This makes it convenient, clear, and performant (the compiler will
- * either do RVO to elide the temporary, or invoke the move constructor
- * taking the unnamed temporary) to write a declaration like
- *
- *   auto v = copyOf(arrayRef);
- *
- * \ingroup module_utility
- */
-template <typename T>
-std::vector<T> copyOf(const ArrayRef<const T> &arrayRef)
-{
-    return std::vector<T>(arrayRef.begin(), arrayRef.end());
-}
-
 } // namespace gmx
 
 #endif
