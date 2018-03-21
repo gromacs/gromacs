@@ -107,24 +107,44 @@ static inline SimdDouble gmx_simdcall
 simdLoad(const double *m, SimdDoubleTag = {})
 {
     return {
+#if defined(__ibmxl__)
+               vec_ld(0, m)
+#else
+#  if __GNUC__ < 7
                *reinterpret_cast<const __vector double *>(m)
+#  else
+               vec_vsx_ld(0, m)
+#  endif
+#endif
     };
 }
 
 static inline void gmx_simdcall
 store(double *m, SimdDouble a)
 {
+#if defined(__ibmxl__)
+    vec_st(a.simdInternal_, 0, m);
+#else
+#  if __GNUC__ < 7
     *reinterpret_cast<__vector double *>(m) = a.simdInternal_;
+#  else
+    vec_vsx_st(a.simdInternal_, 0, m);
+#  endif
+#endif
 }
 
 static inline SimdDouble gmx_simdcall
 simdLoadU(const double *m, SimdDoubleTag = {})
 {
     return {
-#if __GNUC__ < 7
-               *reinterpret_cast<const __vector double *>(m)
-#else
+#if defined(__ibmxl__)
                vec_xl(0, m)
+#else
+#  if __GNUC__ < 7
+               *reinterpret_cast<const __vector double *>(m)
+#  else
+               vec_vsx_ld(0, m)
+#  endif
 #endif
     };
 }
@@ -132,10 +152,14 @@ simdLoadU(const double *m, SimdDoubleTag = {})
 static inline void gmx_simdcall
 storeU(double *m, SimdDouble a)
 {
-#if __GNUC__ < 7
-    *reinterpret_cast<__vector double *>(m) = a.simdInternal_;
-#else
+#if defined(__ibmxl__)
     vec_xst(a.simdInternal_, 0, m);
+#else
+#  if __GNUC__ < 7
+    *reinterpret_cast<__vector double *>(m) = a.simdInternal_;
+#  else
+    vec_vsx_st(a.simdInternal_, 0, m);
+#  endif
 #endif
 }
 
