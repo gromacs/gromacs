@@ -960,6 +960,22 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
         }
     }
 
+    // #TODO: Looks like a place to initialize the Schedule object and introduce selection of the right schedule.
+#ifdef SCHEDULERPATH
+
+    AbstractNBSchedule     nbSchedule;
+
+    MDLoopSharedPrimitives sp(&step, &t, &bBornRadii, &ddOpenBalanceRegion, &ddCloseBalanceRegion);
+
+    // Call a selector function to automatically pick a schedule based on execution context in the future
+
+    nbSchedule = *(new defaultNBSchedule());
+
+    nbSchedule.init(fplog, cr, ir, nrnb, wcycle, top, groups, state, &f,
+                    &force_vir, mdatoms, enerd, fcd, graph, fr, vsite, &mu_tot, ed, &sp);
+
+#endif SCHEDULERPATH
+
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -1224,6 +1240,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
                 ir->awh->updateHistory(state_global->awhHistory.get());
             }
 
+#ifdef SCHEDULERPATH
+
+
+            nbSchedule.computeNextStep((bNS ? GMX_FORCE_NS : 0) | force_flags);
+
+#elseif
+
             /* The coordinates (x) are shifted (to get whole molecules)
              * in do_force.
              * This is parallellized as well, and does communication too.
@@ -1236,6 +1259,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
                      fr, vsite, mu_tot, t, ed,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
+
+#endif SCHEDULERPATH
+
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)

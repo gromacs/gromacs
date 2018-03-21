@@ -116,6 +116,8 @@
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
+#include "gromacs/mdtypes/forceschedule.h"
+
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
@@ -2040,6 +2042,38 @@ static void do_force_cutsGROUP(FILE *fplog, const t_commrec *cr,
         }
     }
 
+}
+
+void gmx::DefaultNBSchedule::computeStep(int flags)
+
+{
+    GMX_ASSERT(state_->x.size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "coordinates should be padded");
+    GMX_ASSERT(force_->size() >= gmx::paddedRVecVectorSize(fr_->natoms_force), "force should be padded");
+
+    do_force_cutsVERLET(log_, cr_, ms_, inputrec_,
+                        *(sp_->step_), nrnb_, wcycle_,
+                        top_, groups_,
+                        state_->box, state_->x, &(state_->hist),
+                        *force_, *vir_force_,
+                        mdatoms_, enerd_, fcd_,
+                        state_->lambda.data(), graph_,
+                        fr_, fr_->ic, vsite_, *mu_tot_,
+                        *(sp_->t_), ed_,
+                        flags,
+                        *(sp_->ddOpenBalanceRegion_),
+                        *(sp_->ddCloseBalanceRegion_));
+
+    /* In case we don't have constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
+     * virial calculation and COM pulling, is not thus not included in
+     * the balance timing, which is ok as most tasks do communication.
+     */
+
+    if (*(sp_->ddOpenBalanceRegion_) == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        ddOpenBalanceRegionCpu(cr_->dd, DdAllowBalanceRegionReopen::no);
+    }
 }
 
 void do_force(FILE *fplog, const t_commrec *cr,
