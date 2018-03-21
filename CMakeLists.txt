@@ -103,12 +103,12 @@ set(INSTALLED_HEADER_DEFINITIONS "")
 # linking. They should be appended to with list(APPEND ${name}
 # new-library) calls. They are:
 #  - Libraries that are required for libgromacs (only)
-set(GMX_EXTRA_LIBRARIES "")
+set(GMX_EXTRA_LIBRARIES "${GMX_EXTRA_LIBRARIES}")
 #  - Libraries that are required for all code in the repository
-set(GMX_COMMON_LIBRARIES "")
+set(GMX_COMMON_LIBRARIES "${GMX_COMMON_LIBRARIES}")
 #  - Libraries that all code linked against libgromacs needs
 #    (i.e., something that is exposed in installed headers).
-set(GMX_PUBLIC_LIBRARIES "")
+set(GMX_PUBLIC_LIBRARIES "${GMX_PUBLIC_LIBRARIES}")
 
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
