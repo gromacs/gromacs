@@ -29,6 +29,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2018/2018.2
    2018/2018.1
 
 Major release
