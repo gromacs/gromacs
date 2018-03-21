@@ -56,6 +56,7 @@
  *
  * The main type is defined only in edsam.cpp
  */
+
 typedef struct gmx_edsam *gmx_edsam_t;
 
 struct gmx_domdec_t;
