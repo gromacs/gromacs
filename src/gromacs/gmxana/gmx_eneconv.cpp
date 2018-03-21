@@ -510,7 +510,8 @@ int gmx_eneconv(int argc, char *argv[])
     lastfilestep = 0;
     laststep     = 0;
 
-    auto files = gmx::copyOf(opt2fns("-f", NFILE, fnm));
+    gmx::ArrayRef<const std::string> filesOrig = opt2fns("-f", NFILE, fnm);
+    std::vector<std::string>         files(filesOrig.begin(), filesOrig.end());
 
     if (files.empty())
     {

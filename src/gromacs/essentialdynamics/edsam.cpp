@@ -186,7 +186,7 @@ typedef struct edpar
 } t_edpar;
 
 
-typedef struct gmx_edsam
+struct gmx_edsam
 {
     int            eEDtype;       /* Type of ED: see enums above          */
     FILE          *edo;           /* output file pointer                  */

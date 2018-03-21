@@ -34,7 +34,7 @@
 
 file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
-add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
+add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES} ../gromacs/mdtypes/forceschedule.h ../gromacs/mdtypes/forceschedule.cpp)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -43,7 +43,7 @@ if(GMX_FAHCORE)
     add_library(fahcore $<TARGET_OBJECTS:mdrun_objlib>)
     target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES})
 elseif(GMX_BUILD_MDRUN_ONLY)
-    add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
+    add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp ../gromacs/mdtypes/forceschedule.h ../gromacs/mdtypes/forceschedule.cpp)
     target_link_libraries(mdrun libgromacs
         ${GMX_COMMON_LIBRARIES}
         ${GMX_EXE_LINKER_FLAGS}

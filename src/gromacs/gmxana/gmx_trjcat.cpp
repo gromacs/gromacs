@@ -585,7 +585,7 @@ int gmx_trjcat(int argc, char *argv[])
     }
     if (bDeMux)
     {
-        auto outFilesDemux = gmx::copyOf(outFiles);
+        std::vector<std::string> outFilesDemux(outFiles.begin(), outFiles.end());
         if (static_cast<int>(outFilesDemux.size()) != nset)
         {
             std::string name = outFilesDemux[0];
@@ -605,7 +605,7 @@ int gmx_trjcat(int argc, char *argv[])
 
         snew(settime, inFiles.size() + 1);
         snew(cont_type, inFiles.size() + 1);
-        auto inFilesEdited = gmx::copyOf(inFiles);
+        std::vector<std::string> inFilesEdited(inFiles.begin(), inFiles.end());
         edit_files(inFilesEdited, readtime, timest, settime, cont_type, bSetTime, bSort,
                    oenv);
 
