@@ -437,7 +437,7 @@ int gmx_potential(int argc, char *argv[])
         { "-tz",  FALSE, etREAL, {&fudge_z},
           "Translate all coordinates by this distance in the direction of the box" },
         { "-spherical", FALSE, etBOOL, {&bSpherical},
-          "Calculate spherical thingie" },
+          "Calculate in spherical coordinates" },
         { "-ng",       FALSE, etINT, {&ngrps},
           "Number of groups to consider" },
         { "-correct",  FALSE, etBOOL, {&bCorrect},
