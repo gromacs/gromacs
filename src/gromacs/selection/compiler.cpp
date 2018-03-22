@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2920,10 +2920,10 @@ SelectionCompiler::compile(SelectionCollection *coll)
     /* Allocate memory for the evaluation memory pool. */
     _gmx_sel_mempool_reserve(sc->mempool, 0);
 
-    /* Finish up by calculating total masses and charges. */
+    /* Finish up by calculating some atom properties. */
     for (i = 0; i < sc->sel.size(); ++i)
     {
-        sc->sel[i]->initializeMassesAndCharges(sc->top);
+        sc->sel[i]->initializeAtomInfo(sc->top);
     }
 }
 

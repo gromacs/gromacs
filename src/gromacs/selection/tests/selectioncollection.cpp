@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -196,8 +196,10 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             efTestPositionMapping       = 1<<3,
             efTestPositionMasses        = 1<<4,
             efTestPositionCharges       = 1<<5,
-            efTestSelectionNames        = 1<<6,
-            efDontTestCompiledAtoms     = 1<<8
+            efTestPositionAtomicNumbers = 1<<6,
+            efTestPositionElements      = 1<<7,
+            efTestSelectionNames        = 1<<8,
+            efDontTestCompiledAtoms     = 1<<10
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -247,7 +249,9 @@ SelectionCollectionDataTest::checkSelection(
         || flags.test(efTestPositionCoordinates)
         || flags.test(efTestPositionMapping)
         || flags.test(efTestPositionMasses)
-        || flags.test(efTestPositionCharges))
+        || flags.test(efTestPositionCharges)
+        || flags.test(efTestPositionAtomicNumbers)
+        || flags.test(efTestPositionElements))
     {
         TestReferenceChecker compound(
                 checker->checkSequenceCompound("Positions", sel.posCount()));
@@ -276,6 +280,14 @@ SelectionCollectionDataTest::checkSelection(
             if (flags.test(efTestPositionCharges))
             {
                 poscompound.checkReal(p.charge(), "Charge");
+            }
+            if (flags.test(efTestPositionAtomicNumbers))
+            {
+                poscompound.checkInteger(p.atomicNumber(), "AtomicNumber");
+            }
+            if (flags.test(efTestPositionElements))
+            {
+                poscompound.checkString(p.element(), "Element");
             }
         }
     }
