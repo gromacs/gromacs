@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,29 +137,29 @@ class SelectionData
          */
         void refreshName();
         /*! \brief
-         * Computes total masses and charges for all selection positions.
+         * Computes some atom properties for all selection positions.
          *
          * \param[in] top   Topology information.
          * \throws    std::bad_alloc if out of memory.
          *
          * For dynamic selections, the values need to be updated after each
-         * evaluation with refreshMassesAndCharges().
+         * evaluation with refreshAtomInfo().
          * This is done by SelectionEvaluator.
          *
          * This function is called by SelectionCompiler.
          *
          * Strong exception safety guarantee.
          */
-        void initializeMassesAndCharges(const gmx_mtop_t *top);
+        void initializeAtomInfo(const gmx_mtop_t *top);
         /*! \brief
-         * Updates masses and charges after dynamic selection has been
+         * Updates atom properties after dynamic selection has been
          * evaluated.
          *
          * \param[in] top   Topology information.
          *
          * Called by SelectionEvaluator.
          */
-        void refreshMassesAndCharges(const gmx_mtop_t *top);
+        void refreshAtomInfo(const gmx_mtop_t *top);
         /*! \brief
          * Updates the covered fraction after a selection has been evaluated.
          *
@@ -198,6 +198,10 @@ class SelectionData
         std::vector<real>         posMass_;
         //! Total charges for the current positions.
         std::vector<real>         posCharge_;
+        //! atomic numbers for the current positions.
+        std::vector<int>          posAtomicNumber_;
+        //! elements for the current positions.
+        std::vector<std::string>  posElement_;
         SelectionFlags            flags_;
         //! Root of the selection evaluation tree.
         SelectionTreeElement     &rootElement_;
@@ -678,6 +682,26 @@ class SelectionPosition
         real charge() const
         {
             return sel_->posCharge_[i_];
+        }
+        /*! \brief
+         * Returns atomic number for this position.
+         *
+         * If there are no atoms associated or indices are not available,
+         * returns zero.
+         */
+        int atomicNumber() const
+        {
+            return sel_->posAtomicNumber_[i_];
+        }
+        /*! \brief
+         * Returns element for this position.
+         *
+         * If there are no atoms associated or indices are not available,
+         * returns the string '    '.
+         */
+        std::string element() const
+        {
+            return sel_->posElement_[i_];
         }
         //! Returns the number of atoms that make up this position.
         int atomCount() const

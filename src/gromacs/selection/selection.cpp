@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,18 +152,23 @@ namespace
 {
 
 /*! \brief
- * Helper function to compute total masses and charges for positions.
+ * Helper function to retrieve basic atom info
  *
- * \param[in]  top     Topology to take atom masses from.
- * \param[in]  pos     Positions to compute masses and charges for.
- * \param[out] masses  Output masses.
- * \param[out] charges Output charges.
+ * \param[in]  top            Topology to take atom masses from.
+ * \param[in]  pos            Positions to compute masses and charges for.
+ * \param[out] masses         Output masses.
+ * \param[out] charges        Output charges.
+ * \param[out] residueIndices Output residue indices.
+ * \param[out] atomicNumbers  Output atomic number.
+ * \param[out] elements       Output element.
  *
  * Does not throw if enough space has been reserved for the output vectors.
  */
-void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
-                             std::vector<real> *masses,
-                             std::vector<real> *charges)
+void computeAtomInfo(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
+                             std::vector<real>        *masses,
+                             std::vector<real>        *charges,
+                             std::vector<int>         *atomicNumbers,
+                             std::vector<std::string> *elements)
 {
     GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
     masses->clear();
@@ -171,17 +176,23 @@ void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
     int molb = 0;
     for (int b = 0; b < pos.count(); ++b)
     {
-        real mass   = 0.0;
-        real charge = 0.0;
+        real        mass         = 0.0;
+        real        charge       = 0.0;
+        int         atomicNumber = 0;
+        std::string element      = "";
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
         {
             const int     index  = pos.m.mapb.a[i];
             const t_atom &atom   = mtopGetAtomParameters(top, index, &molb);
             mass                += atom.m;
             charge              += atom.q;
+            atomicNumber        += atom.atomnumber;
+            element             += atom.elem;
         }
         masses->push_back(mass);
         charges->push_back(charge);
+        atomicNumbers->push_back(atomicNumber);
+        elements->push_back(element);
     }
 }
 
@@ -203,30 +214,38 @@ SelectionData::refreshName()
 }
 
 void
-SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
+SelectionData::initializeAtomInfo(const gmx_mtop_t *top)
 {
-    GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
+    GMX_ASSERT(posMass_.empty() && posCharge_.empty()
+               && posResidueIndex_.empty() &&
+               posAtomNumber_.empty() && posElement_empty(),
                "Should not be called more than once");
     posMass_.reserve(posCount());
     posCharge_.reserve(posCount());
+    posAtomicNumber_.reserve(posCount());
+    posElement_.reserve(posCount());
     if (top == nullptr)
     {
         posMass_.resize(posCount(), 1.0);
         posCharge_.resize(posCount(), 0.0);
+        posAtomicNumber_.resize(posCount(), 0);
+        posElement_.resize(posCount(), "    ");
     }
     else
     {
-        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
+        computeAtomInfo(top, rawPositions_, &posMass_, &posCharge_,
+                        &posAtomicNumber_, &posElement_);
     }
 }
 
 
 void
-SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
+SelectionData::refreshAtomInfo(const gmx_mtop_t *top)
 {
     if (top != nullptr && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
-        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
+        computeAtomInfo(top, rawPositions_, &posMass_, &posCharge_,
+                        &posAtomicNumber_, &posElement_);
     }
 }
 
@@ -261,7 +280,7 @@ SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
         gmx_ana_pos_t &p = rawPositions_;
         gmx_ana_indexmap_update(&p.m, rootElement().v.u.g,
                                 hasFlag(gmx::efSelection_DynamicMask));
-        refreshMassesAndCharges(top);
+        refreshAtomInfo(top);
     }
 }
 
