@@ -1305,10 +1305,14 @@ int Mdrunner::mdrunner()
         {
             /* Initialize pull code */
             inputrec->pull_work =
-                init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
-                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr),
-                          continuationOptions);
+                init_pull(fplog, inputrec->pull, inputrec,
+                          mtop, cr, inputrec->fepvals->init_lambda);
+            if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
+            {
+                init_pull_output_files(inputrec->pull_work,
+                                       nfile, fnm, oenv,
+                                       continuationOptions);
+            }
         }
 
         if (inputrec->bRot)

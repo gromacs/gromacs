@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -503,8 +503,7 @@ void make_pull_coords(pull_params_t *pull)
 }
 
 pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
-                      rvec *x, matrix box, real lambda,
-                      const gmx_output_env_t *oenv)
+                      rvec *x, matrix box, real lambda)
 {
     pull_params_t *pull;
     pull_t        *pull_work;
@@ -513,7 +512,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, ContinuationOptions());
+    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, lambda);
     auto mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
     auto md      = mdAtoms->mdatoms();
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, mdAtoms.get());
