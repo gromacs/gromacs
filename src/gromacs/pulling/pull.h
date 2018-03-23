@@ -224,27 +224,33 @@ void dd_make_local_pull_groups(const t_commrec *cr,
  * \param fplog       General output file, normally md.log.
  * \param pull_params The pull input parameters containing all pull settings.
  * \param ir          The inputrec.
- * \param nfile       Number of files.
- * \param fnm         Standard filename struct.
  * \param mtop        The topology of the whole system.
  * \param cr          Struct for communication info.
- * \param oenv        Output options.
  * \param lambda      FEP lambda.
- * \param bOutFile    Open output files?
- * \param continuationOptions  Options for continuing from checkpoint file
  */
 struct pull_t *init_pull(FILE                      *fplog,
                          const pull_params_t       *pull_params,
                          const t_inputrec          *ir,
-                         int                        nfile,
-                         const t_filenm             fnm[],
                          const gmx_mtop_t          *mtop,
                          const t_commrec           *cr,
-                         const gmx_output_env_t    *oenv,
-                         real                       lambda,
-                         gmx_bool                   bOutFile,
-                         const ContinuationOptions &continuationOptions);
+                         real                       lambda);
 
+/*! \brief Set up and open the pull output files, when requested.
+ *
+ * NOTE: This should only be called on the master rank and only when
+ *       doing dynamics (e.g. not with energy minimizatio).
+ *
+ * \param pull        The pull work data struct
+ * \param nfile       Number of files.
+ * \param fnm         Standard filename struct.
+ * \param oenv        Output options.
+ * \param continuationOptions  Options for continuing from checkpoint file
+ */
+void init_pull_output_files(pull_t                    *pull,
+                            int                        nfile,
+                            const t_filenm             fnm[],
+                            const gmx_output_env_t    *oenv,
+                            const ContinuationOptions &continuationOptions);
 
 /*! \brief Close the pull output files.
  *
