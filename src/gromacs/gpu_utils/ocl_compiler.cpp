@@ -170,6 +170,8 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
 {
     std::string compilerOptions;
 
+    compilerOptions += " -Werror";
+
     if (getenv("GMX_OCL_NOOPT") )
     {
         compilerOptions += " -cl-opt-disable";
