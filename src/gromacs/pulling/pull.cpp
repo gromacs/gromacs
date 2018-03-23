@@ -2124,7 +2124,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 {
     struct pull_t *pull;
     pull_comm_t   *comm;
-    int            g, c, m;
 
     snew(pull, 1);
 
@@ -2144,26 +2143,31 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bCylinder   = FALSE;
     pull->bAngle      = FALSE;
 
-    for (g = 0; g < pull->ngroup; g++)
+    for (int g = 0; g < pull->ngroup; g++)
     {
-        pull_group_work_t *pgrp;
-        int                i;
-
-        pgrp = &pull->group[g];
+        pull_group_work_t *pgrp = &pull->group[g];
 
         /* Copy the pull group parameters */
         pgrp->params = pull_params->group[g];
 
+        if (g == 0)
+        {
+            GMX_RELEASE_ASSERT(pgrp->params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
+            clear_dvec(pgrp->x);
+            clear_dvec(pgrp->xp);
+            pgrp->bCalcCOM = FALSE;
+        }
+
         /* Avoid pointer copies by allocating and copying arrays */
         snew(pgrp->params.ind, pgrp->params.nat);
-        for (i = 0; i < pgrp->params.nat; i++)
+        for (int i = 0; i < pgrp->params.nat; i++)
         {
             pgrp->params.ind[i] = pull_params->group[g].ind[i];
         }
         if (pgrp->params.nweight > 0)
         {
             snew(pgrp->params.weight, pgrp->params.nweight);
-            for (i = 0; i < pgrp->params.nweight; i++)
+            for (int i = 0; i < pgrp->params.nweight; i++)
             {
                 pgrp->params.weight[i] = pull_params->group[g].weight[i];
             }
@@ -2172,10 +2176,9 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     pull->numCoordinatesWithExternalPotential = 0;
 
-    for (c = 0; c < pull->ncoord; c++)
+    for (int c = 0; c < pull->ncoord; c++)
     {
         pull_coord_work_t *pcrd;
-        int                calc_com_start, calc_com_end, g;
 
         pcrd = &pull->coord[c];
 
@@ -2243,12 +2246,16 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         /* We only need to calculate the plain COM of a group
          * when it is not only used as a cylinder group.
          */
-        calc_com_start = (pcrd->params.eGeom == epullgCYL         ? 1 : 0);
-        calc_com_end   = pcrd->params.ngroup;
+        int groupRangeStart = (pcrd->params.eGeom == epullgCYL ? 1 : 0);
+        int groupRangeEnd   = pcrd->params.ngroup + 1;
 
-        for (g = calc_com_start; g <= calc_com_end; g++)
+        for (int i = groupRangeStart; i < groupRangeEnd; i++)
         {
-            pull->group[pcrd->params.group[g]].bCalcCOM = TRUE;
+            int groupIndex = pcrd->params.group[i];
+            if (groupIndex > 0)
+            {
+                pull->group[groupIndex].bCalcCOM = TRUE;
+            }
         }
 
         /* With non-zero rate the reference value is set at every step */
@@ -2300,7 +2307,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         gmx_bool bAbs, bCos;
 
         bAbs = FALSE;
-        for (c = 0; c < pull->ncoord; c++)
+        for (int c = 0; c < pull->ncoord; c++)
         {
             if (pull->group[pull->coord[c].params.group[0]].params.nat == 0 ||
                 pull->group[pull->coord[c].params.group[1]].params.nat == 0)
@@ -2329,7 +2336,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
         bCos = FALSE;
         // Don't include the reference group 0 in loop
-        for (g = 1; g < pull->ngroup; g++)
+        for (int g = 1; g < pull->ngroup; g++)
         {
             if (pull->group[g].params.nat > 1 &&
                 pull->group[g].params.pbcatom < 0)
@@ -2347,7 +2354,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     pull->bRefAt   = FALSE;
     pull->cosdim   = -1;
-    for (g = 0; g < pull->ngroup; g++)
+    for (int g = 0; g < pull->ngroup; g++)
     {
         pull_group_work_t *pgrp;
 
@@ -2373,7 +2380,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             bConstraint = FALSE;
             clear_ivec(pulldim);
             clear_ivec(pulldim_con);
-            for (c = 0; c < pull->ncoord; c++)
+            for (int c = 0; c < pull->ncoord; c++)
             {
                 pull_coord_work_t *pcrd;
                 int                gi;
@@ -2392,7 +2399,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
                 if (bGroupUsed)
                 {
-                    for (m = 0; m < DIM; m++)
+                    for (int m = 0; m < DIM; m++)
                     {
                         if (pcrd->params.dim[m] == 1)
                         {
@@ -2412,7 +2419,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
              * the COM's of the pull groups.
              */
             GMX_RELEASE_ASSERT(pull->npbcdim <= DIM, "npbcdim must be <= the number of dimensions");
-            for (m = 0; m < pull->npbcdim; m++)
+            for (int m = 0; m < pull->npbcdim; m++)
             {
                 GMX_RELEASE_ASSERT(m <= DIM, "npbcdim must be <= the number of dimensions");
                 if (pulldim[m] == 1 && pgrp->params.nat > 1)
@@ -2457,7 +2464,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     {
         snew(pull->dyna, pull->ncoord);
 
-        for (c = 0; c < pull->ncoord; c++)
+        for (int c = 0; c < pull->ncoord; c++)
         {
             const pull_coord_work_t *pcrd;
 
