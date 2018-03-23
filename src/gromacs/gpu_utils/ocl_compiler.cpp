@@ -170,6 +170,13 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
 {
     std::string compilerOptions;
 
+    /* Treating warning as errors.
+     * NOTE: while this is a part of OpenCL standard, this seems to be ignored
+     * at least with NVIDIA driver 384.111 (CUDA 9.0),
+     * when adding unused variables and checking for undefined macros in the NB kernel.
+     */
+    compilerOptions += " -Werror";
+
     if (getenv("GMX_OCL_NOOPT") )
     {
         compilerOptions += " -cl-opt-disable";
