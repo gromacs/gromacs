@@ -733,8 +733,10 @@ void pull_calc_coms(const t_commrec *cr,
         pull_group_work_t *pgrp;
 
         pgrp = &pull->group[g];
-        if (pgrp->params.nat > 0 && pgrp->bCalcCOM)
+        if (pgrp->bCalcCOM)
         {
+            GMX_ASSERT(pgrp->params.nat > 0, "Normal pull groups should have atoms, only group 0, which should have bCalcCom=FALSE has nat=0");
+
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
                 double wmass, wwmass;
