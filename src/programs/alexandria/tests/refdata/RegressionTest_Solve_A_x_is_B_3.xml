@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
-<ReferenceData>
-  <Sequence Name="solution">
-    <Int Name="Length">2</Int>
-    <Real>1.9999999999999987</Real>
-    <Real>1</Real>
-  </Sequence>
-</ReferenceData>

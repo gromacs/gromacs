@@ -218,7 +218,7 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.findEem(ieqd, atp->getType());
+            auto ei = pd.findEem(ieqd, atp->getZtype());
             if (ei != pd.EndEemprops())
             {
                 auto nzeta = pd.getNzeta(ieqd, ei->getName());
@@ -244,7 +244,7 @@ static void merge_zeta(std::vector<alexandria::Poldata>     pds,
     for (auto atp = pdout.getAtypeBegin(); 
          atp < pdout.getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.findEem(ieqd, atp->getType());
+        auto ei = pdout.findEem(ieqd, atp->getZtype());
         if (ei != pdout.EndEemprops())
         {
             zstr[0]  = '\0';

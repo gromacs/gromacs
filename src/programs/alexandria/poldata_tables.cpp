@@ -89,10 +89,10 @@ void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
             
             snprintf(longbuf, STRLEN, "%s & %0.3f (%0.3f) & %0.3f (%0.3f)",
                      ztype.c_str(),
-                     AXpg->getZeta(0),
-                     atof(gmx::splitString(AXpg->getZeta_sigma()).begin()->c_str()),
-                     AXps->getZeta(0),
-                     atof(gmx::splitString(AXps->getZeta_sigma()).begin()->c_str()));
+                     AXpg->getZeta(1),
+                     atof(gmx::splitString(AXpg->getZeta_sigma()).back().c_str()),
+                     AXps->getZeta(1),
+                     atof(gmx::splitString(AXps->getZeta_sigma()).back().c_str()));
             lt.printLine(longbuf);
         }
     }
