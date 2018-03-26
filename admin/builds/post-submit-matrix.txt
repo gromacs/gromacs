@@ -24,9 +24,8 @@ gcc-7 mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
 # Test newest icc at time of release
-# Test icc without SIMD in double precision in release mode
-# TODO enable simd=avx_256 in this config, and change the above description once #2335 is resolved
-icc-18 npme=1 nranks=2 no-openmp  double fftpack release simd=none
+# Test icc with AVX256 in double precision in release mode
+icc-18 simd=avx_256 npme=1 nranks=2 no-openmp  double fftpack release
 
 # Test CUDA build on a slave with no CUDA devices
 gcc-4.9 gpu cuda-7.0 openmp release-with-assert
@@ -36,8 +35,7 @@ gcc-4.9 gpu cuda-7.0 openmp release-with-assert
 # msvc-2015 double no-threadmpi no-prefer-static-libs release-with-assert
 
 # Test behaviour when dlopen is not present
-# TODO enable this
-# icc-18 no-dlopen no-threadmpi double mkl release-with-assert
+icc-18 no-dlopen no-threadmpi double mkl release-with-assert
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
