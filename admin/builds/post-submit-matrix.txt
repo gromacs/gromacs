@@ -53,7 +53,8 @@ gcc-4.8 gpu npme=1 nranks=2 cuda-7.5 simd=sse2 release
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
-gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert
+# Test own-fftw build
+gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert own-fftw
 
 # Test oldest supported icc
 # Test icc on Windows
