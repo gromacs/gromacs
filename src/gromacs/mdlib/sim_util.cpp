@@ -1591,7 +1591,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     {
         gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
         matrix vir_Q;
-        real   Vlr_q;
+        real   Vlr_q = 0.0;
         pme_gpu_wait_finish_task(fr->pmedata, wcycle, &pmeGpuForces, vir_Q, &Vlr_q);
         pme_gpu_reduce_outputs(wcycle, &forceWithVirial, pmeGpuForces, enerd, vir_Q, Vlr_q);
     }
