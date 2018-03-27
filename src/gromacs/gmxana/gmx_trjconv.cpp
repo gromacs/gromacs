@@ -1080,6 +1080,7 @@ int gmx_trjconv(int argc, char *argv[])
         /* skipping */
         if (skip_nr <= 0)
         {
+            gmx_fatal(FARGS, "Argument for -skip (%d) needs to be greater or equal to 1.", skip_nr);
         }
 
         std::unique_ptr<gmx_mtop_t> mtop = read_mtop_for_tng(top_file, in_file, out_file);
