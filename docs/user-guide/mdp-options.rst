@@ -1338,12 +1338,14 @@ Bonds
 
 .. mdp:: constraints
 
+   Controls which bonds in the topology will be converted to rigid
+   holonomic constraints. Note that typical rigid water models do not
+   have bonds, but rather a specialized ``[settles]`` directive, so
+   are not affected by this keyword.
+
    .. mdp-value:: none
 
-      No constraints except for those defined explicitly in the
-      topology, *i.e.* bonds are represented by a harmonic (or other)
-      potential or a Morse potential (depending on the setting of
-      :mdp:`morse`) and angles by a harmonic (or other) potential.
+      No bonds converted to constraints.
 
    .. mdp-value:: h-bonds
 
@@ -1355,14 +1357,17 @@ Bonds
 
    .. mdp-value:: h-angles
 
-      Convert all bonds and additionally the angles that involve
-      H-atoms to bond-constraints.
+      Convert all bonds to constraints and convert the angles that
+      involve H-atoms to bond-constraints.
 
    .. mdp-value:: all-angles
 
-      Convert all bonds and angles to bond-constraints.
+      Convert all bonds to constraints and all angles to bond-constraints.
 
 .. mdp:: constraint-algorithm
+
+   Chooses which solver satisfies any non-SETTLE holonomic
+   constraints.
 
    .. mdp-value:: LINCS
 
@@ -1391,7 +1396,7 @@ Bonds
 
 .. mdp:: continuation
 
-   This option was formerly known as unconstrained-start.
+   This option was formerly known as ``unconstrained-start``.
 
    .. mdp-value:: no
 
