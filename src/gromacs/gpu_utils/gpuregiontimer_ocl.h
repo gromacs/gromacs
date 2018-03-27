@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,14 @@ template <> struct GpuTraits<GpuFramework::OpenCL>
 using GpuRegionTimer = GpuRegionTimerWrapper<GpuFramework::OpenCL>;
 
 // cppcheck-suppress noConstructor
+/*! \brief The OpenCL implementation of the GPU code region timing.
+ * With OpenCL, one has to use cl_event handle for each API call that has to be timed, and
+ * accumulate the timing afterwards. As we would like to avoid overhead on API calls,
+ * we only query and accumulate cl_event timing at the end of time steps, not after the API calls.
+ * Thus, this implementation does not reuse a single cl_event for multiple calls, but instead
+ * maintains an array of cl_events to be used within any single code region.
+ * Array size is fixed arbitrarily at 10.
+ */
 template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
 {
     //! Short-hands
@@ -108,7 +116,8 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
             {
                 if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
                 {
-                    GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
+                    cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
+                    GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
                 }
             }
             currentEvent_ = 0;
