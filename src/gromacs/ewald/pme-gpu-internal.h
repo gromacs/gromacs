@@ -555,8 +555,11 @@ inline bool pme_gpu_performs_solve(const PmeGpu *pmeGpu)
  */
 inline void pme_gpu_set_testing(PmeGpu *pmeGpu, bool testing)
 {
-    pmeGpu->settings.copyAllOutputs = testing;
-    pmeGpu->settings.transferKind   = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
+    if (pmeGpu)
+    {
+        pmeGpu->settings.copyAllOutputs = testing;
+        pmeGpu->settings.transferKind   = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
+    }
 }
 
 /*! \libinternal \brief
@@ -578,7 +581,7 @@ inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu             The PME GPU structure.
  * \returns                      The input/output forces.
  */
-gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu);
+CUDA_FUNC_QUALIFIER gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM_WITH_RETURN(gmx::EmptyArrayRef())
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.
@@ -587,7 +590,9 @@ gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu);
  * \param[out] energy            The output energy.
  * \param[out] virial            The output virial matrix.
  */
-void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial);
+CUDA_FUNC_QUALIFIER void pme_gpu_get_energy_virial(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                                   real *CUDA_FUNC_ARGUMENT(energy),
+                                                   matrix CUDA_FUNC_ARGUMENT(virial)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
@@ -595,7 +600,8 @@ void pme_gpu_get_energy_virial(const PmeGpu *pmeGpu, real *energy, matrix virial
  * \param[in] pmeGpu         The PME GPU structure.
  * \param[in] box            The unit cell box.
  */
-void pme_gpu_update_input_box(PmeGpu *pmeGpu, const matrix box);
+CUDA_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                                  const matrix CUDA_FUNC_ARGUMENT(box)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Finishes the PME GPU computation, waiting for the output forces and/or energy/virial to be copied to the host.
@@ -626,8 +632,11 @@ enum class PmeLayoutTransform
  * \param[in]  dimIndex   Dimension index.
  * \param[in]  transform  Layout transform type
  */
-void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm_t *atc,
-                                        PmeSplineDataType type, int dimIndex, PmeLayoutTransform transform);
+CUDA_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                                            const pme_atomcomm_t *CUDA_FUNC_ARGUMENT(atc),
+                                                            PmeSplineDataType CUDA_FUNC_ARGUMENT(type),
+                                                            int CUDA_FUNC_ARGUMENT(dimIndex),
+                                                            PmeLayoutTransform CUDA_FUNC_ARGUMENT(transform)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Gets a unique index to an element in a spline parameter buffer (theta/dtheta),
@@ -655,7 +664,9 @@ CUDA_FUNC_QUALIFIER int getSplineParamFullIndex(int CUDA_FUNC_ARGUMENT(order),
  * \param[out] gridSize          Pointer to the grid dimensions to fill in.
  * \param[out] paddedGridSize    Pointer to the padded grid dimensions to fill in.
  */
-void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx::IVec *paddedGridSize);
+CUDA_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                                     gmx::IVec *CUDA_FUNC_ARGUMENT(gridSize),
+                                                     gmx::IVec *CUDA_FUNC_ARGUMENT(paddedGridSize)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
@@ -664,14 +675,15 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx:
  * \param[in,out] gpuInfo   The GPU information structure.
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo);
+CUDA_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
+                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.
  *
  * \param[in] pmeGpu     The PME GPU structure.
  */
-void pme_gpu_destroy(PmeGpu *pmeGpu);
+CUDA_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Reallocates the local atoms data (charges, coordinates, etc.). Copies the charges to the GPU.
@@ -683,9 +695,9 @@ void pme_gpu_destroy(PmeGpu *pmeGpu);
  * This is a function that should only be called in the beginning of the run and on domain decomposition.
  * Should be called before the pme_gpu_set_io_ranges.
  */
-void pme_gpu_reinit_atoms(PmeGpu           *pmeGpu,
-                          const int         nAtoms,
-                          const real       *charges);
+CUDA_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                              const int         CUDA_FUNC_ARGUMENT(nAtoms),
+                                              const real       *CUDA_FUNC_ARGUMENT(charges)) CUDA_FUNC_TERM
 
 /*! \brief \libinternal
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
