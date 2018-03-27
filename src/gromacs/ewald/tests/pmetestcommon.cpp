@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -472,7 +472,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
     const size_t                atomCount   = atc->n;
     GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
 
-    IVec paddedGridSizeUnused, gridSize;
+    IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);
 
     for (const auto &index : gridLineIndices)
@@ -526,7 +526,7 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
                                GridOrdering gridOrdering,
                                const SparseGridValuesInput<ValueType> &gridValues)
 {
-    IVec       gridSize, paddedGridSize;
+    IVec       gridSize(0, 0, 0), paddedGridSize(0, 0, 0);
     ValueType *grid;
     pmeGetGridAndSizesInternal<ValueType>(pme, mode, grid, gridSize, paddedGridSize);
 
@@ -622,7 +622,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
 template<typename ValueType>
 static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering)
 {
-    IVec       gridSize, paddedGridSize;
+    IVec       gridSize(0, 0, 0), paddedGridSize(0, 0, 0);
     ValueType *grid;
     pmeGetGridAndSizesInternal<ValueType>(pme, mode, grid, gridSize, paddedGridSize);
     SparseGridValuesOutput<ValueType> gridValues;
@@ -675,7 +675,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
 {
     real      energy = 0.0f;
     Matrix3x3 virial;
-    matrix    virialTemp; //TODO get rid of
+    matrix    virialTemp = {{0}}; //TODO get rid of
     switch (mode)
     {
         case CodePath::CPU:

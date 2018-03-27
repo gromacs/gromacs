@@ -46,8 +46,6 @@
 
 #include "pme-gpu-internal.h"
 
-#include "config.h"
-
 #include <list>
 #include <string>
 
@@ -219,53 +217,6 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     pmeGpu->common->boxScaler = pme->boxScaler;
 }
 
-/*! \brief \libinternal
- * Finds out if PME with given inputs is possible to run on GPU.
- *
- * \param[in]  pme          The PME structure.
- * \param[out] error        The error message if the input is not supported on GPU.
- * \returns                 True if this PME input is possible to run on GPU, false otherwise.
- */
-static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
-{
-    std::list<std::string> errorReasons;
-    if (pme->nnodes != 1)
-    {
-        errorReasons.push_back("PME decomposition");
-    }
-    if (pme->pme_order != 4)
-    {
-        errorReasons.push_back("interpolation orders other than 4");
-    }
-    if (pme->bFEP)
-    {
-        errorReasons.push_back("free energy calculations (multiple grids)");
-    }
-    if (pme->doLJ)
-    {
-        errorReasons.push_back("Lennard-Jones PME");
-    }
-#if GMX_DOUBLE
-    {
-        errorReasons.push_back("double precision");
-    }
-#endif
-#if GMX_GPU != GMX_GPU_CUDA
-    {
-        errorReasons.push_back("non-CUDA build of GROMACS");
-    }
-#endif
-
-    bool inputSupported = errorReasons.empty();
-    if (!inputSupported && error)
-    {
-        std::string regressionTestMarker = "PME GPU does not support";
-        // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
-    }
-    return inputSupported;
-}
-
 /*! \libinternal \brief
  * Initializes the PME GPU data at the beginning of the run.
  *
@@ -274,13 +225,6 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
  */
 static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 {
-    std::string errorString;
-    bool        canRunOnGpu = pme_gpu_check_restrictions(pme, &errorString);
-    if (!canRunOnGpu)
-    {
-        GMX_THROW(gmx::NotImplementedError(errorString));
-    }
-
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
     changePinningPolicy(&pmeGpu->staging.h_forces, gmx::PinningPolicy::CanBePinned);
