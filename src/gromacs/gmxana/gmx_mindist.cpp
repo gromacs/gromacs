@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -660,7 +660,9 @@ int gmx_mindist(int argc, char *argv[])
         "With option [TT]-pi[tt] the minimum distance of a group to its",
         "periodic image is plotted. This is useful for checking if a protein",
         "has seen its periodic image during a simulation. Only one shift in",
-        "each direction is considered, giving a total of 26 shifts.",
+        "each direction is considered, giving a total of 26 shifts. Note",
+        "that periodicity information is required from the file supplied with",
+        "with [TT]-s[tt], either as a .tpr file or a .pdb file with CRYST1 fields.",
         "It also plots the maximum distance within the group and the lengths",
         "of the three box vectors.[PAR]",
         "Also [gmx-distance] and [gmx-pairdist] calculate distances."
