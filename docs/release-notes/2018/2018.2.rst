@@ -9,6 +9,13 @@ earlier, which you can find described in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent OpenCL timing memory leak
+"""""""""""""""""""""""""""""""""
+
+When using OpenCL builds and timing, a memory leak would lead to all system memory being used up.
+
+:issue:`2470`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
