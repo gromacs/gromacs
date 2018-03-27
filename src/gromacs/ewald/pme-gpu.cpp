@@ -42,8 +42,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <list>
 
 #include "gromacs/ewald/ewald-utils.h"
@@ -60,60 +58,6 @@
 #include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-solve.h"
-
-PmeRunMode pme_run_mode(const gmx_pme_t *pme)
-{
-    GMX_ASSERT(pme != nullptr, "Expecting valid PME data pointer");
-    return pme->runMode;
-}
-
-bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
-{
-    std::list<std::string> errorReasons;
-    if (!EEL_PME(ir->coulombtype))
-    {
-        errorReasons.push_back("systems that do not use PME for electrostatics");
-    }
-    if (ir->pme_order != 4)
-    {
-        errorReasons.push_back("interpolation orders other than 4");
-    }
-    if (ir->efep != efepNO)
-    {
-        errorReasons.push_back("free energy calculations (multiple grids)");
-    }
-    if (EVDW_PME(ir->vdwtype))
-    {
-        errorReasons.push_back("Lennard-Jones PME");
-    }
-#if GMX_DOUBLE
-    {
-        errorReasons.push_back("double precision");
-    }
-#endif
-#if GMX_GPU != GMX_GPU_CUDA
-    {
-        errorReasons.push_back("non-CUDA build of GROMACS");
-    }
-#endif
-    if (ir->cutoff_scheme == ecutsGROUP)
-    {
-        errorReasons.push_back("group cutoff scheme");
-    }
-    if (EI_TPI(ir->eI))
-    {
-        errorReasons.push_back("test particle insertion");
-    }
-
-    bool inputSupported = errorReasons.empty();
-    if (!inputSupported && error)
-    {
-        std::string regressionTestMarker = "PME GPU does not support";
-        // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
-    }
-    return inputSupported;
-}
 
 void pme_gpu_reset_timings(const gmx_pme_t *pme)
 {
