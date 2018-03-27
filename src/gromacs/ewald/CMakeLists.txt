@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,11 +33,20 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB EWALD_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
+file(GLOB EWALD_GPU_SHARED_SOURCES pme-gpu*.cpp)
+file(GLOB EWALD_CUDA_SOURCES *.cu)
+
 if (GMX_USE_CUDA)
-    file(GLOB EWALD_CUDA_SOURCES *.cu)
     gmx_add_libgromacs_sources(${EWALD_CUDA_SOURCES})
+else ()
+    # Removing the GPU PME plain C++ fles from the build target
+    # TODO: not remove them for GMX_USE_OPENCL.
+    foreach (GPU_ONLY_SOURCE ${EWALD_GPU_SHARED_SOURCES})
+        list(REMOVE_ITEM EWALD_SOURCES ${GPU_ONLY_SOURCE})
+    endforeach()
 endif()
+
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
