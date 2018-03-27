@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,8 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
             {
                 if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
                 {
-                    GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
+                    cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
+                    GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
                 }
             }
             currentEvent_ = 0;
