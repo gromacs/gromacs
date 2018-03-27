@@ -108,7 +108,8 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
             {
                 if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
                 {
-                    GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
+                    cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
+                    GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
                 }
             }
             currentEvent_ = 0;
