@@ -170,7 +170,7 @@ void PmeTest::runTest(const RunModesList &runModes)
             while (energyReader->readNextFrame())
             {
                 const EnergyFrame &frame            = energyReader->frame();
-                const std::string  stepName         = frame.getFrameName();
+                const std::string  stepName         = frame.frameName();
                 const real         conservedEnergy  = frame.at("Total Energy");
                 const real         reciprocalEnergy = frame.at("Coul. recip.");
                 if (firstIteration)
