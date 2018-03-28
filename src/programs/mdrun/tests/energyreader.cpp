@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -210,7 +210,7 @@ EnergyFrameReader::frame()
 
 EnergyFrame::EnergyFrame() : values_(), step_(), time_() {};
 
-std::string EnergyFrame::getFrameName() const
+std::string EnergyFrame::frameName() const
 {
     return formatString("Time %f Step %" GMX_PRId64, time_, step_);
 }
@@ -225,21 +225,26 @@ const real &EnergyFrame::at(const std::string &name) const
     return valueIterator->second;
 }
 
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
+// === Free functions ===
 
+void compareEnergyFrames(const EnergyFrame      &reference,
+                         const EnergyFrame      &test,
+                         const EnergyTolerances &tolerances)
+{
     for (auto referenceIt = reference.values_.begin(); referenceIt != reference.values_.end(); ++referenceIt)
     {
-        auto testIt = test.values_.find(referenceIt->first);
+        auto &energyName = referenceIt->first;
+        SCOPED_TRACE("Comparing " +  energyName + " between frames");
+        auto  testIt = test.values_.find(energyName);
         if (testIt != test.values_.end())
         {
-            auto energyFieldInReference = referenceIt->second;
-            auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+            auto &energyValueInReference = referenceIt->second;
+            auto &energyValueInTest      = testIt->second;
+            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest, tolerances.at(energyName));
+        }
+        else
+        {
+            ADD_FAILURE() << "Could not find energy component from reference frame in test frame";
         }
     }
 }

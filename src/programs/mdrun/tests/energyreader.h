@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,6 +68,21 @@ namespace gmx
 {
 namespace test
 {
+
+//! Convenience function to get std::string keys from a map.
+template <typename Map>
+std::vector<std::string> getKeys(const Map &m)
+{
+    std::vector<std::string> keys;
+    for (const auto &it : m)
+    {
+        keys.push_back(it.first);
+    }
+    return keys;
+}
+
+//! Convenience type
+using EnergyTolerances = std::map<std::string, FloatingPointTolerance>;
 
 //! Forward declaration
 class EnergyFrameReader;
@@ -154,9 +169,11 @@ class EnergyFrameReader
  *
  * Ignore any key found in either \c reference or \c test that is not
  * found in the other. For all keys found in both frames, compare the
- * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance);
+ * values with EXPECT_REAL_EQ_TOL and the given tolerance for that
+ * key. */
+void compareEnergyFrames(const EnergyFrame      &reference,
+                         const EnergyFrame      &test,
+                         const EnergyTolerances &tolerances);
 
 /*! \internal
  * \brief Contains the content of an .edr frame read by an EnergyFrameReader
@@ -172,7 +189,7 @@ class EnergyFrame
         /*! \brief Return string that helps users identify this frame, containing time and step number.
          *
          * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
+        std::string frameName() const;
         /*! \brief Return the value read for energy \c name.
          *
          * \throws APIError  if \c name was not registered with EnergyFileReader. */
@@ -188,8 +205,9 @@ class EnergyFrame
         double time_;
 
         friend class EnergyFrameReader;
-        friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                                  FloatingPointTolerance tolerance);
+        friend void compareEnergyFrames(const EnergyFrame      &reference,
+                                        const EnergyFrame      &test,
+                                        const EnergyTolerances &tolerances);
 };
 
 } // namespace

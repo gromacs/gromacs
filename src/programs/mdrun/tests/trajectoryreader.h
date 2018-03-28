@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,8 +66,14 @@ namespace gmx
 namespace test
 {
 
-//! Forward declaration
-class TrajectoryFrame;
+//! Helper struct for testing different trajectory components with different tolerances.
+struct TrajectoryTolerances
+{
+    //!@{
+    //! Tolerances for reproduction of different quantities.
+    FloatingPointTolerance box, positions, velocities, forces;
+    //!@}
+};
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
@@ -140,35 +146,48 @@ class TrajectoryFrameReader
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
 
-/*! \brief Compare the fields of the two frames for equality within
- * the \c tolerance.
+/*! \internal
+ * \brief Helper struct to specify the expected behaviour of compareFrames().
+ *
+ * By default, nothing is required to be compared, but the comparer will
+ * compare what it can with the frames it is given.
+ *
+ * Handling PBC refers to putting all the atoms in the simulation box,
+ * which requires that both the PBC type and a simulation box are
+ * available from the trajectory frame. */
+struct TrajectoryFrameMatchSettings
+{
+    //! Whether boxes must be compared.
+    bool mustCompareBox;
+    //! Whether positions must be compared.
+    bool mustComparePositions;
+    //! Whether PBC will be handled if it can be handled.
+    bool handlePbcIfPossible;
+    //! Whether PBC handling must occur for a valid comparison.
+    bool requirePbcHandling;
+    //! Whether velocities must be compared.
+    bool mustCompareVelocities;
+    //! Whether forces must be compared.
+    bool mustCompareForces;
+};
+
+/*! \brief Compare the fields of the two frames for equality given
+ * the \c matchSettings and \c tolerances.
  *
  * The two frames are required to have valid and matching values for
- * time and step. Positions, velocities and/or forces will be compared
- * when present in both frames, and expected to be equal within \c
- * tolerance. */
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance);
-
-/*! \internal
- * \brief Contains the content of a trajectory frame read by an TrajectoryFrameReader
- *
- * Objects of this type are intended to be constructed by
- * TrajectoryFrameReader objects, and as such will always contain valid
- * data from an trajectory file frame. */
-class TrajectoryFrame
-{
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        //! Constructor
-        TrajectoryFrame();
-
-        //! Handle to trajectory data
-        t_trxframe *frame_;
-};
+ * time and step. According to \c matchSettings, box, positions,
+ * velocities and/or forces will be compared between frames, using the
+ * \c tolerances. Comparisons will only occur when both frames have
+ * the requisite data, and will be expected to be equal within the
+ * matching component of \c tolerances. If a comparison fails, a
+ * GoogleTest expectation failure will be given. If a comparison is
+ * required by \c matchSettings but cannot be done because either (or
+ * both) frames lack the requisite data, descriptive expectation
+ * failures will be given. */
+void compareTrajectoryFrames(const TrajectoryFrame              &reference,
+                             const TrajectoryFrame              &test,
+                             const TrajectoryFrameMatchSettings &matchSettings,
+                             const TrajectoryTolerances         &tolerances);
 
 } // namespace
 } // namespace

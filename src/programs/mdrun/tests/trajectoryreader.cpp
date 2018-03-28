@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,12 @@
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+
+#include <gmock/gmock.h>
 
 #include "testutils/testasserts.h"
 
@@ -59,6 +62,121 @@ namespace gmx
 {
 namespace test
 {
+
+/*! \brief Implementation class for RealEq matcher
+ *
+ * See RealEq().
+ */
+template <typename FloatType>
+class FloatTypeMatcher : public testing::MatcherInterface < std::tuple < FloatType, FloatType>>
+{
+    public:
+        //! Constructor
+        FloatTypeMatcher(FloatingPointTolerance tolerance)
+            : tolerance_(tolerance) {}
+        //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
+        virtual bool MatchAndExplain(std::tuple<FloatType, FloatType> arg,
+                                     testing::MatchResultListener* listener) const
+        {
+            const FloatType        &value1 = std::get<0>(arg);
+            const FloatType        &value2 = std::get<1>(arg);
+            FloatingPointDifference diff(value1, value2);
+            if (tolerance_.isWithin(diff))
+            {
+                return true;
+            }
+            *listener->stream()
+            << "  Actual value: " << value2 << std::endl
+            << "Expected value: " << value1 << std::endl
+            << "    Difference: " << diff.toString() << std::endl
+            << "     Tolerance: " << tolerance_.toString(diff);
+            return false;
+        }
+        //! Describe to a human what matching means.
+        virtual void DescribeTo(::std::ostream* os) const
+        {
+            *os << "matches within tolerance";
+        }
+        //! Describe to a human what failing to match means.
+        virtual void DescribeNegationTo(::std::ostream* os) const
+        {
+            *os << "does not match within tolerance";
+        }
+    private:
+        //! Tolerance used in matching
+        FloatingPointTolerance tolerance_;
+};
+
+/*! \brief Make matcher for reals for use with GoogleMock that compare
+ * equal when \c tolerance is satisifed.
+ *
+ * Used like
+ *
+ *   EXPECT_THAT(testReals, Pointwise(RealEq(tolerance), referenceReals));
+ */
+template <typename FloatType>
+inline testing::Matcher < std::tuple < FloatType, FloatType>>
+RealEq(FloatingPointTolerance tolerance)
+{
+    return testing::MakeMatcher(new FloatTypeMatcher<FloatType>(tolerance));
+}
+
+/*! \brief Implementation class for RvecEq matcher
+ *
+ * See RvecEq().
+ */
+template <typename FloatType>
+class RVecMatcher :
+    public testing::MatcherInterface < std::tuple < BasicVector<FloatType>, BasicVector<FloatType>>>
+{
+    public:
+        //! Convenience type
+        using VectorType = BasicVector<FloatType>;
+        //! Constructor
+        RVecMatcher(FloatingPointTolerance tolerance)
+            : tolerance_(tolerance) {}
+        //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
+        virtual bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
+                                     testing::MatchResultListener* listener) const
+        {
+            const VectorType           &lhs = std::get<0>(arg);
+            const VectorType           &rhs = std::get<1>(arg);
+            FloatTypeMatcher<FloatType> floatTypeMatcher(tolerance_);
+            bool matches = true;
+            for (int d = 0; d < DIM; ++d)
+            {
+                auto floatTuple = std::make_tuple<FloatType, FloatType>(lhs[d], rhs[d]);
+                matches = matches && floatTypeMatcher.MatchAndExplain(floatTuple, listener);
+            }
+            return matches;
+        }
+        //! Describe to a human what matching means.
+        virtual void DescribeTo(::std::ostream* os) const
+        {
+            *os << "matches all elements within tolerance";
+        }
+        //! Describe to a human what failing to match means.
+        virtual void DescribeNegationTo(::std::ostream* os) const
+        {
+            *os << "does not match all elements within tolerance";
+        }
+    private:
+        //! Tolerance used in matching
+        FloatingPointTolerance tolerance_;
+};
+
+/*! \brief Make matcher for RVecs for use with GoogleMock that compare
+ * equal when \c tolerance is satisifed.
+ *
+ * Used like
+ *
+ *   EXPECT_THAT(testRVecs, Pointwise(RVecEq(tolerance), referenceRVecs));
+ */
+inline testing::Matcher < std::tuple < RVec, RVec>>
+RVecEq(FloatingPointTolerance tolerance)
+{
+    return testing::MakeMatcher(new RVecMatcher<real>(tolerance));
+}
 
 //! Helper function to obtain resources
 static t_trxframe *make_trxframe()
@@ -141,15 +259,13 @@ TrajectoryFrameReader::readNextFrame()
 TrajectoryFrame
 TrajectoryFrameReader::frame()
 {
-    TrajectoryFrame frame;
-
     if (!haveProbedForNextFrame_)
     {
         readNextFrame();
     }
     if (!nextFrameExists_)
     {
-        GMX_THROW(APIError("There is no next frame, so there should have been no attempt to use the data, e.g. by reacting to a call to readNextFrame()."));
+        GMX_THROW(APIError("There is no next frame, so there should have been no attempt to get it. Perhaps the return value of readNextFrame() was misused."));
     }
 
     // Prepare for reading future frames
@@ -157,66 +273,161 @@ TrajectoryFrameReader::frame()
     nextFrameExists_        = false;
 
     // The probe filled trxframeGuard_ with new data, so return it
-    frame.frame_ = trxframeGuard_.get();
-
-    if (!frame.frame_->bStep)
-    {
-        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a step number"));
-    }
-
-    if (!frame.frame_->bTime)
-    {
-        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a time"));
-    }
-
-    return frame;
+    return TrajectoryFrame(*trxframeGuard_.get());
 }
 
-// === TrajectoryFrame ===
+// === Free functions ===
 
-TrajectoryFrame::TrajectoryFrame() : frame_(nullptr) {};
+using ::testing::Pointwise;
 
-std::string TrajectoryFrame::getFrameName() const
+/*! \brief Compares the box from \c reference and \c test
+ * according to the \c matchSettings and \c tolerance.
+ *
+ * \todo This could be streamlined when we have a proper 3D matrix
+ * class and view. */
+static void compareBox(const TrajectoryFrame              &reference,
+                       const TrajectoryFrame              &test,
+                       const TrajectoryFrameMatchSettings &matchSettings,
+                       const FloatingPointTolerance        tolerance)
 {
-    GMX_RELEASE_ASSERT(frame_, "Cannot get name of invalid frame");
-    return formatString("Time %f Step %" GMX_PRId64, frame_->time, frame_->step);
-}
-
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
-    // NB We checked earlier for both frames that bStep and bTime are set
-
-    EXPECT_EQ(reference.frame_->step, test.frame_->step)
-    << "step didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-
-    EXPECT_EQ(reference.frame_->time, test.frame_->time)
-    << "time didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-
-    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    if (!matchSettings.mustCompareBox)
     {
-        for (int d = 0; d < DIM; ++d)
+        return;
+    }
+    bool canCompareBox = true;
+    if (!reference.hasBox())
+    {
+        ADD_FAILURE() << "Comparing the box was required, "
+        "but the reference frame did not have one";
+        canCompareBox = false;
+    }
+    if (!test.hasBox())
+    {
+        ADD_FAILURE() << "Comparing the box was required, "
+        "but the test frame did not have one";
+        canCompareBox = false;
+    }
+    if (!canCompareBox)
+    {
+        return;
+    }
+
+    // Do the comparing.
+    for (int d = 0; d < DIM; ++d)
+    {
+        for (int dd = 0; dd < DIM; ++dd)
         {
-            if (reference.frame_->bX && test.frame_->bX)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
-                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
-            if (reference.frame_->bV && test.frame_->bV)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
-                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
-            if (reference.frame_->bF && test.frame_->bF)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
-                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
+            EXPECT_REAL_EQ_TOL(reference.box()[d][dd], test.box()[d][dd], tolerance);
         }
     }
+}
+
+/*! \brief Help put all atom positions in \c frame into its box.
+ *
+ * This can perhaps go away when frame->x is a container. */
+static std::vector<RVec>
+putAtomsInBox(const TrajectoryFrame &frame)
+{
+    std::vector<RVec> x(frame.x().begin(), frame.x().end());
+    matrix            box;
+    for (int d = 0; d < DIM; ++d)
+    {
+        for (int dd = 0; dd < DIM; ++dd)
+        {
+            box[d][dd] = frame.box()[d][dd];
+        }
+    }
+    // Note we don't need to compare bPBC because put_atoms_in_box
+    // implements a fallback if nothing specific was set in the
+    // trajectory frame.
+    put_atoms_in_box(frame.pbc(), box, x);
+    return x;
+}
+
+/*! \brief Compares the positions from \c reference and \c test
+ * according to the \c matchSettings and \c tolerance. */
+static void comparePositions(const TrajectoryFrame              &reference,
+                             const TrajectoryFrame              &test,
+                             const TrajectoryFrameMatchSettings &matchSettings,
+                             const FloatingPointTolerance        tolerance)
+{
+    bool canHandlePbc = true;
+    if (!reference.hasBox())
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions required PBC handling, "
+            "but the reference frame did not have a box";
+        }
+        canHandlePbc = false;
+    }
+    if (!test.hasBox())
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions required PBC handling, "
+            "but the test frame did not have a box";
+        }
+        canHandlePbc = false;
+    }
+
+    if (matchSettings.requirePbcHandling && !canHandlePbc)
+    {
+        ADD_FAILURE() << "Cannot compare positions for the above reason(s)";
+        return;
+    }
+
+    if ((matchSettings.handlePbcIfPossible || matchSettings.requirePbcHandling) && canHandlePbc)
+    {
+        EXPECT_THAT(putAtomsInBox(test), Pointwise(RVecEq(tolerance), putAtomsInBox(reference)));
+    }
+    else
+    {
+        EXPECT_THAT(test.x(), Pointwise(RVecEq(tolerance), reference.x()));
+    }
+}
+
+/*! \brief Compares the velocities from \c reference and \c test
+ * according to the \c matchSettings and \c tolerance. */
+static void compareVelocities(const TrajectoryFrame              &reference,
+                              const TrajectoryFrame              &test,
+                              const TrajectoryFrameMatchSettings &matchSettings,
+                              const FloatingPointTolerance        tolerance)
+{
+    if (!matchSettings.mustCompareVelocities)
+    {
+        return;
+    }
+    EXPECT_THAT(test.v(), Pointwise(RVecEq(tolerance), reference.v()));
+}
+
+/*! \brief Compares the forces from \c reference and \c test
+ * according to the \c matchSettings and \c tolerance. */
+static void compareForces(const TrajectoryFrame              &reference,
+                          const TrajectoryFrame              &test,
+                          const TrajectoryFrameMatchSettings &matchSettings,
+                          const FloatingPointTolerance        tolerance)
+{
+    if (!matchSettings.mustCompareForces)
+    {
+        return;
+    }
+    EXPECT_THAT(test.f(), Pointwise(RVecEq(tolerance), reference.f()));
+}
+
+
+void compareTrajectoryFrames(const TrajectoryFrame              &reference,
+                             const TrajectoryFrame              &test,
+                             const TrajectoryFrameMatchSettings &matchSettings,
+                             const TrajectoryTolerances         &tolerances)
+{
+    SCOPED_TRACE("Comparing reference frame " + reference.frameName() + " and test frame " + test.frameName());
+    EXPECT_EQ(reference.step(), test.step());
+    EXPECT_EQ(reference.time(), test.time());
+    compareBox(reference, test, matchSettings, tolerances.box);
+    comparePositions(reference, test, matchSettings, tolerances.positions);
+    compareVelocities(reference, test, matchSettings, tolerances.velocities);
+    compareForces(reference, test, matchSettings, tolerances.forces);
 }
 
 } // namespace
