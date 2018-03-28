@@ -41,7 +41,6 @@
  */
 #include "gmxpre.h"
 
-#include "filehandler.h"
 #include "convert.h"
 
 #include <algorithm>
@@ -50,35 +49,35 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/unique_cptr.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/fileio/filetypes.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
+
+#include "filehandler.h"
 
 namespace gmx
 {
 
 struct t_writeFileBool;
 struct t_writeFileDoubles;
-class TrajecotryWriteSettings;
 
 namespace analysismodules
 {
@@ -107,20 +106,12 @@ class Convert : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Selection                            sel_;
-        TrajectoryWriteSettings             *settings_;
-        TrajectoryWriteSettings              localSettings_;
         Filehandler                          file_;
-        t_trxframe                           localFrame_;
-        t_writeFileBool writeBool_;
-        t_writeFileDoubles                   writeDoubles_;
-        std::string name_;
 
 };
 
-Convert::Convert() : sel_(nullptr), settings_(nullptr)
+Convert::Convert()
 {
-    settings_ = &localSettings_;
 }
 
 
@@ -131,44 +122,16 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
         "[THISMODULE] converts trajectory files between different formats."
     };
 
+    file_.initFileOptions(options);
     settings->setHelpText(desc);
-
-    options->addOption(SelectionOption("select").store(&sel_).dynamicMask()
-                           .required()
-                           .description("Selection to write out"));
-
-    options->addOption(FileNameOption("o").filetype(eftTrajectory).outputFile()
-                           .store(&name_).defaultBasename("trajout")
-                           .required()
-                           .description("Output trajectory after conversion"));
-    options->addOption(BooleanOption("velocity").store(&writeBool_.bV)
-                           .description("Write velocities to file if possible"));
-    options->addOption(BooleanOption("force").store(&writeBool_.bF)
-                           .description("Write forces to file if possible"));
-    options->addOption(BooleanOption("conect").store(&writeBool_.bGC)
-                           .description("Write connection information to file"));
-    options->addOption(DoubleOption("prec").store(&writeDoubles_.prec)
-                           .description("Output precision for compressed files")
-                           .storeIsSet(&writeBool_.bP));
-    options->addOption(DoubleOption("t0").store(&writeDoubles_.time)
-                           .description("Set custom start time")
-                           .storeIsSet(&writeBool_.bT));
-
-
-
     // set correct flags to indicate we need a proper topology for the analysis
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
-
-    settings_->setWriteBool(writeBool_);
-    settings_->setWriteDoubles(writeDoubles_);
-    settings_->setName(name_);
-    settings_->setSel(&sel_);
-
 }
 
 void
 Convert::optionsFinished(TrajectoryAnalysisSettings * /*settings*/)
 {
+    file_.checkOptions();
 }
 
 
@@ -176,8 +139,8 @@ void
 Convert::initAnalysis(const TrajectoryAnalysisSettings   & /*settings*/,
                       const TopologyInformation         &top)
 {
-    settings_->setMtop(top.mtop());
-    file_.initOutput(settings_);
+    file_.setMtop(top.mtop());
+    file_.initOutput();
 }
 
 void
