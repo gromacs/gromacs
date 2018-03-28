@@ -32,9 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Helper classes for file handling of trajectory files.
+ * Handler for writing coordinate data to files.
+ * Takes care of file formatting and handling of file correct output sizes.
  *
  * \author
  * \ingroup module_trajectoryanalysis
@@ -44,69 +45,143 @@
 
 #include <algorithm>
 
-#include "writesettings.h"
-
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/selection/selectionoption.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
 
-/*! \libinternal \brief
- * Filehandler classes for handling trajectory file opening and data writing
+/*! \libinternal
+ * \brief
+ * Container for double values for file output.
+ *
+ * Struct that holds user information for writing time and file output precision.
+ * Can be extendet if needed to contain more values.
+ */
+typedef struct t_writeFileDoubles
+{
+    //! Precision for binary file formats.
+    double prec;
+    //! Non default starting time.
+    double time;
+} t_writeFileDoubles;
+
+/*!\libinternal
+ * \brief
+ * Container for boolean values for file output.
+ *
+ * Struct that should hold all the boolean values for deciding what and how to write
+ * the new coordinate files.
+ */
+typedef struct t_writeFileBool
+{
+    //! Do we need to write connection information.
+    bool    bGC;
+    //! Does the frame have non default precision.
+    bool    bP;
+    //! Does the frame have velocities.
+    bool    bV;
+    //! Does the frame have forces.
+    bool    bF;
+    //! Is the t_atoms struct included in the frame data.
+    bool    bA;
+    //! Are we using non default starting and frame times.
+    bool    bT;
+    //! Are we setting a new and different box.
+    bool    bNewBox;
+} t_writeFileBool;
+
+/*!\libinternal
+ * \brief
+ * Filehandler class for handling trajectory file opening and data writing
  *
  * The filehandler keeps both track of the file being currently written too
  * and the correct number of coordinates that should be written, as well as
  * the output file type.
- * It is passed the file name (used to derive file type) and a settings object containing
- * the appropriate fields to set the number of coordinates and internal state of
- * the final coordinate file.
+ * All the information is set by the user through the options mechanics
+ * in the framework.
  *
  * \ingroup module_trajectoryanalysis
  *
  */
-
-//    struct t_writeFileBool;
-//    struct t_writeFileDoubles;
-
 class Filehandler
 {
     public:
         /*! \brief
-         * Default constructor
+         * Default constructor for Filehandler.
          */
-        Filehandler() : sel_(nullptr), trr_(nullptr), infile_(nullptr), filetype_(efNR), mtop_(nullptr)
+        Filehandler() : sel_(nullptr), trr_(nullptr), filetype_(efNR), mtop_(nullptr)
         {
+            initWriteBool(&writeBool_);
+            initWriteDoubles(&writeDoubles_);
+            connections_ = gmx_conect_init();
+            init_atom(&atoms_);
             strcpy(filemode_, "w");
+            clear_trxframe(&newFrame_, true);
+
         }
         /*! \brief
-         * Destructor calls file closing routine.
+         * Construct Filehandler object with initial selection.
+         *
+         * Can be used to initialize Filehandler from outside of trajectoryanalysis
+         * framework.
+         * TODO Add initializers for the remaining fields.
          */
+        Filehandler(Selection sel) : sel_(sel), trr_(nullptr), filetype_(efNR), mtop_(nullptr)
+        {
+            initWriteBool(&writeBool_);
+            initWriteDoubles(&writeDoubles_);
+            connections_ = gmx_conect_init();
+            init_atom(&atoms_);
+            strcpy(filemode_, "w");
+            clear_trxframe(&newFrame_, true);
+        }
+
         ~Filehandler()
         {
             closeFile();
         }
-        /*! \brief
-         * Initializes the file writer with the appropriate `settings`.
+        /*!\brief
+         * Initialize settings through the options interface.
+         *
+         * The Filehandler is passed the information needed to properly set up the
+         * new trajectory file directly from user information through the options
+         * interface.
+         *
+         * \param[in,out] options Pointer to options interface passed from trajectoryanalysis framework.
          */
-        void initOutput(TrajectoryWriteSettings *settings);
+        void initFileOptions(IOptionsContainer *options);
         /*! \brief
+         * Prepare file output.
+         *
+         * After processing user information, the new file can be opened, while also setting
+         * legacy information and/or connections needed for plain text files.
+         */
+        void initOutput();
+
+        /*! \brief
+         * Change coordinate frame information for output.
+         *
          * Takes the `oldFrame` coordinates and changes them
-         * internally for correct number of atoms
+         * internally for correct number of atoms, as well as changing things such as
+         * frame time or affect output of velocities or forces.
+         *
+         * \param[in] oldFrame Coordinate frame to be modified for output.
          */
         void modifyFrame(const t_trxframe *oldFrame);
         /*! \brief
@@ -115,9 +190,75 @@ class Filehandler
         void writeFrame() const;
         /*! \brief
          * Closes new trajectory file after finishing the writing too it.
-         * Has to be called from parent before destroying the created filehandler object.
+         *
+         * Function to properly close opened output files after the file writing is finished.
+         * Has to be called from parent or will be invoked when the filehandler itself is destroyed.
          */
         void closeFile();
+        /*! \brief
+         * Sets a new box for the frame output.
+         *
+         * In case the user wants to modify the box of the new frame, we set the new matrix for the box here.
+         * \param[in] box New box in matrix format.
+         */
+        void setBox(const matrix box);
+
+        /*! \brief
+         * Get the currently processed coordinate frame for further processing.
+         *
+         * Function to access the internally stored trajectory frame for additional processing
+         * after the initial information that will actually written to disk has been set.
+         * This includes number of atoms, box, force and velocity output and frame times.
+         *
+         * \returns Trajectory frame pointer to internally stored frame.
+         */
+        t_trxframe *getFrameForModification();
+
+        //! Returns if we need to set new box or not.
+        bool getUseNewBox()
+        {
+            return writeBool_.bNewBox;
+        }
+
+        //! Returns the rectangular box dimensions as a vector.
+        const std::vector<float> getNewBoxDimensions()
+        {
+            return newBox_;
+        }
+
+        //! Returns the internal Selection for the output.
+        const Selection *getSel()
+        {
+            return &sel_;
+        }
+
+        //! Returns the pointer to the topology information obtained from the analysis framework.
+        const gmx_mtop_t *getMtop() const
+        {
+            return mtop_;
+        }
+
+        /*! \brief
+         * Set the pointer to the topology information.
+         *
+         * Makes the topology information available to the filehandler functions to set coordinates
+         * and access molecule information for file writing.
+         *
+         * \param[in] mtop Pointer to topology from analysis framework.
+         */
+        void setMtop(const gmx_mtop_t *mtop)
+        {
+            mtop_ = mtop;
+        }
+
+        /*! \brief
+         * Sanity check for user input options.
+         *
+         * This function performs the check of the user input for basic sanity issues
+         * and should be called after option processing has been finished.
+         */
+        void checkOptions();
+
         // Remaining functions are internal and called by functions above.
     private:
         /*! \brief
@@ -126,227 +267,126 @@ class Filehandler
          */
         void setLegacyInformation(t_atoms *local);
         /*! \brief
-         * Individual function needed to open TNG files. Needs `filename`, filemode `mode`
+         * Individual function needed to open TNG files.
+         *
+         * Function used to open TNG formatted output files for writing. The function is
+         * basically a wrapper about the lower level function that sets the necessary input
+         * needed for opening the file.
+         *
+         * \param[in] filename Character string for the new filename.
+         * \param[in] mode Character string indicating filemode, has to be 'w'.
          */
         t_trxstatus *trjOpenTng(const char *filename, const char *mode) const;
         /*! \brief
-         * Function used to open all files execpt TNG files. Needs `filename` and
-         * filemode `mode`.
+         * Function used to open all files execpt TNG files.
+         *
+         * This is just a wrapper around the open_trx function from the file handling routines.
+         *
+         * \param[in] filename Character string for the new filename.
+         * \param[in] mode Character string indicating filemode, has to be 'w'.
          */
         t_trxstatus *trjOpenTrr(const char *filename, const char *mode) const;
         /*! \brief
-         * Set connection information needed to write out text based files.
+         * Set connection information needed to write out plain text files.
+         *
+         * Plain text format files (pdb, gro, g96) need the information for which molecules are
+         * connected for writing the new files. This function populates gmx_conect to make this
+         * available for writing.
          */
         void setConnections();
 
+        /*! \brief
+         * Initialize boolean variables to false.
+         *
+         * \param[in,out] writeBool Boolean storage struct that will be initialized.
+         */
+        void initWriteBool(t_writeFileBool *writeBool);
+
+        /*! \brief
+         * Initialize double variables to 0.
+         *
+         * \param[in,out] writeDouble Double storage struct that will be initialized.
+         */
+        void initWriteDoubles(t_writeFileDoubles *writeDouble);
+
+
+    private:
+        /*! \brief
+         * Selection of atoms that will be written to disk.
+         *
+         * Internal selection of atoms chosen by the user that will be written
+         * to disk during processing. All actions that the filehandler performs
+         * will only be on those atoms, with the remaining ones being not affected.
+         */
         Selection                            sel_;
+        /*! \brief
+         * Name for the new coordinate file.
+         *
+         * User supplied name for the new coordinate file. Also used to determine the
+         * file type through checking of the file extension.
+         */
         std::string                          name_;
 
-        TrajectoryWriteSettings             *settings_;
+        /*! \brief
+         * Vector of real values to set new box size if requested.
+         *
+         * Internal storage for new box formats if requested.
+         */
+        std::vector<float> newBox_;
 
-
+        /*! \brief
+         * Internal storage of modified coordinates.
+         *
+         * Local copy of the modified coordinates stored internally for writing and
+         * possible use for additional modifications.
+         */
         t_trxframe                 newFrame_;
+
+        /*! \brief
+         * Local storage for boolean options.
+         */
         t_writeFileBool            writeBool_;
+        /*! \brief
+         * Local storage for double options.
+         */
         t_writeFileDoubles         writeDoubles_;
 
+        /*! \brief
+         * File pointer to the coordinate file being written.
+         */
         t_trxstatus               *trr_;
 
+        /*! \brief
+         * File mode for writing to coordinate files.
+         *
+         * TODO have this as a constant string.
+         */
         char                       filemode_[5];
-        t_trxstatus               *infile_;
+
+        /*! \brief
+         * Local storage of connection information for plain text files.
+         *
+         * The connections object needs to be populated for writing to plain text files
+         * and is handled during the set-up of the file writing.
+         */
         gmx_conect                 connections_;
+
+        /*! \brief
+         * Local copy of the atom information struct needed for writing to some coordinate file types.
+         */
         t_atoms                    atoms_;
+
+        /*! \brief
+         * Storage of file type for determing what kind of file will be written to disk.
+         */
         int filetype_;
+
+        /*! \brief
+         * Local copy of the topology so it is available for functions that rely on it.
+         */
         const gmx_mtop_t          *mtop_;
 
 };
-
-void
-Filehandler::modifyFrame(const t_trxframe *oldFrame)
-{
-    const Selection *sel    = &sel_;
-    int              natoms = sel->atomCount();
-
-    newFrame_ = *oldFrame;
-
-    newFrame_.time   = writeDoubles_.time;
-    newFrame_.bV     = (oldFrame->bV && writeBool_.bV);
-    newFrame_.bF     = (oldFrame->bF && writeBool_.bF);
-    newFrame_.natoms = natoms;
-    newFrame_.bPrec  = (oldFrame->bPrec && writeBool_.bP);
-    newFrame_.prec   = writeDoubles_.prec;
-    newFrame_.atoms  = &atoms_;
-    newFrame_.bAtoms = writeBool_.bA;
-
-    rvec *xmem = nullptr;
-    rvec *vmem = nullptr;
-    rvec *fmem = nullptr;
-    snew(xmem, natoms);
-    if (newFrame_.bV)
-    {
-        snew(vmem, natoms);
-    }
-    if (newFrame_.bF)
-    {
-        snew(fmem, natoms);
-    }
-    newFrame_.x = xmem;
-    newFrame_.v = vmem;
-    newFrame_.f = fmem;
-
-
-    for (int i = 0; i < natoms; i++)
-    {
-        int pos = sel->position(i).refId();
-        copy_rvec(oldFrame->x[pos], newFrame_.x[i]);
-        if (newFrame_.bV)
-        {
-            copy_rvec(oldFrame->v[pos], newFrame_.v[i]);
-        }
-        if (newFrame_.bF)
-        {
-            copy_rvec(oldFrame->f[pos], newFrame_.f[i]);
-        }
-    }
-}
-
-void
-Filehandler::closeFile()
-{
-    if (trr_ != nullptr)
-    {
-        close_trx(trr_);
-    }
-    trr_ = nullptr;
-}
-
-void
-Filehandler::setLegacyInformation(t_atoms *local)
-{
-    t_atoms inputAtoms = gmx_mtop_global_atoms(mtop_);
-    init_t_atoms(local, inputAtoms.nr, inputAtoms.havePdbInfo);
-    sfree(local->resinfo);
-    local->resinfo = inputAtoms.resinfo;
-    int natoms = sel_.atomCount();
-    for (int i = 0; (i < natoms); i++)
-    {
-        local->atomname[i] = inputAtoms.atomname[sel_.position(i).refId()];
-        local->atom[i]     = inputAtoms.atom[sel_.position(i).refId()];
-        if (inputAtoms.havePdbInfo)
-        {
-            local->pdbinfo[i] = inputAtoms.pdbinfo[sel_.position(i).refId()];
-        }
-        local->nres = std::max(local->nres, local->atom[i].resind+1);
-    }
-    local->nr     = natoms;
-    writeBool_.bA = true;
-}
-
-t_trxstatus *
-Filehandler::trjOpenTng(const char *filename, const char *mode) const
-{
-    ArrayRef<const int> index     = sel_.atomIndices();
-    int                 natoms    = sel_.atomCount();
-    const char         *indexname = sel_.name();
-
-    int                 size = index.size();
-    int                *localindex;
-    snew(localindex, size);
-    int                 runner = 0;
-
-    for (const int *ai = index.begin(); ai != index.end(); ++ai)
-    {
-        localindex[runner++] = *ai;
-    }
-
-    gmx_mtop_t mtop = (*const_cast<gmx_mtop_t*>(mtop_));
-
-    t_trxstatus *out =
-    trjtools_gmx_prepare_tng_writing(filename,
-                                     mode[0],
-                                     nullptr, //infile_, //how to get the input file here?
-                                     nullptr,
-                                     natoms,
-                                     &mtop,
-                                     localindex,
-                                     indexname);
-
-    sfree(localindex);
-    return out;
-}
-
-t_trxstatus *
-Filehandler::trjOpenTrr(const char *filename, const char *mode) const
-{
-    return open_trx(filename, mode);
-}
-
-void
-Filehandler::setConnections()
-{
-    gmx_mtop_t *mtop = const_cast<gmx_mtop_t*>(mtop_);
-    t_topology  top  = gmx_mtop_t_to_t_topology(mtop, false);
-    connections_ = gmx_conect(&top);
-}
-
-
-void
-Filehandler::initOutput(TrajectoryWriteSettings *settings)
-{
-    settings_     = settings;
-    name_         = settings_->getName();
-    sel_          = *(settings_->getSel());
-    mtop_         = settings_->getMtop();
-    writeBool_    = settings_->getWriteBool();
-    writeDoubles_ = settings_->getWriteDoubles();
-    if (!name_.empty())
-    {
-        filetype_ = fn2ftp(name_.c_str());
-        switch (filetype_)
-        {
-            case (efTNG):
-                trr_ = trjOpenTng(name_.c_str(), filemode_);
-                break;
-            case (efPDB):
-            case (efGRO):
-		writeBool_.bGC = true;
-            case (efTRR):
-            case (efXTC):
-            case (efG96):
-                trr_ = trjOpenTrr(name_.c_str(), filemode_);
-                setLegacyInformation(&atoms_);
-                break;
-            default:
-                gmx_incons("Invalid file type");
-        }
-    }
-    if (writeBool_.bGC)
-    {
-        setConnections();
-    }
-}
-
-/*! \cond libapi */
-
-void
-Filehandler::writeFrame() const
-{
-    const t_trxframe *plocal = &newFrame_;
-    t_trxframe        local  = (*const_cast<t_trxframe*>(plocal));
-
-    switch (filetype_)
-    {
-        case (efTNG):
-        case (efTRR):
-        case (efXTC):
-        case (efPDB):
-        case (efGRO):
-        case (efG96):
-            write_trxframe(trr_, &local, connections_);
-            break;
-        default:
-            gmx_incons("Illegal output file format");
-    }
-}
 
 } // namespace gmx
 

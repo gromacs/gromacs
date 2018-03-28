@@ -34,46 +34,33 @@
  */
 /*! \internal \file
  * \brief
- * Tests for functionality of the "convert" trajectory analysis module.
+ * Declares trajectory analysis module for changing
+ * periodic boundary conditions.
  *
  * \author
  * \ingroup module_trajectoryanalysis
  */
-#include "gmxpre.h"
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_CHANGEPBC_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_CHANGEPBC_H
 
-#include "gromacs/trajectoryanalysis/modules/convert.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 
-#include <gtest/gtest.h>
-
-#include "testutils/cmdlinetest.h"
-#include "testutils/textblockmatchers.h"
-
-#include "moduletest.h"
-
-namespace
+namespace gmx
 {
 
-using gmx::test::CommandLine;
-using gmx::test::ExactTextMatch;
-
-/********************************************************************
- * Tests for gmx::analysismodules::Convert.
- */
-
-//! Test fixture for the convert analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::ConvertInfo>
-    ConvertModuleTest;
-
-TEST_F(ConvertModuleTest, SimpleConvert)
+namespace analysismodules
 {
-    const char *const cmdline[] = {
-        "convert",
-        "-select", "0"
-    };
-    setTopology("freevolume.tpr");
-    setTrajectory("freevolume.xtc");
-    setOutputFile("-o", "convert.pdb", ExactTextMatch());
-    runTest(CommandLine(cmdline));
-}
 
-} // namespace
+class ChangePBCInfo
+{
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static TrajectoryAnalysisModulePointer create();
+};
+
+} // namespace analysismodules
+
+} // namespace gmx
+
+#endif
