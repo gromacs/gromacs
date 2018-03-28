@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,7 +144,12 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  */
 const char *check_box(int ePBC, const matrix box);
 
-/*! \brief Creates box matrix from edge lengths and angles. */
+/*! \brief Creates box matrix from edge lengths and angles.
+ *
+ * \param[inout] box         The box matrix
+ * \param[in] vec            The edge lengths
+ * \param[in] angleInDegrees The angles
+ */
 void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees);
 
 /*! \brief Compute the maximum cutoff for the box
@@ -241,7 +246,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  */
 int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
 
-/*\brief Compute distance with PBC
+/*! \brief Compute distance with PBC
  *
  * As pbc_dx, but for double precision vectors.
  * set_pbc must be called before ever calling this routine.

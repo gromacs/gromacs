@@ -1,7 +1,7 @@
 GROMACS 2018.1 release notes
 ----------------------------
 
-This version was released on February 23, 2018. These release notes
+This version was released on March 21, 2018. These release notes
 document the changes that have taken place in GROMACS since the
 initial version 2018, to fix known issues. It also incorporates all
 fixes made in version 2016.5 and earlier, which you can find described
@@ -9,6 +9,18 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed leap-frog integrator with Nose-Hoover T coupling and Parrinello-Rahman P coupling
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With Parrinello-Rahman P coupling active, when applying Nose-Hoover T
+coupling at an MD step where no P coupling occured, the update phase
+could use outdated or garbage coupling data. Such simulations with
+:mdp:`nsttcouple` equal to :mdp:`nstpcouple` are unaffected
+by this issue, so few users will be impacted by this. Simulations
+using other coupling algorithms are unaffected.
+
+:issue:`2418`
 
 Used SIMD bondeds without perturbed interactions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -29,6 +41,18 @@ COMM removal requested for part of the system acted on the whole
 system.
 
 :issue:`2381`
+
+Fixed multi-simulations with multiple ranks per simulation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+These used to crash or hang mysteriously before the simulation would
+start.
+
+:issue:`2403`
+
+Improved inter-simulation signalling implementation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Reduced communication overhead with either many simulations or many
+ranks per simulation.
 
 Fixed FEP calculations with SHAKE
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -90,6 +114,47 @@ Also updated -multi to -multidir in an error message.
 
 :issue:`2377`
 
+Improved mdrun handling when GPUs are present but unavailable
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2415`
+
+Fixed crash with AWH and awh1-equilibrate-histogram=yes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When running AWH with awh1-equilibrate-histogram=yes and multiple MPI
+ranks, the simulation would segmentation fault.
+
+:issue:`2436`
+
+Fixed issues with AWH and bias sharing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When sharing AWH biases between multiple simulations, there were four
+issues. An MPI error would occur when an individual simulation would
+use more than one rank. The deconvoluted PMF would be garbage (but
+the sampling was correct). with more than 32 MPI ranks for an individual
+simulation, an error about a coordinate being 0 could occur.
+And continuation from checkpoints could be refused.
+
+:issue:`2433`
+:issue:`2439`
+:issue:`2441`
+:issue:`2444`
+
+Fixed virial with AWH and domain decomposiion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When running AWH with domain decomposition, the AWH/pull virial
+contribution would be multiplied with the number of MPI ranks.
+
+
+Fixed restart bug with pull geometry direction-periodic
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+With COM pulling with geometry direction-periodic, (only) at the step
+of continuing from checkpoint the closest PBC image would be used
+instead of the of the one closest to the reference value. This could
+lead to a sharp spike in the pull force at the continuation step.
+
+:issue:`2446`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -101,11 +166,41 @@ would fail. Now a fatal error is issued.
 
 :issue:`2386`
 
+Fixed grompp net charge check
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Use of multiple non-consecutive blocks of a moleculetype now works
+correctly.
+
+:issue:`2407`
+
+Fixed issue with adding selection groups for TNG output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When there were more molecule blocks than molecule types in the topology,
+the output was wrong.
+
+Fixed help text and functionality of ``pdb2gmx -missing``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This now permits dangling bonds at termini, which is occasionally useful.
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+PME on Fermi-era GPUs on large systems now works
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On older GPUs, it was possible to run into a hardware size limitation
+that has now been fixed.
+
+:issue:`2409`
+
 GoogleTest death tests are now used in a more portable way
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Tests for GPU utility functionality are now more robust
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Non-GPU builds, and GPU builds that find incompatible or otherwise
+unavailable devices will pass the tests in the manner intended.
+
+:issue:`2405`
 
 Used more portable python shebangs
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -129,7 +224,7 @@ Patch provdied by Veselin Kolev to quiet some compiler warnings.
 
 :issue:`2400`
 
-Work around gcc-6 bug in tabulated group non-bonded kernels
+Worked around gcc-6 bug in tabulated group non-bonded kernels
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 With the gcc-6 compiler, AVX and -O3, which is the default,
 the tabulated non-bonded kernels of the (deprecated) group
@@ -138,23 +233,30 @@ The errors are so large that they could not have caused latent issues.
 
 :issue:`2424`
 
-Detect correct AMD Zen SMT topology
+Detected correct AMD Zen SMT topology
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 On recent AMD Zen processors, hardware thread detection and pinning
 handling have been fixed, improving performance.
 
 :issue:`2388`
 
-Fix sharing of the AWH bias over multiple simulations
+Fixed POWER VSX SIMD usage for upcoming gcc version 8
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Sharing the AWH bias over multiple simulations only worked when
-each simulation was running on a single MPI rank. When a simulation
-itself used multiple MPI ranks, the run would stop with an MPI error.
+:issue:`2421`
 
-:issue:`2433`
+Fixed clang 6 with CUDA 9
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Permits builds for sm_70 and may work around an issue with sm_37
+
+:issue:`2443`
 
 Miscellaneous
 ^^^^^^^^^^^^^
 
 Made multi-atom TPI reproducible with different compilers
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Documentation enhancements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In particular, for handling options to mdrun relating to GPUs and
+running mdrun with good performance.

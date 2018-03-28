@@ -165,7 +165,7 @@ void sumPmf(gmx::ArrayRef<PointState>  pointState,
     /* Need to temporarily exponentiate the log weights to sum over simulations */
     for (size_t i = 0; i < buffer.size(); i++)
     {
-        buffer[i] = pointState[i].inTargetRegion() ? std::exp(static_cast<float>(pointState[i].logPmfSum())) : 0;
+        buffer[i] = pointState[i].inTargetRegion() ? std::exp(-pointState[i].logPmfSum()) : 0;
     }
 
     sumOverSimulations(gmx::ArrayRef<double>(buffer), commRecord, multiSimComm);

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017, by the GROMACS development team, led by
+# Copyright (c) 2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@ endfunction ()
 
 if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0" AND
     NOT CUDA_VERSION VERSION_LESS "8.0")
-    message(FATAL_ERROR "clang ${CMAKE_CXX_COMPILER_VERSION} for CUDA is only compatible with CUDA version <8.0")
+    message(FATAL_ERROR "clang ${CMAKE_CXX_COMPILER_VERSION} for CUDA is only compatible with CUDA version <=8.0")
 endif()
 
 if (GMX_CUDA_TARGET_COMPUTE)
@@ -64,18 +64,24 @@ if (GMX_CUDA_TARGET_SM)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_${_target}")
     endforeach()
 else()
-    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_20")
+    if(CUDA_VERSION VERSION_LESS "9.00") # < 9.0
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_20")
+    endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_30")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_35")
-    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_37")
+    # clang 6.0 + CUDA 9.0 seems to have issues generating code for sm_37
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0.999)
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_37")
+    endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_50")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_52")
     if (NOT CUDA_VERSION VERSION_LESS 8.0)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_60")
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_61")
     endif()
-    # TODO: test CUDA 9.0 and figure out which clang releases support it
-    #       and the sm_70 arch.
+    if (NOT CUDA_VERSION VERSION_LESS 9.0)
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_70")
+    endif()
 endif()
 if (GMX_CUDA_TARGET_SM)
     set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY HELPSTRING "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)")

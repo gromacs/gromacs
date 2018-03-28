@@ -126,6 +126,7 @@ if (SPHINX_FOUND)
         fragments/doxygen-links.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/2018/2018.2.rst
         release-notes/2018/2018.1.rst
         release-notes/2018/major/highlights.rst
         release-notes/2018/major/features.rst
