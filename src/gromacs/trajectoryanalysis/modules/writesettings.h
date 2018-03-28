@@ -49,6 +49,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
@@ -78,6 +79,7 @@ typedef struct t_writeFileBool
     bool    bF;
     bool    bA;
     bool    bT;
+    bool    bNewBox;
 } t_writeFileBool;
 
 class TrajectoryWriteSettings
@@ -97,7 +99,7 @@ class TrajectoryWriteSettings
         }
         const Selection *getSel()
         {
-            return sel_;
+            return &sel_;
         }
         std::string getName()
         {
@@ -107,13 +109,19 @@ class TrajectoryWriteSettings
         {
             return mtop_;
         }
+
+        bool getUseNewBox()
+        {
+            return writeBool_.bNewBox;
+        }
+
+        const std::vector<real> getNewBoxDimensions()
+        {
+            return newBox_;
+        }
         void setName(const std::string name)
         {
             name_ = name;
-        }
-        void setSel(const Selection *sel)
-        {
-            sel_ = sel;
         }
         void setMtop(const gmx_mtop_t *mtop)
         {
@@ -160,19 +168,19 @@ class TrajectoryWriteSettings
             writeBool_.bT = bTime;
         }
 
+        void initWriteSettingsOptions(IOptionsContainer *options);
+        void initWriteBool(t_writeFileBool *writeBool);
+        void initWriteDouble(t_writeFileDoubles *writeDoubles);
+        void checkOptions();
     private:
         t_writeFileDoubles    writeDoubles_;
         t_writeFileBool       writeBool_;
         std::string           name_;
         const gmx_mtop_t     *mtop_;
-        const Selection      *sel_;
+        Selection       sel_;
+        std::vector<real> newBox_;
+
 };
-
-TrajectoryWriteSettings::TrajectoryWriteSettings()
-{}
-
-TrajectoryWriteSettings::~TrajectoryWriteSettings()
-{}
 
 } // namespace gmx
 

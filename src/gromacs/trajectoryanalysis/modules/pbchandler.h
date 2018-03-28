@@ -34,16 +34,13 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::analysismodules::Convert.
+ * Helper classes for PBC change 
  *
  * \author
  * \ingroup module_trajectoryanalysis
  */
-#include "gmxpre.h"
-
-#include "filehandler.h"
-#include "writesettings.h"
-#include "convert.h"
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_PBCHANDLER_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_PBCHANDLER_H
 
 #include <algorithm>
 
@@ -58,6 +55,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
@@ -77,109 +75,83 @@
 namespace gmx
 {
 
-struct t_writeFileBool;
-struct t_writeFileDoubles;
-
-namespace analysismodules
+//! Enum value to store the selection for the PBC type from `-pbc`.
+enum PBCType
 {
+    ePBCTypeMolecule,
+    ePBCTypeResidue,
+    ePBCTypeAtom,
+    ePBCTypeNoJump,
+    ePBCTypeCluster,
+    ePBCTypeWhole,
+    ePBCNotSet
+};
 
-namespace
+//! Enum value to store the selection for the unit cell type from `-ur`.
+enum UnitCellType
 {
+    eUnitCellTypeRectangular,
+    eUnitCellTypeTriclinic,
+    eUnitCellTypeCompact,
+    eUnitCellNotSet
+};
 
-/*
- * Convert
- */
+//! Enum value to store the selection for the centering from `-center`.
+enum CenteringType
+{
+    eCenteringTypeTriclinic,
+    eCenteringTypeRectangular,
+    eCenteringTypeZero,
+    eCenteringNotSet
+};
 
-class Convert : public TrajectoryAnalysisModule
+//! Strings corresponding to PBCType.
+const char *const    c_pbcTypes[] = {"mol", "res", "atom", "nojump", "cluster", "whole"};
+//! Strings corresponding to UnitCellType.
+const char *const    c_unitCellTypes[] = {"rect", "tric", "compact"};
+//! Strings corresponding to CenteringType.
+const char *const    c_centeringTypes[] = {"tric", "rect", "zero"};
+
+class Pbchandler
 {
     public:
-        Convert();
+        Pbchandler() :  selPBCType_(ePBCNotSet), selUnitCellType_(eUnitCellNotSet), selCenteringType_(eCenteringNotSet), selCOM_(nullptr), selCent_(nullptr), selClust_(nullptr)
+    {}
+        ~Pbchandler()
+        {}
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
-
+        void initPBCOptions(IOptionsContainer *options);
+        void checkOptions(const Selection *sel, TrajectoryAnalysisSettings *settings);
+        void doPBC(const t_trxframe *input, t_trxframe *output, const gmx_mtop_t *mtop);
+        void setReferenceCoordinates(const TopologyInformation &top);
     private:
-        TrajectoryWriteSettings             *writeSettings_;
-        TrajectoryWriteSettings              localSettings_;
-        Filehandler                          file_;
+        void removeJump(t_trxframe *output);
+        void centerSystem(t_trxframe *output, int centeringType);
+        void cluster(t_trxframe *output, const gmx_mtop_t *mtop);
+        void comAtom(t_trxframe *output);
+        void comResidue(const t_trxframe *input, t_trxframe *output, const gmx_mtop_t *mtop);
+        void comMolecule(const t_trxframe *input, t_trxframe *output, const gmx_mtop_t *mtop);
+        void shiftCoord(const int atomStart, const int atomEnd, rvec shift, rvec *coord, const bool checkValid);
+
+    PBCType    selPBCType_;
+    UnitCellType    selUnitCellType_;
+    CenteringType    selCenteringType_;
+    Selection sel_;
+    Selection selCOM_;
+    Selection selCent_;
+    Selection selClust_;
+    bool    bCenter_;
+    bool    bHaveSelClust_;
+    bool    bHaveSelCent_;
+    bool    bHaveSelCom_;
+    std::vector<RVec>    refCoord_;
+    std::vector<float>   newBox_;
+    bool    bUseNewBox_;
+    matrix  newMatrix_;
+
 
 };
 
-Convert::Convert() : writeSettings_(nullptr)
-{
-    writeSettings_ = &localSettings_;
-}
-
-
-void
-Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
-{
-    static const char *const desc[] = {
-        "[THISMODULE] converts trajectory files between different formats."
-    };
-
-    writeSettings_->initWriteSettingsOptions(options);
-    file_.initFileOptions(options);
-    settings->setHelpText(desc);
-    // set correct flags to indicate we need a proper topology for the analysis
-    settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
-}
-
-void
-Convert::optionsFinished(TrajectoryAnalysisSettings * /*settings*/)
-{
-    writeSettings_->checkOptions();
-}
-
-
-void
-Convert::initAnalysis(const TrajectoryAnalysisSettings   & /*settings*/,
-                      const TopologyInformation         &top)
-{
-    writeSettings_->setMtop(top.mtop());
-    file_.initOutput(writeSettings_);
-}
-
-void
-Convert::analyzeFrame(int /*frnr*/, const t_trxframe &fr, t_pbc * /* pbc */,
-                      TrajectoryAnalysisModuleData * /*pdata*/)
-{
-    file_.modifyFrame(&fr);
-    file_.writeFrame();
-}
-
-void
-Convert::finishAnalysis(int /*nframes*/)
-{
-    file_.closeFile();
-}
-
-
-
-void
-Convert::writeOutput()
-{
-}
-
-}       // namespace
-
-const char ConvertInfo::name[]             = "convert";
-const char ConvertInfo::shortDescription[] =
-    "Converts between different trajectory types";
-
-TrajectoryAnalysisModulePointer ConvertInfo::create()
-{
-    return TrajectoryAnalysisModulePointer(new Convert);
-}
-
-} // namespace analysismodules
-
 } // namespace gmx
+
+#endif
