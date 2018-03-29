@@ -150,14 +150,17 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
 
     if (tidxz == 0)
     {
-        /* Pre-load i-atom x and q into shared memory */
-        int ci = sci * c_numClPerSupercl + tidxj;
-        int ai = ci * c_clSize + tidxi;
+        for (int i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
+        {
+            /* Pre-load i-atom x and q into shared memory */
+            int ci = sci * c_numClPerSupercl + tidxj+i;
+            int ai = ci * c_clSize + tidxi;
 
-        /* We don't need q, but using float4 in shmem avoids bank conflicts */
-        float4 tmp = xq[ai];
-        float4 xi  = tmp + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
-        xib[tidxj * c_clSize + tidxi] = xi;
+            /* We don't need q, but using float4 in shmem avoids bank conflicts */
+            float4 tmp = xq[ai];
+            float4 xi  = tmp + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+            xib[(tidxj+i) * c_clSize + tidxi] = xi;
+        }
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
+
+#include "config.h"
 
 #include <cstddef>
 
@@ -74,8 +76,12 @@ struct NbnxnListParameters
 
 /*! \endcond */
 
-/* With GPU kernels the i and j cluster size is 8 atoms */
+/* With GPU kernels the i and j cluster size is 8 atoms for CUDA and can be set at compile time for OpenCL */
+#if GMX_GPU == GMX_GPU_OPENCL
+static const int c_nbnxnGpuClusterSize = GMX_OCL_CLUSTER_SIZE;
+#else
 static const int c_nbnxnGpuClusterSize = 8;
+#endif
 
 /* The number of clusters in a super-cluster, used for GPU */
 static const int c_nbnxnGpuNumClusterPerSupercluster = 8;
