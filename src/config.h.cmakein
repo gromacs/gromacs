@@ -241,6 +241,9 @@
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
+/* Cluster size used by OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
+#define GMX_OCL_CLUSTER_SIZE @GMX_OCL_CLUSTER_SIZE@
+
 /* Use NVML */
 #cmakedefine01 HAVE_NVML
 
