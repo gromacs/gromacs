@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,6 +66,9 @@
 
 namespace gmx
 {
+
+class EnergyFrame;
+
 namespace test
 {
 
@@ -87,8 +90,6 @@ typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
  * making EnergyFrameReader objects. */
 EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string              &filename,
                                                 const std::vector<std::string> &requiredEnergyFieldNames);
-
-class EnergyFrame;
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<ener_file, done_ener_file> ener_file_ptr;
@@ -157,40 +158,6 @@ class EnergyFrameReader
  * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
 void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
                    FloatingPointTolerance tolerance);
-
-/*! \internal
- * \brief Contains the content of an .edr frame read by an EnergyFrameReader
- *
- * The interface of this class is intended to resemble a subset of std::map.
- *
- * Objects of this type are intended to be constructed by
- * EnergyFrameReader objects, and as such will always contain valid
- * data from an .edr file frame. */
-class EnergyFrame
-{
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        /*! \brief Return the value read for energy \c name.
-         *
-         * \throws APIError  if \c name was not registered with EnergyFileReader. */
-        const real &at(const std::string &name) const;
-        //! Constructor
-        EnergyFrame();
-    private:
-        //! Container for energy values, indexed by name
-        std::map<std::string, real> values_;
-        //! Step number read from the .edr file frame
-        std::int64_t                step_;
-        //! Time read from the .edr file frame
-        double time_;
-
-        friend class EnergyFrameReader;
-        friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                                  FloatingPointTolerance tolerance);
-};
 
 } // namespace
 } // namespace

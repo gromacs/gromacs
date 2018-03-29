@@ -58,6 +58,7 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
@@ -170,7 +171,7 @@ void PmeTest::runTest(const RunModesList &runModes)
             while (energyReader->readNextFrame())
             {
                 const EnergyFrame &frame            = energyReader->frame();
-                const std::string  stepName         = frame.getFrameName();
+                const std::string  stepName         = frame.frameName();
                 const real         conservedEnergy  = frame.at("Total Energy");
                 const real         reciprocalEnergy = frame.at("Coul. recip.");
                 if (firstIteration)

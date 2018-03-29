@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,9 @@
 #include "gromacs/math/veccompare.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
                 gmx_bool bRMSD, real ftol, real abstol)
@@ -101,3 +103,97 @@ void done_frame(t_trxframe *frame)
     sfree(frame->v);
     sfree(frame->f);
 }
+
+namespace gmx
+{
+
+TrajectoryFrame::TrajectoryFrame(const t_trxframe &frame)
+    : frame_(frame)
+{
+    // This would be nicer as an initializer, but once uncrustify is
+    // happy, Doxygen can't parse it.
+    box_ = {{{{0}}}};
+
+    if (!frame.bStep)
+    {
+        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a step number"));
+    }
+    if (!frame.bTime)
+    {
+        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a time"));
+    }
+    if (frame.bBox)
+    {
+        for (int d = 0; d < DIM; ++d)
+        {
+            for (int dd = 0; dd < DIM; ++dd)
+            {
+                box_[d][dd] = frame.box[d][dd];
+            }
+        }
+    }
+}
+
+std::string TrajectoryFrame::frameName() const
+{
+    return formatString("Time %f Step %" GMX_PRId64, frame_.time, frame_.step);
+}
+
+std::int64_t TrajectoryFrame::step() const
+{
+    return frame_.step;
+}
+
+double TrajectoryFrame::time() const
+{
+    return frame_.time;
+}
+
+int TrajectoryFrame::pbc() const
+{
+    return frame_.ePBC;
+}
+
+ArrayRef<const RVec> TrajectoryFrame::x() const
+{
+    return arrayRefFromArray(reinterpret_cast<RVec *>(frame_.x),
+                             frame_.natoms);
+}
+
+ArrayRef<const RVec> TrajectoryFrame::v() const
+{
+    if (frame_.bV)
+    {
+        return arrayRefFromArray(reinterpret_cast<RVec *>(frame_.v),
+                                 frame_.natoms);
+    }
+    else
+    {
+        return EmptyArrayRef();
+    }
+}
+
+ArrayRef<const RVec> TrajectoryFrame::f() const
+{
+    if (frame_.bF)
+    {
+        return arrayRefFromArray(reinterpret_cast<RVec *>(frame_.f),
+                                 frame_.natoms);
+    }
+    else
+    {
+        return EmptyArrayRef();
+    }
+}
+
+bool TrajectoryFrame::hasBox() const
+{
+    return frame_.bBox;
+}
+
+const BoxMatrix &TrajectoryFrame::box() const
+{
+    return box_;
+}
+
+} // namespace gmx

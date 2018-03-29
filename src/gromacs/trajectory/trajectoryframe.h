@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,10 @@
 
 #include <cstdio>
 
+#include <array>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -85,5 +88,64 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
                 gmx_bool bRMSD, real ftol, real abstol);
 
 void done_frame(t_trxframe *frame);
+
+namespace gmx
+{
+
+/*!\brief A 3x3 matrix data type useful for simulation boxes
+ *
+ * \todo Implement a full replacement for C-style real[DIM][DIM] */
+using BoxMatrix = std::array <std::array<real, DIM>, DIM>;
+
+/*! \internal
+ * \brief Contains a valid trajectory frame.
+ *
+ * Valid frames have a step and time, but need not have any particular
+ * other fields.
+ *
+ * \todo Eventually t_trxframe should be replaced by a class such as
+ * this. Currently we need to introduce BoxMatrix so that we can have
+ * a normal C++ getter that returns the contents of a box matrix,
+ * since you cannot use a real[DIM][DIM] as a function return type.
+ *
+ * \todo Consider a std::optional work-alike type for expressing that
+ * a field may or may not have content. */
+class TrajectoryFrame
+{
+    public:
+        /*! \brief Constructor
+         *
+         * \throws APIError If \c frame lacks either step or time.
+         */
+        explicit TrajectoryFrame(const t_trxframe &frame);
+        /*! \brief Return a string that helps users identify this frame, containing time and step number.
+         *
+         * \throws std::bad_alloc  when out of memory */
+        std::string frameName() const;
+        //! Step number read from the trajectory file frame.
+        std::int64_t step() const;
+        //! Time read from the trajectory file frame.
+        double time() const;
+        //! The PBC characteristics of the box.
+        int pbc() const;
+        //! Get a view of position coordinates of the frame (which could be empty).
+        ArrayRef<const RVec> x() const;
+        //! Get a view of velocity coordinates of the frame (which could be empty).
+        ArrayRef<const RVec> v() const;
+        //! Get a view of force coordinates of the frame (which could be empty).
+        ArrayRef<const RVec> f() const;
+        //! Return whether the frame has a box.
+        bool hasBox() const;
+        //! Return a handle to the frame's box, which is all zero if the frame has no box.
+        const BoxMatrix &box() const;
+        // TODO make this private when updating trajectory comparison code
+        //! Handle to trajectory data
+        const t_trxframe &frame_;
+    private:
+        //! Box matrix data from the frame_.
+        BoxMatrix         box_;
+};
+
+} // namespace gmx
 
 #endif
