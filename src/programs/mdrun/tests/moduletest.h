@@ -99,7 +99,7 @@ class SimulationRunner
         //! Use a string as -n input to grompp
         void useStringAsNdxFile(const char *ndxString);
         //! Use a standard .top and .gro file as input to grompp
-        void useTopGroAndNdxFromDatabase(const char *name);
+        void useTopGroAndNdxFromDatabase(const std::string &name);
         //! Use a standard .gro file as input to grompp
         void useGroFromDatabase(const char *name);
         //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
