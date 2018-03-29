@@ -115,7 +115,8 @@ MdpFileValues mdpFileValueDatabase_g
                                         "constraints", "all-bonds"
                                     } }
     },
-    // Nonanol molecule in vacuo, topology suitable for FEP testing
+    // Nonanol molecule in vacuo, topology suitable for testing FEP
+    // on KE, angles, dihedral restraints, coulomb and vdw
     {
         "nonanol_vacuo", { {
                                "nsteps", "16"
@@ -131,17 +132,20 @@ MdpFileValues mdpFileValueDatabase_g
                            },
                            {
                                "other",
-                               R"(free-energy       = yes
-                                  sc-alpha          = 0.5
-                                  sc-r-power        = 6
-                                  nstdhdl           = 4
-                                  init-lambda-state = 3
-                                  fep_lambdas       = 0.00 0.50 1.00 1.00 1.00
-                                  vdw_lambdas       = 0.00 0.00 0.00 0.50 1.00
-                                  couple-moltype    = nonanol
-                                  couple-lambda0    = vdw-q
-                                  couple-lambda1    = none
-                                  couple-intramol   = yes)"
+                               R"(free-energy         = yes
+                                  sc-alpha            = 0.5
+                                  sc-r-power          = 6
+                                  nstdhdl             = 4
+                                  init-lambda-state   = 3
+                                  mass-lambdas        = 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+                                  bonded-lambdas      = 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+                                  restraint-lambdas   = 0.0 0.0 0.0 0.0 0.0 0.5 1.0 1.0 1.0 1.0 1.0
+                                  vdw-lambdas         = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.5 1.0 1.0 1.0
+                                  coul-lambdas        = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.5 1.0
+                                  ;couple-moltype      = nonanol
+                                  ;couple-lambda0      = none
+                                  ;couple-lambda1      = vdw-q
+                                  ;couple-intramol     = yes)"
                            } }
     }
 };

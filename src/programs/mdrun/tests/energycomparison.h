@@ -42,8 +42,8 @@
 #ifndef GMX_PROGRAMS_MDRUN_TESTS_ENERGYCOMPARISON_H
 #define GMX_PROGRAMS_MDRUN_TESTS_ENERGYCOMPARISON_H
 
-#include <map>
 #include <string>
+#include <unordered_map>
 
 #include "testutils/testasserts.h"
 
@@ -56,7 +56,7 @@ namespace test
 {
 
 //! Convenience type
-using EnergyTolerances = std::map<std::string, FloatingPointTolerance>;
+using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>;
 
 /*! \brief Compare all fields of reference with all matching fields from test
  *
