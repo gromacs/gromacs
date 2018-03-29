@@ -51,9 +51,9 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -81,8 +81,6 @@ void done_trxframe(t_trxframe *fr)
     sfree(fr->index);
     sfree(fr);
 }
-
-// === TrajectoryFrameReader ===
 
 TrajectoryFrameReader::TrajectoryFrameReader(const std::string &filename)
     : filename_(filename),
@@ -147,7 +145,7 @@ TrajectoryFrameReader::frame()
     }
     if (!nextFrameExists_)
     {
-        GMX_THROW(APIError("There is no next frame, so there should have been no attempt to use the data, e.g. by reacting to a call to readNextFrame()."));
+        GMX_THROW(APIError("There is no next frame, so there should have been no attempt to get it. Perhaps the return value of readNextFrame() was misused."));
     }
 
     // Prepare for reading future frames
@@ -156,43 +154,6 @@ TrajectoryFrameReader::frame()
 
     // The probe filled trxframeGuard_ with new data, so return it
     return TrajectoryFrame(*trxframeGuard_.get());
-}
-
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
-    // NB We checked earlier for both frames that bStep and bTime are set
-
-    EXPECT_EQ(reference.frame_.step, test.frame_.step)
-    << "step didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-
-    EXPECT_EQ(reference.frame_.time, test.frame_.time)
-    << "time didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-
-    for (int i = 0; i < reference.frame_.natoms && i < test.frame_.natoms; ++i)
-    {
-        for (int d = 0; d < DIM; ++d)
-        {
-            if (reference.frame_.bX && test.frame_.bX)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_.x[i][d], test.frame_.x[i][d], tolerance)
-                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-            }
-            if (reference.frame_.bV && test.frame_.bV)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_.v[i][d], test.frame_.v[i][d], tolerance)
-                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-            }
-            if (reference.frame_.bF && test.frame_.bF)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_.f[i][d], test.frame_.f[i][d], tolerance)
-                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-            }
-        }
-    }
 }
 
 } // namespace

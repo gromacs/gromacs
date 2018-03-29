@@ -48,17 +48,19 @@ set(exename "mdrun-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
-    tabulated_bonded_interactions.cpp
+    compressed_x_output.cpp
+    energycomparison.cpp
     grompp.cpp
     initialconstraints.cpp
-    rerun.cpp
-    trajectory_writing.cpp
-    trajectoryreader.cpp
-    compressed_x_output.cpp
-    swapcoords.cpp
     interactiveMD.cpp
+    rerun.cpp
+    swapcoords.cpp
+    tabulated_bonded_interactions.cpp
     termination.cpp
     tpitest.cpp
+    trajectory_writing.cpp
+    trajectorycomparison.cpp
+    trajectoryreader.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
@@ -72,10 +74,10 @@ set(exename "mdrun-mpi-test")
 gmx_add_gtest_executable(
     ${exename} MPI
     # files with code for tests
+    domain_decomposition.cpp
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
-    domain_decomposition.cpp
     # pseudo-library for code for testing mdrun
     $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
