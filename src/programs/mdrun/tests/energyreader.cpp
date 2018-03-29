@@ -192,24 +192,5 @@ EnergyFrameReader::frame()
     return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyFields_);
 }
 
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
-    for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
-    {
-        auto testIt = test.find(referenceIt->first);
-        if (testIt != test.end())
-        {
-            auto energyFieldInReference = referenceIt->second;
-            auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-        }
-    }
-}
-
 } // namespace
 } // namespace
