@@ -754,8 +754,8 @@ Van der Waals
 
    .. mdp-value:: Cut-off
 
-      Twin range cut-offs with neighbor list cut-off :mdp:`rlist` and
-      VdW cut-off :mdp:`rvdw`, where :mdp:`rvdw` >= :mdp:`rlist`.
+      Plain cut-off with neighborlist radius :mdp:`rlist` and VdW
+      cut-off :mdp:`rvdw`, where :mdp:`rlist` >= :mdp:`rvdw`.
 
    .. mdp-value:: PME
 
