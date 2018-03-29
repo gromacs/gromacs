@@ -54,9 +54,9 @@
 
 #include <cstdint>
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "gromacs/fileio/enxio.h"
@@ -71,6 +71,9 @@ class EnergyFrame;
 
 namespace test
 {
+
+//! Convenience type
+using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>;
 
 //! Forward declaration
 class EnergyFrameReader;
@@ -150,14 +153,6 @@ class EnergyFrameReader
         // Multiple owners of these resources isn't very sensible, so prevent it
         GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
-
-/*! \brief Compare all fields of reference with all matching fields from test
- *
- * Ignore any key found in either \c reference or \c test that is not
- * found in the other. For all keys found in both frames, compare the
- * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance);
 
 } // namespace
 } // namespace

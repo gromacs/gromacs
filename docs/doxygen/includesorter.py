@@ -110,7 +110,8 @@ class GroupedSorter(object):
             'limits', 'list', 'map', 'memory', 'mutex',
             'new', 'numeric', 'ostream', 'random',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
-            'thread', 'tuple', 'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
+            'thread', 'tuple', 'type_traits', 'typeindex', 'typeinfo', 'vector',
+            'unordered_map', 'utility']
 
     def __init__(self, style='pub-priv', absolute=False):
         """Initialize a sorted with the given style."""
