@@ -46,8 +46,8 @@
  *  NOTE: No include fence as it is meant to be included multiple times.
  */
 
-#if defined(_WARPLESS_SOURCE_)
-#define CL_SOURCE_FILE "nbnxn_ocl_kernel_nowarp.clh"
+#if defined(_INTEL_SOURCE_)
+#define CL_SOURCE_FILE "nbnxn_ocl_kernel_intel.clh"
 #elif defined(_NVIDIA_SOURCE_)
 #define CL_SOURCE_FILE "nbnxn_ocl_kernel_nvidia.clh"
 #elif defined(_AMD_SOURCE_)
