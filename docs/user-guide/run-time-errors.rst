@@ -388,7 +388,7 @@ The sum of the two largest charge group radii (X) is larger than rlist - rvdw/rc
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This error warns that some combination of settings will result in poor energy conservation at the
-longest cutoff, which occurs when charge groups move in or out of neighborlist range.
+longest cutoff, which occurs when charge groups move in or out of pair list range.
 The error can have two sources:
 
 * Your charge groups encompass too many atoms. Most charge groups should be less than 4 atoms or less.

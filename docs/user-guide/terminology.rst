@@ -194,7 +194,7 @@ case:
 * Cut-off treatment and/or long-range electrostatics treatment (see Van Der
   Spoel, D. & van Maaren, P. J. The origin of layer structure artifacts in
   simulations of liquid water. *J. Chem. Theor. Comp.* **2**, 1–11 (2006).)
-* Treatment of neighborlists,
+* Treatment of pair lists,
 * Constraint algorithms (see e.g. Hess, B. P-LINCS: A parallel linear constraint
   solver for molecular simulation. *J. Chem. Theor. Comp.* **4**, 116–122
   (2008).)
