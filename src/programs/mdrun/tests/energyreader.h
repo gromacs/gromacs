@@ -72,6 +72,26 @@ class EnergyFrame;
 namespace test
 {
 
+/*! \brief Convenience function to get std::string keys from a map.
+ *
+ * This function can be used to provide an input for
+ * openEnergyFileToReadFields().
+ *
+ * \todo This returns a copy of the keys, which is convenient, but
+ * inefficient. Alternatively, this could return a view of the keys
+ * from a range rather than a container, but there's no implementation
+ * of that in C++11 at the moment. */
+template <typename Map>
+std::vector<std::string> getKeys(const Map &m)
+{
+    std::vector<std::string> keys;
+    for (const auto &it : m)
+    {
+        keys.push_back(it.first);
+    }
+    return keys;
+}
+
 //! Convenience type
 using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>;
 
