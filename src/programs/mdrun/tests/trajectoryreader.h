@@ -133,9 +133,6 @@ class TrajectoryFrameReader
         GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
 };
 
-//! Convenience smart pointer typedef
-typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
-
 }  // namespace test
 }  // namespace gmx
 
