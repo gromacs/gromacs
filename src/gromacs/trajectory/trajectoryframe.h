@@ -138,10 +138,9 @@ class TrajectoryFrame
         bool hasBox() const;
         //! Return a handle to the frame's box, which is all zero if the frame has no box.
         const BoxMatrix &box() const;
-        // TODO make this private when updating trajectory comparison code
+    private:
         //! Handle to trajectory data
         const t_trxframe &frame_;
-    private:
         //! Box matrix data from the frame_.
         BoxMatrix         box_;
 };
