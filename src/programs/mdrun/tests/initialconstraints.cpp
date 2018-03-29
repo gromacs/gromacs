@@ -95,7 +95,7 @@ TEST_P(InitialConstraintsTest, Works)
     runner_.useStringAsMdpFile(theMdpFile);
 
     const std::string inputFile = "spc-and-methanol";
-    runner_.useTopGroAndNdxFromDatabase(inputFile.c_str());
+    runner_.useTopGroAndNdxFromDatabase(inputFile);
     EXPECT_EQ(0, runner_.callGrompp());
 
     runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr");
