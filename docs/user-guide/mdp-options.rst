@@ -438,7 +438,7 @@ Neighbor searching
       Generate a pair list for groups of atoms. These groups
       correspond to the charge groups in the topology. This was the
       only cut-off treatment scheme before version 4.6, and is
-      **deprecated in |gmx-version|**. There is no explicit buffering of
+      **deprecated since 5.1**. There is no explicit buffering of
       the pair list. This enables efficient force calculations for
       water, but energy is only conserved when a buffer is explicitly
       added.
@@ -754,8 +754,8 @@ Van der Waals
 
    .. mdp-value:: Cut-off
 
-      Twin range cut-offs with neighbor list cut-off :mdp:`rlist` and
-      VdW cut-off :mdp:`rvdw`, where :mdp:`rvdw` >= :mdp:`rlist`.
+      Plain cut-off with neighborlist radius :mdp:`rlist` and VdW
+      cut-off :mdp:`rvdw`, where :mdp:`rlist` >= :mdp:`rvdw`.
 
    .. mdp-value:: PME
 
