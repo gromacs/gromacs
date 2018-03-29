@@ -566,7 +566,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(&hw_opt, cr, domdecOptions.numPmeRanks);
+    check_and_update_hw_opt_1(mdlog, &hw_opt, cr, domdecOptions.numPmeRanks);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(mdlog, cr,
