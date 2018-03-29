@@ -38,7 +38,7 @@
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 
-#define WARP_SIZE  32
+#define WARP_SIZE  (CL_SIZE*CL_SIZE/2)
 
 #undef KERNEL_UTILS_INLINE
 #ifdef KERNEL_UTILS_INLINE
@@ -61,8 +61,16 @@ __constant sampler_t generic_sampler     = (CLK_NORMALIZED_COORDS_FALSE /* Natur
 
 #define __device__
 
+#if CL_SIZE == 8
 #define WARP_SIZE_LOG2  (5)
-#define CL_SIZE_LOG2    (3)  /* change this together with CL_SIZE !*/
+#define CL_SIZE_LOG2    (3)
+#elif CL_SIZE == 4
+#define WARP_SIZE_LOG2  (3)
+#define CL_SIZE_LOG2    (2)
+#else
+#error unsupported CL_SIZE
+#endif
+
 #define CL_SIZE_SQ      (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE     (CL_SIZE_SQ)
 
@@ -142,9 +150,9 @@ typedef struct {
 
 
 typedef struct {
-    unsigned int pair[32]; /* Topology exclusion interaction bits for one warp,
-                            * each unsigned has bitS for 4*8 i clusters
-                            */
+    unsigned int pair[CL_SIZE*CL_SIZE/2]; /* Topology exclusion interaction bits for one warp,
+                                           * each unsigned has bitS for 4*8 i clusters
+                                           */
 } nbnxn_excl_t;
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
@@ -210,13 +218,14 @@ int loadCj(__local int        *sm_cjPreload,
     const int c_nbnxnGpuClusterpairSplit = 2;
     const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
 
-#if _NVIDIA_SOURCE_
-    int warpLoadOffset = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
-#else // defined _WARPLESS_SOURCE_ || defined _AMD_SOURCE_
-    int warpLoadOffset = 0;
-#endif
-
 #if USE_CJ_PREFETCH
+#if defined _NVIDIA_SOURCE_
+    int warpLoadOffset = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
+#elif defined _AMD_SOURCE_
+    int warpLoadOffset = 0;
+#else
+#error Not supported
+#endif
     return sm_cjPreload[jm + warpLoadOffset];
 #else
     return gm_cj[jm];
@@ -583,6 +592,7 @@ void reduce_force_i_generic(__local float *f_buf, __global float *fout,
             (*fshift_buf) += f;
         }
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
 }
 
 /*! Final i-force reduction; this implementation works only with power of two
@@ -610,6 +620,11 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
         }
         i >>= 1;
     }
+    /* needed because
+     * a) for CL_SIZE<8: id 2 (doing z in next block) is in 2nd warp
+     * b) for all CL_SIZE a barrier is needed before f_buf is reused by next reduce_force_i call
+     */
+    barrier(CLK_LOCAL_MEM_FENCE);
 
     /* i == 1, last reduction step, writing to global mem */
     /* Split the reduction between the first 3 line threads
