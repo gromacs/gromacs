@@ -38,9 +38,8 @@
  * trajectories produced by mdrun.
  *
  * Intended usage is to create a TrajectoryFrameReader. Successive
- * calls to its TrajectoryFrameReader::readNextFrame() and
- * TrajectoryFrameReader::frame() methods will return a handle to a
- * t_trxframe object for each frame.
+ * calls to its readNextFrameStub and frame methods will return a handle
+ * to a t_trxframe object for each frame.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
@@ -54,12 +53,8 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/unique_cptr.h"
-
-#include "testutils/testasserts.h"
-
-//! Forward declaration
-struct gmx_output_env_t;
 
 namespace gmx
 {
@@ -93,10 +88,10 @@ class TrajectoryFrameReader
          * API, which does the file opening as a side effect of
          * reading the first frame.
          *
-         * If true is returned, then frame() should be called
+         * If true is returned, then TrajectoryFrame frame() should be called
          * to get access to the data. If false is returned, then no
          * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
+         * readNextFrameStub or TrajectoryFrame frame() should occur.
          *
          * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
          * \throws APIError    if an earlier probe has not been properly handled
@@ -107,9 +102,9 @@ class TrajectoryFrameReader
          *
          * If the next frame has not been probed for, then probe for
          * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
+         * user code should have called readNextFrameStub itself if this
          * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
+         * to readNextFrameStub in a case where it already knows that
          * the frame exists.)
          *
          * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
@@ -140,16 +135,6 @@ class TrajectoryFrameReader
 
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
-
-/*! \brief Compare the fields of the two frames for equality within
- * the \c tolerance.
- *
- * The two frames are required to have valid and matching values for
- * time and step. Positions, velocities and/or forces will be compared
- * when present in both frames, and expected to be equal within \c
- * tolerance. */
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance);
 
 } // namespace
 } // namespace
