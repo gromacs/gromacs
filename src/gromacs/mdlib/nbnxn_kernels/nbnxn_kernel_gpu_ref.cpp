@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -234,7 +234,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     continue;
                                 }
 
-                                int_bit = ((excl[jc >> 2]->pair[(jc & 3)*c_clSize + ic] >> (jm*c_numClPerSupercl + im)) & 1);
+                                static int clusterPerSplit = c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+                                int_bit = ((excl[jc/clusterPerSplit]->pair[(jc & (clusterPerSplit-1))*c_clSize + ic]
+                                            >> (jm*c_numClPerSupercl + im)) & 1);
 
                                 js               = ja*nbat->xstride;
                                 jfs              = ja*nbat->fstride;

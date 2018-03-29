@@ -326,8 +326,11 @@ makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
         case OCL_VENDOR_NVIDIA:
             choice = "-D_NVIDIA_SOURCE_";
             break;
+        case OCL_VENDOR_INTEL:
+            choice = "-D_INTEL_SOURCE_";
+            break;
         default:
-            choice = "-D_WARPLESS_SOURCE_";
+            choice = "";
             break;
     }
     return choice;

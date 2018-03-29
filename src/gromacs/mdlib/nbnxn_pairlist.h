@@ -36,6 +36,8 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
+#include "config.h"
+
 #include <cstddef>
 
 #include "gromacs/math/vectypes.h"
@@ -74,8 +76,12 @@ struct NbnxnListParameters
 
 /*! \endcond */
 
-/* With GPU kernels the i and j cluster size is 8 atoms */
+/* With GPU kernels the i and j cluster size is 8 atoms for CUDA and can be set at compile time for OpenCL */
+#if GMX_GPU == GMX_GPU_OPENCL
+static constexpr int c_nbnxnGpuClusterSize = GMX_OCL_CLUSTER_SIZE;
+#else
 static constexpr int c_nbnxnGpuClusterSize = 8;
+#endif
 
 /* The number of clusters in a super-cluster, used for GPU */
 static constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
