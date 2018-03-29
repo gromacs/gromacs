@@ -72,6 +72,22 @@ class EnergyFrame;
 namespace test
 {
 
+// TODO does this belong in this header?
+//! Convenience function to get std::string keys from a map.
+template <typename Map>
+std::vector<std::string> getKeys(const Map &m)
+{
+    std::vector<std::string> keys;
+    for (const auto &it : m)
+    {
+        keys.push_back(it.first);
+    }
+    return keys;
+}
+
+//! Convenience type
+using EnergyTolerances = std::map<std::string, FloatingPointTolerance>;
+
 //! Forward declaration
 class EnergyFrameReader;
 //! Convenience smart pointer typedef
@@ -150,14 +166,6 @@ class EnergyFrameReader
         // Multiple owners of these resources isn't very sensible, so prevent it
         GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
-
-/*! \brief Compare all fields of reference with all matching fields from test
- *
- * Ignore any key found in either \c reference or \c test that is not
- * found in the other. For all keys found in both frames, compare the
- * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance);
 
 } // namespace
 } // namespace
