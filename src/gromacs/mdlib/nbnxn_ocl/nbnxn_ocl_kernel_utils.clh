@@ -609,6 +609,7 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
             f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
         }
         i >>= 1;
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     /* i == 1, last reduction step, writing to global mem */
@@ -670,6 +671,7 @@ void reduce_energy_pow2(volatile __local float  *buf,
             buf[FBUF_STRIDE + tidx] += buf[FBUF_STRIDE + tidx + i];
         }
         i >>= 1;
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     /* last reduction step, writing to global mem */

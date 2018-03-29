@@ -409,6 +409,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                             if (!warp_any[widx])
                                 imask &= ~mask_ji;
 
+                            barrier(CLK_LOCAL_MEM_FENCE);
                             warp_any[widx]=0;
 #endif
 
@@ -588,6 +589,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                     f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
                     f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
 
+		    //barrier(CLK_LOCAL_MEM_FENCE); //why is this OK without?
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
                 }
             }
@@ -638,6 +640,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
     f_buf[FBUF_STRIDE + tidx] = E_el;
+    barrier(CLK_LOCAL_MEM_FENCE);
     reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
 
 #endif
