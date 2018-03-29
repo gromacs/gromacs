@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -650,9 +650,10 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->userGpuTaskAssignment.c_str());
 }
 
-void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr,
-                               int              nPmeRanks)
+void check_and_update_hw_opt_1(const gmx::MDLogger &mdlog,
+                               gmx_hw_opt_t        *hw_opt,
+                               const t_commrec     *cr,
+                               int                  nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
      * by the user on the command line.
@@ -665,7 +666,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
     /* Check for OpenMP settings stored in environment variables, which can
      * potentially be different on different MPI ranks.
      */
-    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, SIMMASTER(cr));
+    gmx_omp_nthreads_read_env(mdlog, &hw_opt->nthreads_omp);
 
     /* Check restrictions on the user supplied options before modifying them.
      * TODO: Put the user values in a const struct and preserve them.

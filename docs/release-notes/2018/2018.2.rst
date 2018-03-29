@@ -103,6 +103,14 @@ Fixed CUDA compilation on Windows.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Information message about OMP_NUM_THREADS now sent to log file
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Made it easier to track this information by writing it to the log file
+in a clear way, rather than to stderr.
+
+:issue:`2472`
+
 Fixed inadvertent disabling of SIMD version of the integrator
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
