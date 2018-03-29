@@ -1986,7 +1986,8 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                                     unsigned int  excl_bit;
                                     real          dx, dy, dz;
 
-                                    get_nbl_exclusions_1(nbl, cj4_ind, j>>2, &excl);
+                                    const int     jHalf = j/(c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit);
+                                    get_nbl_exclusions_1(nbl, cj4_ind, jHalf, &excl);
 
                                     excl_pair = a_mod_wj(j)*nbl->na_ci + i;
                                     excl_bit  = (1U << (gcj*c_gpuNumClusterPerCell + c));
