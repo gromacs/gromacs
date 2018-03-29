@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,11 +63,12 @@ struct gmx_output_env_t;
 
 namespace gmx
 {
-namespace test
-{
 
 //! Forward declaration
 class TrajectoryFrame;
+
+namespace test
+{
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
@@ -149,26 +150,6 @@ typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
  * tolerance. */
 void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
                    FloatingPointTolerance tolerance);
-
-/*! \internal
- * \brief Contains the content of a trajectory frame read by an TrajectoryFrameReader
- *
- * Objects of this type are intended to be constructed by
- * TrajectoryFrameReader objects, and as such will always contain valid
- * data from an trajectory file frame. */
-class TrajectoryFrame
-{
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        //! Constructor
-        TrajectoryFrame();
-
-        //! Handle to trajectory data
-        t_trxframe *frame_;
-};
 
 } // namespace
 } // namespace

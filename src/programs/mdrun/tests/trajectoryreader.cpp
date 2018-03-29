@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,8 +141,6 @@ TrajectoryFrameReader::readNextFrame()
 TrajectoryFrame
 TrajectoryFrameReader::frame()
 {
-    TrajectoryFrame frame;
-
     if (!haveProbedForNextFrame_)
     {
         readNextFrame();
@@ -157,29 +155,7 @@ TrajectoryFrameReader::frame()
     nextFrameExists_        = false;
 
     // The probe filled trxframeGuard_ with new data, so return it
-    frame.frame_ = trxframeGuard_.get();
-
-    if (!frame.frame_->bStep)
-    {
-        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a step number"));
-    }
-
-    if (!frame.frame_->bTime)
-    {
-        GMX_THROW(APIError("Cannot handle trajectory frame that lacks a time"));
-    }
-
-    return frame;
-}
-
-// === TrajectoryFrame ===
-
-TrajectoryFrame::TrajectoryFrame() : frame_(nullptr) {};
-
-std::string TrajectoryFrame::getFrameName() const
-{
-    GMX_RELEASE_ASSERT(frame_, "Cannot get name of invalid frame");
-    return formatString("Time %f Step %" GMX_PRId64, frame_->time, frame_->step);
+    return TrajectoryFrame(*trxframeGuard_.get());
 }
 
 void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
@@ -190,30 +166,30 @@ void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
 
     // NB We checked earlier for both frames that bStep and bTime are set
 
-    EXPECT_EQ(reference.frame_->step, test.frame_->step)
-    << "step didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+    EXPECT_EQ(reference.frame_.step, test.frame_.step)
+    << "step didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
 
-    EXPECT_EQ(reference.frame_->time, test.frame_->time)
-    << "time didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+    EXPECT_EQ(reference.frame_.time, test.frame_.time)
+    << "time didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
 
-    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    for (int i = 0; i < reference.frame_.natoms && i < test.frame_.natoms; ++i)
     {
         for (int d = 0; d < DIM; ++d)
         {
-            if (reference.frame_->bX && test.frame_->bX)
+            if (reference.frame_.bX && test.frame_.bX)
             {
-                EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
-                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                EXPECT_REAL_EQ_TOL(reference.frame_.x[i][d], test.frame_.x[i][d], tolerance)
+                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
             }
-            if (reference.frame_->bV && test.frame_->bV)
+            if (reference.frame_.bV && test.frame_.bV)
             {
-                EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
-                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                EXPECT_REAL_EQ_TOL(reference.frame_.v[i][d], test.frame_.v[i][d], tolerance)
+                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
             }
-            if (reference.frame_->bF && test.frame_->bF)
+            if (reference.frame_.bF && test.frame_.bF)
             {
-                EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
-                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                EXPECT_REAL_EQ_TOL(reference.frame_.f[i][d], test.frame_.f[i][d], tolerance)
+                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
             }
         }
     }
