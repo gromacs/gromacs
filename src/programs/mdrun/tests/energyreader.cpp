@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/exceptions.h"
@@ -119,7 +120,8 @@ openEnergyFileToReadFields(const std::string              &filename,
         GMX_THROW(APIError(requiredEnergiesNotFound));
     }
 
-    return EnergyFrameReaderPtr(new EnergyFrameReader(indicesOfEnergyFields, energyFile.release()));
+    return EnergyFrameReaderPtr(compat::make_unique<EnergyFrameReader>(indicesOfEnergyFields,
+                                                                       energyFile.release()));
 }
 
 //! Helper function to obtain resources
@@ -190,25 +192,6 @@ EnergyFrameReader::frame()
 
     // The probe filled enxframe_ with new data, so now we use that data to fill energyFrame
     return EnergyFrame(*enxframeGuard_.get(), indicesOfEnergyFields_);
-}
-
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                   FloatingPointTolerance tolerance)
-{
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
-    for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
-    {
-        auto testIt = test.find(referenceIt->first);
-        if (testIt != test.end())
-        {
-            auto energyFieldInReference = referenceIt->second;
-            auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.frameName() << " and test run " << test.frameName();
-        }
-    }
 }
 
 } // namespace
