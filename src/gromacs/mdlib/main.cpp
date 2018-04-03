@@ -248,14 +248,22 @@ gmx_multisim_t *init_multisystem(MPI_Comm                         comm,
     int            *rank;
 #endif
 
-    if (multidirs.size() <= 1)
+    if (multidirs.empty())
     {
         return nullptr;
     }
-    if (!GMX_LIB_MPI && multidirs.size() > 1)
+
+    if (!GMX_LIB_MPI && multidirs.size() >= 1)
     {
         gmx_fatal(FARGS, "mdrun -multidir is only supported when GROMACS has been "
                   "configured with a proper external MPI library.");
+    }
+
+    if (multidirs.size() == 1)
+    {
+        /* NOTE: It would be nice if this special case worked, but this requires checks/tests. */
+        gmx_fatal(FARGS, "To run mdrun in multiple simulation mode, more then one "
+                  "actual simulation is required. The single simulation case is not supported.");
     }
 
 #if GMX_MPI

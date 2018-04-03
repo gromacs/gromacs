@@ -940,6 +940,8 @@ static double get_pull_coord_deviation(struct pull_t *pull,
 
     get_pull_coord_distance(pull, coord_ind, pbc);
 
+    get_pull_coord_distance(pull, coord_ind, pbc);
+
     /* Determine the deviation */
     dev = pcrd->spatialData.value - pcrd->value_ref;
 
@@ -1672,7 +1674,7 @@ void apply_external_pull_coord_force(struct pull_t        *pull,
         PullCoordVectorForces pullCoordForces = calculateVectorForces(*pcrd);
 
         /* Add the forces for this coordinate to the total virial and force */
-        if (forceWithVirial->computeVirial_)
+        if (forceWithVirial->computeVirial_ && pull->comm.isMasterRank)
         {
             matrix virial = { { 0 } };
             add_virial_coord(virial, *pcrd, pullCoordForces);
@@ -1839,10 +1841,10 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
         ga2la = nullptr;
     }
 
-    /* We always make the master node participate, such that it can do i/o
-     * and to simplify MC type extensions people might have.
+    /* We always make the master node participate, such that it can do i/o,
+     * add the virial and to simplify MC type extensions people might have.
      */
-    bMustParticipate = (comm->bParticipateAll || dd == nullptr || DDMASTER(dd));
+    bMustParticipate = (comm->bParticipateAll || comm->isMasterRank);
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -1850,6 +1852,8 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
 
         make_local_pull_group(ga2la, &pull->group[g],
                               0, md->homenr);
+
+        GMX_ASSERT(bMustParticipate || dd != nullptr, "Either all ranks (including this rank) participate, or we use DD and need to have access to dd here");
 
         /* We should participate if we have pull or pbc atoms */
         if (!bMustParticipate &&
@@ -2475,18 +2479,24 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     comm = &pull->comm;
 
 #if GMX_MPI
-    /* Use a sub-communicator when we have more than 32 ranks */
+    /* Use a sub-communicator when we have more than 32 ranks, but not
+     * when we have an external pull potential, since then the external
+     * potential provider expects each rank to have the coordinate.
+     */
     comm->bParticipateAll = (cr == nullptr || !DOMAINDECOMP(cr) ||
                              cr->dd->nnodes <= 32 ||
+                             pull->numCoordinatesWithExternalPotential > 0 ||
                              getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
      * so we can always initialize it to NULL.
      */
     comm->mpi_comm_com    = MPI_COMM_NULL;
     comm->nparticipate    = 0;
+    comm->isMasterRank    = (cr == nullptr || MASTER(cr));
 #else
     /* No MPI: 1 rank: all ranks pull */
     comm->bParticipateAll = TRUE;
+    comm->isMasterRank    = true;
 #endif
     comm->bParticipate    = comm->bParticipateAll;
     comm->setup_count     = 0;

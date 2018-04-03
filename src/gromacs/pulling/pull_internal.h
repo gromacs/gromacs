@@ -177,6 +177,7 @@ typedef struct {
     MPI_Comm    mpi_comm_com;    /* Communicator for pulling */
 #endif
     int         nparticipate;    /* The number of ranks participating */
+    bool        isMasterRank;    /* Tells whether our rank is the master rank and thus should add the pull virial */
 
     gmx_int64_t setup_count;     /* The number of decomposition calls */
     gmx_int64_t must_count;      /* The last count our rank needed to be part */
