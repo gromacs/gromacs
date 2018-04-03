@@ -12,6 +12,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed buffer overflow in grompp warnings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When grompp issued a warning or error with a filename/path of more than
+255 characters, a buffer overflow would occur. This could also happens
+during make check/test.
+
+:issue:`2465`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
