@@ -60,12 +60,17 @@ set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 set(EXPECTED_SPHINX_VERSION 1.4.1)
 
+set(EXPECTED_DVIPNG_VERSION 1.0)
+
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
 find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
+
+# Check that we have dvipng to make sure we can transform the images.
+find_package(dvipng ${EXPECTED_DVIPNG_VERSION} QUIET)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
