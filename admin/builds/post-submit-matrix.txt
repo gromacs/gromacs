@@ -53,7 +53,8 @@ gcc-4.8 gpu npme=1 nranks=2 cuda-7.5 simd=sse2 release
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
-gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 release-with-assert
+# Test no hwloc build, tests internal CPU topology detection (mainly for x86)
+gcc-5 gpu nranks=4 gpu_id=1 cuda-8.0 no-hwloc release-with-assert
 
 # Test oldest supported icc
 # Test icc on Windows
@@ -65,7 +66,6 @@ icc-16 msvc-2015 fftpack simd=avx2_256 release
 # Add OpenMP + CUDA + device sharing TSAN build
 # Re-enable Phi build (FIXME: do we still care?)
 # Test without TNG support
-# Test without hwloc support
 # Test with NVML support
 # Test statically linked hwloc support (if/when it can work well)
 # Test 3D DD (2D is partially covered in regressiontests)
