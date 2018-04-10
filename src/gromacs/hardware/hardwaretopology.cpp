@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@
 #include <algorithm>
 #include <vector>
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
 #    include <hwloc.h>
 #endif
 
@@ -150,7 +150,7 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
     }
 }
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
 
 #if HWLOC_API_VERSION < 0x00010b00
 #    define HWLOC_OBJ_PACKAGE  HWLOC_OBJ_SOCKET
@@ -582,7 +582,7 @@ HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
     parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
