@@ -828,6 +828,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_uint), &natoms_flat);
     assert(cl_error == CL_SUCCESS);
 
+    gmx_used_in_debug cl_error;
     cl_error = clEnqueueNDRangeKernel(ls, memset_f, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
     assert(cl_error == CL_SUCCESS);
 }
