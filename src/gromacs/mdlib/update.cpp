@@ -1902,6 +1902,7 @@ void update_coords(gmx_int64_t                    step,
              * always adds padding for GMX_REAL_MAX_SIMD_WIDTH, we check that.
              */
             size_t homenrSimdPadded = ((homenr + GMX_REAL_MAX_SIMD_WIDTH - 1)/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
+            GMX_VALUE_USED_IN_DEBUG(homenrSimdPadded);
             GMX_ASSERT(state->x.size() >= homenrSimdPadded, "state->x needs to be padded for SIMD access");
             GMX_ASSERT(upd->xp.size()  >= homenrSimdPadded, "upd->xp needs to be padded for SIMD access");
             GMX_ASSERT(state->v.size() >= homenrSimdPadded, "state->v needs to be padded for SIMD access");
