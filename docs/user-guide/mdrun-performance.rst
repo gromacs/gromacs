@@ -111,7 +111,7 @@ definitions. Experienced HPC users can skip this section.
         on AMD devices (both GPUs and APUs); NVIDIA hardware is also supported.
 
     SIMD
-        Modern CPU cores have instructions that can execute large
+        A type of CPU instruction by which modern CPU cores can execute large
         numbers of floating-point instructions in a single cycle.
 
 
@@ -139,8 +139,8 @@ see the Reference Manual. The most important of these are
         PP rank per GPU and for that rank to have thousands of
         particles. When the work of a PP rank is done on the CPU, :ref:`mdrun <gmx mdrun>`
         will make extensive use of the SIMD capabilities of the
-        core. There are various `command-line options
-        <controlling-the-domain-decomposition-algorithm` to control
+        core. There are various :ref:`command-line options
+        <controlling-the-domain-decomposition-algorithm>` to control
         the behaviour of the DD algorithm.
 
     Particle-mesh Ewald
@@ -541,6 +541,8 @@ GPUs, but there is no need to specify ``-gpu_id`` for the
 normal case where all the GPUs on the node are available
 for use.
 
+.. _controlling-the-domain-decomposition-algorithm:
+
 Controlling the domain decomposition algorithm
 ----------------------------------------------
 This section lists all the options that affect how the domain
@@ -690,9 +692,6 @@ Subcounters are geared toward developers and have to be enabled during compilati
 TODO In future patch:
 - red flags in log files, how to interpret wallcycle output
 - hints to devs how to extend wallcycles
-
-TODO In future patch: import wiki page stuff on performance checklist; maybe here,
-maybe elsewhere
 
 .. _gmx-mdrun-on-gpu:
 
