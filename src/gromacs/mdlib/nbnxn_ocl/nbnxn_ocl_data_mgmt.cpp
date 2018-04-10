@@ -803,7 +803,6 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
         return;
     }
 
-    cl_int               cl_error;
     cl_atomdata_t *      adat     = nb->atdat;
     cl_command_queue     ls       = nb->stream[eintLocal];
     cl_float             value    = 0.0f;
@@ -822,6 +821,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
 
 
+    cl_int gmx_used_in_debug cl_error;
     arg_no    = 0;
     cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
     cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_float), &value);
