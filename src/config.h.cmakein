@@ -163,7 +163,7 @@
 #cmakedefine01 GMX_OPENMP
 
 /* Use the Portable Hardware Locality package (hwloc) */
-#cmakedefine01 GMX_HWLOC
+#cmakedefine01 GMX_USE_HWLOC
 
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE
