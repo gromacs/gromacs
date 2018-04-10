@@ -807,7 +807,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
 
     cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float),
                                    0, natoms_clear*sizeof(rvec), 0, NULL, NULL);
-    GMX_UNUSED_VALUE(cl_error);
+    GMX_VALUE_USED_IN_DEBUG(cl_error);
     GMX_ASSERT(cl_error == CL_SUCCESS, ("nbnxn_ocl_clear_f failed: " +
                                         ocl_get_error_string(cl_error)).c_str());
 }
