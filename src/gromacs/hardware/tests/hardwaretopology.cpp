@@ -76,7 +76,7 @@ TEST(HardwareTopologyTest, Execute)
     << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
 }
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
 TEST(HardwareTopologyTest, HwlocExecute)
 {
 #if defined(__linux__)

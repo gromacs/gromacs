@@ -52,7 +52,7 @@
 #include <algorithm>
 #include <vector>
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
 #    include <hwloc.h>
 #endif
 
@@ -150,7 +150,7 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
     }
 }
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
 
 #if HWLOC_API_VERSION < 0x00010b00
 #    define HWLOC_OBJ_PACKAGE  HWLOC_OBJ_SOCKET
@@ -582,7 +582,7 @@ HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
-#if GMX_HWLOC
+#if GMX_USE_HWLOC
     parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
