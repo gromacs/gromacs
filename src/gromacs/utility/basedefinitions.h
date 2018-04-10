@@ -217,6 +217,17 @@ typedef uint64_t gmx_uint64_t;
  */
 #define GMX_UNUSED_VALUE(value) (void)value
 
+/*! \brief
+ * Macro to explicitly indicate that a value is used only in debug mode.
+ *
+ * \ingroup module_utility
+ */
+#ifdef NDEBUG
+#define GMX_VALUE_USED_IN_DEBUG(value) (void)value
+#else
+#define GMX_VALUE_USED_IN_DEBUG(value)
+#endif
+
 #ifdef __cplusplus
 namespace gmx
 {
