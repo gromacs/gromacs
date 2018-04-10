@@ -191,6 +191,17 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
+/*! \brief Attribute to explicitly indicate that a parameter or
+ * locally scoped variable is used just in debug mode.
+ *
+ * \ingroup module_utility
+ */
+#ifdef NDEBUG
+#define gmx_used_in_debug
+#else
+#define gmx_used_in_debug gmx_unused
+#endif
+
 #ifndef __has_feature
 /** For compatibility with non-clang compilers. */
 #define __has_feature(x) 0
@@ -216,6 +227,17 @@ typedef uint64_t gmx_uint64_t;
  * \ingroup module_utility
  */
 #define GMX_UNUSED_VALUE(value) (void)value
+
+/*! \brief
+ * Macro to explicitly indicate that a value is used only in debug mode.
+ *
+ * \ingroup module_utility
+ */
+#ifdef NDEBUG
+#define GMX_VALUE_USED_IN_DEBUG(value) (void)value
+#else
+#define GMX_VALUE_USED_IN_DEBUG(value)
+#endif
 
 #ifdef __cplusplus
 namespace gmx
