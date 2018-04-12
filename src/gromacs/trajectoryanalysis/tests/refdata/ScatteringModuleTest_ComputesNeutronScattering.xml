@@ -1,0 +1,260 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">scattering -sel 'name CA' -norm yes -scatter-type neutron -numq 11</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="scattering">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">0</Int>
+          <Int Name="LastColumn">0</Int>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">0.99973357</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">2</Int>
+          <Int Name="LastColumn">2</Int>
+          <DataValue>
+            <Real Name="Value">0.99893445</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">3</Int>
+          <Int Name="LastColumn">3</Int>
+          <DataValue>
+            <Real Name="Value">0.99760342</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">4</Int>
+          <Int Name="LastColumn">4</Int>
+          <DataValue>
+            <Real Name="Value">0.99574178</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">5</Int>
+          <Int Name="LastColumn">5</Int>
+          <DataValue>
+            <Real Name="Value">0.99335128</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">6</Int>
+          <Int Name="LastColumn">6</Int>
+          <DataValue>
+            <Real Name="Value">0.99043429</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">7</Int>
+          <Int Name="LastColumn">7</Int>
+          <DataValue>
+            <Real Name="Value">0.98699349</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">8</Int>
+          <Int Name="LastColumn">8</Int>
+          <DataValue>
+            <Real Name="Value">0.98303229</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">9</Int>
+          <Int Name="LastColumn">9</Int>
+          <DataValue>
+            <Real Name="Value">0.97855443</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">10</Int>
+          <Int Name="LastColumn">10</Int>
+          <DataValue>
+            <Real Name="Value">0.97356421</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">200</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">0</Int>
+          <Int Name="LastColumn">0</Int>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">1</Int>
+          <Int Name="LastColumn">1</Int>
+          <DataValue>
+            <Real Name="Value">0.9997189</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">2</Int>
+          <Int Name="LastColumn">2</Int>
+          <DataValue>
+            <Real Name="Value">0.99887586</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">3</Int>
+          <Int Name="LastColumn">3</Int>
+          <DataValue>
+            <Real Name="Value">0.99747175</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">4</Int>
+          <Int Name="LastColumn">4</Int>
+          <DataValue>
+            <Real Name="Value">0.99550796</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">5</Int>
+          <Int Name="LastColumn">5</Int>
+          <DataValue>
+            <Real Name="Value">0.99298656</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">6</Int>
+          <Int Name="LastColumn">6</Int>
+          <DataValue>
+            <Real Name="Value">0.98991001</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">7</Int>
+          <Int Name="LastColumn">7</Int>
+          <DataValue>
+            <Real Name="Value">0.98628145</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">8</Int>
+          <Int Name="LastColumn">8</Int>
+          <DataValue>
+            <Real Name="Value">0.98210454</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">9</Int>
+          <Int Name="LastColumn">9</Int>
+          <DataValue>
+            <Real Name="Value">0.97738349</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <Int Name="FirstColumn">10</Int>
+          <Int Name="LastColumn">10</Int>
+          <DataValue>
+            <Real Name="Value">0.97212309</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Scattering intensity: I(q)"
+xaxis  label "q (1/nm)"
+yaxis  label "Intensity"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.00000000</Real>
+          <Real>1.00000000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>0.05000000</Real>
+          <Real>0.99972624</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>0.10000000</Real>
+          <Real>0.99890518</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>0.15000001</Real>
+          <Real>0.99753761</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>0.20000000</Real>
+          <Real>0.99562490</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>0.25000000</Real>
+          <Real>0.99316895</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">2</Int>
+          <Real>0.30000001</Real>
+          <Real>0.99017215</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">2</Int>
+          <Real>0.34999999</Real>
+          <Real>0.98663747</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">2</Int>
+          <Real>0.40000001</Real>
+          <Real>0.98256838</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">2</Int>
+          <Real>0.45000002</Real>
+          <Real>0.97796893</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">2</Int>
+          <Real>0.50000000</Real>
+          <Real>0.97284365</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
