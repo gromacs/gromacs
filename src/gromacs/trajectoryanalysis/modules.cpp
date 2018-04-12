@@ -52,6 +52,7 @@
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
 #include "modules/sasa.h"
+#include "modules/scattering.h"
 #include "modules/select.h"
 #include "modules/trajectory.h"
 
@@ -96,6 +97,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
+    registerModule<ScatteringInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
     registerModule<TrajectoryInfo>(manager, group);
 }
