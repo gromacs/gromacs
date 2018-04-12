@@ -42,6 +42,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   pairdist.cpp
                   rdf.cpp
                   sasa.cpp
+		  scattering.cpp
                   select.cpp
                   surfacearea.cpp
                   trajectory.cpp
