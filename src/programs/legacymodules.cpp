@@ -331,10 +331,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Plot the rotation matrix for fitting to a reference structure");
     registerModule(manager, &gmx_saltbr, "saltbr",
                    "Compute salt bridges");
-    registerModule(manager, &gmx_sans, "sans",
-                   "Compute small angle neutron scattering spectra");
-    registerModule(manager, &gmx_saxs, "saxs",
-                   "Compute small angle X-ray scattering spectra");
     registerModule(manager, &gmx_sham, "sham",
                    "Compute free energies or other histograms from histograms");
     registerModule(manager, &gmx_sigeps, "sigeps",
@@ -451,8 +447,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("rdf");
         group.addModule("rotacf");
         group.addModule("rotmat");
-        group.addModule("sans");
-        group.addModule("saxs");
         group.addModule("traj");
         group.addModule("vanhove");
     }
