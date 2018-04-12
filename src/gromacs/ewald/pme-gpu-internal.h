@@ -115,7 +115,7 @@ const int c_virialAndEnergyCount = 7;
  * \param[in] pmeGpu            The PME GPU structure.
  * \returns   Number of atoms in a single GPU atom data chunk.
  */
-CUDA_FUNC_QUALIFIER int pme_gpu_get_atom_data_alignment(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM_WITH_RETURN(1)
+int pme_gpu_get_atom_data_alignment(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Returns the number of atoms per chunk in the atom spline theta/dtheta data layout.
@@ -123,7 +123,7 @@ CUDA_FUNC_QUALIFIER int pme_gpu_get_atom_data_alignment(const PmeGpu *CUDA_FUNC_
  * \param[in] pmeGpu            The PME GPU structure.
  * \returns   Number of atoms in a single GPU atom spline data chunk.
  */
-CUDA_FUNC_QUALIFIER int pme_gpu_get_atoms_per_warp(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM_WITH_RETURN(1)
+int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Synchronizes the current computation, waiting for the GPU kernels/transfers to finish.
@@ -137,14 +137,14 @@ CUDA_FUNC_QUALIFIER void pme_gpu_synchronize(const PmeGpu *CUDA_FUNC_ARGUMENT(pm
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_alloc_energy_virial(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the energy and virial memory both on GPU and CPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_energy_virial(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_energy_virial(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Clears the energy and virial memory on GPU with 0.
@@ -152,35 +152,35 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_energy_virial(PmeGpu *CUDA_FUNC_ARGUMENT(p
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_clear_energy_virial(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_clear_energy_virial(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed B-spline values to the GPU.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the pre-computed B-spline values on the GPU (and the transfer CPU buffers).
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_bspline_values(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_bspline_values(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the GPU buffer for the PME forces.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_forces(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the GPU buffer for the PME forces.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_forces(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_forces(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the forces from the CPU buffer to the GPU (to reduce them with the PME GPU gathered forces).
@@ -188,14 +188,14 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_forces(const PmeGpu *CUDA_FUNC_ARGUMENT(pm
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_copy_input_forces(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the forces from the GPU to the CPU buffer. To be called after the gathering stage.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_copy_output_forces(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Checks whether work in the PME GPU stream has completed.
@@ -204,7 +204,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_forces(PmeGpu *CUDA_FUNC_ARGUMENT(p
  *
  * \returns                     True if work in the PME stream has completed.
  */
-CUDA_FUNC_QUALIFIER bool pme_gpu_stream_query(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM_WITH_RETURN(0)
+bool pme_gpu_stream_query(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
@@ -213,7 +213,7 @@ CUDA_FUNC_QUALIFIER bool pme_gpu_stream_query(const PmeGpu *CUDA_FUNC_ARGUMENT(p
  *
  * Needs to be called on every DD step/in the beginning.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_coordinates(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the input coordinates from the CPU buffer onto the GPU.
@@ -223,15 +223,15 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_coordinates(const PmeGpu *CUDA_FUNC_ARG
  *
  * Needs to be called for every PME computation. The coordinates are then used in the spline calculation.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                        const rvec      *CUDA_FUNC_ARGUMENT(h_coordinates)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                                        const rvec   *CUDA_FUNC_ARGUMENT(h_coordinates)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Frees the coordinates on the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_coordinates(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_coordinates(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the buffer on the GPU and copies the charges/coefficients from the CPU buffer.
@@ -243,57 +243,57 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_coordinates(const PmeGpu *CUDA_FUNC_ARGUME
  * Does not need to be done for every PME computation, only whenever the local charges change.
  * (So, in the beginning of the run, or on DD step).
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                                     const float     *CUDA_FUNC_ARGUMENT(h_coefficients)) CUDA_FUNC_TERM
+void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu    *pmeGpu,
+                                                 const float     *h_coefficients);
 
 /*! \libinternal \brief
  * Frees the charges/coefficients on the GPU.
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_coefficients(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_coefficients(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the buffers on the GPU and the host for the atoms spline data.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_spline_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_spline_data(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the buffers on the GPU for the atoms spline data.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_spline_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_spline_data(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the buffers on the GPU and the host for the particle gridline indices.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_grid_indices(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_grid_indices(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the buffer on the GPU for the particle gridline indices.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_grid_indices(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_grid_indices(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the real space grid and the complex reciprocal grid (if needed) on the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_grids(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_grids(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the real space grid and the complex reciprocal grid (if needed) on the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_grids(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_grids(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Clears the real space grid on the GPU.
@@ -301,21 +301,21 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_grids(const PmeGpu *CUDA_FUNC_ARGUMENT(pme
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_clear_grids(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_clear_grids(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed fractional coordinates' shifts to the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Frees the pre-computed fractional coordinates' shifts on the GPU.
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_free_fract_shifts(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the input real-space grid from the host to the GPU.
@@ -323,8 +323,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_free_fract_shifts(const PmeGpu *CUDA_FUNC_ARGUM
  * \param[in] pmeGpu   The PME GPU structure.
  * \param[in] h_grid   The host-side grid buffer.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_gather_grid(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                        float           *CUDA_FUNC_ARGUMENT(h_grid)) CUDA_FUNC_TERM
+void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu,
+                                    float        *h_grid);
 
 /*! \libinternal \brief
  * Copies the output real-space grid from the GPU to the host.
@@ -332,29 +332,29 @@ CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_gather_grid(const PmeGpu    *CUDA_FU
  * \param[in] pmeGpu   The PME GPU structure.
  * \param[out] h_grid  The host-side grid buffer.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_spread_grid(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                         float           *CUDA_FUNC_ARGUMENT(h_grid)) CUDA_FUNC_TERM
+void pme_gpu_copy_output_spread_grid(const PmeGpu *pmeGpu,
+                                     float        *h_grid);
 
 /*! \libinternal \brief
  * Copies the spread output spline data and gridline indices from the GPU to the host.
  *
  * \param[in] pmeGpu   The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_output_spread_atom_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_copy_output_spread_atom_data(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the gather input spline data and gridline indices from the host to the GPU.
  *
  * \param[in] pmeGpu   The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_gather_atom_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Waits for the grid copying to the host-side buffer after spreading to finish.
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_spread_grid(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_sync_spread_grid(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Does the one-time GPU-framework specific PME initialization.
@@ -362,7 +362,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_sync_spread_grid(const PmeGpu *CUDA_FUNC_ARGUME
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_init_internal(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_init_internal(PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Destroys the PME GPU-framework specific data.
@@ -370,35 +370,35 @@ CUDA_FUNC_QUALIFIER void pme_gpu_init_internal(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_destroy_specific(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_destroy_specific(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Initializes the PME GPU synchronization events.
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_init_sync_events(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_init_sync_events(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Destroys the PME GPU synchronization events.
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_destroy_sync_events(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_destroy_sync_events(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Initializes the CUDA FFT structures.
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reinit_3dfft(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Destroys the CUDA FFT structures.
  *
  * \param[in] pmeGpu  The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_destroy_3dfft(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_destroy_3dfft(const PmeGpu *pmeGpu);
 
 /* Several CUDA event-based timing functions that live in pme-timings.cu */
 
@@ -407,21 +407,21 @@ CUDA_FUNC_QUALIFIER void pme_gpu_destroy_3dfft(const PmeGpu *CUDA_FUNC_ARGUMENT(
  *
  * \param[in] pmeGpu         The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_update_timings(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_update_timings(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Updates the internal list of active PME GPU stages (if timings are enabled).
  *
  * \param[in] pmeGpu         The PME GPU data structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reinit_timings(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_reinit_timings(const PmeGpu *pmeGpu);
 
 /*! \brief
  * Resets the PME GPU timings. To be called at the reset MD step.
  *
  * \param[in] pmeGpu         The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reset_timings(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+void pme_gpu_reset_timings(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Copies the PME GPU timings to the gmx_wallclock_gpu_t structure (for log output). To be called at the run end.
@@ -429,8 +429,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_reset_timings(const PmeGpu *CUDA_FUNC_ARGUMENT(
  * \param[in] pmeGpu         The PME GPU structure.
  * \param[in] timings        The gmx_wallclock_gpu_pme_t structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_get_timings(const PmeGpu            *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                             gmx_wallclock_gpu_pme_t *CUDA_FUNC_ARGUMENT(timings)) CUDA_FUNC_TERM
+void pme_gpu_get_timings(const PmeGpu            *pmeGpu,
+                         gmx_wallclock_gpu_pme_t *timings);
 
 /* The PME stages themselves */
 
@@ -651,11 +651,11 @@ CUDA_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *CUDA_F
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
-CUDA_FUNC_QUALIFIER int getSplineParamFullIndex(int CUDA_FUNC_ARGUMENT(order),
-                                                int CUDA_FUNC_ARGUMENT(splineIndex),
-                                                int CUDA_FUNC_ARGUMENT(dimIndex),
-                                                int CUDA_FUNC_ARGUMENT(warpIndex),
-                                                int CUDA_FUNC_ARGUMENT(atomWarpIndex)) CUDA_FUNC_TERM_WITH_RETURN(-1)
+int getSplineParamFullIndex(int order,
+                            int splineIndex,
+                            int dimIndex,
+                            int warpIndex,
+                            int atomWarpIndex);
 
 /*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.
