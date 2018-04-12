@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,8 @@ namespace ocl
 /*! \brief Compile the specified kernel for the context and device.
  *
  * \param[out] fplog                 Open file pointer for log output
+ * \param[in]  kernelRelativePath    Relative path to the kernel in the source tree,
+ *                                   e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
  * \param[in]  kernelBaseFilename    The name of the kernel source file to compile, e.g. "nbnxn_ocl_kernels.cl"
  * \param[in]  extraDefines          Preprocessor defines required by the calling code, e.g. for configuring the kernels
  * \param[in]  context               OpenCL context on the device to compile for
@@ -74,6 +76,7 @@ namespace ocl
  *         InternalError   if an OpenCL API error prevents returning a valid compiled program. */
 cl_program
 compileProgram(FILE              *fplog,
+               const std::string &kernelRelativePath,
                const std::string &kernelBaseFilename,
                const std::string &extraDefines,
                cl_context         context,

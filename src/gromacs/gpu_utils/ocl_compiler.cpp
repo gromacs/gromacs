@@ -203,20 +203,22 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
     return compilerOptions;
 }
 
-/*! \brief Get the path to the main folder storing OpenCL kernels.
+/*! \brief Get the path to the folder storing an OpenCL kernel.
  *
  * By default, this function constructs the full path to the OpenCL from
  * the known location of the binary that is running, so that we handle
  * both in-source and installed builds. The user can override this
  * behavior by defining GMX_OCL_FILE_PATH environment variable.
  *
- * \return OS-normalized path string to the main folder storing OpenCL kernels
+ * \param[in] kernelRelativePath    Relative path to the kernel in the source tree,
+ *                                  e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
+ * \return OS-normalized path string to the folder storing OpenCL kernel
  *
  * \throws std::bad_alloc    if out of memory.
  *         FileIOError  if GMX_OCL_FILE_PATH does not specify a readable path
  */
 static std::string
-getKernelRootPath()
+getKernelRootPath(const std::string &kernelRelativePath)
 {
     std::string kernelRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
@@ -228,7 +230,7 @@ getKernelRootPath()
            root path from the path to the binary that is running. */
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
-                                                      "src/gromacs/mdlib/nbnxn_ocl" :
+                                                      kernelRelativePath :
                                                       OCL_INSTALL_DIR);
         kernelRootPath = Path::join(info.path, dataPathSuffix);
     }
@@ -410,6 +412,7 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
 
 cl_program
 compileProgram(FILE              *fplog,
+               const std::string &kernelRelativePath,
                const std::string &kernelBaseFilename,
                const std::string &extraDefines,
                cl_context         context,
@@ -417,7 +420,7 @@ compileProgram(FILE              *fplog,
                ocl_vendor_id_t    deviceVendorId)
 {
     cl_int      cl_error;
-    std::string kernelRootPath = getKernelRootPath();
+    std::string kernelRootPath = getKernelRootPath(kernelRelativePath);
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
