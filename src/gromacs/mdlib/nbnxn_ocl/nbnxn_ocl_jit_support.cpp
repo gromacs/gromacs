@@ -218,6 +218,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr,
+                                               "src/gromacs/mdlib/nbnxn_ocl",
                                                "nbnxn_ocl_kernels.cl",
                                                extraDefines,
                                                nb->dev_rundata->context,
