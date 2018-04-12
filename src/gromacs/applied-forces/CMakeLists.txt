@@ -36,6 +36,8 @@ gmx_add_libgromacs_sources(
     electricfield.cpp
     )
 
+add_subdirectory(scattering)
+    
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
