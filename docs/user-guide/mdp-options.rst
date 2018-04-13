@@ -151,7 +151,7 @@ Run control
       molecule. When :mdp:`nstlist` is larger than one,
       :mdp:`nstlist` insertions are performed in a sphere with radius
       :mdp:`rtpi` around a the same random location using the same
-      neighborlist. Since neighborlist construction is expensive,
+      pair list. Since pair list construction is expensive,
       one can perform several extra insertions with the same list
       almost for free. The random seed is set with
       :mdp:`ld-seed`. The temperature for the Boltzmann weighting is
@@ -438,7 +438,7 @@ Neighbor searching
       Generate a pair list for groups of atoms. These groups
       correspond to the charge groups in the topology. This was the
       only cut-off treatment scheme before version 4.6, and is
-      **deprecated in |gmx-version|**. There is no explicit buffering of
+      **deprecated since 5.1**. There is no explicit buffering of
       the pair list. This enables efficient force calculations for
       water, but energy is only conserved when a buffer is explicitly
       added.
@@ -451,7 +451,7 @@ Neighbor searching
 
       Frequency to update the neighbor list. When this is 0, the
       neighbor list is made only once. With energy minimization the
-      neighborlist will be updated for every energy evaluation when
+      pair list will be updated for every energy evaluation when
       :mdp:`nstlist` is greater than 0. With :mdp-value:`cutoff-scheme=Verlet` and
       :mdp:`verlet-buffer-tolerance` set, :mdp:`nstlist` is actually
       a minimum value and :ref:`gmx mdrun` might increase it, unless
@@ -567,7 +567,7 @@ Electrostatics
 
    .. mdp-value:: Cut-off
 
-      Plain cut-off with neighborlist radius :mdp:`rlist` and
+      Plain cut-off with pair list radius :mdp:`rlist` and
       Coulomb cut-off :mdp:`rcoulomb`, where :mdp:`rlist` >=
       :mdp:`rcoulomb`.
 
@@ -721,7 +721,7 @@ Electrostatics
 
       Use an unmodified Coulomb potential. With the group scheme this
       means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the neighborlist.
+      calculated for all pairs in the pair list.
 
 .. mdp:: rcoulomb-switch
 
@@ -754,8 +754,8 @@ Van der Waals
 
    .. mdp-value:: Cut-off
 
-      Twin range cut-offs with neighbor list cut-off :mdp:`rlist` and
-      VdW cut-off :mdp:`rvdw`, where :mdp:`rvdw` >= :mdp:`rlist`.
+      Plain cut-off with pair list radius :mdp:`rlist` and VdW
+      cut-off :mdp:`rvdw`, where :mdp:`rlist` >= :mdp:`rvdw`.
 
    .. mdp-value:: PME
 
@@ -823,7 +823,7 @@ Van der Waals
 
       Use an unmodified Van der Waals potential. With the group scheme
       this means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the neighborlist.
+      calculated for all pairs in the pair list.
 
    .. mdp-value:: Force-switch
 
@@ -1338,12 +1338,14 @@ Bonds
 
 .. mdp:: constraints
 
+   Controls which bonds in the topology will be converted to rigid
+   holonomic constraints. Note that typical rigid water models do not
+   have bonds, but rather a specialized ``[settles]`` directive, so
+   are not affected by this keyword.
+
    .. mdp-value:: none
 
-      No constraints except for those defined explicitly in the
-      topology, *i.e.* bonds are represented by a harmonic (or other)
-      potential or a Morse potential (depending on the setting of
-      :mdp:`morse`) and angles by a harmonic (or other) potential.
+      No bonds converted to constraints.
 
    .. mdp-value:: h-bonds
 
@@ -1355,14 +1357,17 @@ Bonds
 
    .. mdp-value:: h-angles
 
-      Convert all bonds and additionally the angles that involve
-      H-atoms to bond-constraints.
+      Convert all bonds to constraints and convert the angles that
+      involve H-atoms to bond-constraints.
 
    .. mdp-value:: all-angles
 
-      Convert all bonds and angles to bond-constraints.
+      Convert all bonds to constraints and all angles to bond-constraints.
 
 .. mdp:: constraint-algorithm
+
+   Chooses which solver satisfies any non-SETTLE holonomic
+   constraints.
 
    .. mdp-value:: LINCS
 
@@ -1391,7 +1396,7 @@ Bonds
 
 .. mdp:: continuation
 
-   This option was formerly known as unconstrained-start.
+   This option was formerly known as ``unconstrained-start``.
 
    .. mdp-value:: no
 
