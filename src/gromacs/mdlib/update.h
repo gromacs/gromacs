@@ -184,7 +184,9 @@ void update_sd_second_half(gmx_int64_t                    step,
                            t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
-                           gmx::Constraints              *constr);
+                           gmx::Constraints              *constr,
+                           bool                           do_log,
+                           bool                           do_ene);
 
 void finish_update(const t_inputrec              *inputrec,
                    t_mdatoms                     *md,
