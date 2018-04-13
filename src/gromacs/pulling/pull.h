@@ -71,6 +71,7 @@ struct t_pbc;
 namespace gmx
 {
 class ForceWithVirial;
+class LocalAtomSetManager;
 }
 
 /*! \brief Returns if the pull coordinate is an angle
@@ -213,10 +214,8 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  *
  * \param cr             Structure for communication info.
  * \param pull           The pull group.
- * \param md             All atoms.
  */
-void dd_make_local_pull_groups(const t_commrec *cr,
-                               struct pull_t *pull, t_mdatoms *md);
+void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
 
 
 /*! \brief Allocate, initialize and return a pull work struct.
@@ -226,6 +225,7 @@ void dd_make_local_pull_groups(const t_commrec *cr,
  * \param ir          The inputrec.
  * \param mtop        The topology of the whole system.
  * \param cr          Struct for communication info.
+ * \param atomSets    The manager that handles the pull atom sets
  * \param lambda      FEP lambda.
  */
 struct pull_t *init_pull(FILE                      *fplog,
@@ -233,6 +233,7 @@ struct pull_t *init_pull(FILE                      *fplog,
                          const t_inputrec          *ir,
                          const gmx_mtop_t          *mtop,
                          const t_commrec           *cr,
+                         gmx::LocalAtomSetManager  *atomSets,
                          real                       lambda);
 
 /*! \brief Set up and open the pull output files, when requested.
