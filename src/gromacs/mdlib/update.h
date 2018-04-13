@@ -177,7 +177,6 @@ void update_sd_second_half(gmx_int64_t                    step,
                            t_mdatoms                     *md,
                            t_state                       *state,
                            gmx_bool                       bMolPBC,
-                           gmx::PaddedArrayRef<gmx::RVec> force,  /* forces on home particles */
                            t_idef                        *idef,
                            const t_commrec               *cr,
                            const gmx_multisim_t          *ms,

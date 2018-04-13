@@ -873,145 +873,109 @@ void update_realloc(gmx_update_t *upd, int natoms)
     upd->xp.resize(gmx::paddedRVecVectorSize(natoms));
 }
 
-static void do_update_sd1(gmx_stochd_t *sd,
-                          int start, int nrend, real dt,
-                          rvec accel[], ivec nFreeze[],
-                          real invmass[], unsigned short ptype[],
-                          unsigned short cFREEZE[], unsigned short cACC[],
-                          unsigned short cTC[],
-                          const rvec x[], rvec xprime[], rvec v[], const rvec f[],
-                          gmx_bool bDoConstr,
-                          gmx_bool bFirstHalfConstr,
-                          gmx_int64_t step, int seed, int* gatindex)
+/*! \brief Sets the SD update type */
+enum class SDUpdate : int
 {
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sig;
-    int             gf = 0, ga = 0, gt = 0;
-    real            ism;
-    int             n, d;
+    ForcesOnly, FrictionAndNoiseOnly, Combined
+};
+
+/*! \brief SD integrator update
+ *
+ * Two phases are required in the general case of a constrained
+ * update, the first phase from the contribution of forces, before
+ * applying constraints, and then a second phase applying the friction
+ * and noise, and then further constraining. For details, see
+ * Goga2012.
+ *
+ * Without constraints, the two phases can be combined, for
+ * efficiency.
+ *
+ * Thus three instantiations of this templated function will be made,
+ * two with only one contribution, and one with both contributions. */
+template <SDUpdate updateType>
+static void
+doSDUpdateGeneral(gmx_stochd_t *sd,
+                  int start, int nrend, real dt,
+                  rvec accel[], ivec nFreeze[],
+                  real invmass[], unsigned short ptype[],
+                  unsigned short cFREEZE[], unsigned short cACC[],
+                  unsigned short cTC[],
+                  const rvec x[], rvec xprime[], rvec v[], const rvec f[],
+                  gmx_int64_t step, int seed, int *gatindex)
+{
+    if (updateType != SDUpdate::FrictionAndNoiseOnly)
+    {
+        GMX_ASSERT(f != nullptr, "SD update with forces requires forces");
+        GMX_ASSERT(cACC != nullptr, "SD update with forces requires acceleration groups");
+    }
+    if (updateType != SDUpdate::ForcesOnly)
+    {
+        GMX_ASSERT(cTC != nullptr, "SD update with noise requires temperature groups");
+    }
 
     // Even 0 bits internal counter gives 2x64 ints (more than enough for three table lookups)
     gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
     gmx::TabulatedNormalDistribution<real, 14> dist;
 
-    sdc = sd->sdc;
-    sig = sd->sdsig;
+    gmx_sd_const_t *sdc = sd->sdc;
+    gmx_sd_sigma_t *sig = sd->sdsig;
 
-    if (!bDoConstr)
+    for (int n = start; n < nrend; n++)
     {
-        for (n = start; n < nrend; n++)
+        int globalAtomIndex = gatindex ? gatindex[n] : n;
+        rng.restart(step, globalAtomIndex);
+        dist.reset();
+
+        real inverseMass     = invmass[n];
+        real inverseMassSqrt = std::sqrt(inverseMass);
+
+        int  freezeGroup       = cFREEZE ? cFREEZE[n] : 0;
+        int  accelerationGroup = cACC ? cACC[n] : 0;
+        int  temperatureGroup  = cTC ? cTC[n] : 0;
+
+        for (int d = 0; d < DIM; d++)
         {
-            int  ng = gatindex ? gatindex[n] : n;
-
-            rng.restart(step, ng);
-            dist.reset();
-
-            ism = std::sqrt(invmass[n]);
-
-            if (cFREEZE)
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[freezeGroup][d])
             {
-                gf  = cFREEZE[n];
-            }
-            if (cACC)
-            {
-                ga  = cACC[n];
-            }
-            if (cTC)
-            {
-                gt  = cTC[n];
-            }
+                real vn;
 
-            for (d = 0; d < DIM; d++)
-            {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                if (updateType == SDUpdate::ForcesOnly)
                 {
-                    real sd_V, vn;
-
-                    sd_V         = ism*sig[gt].V*dist(rng);
-                    vn           = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
-                    v[n][d]      = vn*sdc[gt].em + sd_V;
-                    /* Here we include half of the friction+noise
-                     * update of v into the integration of x.
-                     */
-                    xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                    vn           = v[n][d] + (inverseMass*f[n][d] + accel[accelerationGroup][d])*dt;
+                    v[n][d]      = vn;
+                    // Simple position update.
+                    xprime[n][d] = x[n][d] + v[n][d]*dt;
+                }
+                else if (updateType == SDUpdate::FrictionAndNoiseOnly)
+                {
+                    vn           = v[n][d];
+                    v[n][d]      = (vn*sdc[temperatureGroup].em +
+                                    inverseMassSqrt*sig[temperatureGroup].V*dist(rng));
+                    // The previous phase already updated the
+                    // positions with a full v*dt term that must
+                    // now be half removed.
+                    xprime[n][d] = xprime[n][d] + 0.5*(v[n][d] - vn)*dt;
                 }
                 else
                 {
+                    vn           = v[n][d] + (inverseMass*f[n][d] + accel[accelerationGroup][d])*dt;
+                    v[n][d]      = (vn*sdc[temperatureGroup].em +
+                                    inverseMassSqrt*sig[temperatureGroup].V*dist(rng));
+                    // Here we include half of the friction+noise
+                    // update of v into the position update.
+                    xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                }
+            }
+            else
+            {
+                // When using constraints, the update is split into
+                // two phases, but we only need to zero the update of
+                // virtual, shell or frozen particles in at most one
+                // of the phases.
+                if (updateType != SDUpdate::FrictionAndNoiseOnly)
+                {
                     v[n][d]      = 0.0;
                     xprime[n][d] = x[n][d];
-                }
-            }
-        }
-    }
-    else
-    {
-        /* We do have constraints */
-        if (bFirstHalfConstr)
-        {
-            /* First update without friction and noise */
-            real im;
-
-            for (n = start; n < nrend; n++)
-            {
-                im = invmass[n];
-
-                if (cFREEZE)
-                {
-                    gf  = cFREEZE[n];
-                }
-                if (cACC)
-                {
-                    ga  = cACC[n];
-                }
-
-                for (d = 0; d < DIM; d++)
-                {
-                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-                    {
-                        v[n][d]      = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
-                        xprime[n][d] = x[n][d] +  v[n][d]*dt;
-                    }
-                    else
-                    {
-                        v[n][d]      = 0.0;
-                        xprime[n][d] = x[n][d];
-                    }
-                }
-            }
-        }
-        else
-        {
-            /* Update friction and noise only */
-            for (n = start; n < nrend; n++)
-            {
-                int  ng = gatindex ? gatindex[n] : n;
-
-                rng.restart(step, ng);
-                dist.reset();
-
-                ism = std::sqrt(invmass[n]);
-
-                if (cFREEZE)
-                {
-                    gf  = cFREEZE[n];
-                }
-                if (cTC)
-                {
-                    gt  = cTC[n];
-                }
-
-                for (d = 0; d < DIM; d++)
-                {
-                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-                    {
-                        real sd_V, vn;
-
-                        sd_V         = ism*sig[gt].V*dist(rng);
-                        vn           = v[n][d];
-                        v[n][d]      = vn*sdc[gt].em + sd_V;
-                        /* Add the friction and noise contribution only */
-                        xprime[n][d] = xprime[n][d] + 0.5*(v[n][d] - vn)*dt;
-                    }
                 }
             }
         }
@@ -1636,7 +1600,6 @@ update_sd_second_half(gmx_int64_t                    step,
                       t_mdatoms                     *md,
                       t_state                       *state,
                       gmx_bool                       bMolPBC,
-                      gmx::PaddedArrayRef<gmx::RVec> force,       /* forces on home particles */
                       t_idef                        *idef,
                       const t_commrec               *cr,
                       const gmx_multisim_t          *ms,
@@ -1677,18 +1640,16 @@ update_sd_second_half(gmx_int64_t                    step,
                 int start_th, end_th;
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
-                /* The second part of the SD integration */
-                // TODO this just does an update of friction and
-                // noise, so extract that and make it obvious.
-                do_update_sd1(upd->sd,
-                              start_th, end_th, dt,
-                              inputrec->opts.acc, inputrec->opts.nFreeze,
-                              md->invmass, md->ptype,
-                              md->cFREEZE, md->cACC, md->cTC,
-                              as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array(force.data()),
-                              TRUE, FALSE,
-                              step, inputrec->ld_seed,
-                              DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>
+                    (upd->sd,
+                    start_th, end_th, dt,
+                    inputrec->opts.acc, inputrec->opts.nFreeze,
+                    md->invmass, md->ptype,
+                    md->cFREEZE, nullptr, md->cTC,
+                    as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()),
+                    as_rvec_array(state->v.data()), nullptr,
+                    step, inputrec->ld_seed,
+                    DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1967,15 +1928,30 @@ void update_coords(gmx_int64_t                    step,
                                  state->nosehoover_vxi.data(), M);
                     break;
                 case (eiSD1):
-                    /* With constraints, the SD1 update is done in 2 parts */
-                    do_update_sd1(upd->sd,
-                                  start_th, end_th, dt,
-                                  inputrec->opts.acc, inputrec->opts.nFreeze,
-                                  md->invmass, md->ptype,
-                                  md->cFREEZE, md->cACC, md->cTC,
-                                  x_rvec, xp_rvec, v_rvec, f_rvec,
-                                  bDoConstr, TRUE,
-                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                    if (bDoConstr)
+                    {
+                        // With constraints, the SD update is done in 2 parts
+                        doSDUpdateGeneral<SDUpdate::ForcesOnly>
+                            (upd->sd,
+                            start_th, end_th, dt,
+                            inputrec->opts.acc, inputrec->opts.nFreeze,
+                            md->invmass, md->ptype,
+                            md->cFREEZE, md->cACC, nullptr,
+                            x_rvec, xp_rvec, v_rvec, f_rvec,
+                            step, inputrec->ld_seed, nullptr);
+                    }
+                    else
+                    {
+                        doSDUpdateGeneral<SDUpdate::Combined>
+                            (upd->sd,
+                            start_th, end_th, dt,
+                            inputrec->opts.acc, inputrec->opts.nFreeze,
+                            md->invmass, md->ptype,
+                            md->cFREEZE, md->cACC, md->cTC,
+                            x_rvec, xp_rvec, v_rvec, f_rvec,
+                            step, inputrec->ld_seed,
+                            DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                    }
                     break;
                 case (eiBD):
                     do_update_bd(start_th, end_th, dt,
