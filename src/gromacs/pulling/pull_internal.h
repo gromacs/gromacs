@@ -56,6 +56,7 @@
 
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/domdec/localatomset.h"
 
 /*! \cond INTERNAL */
 
@@ -75,12 +76,28 @@ enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
 };
 
+struct pull_group_work_t
+{
+    pull_group_work_t(gmx::LocalAtomSet atomSet);
+    t_pull_group      params = {};
+    gmx::LocalAtomSet atomSet;
+    gmx_bool          bCalcCOM;   /* Calculate COM? Not if only used as cylinder group */
+    int               epgrppbc;   /* The type of pbc for this pull group, see enum above */
+
+    real             *weight_loc; /* Weights for the local indices */
+
+    real              mwscale;    /* mass*weight scaling factor 1/sum w m */
+    real              wscale;     /* scaling factor for the weights: sum w m/sum w w m */
+    real              invtm;      /* inverse total mass of the group: 1/wscale sum w m */
+    dvec             *mdw;        /* mass*gradient(weight) for atoms */
+    double           *dv;         /* distance to the other group along vec */
+    dvec              x;          /* center of mass before update */
+    dvec              xp;         /* center of mass after update before constraining */
+};
+
 typedef struct
 {
     t_pull_group  params;
-
-    gmx_bool      bCalcCOM;   /* Calculate COM? Not if only used as cylinder group */
-    int           epgrppbc;   /* The type of pbc for this pull group, see enum above */
 
     int           nat_loc;    /* Number of local pull atoms */
     int           nalloc_loc; /* Allocation size for ind_loc and weight_loc */
@@ -93,9 +110,8 @@ typedef struct
     dvec         *mdw;        /* mass*gradient(weight) for atoms */
     double       *dv;         /* distance to the other group along vec */
     dvec          x;          /* center of mass before update */
-    dvec          xp;         /* center of mass after update before constraining */
 }
-pull_group_work_t;
+pull_group_dyna_work_t;
 
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
 struct PullCoordSpatialData
@@ -204,9 +220,9 @@ struct pull_t
     gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
 
     /* Parameters + dynamic data for groups */
-    int                ngroup;       /* Number of pull groups */
-    pull_group_work_t *group;        /* The pull group param and work data */
-    pull_group_work_t *dyna;         /* Dynamic groups for geom=cylinder */
+    int                             ngroup; /* Number of pull groups */
+    std::vector<pull_group_work_t>  group;  /* The pull group param and work data */
+    pull_group_dyna_work_t         *dyna;   /* Dynamic groups for geom=cylinder */
 
     /* Parameters + dynamic data for coordinates */
     std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */

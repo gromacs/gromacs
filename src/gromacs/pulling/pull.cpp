@@ -52,6 +52,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
@@ -79,6 +81,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+
+pull_group_work_t::pull_group_work_t(gmx::LocalAtomSet atomSet) : atomSet(atomSet){};
 
 bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
@@ -137,6 +142,20 @@ static std::string append_before_extension(std::string pathname,
     {
         return pathname.substr(0, extPos) + to_append +
                pathname.substr(extPos, std::string::npos);
+    }
+}
+
+static void pull_print_dynamic_group_x(FILE *out, const ivec dim,
+                                       const pull_group_dyna_work_t *pgrp)
+{
+    int m;
+
+    for (m = 0; m < DIM; m++)
+    {
+        if (dim[m])
+        {
+            fprintf(out, "\t%g", pgrp->x[m]);
+        }
     }
 }
 
@@ -210,7 +229,7 @@ static void pull_print_x(FILE *out, struct pull_t *pull, double t)
         {
             if (pcrd->params.eGeom == epullgCYL)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->dyna[c]);
+                pull_print_dynamic_group_x(out, pcrd->params.dim, &pull->dyna[c]);
             }
             else
             {
@@ -393,7 +412,7 @@ static void apply_forces_grp_part(const pull_group_work_t *pgrp,
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int    ii    = pgrp->ind_loc[i];
+        int    ii    = pgrp->atomSet.localIndex()[i];
         double wmass = md->massT[ii];
         if (pgrp->weight_loc)
         {
@@ -413,7 +432,7 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
                              const dvec f_pull, int sign, rvec *f,
                              int nthreads)
 {
-    if (pgrp->params.nat == 1 && pgrp->nat_loc == 1)
+    if (pgrp->params.nat == 1 && pgrp->atomSet.numAtomsLocal() == 1)
     {
         /* Only one atom and our rank has this atom: we can skip
          * the mass weighting, which means that this code also works
@@ -421,22 +440,22 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
          */
         for (int d = 0; d < DIM; d++)
         {
-            f[pgrp->ind_loc[0]][d] += sign*f_pull[d];
+            f[pgrp->atomSet.localIndex()[0]][d] += sign*f_pull[d];
         }
     }
     else
     {
-        if (pgrp->nat_loc <= c_pullMaxNumLocalAtomsSingleThreaded)
+        if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
         {
-            apply_forces_grp_part(pgrp, 0, pgrp->nat_loc, md, f_pull, sign, f);
+            apply_forces_grp_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), md, f_pull, sign, f);
         }
         else
         {
 #pragma omp parallel for num_threads(nthreads) schedule(static)
             for (int th = 0; th < nthreads; th++)
             {
-                int ind_start = (pgrp->nat_loc*(th + 0))/nthreads;
-                int ind_end   = (pgrp->nat_loc*(th + 1))/nthreads;
+                int ind_start = (pgrp->atomSet.numAtomsLocal()*(th + 0))/nthreads;
+                int ind_end   = (pgrp->atomSet.numAtomsLocal()*(th + 1))/nthreads;
                 apply_forces_grp_part(pgrp, ind_start, ind_end,
                                       md, f_pull, sign, f);
             }
@@ -445,7 +464,7 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
 }
 
 /* Apply forces in a mass weighted fashion to a cylinder group */
-static void apply_forces_cyl_grp(const pull_group_work_t *pgrp,
+static void apply_forces_cyl_grp(const pull_group_dyna_work_t *pgrp,
                                  const double dv_corr,
                                  const t_mdatoms *md,
                                  const dvec f_pull, double f_scal,
@@ -1282,9 +1301,9 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
         /* update the atom positions */
         copy_dvec(dr, tmp);
-        for (j = 0; j < pgrp->nat_loc; j++)
+        for (size_t j = 0; j < pgrp->atomSet.numAtomsLocal(); j++)
         {
-            ii = pgrp->ind_loc[j];
+            ii = pgrp->atomSet.localIndex()[j];
             if (pgrp->weight_loc)
             {
                 dsvmul(pgrp->wscale*pgrp->weight_loc[j], dr, tmp);
@@ -1782,45 +1801,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t *ga2la,
-                                  pull_group_work_t *pg, int start, int end)
-{
-    int i, ii;
-
-    pg->nat_loc = 0;
-    for (i = 0; i < pg->params.nat; i++)
-    {
-        ii = pg->params.ind[i];
-        if (ga2la)
-        {
-            if (!ga2la_get_home(ga2la, ii, &ii))
-            {
-                ii = -1;
-            }
-        }
-        if (ii >= start && ii < end)
-        {
-            /* This is a home atom, add it to the local pull group */
-            if (pg->nat_loc >= pg->nalloc_loc)
-            {
-                pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
-                srenew(pg->ind_loc, pg->nalloc_loc);
-                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr)
-                {
-                    srenew(pg->weight_loc, pg->nalloc_loc);
-                }
-            }
-            pg->ind_loc[pg->nat_loc] = ii;
-            if (pg->params.weight != nullptr)
-            {
-                pg->weight_loc[pg->nat_loc] = pg->params.weight[i];
-            }
-            pg->nat_loc++;
-        }
-    }
-}
-
-void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
+void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 {
     gmx_domdec_t   *dd;
     pull_comm_t    *comm;
@@ -1848,16 +1829,22 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
 
     for (g = 0; g < pull->ngroup; g++)
     {
-        int a;
-
-        make_local_pull_group(ga2la, &pull->group[g],
-                              0, md->homenr);
+        int  a;
+        auto pg = &pull->group[g];
+        if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr)
+        {
+            srenew(pg->weight_loc, pg->atomSet.numAtomsLocal());
+            for (size_t i = 0; i < pg->atomSet.numAtomsLocal(); ++i)
+            {
+                pg->weight_loc[i] = pg->params.weight[pg->atomSet.collectiveIndex()[i]];
+            }
+        }
 
         GMX_ASSERT(bMustParticipate || dd != nullptr, "Either all ranks (including this rank) participate, or we use DD and need to have access to dd here");
 
         /* We should participate if we have pull or pbc atoms */
         if (!bMustParticipate &&
-            (pull->group[g].nat_loc > 0 ||
+            (pull->group[g].atomSet.numAtomsLocal() > 0 ||
              (pull->group[g].params.pbcatom >= 0 &&
               ga2la_get_home(dd->ga2la, pull->group[g].params.pbcatom, &a))))
         {
@@ -1967,15 +1954,10 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
 
     if (cr && PAR(cr))
     {
-        pg->nat_loc    = 0;
-        pg->nalloc_loc = 0;
-        pg->ind_loc    = nullptr;
         pg->weight_loc = nullptr;
     }
     else
     {
-        pg->nat_loc = pg->params.nat;
-        pg->ind_loc = pg->params.ind;
         if (pg->epgrppbc == epgrppbcCOS)
         {
             snew(pg->weight_loc, pg->params.nat);
@@ -2121,7 +2103,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
 
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
-          const gmx_mtop_t *mtop, const t_commrec *cr,
+          const gmx_mtop_t *mtop, const t_commrec *cr, gmx::LocalAtomSetManager *atomSets,
           real lambda)
 {
     struct pull_t *pull;
@@ -2136,7 +2118,10 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->params.coord = nullptr;
 
     pull->ngroup       = pull_params->ngroup;
-    snew(pull->group, pull->ngroup);
+    for (int i = 0; i < pull->ngroup; ++i)
+    {
+        pull->group.emplace_back(atomSets->add({pull_params->group[i].ind, pull_params->group[i].ind+pull_params->group[i].nat}));
+    }
 
     pull->bPotential  = FALSE;
     pull->bConstraint = FALSE;
@@ -2575,12 +2560,25 @@ void init_pull_output_files(pull_t                    *pull,
     }
 }
 
-static void destroy_pull_group(pull_group_work_t *pgrp)
+static void destroy_dynamic_pull_group(pull_group_dyna_work_t *pgrp)
 {
     if (pgrp->ind_loc != pgrp->params.ind)
     {
         sfree(pgrp->ind_loc);
     }
+    if (pgrp->weight_loc != pgrp->params.weight)
+    {
+        sfree(pgrp->weight_loc);
+    }
+    sfree(pgrp->mdw);
+    sfree(pgrp->dv);
+
+    sfree(pgrp->params.ind);
+    sfree(pgrp->params.weight);
+}
+
+static void destroy_pull_group(pull_group_work_t *pgrp)
+{
     if (pgrp->weight_loc != pgrp->params.weight)
     {
         sfree(pgrp->weight_loc);
@@ -2602,10 +2600,9 @@ static void destroy_pull(struct pull_t *pull)
     {
         if (pull->coord[c].params.eGeom == epullgCYL)
         {
-            destroy_pull_group(&(pull->dyna[c]));
+            destroy_dynamic_pull_group(&(pull->dyna[c]));
         }
     }
-    sfree(pull->group);
     sfree(pull->dyna);
 
 #if GMX_MPI
