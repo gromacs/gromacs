@@ -198,11 +198,8 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 {
     /* The size and stride per coord for the reduction buffer */
     const int       stride = 9;
-    int             i, ii, m, start, end;
-    rvec            g_x, dx, dir;
     double          inv_cyl_r2;
     pull_comm_t    *comm;
-    gmx_ga2la_t    *ga2la = nullptr;
 
     comm = &pull->comm;
 
@@ -210,14 +207,6 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
     {
         snew(comm->dbuf_cyl, pull->coord.size()*stride);
     }
-
-    if (cr && DOMAINDECOMP(cr))
-    {
-        ga2la = cr->dd->ga2la;
-    }
-
-    start = 0;
-    end   = md->homenr;
 
     inv_cyl_r2 = 1.0/gmx::square(pull->params.cylinder_r);
 
@@ -238,18 +227,17 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 
         if (pcrd->params.eGeom == epullgCYL)
         {
-            pull_group_work_t *pref, *pgrp, *pdyna;
-
             /* pref will be the same group for all pull coordinates */
-            pref  = &pull->group[pcrd->params.group[0]];
-            pgrp  = &pull->group[pcrd->params.group[1]];
-            pdyna = &pull->dyna[c];
-            copy_dvec_to_rvec(pcrd->spatialData.vec, dir);
-            pdyna->nat_loc = 0;
+            const pull_group_work_t &pref  = pull->group[pcrd->params.group[0]];
+            const pull_group_work_t &pgrp  = pull->group[pcrd->params.group[1]];
+            pull_group_work_t       &pdyna = pull->dyna[c];
+            rvec direction;
+            copy_dvec_to_rvec(pcrd->spatialData.vec, direction);
 
-            /* We calculate distances with respect to the reference location
-             * of this cylinder group (g_x), which we already have now since
-             * we reduced the other group COM over the ranks. This resolves
+            /* Since we have not calculated the COM of the cylinder group yet,
+             * we calculate distances with respect to location of the pull
+             * group minus the reference position along the vector.
+             * here we already have the COM of the pull group. This resolves
              * any PBC issues and we don't need to use a PBC-atom here.
              */
             if (pcrd->params.rate != 0)
@@ -257,81 +245,63 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
                 /* With rate=0, value_ref is set initially */
                 pcrd->value_ref = pcrd->params.init + pcrd->params.rate*t;
             }
-            for (m = 0; m < DIM; m++)
+            rvec reference;
+            for (int m = 0; m < DIM; m++)
             {
-                g_x[m] = pgrp->x[m] - pcrd->spatialData.vec[m]*pcrd->value_ref;
+                reference[m] = pgrp.x[m] - pcrd->spatialData.vec[m]*pcrd->value_ref;
             }
 
             /* loop over all atoms in the main ref group */
-            for (i = 0; i < pref->params.nat; i++)
+            for (size_t indexInSet = 0; indexInSet < pref.atomSet.numAtomsLocal(); indexInSet++)
             {
-                ii = pref->params.ind[i];
-                if (ga2la)
+                int    atomIndex = pref.atomSet.localIndex()[indexInSet];
+                rvec   dx;
+                pbc_dx_aiuc(pbc, x[atomIndex], reference, dx);
+                double axialLocation = iprod(direction, dx);
+                dvec   radialLocation;
+                double dr2 = 0;
+                for (int m = 0; m < DIM; m++)
                 {
-                    if (!ga2la_get_home(ga2la, pref->params.ind[i], &ii))
+                    /* Determine the radial components */
+                    radialLocation[m]  = dx[m] - axialLocation*direction[m];
+                    dr2               += gmx::square(radialLocation[m]);
+                }
+                double dr2_rel = dr2*inv_cyl_r2;
+
+                if (dr2_rel < 1)
+                {
+                    /* add atom to sum of COM and to weight array */
+
+                    double mass                   = md->massT[atomIndex];
+                    /* The radial weight function is 1-2x^2+x^4,
+                     * where x=r/cylinder_r. Since this function depends
+                     * on the radial component, we also get radial forces
+                     * on both groups.
+                     */
+                    double weight                 =  1 + (-2 + dr2_rel)*dr2_rel;
+                    double dweight_r              = (-4 + 4*dr2_rel)*inv_cyl_r2;
+                    pdyna.weight_loc[indexInSet]  = weight;
+                    sum_a                        += mass*weight*axialLocation;
+                    wmass                        += mass*weight;
+                    wwmass                       += mass*weight*weight;
+                    dvec mdw;
+                    dsvmul(mass*dweight_r, radialLocation, mdw);
+                    copy_dvec(mdw, pdyna.mdw[atomIndex]);
+                    /* Currently we only have the axial component of the
+                     * offset from the cylinder COM up to an unkown offset.
+                     * We add this offset after the reduction needed
+                     * for determining the COM of the cylinder group.
+                     */
+                    pdyna.dv[indexInSet] = axialLocation;
+                    for (int m = 0; m < DIM; m++)
                     {
-                        ii = -1;
+                        radf_fac0[m] += mdw[m];
+                        radf_fac1[m] += mdw[m]*axialLocation;
                     }
                 }
-                if (ii >= start && ii < end)
+                else
                 {
-                    double dr2, dr2_rel, inp;
-                    dvec   dr;
-
-                    pbc_dx_aiuc(pbc, x[ii], g_x, dx);
-                    inp = iprod(dir, dx);
-                    dr2 = 0;
-                    for (m = 0; m < DIM; m++)
-                    {
-                        /* Determine the radial components */
-                        dr[m] = dx[m] - inp*dir[m];
-                        dr2  += dr[m]*dr[m];
-                    }
-                    dr2_rel = dr2*inv_cyl_r2;
-
-                    if (dr2_rel < 1)
-                    {
-                        double mass, weight, dweight_r;
-                        dvec   mdw;
-
-                        /* add to index, to sum of COM, to weight array */
-                        if (pdyna->nat_loc >= pdyna->nalloc_loc)
-                        {
-                            pdyna->nalloc_loc = over_alloc_large(pdyna->nat_loc+1);
-                            srenew(pdyna->ind_loc,    pdyna->nalloc_loc);
-                            srenew(pdyna->weight_loc, pdyna->nalloc_loc);
-                            srenew(pdyna->mdw,        pdyna->nalloc_loc);
-                            srenew(pdyna->dv,         pdyna->nalloc_loc);
-                        }
-                        pdyna->ind_loc[pdyna->nat_loc] = ii;
-
-                        mass      = md->massT[ii];
-                        /* The radial weight function is 1-2x^2+x^4,
-                         * where x=r/cylinder_r. Since this function depends
-                         * on the radial component, we also get radial forces
-                         * on both groups.
-                         */
-                        weight    = 1 + (-2 + dr2_rel)*dr2_rel;
-                        dweight_r = (-4 + 4*dr2_rel)*inv_cyl_r2;
-                        pdyna->weight_loc[pdyna->nat_loc] = weight;
-                        sum_a    += mass*weight*inp;
-                        wmass    += mass*weight;
-                        wwmass   += mass*weight*weight;
-                        dsvmul(mass*dweight_r, dr, mdw);
-                        copy_dvec(mdw, pdyna->mdw[pdyna->nat_loc]);
-                        /* Currently we only have the axial component of the
-                         * distance (inp) up to an unkown offset. We add this
-                         * offset after the reduction needs to determine the
-                         * COM of the cylinder group.
-                         */
-                        pdyna->dv[pdyna->nat_loc] = inp;
-                        for (m = 0; m < DIM; m++)
-                        {
-                            radf_fac0[m] += mdw[m];
-                            radf_fac1[m] += mdw[m]*inp;
-                        }
-                        pdyna->nat_loc++;
-                    }
+                    pdyna.weight_loc[indexInSet] = 0;
                 }
             }
         }
@@ -360,12 +330,12 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
 
         if (pcrd->params.eGeom == epullgCYL)
         {
-            pull_group_work_t    *pdyna       = &pull->dyna[c];
-            pull_group_work_t    *pgrp        = &pull->group[pcrd->params.group[1]];
-            PullCoordSpatialData &spatialData = pcrd->spatialData;
+            pull_group_work_t      *pdyna       = &pull->dyna[c];
+            pull_group_work_t      *pgrp        = &pull->group[pcrd->params.group[1]];
+            PullCoordSpatialData   &spatialData = pcrd->spatialData;
 
-            double                wmass       = comm->dbuf_cyl[c*stride+0];
-            double                wwmass      = comm->dbuf_cyl[c*stride+1];
+            double                  wmass       = comm->dbuf_cyl[c*stride+0];
+            double                  wwmass      = comm->dbuf_cyl[c*stride+1];
             pdyna->mwscale                    = 1.0/wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
@@ -378,11 +348,11 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
              * to the atoms in the cylinder group.
              */
             spatialData.cyl_dev = 0;
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
-                g_x[m]               = pgrp->x[m] - spatialData.vec[m]*pcrd->value_ref;
+                double reference     = pgrp->x[m] - spatialData.vec[m]*pcrd->value_ref;
                 double dist          = -spatialData.vec[m]*comm->dbuf_cyl[c*stride+2]*pdyna->mwscale;
-                pdyna->x[m]          = g_x[m] - dist;
+                pdyna->x[m]          = reference - dist;
                 spatialData.cyl_dev += dist;
             }
             /* Now we know the exact COM of the cylinder reference group,
@@ -390,7 +360,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
              * multiplied with the axial pull force will give the radial
              * force on the pulled (non-cylinder) group.
              */
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 spatialData.ffrad[m] = (comm->dbuf_cyl[c*stride+6+m] +
                                         comm->dbuf_cyl[c*stride+3+m]*spatialData.cyl_dev)/wmass;
@@ -435,7 +405,7 @@ static void sum_com_part(const pull_group_work_t *pgrp,
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int  ii = pgrp->ind_loc[i];
+        int  ii = pgrp->atomSet.localIndex()[i];
         real wm;
         if (pgrp->weight_loc == nullptr)
         {
@@ -517,7 +487,7 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int  ii  = pgrp->ind_loc[i];
+        int  ii  = pgrp->atomSet.localIndex()[i];
         real m   = mass[ii];
         /* Determine cos and sin sums */
         real cw  = std::cos(x[ii][cosdim]*twopi_box);
@@ -626,23 +596,23 @@ void pull_calc_coms(const t_commrec *cr,
                  * in that case a check group mass != 0 has been done before.
                  */
                 if (pgrp->params.nat == 1 &&
-                    pgrp->nat_loc == 1 &&
-                    md->massT[pgrp->ind_loc[0]] == 0)
+                    pgrp->atomSet.numAtomsLocal() == 1 &&
+                    md->massT[pgrp->atomSet.localIndex()[0]] == 0)
                 {
                     GMX_ASSERT(xp == NULL, "We should not have groups with zero mass with constraints, i.e. xp!=NULL");
 
                     /* Copy the single atom coordinate */
                     for (int d = 0; d < DIM; d++)
                     {
-                        sum_com->sum_wmx[d] = x[pgrp->ind_loc[0]][d];
+                        sum_com->sum_wmx[d] = x[pgrp->atomSet.localIndex()[0]][d];
                     }
                     /* Set all mass factors to 1 to get the correct COM */
                     sum_com->sum_wm  = 1;
                     sum_com->sum_wwm = 1;
                 }
-                else if (pgrp->nat_loc <= c_pullMaxNumLocalAtomsSingleThreaded)
+                else if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
                 {
-                    sum_com_part(pgrp, 0, pgrp->nat_loc,
+                    sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(),
                                  x, xp, md->massT,
                                  pbc, x_pbc,
                                  sum_com);
@@ -652,8 +622,8 @@ void pull_calc_coms(const t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                     for (int t = 0; t < pull->nthreads; t++)
                     {
-                        int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                        int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                        int ind_start = (pgrp->atomSet.numAtomsLocal()*(t + 0))/pull->nthreads;
+                        int ind_end   = (pgrp->atomSet.numAtomsLocal()*(t + 1))/pull->nthreads;
                         sum_com_part(pgrp, ind_start, ind_end,
                                      x, xp, md->massT,
                                      pbc, x_pbc,
@@ -691,8 +661,8 @@ void pull_calc_coms(const t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                 for (int t = 0; t < pull->nthreads; t++)
                 {
-                    int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                    int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                    int ind_start = (pgrp->atomSet.numAtomsLocal()*(t + 0))/pull->nthreads;
+                    int ind_end   = (pgrp->atomSet.numAtomsLocal()*(t + 1))/pull->nthreads;
                     sum_com_part_cosweight(pgrp, ind_start, ind_end,
                                            pull->cosdim, twopi_box,
                                            x, xp, md->massT,
@@ -774,7 +744,6 @@ void pull_calc_coms(const t_commrec *cr,
             {
                 /* Cosine weighting geometry */
                 double csw, snw, wmass, wwmass;
-                int    i, ii;
 
                 /* Determine the optimal location of the cosine weight */
                 csw                   = comm->dbuf[g*3][0];
@@ -792,9 +761,9 @@ void pull_calc_coms(const t_commrec *cr,
                 /* Set the weights for the local atoms */
                 csw *= pgrp->invtm;
                 snw *= pgrp->invtm;
-                for (i = 0; i < pgrp->nat_loc; i++)
+                for (size_t i = 0; i < pgrp->atomSet.numAtomsLocal(); i++)
                 {
-                    ii                  = pgrp->ind_loc[i];
+                    int ii = pgrp->atomSet.localIndex()[i];
                     pgrp->weight_loc[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
                         snw*sin(twopi_box*x[ii][pull->cosdim]);
                 }
