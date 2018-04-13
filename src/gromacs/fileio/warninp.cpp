@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,25 +47,23 @@
 #include "gromacs/utility/smalloc.h"
 
 typedef struct warninp {
-    gmx_bool bAllowWarnings;
-    int      nwarn_note;
-    int      nwarn_warn;
-    int      nwarn_error;
-    int      maxwarn;
-    int      lineno;
-    char     filenm[256];
+    gmx_bool    bAllowWarnings;
+    int         nwarn_note;
+    int         nwarn_warn;
+    int         nwarn_error;
+    int         maxwarn;
+    int         lineno;
+    std::string filenm;
 } t_warninp;
 
 warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning)
 {
-    warninp_t wi;
-
-    snew(wi, 1);
+    warninp_t wi = new warninp;
 
     wi->bAllowWarnings = bAllowWarnings;
     wi->maxwarn        = maxwarning;
     warning_reset(wi);
-    strcpy(wi->filenm, "unknown");
+    wi->filenm         = "unknown";
     wi->lineno         = 0;
 
     return wi;
@@ -82,7 +80,7 @@ void set_warning_line(warninp_t wi, const char *s, int line)
 {
     if (s != nullptr)
     {
-        std::strcpy(wi->filenm, s);
+        wi->filenm = s;
     }
     wi->lineno = line;
 }
@@ -94,7 +92,7 @@ int get_warning_line(warninp_t wi)
 
 const char *get_warning_file(warninp_t wi)
 {
-    return wi->filenm;
+    return wi->filenm.c_str();
 }
 
 static void low_warning(warninp_t wi, const char *wtype, int n, const char *s)
@@ -115,17 +113,17 @@ static void low_warning(warninp_t wi, const char *wtype, int n, const char *s)
     temp[indent] = '\0';
     std::strcat(temp, s);
     temp2 = wrap_lines(temp, 78-indent, indent, FALSE);
-    if (std::strlen(wi->filenm) > 0)
+    if (!wi->filenm.empty())
     {
         if (wi->lineno != -1)
         {
             fprintf(stderr, "\n%s %d [file %s, line %d]:\n%s\n\n",
-                    wtype, n, wi->filenm, wi->lineno, temp2);
+                    wtype, n, wi->filenm.c_str(), wi->lineno, temp2);
         }
         else
         {
             fprintf(stderr, "\n%s %d [file %s]:\n%s\n\n",
-                    wtype, n, wi->filenm, temp2);
+                    wtype, n, wi->filenm.c_str(), temp2);
         }
     }
     else
@@ -238,7 +236,7 @@ void done_warning(warninp_t wi, int f_errno, const char *file, int line)
 
 void free_warning(warninp_t wi)
 {
-    sfree(wi);
+    delete wi;
 }
 
 void _too_few(warninp_t wi, const char *fn, int line)

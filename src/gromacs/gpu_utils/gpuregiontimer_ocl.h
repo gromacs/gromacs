@@ -52,11 +52,15 @@
 #include "gpuregiontimer.h"
 
 /*! \libinternal \brief
- * This is a GPU region timing implementation for OpenCL.
- * It provides methods for measuring the last timespan.
- * Copying/assignment is disabled since the underlying timing events are owned by this.
+ * The OpenCL implementation of the GPU code region timing.
+ * With OpenCL, one has to use cl_event handle for each API call that has to be timed, and
+ * accumulate the timing afterwards. As we would like to avoid overhead on API calls,
+ * we only query and accumulate cl_event timing at the end of time steps, not after the API calls.
+ * Thus, this implementation does not reuse a single cl_event for multiple calls, but instead
+ * maintains an array of cl_events to be used within any single code region.
+ * The array size is fixed at a small but sufficiently large value for the number of cl_events
+ * that might contribute to a timer region, currently 10.
  */
-// cppcheck-suppress noConstructor
 class GpuRegionTimerImpl
 {
     /*! \brief The underlying individual timing events array.
@@ -78,13 +82,11 @@ class GpuRegionTimerImpl
         //! Moving is disabled but can be considered in the future if needed
         GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
 
-        /*! \brief Will be called before the region start. */
+        /*! \brief Should be called before the region start. */
         inline void openTimingRegion(CommandStream){}
-
-        /*! \brief Will be called after the region end. */
+        /*! \brief Should be called after the region end. */
         inline void closeTimingRegion(CommandStream){}
-
-        /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset() */
+        /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset(). */
         inline double getLastRangeTime()
         {
             double milliseconds = 0.0;
@@ -107,22 +109,21 @@ class GpuRegionTimerImpl
             reset();
             return milliseconds;
         }
-
-        /*! \brief Resets internal state */
+        /*! \brief Resets the internal state, releasing the used cl_events. */
         inline void reset()
         {
             for (size_t i = 0; i < currentEvent_; i++)
             {
                 if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
                 {
-                    GMX_ASSERT(CL_SUCCESS == clReleaseEvent(events_[i]), "OpenCL event release failure");
+                    cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
+                    GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
                 }
             }
             currentEvent_ = 0;
             // As long as we're doing nullptr checks, we might want to be extra cautious.
             events_.fill(nullptr);
         }
-
         /*! \brief Returns a new raw timing event
          * for passing into individual GPU API calls
          * within the region if the API requires it (e.g. on OpenCL).

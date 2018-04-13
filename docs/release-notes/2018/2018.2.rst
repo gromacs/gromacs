@@ -9,8 +9,23 @@ earlier, which you can find described in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent OpenCL timing memory leak
+"""""""""""""""""""""""""""""""""
+
+When using OpenCL builds and timing, a memory leak would lead to all system memory being used up.
+
+:issue:`2470`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed buffer overflow in grompp warnings
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When grompp issued a warning or error with a filename/path of more than
+255 characters, a buffer overflow would occur. This could also happens
+during make check/test.
+
+:issue:`2465`
 
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
