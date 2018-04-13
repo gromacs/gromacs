@@ -1555,9 +1555,8 @@ void gmx::Integrator::do_md()
                                   cr, ms, nrnb, wcycle, upd, constr,
                                   bCalcVir, do_log, do_ene);
             update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state,
-                                  fr->bMolPBC, f,
-                                  &top->idef,
-                                  cr, ms, nrnb, wcycle, upd, constr);
+                                  fr->bMolPBC, f, &top->idef, cr, ms,
+                                  nrnb, wcycle, upd, constr, do_log, do_ene);
             finish_update(ir, mdatoms,
                           state, graph,
                           nrnb, wcycle, upd, constr);

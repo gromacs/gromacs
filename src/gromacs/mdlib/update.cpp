@@ -1643,7 +1643,9 @@ update_sd_second_half(gmx_int64_t                    step,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
                       gmx_update_t                  *upd,
-                      gmx::Constraints              *constr)
+                      gmx::Constraints              *constr,
+                      bool                           do_log,
+                      bool                           do_ene)
 {
     if (!constr)
     {
@@ -1696,13 +1698,7 @@ update_sd_second_half(gmx_int64_t                    step,
         {
             /* Constrain the coordinates upd->xp for half a time step */
             wallcycle_start(wcycle, ewcCONSTR);
-
-            // TODO This logic should be handled in do_md, because the
-            // last step happens for multiple reasons.
-            gmx_bool bLastStep = (step == inputrec->init_step+inputrec->nsteps);
-            gmx_bool bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
-            gmx_bool bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
-            constrain(nullptr, bLog, bEner, constr, idef,
+            constrain(nullptr, do_log, do_ene, constr, idef,
                       inputrec, cr, ms, step, 1, 0.5, md,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
