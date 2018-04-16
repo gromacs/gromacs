@@ -845,15 +845,40 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     gmx_mtop_atomloop_all_t aloop;
     int                     ag;
 
-    top->atomtypes = mtop->atomtypes;
+    /* no copying of pointers possible now */
+
+    top->atomtypes.nr = mtop->atomtypes.nr;
+    snew(top->atomtypes.atomnumber, top->atomtypes.nr);
+    std::copy(mtop->atomtypes.atomnumber, mtop->atomtypes.atomnumber + top->atomtypes.nr, top->atomtypes.atomnumber);
 
     ffp = &mtop->ffparams;
 
     idef                          = &top->idef;
     idef->ntypes                  = ffp->ntypes;
     idef->atnr                    = ffp->atnr;
-    idef->functype                = ffp->functype;
-    idef->iparams                 = ffp->iparams;
+    /* we can no longer copy the pointers to the mtop members,
+     * because they will become invalid as soon as mtop gets free'd.
+     * We also need to make sure to only operate on valid data!
+     */
+
+    if (ffp->functype)
+    {
+        snew(idef->functype, ffp->ntypes);
+        std::copy(ffp->functype, ffp->functype + ffp->ntypes, idef->functype);
+    }
+    else
+    {
+        idef->functype = nullptr;
+    }
+    if (ffp->iparams)
+    {
+        snew(idef->iparams, ffp->ntypes);
+        std::copy(ffp->iparams, ffp->iparams + ffp->ntypes, idef->iparams);
+    }
+    else
+    {
+        idef->iparams = nullptr;
+    }
     idef->iparams_posres          = nullptr;
     idef->iparams_posres_nalloc   = 0;
     idef->iparams_fbposres        = nullptr;
