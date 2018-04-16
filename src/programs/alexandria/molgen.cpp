@@ -130,7 +130,8 @@ static void update_index_count_bool(IndexCount             *ic,
     {
         if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
         {
-            ic->addName(k, bSet);
+            auto fa = pd.findAtype(k);
+            ic->addName(fa->getZtype(), bSet);
         }
     }
 }

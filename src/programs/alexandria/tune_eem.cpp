@@ -292,8 +292,8 @@ void OptEEM::calcDeviation()
                                        gmx::square(qq - mymol.chargeQM(qtCM5)[i++]));
                     }                   
                 }
-                increaseEnergy(ermsCHARGE,
-                               gmx::square(qtot - mymol.molProp()->getCharge()));
+                //increaseEnergy(ermsCHARGE,
+                //               gmx::square(qtot - mymol.molProp()->getCharge()));
             }
             if (weight(ermsESP))
             {
@@ -495,7 +495,7 @@ double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
     double         ref_chi = 0;
-    const double         p = 1e3;
+    const double         p = 1e2;
     const Poldata &pd      = poldata();
     
     if (strlen(fixchi()) != 0)
@@ -596,7 +596,7 @@ double OptEEM::objFunction(const double v[])
     calcDeviation(); 
     increaseEnergy(ermsBOUNDS, bound);
     increaseEnergy(ermsTOT, bound);
-    increaseEnergy(ermsTOT, penalty);
+    //increaseEnergy(ermsTOT, penalty);
     return energy(ermsTOT);
 }
 
