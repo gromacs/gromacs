@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -208,7 +208,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
 # 383: value copied to temporary, reference to temporary used
 # 444: destructor for base class ".." is not virtual
 #2282: unrecognized GCC pragma
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd593 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd2547 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -qoverride-limits" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
