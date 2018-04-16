@@ -221,6 +221,8 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
             done_block(&top->mols);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
+            sfree(top->idef.functype);
+            sfree(top->idef.iparams);
         }
 
         // Note that the rest of mtop will be freed by the destructor
