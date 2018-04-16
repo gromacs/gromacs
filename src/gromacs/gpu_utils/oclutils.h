@@ -165,6 +165,19 @@ static inline void gpuStreamSynchronize(cl_command_queue s)
                        ("Error caught during clFinish:" + ocl_get_error_string(cl_error)).c_str());
 }
 
+//! A debug checker to track cl_events being released correctly
+inline void ensureReferenceCount(const cl_event &event, unsigned int refCount)
+{
+#ifndef NDEBUG
+    cl_int clError = clGetEventInfo(event, CL_EVENT_REFERENCE_COUNT, sizeof(refCount), &refCount, nullptr);
+    GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
+    GMX_ASSERT(refCount == refCount, "Unexpected reference count");
+#else
+    GMX_UNUSED_VALUE(event);
+    GMX_UNUSED_VALUE(refCount);
+#endif
+}
+
 /*! \brief Pretend to synchronize an OpenCL stream (dummy implementation).
  *
  * \param[in] s queue to check

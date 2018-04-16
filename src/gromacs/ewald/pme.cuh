@@ -51,6 +51,7 @@
 #include <set>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
+#include "gromacs/gpu_utils/gpuhostsynchronizer.cuh"
 
 #include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
 #include "pme-timings.cuh"
@@ -209,7 +210,7 @@ struct PmeGpuCuda
 
     /* Synchronization events */
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
-    cudaEvent_t syncSpreadGridD2H;
+    GpuHostSynchronizer syncSpreadGridD2H;
 
     // TODO: consider moving some things below into the non-CUDA struct.
 
