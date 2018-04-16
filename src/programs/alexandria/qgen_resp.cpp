@@ -30,12 +30,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_resp.h"
-
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
-
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
@@ -54,6 +51,7 @@
 
 #include "nmsimplex.h"
 #include "poldata.h"
+#include "qgen_resp.h"
 #include "regression.h"
 
 namespace alexandria

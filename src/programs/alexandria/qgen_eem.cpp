@@ -30,8 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_eem.h"
-
 #include <cctype>
 
 #include "gromacs/coulombintegrals/coulombintegrals.h"
@@ -45,6 +43,9 @@
 
 #include "molprop.h"
 #include "poldata.h"
+#include "qgen_eem.h"
+#include "regression.h"
+
 
 namespace alexandria
 {
@@ -217,7 +218,7 @@ double QgenEem::getZeta(int atom, int z)
     return 0;
 }
 
-double CoulombNN(double r)
+double Coulomb_PP(double r)
 {
     return 1/r;
 }
@@ -373,7 +374,7 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
     {
         case eqdAXp:
         case eqdAXpp:
-            eTot = CoulombNN(r);
+            eTot = Coulomb_PP(r);
             break;
         case eqdAXs:
         case eqdAXps:
@@ -645,54 +646,43 @@ void QgenEem::checkSupport(const Poldata &pd)
 
 void QgenEem::solveQEem(FILE *fp)
 {
-    double **lhs, qtot, q;
+    double   qtot;
     int      i, j, n;
 
     n = natom_ + 1;
-    lhs = alloc_matrix(n, n);
+    MatrixWrapper lhs(n, n);
     for (i = 0; i < natom_; i++)
     {
         for (j = 0; j < natom_; j++)
         {
-            lhs[i][j] = Jcc_[i][j];
+            lhs.set(i, j, Jcc_[i][j]);
         }
-        lhs[i][i] = hardnessFactor_*Jcc_[i][i];
+        lhs.set(i, i, hardnessFactor_*Jcc_[i][i]);
     }
     for (j = 0; j < natom_; j++)
     {
-        lhs[natom_][j] = 1;
+        lhs.set(natom_, j, 1);
     }
     for (i = 0; i < natom_; i++)
     {
-        lhs[i][natom_] = -1;
+        lhs.set(i, natom_, -1);
     }    
-    lhs[natom_][natom_] = 0;
-    if (matrix_invert(fp, n, lhs) == 0)
-    {
-        for (i = 0; i < n; i++)
-        {
-            q = 0;
-            for (j = 0; j < n; j++)
-            {
-                q += lhs[i][j]*rhs_[j];
-            }
-            q_[i][0] = q;
-            if (fp)
-            {
-                fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q);
-            }
-        }
-    }
-    else
-    {
-        for (i = 0; i < n; i++)
-        {
-            q_[i][0] = 1;
-        }
-    }
-    chieq_      = q_[natom_][0];
+    lhs.set(natom_, natom_, 0);
     
-    qtot        = 0;
+    std::vector<double> q;
+    q.resize(n);
+    lhs.solve(rhs_, &q);
+    
+    for (i = 0; i < n; i++)
+    {
+        q_[i][0] = q[i];
+        if (fp)
+        {
+            fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q[i]);
+        }
+    }
+    chieq_  = q_[natom_][0];   
+    qtot    = 0;
     if (bHaveShell_)
     {
         for (i = 0; i < natom_; i++)
@@ -710,12 +700,10 @@ void QgenEem::solveQEem(FILE *fp)
             qtot += q_[i][0];
         }
     }
-
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
         fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
     }
-    free_matrix(lhs);
 }
 
 int QgenEem::generateChargesSm(FILE              *fp,
