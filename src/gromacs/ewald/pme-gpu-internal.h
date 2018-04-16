@@ -345,20 +345,6 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu);
 void pme_gpu_destroy_specific(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
- * Initializes the PME GPU synchronization events.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_init_sync_events(const PmeGpu *pmeGpu);
-
-/*! \libinternal \brief
- * Destroys the PME GPU synchronization events.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_destroy_sync_events(const PmeGpu *pmeGpu);
-
-/*! \libinternal \brief
  * Initializes the CUDA FFT structures.
  *
  * \param[in] pmeGpu  The PME GPU structure.
