@@ -48,8 +48,8 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/dlbtiming.h"
-#include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
@@ -134,78 +134,78 @@ typedef struct gmx_enfrot
 
 
 /* Global enforced rotation data for a single rotation group                  */
-typedef struct gmx_enfrotgrp
+struct gmx_enfrotgrp
 {
-    real     degangle;   /* Rotation angle in degrees                      */
-    matrix   rotmat;     /* Rotation matrix                                */
-    int     *ind_loc;    /* Local rotation indices                         */
-    int      nat_loc;    /* Number of local group atoms                    */
-    int      nalloc_loc; /* Allocation size for ind_loc and weight_loc     */
+    gmx_enfrotgrp(FILE *fplog, const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, int g, t_rotgrp *rotg,
+                  rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, const matrix box,
+                  t_inputrec *ir, gmx_bool bOutputCenters);
 
-    real     V;          /* Rotation potential for this rotation group     */
-    rvec    *f_rot_loc;  /* Array to store the forces on the local atoms
-                            resulting from enforced rotation potential     */
+    real              degangle = 0;        /* Rotation angle in degrees                      */
+    matrix            rotmat;              /* Rotation matrix                                */
+    gmx::LocalAtomSet atomSet;             /* The atoms subject to enforced rotation        */
+
+    real              V         = 0;       /* Rotation potential for this rotation group     */
+    rvec             *f_rot_loc = nullptr; /* Array to store the forces on the local atoms
+                                              resulting from enforced rotation potential     */
 
     /* Collective coordinates for the whole rotation group */
-    real  *xc_ref_length;   /* Length of each x_rotref vector after x_rotref
-                               has been put into origin                       */
-    int   *xc_ref_ind;      /* Position of each local atom in the collective
-                               array                                          */
-    rvec   xc_center;       /* Center of the rotation group positions, may
-                               be mass weighted                               */
-    rvec   xc_ref_center;   /* dito, for the reference positions              */
-    rvec  *xc;              /* Current (collective) positions                 */
-    ivec  *xc_shifts;       /* Current (collective) shifts                    */
-    ivec  *xc_eshifts;      /* Extra shifts since last DD step                */
-    rvec  *xc_old;          /* Old (collective) positions                     */
-    rvec  *xc_norm;         /* Normalized form of the current positions       */
-    rvec  *xc_ref_sorted;   /* Reference positions (sorted in the same order
-                               as xc when sorted)                             */
-    int   *xc_sortind;      /* Where is a position found after sorting?       */
-    real  *mc;              /* Collective masses                              */
-    real  *mc_sorted;
-    real   invmass;         /* one over the total mass of the rotation group  */
+    real  *xc_ref_length = nullptr; /* Length of each x_rotref vector after x_rotref
+                                       has been put into origin                       */
+    rvec   xc_center     = {};      /* Center of the rotation group positions, may
+                                       be mass weighted                               */
+    rvec   xc_ref_center = {};      /* dito, for the reference positions              */
+    rvec  *xc            = nullptr; /* Current (collective) positions                 */
+    ivec  *xc_shifts     = nullptr; /* Current (collective) shifts                    */
+    ivec  *xc_eshifts    = nullptr; /* Extra shifts since last DD step                */
+    rvec  *xc_old        = nullptr; /* Old (collective) positions                     */
+    rvec  *xc_norm       = nullptr; /* Normalized form of the current positions       */
+    rvec  *xc_ref_sorted = nullptr; /* Reference positions (sorted in the same order
+                                       as xc when sorted)                             */
+    int   *xc_sortind    = nullptr; /* Where is a position found after sorting?       */
+    real  *mc            = nullptr; /* Collective masses                              */
+    real  *mc_sorted     = nullptr;
+    real   invmass       = 0.;      /* one over the total mass of the rotation group  */
 
-    real   torque_v;        /* Torque in the direction of rotation vector     */
-    real   angle_v;         /* Actual angle of the whole rotation group       */
+    real   torque_v = 0;            /* Torque in the direction of rotation vector     */
+    real   angle_v  = 0;            /* Actual angle of the whole rotation group       */
     /* Fixed rotation only */
-    real   weight_v;        /* Weights for angle determination                */
-    rvec  *xr_loc;          /* Local reference coords, correctly rotated      */
-    rvec  *x_loc_pbc;       /* Local current coords, correct PBC image        */
-    real  *m_loc;           /* Masses of the current local atoms              */
+    real   weight_v  = 0;           /* Weights for angle determination                */
+    rvec  *xr_loc    = nullptr;     /* Local reference coords, correctly rotated      */
+    rvec  *x_loc_pbc = nullptr;     /* Local current coords, correct PBC image        */
+    real  *m_loc     = nullptr;     /* Masses of the current local atoms              */
 
     /* Flexible rotation only */
-    int    nslabs_alloc;              /* For this many slabs memory is allocated        */
-    int    slab_first;                /* Lowermost slab for that the calculation needs
-                                         to be performed at a given time step           */
-    int    slab_last;                 /* Uppermost slab ...                             */
-    int    slab_first_ref;            /* First slab for which ref. center is stored     */
-    int    slab_last_ref;             /* Last ...                                       */
-    int    slab_buffer;               /* Slab buffer region around reference slabs      */
-    int   *firstatom;                 /* First relevant atom for a slab                 */
-    int   *lastatom;                  /* Last relevant atom for a slab                  */
-    rvec  *slab_center;               /* Gaussian-weighted slab center                  */
-    rvec  *slab_center_ref;           /* Gaussian-weighted slab center for the
-                                         reference positions                            */
-    real  *slab_weights;              /* Sum of gaussian weights in a slab              */
-    real  *slab_torque_v;             /* Torque T = r x f for each slab.                */
-                                      /* torque_v = m.v = angular momentum in the
-                                         direction of v                                 */
-    real  max_beta;                   /* min_gaussian from inputrec->rotgrp is the
-                                         minimum value the gaussian must have so that
-                                         the force is actually evaluated max_beta is
-                                         just another way to put it                     */
-    real           *gn_atom;          /* Precalculated gaussians for a single atom      */
-    int            *gn_slabind;       /* Tells to which slab each precalculated gaussian
-                                         belongs                                        */
-    rvec           *slab_innersumvec; /* Inner sum of the flexible2 potential per slab;
-                                         this is precalculated for optimization reasons */
-    t_gmx_slabdata *slab_data;        /* Holds atom positions and gaussian weights
-                                         of atoms belonging to a slab                   */
+    int    nslabs_alloc    = 0;                 /* For this many slabs memory is allocated        */
+    int    slab_first      = 0;                 /* Lowermost slab for that the calculation needs
+                                                   to be performed at a given time step           */
+    int    slab_last       = 0;                 /* Uppermost slab ...                             */
+    int    slab_first_ref  = 0;                 /* First slab for which ref. center is stored     */
+    int    slab_last_ref   = 0;                 /* Last ...                                       */
+    int    slab_buffer     = 0;                 /* Slab buffer region around reference slabs      */
+    int   *firstatom       = nullptr;           /* First relevant atom for a slab                 */
+    int   *lastatom        = nullptr;           /* Last relevant atom for a slab                  */
+    rvec  *slab_center     = nullptr;           /* Gaussian-weighted slab center                  */
+    rvec  *slab_center_ref = nullptr;           /* Gaussian-weighted slab center for the
+                                                   reference positions                            */
+    real  *slab_weights    = nullptr;           /* Sum of gaussian weights in a slab              */
+    real  *slab_torque_v   = nullptr;           /* Torque T = r x f for each slab.                */
+    /* torque_v = m.v = angular momentum in the
+       direction of v                                 */
+    real  max_beta                   = 0;       /* min_gaussian from inputrec->rotgrp is the
+                                                   minimum value the gaussian must have so that
+                                                   the force is actually evaluated max_beta is
+                                                   just another way to put it                     */
+    real           *gn_atom          = nullptr; /* Precalculated gaussians for a single atom      */
+    int            *gn_slabind       = nullptr; /* Tells to which slab each precalculated gaussian
+                                                   belongs                                        */
+    rvec           *slab_innersumvec = nullptr; /* Inner sum of the flexible2 potential per slab;
+                                                   this is precalculated for optimization reasons */
+    t_gmx_slabdata *slab_data        = nullptr; /* Holds atom positions and gaussian weights
+                                                   of atoms belonging to a slab                   */
 
     /* For potential fits with varying angle: */
-    t_gmx_potfit *PotAngleFit;  /* Used for fit type 'potential'              */
-} t_gmx_enfrotgrp;
+    t_gmx_potfit *PotAngleFit = nullptr;  /* Used for fit type 'potential'              */
+};
 
 
 /* Activate output of forces for correctness checks */
@@ -493,7 +493,7 @@ static void reduce_output(const t_commrec *cr, t_rot *rot, real t, gmx_int64_t s
  * Should be called after the SR forces have been evaluated */
 extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_t step, real t)
 {
-    int             g, l, ii;
+    int             g, ii;
     t_rotgrp       *rotg;
     gmx_enfrot_t    er;         /* Pointer to the enforced rotation buffer variables */
     gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data           */
@@ -510,10 +510,10 @@ extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_
         rotg  = &rot->grp[g];
         erg   = rotg->enfrotgrp;
         Vrot += erg->V;  /* add the local parts from the nodes */
-        for (l = 0; l < erg->nat_loc; l++)
+        for (size_t l = 0; l < erg->atomSet.numAtomsLocal(); l++)
         {
             /* Get the right index of the local force */
-            ii = erg->ind_loc[l];
+            ii = erg->atomSet.localIndex()[l];
             /* Add */
             rvec_inc(f[ii], erg->f_rot_loc[l]);
         }
@@ -1869,7 +1869,7 @@ static real do_flex2_lowlevel(
         gmx_bool   bOutstepSlab,
         matrix     box)
 {
-    int             count, ic, ii, j, m, n, islab, iigrp, ifit;
+    int             count, ic, ii, m, n, islab, iigrp, ifit;
     rvec            xj;          /* position in the i-sum                         */
     rvec            yj0;         /* the reference position in the j-sum           */
     rvec            xcn, ycn;    /* the current and the reference slab centers    */
@@ -1915,12 +1915,12 @@ static real do_flex2_lowlevel(
     N_M      = rotg->nat * erg->invmass;
     V        = 0.0;
     OOsigma2 = 1.0 / (sigma*sigma);
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         /* Local index of a rotation group atom  */
-        ii = erg->ind_loc[j];
+        ii = erg->atomSet.localIndex()[j];
         /* Position of this atom in the collective array */
-        iigrp = erg->xc_ref_ind[j];
+        iigrp = erg->atomSet.collectiveIndex()[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -2117,7 +2117,7 @@ static real do_flex_lowlevel(
         gmx_bool  bOutstepSlab,
         matrix    box)
 {
-    int             count, ic, ifit, ii, j, m, n, islab, iigrp;
+    int             count, ic, ifit, ii, m, n, islab, iigrp;
     rvec            xj, yj0;                /* current and reference position                */
     rvec            xcn, ycn;               /* the current and the reference slab centers    */
     rvec            yj0_ycn;                /* yj0 - ycn                                     */
@@ -2155,12 +2155,12 @@ static real do_flex_lowlevel(
     OOsigma2 = 1.0/(sigma*sigma);
     N_M      = rotg->nat * erg->invmass;
     V        = 0.0;
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         /* Local index of a rotation group atom  */
-        ii = erg->ind_loc[j];
+        ii = erg->atomSet.localIndex()[j];
         /* Position of this atom in the collective array */
-        iigrp = erg->xc_ref_ind[j];
+        iigrp = erg->atomSet.collectiveIndex()[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -2487,7 +2487,7 @@ static inline int get_last_slab(
 
 static void get_firstlast_slab_check(
         t_rotgrp        *rotg,      /* The rotation group (inputrec data) */
-        t_gmx_enfrotgrp *erg,       /* The rotation group (data only accessible in this file) */
+        gmx_enfrotgrp   *erg,       /* The rotation group (data only accessible in this file) */
         rvec             firstatom, /* First atom after sorting along the rotation vector v */
         rvec             lastatom)  /* Last atom along v */
 {
@@ -2656,7 +2656,7 @@ static void do_fixed(
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
-    int             ifit, j, jj, m;
+    int             ifit, jj, m;
     rvec            dr;
     rvec            tmp_f;     /* Force */
     real            alpha;     /* a single angle between an actual and a reference position */
@@ -2681,7 +2681,7 @@ static void do_fixed(
     N_M = rotg->nat * erg->invmass;
 
     /* Each process calculates the forces on its local atoms */
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         /* Calculate (x_i-x_c) resp. (x_i-u) */
         rvec_sub(erg->x_loc_pbc[j], erg->xc_center, xi_xc);
@@ -2714,7 +2714,7 @@ static void do_fixed(
             for (ifit = 0; ifit < rotg->PotAngle_nstep; ifit++)
             {
                 /* Index of this rotation group atom with respect to the whole rotation group */
-                jj = erg->xc_ref_ind[j];
+                jj = erg->atomSet.collectiveIndex()[j];
 
                 /* Rotate with the alternative angle. Like rotate_local_reference(),
                  * just for a single local atom */
@@ -2766,7 +2766,7 @@ static void do_radial_motion(
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
-    int             j, jj, ifit;
+    int             jj, ifit;
     rvec            tmp_f;     /* Force */
     real            alpha;     /* a single angle between an actual and a reference position */
     real            weight;    /* single weight for a single angle */
@@ -2788,7 +2788,7 @@ static void do_radial_motion(
     N_M = rotg->nat * erg->invmass;
 
     /* Each process calculates the forces on its local atoms */
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         /* Calculate (xj-u) */
         rvec_sub(erg->x_loc_pbc[j], erg->xc_center, xj_u);  /* xj_u = xj-u */
@@ -2819,7 +2819,7 @@ static void do_radial_motion(
             for (ifit = 0; ifit < rotg->PotAngle_nstep; ifit++)
             {
                 /* Index of this rotation group atom with respect to the whole rotation group */
-                jj = erg->xc_ref_ind[j];
+                jj = erg->atomSet.collectiveIndex()[j];
 
                 /* Rotate with the alternative angle. Like rotate_local_reference(),
                  * just for a single local atom */
@@ -2865,7 +2865,7 @@ static void do_radial_motion_pf(
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
-    int             i, ii, iigrp, ifit, j;
+    int             i, ii, iigrp, ifit;
     rvec            xj;          /* Current position */
     rvec            xj_xc;       /* xj  - xc  */
     rvec            yj0_yc0;     /* yj0 - yc0 */
@@ -2919,12 +2919,12 @@ static void do_radial_motion_pf(
     svmul(rotg->k*erg->invmass, innersumvec, innersumveckM);
 
     /* Each process calculates the forces on its local atoms */
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         /* Local index of a rotation group atom  */
-        ii = erg->ind_loc[j];
+        ii = erg->atomSet.localIndex()[j];
         /* Position of this atom in the collective array */
-        iigrp = erg->xc_ref_ind[j];
+        iigrp = erg->atomSet.collectiveIndex()[j];
         /* Mass-weighting */
         mj = erg->mc[iigrp];  /* need the unsorted mass here */
         wj = N_M*mj;
@@ -3072,7 +3072,7 @@ static void do_radial_motion2(
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
-    int             ii, iigrp, ifit, j;
+    int             ii, iigrp, ifit;
     rvec            xj;        /* Position */
     real            alpha;     /* a single angle between an actual and a reference position */
     real            weight;    /* single weight for a single angle */
@@ -3115,14 +3115,14 @@ static void do_radial_motion2(
     N_M = rotg->nat * erg->invmass;
 
     /* Each process calculates the forces on its local atoms */
-    for (j = 0; j < erg->nat_loc; j++)
+    for (size_t j = 0; j < erg->atomSet.numAtomsLocal(); j++)
     {
         if (bPF)
         {
             /* Local index of a rotation group atom  */
-            ii = erg->ind_loc[j];
+            ii = erg->atomSet.localIndex()[j];
             /* Position of this atom in the collective array */
-            iigrp = erg->xc_ref_ind[j];
+            iigrp = erg->atomSet.collectiveIndex()[j];
             /* Mass-weighting */
             mj = erg->mc[iigrp];
 
@@ -3195,7 +3195,7 @@ static void do_radial_motion2(
                 else
                 {
                     /* Position of this atom in the collective array */
-                    iigrp = erg->xc_ref_ind[j];
+                    iigrp = erg->atomSet.collectiveIndex()[j];
                     /* Rotate with the alternative angle. Like rotate_local_reference(),
                      * just for a single local atom */
                     mvmul(erg->PotAngleFit->rotmat[ifit], rotg->x_ref[iigrp], fit_rj); /* fit_rj = Omega*(yj0-u) */
@@ -3386,9 +3386,9 @@ static inline void copy_correct_pbc_image(
 }
 
 
-static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *rotg,
-                           rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, const matrix box,
-                           t_inputrec *ir, gmx_bool bOutputCenters)
+gmx_enfrotgrp::gmx_enfrotgrp(FILE *fplog, const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, int g, t_rotgrp *rotg,
+                             rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, const matrix box,
+                             t_inputrec *ir, gmx_bool bOutputCenters) : atomSet(atomSets->add({rotg->ind, rotg->ind+rotg->nat}))
 {
     int                   i, ii;
     rvec                  coord, xref, *xdum;
@@ -3398,7 +3398,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *ro
     real                  mass, totalmass;
     real                  start = 0.0;
     double                t_start;
-
 
     /* Do we have a flexible axis? */
     bFlex = ISFLEX(rotg);
@@ -3428,7 +3427,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *ro
     }
 
     snew(erg->f_rot_loc, rotg->nat);
-    snew(erg->xc_ref_ind, rotg->nat);
 
     /* Make space for the calculation of the potential at other angles (used
      * for fitting only) */
@@ -3449,15 +3447,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *ro
     else
     {
         erg->PotAngleFit = nullptr;
-    }
-
-    /* xc_ref_ind needs to be set to identity in the serial case */
-    if (!PAR(cr))
-    {
-        for (i = 0; i < rotg->nat; i++)
-        {
-            erg->xc_ref_ind[i] = i;
-        }
     }
 
     /* Copy the masses so that the center can be determined. For all types of
@@ -3598,28 +3587,6 @@ static void init_rot_group(FILE *fplog, const t_commrec *cr, int g, t_rotgrp *ro
     }
 }
 
-
-extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot)
-{
-    gmx_ga2la_t      *ga2la;
-    int               g;
-    t_rotgrp         *rotg;
-    gmx_enfrotgrp_t   erg;    /* Pointer to enforced rotation group data */
-
-    ga2la = dd->ga2la;
-
-    for (g = 0; g < rot->ngrp; g++)
-    {
-        rotg = &rot->grp[g];
-        erg  = rotg->enfrotgrp;
-
-
-        dd_make_local_group_indices(ga2la, rotg->nat, rotg->ind,
-                                    &erg->nat_loc, &erg->ind_loc, &erg->nalloc_loc, erg->xc_ref_ind);
-    }
-}
-
-
 /* Calculate the size of the MPI buffer needed in reduce_output() */
 static int calc_mpi_bufsize(t_rot *rot)
 {
@@ -3659,7 +3626,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, gmx::LocalAtomSetManager * atomSets,  const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions)
 {
     t_rot          *rot;
@@ -3667,7 +3634,6 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     int             g;
     int             nat_max = 0;     /* Size of biggest rotation group */
     gmx_enfrot_t    er;              /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;             /* Pointer to enforced rotation group data */
     rvec           *x_pbc = nullptr; /* Space for the pbc-correct atom positions */
 
 
@@ -3737,26 +3703,10 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
 
         if (rotg->nat > 0)
         {
-            /* Allocate space for the rotation group's data: */
-            snew(rotg->enfrotgrp, 1);
-            erg  = rotg->enfrotgrp;
-
-            nat_max = std::max(nat_max, rotg->nat);
-
-            if (PAR(cr))
-            {
-                erg->nat_loc    = 0;
-                erg->nalloc_loc = 0;
-                erg->ind_loc    = nullptr;
-            }
-            else
-            {
-                erg->nat_loc = rotg->nat;
-                erg->ind_loc = rotg->ind;
-            }
-            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
-                           !er->appendFiles); /* Do not output the reference centers
-                                               * again if we are appending */
+            nat_max         = std::max(nat_max, rotg->nat);
+            rotg->enfrotgrp = new gmx_enfrotgrp(fplog, cr, atomSets, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, MASTER(cr) ? globalState->box : nullptr, ir,
+                                                !er->appendFiles); /* Do not output the reference centers
+                                                                    * again if we are appending */
         }
     }
 
@@ -3839,15 +3789,15 @@ extern void finish_rot(t_rot *rot)
 static void rotate_local_reference(t_rotgrp *rotg)
 {
     gmx_enfrotgrp_t erg;
-    int             i, ii;
+    int             ii;
 
 
     erg = rotg->enfrotgrp;
 
-    for (i = 0; i < erg->nat_loc; i++)
+    for (size_t i = 0; i < erg->atomSet.numAtomsLocal(); i++)
     {
         /* Index of this rotation group atom with respect to the whole rotation group */
-        ii = erg->xc_ref_ind[i];
+        ii = erg->atomSet.collectiveIndex()[i];
         /* Rotate */
         mvmul(erg->rotmat, rotg->x_ref[ii], erg->xr_loc[i]);
     }
@@ -3859,17 +3809,17 @@ static void rotate_local_reference(t_rotgrp *rotg)
  * its rotated reference */
 static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 {
-    int             i, ii;
+    int             ii;
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
     rvec            xref;
 
 
     erg = rotg->enfrotgrp;
 
-    for (i = 0; i < erg->nat_loc; i++)
+    for (size_t i = 0; i < erg->atomSet.numAtomsLocal(); i++)
     {
         /* Index of a rotation group atom  */
-        ii = erg->ind_loc[i];
+        ii = erg->atomSet.localIndex()[i];
 
         /* Get the correctly rotated reference position. The pivot was already
          * subtracted in init_rot_group() from the reference positions. Also,
@@ -3893,7 +3843,7 @@ extern void do_rotation(
         gmx_int64_t      step,
         gmx_bool         bNS)
 {
-    int             g, i, ii;
+    int             g, ii;
     t_rot          *rot;
     t_rotgrp       *rotg;
     gmx_bool        outstep_slab, outstep_rot;
@@ -3942,7 +3892,7 @@ extern void do_rotation(
              * all of them. Every node contributes its local positions x and stores
              * it in the collective erg->xc array. */
             communicate_group_positions(cr, erg->xc, erg->xc_shifts, erg->xc_eshifts, bNS,
-                                        x, rotg->nat, erg->nat_loc, erg->ind_loc, erg->xc_ref_ind, erg->xc_old, box);
+                                        x, rotg->nat, erg->atomSet.numAtomsLocal(), erg->atomSet.localIndex().data(), erg->atomSet.collectiveIndex().data(), erg->xc_old, box);
         }
         else
         {
@@ -3950,10 +3900,10 @@ extern void do_rotation(
              * this array changes in DD/neighborsearching steps */
             if (bNS)
             {
-                for (i = 0; i < erg->nat_loc; i++)
+                for (size_t i = 0; i < erg->atomSet.numAtomsLocal(); i++)
                 {
                     /* Index of local atom w.r.t. the collective rotation group */
-                    ii            = erg->xc_ref_ind[i];
+                    ii            = erg->atomSet.collectiveIndex()[i];
                     erg->m_loc[i] = erg->mc[ii];
                 }
             }
@@ -3968,7 +3918,7 @@ extern void do_rotation(
             /* Get the center of the rotation group */
             if ( (rotg->eType == erotgISOPF) || (rotg->eType == erotgPMPF) )
             {
-                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->xc_center);
+                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->atomSet.numAtomsLocal(), rotg->nat, erg->xc_center);
             }
         }
 
@@ -3999,7 +3949,7 @@ extern void do_rotation(
         if ( (outstep_rot || outstep_slab) && (erotgFitPOT == rotg->eFittype) )
         {
             fit = erg->PotAngleFit;
-            for (i = 0; i < rotg->PotAngle_nstep; i++)
+            for (int i = 0; i < rotg->PotAngle_nstep; i++)
             {
                 calc_rotmat(rotg->vec, erg->degangle + fit->degangle[i], fit->rotmat[i]);
 

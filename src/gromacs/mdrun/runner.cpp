@@ -1282,7 +1282,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, globalState.get(), &mtop, oenv, mdrunOptions);
+            init_rot(fplog, inputrec, nfile, fnm, cr, &atomSets, globalState.get(), &mtop, oenv, mdrunOptions);
         }
 
         if (inputrec->eSwapCoords != eswapNO)

@@ -63,10 +63,10 @@ struct t_inputrec;
 struct t_rot;
 class t_state;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+namespace gmx
+{
+class LocalAtomSetManager;
+}
 
 /*! \brief Initializes the enforced rotation groups.
  *
@@ -80,26 +80,15 @@ extern "C" {
  * \param fnm      The filenames struct containing also the names
  *                 of the rotation output files.
  * \param cr       Pointer to MPI communication data.
+ * \param atomSets Tracks indices of atoms subject to enforced rotation for each DD rank.
  * \param globalState  The global state, only used on the master rank.
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
  * \param mdrunOptions  Options for mdrun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     const t_commrec *cr, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
+                     const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      const MdrunOptions &mdrunOptions);
-
-
-/*! \brief Make a selection of the home atoms for all enforced rotation groups.
- *
- * This routine is similar to \ref dd_make_local_pull_groups, but works only with
- * domain decomposition. It should be called at every domain decomposition.
- *
- * \param dd      Structure containing domain decomposition data.
- * \param rot     Pointer to all the enforced rotation data.
- */
-extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
-
 
 /*! \brief Calculates the enforced rotation potential(s).
  *
@@ -145,11 +134,5 @@ extern real add_rot_forces(t_rot *rot, rvec f[], const t_commrec *cr, gmx_int64_
  * \param rot     Pointer to all the enforced rotation data.
  */
 extern void finish_rot(t_rot *rot);
-
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif
