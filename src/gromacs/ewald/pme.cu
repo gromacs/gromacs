@@ -384,8 +384,7 @@ void pme_gpu_copy_output_spread_grid(const PmeGpu *pmeGpu, float *h_grid)
     copyFromDeviceBuffer(h_grid, &pmeGpu->kernelParams->grid.d_realGrid,
                          0, pmeGpu->archSpecific->realGridSize,
                          pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
-    cudaError_t  stat = cudaEventRecord(pmeGpu->archSpecific->syncSpreadGridD2H, pmeGpu->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "PME spread grid sync event record failure");
+    pmeGpu->archSpecific->syncSpreadGridD2H.markEvent(pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_copy_output_spread_atom_data(const PmeGpu *pmeGpu)
@@ -434,8 +433,7 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu)
 
 void pme_gpu_sync_spread_grid(const PmeGpu *pmeGpu)
 {
-    cudaError_t stat = cudaEventSynchronize(pmeGpu->archSpecific->syncSpreadGridD2H);
-    CU_RET_ERR(stat, "Error while waiting for the PME GPU spread grid to be copied to the host");
+    pmeGpu->archSpecific->syncSpreadGridD2H.waitForEvent();
 }
 
 void pme_gpu_init_internal(PmeGpu *pmeGpu)
@@ -474,17 +472,6 @@ void pme_gpu_destroy_specific(const PmeGpu *pmeGpu)
     /* Destroy the CUDA stream */
     cudaError_t stat = cudaStreamDestroy(pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME cudaStreamDestroy error");
-}
-
-void pme_gpu_init_sync_events(const PmeGpu *pmeGpu)
-{
-    const auto  eventFlags = cudaEventDisableTiming;
-    CU_RET_ERR(cudaEventCreateWithFlags(&pmeGpu->archSpecific->syncSpreadGridD2H, eventFlags), "cudaEventCreate on syncSpreadGridD2H failed");
-}
-
-void pme_gpu_destroy_sync_events(const PmeGpu *pmeGpu)
-{
-    CU_RET_ERR(cudaEventDestroy(pmeGpu->archSpecific->syncSpreadGridD2H), "cudaEventDestroy failed on syncSpreadGridD2H");
 }
 
 void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu)
