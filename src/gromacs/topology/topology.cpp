@@ -183,8 +183,14 @@ gmx_mtop_t::~gmx_mtop_t()
 
 void done_top(t_topology *top)
 {
-    sfree(top->idef.functype);
-    sfree(top->idef.iparams);
+    if (top->idef.functype != nullptr)
+    {
+        sfree(top->idef.functype);
+    }
+    if (top->idef.iparams != nullptr)
+    {
+        sfree(top->idef.iparams);
+    }
     for (int f = 0; f < F_NRE; ++f)
     {
         sfree(top->idef.il[f].iatoms);
