@@ -185,6 +185,7 @@ void done_top(t_topology *top)
 {
     sfree(top->idef.functype);
     sfree(top->idef.iparams);
+    sfree(top->idef.cmap_grid.cmapdata);
     for (int f = 0; f < F_NRE; ++f)
     {
         sfree(top->idef.il[f].iatoms);
@@ -221,6 +222,10 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
             done_block(&top->mols);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
+            sfree(top->idef.functype);
+            sfree(top->idef.iparams);
+            sfree(top->idef.cmap_grid.cmapdata);
+            done_atomtypes(&(top->atomtypes));
         }
 
         // Note that the rest of mtop will be freed by the destructor
