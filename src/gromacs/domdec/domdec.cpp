@@ -91,7 +91,6 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
@@ -6811,12 +6810,6 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local pull groups */
         dd_make_local_pull_groups(cr, ir->pull_work, mdatoms);
-    }
-
-    if (ir->bRot)
-    {
-        /* Update the local rotation groups */
-        dd_make_local_rotation_groups(dd, ir->rot);
     }
 
     if (ir->eSwapCoords != eswapNO)
