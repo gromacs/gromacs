@@ -241,7 +241,6 @@ static void pme_gpu_init(gmx_pme_t          *pme,
     pmeGpu->programHandle_ = pmeGpuProgram;
 
     pme_gpu_init_internal(pmeGpu);
-    pme_gpu_init_sync_events(pmeGpu);
     pme_gpu_alloc_energy_virial(pmeGpu);
 
     pme_gpu_copy_common_data_from(pme);
@@ -373,7 +372,6 @@ void pme_gpu_destroy(PmeGpu *pmeGpu)
     pme_gpu_free_grids(pmeGpu);
 
     pme_gpu_destroy_3dfft(pmeGpu);
-    pme_gpu_destroy_sync_events(pmeGpu);
 
     /* Free the GPU-framework specific data last */
     pme_gpu_destroy_specific(pmeGpu);
