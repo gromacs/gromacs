@@ -1066,7 +1066,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     const bool useGpuNb       = useGpuNonbonded(fr->nbv);
     const bool useOrEmulGpuNb = useGpuNb || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
-    const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
+    const auto pmeRunMode = ((GMX_GPU == GMX_GPU_NONE) || fr->pmedata == nullptr) ? PmeRunMode::CPU : pme_run_mode(fr->pmedata);
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
     const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && thisRankHasDuty(cr, DUTY_PME) &&
         ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed));
