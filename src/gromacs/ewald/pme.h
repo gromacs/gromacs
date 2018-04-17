@@ -48,6 +48,8 @@
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
 
+#include "config.h"
+
 #include <string>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
@@ -264,7 +266,7 @@ PmeRunMode pme_run_mode(const gmx_pme_t *pme);
  */
 inline bool pme_gpu_task_enabled(const gmx_pme_t *pme)
 {
-    return (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
+    return (GMX_GPU != GMX_GPU_NONE) && (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
 }
 
 // The following functions are all the PME GPU entry points,
