@@ -617,7 +617,7 @@ int gmx_trjconv(int argc, char *argv[])
         "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt]",
         "and [REF].pdb[ref].",
         "The file formats are detected from the file extension.",
-        "The precision of [REF].xtc[ref] and [REF].gro[ref] output is taken from the",
+        "The precision of the [REF].xtc[ref] output is taken from the",
         "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
