@@ -2302,11 +2302,6 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     *nb_verlet = nbv;
 }
 
-gmx_bool usingGpu(nonbonded_verlet_t *nbv)
-{
-    return nbv != nullptr && nbv->bUseGPU;
-}
-
 void init_forcerec(FILE                             *fp,
                    const gmx::MDLogger              &mdlog,
                    t_forcerec                       *fr,
