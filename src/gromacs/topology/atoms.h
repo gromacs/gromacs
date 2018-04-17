@@ -73,6 +73,7 @@ typedef struct t_atom
     char           elem[4];     /* Element name                         */
     real           zetaA;       /* 1/Width of the Gaussian charge (unit 1/nm) */
     real           zetaB;       /* 1/Width of the Gaussian charge (unit 1/nm) */
+    int            row;         /* row in the periodic table*/
 } t_atom;
 
 typedef struct t_resinfo

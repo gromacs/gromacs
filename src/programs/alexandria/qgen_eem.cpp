@@ -57,23 +57,23 @@ void QgenEem::setInfo(const Poldata            &pd,
                       int                       qtotal,
                       bool                      haveShell)
 {
-    bWarned_    = false;
-    bAllocSave_ = false;
-    bHaveShell_ = haveShell;
-    eQGEN_      = eQGEN_OK;
-    hardnessFactor_ = 1;
-    chieq_          = 0;
-    Jcs_            = 0;
-    Jss_            = 0;
-    rms_            = 0;
-    natom_          = 0;
-    std::string  atp;
-    bool         bSupport = true;
     int          i, j, k, atm, nz;
-
-    iChargeDistributionModel_   = iChargeDistributionModel;
-    hfac_                       = hfac;
-    qtotal_                     = qtotal;
+    bool         bSupport = true;
+    std::string  atp;
+    
+    bWarned_                   = false;
+    bAllocSave_                = false;
+    bHaveShell_                = haveShell;
+    eQGEN_                     = eQGEN_OK;
+    hardnessFactor_            = 1;
+    chieq_                     = 0;
+    Jcs_                       = 0;
+    Jss_                       = 0;
+    rms_                       = 0;
+    natom_                     = 0;
+    iChargeDistributionModel_  = iChargeDistributionModel;
+    hfac_                      = hfac;
+    qtotal_                    = qtotal;
    
     for (i = 0; i < atoms->nr; i++)
     {
@@ -141,11 +141,11 @@ void QgenEem::setInfo(const Poldata            &pd,
                     q_[j][k]    = eem->getQ(k);
                     zeta_[j][k] = eem->getZeta(k);
                     row_[j][k]  = eem->getRow(k);
-                    char buf[256];
-                    snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
-                             atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
-                             getEemtypeName(iChargeDistributionModel_));
-                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
+                    //char buf[256];
+                    //snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
+                    //         atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
+                    //         getEemtypeName(iChargeDistributionModel_));
+                    //GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -646,43 +646,54 @@ void QgenEem::checkSupport(const Poldata &pd)
 
 void QgenEem::solveQEem(FILE *fp)
 {
-    double   qtot;
+    double **lhs, qtot, q;
     int      i, j, n;
 
     n = natom_ + 1;
-    MatrixWrapper lhs(n, n);
+    lhs = alloc_matrix(n, n);
     for (i = 0; i < natom_; i++)
     {
         for (j = 0; j < natom_; j++)
         {
-            lhs.set(i, j, Jcc_[i][j]);
+            lhs[i][j] = Jcc_[i][j];
         }
-        lhs.set(i, i, hardnessFactor_*Jcc_[i][i]);
+        lhs[i][i] = hardnessFactor_*Jcc_[i][i];
     }
     for (j = 0; j < natom_; j++)
     {
-        lhs.set(natom_, j, 1);
+        lhs[natom_][j] = 1;
     }
     for (i = 0; i < natom_; i++)
     {
-        lhs.set(i, natom_, -1);
+        lhs[i][natom_] = -1;
     }    
-    lhs.set(natom_, natom_, 0);
-    
-    std::vector<double> q;
-    q.resize(n);
-    lhs.solve(rhs_, &q);
-    
-    for (i = 0; i < n; i++)
+    lhs[natom_][natom_] = 0;
+    if (matrix_invert(fp, n, lhs) == 0)
     {
-        q_[i][0] = q[i];
-        if (fp)
+        for (i = 0; i < n; i++)
         {
-            fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q[i]);
+            q = 0;
+            for (j = 0; j < n; j++)
+            {
+                q += lhs[i][j]*rhs_[j];
+            }
+            q_[i][0] = q;
+            if (fp)
+            {
+                fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q);
+            }
         }
     }
-    chieq_  = q_[natom_][0];   
-    qtot    = 0;
+    else
+    {
+        for (i = 0; i < n; i++)
+        {
+            q_[i][0] = 1;
+        }
+    }
+    chieq_      = q_[natom_][0];
+    
+    qtot        = 0;
     if (bHaveShell_)
     {
         for (i = 0; i < natom_; i++)
@@ -700,10 +711,12 @@ void QgenEem::solveQEem(FILE *fp)
             qtot += q_[i][0];
         }
     }
+
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
         fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
     }
+    free_matrix(lhs);
 }
 
 int QgenEem::generateChargesSm(FILE              *fp,

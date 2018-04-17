@@ -60,10 +60,12 @@ class QgenEem
     
         QgenEem(){};
     
-        void setInfo(const Poldata &pd,
-                     t_atoms *atoms,
-                     ChargeDistributionModel   iChargeDistributionModel,
-                     double hfac, int qtotal, bool haveShell);
+        void setInfo(const Poldata            &pd,
+                     t_atoms                 *atoms,
+                     ChargeDistributionModel  iChargeDistributionModel,
+                     double                   hfac, 
+                     int                      qtotal, 
+                     bool                     haveShell);
                      
         void updateInfo(const Poldata &pd);
 
@@ -85,7 +87,6 @@ class QgenEem
         
         gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
 
-        /* The routines below return NOTSET if something is out of the ordinary */
         int getNzeta(int atom);
 
         int getRow(int atom, int z);
@@ -99,7 +100,6 @@ class QgenEem
         void checkSupport(const Poldata &pd);
 
         double getZeta(int atom, int z);
-
 
         void print(FILE *fp, t_atoms *atoms);
 

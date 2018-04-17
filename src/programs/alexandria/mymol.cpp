@@ -635,9 +635,11 @@ immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
     /*Here, we add zeta for the core. addShell will 
       take care of the zeta for the shells later*/
     auto zeta = 0.0;
+    auto row  = 0;
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
-        zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);       
+        zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0); 
+        row  = pd.getRow(eqdModel, *topology_->atoms.atomtype[i], 0);      
         if (zeta == 0 && (eqdModel != eqdAXp && 
                           eqdModel != eqdAXpp && 
                           eqdModel != eqdBultinck))
@@ -647,6 +649,7 @@ immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
         }
         topology_->atoms.atom[i].zetaA = 
             topology_->atoms.atom[i].zetaB = zeta;
+        topology_->atoms.atom[i].row =  row;
     }    
     return immOK;
 }
@@ -978,6 +981,7 @@ void MyMol::addShells(const Poldata          &pd,
             newatoms->atom[j].ptype         = eptShell;
             newatoms->atom[j].zetaA         = pd.getZeta(iModel, atomtype, 1);
             newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
+            newatoms->atom[j].row           = pd.getRow(iModel, atomtype, 1);
             newatoms->atom[j].resind        = topology_->atoms.atom[i].resind;            
             copy_rvec(state_->x[i], newx[j]);   
                      

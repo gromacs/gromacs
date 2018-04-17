@@ -369,7 +369,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 }
             }
             
-            md->row[i]          = getAtomRow(atom.atomnumber);
+            md->row[i]          = atom.row; //getAtomRow(atom.atomnumber);
             md->chargeA[i]      = atom.q;
             md->zetaA[i]        = atom.zetaA;
             md->typeA[i]        = atom.type;

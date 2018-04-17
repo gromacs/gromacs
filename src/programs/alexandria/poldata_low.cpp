@@ -788,9 +788,9 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
     {
         fprintf(debug, "Reducing row from %d to %d\n", row, row_);
     }
-    snprintf(buf, sizeof(buf), "Row (%d) in the periodic table must be > 0 and <= %d",
+    snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)",
              row_, SLATER_MAX);
-    GMX_RELEASE_ASSERT(row_ > 0 && row_ <= SLATER_MAX, buf);
+    GMX_RELEASE_ASSERT(row_ <= SLATER_MAX, buf);
     fixedQ_ = (q != 0);
 }
 
