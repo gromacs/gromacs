@@ -160,6 +160,4 @@ void init_md(FILE *fplog,
              gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
 
-gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
-
 #endif
