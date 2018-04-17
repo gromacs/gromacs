@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -202,9 +202,22 @@ typedef struct nonbonded_verlet_t {
                                                                used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
 
-/*! \brief Getter for bUseGPU */
-gmx_bool
-usingGpu(nonbonded_verlet_t *nbv);
+
+/*! \brief Checks whether the nonbonded computations is mapped to a GPU device in this run.
+ *
+ *  At the moment this is statically assigned during the nonbonded module initialization
+ *  and it is constant for the entire run.
+ *
+ *  \todo This will be better handled in the future by the task assignment manager.
+ *
+ * \param[in] nbv   nonbonded data structure
+ * \return          true if the nonbonded interactions are evaluated on a GPU
+ */
+static inline bool
+useGpuNonbonded(const nonbonded_verlet_t *nbv)
+{
+    return (GMX_GPU != GMX_GPU_NONE) && (nbv != nullptr) && nbv->bUseGPU;
+}
 
 #ifdef __cplusplus
 }

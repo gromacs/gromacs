@@ -158,7 +158,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
             "step %s: resetting all time and cycle counters",
             gmx_step_str(step, sbuf));
 
-    if (use_GPU(nbv))
+    if (useGpuNonbonded(nbv))
     {
         nbnxn_gpu_reset_timings(nbv);
     }
@@ -168,7 +168,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
         pme_gpu_reset_timings(pme);
     }
 
-    if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
+    if (useGpuNonbonded(nbv) || pme_gpu_task_enabled(pme))
     {
         resetGpuProfiler();
     }
@@ -599,7 +599,7 @@ void gmx::Integrator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
-                         fr->ic, fr->nbv->listParams.get(), fr->pmedata, use_GPU(fr->nbv),
+                         fr->ic, fr->nbv->listParams.get(), fr->pmedata, useGpuNonbonded(fr->nbv),
                          &bPMETunePrinting);
     }
 
@@ -1907,7 +1907,7 @@ void gmx::Integrator::do_md()
                           "mdrun -resetstep.", step);
             }
             reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
+                               useGpuNonbonded(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
             wcycle_set_reset_counters(wcycle, -1);
             if (!thisRankHasDuty(cr, DUTY_PME))
             {
@@ -1959,7 +1959,7 @@ void gmx::Integrator::do_md()
 
     if (bPMETune)
     {
-        pme_loadbal_done(pme_loadbal, fplog, mdlog, use_GPU(fr->nbv));
+        pme_loadbal_done(pme_loadbal, fplog, mdlog, useGpuNonbonded(fr->nbv));
     }
 
     done_shellfc(fplog, shellfc, step_rel);

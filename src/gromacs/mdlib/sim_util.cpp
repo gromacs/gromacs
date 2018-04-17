@@ -669,11 +669,6 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     wallcycle_sub_stop(wcycle, ewcsNONBONDED);
 }
 
-gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
-{
-    return nbv != nullptr && nbv->bUseGPU;
-}
-
 static inline void clear_rvecs_omp(int n, rvec v[])
 {
     int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
@@ -1057,7 +1052,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     int                 cg1, i, j;
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
+    gmx_bool            bDoForces;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_wait_gpu;
     nonbonded_verlet_t *nbv = fr->nbv;
@@ -1067,8 +1062,9 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = (flags & GMX_FORCE_FORCES);
-    bUseGPU       = fr->nbv->bUseGPU;
-    bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
+
+    const bool useGpuNb       = useGpuNonbonded(fr->nbv);
+    const bool useOrEmulGpuNb = useGpuNb || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
     const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
     // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
@@ -1205,7 +1201,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     }
 
     /* initialize the GPU atom data and copy shift vector */
-    if (bUseGPU)
+    if (useGpuNb)
     {
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1235,13 +1231,13 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                             nbv->grp[eintLocal].kernel_type,
                             nrnb);
         nbv->grp[eintLocal].nbl_lists.outerListCreationStep = step;
-        if (nbv->listParams->useDynamicPruning && !bUseGPU)
+        if (nbv->listParams->useDynamicPruning && !useGpuNb)
         {
             nbnxnPrepareListForDynamicPruning(&nbv->grp[eintLocal].nbl_lists);
         }
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
 
-        if (bUseGPU)
+        if (useGpuNb)
         {
             /* initialize local pair-list on the GPU */
             nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
@@ -1256,7 +1252,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                                         nbv->nbat, wcycle);
     }
 
-    if (bUseGPU)
+    if (useGpuNb)
     {
         if (DOMAINDECOMP(cr))
         {
@@ -1299,7 +1295,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                                 nbv->grp[eintNonlocal].kernel_type,
                                 nrnb);
             nbv->grp[eintNonlocal].nbl_lists.outerListCreationStep = step;
-            if (nbv->listParams->useDynamicPruning && !bUseGPU)
+            if (nbv->listParams->useDynamicPruning && !useGpuNb)
             {
                 nbnxnPrepareListForDynamicPruning(&nbv->grp[eintNonlocal].nbl_lists);
             }
@@ -1322,7 +1318,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                                             nbv->nbat, wcycle);
         }
 
-        if (bUseGPU)
+        if (useGpuNb)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1334,7 +1330,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
         }
     }
 
-    if (bUseGPU)
+    if (useGpuNb)
     {
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
@@ -1442,7 +1438,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
      * decomposition load balancing.
      */
 
-    if (!bUseOrEmulGPU)
+    if (!useOrEmulGpuNb)
     {
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
                      step, nrnb, wcycle);
@@ -1471,7 +1467,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
         }
     }
 
-    if (!bUseOrEmulGPU)
+    if (!useOrEmulGpuNb)
     {
         int aloc;
 
@@ -1481,7 +1477,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                          step, nrnb, wcycle);
         }
 
-        if (!bUseOrEmulGPU)
+        if (!useOrEmulGpuNb)
         {
             aloc = eintLocal;
         }
@@ -1531,12 +1527,12 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
-    if (bUseOrEmulGPU)
+    if (useOrEmulGpuNb)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
         if (DOMAINDECOMP(cr))
         {
-            if (bUseGPU)
+            if (useGpuNb)
             {
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
@@ -1581,7 +1577,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
-    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && bUseGPU && !DOMAINDECOMP(cr));
+    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPme && useGpuNb && !DOMAINDECOMP(cr));
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv, fr->pmedata, &force, &forceWithVirial, fr->fshift, enerd, flags, wcycle);
@@ -1597,7 +1593,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
-    if (!alternateGpuWait && bUseGPU)
+    if (!alternateGpuWait && useGpuNb)
     {
         /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
          * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
@@ -1641,7 +1637,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
-    if (bUseGPU)
+    if (useGpuNb)
     {
         /* now clear the GPU outputs while we finish the step on the CPU */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
@@ -1661,7 +1657,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
 
     /* Do the nonbonded GPU (or emulation) force buffer reduction
      * on the non-alternating path. */
-    if (bUseOrEmulGPU && !alternateGpuWait)
+    if (useOrEmulGpuNb && !alternateGpuWait)
     {
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
                                        nbv->nbat, f, wcycle);
@@ -2752,7 +2748,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
 
     if (printReport)
     {
-        auto                    nbnxn_gpu_timings = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
+        auto                    nbnxn_gpu_timings = useGpuNonbonded(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
         gmx_wallclock_gpu_pme_t pme_gpu_timings   = {};
         if (pme_gpu_task_enabled(pme))
         {
