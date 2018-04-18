@@ -50,7 +50,7 @@
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 #include "gromacs/utility/arrayref.h"
 
-#include "pme-gpu-types.h"                     // for the inline functions accessing PmeGpu members
+#include "pme-gpu-types-host.h"                     // for the inline functions accessing PmeGpu members
 
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
