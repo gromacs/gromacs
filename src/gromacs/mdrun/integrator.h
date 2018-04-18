@@ -164,7 +164,7 @@ struct Integrator
     IntegratorFunctionType           do_tpi;
     /*! \brief Function to run the correct IntegratorFunctionType,
      * based on the .mdp integrator field. */
-    void run(unsigned int ei);
+    void run(unsigned int ei, bool doRerun);
     //! We only intend to construct such objects with an initializer list.
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
     // Aspects of the C++11 spec changed after GCC 4.8.5, and
