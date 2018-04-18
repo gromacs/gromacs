@@ -163,8 +163,9 @@ void pme_gpu_launch_spread(gmx_pme_t            *pme,
 
     PmeGpu *pmeGpu = pme->gpu;
 
-    // The only spot of PME GPU where LAUNCH_GPU (sub)counter increases call-count
+    // The only spot of PME GPU where LAUNCH_GPU counter increases call-count
     wallcycle_start(wcycle, ewcLAUNCH_GPU);
+    // The only spot of PME GPU where ewcsLAUNCH_GPU_PME subcounter increases call-count
     wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
     pme_gpu_copy_input_coordinates(pmeGpu, x);
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
@@ -216,7 +217,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
             {
                 const auto gridOrdering = pme_gpu_uses_dd(pmeGpu) ? GridOrdering::YZX : GridOrdering::XYZ;
                 wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-                wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME); //FIXME nocount
+                wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
                 pme_gpu_solve(pmeGpu, cfftgrid, gridOrdering, computeEnergyAndVirial);
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
                 wallcycle_stop(wcycle, ewcLAUNCH_GPU);
@@ -320,15 +321,8 @@ bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
     // Time the final staged data handling separately with a counting call to get
     // the call count right.
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-
-    // The computation has completed, do timing accounting and resetting buffers
     pme_gpu_update_timings(pme->gpu);
-    // TODO: move this later and launch it together with the other
-    // non-bonded tasks at the end of the step
-    pme_gpu_reinit_computation(pme->gpu);
-
     pme_gpu_get_staged_results(pme, forces, virial, energy);
-
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
     return true;
@@ -341,4 +335,19 @@ void pme_gpu_wait_finish_task(const gmx_pme_t                *pme,
                               real                           *energy)
 {
     pme_gpu_try_finish_task(pme, wcycle, forces, virial, energy, GpuTaskCompletion::Wait);
+}
+
+void pme_gpu_reinit_computation(const gmx_pme_t *pme,
+                                gmx_wallcycle   *wcycle)
+{
+    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+
+    wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+    wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+
+    pme_gpu_clear_grids(pme->gpu);
+    pme_gpu_clear_energy_virial(pme->gpu);
+
+    wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+    wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }

@@ -1641,6 +1641,11 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
+    if (useGpuPme)
+    {
+        pme_gpu_reinit_computation(fr->pmedata, wcycle);
+    }
+
     if (bUseGPU)
     {
         /* now clear the GPU outputs while we finish the step on the CPU */
@@ -1655,8 +1660,6 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
         }
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-
-        // TODO: move here the PME buffer clearing call pme_gpu_reinit_computation()
     }
 
     /* Do the nonbonded GPU (or emulation) force buffer reduction

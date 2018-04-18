@@ -379,5 +379,20 @@ CUDA_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                
                                                  real                           *CUDA_FUNC_ARGUMENT(energy),
                                                  GpuTaskCompletion               CUDA_FUNC_ARGUMENT(completionKind)) CUDA_FUNC_TERM_WITH_RETURN(false)
 
+/*! \brief
+ * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
+ *
+ * Clears the internal grid and energy/virial buffers; it is not safe to start
+ * the PME computation without calling this.
+ * Note that unlike in the nbnxn module, the force buffer does not need clearing.
+ *
+ * \todo Rename this function to *clear* -- it clearly only does output resetting
+ * and we should be clear about what the function does..
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \param[in] wcycle         The wallclock counter.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
+                                                    gmx_wallcycle   *CUDA_FUNC_ARGUMENT(wcycle)) CUDA_FUNC_TERM
 
 #endif
