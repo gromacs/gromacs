@@ -127,17 +127,6 @@ void pme_gpu_update_input_box(PmeGpu gmx_unused       *pmeGpu,
 }
 
 /*! \brief \libinternal
- * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- */
-void pme_gpu_reinit_computation(const PmeGpu *pmeGpu)
-{
-    pme_gpu_clear_grids(pmeGpu);
-    pme_gpu_clear_energy_virial(pmeGpu);
-}
-
-/*! \brief \libinternal
  * (Re-)initializes all the PME GPU data related to the grid size and cut-off.
  *
  * \param[in] pmeGpu            The PME GPU structure.
@@ -348,7 +337,9 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     pme_gpu_reinit_timings(pme->gpu);
 
     pme_gpu_reinit_grids(pme->gpu);
-    pme_gpu_reinit_computation(pme->gpu);
+    // Note: if timing the reinit launch overhead becomes more relevant
+    // (e.g. with regulat PP-PME re-balancing), we should pass wcycle here.
+    pme_gpu_reinit_computation(pme, nullptr);
     /* Clear the previous box - doesn't hurt, and forces the PME CPU recipbox
      * update for mixed mode on grid switch. TODO: use shared recipbox field.
      */
