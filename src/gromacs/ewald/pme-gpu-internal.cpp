@@ -50,6 +50,8 @@
 #include <string>
 
 #include "gromacs/ewald/ewald-utils.h"
+#include "gromacs/ewald/pme-gpu-types.h"
+#include "gromacs/ewald/pme-gpu-types-host.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
