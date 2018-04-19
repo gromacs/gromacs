@@ -229,7 +229,7 @@ extern const char *ens_names[ensNR+1];
  * and the half step kinetic energy for temperature control
  */
 enum {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiCUSTOM, eiCUSTOM2, eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR+1];
@@ -245,13 +245,15 @@ extern const char *ei_names[eiNR+1];
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
 //! Do we use any type of dynamics
-#define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e))
+#define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e) || EI_CUSTOM(e))
 //! Or do we use minimization
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 //! Do we apply test particle insertion
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 //! Do we deal with particle velocities
 #define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
+//! Do we use a custom integrator
+#define EI_CUSTOM(e) ((e) == eiCUSTOM || (e) == eiCUSTOM2)
 
 //! Constraint algorithm
 enum {

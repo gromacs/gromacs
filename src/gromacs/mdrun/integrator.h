@@ -154,6 +154,10 @@ struct Integrator
     IntegratorFunctionType           do_md;
     //! Implements the rerun functionality.
     IntegratorFunctionType           do_rerun;
+    //! Implements the custom MD integrators.
+    IntegratorFunctionType           do_custom;
+    //! Implements the custom MD integrators.
+    IntegratorFunctionType           do_custom_2;
     //! Implements steepest descent EM.
     IntegratorFunctionType           do_steep;
     //! Implements conjugate gradient energy minimization

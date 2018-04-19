@@ -1962,6 +1962,8 @@ void update_coords(gmx_int64_t                    step,
             switch (inputrec->eI)
             {
                 case (eiMD):
+                case (eiCUSTOM):
+                case (eiCUSTOM2):
                     do_update_md(start_th, end_th, step, dt,
                                  inputrec, md, ekind, state->box,
                                  x_rvec, xp_rvec, v_rvec, f_rvec,

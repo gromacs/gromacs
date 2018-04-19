@@ -70,6 +70,12 @@ void Integrator::run(unsigned int ei, bool doRerun)
                 do_md();
             }
             break;
+        case eiCUSTOM:
+            do_custom();
+            break;
+        case eiCUSTOM2:
+            do_custom_2();
+            break;
         case eiSteep:
             do_steep();
             break;
