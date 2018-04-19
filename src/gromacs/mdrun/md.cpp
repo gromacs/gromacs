@@ -188,78 +188,6 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
-/*! \brief Copy the state from \p rerunFrame to \p globalState and, if requested, construct vsites
- *
- * \param[in]     rerunFrame      The trajectory frame to compute energy/forces for
- * \param[in,out] globalState     The global state container
- * \param[in]     constructVsites When true, vsite coordinates are constructed
- * \param[in]     vsite           Vsite setup, can be nullptr when \p constructVsites = false
- * \param[in]     idef            Topology parameters, used for constructing vsites
- * \param[in]     timeStep        Time step, used for constructing vsites
- * \param[in]     forceRec        Force record, used for constructing vsites
- * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
- * \param[in,out] warnWhenNoV     When true, issue a warning when no velocities are present in \p rerunFrame; is set to false when a warning was issued
- */
-static void prepareRerunState(const t_trxframe  &rerunFrame,
-                              t_state           *globalState,
-                              bool               constructVsites,
-                              const gmx_vsite_t *vsite,
-                              const t_idef      &idef,
-                              double             timeStep,
-                              const t_forcerec  &forceRec,
-                              t_graph           *graph,
-                              gmx_bool          *warnWhenNoV)
-{
-    for (int i = 0; i < globalState->natoms; i++)
-    {
-        copy_rvec(rerunFrame.x[i], globalState->x[i]);
-    }
-    if (rerunFrame.bV)
-    {
-        for (int i = 0; i < globalState->natoms; i++)
-        {
-            copy_rvec(rerunFrame.v[i], globalState->v[i]);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < globalState->natoms; i++)
-        {
-            clear_rvec(globalState->v[i]);
-        }
-        if (*warnWhenNoV)
-        {
-            fprintf(stderr, "\nWARNING: Some frames do not contain velocities.\n"
-                    "         Ekin, temperature and pressure are incorrect,\n"
-                    "         the virial will be incorrect when constraints are present.\n"
-                    "\n");
-            *warnWhenNoV = FALSE;
-        }
-    }
-    copy_mat(rerunFrame.box, globalState->box);
-
-    if (constructVsites)
-    {
-        GMX_ASSERT(vsite, "Need valid vsite for constructing vsites");
-
-        if (graph)
-        {
-            /* Following is necessary because the graph may get out of sync
-             * with the coordinates if we only have every N'th coordinate set
-             */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, as_rvec_array(globalState->x.data()));
-            shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
-        }
-        construct_vsites(vsite, as_rvec_array(globalState->x.data()), timeStep, as_rvec_array(globalState->v.data()),
-                         idef.iparams, idef.il,
-                         forceRec.ePBC, forceRec.bMolPBC, nullptr, globalState->box);
-        if (graph)
-        {
-            unshift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
-        }
-    }
-}
-
 void gmx::Integrator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
@@ -277,17 +205,15 @@ void gmx::Integrator::do_md()
     gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
                       bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
+    gmx_bool          do_ene, do_log, do_verbose,
                       bForceUpdate = FALSE, bCPT;
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
     int               i, m;
-    t_trxstatus      *status;
     rvec              mu_tot;
     t_vcm            *vcm;
     matrix            parrinellorahmanMu, M;
-    t_trxframe        rerun_fr;
     gmx_repl_ex_t     repl_ex = nullptr;
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
@@ -372,26 +298,12 @@ void gmx::Integrator::do_md()
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
     bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
 
-    const gmx_bool bRerunMD      = mdrunOptions.rerun;
+    const gmx_bool bRerunMD      = FALSE;
     int            nstglobalcomm = mdrunOptions.globalCommunicationInterval;
-
-    if (bRerunMD)
-    {
-        /* Since we don't know if the frames read are related in any way,
-         * rebuild the neighborlist at every step.
-         */
-        ir->nstlist       = 1;
-        ir->nstcalcenergy = 1;
-        nstglobalcomm     = 1;
-    }
 
     nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
     bGStatEveryStep = (nstglobalcomm == 1);
 
-    if (bRerunMD)
-    {
-        ir->nstxout_compressed = 0;
-    }
     groups = &top_global->groups;
 
     gmx_edsam *ed = nullptr;
@@ -594,7 +506,7 @@ void gmx::Integrator::do_md()
     /* PME tuning is only supported in the Verlet scheme, with PME for
      * Coulomb. It is not supported with only LJ PME, or for
      * reruns. */
-    bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !bRerunMD &&
+    bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) &&
                 !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
@@ -603,7 +515,7 @@ void gmx::Integrator::do_md()
                          &bPMETunePrinting);
     }
 
-    if (!ir->bContinuation && !bRerunMD)
+    if (!ir->bContinuation)
     {
         if (state->flags & (1 << estV))
         {
@@ -749,19 +661,7 @@ void gmx::Integrator::do_md()
             }
         }
 
-        if (bRerunMD)
-        {
-            fprintf(stderr, "starting md rerun '%s', reading coordinates from"
-                    " input trajectory '%s'\n\n",
-                    *(top_global->name), opt2fn("-rerun", nfile, fnm));
-            if (mdrunOptions.verbose)
-            {
-                fprintf(stderr, "Calculated time to finish depends on nsteps from "
-                        "run input file,\nwhich may not correspond to the time "
-                        "needed to process input trajectory.\n\n");
-            }
-        }
-        else
+        // TODO: Clean up indenting
         {
             char tbuf[20];
             fprintf(stderr, "starting mdrun '%s'\n",
@@ -809,54 +709,6 @@ void gmx::Integrator::do_md()
      *             Loop over MD steps
      *
      ************************************************************/
-
-    /* if rerunMD then read coordinates and velocities from input trajectory */
-    if (bRerunMD)
-    {
-        if (getenv("GMX_FORCE_UPDATE"))
-        {
-            bForceUpdate = TRUE;
-        }
-
-        rerun_fr.natoms = 0;
-        if (MASTER(cr))
-        {
-            bLastStep = !read_first_frame(oenv, &status,
-                                          opt2fn("-rerun", nfile, fnm),
-                                          &rerun_fr, TRX_NEED_X | TRX_READ_V);
-            if (rerun_fr.natoms != top_global->natoms)
-            {
-                gmx_fatal(FARGS,
-                          "Number of atoms in trajectory (%d) does not match the "
-                          "run input file (%d)\n",
-                          rerun_fr.natoms, top_global->natoms);
-            }
-            if (ir->ePBC != epbcNONE)
-            {
-                if (!rerun_fr.bBox)
-                {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
-                }
-                if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
-                {
-                    gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
-                }
-            }
-        }
-
-        if (PAR(cr))
-        {
-            rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
-        }
-
-        if (ir->ePBC != epbcNONE)
-        {
-            /* Set the shift vectors.
-             * Necessary here when have a static box different from the tpr box.
-             */
-            calc_shifts(rerun_fr.box, fr->shift_vec);
-        }
-    }
 
     /* Loop over MD steps or if rerunMD to end of input trajectory,
      * or, if max_hours>0, until max_hours is reached.
@@ -943,44 +795,15 @@ void gmx::Integrator::do_md()
 
         wallcycle_start(wcycle, ewcSTEP);
 
-        if (bRerunMD)
-        {
-            if (rerun_fr.bStep)
-            {
-                step     = rerun_fr.step;
-                step_rel = step - ir->init_step;
-            }
-            if (rerun_fr.bTime)
-            {
-                t = rerun_fr.time;
-            }
-            else
-            {
-                t = step;
-            }
-        }
-        else
-        {
-            bLastStep = (step_rel == ir->nsteps);
-            t         = t0 + step*ir->delta_t;
-        }
+        bLastStep = (step_rel == ir->nsteps);
+        t         = t0 + step*ir->delta_t;
 
         // TODO Refactor this, so that nstfep does not need a default value of zero
         if (ir->efep != efepNO || ir->bSimTemp)
         {
-            /* find and set the current lambdas.  If rerunning, we either read in a state, or a lambda value,
-               requiring different logic. */
-            if (bRerunMD)
-            {
-                if (MASTER(cr))
-                {
-                    setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
-                }
-            }
-            else
-            {
-                setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
-            }
+            /* find and set the current lambdas. */
+            setCurrentLambdasLocal(step, ir->fepvals, lam0, state);
+
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
@@ -995,29 +818,11 @@ void gmx::Integrator::do_md()
             update_annealing_target_temp(ir, t, upd);
         }
 
-        if (bRerunMD && MASTER(cr))
-        {
-            const bool constructVsites = (vsite && mdrunOptions.rerunConstructVsites);
-            if (constructVsites && DOMAINDECOMP(cr))
-            {
-                gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented with domain decomposition, use a single rank");
-            }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top->idef, ir->delta_t, *fr, graph, &bRerunWarnNoV);
-        }
-
         /* Stop Center of Mass motion */
         bStopCM = (ir->comm_mode != ecmNO && do_per_step(step, ir->nstcomm));
 
-        if (bRerunMD)
-        {
-            /* for rerun MD always do Neighbour Searching */
-            bNS      = (bFirstStep || ir->nstlist != 0);
-        }
-        else
-        {
-            /* Determine whether or not to do Neighbour Searching */
-            bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
-        }
+        /* Determine whether or not to do Neighbour Searching */
+        bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
         if ( (signals[eglsSTOPCOND].set < 0) ||
@@ -1032,17 +837,13 @@ void gmx::Integrator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep || bRerunMD;
+        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep;
         do_verbose = mdrunOptions.verbose &&
-            (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep || bRerunMD);
+            (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
-        if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD))
+        if (bNS && !(bFirstStep && ir->bContinuation))
         {
-            if (bRerunMD)
-            {
-                bMasterState = TRUE;
-            }
-            else
+            // TODO: Clean up indenting
             {
                 bMasterState = FALSE;
                 /* Correct the new box if it is too skewed */
@@ -1084,7 +885,7 @@ void gmx::Integrator::do_md()
             update_mdatoms(mdatoms, state->lambda[efptMASS]);
         }
 
-        if ((bRerunMD && rerun_fr.bV) || bExchanged)
+        if (bExchanged)
         {
 
             /* We need the kinetic energy at minus the half step for determining
@@ -1108,7 +909,7 @@ void gmx::Integrator::do_md()
          */
         bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && mdrunOptions.writeConfout)) &&
-                step > ir->init_step && !bRerunMD);
+                step > ir->init_step);
         if (bCPT)
         {
             signals[eglsCHKPT].set = 0;
@@ -1137,7 +938,7 @@ void gmx::Integrator::do_md()
         }
         bCalcEner = bCalcEnerStep;
 
-        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep || bRerunMD);
+        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
         if (do_ene || do_log || bDoReplEx)
         {
@@ -1151,7 +952,7 @@ void gmx::Integrator::do_md()
                   (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
 
         force_flags = (GMX_FORCE_STATECHANGED |
-                       ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
+                       ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
                        (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
                        (bCalcEner ? GMX_FORCE_ENERGY : 0) |
@@ -1199,7 +1000,7 @@ void gmx::Integrator::do_md()
                      ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
 
-        if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
+        if (EI_VV(ir->eI) && !startingFromCheckpoint)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             rvec *vbuf = nullptr;
@@ -1226,7 +1027,7 @@ void gmx::Integrator::do_md()
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
-            if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
+            if (bForceUpdate)
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
                 constrain_velocities(step, nullptr, ir, mdatoms,
@@ -1347,7 +1148,7 @@ void gmx::Integrator::do_md()
                 saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
-            if (ir->efep != efepNO && !bRerunMD)
+            if (ir->efep != efepNO)
             {
                 sum_dhdl(enerd, state->lambda, ir->fepvals);
             }
@@ -1500,7 +1301,7 @@ void gmx::Integrator::do_md()
 
         dvdl_constr = 0;
 
-        if (!bRerunMD || rerun_fr.bV || bForceUpdate)
+        // TODO: Clean up indenting
         {
             wallcycle_start(wcycle, ewcUPDATE);
             /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
@@ -1612,12 +1413,6 @@ void gmx::Integrator::do_md()
                 enerd->term[F_DVDL_CONSTR] += dvdl_constr;
             }
         }
-        else if (graph)
-        {
-            /* Need to unshift here */
-            unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-        }
-
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
@@ -1664,10 +1459,10 @@ void gmx::Integrator::do_md()
                                 lastbox,
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0)
-                                | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
+                                | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
-                                | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0)
+                                | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                                 | CGLO_CONSTRAINT
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 );
@@ -1684,7 +1479,7 @@ void gmx::Integrator::do_md()
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-        if (ir->efep != efepNO && (!EI_VV(ir->eI) || bRerunMD))
+        if (ir->efep != efepNO && (!EI_VV(ir->eI)))
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
@@ -1801,8 +1596,8 @@ void gmx::Integrator::do_md()
             do_per_step(step, ir->swap->nstswap))
         {
             bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
-                                             bRerunMD ? rerun_fr.x   : as_rvec_array(state->x.data()),
-                                             bRerunMD ? rerun_fr.box : state->box,
+                                             as_rvec_array(state->x.data()),
+                                             state->box,
                                              MASTER(cr) && mdrunOptions.verbose,
                                              bRerunMD);
 
@@ -1857,32 +1652,14 @@ void gmx::Integrator::do_md()
             rescale_membed(step_rel, membed, as_rvec_array(state_global->x.data()));
         }
 
-        if (bRerunMD)
-        {
-            if (MASTER(cr))
-            {
-                /* read next frame from input trajectory */
-                bLastStep = !read_next_frame(oenv, status, &rerun_fr);
-            }
-
-            if (PAR(cr))
-            {
-                rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
-            }
-        }
-
         cycles = wallcycle_stop(wcycle, ewcSTEP);
         if (DOMAINDECOMP(cr) && wcycle)
         {
             dd_cycles_add(cr->dd, cycles, ddCyclStep);
         }
 
-        if (!bRerunMD || !rerun_fr.bStep)
-        {
-            /* increase the MD step number */
-            step++;
-            step_rel++;
-        }
+        step++;
+        step_rel++;
 
         /* TODO make a counter-reset module */
         /* If it is time to reset counters, set a flag that remains
@@ -1935,11 +1712,6 @@ void gmx::Integrator::do_md()
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);
 
-    if (bRerunMD && MASTER(cr))
-    {
-        close_trx(status);
-    }
-
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Tell the PME only node to finish */
@@ -1948,7 +1720,7 @@ void gmx::Integrator::do_md()
 
     if (MASTER(cr))
     {
-        if (ir->nstcalcenergy > 0 && !bRerunMD)
+        if (ir->nstcalcenergy > 0)
         {
             print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, mdebin, fcd, groups, &(ir->opts), ir->awh);
