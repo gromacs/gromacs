@@ -103,7 +103,6 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
 {
     std::ifstream g09f;
     bool          isGzip = false;
-
     if (!gmx_fexist(g09))
     {
         std::string g09z(g09);
@@ -119,15 +118,12 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
     {
         gmx_fatal(FARGS, "Cannot open file %s for reading", g09);
     }
-
-    // Read from g09f
-    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g09f, &std::cout);
+    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
     if (conv->SetInFormat("g09", isGzip))
     {
         if (conv->Read(mol, &g09f))
         {
             g09f.close();
-
             return conv; // exit with success
         }
         else
@@ -140,7 +136,6 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
         fprintf(stderr, "Input file %s has incomprehensible format.\n", g09);
     }
     g09f.close();
-
     return nullptr;
 }
 
@@ -276,8 +271,7 @@ void ReadGauss(const char          *g09,
         }
     }
 
-    alexandria::Experiment exp(program, method, basis, reference,
-                               conformation, g09ptr, jobtype);
+    alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
     mpt.AddExperiment(exp);
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
@@ -383,8 +377,7 @@ void ReadGauss(const char          *g09,
     }
 
     // HF Eenergy
-    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS,
-                                    convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
+    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
     mpt.LastExperiment()->AddEnergy(mes);
 
     // Atoms
@@ -401,8 +394,7 @@ void ReadGauss(const char          *g09,
             }
             if (nullptr != debug)
             {
-                fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n",
-                        atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
+                fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n", atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             ca.SetUnit(unit2string(eg2cPm));

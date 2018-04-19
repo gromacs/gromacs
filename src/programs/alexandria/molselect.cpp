@@ -265,7 +265,7 @@ int alex_molselect(int argc, char *argv[])
     static int                  nsample   = 1;
     static int                  maxatempt = 5000;
     static char                *opt_elem  = nullptr;
-    static gmx_bool             bZero     = TRUE;
+    static gmx_bool             bZero     = false;
     t_pargs                     pa[]      =
     {
         { "-nsample",   FALSE, etINT, {&nsample},

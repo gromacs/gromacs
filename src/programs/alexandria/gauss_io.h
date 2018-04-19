@@ -36,6 +36,17 @@
 
 #include "molprop.h"
 
+
+enum BabelFileType {
+    ebfPDB  = 0,
+    ebfXYZ  = 1,
+    ebfSDF  = 2,
+    ebfMOL  = 3,
+    ebfMOL2 = 4,
+    ebfG09  = 5,
+    ebfNR   = 6
+};
+
 /*! \brief
  * Read a Gaussian log file either using home grown methods or using OpenBabel
  *
