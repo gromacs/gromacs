@@ -80,6 +80,36 @@
 #undef KOKO
 #endif
 
+
+BabelFile::BabelFile(BabelFileType      ftype, 
+                     const std::string &ext, 
+                     const std::string &InFormat)
+    :
+    ftype_(ftype),
+    ext_(ext),
+    InFormat_(InFormat)
+   {}
+    
+BabelFiles::BabelFiles ()
+{
+    bfiles_.push_back(BabelFile(ebftPDB,  ".pdb",  "pdb"));
+    bfiles_.push_back(BabelFile(ebftXYZ,  ".xyz",  "xyz"));
+    bfiles_.push_back(BabelFile(ebftSDF,  ".sdf",  "sdf"));
+    bfiles_.push_back(BabelFile(ebftMOL,  ".mol",  "mol"));
+    bfiles_.push_back(BabelFile(ebftMOL2, ".mol2", "mol2"));
+    bfiles_.push_back(BabelFile(ebftG09,  ".log",  "g09"));
+}
+
+BabelFileIterator BabelFiles::findBabelFile(const std::string &fn)
+{
+    auto extension = fn.substr(fn.find_last_of("."));    
+    BabelFileIterator fb = bfiles_.begin(), fe = bfiles_.end();
+    return std::find_if(fb, fe, [extension](const BabelFile &bf)
+                        {
+                            return (extension == bf.ext());
+                        });
+}
+
 static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
                                           int                                              natom,
@@ -119,7 +149,9 @@ static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mo
         gmx_fatal(FARGS, "Cannot open file %s for reading", g09);
     }
     OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
-    if (conv->SetInFormat("g09", isGzip))
+    auto babelfiles = BabelFiles();
+    auto informat   = babelfiles.findBabelFile(g09)->informat().c_str();
+    if (conv->SetInFormat(informat, isGzip))
     {
         if (conv->Read(mol, &g09f))
         {

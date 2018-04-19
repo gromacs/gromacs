@@ -38,13 +38,47 @@
 
 
 enum BabelFileType {
-    ebfPDB  = 0,
-    ebfXYZ  = 1,
-    ebfSDF  = 2,
-    ebfMOL  = 3,
-    ebfMOL2 = 4,
-    ebfG09  = 5,
-    ebfNR   = 6
+    ebftPDB  = 0,
+    ebftXYZ  = 1,
+    ebftSDF  = 2,
+    ebftMOL  = 3,
+    ebftMOL2 = 4,
+    ebftG09  = 5,
+    ebftNR   = 6
+};
+
+class BabelFile
+{
+ public:
+    
+    BabelFile() {};
+    
+    BabelFile(BabelFileType ftype, const std::string &ext, const std::string &InFormat);
+    
+    BabelFileType ftype() { return ftype_; }
+    
+    const std::string &ext() const { return ext_; }
+    
+    const std::string &informat() const { return InFormat_; }
+    
+ private:
+    BabelFileType ftype_;
+    std::string   ext_;
+    std::string   InFormat_;    
+};
+
+using BabelFileIterator      = typename std::vector<BabelFile>::iterator;
+using BabelFileConstIterator = typename std::vector<BabelFile>::const_iterator;
+
+class BabelFiles
+{
+ public:
+    BabelFiles ();
+    
+    BabelFileIterator findBabelFile(const std::string &fn);
+    
+ private:
+    std::vector<BabelFile> bfiles_;
 };
 
 /*! \brief
