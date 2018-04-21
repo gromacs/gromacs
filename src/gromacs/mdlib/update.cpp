@@ -1783,8 +1783,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
             rvec *xp = as_rvec_array(upd->xp.data());
 #ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
-            int nth = gmx_omp_nthreads_get(emntUpdate);
-            GMX_UNUSED_VALUE(nth);
+            int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (int i = 0; i < homenr; i++)
