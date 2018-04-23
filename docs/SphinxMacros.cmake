@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@ include(CMakeParseArguments)
 macro(gmx_init_sphinx_setup SPHINX_INPUT_DIR)
     set(_SPHINX_INPUT_ROOT ${SPHINX_INPUT_DIR})
     set(_SPHINX_INPUT_FILES)
+    set(_SPHINX_IMAGE_CONVERSION_FILES)
 endmacro()
 
 macro(gmx_add_sphinx_input_file FILEPATH)
@@ -81,4 +82,33 @@ endmacro()
 macro(gmx_add_sphinx_input_target TARGETNAME)
     gmx_add_custom_output_target(${TARGETNAME} OUTPUT STAMP
         DEPENDS ${_SPHINX_INPUT_FILES})
+endmacro()
+
+function(gmx_add_sphinx_image_conversion_files)
+    set(_one_value_args FROM TO PREFIX)
+    cmake_parse_arguments(ARG "" "${_one_value_args}" "FILES" ${ARGN})
+    if (NOT ARG_FROM)
+        set(ARG_FROM ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
+    if (ARG_TO)
+        set(ARG_TO ${ARG_TO}/)
+    endif()
+    foreach(_file ${ARG_FILES})
+        set(_source ${ARG_FROM}/${_file})
+        string(REGEX REPLACE "pdf" "png" _tmp ${_file})
+        set(_target ${_SPHINX_INPUT_ROOT}/${ARG_TO}${_tmp})
+        add_custom_command(
+            OUTPUT  ${_target}
+            COMMAND convert ${_source} -antialias -quality 03 -quiet -pointsize 12 -density 1200 -units PixelsPerInch  ${_target}
+            DEPENDS ${_source}
+            COMMENT "Converting Sphinx input graphics file ${_file} to png"
+            VERBATIM)
+        list(APPEND _SPHINX_IMAGE_CONVERSION_FILES ${_target})
+    endforeach()
+    set(_SPHINX_IMAGE_CONVERSION_FILES "${_SPHINX_IMAGE_CONVERSION_FILES}" PARENT_SCOPE)
+endfunction()
+
+macro(gmx_add_sphinx_image_conversion_target TARGETNAME)
+    gmx_add_custom_output_target(${TARGETNAME} OUTPUT STAMP
+        DEPENDS ${_SPHINX_IMAGE_CONVERSION_FILES})
 endmacro()
