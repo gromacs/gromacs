@@ -154,10 +154,6 @@ Performance and Run Control
 ``GMX_CUDA_NB_TAB_EWALD``
         force the use of tabulated Ewald kernels. Should be used only for benchmarking.
 
-``GMX_DISABLE_CUDALAUNCH``
-        disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
-        Should only be used for benchmarking purposes.
-
 ``GMX_DISABLE_CUDA_TIMING``
         Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
