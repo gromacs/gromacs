@@ -117,7 +117,7 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
  * \tparam        ValueType            Raw value type of the \p buffer.
  * \param[in,out] buffer               Pointer to the device-side buffer
  * \param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
- * \param[in]     startingValueIndex   Offset (in values) at the device-side buffer to copy into.
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy into.
  * \param[in]     numValues            Number of values to copy.
  * \param[in]     stream               GPU stream to perform asynchronous copy in.
  * \param[in]     transferKind         Copy type: synchronous or asynchronous.
@@ -128,7 +128,7 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
 template <typename ValueType>
 void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
                         const ValueType         *hostBuffer,
-                        size_t                   startingValueIndex,
+                        size_t                   startingOffset,
                         size_t                   numValues,
                         CommandStream            stream,
                         GpuApiCallBehavior       transferKind,
@@ -141,7 +141,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
     cl_int       clError;
-    const size_t offset = startingValueIndex * sizeof(ValueType);
+    const size_t offset = startingOffset * sizeof(ValueType);
     const size_t bytes  = numValues * sizeof(ValueType);
     switch (transferKind)
     {
@@ -153,6 +153,53 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
         case GpuApiCallBehavior::Sync:
             clError = clEnqueueWriteBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
             GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Synchronous H2D copy failed");
+            break;
+
+        default:
+            throw;
+    }
+}
+
+/*! \brief
+ * Performs the device-to-host data copy, synchronous or asynchronously on request.
+ *
+ * TODO: This is meant to gradually replace cu/ocl_copy_d2h.
+ *
+ * \tparam        ValueType            Raw value type of the \p buffer.
+ * \param[in,out] hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
+ * \param[in]     buffer               Pointer to the device-side buffer
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy from.
+ * \param[in]     numValues            Number of values to copy.
+ * \param[in]     stream               GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind         Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
+ *                                     If the pointer is not null, the event can further be used
+ *                                     to queue a wait for this operation or to query profiling information.
+ */
+template <typename ValueType>
+void copyFromDeviceBuffer(ValueType                     *hostBuffer,
+                          DeviceBuffer<ValueType>       *buffer,
+                          size_t                         startingOffset,
+                          size_t                         numValues,
+                          CommandStream                  stream,
+                          GpuApiCallBehavior             transferKind,
+                          CommandEvent                  *timingEvent)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
+    cl_int       clError;
+    const size_t offset = startingOffset * sizeof(ValueType);
+    const size_t bytes  = numValues * sizeof(ValueType);
+    switch (transferKind)
+    {
+        case GpuApiCallBehavior::Async:
+            clError = clEnqueueReadBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Asynchronous D2H copy failed");
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            clError = clEnqueueReadBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Synchronous D2H copy failed");
             break;
 
         default:
