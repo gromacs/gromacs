@@ -116,11 +116,6 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
 
 /*********************************/
 
-/* XXX switch between chevron and cudaLaunch (supported only in CUDA >=7.0)
-   -- only for benchmarking purposes */
-static const bool bUseCudaLaunchKernel =
-    (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == NULL);
-
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
 static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t *dinfo)
 {
@@ -434,19 +429,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 
     if (bUseCudaLaunchKernel)
     {
-        gmx_unused void* kernel_args[4];
+        void* kernel_args[4];
         kernel_args[0] = adat;
         kernel_args[1] = nbp;
         kernel_args[2] = plist;
         kernel_args[3] = &bCalcFshift;
 
-#if GMX_CUDA_VERSION >= 7000
         cudaLaunchKernel((void *)nb_kernel, dim_grid, dim_block, kernel_args, shmem, stream);
-#endif
-    }
-    else
-    {
-        nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
     }
     CU_LAUNCH_ERR("k_calc_nb");
 
@@ -571,7 +560,6 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         kernel_args[3] = &numParts;
         kernel_args[4] = &part;
 
-#if GMX_CUDA_VERSION >= 7000
         if (plist->haveFreshList)
         {
             cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true>, dim_grid, dim_block, kernel_args, shmem, stream);
@@ -579,18 +567,6 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         else
         {
             cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<false>, dim_grid, dim_block, kernel_args, shmem, stream);
-        }
-#endif
-    }
-    else
-    {
-        if (plist->haveFreshList)
-        {
-            nbnxn_kernel_prune_cuda<true><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
-        }
-        else
-        {
-            nbnxn_kernel_prune_cuda<false><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
         }
     }
     CU_LAUNCH_ERR("k_pruneonly");
