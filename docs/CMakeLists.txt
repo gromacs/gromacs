@@ -105,7 +105,7 @@ if (SPHINX_FOUND)
         # this should be set to the matching MD5 sum.
         set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
     endif()
-    set(WEBMANUAL_SPHINX_FILES
+    set(REFERENCEMANUAL_SPHINX_FILES
         reference-manual/algorithms.rst
         reference-manual/analysis.rst
         reference-manual/averages.rst
@@ -120,6 +120,12 @@ if (SPHINX_FOUND)
         reference-manual/run-parameters.rst
         reference-manual/special.rst
         reference-manual/topologies.rst
+        reference-manual/plots/peregrine.png
+        reference-manual/plots/adress.png
+        reference-manual/plots/plotje.png
+        reference-manual/plots/xvgr.png
+        )
+    set(REFERENCEMANUAL_IMAGE_FILES 
         reference-manual/plots/angle.pdf
         reference-manual/plots/awh-invN.pdf
         reference-manual/plots/awh-pmfs.pdf
@@ -174,7 +180,6 @@ if (SPHINX_FOUND)
         reference-manual/plots/par-lincs2.pdf
         reference-manual/plots/parsort.pdf
         reference-manual/plots/pbctric.pdf
-        reference-manual/plots/peregrine.png
         reference-manual/plots/phipsi.pdf
         reference-manual/plots/pulldirrel.pdf
         reference-manual/plots/pull.pdf
@@ -195,9 +200,6 @@ if (SPHINX_FOUND)
         reference-manual/plots/vcrf.pdf
         reference-manual/plots/verlet-drift.pdf
         reference-manual/plots/vsite-4fdn.pdf
-        reference-manual/plots/adress.png
-        reference-manual/plots/plotje.png
-        reference-manual/plots/xvgr.png
         )
     set(SPHINX_SOURCE_FILES
         index.rst
@@ -302,9 +304,15 @@ if (SPHINX_FOUND)
     if (IMAGE_CONVERT_POSSIBLE)
         gmx_add_sphinx_source_files(
             FILES
-            ${WEBMANUAL_SPHINX_FILES}
+            ${REFERENCEMANUAL_SPHINX_FILES}
             user-guide/index.rst
             user-guide/flow.rst)
+        gmx_add_sphinx_source_files(
+            FILES
+            ${REFERENCEMANUAL_IMAGE_FILES})
+        gmx_add_sphinx_image_conversion_files(
+            FILES
+            ${REFERENCEMANUAL_IMAGE_FILES})
     else()
         gmx_add_sphinx_source_files(
             FROM ${CMAKE_CURRENT_SOURCE_DIR}/reference-manual TO user-guide
@@ -323,6 +331,7 @@ if (SPHINX_FOUND)
             flow.rst)
     endif()
     gmx_add_sphinx_input_target(sphinx-input)
+    gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
@@ -373,7 +382,7 @@ if (SPHINX_FOUND)
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
-        DEPENDS sphinx-image-conv-png
+        DEPENDS sphinx-image-conversion 
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
