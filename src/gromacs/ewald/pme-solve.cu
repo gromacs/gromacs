@@ -43,6 +43,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -409,12 +410,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     const bool   copyInputAndOutputGrid = pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu);
 
     cudaStream_t stream          = pmeGpu->archSpecific->pmeStream;
-    const auto  *kernelParamsPtr = pmeGpu->kernelParams.get();
+    auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
 
+    float       *h_gridFloat = reinterpret_cast<float *>(h_grid);
     if (copyInputAndOutputGrid)
     {
-        cu_copy_H2D(kernelParamsPtr->grid.d_fourierGrid, h_grid, pmeGpu->archSpecific->complexGridSize * sizeof(float),
-                    pmeGpu->settings.transferKind, stream);
+        copyToDeviceBuffer(&kernelParamsPtr->grid.d_fourierGrid, h_gridFloat,
+                           0, pmeGpu->archSpecific->complexGridSize,
+                           stream, pmeGpu->settings.transferKind, nullptr);
     }
 
     int majorDim = -1, middleDim = -1, minorDim = -1;
@@ -476,13 +479,15 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
     if (computeEnergyAndVirial)
     {
-        cu_copy_D2H(pmeGpu->staging.h_virialAndEnergy, kernelParamsPtr->constants.d_virialAndEnergy,
-                    c_virialAndEnergyCount * sizeof(float), pmeGpu->settings.transferKind, stream);
+        copyFromDeviceBuffer(pmeGpu->staging.h_virialAndEnergy, &kernelParamsPtr->constants.d_virialAndEnergy,
+                             0, c_virialAndEnergyCount,
+                             stream, pmeGpu->settings.transferKind, nullptr);
     }
 
     if (copyInputAndOutputGrid)
     {
-        cu_copy_D2H(h_grid, kernelParamsPtr->grid.d_fourierGrid, pmeGpu->archSpecific->complexGridSize * sizeof(float),
-                    pmeGpu->settings.transferKind, stream);
+        copyFromDeviceBuffer(h_gridFloat, &kernelParamsPtr->grid.d_fourierGrid,
+                             0, pmeGpu->archSpecific->complexGridSize,
+                             stream, pmeGpu->settings.transferKind, nullptr);
     }
 }
