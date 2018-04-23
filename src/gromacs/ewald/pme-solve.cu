@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,8 +41,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/utility/exceptions.h"
@@ -57,18 +55,6 @@ constexpr int c_solveMaxWarpsPerBlock = 8;
 //! Solving kernel max block size in threads
 constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
 
-// CUDA 6.5 can not compile enum class as a template kernel parameter,
-// so we replace it with a duplicate simple enum
-#if GMX_CUDA_VERSION >= 7000
-using GridOrderingInternal = GridOrdering;
-#else
-enum GridOrderingInternal
-{
-    YZX,
-    XYZ
-};
-#endif
-
 /*! \brief
  * PME complex grid solver kernel function.
  *
@@ -77,7 +63,7 @@ enum GridOrderingInternal
  * \param[in]  kernelParams             Input PME CUDA data in constant memory.
  */
 template<
-    GridOrderingInternal gridOrdering,
+    GridOrdering gridOrdering,
     bool computeEnergyAndVirial
     >
 __launch_bounds__(c_solveMaxThreadsPerBlock)
@@ -87,13 +73,13 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     int majorDim, middleDim, minorDim;
     switch (gridOrdering)
     {
-        case GridOrderingInternal::YZX:
+        case GridOrdering::YZX:
             majorDim  = YY;
             middleDim = ZZ;
             minorDim  = XX;
             break;
 
-        case GridOrderingInternal::XYZ:
+        case GridOrdering::XYZ:
             majorDim  = XX;
             middleDim = YY;
             minorDim  = ZZ;
@@ -161,14 +147,14 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         const int             kMiddle = indexMiddle + localOffsetMiddle;
         float                 mMiddle = kMiddle;
         /* Checking Y in XYZ case */
-        if (gridOrdering == GridOrderingInternal::XYZ)
+        if (gridOrdering == GridOrdering::XYZ)
         {
             mMiddle = (kMiddle < maxkMiddle) ? kMiddle : (kMiddle - nMiddle);
         }
         const int             kMinor  = localOffsetMinor + indexMinor;
         float                 mMinor  = kMinor;
         /* Checking X in YZX case */
-        if (gridOrdering == GridOrderingInternal::YZX)
+        if (gridOrdering == GridOrdering::YZX)
         {
             mMinor = (kMinor < maxkMinor) ? kMinor : (kMinor - nMinor);
         }
@@ -178,13 +164,13 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         float      mX, mY, mZ;
         switch (gridOrdering)
         {
-            case GridOrderingInternal::YZX:
+            case GridOrdering::YZX:
                 mX = mMinor;
                 mY = mMajor;
                 mZ = mMiddle;
                 break;
 
-            case GridOrderingInternal::XYZ:
+            case GridOrdering::XYZ:
                 mX = mMajor;
                 mY = mMiddle;
                 mZ = mMinor;
@@ -198,14 +184,14 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
         float corner_fac = 1.0f;
         switch (gridOrdering)
         {
-            case GridOrderingInternal::YZX:
+            case GridOrdering::YZX:
                 if ((kMiddle == 0) | (kMiddle == maxkMiddle))
                 {
                     corner_fac = 0.5f;
                 }
                 break;
 
-            case GridOrderingInternal::XYZ:
+            case GridOrdering::XYZ:
                 if ((kMinor == 0) | (kMinor == maxkMinor))
                 {
                     corner_fac = 0.5f;
@@ -467,22 +453,22 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     {
         if (computeEnergyAndVirial)
         {
-            pme_solve_kernel<GridOrderingInternal::YZX, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            pme_solve_kernel<GridOrdering::YZX, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
         }
         else
         {
-            pme_solve_kernel<GridOrderingInternal::YZX, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            pme_solve_kernel<GridOrdering::YZX, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
         }
     }
     else if (gridOrdering == GridOrdering::XYZ)
     {
         if (computeEnergyAndVirial)
         {
-            pme_solve_kernel<GridOrderingInternal::XYZ, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            pme_solve_kernel<GridOrdering::XYZ, true> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
         }
         else
         {
-            pme_solve_kernel<GridOrderingInternal::XYZ, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
+            pme_solve_kernel<GridOrdering::XYZ, false> <<< blocks, threads, 0, stream>>> (*kernelParamsPtr);
         }
     }
     CU_LAUNCH_ERR("pme_solve_kernel");
