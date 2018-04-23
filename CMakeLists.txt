@@ -202,15 +202,12 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
 # Decide on GPU settings based on user-settings and GPU/CUDA
-# detection.  GCC 4.8 requires CUDA 6.0 (but we choose 6.5 for the
-# preliminary C++11 support), icc 15 requires CUDA 7.0, and VS2015
-# requires CUDA 8.0
+# detection. VS2015 requires CUDA 8.0, for the other arch/compilers
+# rest we require CUDA 7.0 or later (including for clang-CUDA).
 if(MSVC)
     set(REQUIRED_CUDA_VERSION 8.0)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(REQUIRED_CUDA_VERSION 7.0)
-else()
-    set(REQUIRED_CUDA_VERSION 6.5)
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 
