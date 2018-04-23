@@ -45,10 +45,6 @@ endif()
 option(GMX_GPU "Enable GPU acceleration" OFF)
 
 option(GMX_CLANG_CUDA "Use clang for CUDA" OFF)
-if (GMX_CLANG_CUDA)
-    # CUDA 7.0 or later required, override req. version
-    set(REQUIRED_CUDA_VERSION 7.0)
-endif()
 
 if(GMX_GPU AND GMX_DOUBLE)
     message(FATAL_ERROR "GPU acceleration is not available in double precision!")
