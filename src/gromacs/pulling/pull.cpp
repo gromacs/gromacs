@@ -2251,7 +2251,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         calc_com_start = (pcrd->params.eGeom == epullgCYL         ? 1 : 0);
         calc_com_end   = pcrd->params.ngroup;
 
-        for (g = calc_com_start; g <= calc_com_end; g++)
+        for (g = calc_com_start; g < calc_com_end; g++)
         {
             pull->group[pcrd->params.group[g]].bCalcCOM = TRUE;
         }
