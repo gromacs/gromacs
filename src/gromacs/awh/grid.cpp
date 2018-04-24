@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -689,9 +689,9 @@ GridAxis::GridAxis(double origin, double end,
     }
     else
     {
-        double lengthInPoints = length_*pointDensity;
-
-        numPoints_            = 1 + static_cast<int>(std::ceil(lengthInPoints));
+        /* An extra point is added here to account for the endpoints. The
+           minimum number of points for a non-zero interval is 2. */
+        numPoints_            = 1 + static_cast<int>(std::ceil(length_*pointDensity));
     }
 
     /* Set point spacing based on the number of points */

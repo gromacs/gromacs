@@ -40,6 +40,14 @@ Fixed enemat when the .edr file had no matching energy groups
 
 :issue:`2508`
 
+Fixed AWH too infrequent checks for covering
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+For multidimensional AWH grids with many points relative to the number
+of samples required for covering the grid, the detection of covering
+coule be delayed because of too infrequent checks.
+
+:issue:`2487`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
