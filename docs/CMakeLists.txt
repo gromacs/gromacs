@@ -105,21 +105,46 @@ if (SPHINX_FOUND)
         # this should be set to the matching MD5 sum.
         set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
     endif()
+    # The reference manual still contains the individual sections from the
+    # LaTeX document, with the files below grouped and annotated by chapter.
     set(REFERENCEMANUAL_SPHINX_FILES
-        reference-manual/algorithms.rst
-        reference-manual/analysis.rst
-        reference-manual/averages.rst
-        reference-manual/definitions.rst
-        reference-manual/details.rst
-        reference-manual/file-formats.rst
-        reference-manual/functions.rst
+        # Main index file, preface and introduction.
         reference-manual/index.rst
-        reference-manual/introduction.rst
         reference-manual/preface.rst
-        reference-manual/references.rst
-        reference-manual/run-parameters.rst
-        reference-manual/special.rst
+        reference-manual/introduction.rst
+        # Definitions and Units chapter
+        reference-manual/definitions.rst
+        # Algorithms chapter
+        reference-manual/algorithms.rst
+        # Interaction functions and force fields chapter
+        reference-manual/functions.rst
+        reference-manual/bonded-interactions.rst
+        reference-manual/force-field.rst
+        reference-manual/free-energy-interactions.rst
+        reference-manual/interaction-methods.rst
+        reference-manual/long-range-electrostatics.rst
+        reference-manual/long-range-vdw.rst
+        reference-manual/nonbonded-interactions.rst
+        reference-manual/polarization.rst
+        reference-manual/restraints.rst
+        # Topologies chapter
         reference-manual/topologies.rst
+        # File formats chapter
+        reference-manual/file-formats.rst
+        # Special topics chapter
+        reference-manual/special.rst
+        # Run parameters and programs chapter
+        reference-manual/run-parameters.rst
+        # Analysis chapter
+        reference-manual/analysis.rst
+        # Implementation details chapter
+        reference-manual/details.rst
+        # Averages and fluctations chapter
+        reference-manual/averages.rst
+        # References
+        reference-manual/references.rst
+        # PNG formated plot files that don't need to be converted into PNG
+        # for the web page.
         reference-manual/plots/peregrine.png
         reference-manual/plots/adress.png
         reference-manual/plots/plotje.png
