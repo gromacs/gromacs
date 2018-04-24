@@ -559,7 +559,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
                      int csj, int stride, const real *x_j,
                      real rlist2)
 {
-#if !GMX_SIMD4_HAVE_REAL
+#if 0 //!GMX_SIMD4_HAVE_REAL
 
     /* Plain C version.
      * All coordinates are stored as xyzxyz...

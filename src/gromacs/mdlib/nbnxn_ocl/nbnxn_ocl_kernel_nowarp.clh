@@ -271,7 +271,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #endif
 #endif
     /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
-    if(tidx==0 || tidx==32)
+    if(tidx==0 || tidx==WARP_SIZE)
         warp_any[widx] = 0;
 
     barrier(CLK_LOCAL_MEM_FENCE);

@@ -75,7 +75,7 @@ struct NbnxnListParameters
 /*! \endcond */
 
 /* With GPU kernels the i and j cluster size is 8 atoms */
-static const int c_nbnxnGpuClusterSize = 8;
+static const int c_nbnxnGpuClusterSize = 4;
 
 /* The number of clusters in a super-cluster, used for GPU */
 static const int c_nbnxnGpuNumClusterPerSupercluster = 8;
