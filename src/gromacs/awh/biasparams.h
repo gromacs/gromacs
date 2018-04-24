@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,17 +143,20 @@ class BiasParams
         }
 
         /*! \brief
-         * Returns if to do checks, only returns true at free-energy update steps.
+         * Returns if to do checks related to the extent of sampling, only returns true at free energy update steps.
          *
-         * To avoid overhead due to expensive checks, we only do checks when we
-         * have taken at least as many samples as we have points.
+         * Histogram checks are performed both for generating warnings about poor sampling and for detecting coverings
+         * of the sampling interval in the intial stage. Ideally, checks should be performed more often than the
+         * sampling interval is traversed, which however depends on the dynamics of the system.
+         * Also, in order to avoid overhead due to expensive checks, we would like to check as infrequently as possible,
+         * without delaying convergence of the method. Here we perform checks every time a predefined, constant number of
+         * samples have been collected, which is simple and convenient.
          *
-         * \param[in] numPointsInHistogram  The total number of points in the bias histogram.
          * \param[in] step                  Time step.
          * \returns true at steps where checks should be performed.
          */
-        bool isCheckStep(std::size_t numPointsInHistogram,
-                         gmx_int64_t step) const;
+        bool isCheckStep(gmx_int64_t step) const;
+
 
         /*! \brief Constructor.
          *

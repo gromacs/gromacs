@@ -78,7 +78,7 @@ void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
     const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
 
     if (fplog == nullptr || numWarningsIssued_ >= maxNumWarningsInRun || state_.inInitialStage() ||
-        !params_.isCheckStep(state_.points().size(), step))
+        !params_.isCheckStep(step))
     {
         return;
     }

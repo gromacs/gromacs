@@ -1066,7 +1066,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     bool detectedCovering = false;
     if (inInitialStage())
     {
-        detectedCovering = (params.isCheckStep(points_.size(), step) &&
+        detectedCovering = (params.isCheckStep(step) &&
                             isSamplingRegionCovered(params, dimParams, grid,
                                                     commRecord, multiSimComm));
     }
