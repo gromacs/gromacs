@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,11 +61,15 @@
 namespace gmx
 {
 
-bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
-                             gmx_int64_t step) const
+bool BiasParams::isCheckStep(gmx_int64_t step) const
 {
-    int numStepsUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
-    int numStepsCheck            = (1 + numPointsInHistogram/numSamplesUpdateFreeEnergy_)*numStepsUpdateFreeEnergy;
+    /* The exact choice of number is quite arbitrary, but it is reasonable to collect ~100
+     * samples before checking global properties of the histogram. */
+    const int numSamplesCheck          = 200;
+    int       numStepsUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
+
+    /* Only do checks at update steps */
+    int numStepsCheck            = (1 + numSamplesCheck/numSamplesUpdateFreeEnergy_)*numStepsUpdateFreeEnergy;
 
     if (step > 0 && step % numStepsCheck == 0)
     {
