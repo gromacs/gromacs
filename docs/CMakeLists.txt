@@ -113,6 +113,15 @@ if (SPHINX_FOUND)
         reference-manual/details.rst
         reference-manual/file-formats.rst
         reference-manual/functions.rst
+        reference-manual/bonded-interactions.rst
+        reference-manual/force-field.rst
+        reference-manual/free-energy-interactions.rst
+        reference-manual/interaction-methods.rst
+        reference-manual/long-range-electrostatics.rst
+        reference-manual/long-range-vdw.rst
+        reference-manual/nonbonded-interactions.rst
+        reference-manual/polarization.rst
+        reference-manual/restraints.rst
         reference-manual/index.rst
         reference-manual/introduction.rst
         reference-manual/preface.rst
