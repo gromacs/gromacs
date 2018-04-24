@@ -27,6 +27,14 @@ during make check/test.
 
 :issue:`2465`
 
+Fixed AWH too infrequent checks for covering
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When the number of points in the AWH grid was large relative to the
+number of samples required for covering the grid the detection of
+covering was delayed because of too infrequent checks.
+
+:issue:`2487`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
