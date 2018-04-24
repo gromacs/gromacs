@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,24 +61,6 @@
 namespace gmx
 {
 
-bool BiasParams::isCheckStep(std::size_t numPointsInHistogram,
-                             gmx_int64_t step) const
-{
-    int numStepsUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
-    int numStepsCheck            = (1 + numPointsInHistogram/numSamplesUpdateFreeEnergy_)*numStepsUpdateFreeEnergy;
-
-    if (step > 0 && step % numStepsCheck == 0)
-    {
-        GMX_ASSERT(isUpdateFreeEnergyStep(step), "We should only check at free-energy update steps");
-
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 namespace
 {
 
@@ -128,6 +110,50 @@ gmx_int64_t calcTargetUpdateInterval(const AwhParams     &awhParams,
     }
 
     return numStepsUpdateTarget;
+}
+
+/*! \brief Determines the step interval for checking for covering.
+ *
+ * \param[in] awhParams      AWH parameters.
+ * \param[in] dimParams         Parameters for the dimensions of the coordinate.
+ * \param[in] gridAxis          The Grid axes.
+ * \returns the check interval in steps.
+ */
+gmx_int64_t calcCheckCoveringInterval(const AwhParams              &awhParams,
+                                      const std::vector<DimParams> &dimParams,
+                                      const std::vector<GridAxis>  &gridAxis)
+{
+    /* Each sample will have a width of sigma. To cover the axis a
+       minimum number of samples of width sigma is required. */
+    int minNumSamplesCover = 0;
+    for (size_t d = 0; d < gridAxis.size(); d++)
+    {
+        GMX_RELEASE_ASSERT(dimParams[d].betak > 0, "Inverse temperature (beta) and force constant (k) should be positive.");
+        double sigma           = 1.0/std::sqrt(dimParams[d].betak);
+
+        /* The additional sample is here because to cover a discretized
+           axis of length sigma one needs two samples, one for each
+           end point. */
+        GMX_RELEASE_ASSERT(gridAxis[d].length()/sigma < std::numeric_limits<int>::max(), "The axis length in units of sigma should fit in an int");
+        int    numSamplesCover = static_cast<int>(std::ceil(gridAxis[d].length()/sigma)) + 1;
+
+        /* The minimum number of samples needed for simultaneously
+           covering all axes is limited by the axis requiring most
+           samples. */
+        minNumSamplesCover = std::max(minNumSamplesCover, numSamplesCover);
+    }
+
+    /* Convert to number of steps using the sampling frequency. The
+       check interval should be a multiple of the update step
+       interval. */
+    int       numStepsUpdate      = awhParams.numSamplesUpdateFreeEnergy*awhParams.nstSampleCoord;
+    GMX_RELEASE_ASSERT(awhParams.numSamplesUpdateFreeEnergy > 0, "When checking for AWH coverings, the number of samples per AWH update need to be > 0.");
+    int       numUpdatesCheck     = std::max(1, minNumSamplesCover/awhParams.numSamplesUpdateFreeEnergy);
+    int       numStepsCheck       = numUpdatesCheck*numStepsUpdate;
+
+    GMX_RELEASE_ASSERT(numStepsCheck % numStepsUpdate == 0, "Only check covering at free energy update steps");
+
+    return numStepsCheck;
 }
 
 /*! \brief
@@ -282,6 +308,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numStepsSampleCoord_(awhParams.nstSampleCoord),
     numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),
     numStepsUpdateTarget_(calcTargetUpdateInterval(awhParams, awhBiasParams)),
+    numStepsCheckCovering_(calcCheckCoveringInterval(awhParams, dimParams, gridAxis)),
     eTarget(awhBiasParams.eTarget),
     freeEnergyCutoffInKT(beta*awhBiasParams.targetCutoff),
     temperatureScaleFactor(awhBiasParams.targetBetaScaling),
