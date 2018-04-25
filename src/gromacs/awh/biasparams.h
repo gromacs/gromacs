@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,7 +129,9 @@ class BiasParams
         inline bool isUpdateFreeEnergyStep(gmx_int64_t step) const
         {
             int stepIntervalUpdateFreeEnergy = numSamplesUpdateFreeEnergy_*numStepsSampleCoord_;
-            return (step > 0 && step % stepIntervalUpdateFreeEnergy == 0);
+
+            /* No samples per update is allowed and interpreted as no updates */
+            return (step > 0 && stepIntervalUpdateFreeEnergy > 0 && step % stepIntervalUpdateFreeEnergy == 0);
         }
 
         /*! \brief

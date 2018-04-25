@@ -1919,6 +1919,8 @@ AWH adaptive biasing
    (10)
    The number of coordinate samples used for each AWH update.
    The update interval in steps is :mdp:`awh-nstsample` times this value.
+   A value of zero means no updates,  *i.e.* the bias will stay
+   constant at its initial value.
 
 .. mdp:: awh-nbias
 
