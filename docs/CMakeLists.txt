@@ -105,13 +105,31 @@ if (SPHINX_FOUND)
         # this should be set to the matching MD5 sum.
         set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
     endif()
-    set(REFERENCEMANUAL_SPHINX_FILES
-        reference-manual/algorithms.rst
-        reference-manual/analysis.rst
-        reference-manual/averages.rst
-        reference-manual/definitions.rst
-        reference-manual/details.rst
+    # Each of the previous chapters of the reference manual is here grouped with the respective
+    # sub pages into a set that is added to the sphinx input files.
+    # The file for the File formats section is grouped with the main section
+    # excluded because it might be added in a different place
+    # if the web version of the reference manual cannot be build.
+    set(REFERENCEMANUAL_SPHINX_FILES_MAIN
+        reference-manual/index.rst
         reference-manual/file-formats.rst
+        reference-manual/references.rst
+        reference-manual/plots/peregrine.png
+        reference-manual/plots/adress.png
+        reference-manual/plots/plotje.png
+        reference-manual/plots/xvgr.png
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_INTRODUCTION
+        reference-manual/preface.rst
+        reference-manual/introduction.rst
+        )
+    set(REFERENCEMANUAL_IMAGE_FILES_DEFINITIONS
+        reference-manual/definitions.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_ALGORITHMS
+        reference-manual/algorithms.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_FUNCTIONS
         reference-manual/functions.rst
         reference-manual/bonded-interactions.rst
         reference-manual/force-field.rst
@@ -122,17 +140,24 @@ if (SPHINX_FOUND)
         reference-manual/nonbonded-interactions.rst
         reference-manual/polarization.rst
         reference-manual/restraints.rst
-        reference-manual/index.rst
-        reference-manual/introduction.rst
-        reference-manual/preface.rst
-        reference-manual/references.rst
-        reference-manual/run-parameters.rst
-        reference-manual/special.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_TOPOLOGIES
         reference-manual/topologies.rst
-        reference-manual/plots/peregrine.png
-        reference-manual/plots/adress.png
-        reference-manual/plots/plotje.png
-        reference-manual/plots/xvgr.png
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_SPECIAL
+        reference-manual/special.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_RUNPARAMETERS
+        reference-manual/run-parameters.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_ANALYSIS
+        reference-manual/analysis.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_DETAILS
+        reference-manual/details.rst
+        )
+    set(REFERENCEMANUAL_SPHINX_FILES_AVERAGES
+        reference-manual/averages.rst
         )
     set(REFERENCEMANUAL_IMAGE_FILES 
         reference-manual/plots/angle.pdf
@@ -313,7 +338,17 @@ if (SPHINX_FOUND)
     if (IMAGE_CONVERT_POSSIBLE)
         gmx_add_sphinx_source_files(
             FILES
-            ${REFERENCEMANUAL_SPHINX_FILES}
+            ${REFERENCEMANUAL_SPHINX_FILES_MAIN}
+            ${REFERENCEMANUAL_SPHINX_FILES_INTRODUCTION}
+            ${REFERENCEMANUAL_IMAGE_FILES_DEFINITIONS}
+            ${REFERENCEMANUAL_SPHINX_FILES_ALGORITHMS}
+            ${REFERENCEMANUAL_SPHINX_FILES_FUNCTIONS}
+            ${REFERENCEMANUAL_SPHINX_FILES_TOPOLOGIES}
+            ${REFERENCEMANUAL_SPHINX_FILES_SPECIAL}
+            ${REFERENCEMANUAL_SPHINX_FILES_RUNPARAMETERS}
+            ${REFERENCEMANUAL_SPHINX_FILES_ANALYSIS}
+            ${REFERENCEMANUAL_SPHINX_FILES_DETAILS}
+            ${REFERENCEMANUAL_SPHINX_FILES_AVERAGES}
             user-guide/index.rst
             user-guide/flow.rst)
         gmx_add_sphinx_source_files(
