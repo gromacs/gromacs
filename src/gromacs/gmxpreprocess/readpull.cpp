@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/readir.h"
@@ -504,9 +505,10 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, lambda);
-    auto mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
-    auto md      = mdAtoms->mdatoms();
+    gmx::LocalAtomSetManager atomSets;
+    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda);
+    auto                     mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
+    auto                     md      = mdAtoms->mdatoms();
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, mdAtoms.get());
     if (ir->efep)
     {
