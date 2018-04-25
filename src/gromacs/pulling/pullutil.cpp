@@ -60,70 +60,61 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static void pull_reduce_real(const t_commrec *cr,
-                             pull_comm_t     *comm,
-                             int              n,
-                             real            *data)
-{
-    if (cr != nullptr && PAR(cr))
-    {
-        if (comm->bParticipateAll)
-        {
-            /* Sum the contributions over all DD ranks */
-            gmx_sum(n, data, cr);
-        }
-        else
-        {
 #if GMX_MPI
-#if MPI_IN_PLACE_EXISTS
-            MPI_Allreduce(MPI_IN_PLACE, data, n, GMX_MPI_REAL, MPI_SUM,
-                          comm->mpi_comm_com);
-#else
-            real *buf;
 
-            snew(buf, n);
-
-            MPI_Allreduce(data, buf, n, GMX_MPI_REAL, MPI_SUM,
-                          comm->mpi_comm_com);
-
-            /* Copy the result from the buffer to the input/output data */
-            for (int i = 0; i < n; i++)
-            {
-                data[i] = buf[i];
-            }
-            sfree(buf);
-#endif
-#else
-            gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
-#endif
-        }
-    }
+// Helper function to deduce MPI datatype from the type of data
+gmx_unused static MPI_Datatype mpiDatatype(const float gmx_unused *data)
+{
+    return MPI_FLOAT;
 }
 
-static void pull_reduce_double(const t_commrec *cr,
-                               pull_comm_t     *comm,
-                               int              n,
-                               double          *data)
+// Helper function to deduce MPI datatype from the type of data
+gmx_unused static MPI_Datatype mpiDatatype(const double gmx_unused *data)
+{
+    return MPI_DOUBLE;
+}
+
+#if !GMX_DOUBLE
+// Helper function; note that gmx_sum(d) should actually be templated
+gmx_unused static void gmxAllReduce(int n, real *data, const t_commrec *cr)
+{
+    gmx_sum(n, data, cr);
+}
+#endif
+
+// Helper function; note that gmx_sum(d) should actually be templated
+gmx_unused static void gmxAllReduce(int n, double *data, const t_commrec *cr)
+{
+    gmx_sumd(n, data, cr);
+}
+
+#endif // GMX_MPI
+
+// Reduce data of n elements over all ranks currently participating in pull
+template <typename T>
+static void pullAllReduce(const t_commrec *cr,
+			  pull_comm_t     *comm,
+			  int              n,
+			  T               *data)
 {
     if (cr != nullptr && PAR(cr))
     {
         if (comm->bParticipateAll)
         {
             /* Sum the contributions over all DD ranks */
-            gmx_sumd(n, data, cr);
+            gmxAllReduce(n, data, cr);
         }
         else
         {
+	    /* Separate branch because gmx_sum uses cr->mpi_comm_mygroup */
 #if GMX_MPI
 #if MPI_IN_PLACE_EXISTS
-            MPI_Allreduce(MPI_IN_PLACE, data, n, MPI_DOUBLE, MPI_SUM,
+            MPI_Allreduce(MPI_IN_PLACE, data, n, mpiDatatype(data), MPI_SUM,
                           comm->mpi_comm_com);
 #else
-            double *buf;
+	    std::vector<T> buf(n);
 
-            snew(buf, n);
-
-            MPI_Allreduce(data, buf, n, MPI_DOUBLE, MPI_SUM,
+            MPI_Allreduce(data, buf, n, mpiDatatype(data), MPI_SUM,
                           comm->mpi_comm_com);
 
             /* Copy the result from the buffer to the input/output data */
@@ -131,7 +122,6 @@ static void pull_reduce_double(const t_commrec *cr,
             {
                 data[i] = buf[i];
             }
-            sfree(buf);
 #endif
 #else
             gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
@@ -189,7 +179,7 @@ static void pull_set_pbcatoms(const t_commrec *cr, struct pull_t *pull,
          * This can be very expensive at high parallelization, so we only
          * do this after each DD repartitioning.
          */
-        pull_reduce_real(cr, &pull->comm, pull->ngroup*DIM, x_pbc[0]);
+        pullAllReduce(cr, &pull->comm, pull->ngroup*DIM, x_pbc[0]);
     }
 }
 
@@ -349,7 +339,7 @@ static void make_cyl_refgrps(const t_commrec *cr, struct pull_t *pull, t_mdatoms
     if (cr != nullptr && PAR(cr))
     {
         /* Sum the contributions over the ranks */
-        pull_reduce_double(cr, comm, pull->coord.size()*stride, comm->dbuf_cyl);
+        pullAllReduce(cr, comm, pull->coord.size()*stride, comm->dbuf_cyl);
     }
 
     for (size_t c = 0; c < pull->coord.size(); c++)
@@ -726,7 +716,7 @@ void pull_calc_coms(const t_commrec *cr,
         }
     }
 
-    pull_reduce_double(cr, comm, pull->ngroup*3*DIM, comm->dbuf[0]);
+    pullAllReduce(cr, comm, pull->ngroup*3*DIM, comm->dbuf[0]);
 
     for (g = 0; g < pull->ngroup; g++)
     {
