@@ -52,6 +52,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
@@ -79,6 +81,39 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+static int groupPbcFromParams(const t_pull_group &params)
+{
+    if (params.nat <= 1)
+    {
+        /* no PBC required */
+        return epgrppbcNONE;
+    }
+    else if (params.pbcatom >= 0)
+    {
+        return epgrppbcREFAT;
+    }
+    else
+    {
+        return epgrppbcCOS;
+    }
+}
+
+/* NOTE: The params initialization currently copies pointers.
+ *       So the lifetime of the source, currently always inputrec,
+ *       should not end before that of this object.
+ *       This will be fixed when the pointers are replacted by std::vector.
+ */
+pull_group_work_t::pull_group_work_t(const t_pull_group &params,
+                                     gmx::LocalAtomSet   atomSet) :
+    params(params),
+    epgrppbc(groupPbcFromParams(params)),
+    needToCalcCom(false),
+    atomSet(atomSet)
+{
+    clear_dvec(x);
+    clear_dvec(xp);
+};
 
 bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
@@ -393,11 +428,11 @@ static void apply_forces_grp_part(const pull_group_work_t *pgrp,
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int    ii    = pgrp->ind_loc[i];
+        int    ii    = pgrp->atomSet.localIndex()[i];
         double wmass = md->massT[ii];
-        if (pgrp->weight_loc)
+        if (!pgrp->localWeights.empty())
         {
-            wmass *= pgrp->weight_loc[i];
+            wmass *= pgrp->localWeights[i];
         }
 
         for (int d = 0; d < DIM; d++)
@@ -413,7 +448,7 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
                              const dvec f_pull, int sign, rvec *f,
                              int nthreads)
 {
-    if (pgrp->params.nat == 1 && pgrp->nat_loc == 1)
+    if (pgrp->params.nat == 1 && pgrp->atomSet.numAtomsLocal() == 1)
     {
         /* Only one atom and our rank has this atom: we can skip
          * the mass weighting, which means that this code also works
@@ -421,22 +456,22 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
          */
         for (int d = 0; d < DIM; d++)
         {
-            f[pgrp->ind_loc[0]][d] += sign*f_pull[d];
+            f[pgrp->atomSet.localIndex()[0]][d] += sign*f_pull[d];
         }
     }
     else
     {
-        if (pgrp->nat_loc <= c_pullMaxNumLocalAtomsSingleThreaded)
+        if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
         {
-            apply_forces_grp_part(pgrp, 0, pgrp->nat_loc, md, f_pull, sign, f);
+            apply_forces_grp_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), md, f_pull, sign, f);
         }
         else
         {
 #pragma omp parallel for num_threads(nthreads) schedule(static)
             for (int th = 0; th < nthreads; th++)
             {
-                int ind_start = (pgrp->nat_loc*(th + 0))/nthreads;
-                int ind_end   = (pgrp->nat_loc*(th + 1))/nthreads;
+                int ind_start = (pgrp->atomSet.numAtomsLocal()*(th + 0))/nthreads;
+                int ind_end   = (pgrp->atomSet.numAtomsLocal()*(th + 1))/nthreads;
                 apply_forces_grp_part(pgrp, ind_start, ind_end,
                                       md, f_pull, sign, f);
             }
@@ -458,11 +493,15 @@ static void apply_forces_cyl_grp(const pull_group_work_t *pgrp,
      * Therefore we always thread-parallelize this group.
      */
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int i = 0; i < pgrp->nat_loc; i++)
+    for (size_t i = 0; i < pgrp->atomSet.numAtomsLocal(); i++)
     {
-        int    ii     = pgrp->ind_loc[i];
+        double weight = pgrp->localWeights[i];
+        if (weight == 0)
+        {
+            continue;
+        }
+        int    ii     = pgrp->atomSet.localIndex()[i];
         double mass   = md->massT[ii];
-        double weight = pgrp->weight_loc[i];
         /* The stored axial distance from the cylinder center (dv) needs
          * to be corrected for an offset (dv_corr), which was unknown when
          * we calculated dv.
@@ -1000,19 +1039,19 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
     double        inpr;
     double        lambda, rm, invdt = 0;
     gmx_bool      bConverged_all, bConverged = FALSE;
-    int           niter = 0, g, ii, j, m, max_iter = 100;
+    int           niter = 0, ii, j, m, max_iter = 100;
     double        a;
     dvec          tmp, tmp3;
 
     snew(r_ij,   pull->coord.size());
     snew(dr_tot, pull->coord.size());
 
-    snew(rnew, pull->ngroup);
+    snew(rnew, pull->group.size());
 
     /* copy the current unconstrained positions for use in iterations. We
        iterate until rinew[i] and rjnew[j] obey the constraints. Then
        rinew - pull.x_unc[i] is the correction dr to group i */
-    for (g = 0; g < pull->ngroup; g++)
+    for (size_t g = 0; g < pull->group.size(); g++)
     {
         copy_dvec(pull->group[g].xp, rnew[g]);
     }
@@ -1238,9 +1277,11 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             {
                 if (debug)
                 {
-                    fprintf(debug, "NOT CONVERGED YET: Group %d:"
+                    fprintf(debug, "Pull constraint not converged: "
+                            "groups %d %d,"
                             "d_ref = %f, current d = %f\n",
-                            g, coord.value_ref, dnorm(unc_ij));
+                            coord.params.group[0], coord.params.group[1],
+                            coord.value_ref, dnorm(unc_ij));
                 }
 
                 bConverged_all = FALSE;
@@ -1264,7 +1305,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
     }
 
     /* update atoms in the groups */
-    for (g = 0; g < pull->ngroup; g++)
+    for (size_t g = 0; g < pull->group.size(); g++)
     {
         const pull_group_work_t *pgrp;
         dvec                     dr;
@@ -1282,12 +1323,12 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
         /* update the atom positions */
         copy_dvec(dr, tmp);
-        for (j = 0; j < pgrp->nat_loc; j++)
+        for (size_t j = 0; j < pgrp->atomSet.numAtomsLocal(); j++)
         {
-            ii = pgrp->ind_loc[j];
-            if (pgrp->weight_loc)
+            ii = pgrp->atomSet.localIndex()[j];
+            if (!pgrp->localWeights.empty())
             {
-                dsvmul(pgrp->wscale*pgrp->weight_loc[j], dr, tmp);
+                dsvmul(pgrp->wscale*pgrp->localWeights[j], dr, tmp);
             }
             for (m = 0; m < DIM; m++)
             {
@@ -1782,84 +1823,40 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t *ga2la,
-                                  pull_group_work_t *pg, int start, int end)
-{
-    int i, ii;
-
-    pg->nat_loc = 0;
-    for (i = 0; i < pg->params.nat; i++)
-    {
-        ii = pg->params.ind[i];
-        if (ga2la)
-        {
-            if (!ga2la_get_home(ga2la, ii, &ii))
-            {
-                ii = -1;
-            }
-        }
-        if (ii >= start && ii < end)
-        {
-            /* This is a home atom, add it to the local pull group */
-            if (pg->nat_loc >= pg->nalloc_loc)
-            {
-                pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
-                srenew(pg->ind_loc, pg->nalloc_loc);
-                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr)
-                {
-                    srenew(pg->weight_loc, pg->nalloc_loc);
-                }
-            }
-            pg->ind_loc[pg->nat_loc] = ii;
-            if (pg->params.weight != nullptr)
-            {
-                pg->weight_loc[pg->nat_loc] = pg->params.weight[i];
-            }
-            pg->nat_loc++;
-        }
-    }
-}
-
-void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
+void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 {
     gmx_domdec_t   *dd;
     pull_comm_t    *comm;
-    gmx_ga2la_t    *ga2la;
     gmx_bool        bMustParticipate;
-    int             g;
 
     dd = cr->dd;
 
     comm = &pull->comm;
-
-    if (dd)
-    {
-        ga2la = dd->ga2la;
-    }
-    else
-    {
-        ga2la = nullptr;
-    }
 
     /* We always make the master node participate, such that it can do i/o,
      * add the virial and to simplify MC type extensions people might have.
      */
     bMustParticipate = (comm->bParticipateAll || comm->isMasterRank);
 
-    for (g = 0; g < pull->ngroup; g++)
+    for (pull_group_work_t &group : pull->group)
     {
-        int a;
-
-        make_local_pull_group(ga2la, &pull->group[g],
-                              0, md->homenr);
+        if (group.epgrppbc == epgrppbcCOS || !group.globalWeights.empty())
+        {
+            group.localWeights.resize(group.atomSet.numAtomsLocal());
+            for (size_t i = 0; i < group.atomSet.numAtomsLocal(); ++i)
+            {
+                group.localWeights[i] = group.globalWeights[group.atomSet.collectiveIndex()[i]];
+            }
+        }
 
         GMX_ASSERT(bMustParticipate || dd != nullptr, "Either all ranks (including this rank) participate, or we use DD and need to have access to dd here");
 
         /* We should participate if we have pull or pbc atoms */
+        int a;
         if (!bMustParticipate &&
-            (pull->group[g].nat_loc > 0 ||
-             (pull->group[g].params.pbcatom >= 0 &&
-              ga2la_get_home(dd->ga2la, pull->group[g].params.pbcatom, &a))))
+            (group.atomSet.numAtomsLocal() > 0 ||
+             (group.params.pbcatom >= 0 &&
+              ga2la_get_home(dd->ga2la, group.params.pbcatom, &a))))
         {
             bMustParticipate = TRUE;
         }
@@ -1952,41 +1949,18 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                                   const gmx_mtop_t *mtop,
                                   const t_inputrec *ir, real lambda)
 {
-    if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
-    {
-        /* There are no masses in the integrator.
-         * But we still want to have the correct mass-weighted COMs.
-         * So we store the real masses in the weights.
-         * We do not set nweight, so these weights do not end up in the tpx file.
-         */
-        if (pg->params.nweight == 0)
-        {
-            snew(pg->params.weight, pg->params.nat);
-        }
-    }
+    /* With EM and BD there are no masses in the integrator.
+     * But we still want to have the correct mass-weighted COMs.
+     * So we store the real masses in the weights.
+     */
+    const bool setWeights = (pg->params.nweight > 0 ||
+                             EI_ENERGY_MINIMIZATION(ir->eI) ||
+                             ir->eI == eiBD);
 
-    if (cr && PAR(cr))
-    {
-        pg->nat_loc    = 0;
-        pg->nalloc_loc = 0;
-        pg->ind_loc    = nullptr;
-        pg->weight_loc = nullptr;
-    }
-    else
-    {
-        pg->nat_loc = pg->params.nat;
-        pg->ind_loc = pg->params.ind;
-        if (pg->epgrppbc == epgrppbcCOS)
-        {
-            snew(pg->weight_loc, pg->params.nat);
-        }
-        else
-        {
-            pg->weight_loc = pg->params.weight;
-        }
-    }
+    /* In parallel, store we need to extract localWeights from weights at DD time */
+    std::vector<real>  &weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
 
-    const gmx_groups_t *groups = &mtop->groups;
+    const gmx_groups_t *groups  = &mtop->groups;
 
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
@@ -2032,7 +2006,6 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             /* Move the mass to the weight */
             w                   *= m;
             m                    = 1;
-            pg->params.weight[i] = w;
         }
         else if (ir->eI == eiBD)
         {
@@ -2054,7 +2027,10 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
             }
             w                   *= m/mbd;
             m                    = mbd;
-            pg->params.weight[i] = w;
+        }
+        if (setWeights)
+        {
+            weights.push_back(w);
         }
         tmass  += m;
         wmass  += m*w;
@@ -2121,7 +2097,7 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
 
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
-          const gmx_mtop_t *mtop, const t_commrec *cr,
+          const gmx_mtop_t *mtop, const t_commrec *cr, gmx::LocalAtomSetManager *atomSets,
           real lambda)
 {
     struct pull_t *pull;
@@ -2135,44 +2111,17 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->params.group = nullptr;
     pull->params.coord = nullptr;
 
-    pull->ngroup       = pull_params->ngroup;
-    snew(pull->group, pull->ngroup);
+    for (int i = 0; i < pull_params->ngroup; ++i)
+    {
+        pull->group.emplace_back(pull_params->group[i], atomSets->add({pull_params->group[i].ind, pull_params->group[i].ind+pull_params->group[i].nat}));
+    }
 
     pull->bPotential  = FALSE;
     pull->bConstraint = FALSE;
     pull->bCylinder   = FALSE;
     pull->bAngle      = FALSE;
 
-    for (int g = 0; g < pull->ngroup; g++)
-    {
-        pull_group_work_t *pgrp = &pull->group[g];
-
-        /* Copy the pull group parameters */
-        pgrp->params = pull_params->group[g];
-
-        if (g == 0)
-        {
-            GMX_RELEASE_ASSERT(pgrp->params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
-            clear_dvec(pgrp->x);
-            clear_dvec(pgrp->xp);
-            pgrp->bCalcCOM = FALSE;
-        }
-
-        /* Avoid pointer copies by allocating and copying arrays */
-        snew(pgrp->params.ind, pgrp->params.nat);
-        for (int i = 0; i < pgrp->params.nat; i++)
-        {
-            pgrp->params.ind[i] = pull_params->group[g].ind[i];
-        }
-        if (pgrp->params.nweight > 0)
-        {
-            snew(pgrp->params.weight, pgrp->params.nweight);
-            for (int i = 0; i < pgrp->params.nweight; i++)
-            {
-                pgrp->params.weight[i] = pull_params->group[g].weight[i];
-            }
-        }
-    }
+    GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
 
     pull->numCoordinatesWithExternalPotential = 0;
 
@@ -2243,16 +2192,15 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
         /* We only need to calculate the plain COM of a group
          * when it is not only used as a cylinder group.
+         * Also the absolute reference group 0 needs no COM computation.
          */
-        int groupRangeStart = (pcrd->params.eGeom == epullgCYL ? 1 : 0);
-        int groupRangeEnd   = pcrd->params.ngroup + 1;
-
-        for (int i = groupRangeStart; i < groupRangeEnd; i++)
+        for (int i = 0; i < pcrd->params.ngroup; i++)
         {
             int groupIndex = pcrd->params.group[i];
-            if (groupIndex > 0)
+            if (groupIndex > 0 &&
+                !(pcrd->params.eGeom == epullgCYL && i == 0))
             {
-                pull->group[groupIndex].bCalcCOM = TRUE;
+                pull->group[groupIndex].needToCalcCom = true;
             }
         }
 
@@ -2324,23 +2272,24 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             fprintf(fplog, "Will apply constraint COM pulling\n");
         }
         // Don't include the reference group 0 in output, so we report ngroup-1
-        GMX_RELEASE_ASSERT(pull->ngroup - 1 > 0, "The reference absolute position pull group should always be present");
+        int numRealGroups = pull->group.size() - 1;
+        GMX_RELEASE_ASSERT(numRealGroups > 0, "The reference absolute position pull group should always be present");
         fprintf(fplog, "with %zu pull coordinate%s and %d group%s\n",
                 pull->coord.size(), pull->coord.size() == 1 ? "" : "s",
-                (pull->ngroup - 1), (pull->ngroup - 1) == 1 ? "" : "s");
+                numRealGroups, numRealGroups == 1 ? "" : "s");
         if (bAbs)
         {
             fprintf(fplog, "with an absolute reference\n");
         }
         bCos = FALSE;
         // Don't include the reference group 0 in loop
-        for (int g = 1; g < pull->ngroup; g++)
+        for (size_t g = 1; g < pull->group.size(); g++)
         {
             if (pull->group[g].params.nat > 1 &&
                 pull->group[g].params.pbcatom < 0)
             {
                 /* We are using cosine weighting */
-                fprintf(fplog, "Cosine weighting is used for group %d\n", g);
+                fprintf(fplog, "Cosine weighting is used for group %zu\n", g);
                 bCos = TRUE;
             }
         }
@@ -2352,12 +2301,11 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     pull->bRefAt   = FALSE;
     pull->cosdim   = -1;
-    for (int g = 0; g < pull->ngroup; g++)
+    for (size_t g = 0; g < pull->group.size(); g++)
     {
         pull_group_work_t *pgrp;
 
         pgrp           = &pull->group[g];
-        pgrp->epgrppbc = epgrppbcNONE;
         if (pgrp->params.nat > 0)
         {
             /* There is an issue when a group is used in multiple coordinates
@@ -2383,7 +2331,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 gmx_bool bGroupUsed = FALSE;
                 for (int gi = 0; gi < coord.params.ngroup; gi++)
                 {
-                    if (coord.params.group[gi] == g)
+                    if (coord.params.group[gi] == static_cast<int>(g))
                     {
                         bGroupUsed = TRUE;
                     }
@@ -2410,32 +2358,32 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             /* Determine if we need to take PBC into account for calculating
              * the COM's of the pull groups.
              */
-            GMX_RELEASE_ASSERT(pull->npbcdim <= DIM, "npbcdim must be <= the number of dimensions");
-            for (int m = 0; m < pull->npbcdim; m++)
+            switch (pgrp->epgrppbc)
             {
-                GMX_RELEASE_ASSERT(m <= DIM, "npbcdim must be <= the number of dimensions");
-                if (pulldim[m] == 1 && pgrp->params.nat > 1)
-                {
-                    if (pgrp->params.pbcatom >= 0)
+                case epgrppbcREFAT:
+                    pull->bRefAt = TRUE;
+                    break;
+                case epgrppbcCOS:
+                    if (pgrp->params.weight != nullptr)
                     {
-                        pgrp->epgrppbc = epgrppbcREFAT;
-                        pull->bRefAt   = TRUE;
+                        gmx_fatal(FARGS, "Pull groups can not have relative weights and cosine weighting at same time");
                     }
-                    else
+                    for (int m = 0; m < DIM; m++)
                     {
-                        if (pgrp->params.weight != nullptr)
+                        if (m < pull->npbcdim && pulldim[m] == 1)
                         {
-                            gmx_fatal(FARGS, "Pull groups can not have relative weights and cosine weighting at same time");
+                            if (pull->cosdim >= 0 && pull->cosdim != m)
+                            {
+                                gmx_fatal(FARGS, "Can only use cosine weighting with pulling in one dimension (use mdp option pull-coord?-dim)");
+                            }
+                            pull->cosdim = m;
                         }
-                        pgrp->epgrppbc = epgrppbcCOS;
-                        if (pull->cosdim >= 0 && pull->cosdim != m)
-                        {
-                            gmx_fatal(FARGS, "Can only use cosine weighting with pulling in one dimension (use mdp option pull-coord?-dim)");
-                        }
-                        pull->cosdim = m;
                     }
-                }
+                    break;
+                case epgrppbcNONE:
+                    break;
             }
+
             /* Set the indices */
             init_pull_group_index(fplog, cr, g, pgrp,
                                   bConstraint, pulldim_con,
@@ -2454,8 +2402,6 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     /* If we use cylinder coordinates, do some initialising for them */
     if (pull->bCylinder)
     {
-        snew(pull->dyna, pull->coord.size());
-
         for (const pull_coord_work_t &coord : pull->coord)
         {
             if (coord.params.eGeom == epullgCYL)
@@ -2465,11 +2411,9 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                     gmx_fatal(FARGS, "A cylinder pull group is not supported when using absolute reference!\n");
                 }
             }
+            const auto &referenceGroup = pull->group[coord.params.group[0]];
+            pull->dyna.emplace_back(referenceGroup.params, referenceGroup.atomSet);
         }
-    }
-    else
-    {
-        pull->dyna = nullptr;
     }
 
     /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
@@ -2575,39 +2519,8 @@ void init_pull_output_files(pull_t                    *pull,
     }
 }
 
-static void destroy_pull_group(pull_group_work_t *pgrp)
-{
-    if (pgrp->ind_loc != pgrp->params.ind)
-    {
-        sfree(pgrp->ind_loc);
-    }
-    if (pgrp->weight_loc != pgrp->params.weight)
-    {
-        sfree(pgrp->weight_loc);
-    }
-    sfree(pgrp->mdw);
-    sfree(pgrp->dv);
-
-    sfree(pgrp->params.ind);
-    sfree(pgrp->params.weight);
-}
-
 static void destroy_pull(struct pull_t *pull)
 {
-    for (int i = 0; i < pull->ngroup; i++)
-    {
-        destroy_pull_group(&pull->group[i]);
-    }
-    for (size_t c = 0; c < pull->coord.size(); c++)
-    {
-        if (pull->coord[c].params.eGeom == epullgCYL)
-        {
-            destroy_pull_group(&(pull->dyna[c]));
-        }
-    }
-    sfree(pull->group);
-    sfree(pull->dyna);
-
 #if GMX_MPI
     if (pull->comm.mpi_comm_com != MPI_COMM_NULL)
     {
