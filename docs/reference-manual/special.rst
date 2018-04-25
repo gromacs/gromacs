@@ -3047,3 +3047,9 @@ smaller core. Then the protein atoms are gradually resized back to their
 initial configuration, using normal dynamics for the rest of the system,
 so the lipids adapt to the protein. Further lipids are removed as
 required.
+
+.. raw:: latex
+
+    \clearpage
+
+
