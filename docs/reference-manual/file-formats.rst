@@ -1091,3 +1091,9 @@ A sample Grace session with |Gromacs| data is shown below:
 
 .. image:: plots/xvgr.*
    :alt:  Sample xvg graphic produced using the |Gromacs| tools
+
+.. raw:: latex
+
+    \clearpage
+
+

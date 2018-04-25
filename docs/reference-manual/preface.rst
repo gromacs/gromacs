@@ -90,4 +90,6 @@ For details, check the COPYING file in the source code or consult
 The |Gromacs| source code and selected set of binary packages are
 available on our homepage, `www.gromacs.org <http://www.gromacs.org>`__. Have fun.
 
+.. raw:: latex
 
+    \clearpage

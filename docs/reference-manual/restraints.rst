@@ -702,3 +702,9 @@ Some parameters for orientation restraints can be specified in the
 force constants and averaging times and ensemble averaging see \ :ref:`92 <refHess2003>`.
 Information for each restraint is stored in the energy
 file and can be processed and plotted with :ref:`gmx nmr`.
+
+.. raw:: latex
+
+    \clearpage
+
+

@@ -397,3 +397,9 @@ quickly, while conjugate gradients brings you *very* close to the local
 minimum, but performs worse far away from the minimum. |Gromacs| also
 supports the L-BFGS minimizer, which is mostly comparable to *conjugate
 gradient method*, but in some cases converges faster.
+
+.. raw:: latex
+
+    \clearpage
+
+

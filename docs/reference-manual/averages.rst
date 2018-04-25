@@ -279,3 +279,8 @@ frequency with which energies are saved. Since this can be easily done
 with a program such as ``xmgr`` this is not
 built-in in |Gromacs|.
 
+.. raw:: latex
+
+    \clearpage
+
+

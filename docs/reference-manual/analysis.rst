@@ -1234,5 +1234,10 @@ calculates the mass density of groups and gives a plot of the density
 against a box axis. This is useful for looking at the distribution of
 groups or atoms across the interface.
 
+.. raw:: latex
+
+    \clearpage
+
+
 .. [1]
    :math:`P_0(x) = 1`, :math:`P_1(x) = x`, :math:`P_2(x) = (3x^2-1)/2`
