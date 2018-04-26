@@ -210,11 +210,12 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
 
 /*! \libinternal \brief
  * Initializes the PME GPU data at the beginning of the run.
+ * TODO: this should become PmeGpu::PmeGpu()
  *
- * \param[in,out] pme       The PME structure.
- * \param[in,out] gpuInfo   The GPU information structure.
+ * \param[in,out] pme            The PME structure.
+ * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+static void pme_gpu_init(gmx_pme_t *pme, PmeGpuProgramHandle pmeGpuProgram)
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
@@ -229,7 +230,8 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     pme_gpu_set_testing(pmeGpu, false);
 
-    pmeGpu->deviceInfo = gpuInfo;
+    GMX_ASSERT(pmeGpuProgram != nullptr, "It's a cller's responsibiloty to compile GPU kernels");
+    pmeGpu->programHandle_ = pmeGpuProgram;
 
     pme_gpu_init_internal(pmeGpu);
     pme_gpu_init_sync_events(pmeGpu);
@@ -314,7 +316,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+void pme_gpu_reinit(gmx_pme_t *pme, PmeGpuProgramHandle pmeGpuProgram)
 {
     if (!pme_gpu_active(pme))
     {
@@ -324,7 +326,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo);
+        pme_gpu_init(pme, pmeGpuProgram);
     }
     else
     {
