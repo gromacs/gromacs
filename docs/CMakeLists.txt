@@ -172,6 +172,20 @@ if (SPHINX_FOUND)
         reference-manual/run-parameters.rst
         # Analysis chapter
         reference-manual/analysis.rst
+        reference-manual/using-groups.rst
+        reference-manual/looking-at-trajectory.rst
+        reference-manual/general-properties.rst
+        reference-manual/radial-distribution-function.rst
+        reference-manual/correlation-function.rst
+        reference-manual/curve-fitting.rst
+        reference-manual/mean-square-displacement.rst
+        reference-manual/bond-angle-dihedral.rst
+        reference-manual/radius-of-gyration.rst
+        reference-manual/rmsd.rst
+        reference-manual/covariance-analysis.rst
+        reference-manual/dihedral-pca.rst
+        reference-manual/protein-related.rst
+        reference-manual/interface-related.rst
         # Implementation details chapter
         reference-manual/details.rst
         # Averages and fluctations chapter
