@@ -50,8 +50,8 @@
 #include <algorithm>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -1863,11 +1863,10 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
         GMX_ASSERT(bMustParticipate || dd != nullptr, "Either all ranks (including this rank) participate, or we use DD and need to have access to dd here");
 
         /* We should participate if we have pull or pbc atoms */
-        int a;
         if (!bMustParticipate &&
             (group.atomSet.numAtomsLocal() > 0 ||
-             (group.params.pbcatom >= 0 &&
-              ga2la_get_home(dd->ga2la, group.params.pbcatom, &a))))
+             (group.epgrppbc == epgrppbcREFAT &&
+              group.pbcAtomSet->numAtomsLocal() > 0)))
         {
             bMustParticipate = TRUE;
         }
@@ -2125,6 +2124,19 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     for (int i = 0; i < pull_params->ngroup; ++i)
     {
         pull->group.emplace_back(pull_params->group[i], atomSets->add({pull_params->group[i].ind, pull_params->group[i].ind+pull_params->group[i].nat}));
+    }
+
+    if (cr != nullptr && DOMAINDECOMP(cr))
+    {
+        /* Set up the global to local atom mapping for PBC atoms */
+        for (pull_group_work_t &group : pull->group)
+        {
+            if (group.epgrppbc == epgrppbcREFAT)
+            {
+                /* pbcAtomSet consists of a single atom */
+                group.pbcAtomSet = gmx::compat::make_unique<gmx::LocalAtomSet>(atomSets->add({&group.params.pbcatom, &group.params.pbcatom + 1}));
+            }
+        }
     }
 
     pull->bPotential  = FALSE;
