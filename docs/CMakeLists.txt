@@ -155,6 +155,19 @@ if (SPHINX_FOUND)
         reference-manual/file-formats.rst
         # Special topics chapter
         reference-manual/special.rst
+        reference-manual/free-energy-implementation.rst
+        reference-manual/pulling.rst
+        reference-manual/awh.rst
+        reference-manual/enforced-rotation.rst
+        reference-manual/electric-fields.rst
+        reference-manual/comp-electrophys.rst
+        reference-manual/free-energy-pmf.rst
+        reference-manual/remove-fast-dgf.rst
+        reference-manual/viscosity-calculation.rst
+        reference-manual/tabulated-interaction-functions.rst
+        reference-manual/qmmm.rst
+        reference-manual/vmd-imd.rst
+        reference-manual/membrane-embedding.rst
         # Run parameters and programs chapter
         reference-manual/run-parameters.rst
         # Analysis chapter
