@@ -158,7 +158,8 @@ struct PullCoordVectorForces
 };
 
 /* Struct for sums over (local) atoms in a pull group */
-struct pull_sum_com_t {
+struct ComSums
+{
     /* For normal weighting */
     double sum_wm;    /* Sum of weight*mass        */
     double sum_wwm;   /* Sum of weight*weight*mass */
@@ -181,7 +182,11 @@ struct pull_sum_com_t {
     int    dummy[32];
 };
 
-typedef struct {
+/*! \brief The cylinder buffer needs 9 elements per group */
+static constexpr int c_cylinderBufferStride = 9;
+
+struct pull_comm_t
+{
     gmx_bool    bParticipateAll; /* Do all ranks always participate in pulling? */
     gmx_bool    bParticipate;    /* Does our rank participate in pulling? */
 #if GMX_MPI
@@ -193,11 +198,11 @@ typedef struct {
     gmx_int64_t setup_count;     /* The number of decomposition calls */
     gmx_int64_t must_count;      /* The last count our rank needed to be part */
 
-    rvec       *rbuf;            /* COM calculation buffer */
-    dvec       *dbuf;            /* COM calculation buffer */
-    double     *dbuf_cyl;        /* cylinder ref. groups calculation buffer */
-}
-pull_comm_t;
+    /* Buffers for parallel reductions */
+    std::vector<gmx::RVec>                pbcAtomBuffer;  /* COM calculation buffer */
+    std::vector < gmx::BasicVector < double>> comBuffer;  /* COM calculation buffer */
+    std::vector<double>                   cylinderBuffer; /* cylinder ref. groups calculation buffer */
+};
 
 struct pull_t
 {
@@ -222,15 +227,15 @@ struct pull_t
     std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
 
     /* Global dynamic data */
-    gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+    gmx_bool             bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    int                nthreads;     /* Number of threads used by the pull code */
-    pull_sum_com_t    *sum_com;      /* Work array for summing for COM, 1 entry per thread */
+    int                  nthreads;     /* Number of threads used by the pull code */
+    std::vector<ComSums> comSums;      /* Work array for summing for COM, 1 entry per thread */
 
-    pull_comm_t        comm;         /* Communication parameters, communicator and buffers */
+    pull_comm_t          comm;         /* Communication parameters, communicator and buffers */
 
-    FILE              *out_x;        /* Output file for pull data */
-    FILE              *out_f;        /* Output file for pull data */
+    FILE                *out_x;        /* Output file for pull data */
+    FILE                *out_f;        /* Output file for pull data */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;
