@@ -48,6 +48,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
+#include "pme-gpu-context-impl.h"
 #include "pme-timings.cuh"
 
 //! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
@@ -417,6 +418,10 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_gather_kernel<4, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, false, true, true>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_gather(PmeGpu                *pmeGpu,
                     PmeForceOutputHandling forceTreatment,
                     const float           *h_grid
@@ -467,14 +472,15 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     // TODO test different cache configs
 
     int  timingId = gtPME_GATHER;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuContextImpl
+    PmeGpuContextImpl::PmeKernelHandle kernelPtr = nullptr;
     if (forceTreatment == PmeForceOutputHandling::Set)
     {
-        kernelPtr = pme_gather_kernel<4, true, wrapX, wrapY>;
+        kernelPtr = pmeGpu->contextHandle_->impl_->gatherKernel;
     }
     else
     {
-        kernelPtr = pme_gather_kernel<4, false, wrapX, wrapY>;
+        kernelPtr = pmeGpu->contextHandle_->impl_->gatherReduceWithInputKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);

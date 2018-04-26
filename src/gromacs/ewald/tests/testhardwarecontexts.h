@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme-gpu-context.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
@@ -63,25 +64,31 @@ enum class CodePath
 };
 
 /*! \internal \brief
- * A structure to describe a hardware context - an abstraction over
- * gmx_device_info_t with a human-readable string.
+ * A structure to describe a hardware context  that persists over the lifetime
+ * of the test binary - an abstraction over PmeGpuContext with a human-readable string.
  * TODO: currently this does not know which CodePath it belongs too.
  * It probably should! That would save us one loop in all the PME tests.
  */
 struct TestHardwareContext
 {
     //! Readable description
-    std::string        description_;
+    std::string             description_;
     //! Device information pointer
-    gmx_device_info_t *deviceInfo_;
+    gmx_device_info_t      *deviceInfo_;
+    //! Persistent PME data (compiled GPU kernels, etc)
+    PmeGpuContextStorage    context_;
 
     public:
         //! Returns a human-readable context description line
         std::string getDescription() const{return description_; }
-//! Returns the device info pointer
-        gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
+        //! Returns the device info pointer
+        gmx_device_info_t      *getDeviceInfo() const{return deviceInfo_; }
+        //! Returns the persistent PME data
+        PmeGpuContextHandle     getPersistentPmeData() const{return context_.get(); }
         //! Constructs the context
-        TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) : description_(description), deviceInfo_(deviceInfo){}
+        TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) :
+            description_(description), deviceInfo_(deviceInfo), context_(buildPmeGpuContext(deviceInfo)){}
+        ~TestHardwareContext() = default;
 };
 
 //! A list of hardware contexts
