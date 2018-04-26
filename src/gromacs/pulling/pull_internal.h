@@ -50,6 +50,7 @@
 
 #include "config.h"
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/domdec/localatomset.h"
@@ -93,8 +94,11 @@ struct pull_group_work_t
     std::vector<real>  globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
     /* Data modified only at init or at domain decomposition */
-    gmx::LocalAtomSet  atomSet;       /**< Global to local atom set mapper */
-    std::vector<real>  localWeights;  /**< Weights for the local atoms */
+    gmx::LocalAtomSet                  atomSet;       /**< Global to local atom set mapper */
+    std::vector<real>                  localWeights;  /**< Weights for the local atoms */
+    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;    /**< Keeps index of the pbc reference atom. 
+                                                           The stored LocalAtomSet consists of exactly one atom when pbc reference atom is required.
+                                                           When no pbc refence atom is used, this pointer shall be null. */
 
     /* Data, potentially, changed at every pull call */
     real                                  mwscale; /**< mass*weight scaling factor 1/sum w m */
