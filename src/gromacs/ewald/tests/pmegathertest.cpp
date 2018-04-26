@@ -389,26 +389,27 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             TestReferenceData refData;
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
-                CodePath   codePath       = context.getCodePath();
+                CodePath   codePath       = context->getCodePath();
                 const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
                     continue;
                 }
 
                 /* Describing the test uniquely */
                 SCOPED_TRACE(formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
                                           ", order %d, %zu atoms, %s",
-                                          codePathToString(codePath), context.getDescription().c_str(),
+                                          codePathToString(codePath), context->getDescription().c_str(),
                                           gridSize[XX], gridSize[YY], gridSize[ZZ],
                                           pmeOrder,
                                           atomCount,
                                           (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                           ));
 
-                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
+                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context->getDeviceInfo(),
+                                                      context->getPmeGpuProgram(), inputAtomData.coordinates, inputAtomData.charges, box);
 
                 /* Setting some more inputs */
                 pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
