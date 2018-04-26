@@ -121,7 +121,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-    #define LOCAL_OFFSET xib + c_numClPerSupercl * c_clSize
+    #define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
     /* shmem buffer for i cj pre-loading */
     __local int *cjs;
 #if USE_CJ_PREFETCH
@@ -188,7 +188,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
             imaskCheck = (imaskNew ^ imaskFull);
         }
 
-        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck);
+        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0u);
 
         if (imaskCheck)
         {
