@@ -34,12 +34,12 @@ standard force fields - contribute them to the force field archive!
 .. toctree::
    :maxdepth: 2
 
-   particle-type
-   parameter-files
-   molecule-definition
-   constraint-algorithm-section
-   pdb2gmx-input-files
-   topology-file-formats
-   force-field-organization
+   topologies/particle-type
+   topologies/parameter-files
+   topologies/molecule-definition
+   topologies/constraint-algorithm-section
+   topologies/pdb2gmx-input-files
+   topologies/topology-file-formats
+   topologies/force-field-organization
 
 

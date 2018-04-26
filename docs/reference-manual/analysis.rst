@@ -18,19 +18,19 @@ different analysis tools are presented.
 .. toctree::
    :maxdepth: 2
 
-   using-groups
-   looking-at-trajectory
-   general-properties
-   radial-distribution-function
-   correlation-function
-   curve-fitting
-   mean-square-displacement
-   bond-angle-dihedral
-   radius-of-gyration
-   rmsd
-   covariance-analysis
-   dihedral-pca
-   protein-related
-   interface-related
+   analysis/using-groups
+   analysis/looking-at-trajectory
+   analysis/general-properties
+   analysis/radial-distribution-function
+   analysis/correlation-function
+   analysis/curve-fitting
+   analysis/mean-square-displacement
+   analysis/bond-angle-dihedral
+   analysis/radius-of-gyration
+   analysis/rmsd
+   analysis/covariance-analysis
+   analysis/dihedral-pca
+   analysis/protein-related
+   analysis/interface-related
 
 

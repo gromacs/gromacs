@@ -116,76 +116,76 @@ if (SPHINX_FOUND)
         reference-manual/definitions.rst
         # Algorithms chapter
         reference-manual/algorithms.rst
-        reference-manual/periodic-boundary-conditions.rst
-        reference-manual/group-concept.rst
-        reference-manual/molecular-dynamics.rst
-        reference-manual/shell-molecular-dynamics.rst
-        reference-manual/constraint-algorithms.rst
-        reference-manual/simulated-annealing.rst
-        reference-manual/stochastic-dynamics.rst
-        reference-manual/brownian-dynamics.rst
-        reference-manual/energy-minimization.rst
-        reference-manual/normal-mode-analysis.rst
-        reference-manual/free-energy-calculations.rst
-        reference-manual/replica-exchange.rst
-        reference-manual/essential-dynamics.rst
-        reference-manual/expanded-ensemble.rst
-        reference-manual/parallelization-domain-decomp.rst
+        reference-manual/algorithms/periodic-boundary-conditions.rst
+        reference-manual/algorithms/group-concept.rst
+        reference-manual/algorithms/molecular-dynamics.rst
+        reference-manual/algorithms/shell-molecular-dynamics.rst
+        reference-manual/algorithms/constraint-algorithms.rst
+        reference-manual/algorithms/simulated-annealing.rst
+        reference-manual/algorithms/stochastic-dynamics.rst
+        reference-manual/algorithms/brownian-dynamics.rst
+        reference-manual/algorithms/energy-minimization.rst
+        reference-manual/algorithms/normal-mode-analysis.rst
+        reference-manual/algorithms/free-energy-calculations.rst
+        reference-manual/algorithms/replica-exchange.rst
+        reference-manual/algorithms/essential-dynamics.rst
+        reference-manual/algorithms/expanded-ensemble.rst
+        reference-manual/algorithms/parallelization-domain-decomp.rst
         # Interaction functions and force fields chapter
         reference-manual/functions.rst
-        reference-manual/bonded-interactions.rst
-        reference-manual/force-field.rst
-        reference-manual/free-energy-interactions.rst
-        reference-manual/interaction-methods.rst
-        reference-manual/long-range-electrostatics.rst
-        reference-manual/long-range-vdw.rst
-        reference-manual/nonbonded-interactions.rst
-        reference-manual/polarization.rst
-        reference-manual/restraints.rst
+        reference-manual/functions/bonded-interactions.rst
+        reference-manual/functions/force-field.rst
+        reference-manual/functions/free-energy-interactions.rst
+        reference-manual/functions/interaction-methods.rst
+        reference-manual/functions/long-range-electrostatics.rst
+        reference-manual/functions/long-range-vdw.rst
+        reference-manual/functions/nonbonded-interactions.rst
+        reference-manual/functions/polarization.rst
+        reference-manual/functions/restraints.rst
         # Topologies chapter
         reference-manual/topologies.rst
-        reference-manual/particle-type.rst
-        reference-manual/parameter-files.rst
-        reference-manual/molecule-definition.rst
-        reference-manual/constraint-algorithm-section.rst
-        reference-manual/pdb2gmx-input-files.rst
-        reference-manual/topology-file-formats.rst
-        reference-manual/force-field-organization.rst
+        reference-manual/topologies/particle-type.rst
+        reference-manual/topologies/parameter-files.rst
+        reference-manual/topologies/molecule-definition.rst
+        reference-manual/topologies/constraint-algorithm-section.rst
+        reference-manual/topologies/pdb2gmx-input-files.rst
+        reference-manual/topologies/topology-file-formats.rst
+        reference-manual/topologies/force-field-organization.rst
         # File formats chapter
         reference-manual/file-formats.rst
         # Special topics chapter
         reference-manual/special.rst
-        reference-manual/free-energy-implementation.rst
-        reference-manual/pulling.rst
-        reference-manual/awh.rst
-        reference-manual/enforced-rotation.rst
-        reference-manual/electric-fields.rst
-        reference-manual/comp-electrophys.rst
-        reference-manual/free-energy-pmf.rst
-        reference-manual/remove-fast-dgf.rst
-        reference-manual/viscosity-calculation.rst
-        reference-manual/tabulated-interaction-functions.rst
-        reference-manual/qmmm.rst
-        reference-manual/vmd-imd.rst
-        reference-manual/membrane-embedding.rst
+        reference-manual/special/free-energy-implementation.rst
+        reference-manual/special/pulling.rst
+        reference-manual/special/awh.rst
+        reference-manual/special/enforced-rotation.rst
+        reference-manual/special/electric-fields.rst
+        reference-manual/special/comp-electrophys.rst
+        reference-manual/special/free-energy-pmf.rst
+        reference-manual/special/remove-fast-dgf.rst
+        reference-manual/special/viscosity-calculation.rst
+        reference-manual/special/tabulated-interaction-functions.rst
+        reference-manual/special/qmmm.rst
+        reference-manual/special/vmd-imd.rst
+        reference-manual/special/membrane-embedding.rst
         # Run parameters and programs chapter
         reference-manual/run-parameters.rst
         # Analysis chapter
         reference-manual/analysis.rst
-        reference-manual/using-groups.rst
-        reference-manual/looking-at-trajectory.rst
-        reference-manual/general-properties.rst
-        reference-manual/radial-distribution-function.rst
-        reference-manual/correlation-function.rst
-        reference-manual/curve-fitting.rst
-        reference-manual/mean-square-displacement.rst
-        reference-manual/bond-angle-dihedral.rst
-        reference-manual/radius-of-gyration.rst
-        reference-manual/rmsd.rst
-        reference-manual/covariance-analysis.rst
-        reference-manual/dihedral-pca.rst
-        reference-manual/protein-related.rst
-        reference-manual/interface-related.rst
+        reference-manual/analysis/using-groups.rst
+        reference-manual/analysis/looking-at-trajectory.rst
+        reference-manual/analysis/general-properties.rst
+        reference-manual/analysis/radial-distribution-function.rst
+        reference-manual/analysis/correlation-function.rst
+        reference-manual/analysis/curve-fitting.rst
+        reference-manual/analysis/mean-square-displacement.rst
+        reference-manual/analysis/bond-angle-dihedral.rst
+        reference-manual/analysis/radius-of-gyration.rst
+        reference-manual/analysis/rmsd.rst
+        reference-manual/analysis/covariance-analysis.rst
+        reference-manual/analysis/dihedral-pca.rst
+        reference-manual/analysis/protein-related.rst
+        reference-manual/analysis/interface-related.rst
         # Implementation details chapter
         reference-manual/details.rst
         # Averages and fluctations chapter
@@ -199,81 +199,88 @@ if (SPHINX_FOUND)
         reference-manual/plots/plotje.png
         reference-manual/plots/xvgr.png
         )
-    set(REFERENCEMANUAL_IMAGE_FILES 
-        reference-manual/plots/angle.pdf
-        reference-manual/plots/awh-invN.pdf
-        reference-manual/plots/awh-pmfs.pdf
-        reference-manual/plots/awh-sampleweights.pdf
-        reference-manual/plots/awh-traj.pdf
-        reference-manual/plots/bstretch.pdf
-        reference-manual/plots/chain.pdf
-        reference-manual/plots/compelsetup.pdf
-        reference-manual/plots/dd-cells.pdf
-        reference-manual/plots/dd-tric.pdf
+    # The image files have also been ordered by the respective
+    # chapter they are included in in the reference manual
+    set(REFERENCEMANUAL_IMAGE_FILES
+        # General folder
         reference-manual/plots/decomp.pdf
-        reference-manual/plots/dih-def.pdf
         reference-manual/plots/dih.pdf
-        reference-manual/plots/distm.pdf
         reference-manual/plots/drift-all.pdf
-        reference-manual/plots/dssp.pdf
-        reference-manual/plots/dumaro.pdf
-        reference-manual/plots/dummies.pdf
-        reference-manual/plots/dumtypes.pdf
-        reference-manual/plots/equipotential.pdf
         reference-manual/plots/f-angle.pdf
-        reference-manual/plots/f-bham.pdf
         reference-manual/plots/f-bond.pdf
-        reference-manual/plots/fbposres.pdf
-        reference-manual/plots/f-dih.pdf
-        reference-manual/plots/f-dr.pdf
-        reference-manual/plots/field.pdf
-        reference-manual/plots/fig-02.pdf
-        reference-manual/plots/fig-04.pdf
-        reference-manual/plots/f-lj.pdf
-        reference-manual/plots/flowchart.pdf
-        reference-manual/plots/f-morse.pdf
         reference-manual/plots/fp-highres.pdf
-        reference-manual/plots/f-imps.pdf
-        reference-manual/plots/f-pr.pdf
-        reference-manual/plots/f-rbs.pdf
-        reference-manual/plots/free1.pdf
-        reference-manual/plots/free2.pdf
-        reference-manual/plots/gaussians.pdf
-        reference-manual/plots/hbond.pdf
-        reference-manual/plots/hbond-insert.pdf
-        reference-manual/plots/hpr-wheel.pdf
         reference-manual/plots/int-mat.pdf
-        reference-manual/plots/leapfrog.pdf
-        reference-manual/plots/lincs.pdf
-        reference-manual/plots/maxwell.pdf
         reference-manual/plots/mdpar.pdf
-        reference-manual/plots/mpmd-pme.pdf
-        reference-manual/plots/msdwater.pdf
-        reference-manual/plots/ngmxdump.pdf
-        reference-manual/plots/nstric.pdf
-        reference-manual/plots/par-lincs2.pdf
         reference-manual/plots/parsort.pdf
-        reference-manual/plots/pbctric.pdf
-        reference-manual/plots/phipsi.pdf
-        reference-manual/plots/pulldirrel.pdf
-        reference-manual/plots/pull.pdf
-        reference-manual/plots/pullref.pdf
-        reference-manual/plots/rama.pdf
-        reference-manual/plots/rdf.pdf
-        reference-manual/plots/rdfO-O.pdf
-        reference-manual/plots/rhododec.pdf
         reference-manual/plots/ring.pdf
-        reference-manual/plots/ring-imp.pdf
-        reference-manual/plots/rotation.pdf
-        reference-manual/plots/sgangle.pdf
         reference-manual/plots/shiftf.pdf
-        reference-manual/plots/softcore.pdf
-        reference-manual/plots/subst-im.pdf
-        reference-manual/plots/tetra-im.pdf
-        reference-manual/plots/truncoct.pdf
-        reference-manual/plots/vcrf.pdf
-        reference-manual/plots/verlet-drift.pdf
-        reference-manual/plots/vsite-4fdn.pdf
+        # Algorithms chapter
+        reference-manual/algorithms/plots/dd-cells.pdf
+        reference-manual/algorithms/plots/dd-tric.pdf
+        reference-manual/algorithms/plots/flowchart.pdf
+        reference-manual/algorithms/plots/free1.pdf
+        reference-manual/algorithms/plots/free2.pdf
+        reference-manual/algorithms/plots/leapfrog.pdf
+        reference-manual/algorithms/plots/lincs.pdf
+        reference-manual/algorithms/plots/maxwell.pdf
+        reference-manual/algorithms/plots/mpmd-pme.pdf
+        reference-manual/algorithms/plots/nstric.pdf
+        reference-manual/algorithms/plots/par-lincs2.pdf
+        reference-manual/algorithms/plots/pbctric.pdf
+        reference-manual/algorithms/plots/rhododec.pdf
+        reference-manual/algorithms/plots/truncoct.pdf
+        reference-manual/algorithms/plots/verlet-drift.pdf
+        # Interaction functions chapter
+        reference-manual/functions/plots/angle.pdf
+        reference-manual/functions/plots/bstretch.pdf
+        reference-manual/functions/plots/chain.pdf
+        reference-manual/functions/plots/dummies.pdf
+        reference-manual/functions/plots/f-bham.pdf
+        reference-manual/functions/plots/fbposres.pdf
+        reference-manual/functions/plots/f-dih.pdf
+        reference-manual/functions/plots/f-dr.pdf
+        reference-manual/functions/plots/fig-02.pdf
+        reference-manual/functions/plots/fig-04.pdf
+        reference-manual/functions/plots/f-imps.pdf
+        reference-manual/functions/plots/f-lj.pdf
+        reference-manual/functions/plots/f-morse.pdf
+        reference-manual/functions/plots/f-pr.pdf
+        reference-manual/functions/plots/f-rbs.pdf
+        reference-manual/functions/plots/ring-imp.pdf
+        reference-manual/functions/plots/softcore.pdf
+        reference-manual/functions/plots/subst-im.pdf
+        reference-manual/functions/plots/tetra-im.pdf
+        reference-manual/functions/plots/vcrf.pdf
+        reference-manual/functions/plots/vsite-4fdn.pdf
+        # Special topics chapter
+        reference-manual/special/plots/awh-invN.pdf
+        reference-manual/special/plots/awh-pmfs.pdf
+        reference-manual/special/plots/awh-sampleweights.pdf
+        reference-manual/special/plots/awh-traj.pdf
+        reference-manual/special/plots/compelsetup.pdf
+        reference-manual/special/plots/dumaro.pdf
+        reference-manual/special/plots/dumtypes.pdf
+        reference-manual/special/plots/equipotential.pdf
+        reference-manual/special/plots/field.pdf
+        reference-manual/special/plots/gaussians.pdf
+        reference-manual/special/plots/pulldirrel.pdf
+        reference-manual/special/plots/pull.pdf
+        reference-manual/special/plots/pullref.pdf
+        reference-manual/special/plots/rotation.pdf
+        # Analysis chapter
+        reference-manual/analysis/plots/dih-def.pdf
+        reference-manual/analysis/plots/distm.pdf
+        reference-manual/analysis/plots/dssp.pdf
+        reference-manual/analysis/plots/hbond-insert.pdf
+        reference-manual/analysis/plots/hbond.pdf
+        reference-manual/analysis/plots/hpr-wheel.pdf
+        reference-manual/analysis/plots/msdwater.pdf
+        reference-manual/analysis/plots/ngmxdump.pdf
+        reference-manual/analysis/plots/phipsi.pdf
+        reference-manual/analysis/plots/rama.pdf
+        reference-manual/analysis/plots/rdfO-O.pdf
+        reference-manual/analysis/plots/rdf.pdf
+        reference-manual/analysis/plots/sgangle.pdf 
         )
     set(SPHINX_SOURCE_FILES
         index.rst
