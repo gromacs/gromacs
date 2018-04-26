@@ -48,6 +48,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
+#include "pme-gpu-context-impl.h"
 #include "pme-timings.cuh"
 
 //! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
@@ -404,6 +405,12 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
                    GridOrdering gridOrdering, bool computeEnergyAndVirial)
 {
@@ -456,28 +463,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     config.stream       = pmeGpu->archSpecific->pmeStream;
 
     int  timingId = gtPME_SOLVE;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    PmeGpuContextImpl::PmeKernelHandle kernelPtr = nullptr;
     if (gridOrdering == GridOrdering::YZX)
     {
-        if (computeEnergyAndVirial)
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::YZX, true>;
-        }
-        else
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::YZX, false>;
-        }
+        kernelPtr = computeEnergyAndVirial ? pmeGpu->contextHandle_->impl_->solveYZXEnergyKernel : pmeGpu->contextHandle_->impl_->solveYZXKernel;
     }
     else if (gridOrdering == GridOrdering::XYZ)
     {
-        if (computeEnergyAndVirial)
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::XYZ, true>;
-        }
-        else
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::XYZ, false>;
-        }
+        kernelPtr = computeEnergyAndVirial ? pmeGpu->contextHandle_->impl_->solveXYZEnergyKernel : pmeGpu->contextHandle_->impl_->solveXYZKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);
