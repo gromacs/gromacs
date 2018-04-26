@@ -209,15 +209,14 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
-    float3       xi, xj, rv, f_ij, fcj_buf /*, fshift_buf*/;
-    float        fshift_buf;
+    float3       xi, xj, rv, f_ij, fcj_buf;
     float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
     nbnxn_sci_t  nb_sci;
 
     /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL=8 bits set */
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
 
-#define LOCAL_OFFSET xqib + NCL_PER_SUPERCL * CL_SIZE
+#define LOCAL_OFFSET (xqib + NCL_PER_SUPERCL * CL_SIZE)
     __local int *cjs;
 #if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
@@ -239,11 +238,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 #endif
 
-#ifndef REDUCE_SHUFFLE
+#if !REDUCE_SHUFFLE
     /* shmem j force buffer */
     __local float *f_buf   = (__local float *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
-    #define LOCAL_OFFSET f_buf + CL_SIZE * CL_SIZE * 3
+    #define LOCAL_OFFSET (f_buf + CL_SIZE * CL_SIZE * 3)
+#else
+    __local float *f_buf  = 0;
 #endif
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
@@ -343,7 +344,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
 
-        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imask);
+        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imask != 0u);
 
 #ifndef PRUNE_NBL
         if (imask)
@@ -388,8 +389,6 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     {
                         if (imask & mask_ji)
                         {
-                            ci_offset   = i;                     /* i force buffer offset */
-
                             ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
                             ai      = ci * CL_SIZE + tidxi;      /* i atom index */
 
@@ -580,7 +579,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 fcj_buf -= f_ij;
 
                                 /* accumulate i forces in registers */
-                                fci_buf[ci_offset] += f_ij;
+                                fci_buf[i] += f_ij;
                             }
                         }
 
@@ -589,13 +588,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     }
 
                     /* reduce j forces */
-
-                    /* store j forces in shmem */
-                    f_buf[                  tidx] = fcj_buf.x;
-                    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
-                    f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
-
-                    reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
+                    reduce_force_j(f_buf, fcj_buf, f, tidxi, tidxj, aj);
                 }
             }
 #ifdef PRUNE_NBL
@@ -610,43 +603,14 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     /* skip central shifts when summing shift forces */
     if (nb_sci.shift == CENTRAL)
     {
-        bCalcFshift = false;
+        bCalcFshift = 0;
     }
-
-    fshift_buf = 0.0f;
-
     /* reduce i forces */
-    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
-    {
-        ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
-
-        f_buf[                  tidx] = fci_buf[ci_offset].x;
-        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
-        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
-        barrier(CLK_LOCAL_MEM_FENCE);
-        reduce_force_i(f_buf, f,
-                       &fshift_buf, bCalcFshift,
-                       tidxi, tidxj, ai);
-    }
-
-    /* add up local shift forces into global mem */
-    if (bCalcFshift)
-    {
-        /* Only threads with tidxj < 3 will update fshift.
-           The threads performing the update must be the same with the threads
-           which stored the reduction result in reduce_force_i function
-         */
-        if (tidxj < 3)
-        {
-            atomicAdd_g_f(&(fshift[3 * nb_sci.shift + tidxj]), fshift_buf);
-        }
-    }
+    reduce_force_i(f_buf, fci_buf, f, bCalcFshift != 0, tidxi, tidxj, sci,
+                   nb_sci.shift, fshift);
 
 #ifdef CALC_ENERGIES
-    /* flush the energies to shmem and reduce them */
-    f_buf[              tidx] = E_lj;
-    f_buf[FBUF_STRIDE + tidx] = E_el;
-    reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+    reduce_energy(f_buf, E_lj, E_el, e_lj, e_el, tidx);
 #endif
 }
 
