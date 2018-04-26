@@ -40,6 +40,13 @@
 
 #define WARP_SIZE  (CL_SIZE*CL_SIZE/2)
 
+/* Nvidia doesn't support subgroup extensions. Code doesn't support CL_SIZE=8 */
+#if _WARPLESS_SOURCE_ && CL_SIZE == 4
+#define REDUCE_SHUFFLE 1
+#else
+#define REDUCE_SHUFFLE 0
+#endif
+
 #undef KERNEL_UTILS_INLINE
 #ifdef KERNEL_UTILS_INLINE
 #define __INLINE__ inline
@@ -539,6 +546,30 @@ float pmecorrF(float z2)
     return polyFN0*polyFD0;
 }
 
+#ifdef REDUCE_SHUFFLE
+void reduce_force_j_shfl(float3 fin, __global float *fout,
+                         int tidxi, int tidxj, int aidx)
+{
+    fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 1);
+    fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, 1);
+    fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, 1);
+    if (tidxi%2 == 1)
+    {
+        fin.x = fin.y;
+    }
+    fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 2);
+    fin.z += intel_sub_group_shuffle_up  (fin.z, fin.z, 2);
+    if (tidxi == 2)
+    {
+        fin.x = fin.z;
+    }
+    if (tidxi < 3)
+    {
+        atomicAdd_g_f(&fout[3 * aidx + tidxi], fin.x);
+    }
+}
+#endif
+
 /*! Final j-force reduction; this generic implementation works with
  *  arbitrary array sizes.
  */
@@ -563,6 +594,38 @@ void reduce_force_j_generic(__local float *f_buf, __global float *fout,
         atomicAdd_g_f(&fout[3 * aidx + tidxi], f);
     }
 }
+
+#ifdef REDUCE_SHUFFLE
+__INLINE__ __device__
+void reduce_force_i_warp_shfl(float3 fin, __global float *fout,
+                              float2 *fshift_buf, bool bCalcFshift,
+                              int tidxj, int aidx)
+{
+    fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
+    fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, CL_SIZE);
+    fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, CL_SIZE);
+
+    if (tidxj & 1)
+    {
+        fin.x = fin.y;
+    }
+    /* Threads 0,1 and 2,3 increment x,y for their warp */
+    atomicAdd_g_f(&fout[3*aidx + (tidxj & 1)], fin.x);
+    if (bCalcFshift)
+    {
+        (*fshift_buf)[0] += fin.x;
+    }
+    /* Threads 0 and 2 increment z for their warp */
+    if ((tidxj & 1) == 0)
+    {
+        atomicAdd_g_f(&fout[3*aidx+2], fin.z);
+        if (bCalcFshift)
+        {
+            (*fshift_buf)[1] += fin.z;
+        }
+    }
+}
+#endif
 
 /*! Final i-force reduction; this generic implementation works with
  *  arbitrary array sizes.
@@ -657,6 +720,22 @@ void reduce_force_i(__local float *f_buf, __global float *f,
         reduce_force_i_pow2(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
 }
+
+#ifdef REDUCE_SHUFFLE
+__INLINE__ __device__
+void reduce_energy_shfl(float E_lj, float E_el,
+                        volatile __global float *e_lj,
+                        volatile __global float *e_el)
+{
+    E_lj = sub_group_reduce_add(E_lj);
+    E_el = sub_group_reduce_add(E_el);
+    if (get_sub_group_local_id() == 0)
+    {
+        atomicAdd_g_f(e_lj, E_lj);
+        atomicAdd_g_f(e_el, E_el);
+    }
+}
+#endif
 
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.

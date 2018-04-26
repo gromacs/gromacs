@@ -209,7 +209,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
     float3       xi, xj, rv, f_ij, fcj_buf /*, fshift_buf*/;
+#ifndef REDUCE_SHUFFLE
     float        fshift_buf;
+#else
+    float2       fshift_buf;
+#endif
     float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
     nbnxn_sci_t  nb_sci;
 
@@ -385,8 +389,6 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     {
                         if (imask & mask_ji)
                         {
-                            ci_offset   = i;                     /* i force buffer offset */
-
                             ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
                             ai      = ci * CL_SIZE + tidxi;      /* i atom index */
 
@@ -577,7 +579,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 fcj_buf -= f_ij;
 
                                 /* accumulate i forces in registers */
-                                fci_buf[ci_offset] += f_ij;
+                                fci_buf[i] += f_ij;
                             }
                         }
 
@@ -588,11 +590,15 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     /* reduce j forces */
 
                     /* store j forces in shmem */
+            #ifndef REDUCE_SHUFFLE
                     f_buf[                  tidx] = fcj_buf.x;
                     f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
                     f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
 
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
+            #else
+                    reduce_force_j_shfl(fcj_buf, f, tidxi, tidxj, aj);
+            #endif
                 }
             }
 #ifdef PRUNE_NBL
@@ -617,6 +623,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     {
         ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
 
+#ifndef REDUCE_SHUFFLE
         f_buf[                  tidx] = fci_buf[ci_offset].x;
         f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
         f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
@@ -624,11 +631,17 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         reduce_force_i(f_buf, f,
                        &fshift_buf, bCalcFshift,
                        tidxi, tidxj, ai);
+#else
+        reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
+                                 &fshift_buf, bCalcFshift,
+                                 tidxj, ai);
+#endif
     }
 
     /* add up local shift forces into global mem */
     if (bCalcFshift)
     {
+    #ifndef REDUCE_SHUFFLE
         /* Only threads with tidxj < 3 will update fshift.
            The threads performing the update must be the same with the threads
            which stored the reduction result in reduce_force_i function
@@ -637,13 +650,26 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         {
             atomicAdd_g_f(&(fshift[3 * nb_sci.shift + tidxj]), fshift_buf);
         }
+    #else
+        //Threads 0,1 and 2,3 update x,y
+        atomicAdd_g_f(&(fshift[3 * nb_sci.shift + (tidxj&1)]), fshift_buf[0]);
+        //Threads 0 and 2 update z
+        if ((tidxj & 1) == 0)
+        {
+            atomicAdd_g_f(&(fshift[3 * nb_sci.shift + 2]), fshift_buf[1]);
+        }
+    #endif
     }
 
 #ifdef CALC_ENERGIES
+#ifndef REDUCE_SHUFFLE
     /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
     f_buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+#else
+    reduce_energy_shfl(E_lj, E_el, e_lj, e_el);
+#endif
 #endif
 }
 
