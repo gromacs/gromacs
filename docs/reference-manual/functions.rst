@@ -30,14 +30,14 @@ The potential functions can be subdivided into three parts
 .. toctree::
    :maxdepth: 2
 
-   nonbonded-interactions
-   bonded-interactions
-   restraints
-   polarization
-   free-energy-interactions
-   interaction-methods
-   long-range-electrostatics
-   long-range-vdw
-   force-field
+   functions/nonbonded-interactions
+   functions/bonded-interactions
+   functions/restraints
+   functions/polarization
+   functions/free-energy-interactions
+   functions/interaction-methods
+   functions/long-range-electrostatics
+   functions/long-range-vdw
+   functions/force-field
 
 
