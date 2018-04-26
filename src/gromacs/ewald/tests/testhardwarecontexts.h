@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
@@ -66,28 +67,32 @@ enum class CodePath
 const char *codePathToString(CodePath codePath);
 
 /*! \internal \brief
- * A structure to describe a hardware context - an abstraction over
- * gmx_device_info_t with a human-readable string.
+ * A structure to describe a hardware context  that persists over the lifetime
+ * of the test binary - an abstraction over PmeGpuProgram with a human-readable string.
  */
 struct TestHardwareContext
 {
     //! Hardware path for the code being tested.
-    CodePath           codePath_;
+    CodePath                codePath_;
     //! Readable description
-    std::string        description_;
-    //! Device information pointer
-    gmx_device_info_t *deviceInfo_;
+    std::string             description_;
+    //! Persistent PME data (compiled GPU kernels)
+    PmeGpuProgramStorage    program_;
 
     public:
         //! Retuns the code path for this context.
         CodePath getCodePath() const { return codePath_; }
         //! Returns a human-readable context description line
-        std::string        getDescription() const{return description_; }
-        //! Returns the device info pointer
-        gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
+        std::string         getDescription() const{return description_; }
+        //! Returns the persistent PME GPU kernels
+        PmeGpuProgramHandle getPmeGpuProgram() const{return program_.get(); }
         //! Constructs the context
         TestHardwareContext(CodePath codePath, const char *description, gmx_device_info_t *deviceInfo) :
-            codePath_(codePath), description_(description), deviceInfo_(deviceInfo){}
+            codePath_(codePath), description_(description),
+            program_(buildPmeGpuProgram(deviceInfo)) {}
+        ~TestHardwareContext() = default;
+        //! TODO disable copy constructor and use references instead
+        TestHardwareContext(const TestHardwareContext &) = default;
 };
 
 //! A container of hardware contexts

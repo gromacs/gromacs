@@ -1035,13 +1035,14 @@ int Mdrunner::mdrunner()
         }
     }
 
-    gmx_device_info_t *pmeDeviceInfo = nullptr;
+    PmeGpuProgramStorage pmeGpuProgram;
     // This works because only one task of each type is currently permitted.
-    auto               pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
+    auto                 pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
     if (pmeGpuTaskMapping != gpuTaskAssignment.end())
     {
-        pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
+        gmx_device_info_t *pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
         init_gpu(mdlog, pmeDeviceInfo);
+        pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
     }
 
     /* getting number of PP/PME threads
@@ -1234,7 +1235,7 @@ int Mdrunner::mdrunner()
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
-                                       pmeRunMode, nullptr, pmeDeviceInfo, mdlog);
+                                       pmeRunMode, nullptr, pmeGpuProgram.get(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1359,7 +1360,10 @@ int Mdrunner::mdrunner()
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
-    free_gpu(pmeDeviceInfo);
+    if (pmeGpuProgram)
+    {
+        free_gpu(pmeGpuProgram->getDeviceInfo());
+    }
     done_forcerec(fr, mtop.molblock.size(), mtop.groups.grps[egcENER].nr);
     sfree(fcd);
 

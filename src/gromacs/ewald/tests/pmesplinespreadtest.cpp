@@ -146,7 +146,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                     /* Running the test */
 
-                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getDeviceInfo(), coordinates, charges, box);
+                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getPmeGpuProgram(), coordinates, charges, box);
 
                     const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
                     const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
