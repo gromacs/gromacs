@@ -53,6 +53,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
+#include "pme-gpu-context-impl.h"
 #include "pme-grid.h"
 #include "pme-timings.cuh"
 
@@ -482,6 +483,11 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_spread(const PmeGpu    *pmeGpu,
                     int gmx_unused   gridIndex,
                     real            *h_grid,
@@ -517,31 +523,25 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
         GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
     }
 
-    // These should later check for PME decomposition
-    constexpr bool wrapX = true;
-    constexpr bool wrapY = true;
-    GMX_UNUSED_VALUE(wrapX);
-    GMX_UNUSED_VALUE(wrapY);
-
     int  timingId;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    PmeGpuContextImpl::PmeKernelHandle kernelPtr = nullptr;
     if (computeSplines)
     {
         if (spreadCharges)
         {
             timingId  = gtPME_SPLINEANDSPREAD;
-            kernelPtr = pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY>;
+            kernelPtr = pmeGpu->contextHandle_->impl_->splineAndSpreadKernel;
         }
         else
         {
             timingId  = gtPME_SPLINE;
-            kernelPtr = pme_spline_and_spread_kernel<4, true, false, wrapX, wrapY>;
+            kernelPtr = pmeGpu->contextHandle_->impl_->splineKernel;
         }
     }
     else
     {
         timingId  = gtPME_SPREAD;
-        kernelPtr = pme_spline_and_spread_kernel<4, false, true, wrapX, wrapY>;
+        kernelPtr = pmeGpu->contextHandle_->impl_->spreadKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);
