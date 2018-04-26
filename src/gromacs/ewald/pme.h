@@ -57,6 +57,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "pme-gpu-program.h"
+
 struct interaction_const_t;
 struct t_commrec;
 struct t_inputrec;
@@ -133,7 +135,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         int nthread,
                         PmeRunMode runMode,
                         PmeGpu *pmeGpu,
-                        gmx_device_info_t *gpuInfo,
+                        PmeGpuProgramHandle pmeGpuProgram,
                         const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/

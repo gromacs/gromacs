@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,9 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                                       ));
 
                             /* Running the test */
-                            PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, mode.first, context.getDeviceInfo(), box, ewaldCoeff_q, ewaldCoeff_lj);
+                            PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, mode.first,
+                                                                  context.getPmeGpuProgram(),
+                                                                  box, ewaldCoeff_q, ewaldCoeff_lj);
                             pmeSetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first, nonZeroGridValues);
                             const real     cellVolume = box[0] * box[4] * box[8];
                             //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
