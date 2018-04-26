@@ -50,6 +50,7 @@
 
 #include <string>
 
+#include "gromacs/ewald/pme-persistent-data.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -133,7 +134,8 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         PmeRunMode runMode,
                         PmeGpu *pmeGpu,
                         gmx_device_info_t *gpuInfo,
-                        const gmx::MDLogger &mdlog);
+                        const gmx::MDLogger &mdlog,
+                        PmePersistentDataHandle persistent = nullptr);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);

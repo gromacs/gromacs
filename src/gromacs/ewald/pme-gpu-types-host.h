@@ -171,6 +171,8 @@ struct PmeGpu
     /*! \brief The information copied once per reinit from the CPU structure. */
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 
+    PmePersistentDataHandle    persistent;
+
     /*! \brief The settings. */
     PmeGpuSettings settings;
 

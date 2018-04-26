@@ -673,10 +673,12 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *CUDA_FUNC_ARG
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
+ * TODO docs
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
-                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo)) CUDA_FUNC_TERM
+                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo),
+                                        PmePersistentDataHandle CUDA_FUNC_ARGUMENT(persistent)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

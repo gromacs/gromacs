@@ -214,7 +214,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
  */
-static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, PmePersistentDataHandle persistent)
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
@@ -230,6 +230,12 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     pme_gpu_set_testing(pmeGpu, false);
 
     pmeGpu->deviceInfo = gpuInfo;
+    GMX_ASSERT(pmeGpu->persistent == nullptr, "Do not delete previous persistent data!");
+    pmeGpu->persistent = persistent;
+    if (!pmeGpu->persistent)
+    {
+        pmeGpu->persistent = std::make_shared<PmeGpuPersistentData>(pme);
+    }
 
     pme_gpu_init_internal(pmeGpu);
     pme_gpu_init_sync_events(pmeGpu);
@@ -314,7 +320,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, PmePersistentDataHandle persistent)
 {
     if (!pme_gpu_active(pme))
     {
@@ -324,7 +330,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo);
+        pme_gpu_init(pme, gpuInfo, persistent);
     }
     else
     {
