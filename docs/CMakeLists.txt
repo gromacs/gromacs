@@ -116,6 +116,21 @@ if (SPHINX_FOUND)
         reference-manual/definitions.rst
         # Algorithms chapter
         reference-manual/algorithms.rst
+        reference-manual/periodic-boundary-conditions.rst
+        reference-manual/group-concept.rst
+        reference-manual/molecular-dynamics.rst
+        reference-manual/shell-molecular-dynamics.rst
+        reference-manual/constraint-algorithms.rst
+        reference-manual/simulated-annealing.rst
+        reference-manual/stochastic-dynamics.rst
+        reference-manual/brownian-dynamics.rst
+        reference-manual/energy-minimization.rst
+        reference-manual/normal-mode-analysis.rst
+        reference-manual/free-energy-calculations.rst
+        reference-manual/replica-exchange.rst
+        reference-manual/essential-dynamics.rst
+        reference-manual/expanded-ensemble.rst
+        reference-manual/parallelization-domain-decomp.rst
         # Interaction functions and force fields chapter
         reference-manual/functions.rst
         reference-manual/bonded-interactions.rst
