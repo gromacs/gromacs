@@ -9,18 +9,18 @@ the use of |Gromacs| for specific scientific problems.
 .. toctree::
    :maxdepth: 2
 
-   free-energy-implementation
-   pulling
-   awh
-   enforced-rotation
-   electric-fields
-   comp-electrophys
-   free-energy-pmf
-   remove-fast-dgf
-   viscosity-calculation
-   tabulated-interaction-functions
-   qmmm
-   vmd-imd
-   membrane-embedding
+   special/free-energy-implementation
+   special/pulling
+   special/awh
+   special/enforced-rotation
+   special/electric-fields
+   special/comp-electrophys
+   special/free-energy-pmf
+   special/remove-fast-dgf
+   special/viscosity-calculation
+   special/tabulated-interaction-functions
+   special/qmmm
+   special/vmd-imd
+   special/membrane-embedding
 
 
