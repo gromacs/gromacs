@@ -40,6 +40,15 @@
 
 #define WARP_SIZE  (CL_SIZE*CL_SIZE/2)
 
+/* Nvidia+AMD don't support subgroup extensions. Code doesn't support CL_SIZE=8.
+   Also uses subgroup extensions which are part of the Intel extension.
+ */
+#if _INTEL_SOURCE_ && CL_SIZE == 4
+#define REDUCE_SHUFFLE 1
+#else
+#define REDUCE_SHUFFLE 0
+#endif
+
 #undef KERNEL_UTILS_INLINE
 #ifdef KERNEL_UTILS_INLINE
 #define __INLINE__ inline
@@ -54,10 +63,6 @@
 
 #ifndef NBNXN_OPENCL_KERNEL_UTILS_CLH
 #define NBNXN_OPENCL_KERNEL_UTILS_CLH
-
-__constant sampler_t generic_sampler     = (CLK_NORMALIZED_COORDS_FALSE /* Natural coords */
-                                            | CLK_ADDRESS_NONE          /* No clamp/repeat*/
-                                            | CLK_FILTER_NEAREST);      /* No interpolation */
 
 #define __device__
 
@@ -473,7 +478,7 @@ void calculate_lj_ewald_comb_LB_F_E(__constant float    *nbfp_comb_climg2d,
     /* Subtract the grid force from the total LJ force */
     *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
 
-    if (with_E_lj == true)
+    if (with_E_lj)
     {
         float sh_mask;
 
@@ -540,14 +545,39 @@ float pmecorrF(float z2)
     return polyFN0*polyFD0;
 }
 
-/*! Final j-force reduction; this generic implementation works with
- *  arbitrary array sizes.
- */
-/* AMD OpenCL compiler error "Undeclared function index 1024" if __INLINE__d */
+#if REDUCE_SHUFFLE
+void reduce_force_j_shfl(float3 fin, __global float *fout,
+                         int tidxi, int tidxj, int aidx)
+{
+    fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 1);
+    fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, 1);
+    fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, 1);
+    if (tidxi%2 == 1)
+    {
+        fin.x = fin.y;
+    }
+    fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 2);
+    fin.z += intel_sub_group_shuffle_up  (fin.z, fin.z, 2);
+    if (tidxi == 2)
+    {
+        fin.x = fin.z;
+    }
+    if (tidxi < 3)
+    {
+        atomicAdd_g_f(&fout[3 * aidx + tidxi], fin.x);
+    }
+}
+#endif
+
 __INLINE__ __device__
-void reduce_force_j_generic(__local float *f_buf, __global float *fout,
+void reduce_force_j_generic(__local float *f_buf, float3 fcj_buf, __global float *fout,
                             int tidxi, int tidxj, int aidx)
 {
+    int tidx = tidxi + tidxj*CL_SIZE;
+    f_buf[                  tidx] = fcj_buf.x;
+    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
+    f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
+
     /* Split the reduction between the first 3 column threads
        Threads with column id 0 will do the reduction for (float3).x components
        Threads with column id 1 will do the reduction for (float3).y components
@@ -565,102 +595,176 @@ void reduce_force_j_generic(__local float *f_buf, __global float *fout,
     }
 }
 
-/*! Final i-force reduction; this generic implementation works with
- *  arbitrary array sizes.
+/*! Final j-force reduction
  */
 __INLINE__ __device__
-void reduce_force_i_generic(__local float *f_buf, __global float *fout,
-                            float *fshift_buf, bool bCalcFshift,
-                            int tidxi, int tidxj, int aidx)
+void reduce_force_j(__local float *f_buf, float3 fcj_buf, __global float *fout,
+                    int tidxi, int tidxj, int aidx)
 {
-    /* Split the reduction between the first 3 line threads
-       Threads with line id 0 will do the reduction for (float3).x components
-       Threads with line id 1 will do the reduction for (float3).y components
-       Threads with line id 2 will do the reduction for (float3).z components. */
-    if (tidxj < 3)
+#if REDUCE_SHUFFLE
+    reduce_force_j_shfl(fcj_buf, fout, tidxi, tidxj, aidx);
+#else
+    reduce_force_j_generic(f_buf, fcj_buf, fout, tidxi, tidxj, aidx);
+#endif
+}
+
+#if REDUCE_SHUFFLE
+__INLINE__ __device__
+void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
+                                   bool bCalcFshift, int tidxi, int tidxj,
+                                   int sci, int shift, __global float *fshift)
+{
+    float2 fshift_buf = 0;
+    for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
-        float f = 0.0f;
-        for (int j = tidxi; j < CL_SIZE_SQ; j += CL_SIZE)
+        int    aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+        float3 fin  = fci_buf[ci_offset];
+        fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
+        fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, CL_SIZE);
+        fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, CL_SIZE);
+
+        if (tidxj & 1)
         {
-            f += f_buf[tidxj * FBUF_STRIDE + j];
+            fin.x = fin.y;
         }
-
-        atomicAdd_g_f(&fout[3 * aidx + tidxj], f);
-
+        /* Threads 0,1 and 2,3 increment x,y for their warp */
+        atomicAdd_g_f(&fout[3*aidx + (tidxj & 1)], fin.x);
         if (bCalcFshift)
         {
-            (*fshift_buf) += f;
+            fshift_buf[0] += fin.x;
+        }
+        /* Threads 0 and 2 increment z for their warp */
+        if ((tidxj & 1) == 0)
+        {
+            atomicAdd_g_f(&fout[3*aidx+2], fin.z);
+            if (bCalcFshift)
+            {
+                fshift_buf[1] += fin.z;
+            }
         }
     }
-    barrier(CLK_LOCAL_MEM_FENCE);
+    /* add up local shift forces into global mem */
+    if (bCalcFshift)
+    {
+        //Threads 0,1 and 2,3 update x,y
+        atomicAdd_g_f(&(fshift[3 * shift + (tidxj&1)]), fshift_buf[0]);
+        //Threads 0 and 2 update z
+        if ((tidxj & 1) == 0)
+        {
+            atomicAdd_g_f(&(fshift[3 * shift + 2]), fshift_buf[1]);
+        }
+    }
 }
+#endif
 
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes.
  */
 __INLINE__ __device__
-void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
-                         float *fshift_buf, bool bCalcFshift,
-                         int tidxi, int tidxj, int aidx)
+void reduce_force_i_and_shift_pow2(volatile __local float *f_buf, float3* fci_buf,
+                                   __global float *fout,
+                                   bool bCalcFshift,
+                                   int tidxi, int tidxj,
+                                   int sci, int shift, __global float *fshift)
 {
-    int     i, j;
-    /* Reduce the initial CL_SIZE values for each i atom to half
-     * every step by using CL_SIZE * i threads.
-     * Can't just use i as loop variable because than nvcc refuses to unroll.
-     */
-    i = CL_SIZE/2;
-    for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
+    float fshift_buf = 0;
+    for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
-        if (tidxj < i)
-        {
+        int aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+        int tidx = tidxi + tidxj*CL_SIZE;
+        /* store i forces in shmem */
+        f_buf[                  tidx] = fci_buf[ci_offset].x;
+        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
+        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
+        barrier(CLK_LOCAL_MEM_FENCE);
 
-            f_buf[                  tidxj * CL_SIZE + tidxi] += f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
-            f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
-            f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+        int     i, j;
+        /* Reduce the initial CL_SIZE values for each i atom to half
+         * every step by using CL_SIZE * i threads.
+         * Can't just use i as loop variable because than nvcc refuses to unroll.
+         */
+        i = CL_SIZE/2;
+        for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
+        {
+            if (tidxj < i)
+            {
+
+                f_buf[                  tidxj * CL_SIZE + tidxi] += f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
+                f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+                f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+            }
+            i >>= 1;
         }
-        i >>= 1;
-    }
-    /* needed because
-     * a) for CL_SIZE<8: id 2 (doing z in next block) is in 2nd warp
-     * b) for all CL_SIZE a barrier is needed before f_buf is reused by next reduce_force_i call
-     */
-    barrier(CLK_LOCAL_MEM_FENCE);
+        /* needed because
+         * a) for CL_SIZE<8: id 2 (doing z in next block) is in 2nd warp
+         * b) for all CL_SIZE a barrier is needed before f_buf is reused by next reduce_force_i call
+         */
+        barrier(CLK_LOCAL_MEM_FENCE);
 
-    /* i == 1, last reduction step, writing to global mem */
-    /* Split the reduction between the first 3 line threads
-       Threads with line id 0 will do the reduction for (float3).x components
-       Threads with line id 1 will do the reduction for (float3).y components
-       Threads with line id 2 will do the reduction for (float3).z components. */
-    if (tidxj < 3)
-    {
-        float f = f_buf[tidxj * FBUF_STRIDE + tidxi] + f_buf[tidxj * FBUF_STRIDE + i * CL_SIZE + tidxi];
-
-        atomicAdd_g_f(&fout[3 * aidx + tidxj], f);
-
-        if (bCalcFshift)
+        /* i == 1, last reduction step, writing to global mem */
+        /* Split the reduction between the first 3 line threads
+           Threads with line id 0 will do the reduction for (float3).x components
+           Threads with line id 1 will do the reduction for (float3).y components
+           Threads with line id 2 will do the reduction for (float3).z components. */
+        if (tidxj < 3)
         {
-            (*fshift_buf) += f;
+            float f = f_buf[tidxj * FBUF_STRIDE + tidxi] + f_buf[tidxj * FBUF_STRIDE + i * CL_SIZE + tidxi];
+
+            atomicAdd_g_f(&fout[3 * aidx + tidxj], f);
+
+            if (bCalcFshift)
+            {
+                fshift_buf += f;
+            }
+        }
+    }
+    /* add up local shift forces into global mem */
+    if (bCalcFshift)
+    {
+        /* Only threads with tidxj < 3 will update fshift.
+           The threads performing the update, must be the same as the threads
+           storing the reduction result above.
+         */
+        if (tidxj < 3)
+        {
+            atomicAdd_g_f(&(fshift[3 * shift + tidxj]), fshift_buf);
         }
     }
 }
 
-/*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
- *  on whether the size of the array to be reduced is power of two or not.
+/*! Final i-force reduction
  */
 __INLINE__ __device__
-void reduce_force_i(__local float *f_buf, __global float *f,
-                    float *fshift_buf, bool bCalcFshift,
-                    int tidxi, int tidxj, int ai)
+void reduce_force_i_and_shift(__local float *f_buf, float3* fci_buf, __global float *f,
+                              bool bCalcFshift, int tidxi, int tidxj, int sci,
+                              int shift, __global float *fshift)
 {
-    if ((CL_SIZE & (CL_SIZE - 1)))
+#if REDUCE_SHUFFLE
+    reduce_force_i_and_shift_shfl(fci_buf, f, bCalcFshift, tidxi, tidxj,
+                                  sci, shift, fshift);
+#else
+    reduce_force_i_and_shift_pow2(f_buf, fci_buf, f, bCalcFshift, tidxi, tidxj,
+                                  sci, shift, fshift);
+#endif
+}
+
+
+
+#if REDUCE_SHUFFLE
+__INLINE__ __device__
+void reduce_energy_shfl(float E_lj, float E_el,
+                        volatile __global float *e_lj,
+                        volatile __global float *e_el)
+{
+    E_lj = sub_group_reduce_add(E_lj);
+    E_el = sub_group_reduce_add(E_el);
+    if (get_sub_group_local_id() == 0)
     {
-        reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
-    }
-    else
-    {
-        reduce_force_i_pow2(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
+        atomicAdd_g_f(e_lj, E_lj);
+        atomicAdd_g_f(e_el, E_el);
     }
 }
+#endif
 
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.
@@ -696,6 +800,23 @@ void reduce_energy_pow2(volatile __local float  *buf,
         atomicAdd_g_f(e_lj, e1);
         atomicAdd_g_f(e_el, e2);
     }
+}
+
+__INLINE__ __device__
+void reduce_energy(volatile __local float  *buf,
+                   float E_lj, float E_el,
+                   volatile __global float *e_lj,
+                   volatile __global float *e_el,
+                   unsigned int             tidx)
+{
+#if REDUCE_SHUFFLE
+    reduce_energy_shfl(E_lj, E_el, e_lj, e_el);
+#else
+    /* flush the energies to shmem and reduce them */
+    buf[              tidx] = E_lj;
+    buf[FBUF_STRIDE + tidx] = E_el;
+    reduce_energy_pow2(buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+#endif
 }
 
 #endif /* NBNXN_OPENCL_KERNEL_UTILS_CLH */
