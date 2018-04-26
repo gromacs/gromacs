@@ -44,6 +44,7 @@
 
 #include "testhardwarecontexts.h"
 
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
@@ -56,6 +57,8 @@ namespace gmx
 {
 namespace test
 {
+
+TestHardwareContext::~TestHardwareContext() = default;
 
 const char *codePathToString(CodePath codePath)
 {
@@ -106,7 +109,7 @@ static gmx_hw_info_t *hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CPU, "", nullptr));
+    hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
 
     hardwareInfo_ = hardwareInit();
     if (!pme_gpu_supports_build(nullptr))
@@ -125,7 +128,9 @@ void PmeTestEnvironment::SetUp()
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
         // TODO should this be CodePath::GPU?
-        hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CUDA, description.c_str(), deviceInfo));
+        hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>
+                                           (CodePath::CUDA, description.c_str(),
+                                            deviceInfo));
     }
 }
 

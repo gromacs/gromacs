@@ -69,6 +69,9 @@ struct gmx_wallcycle;
 struct NumPmeDomains;
 
 enum class GpuTaskCompletion;
+class PmeGpuProgram;
+//! Convenience name.
+using PmeGpuProgramHandle = const PmeGpuProgram *;
 
 namespace gmx
 {
@@ -133,7 +136,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         int nthread,
                         PmeRunMode runMode,
                         PmeGpu *pmeGpu,
-                        gmx_device_info_t *gpuInfo,
+                        PmeGpuProgramHandle pmeGpuProgram,
                         const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/

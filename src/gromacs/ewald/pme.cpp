@@ -607,7 +607,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                         int                  nthread,
                         PmeRunMode           runMode,
                         PmeGpu              *pmeGpu,
-                        gmx_device_info_t   *gpuInfo,
+                        PmeGpuProgramHandle  pmeGpuProgram,
                         const gmx::MDLogger  & /*mdlog*/)
 {
     int               use_threads, sum_use_threads, i;
@@ -954,7 +954,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
             }
         }
 
-        pme_gpu_reinit(pme.get(), gpuInfo);
+        pme_gpu_reinit(pme.get(), pmeGpuProgram);
     }
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
