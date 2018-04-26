@@ -112,7 +112,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
             TestReferenceData refData;
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
-                CodePath   codePath       = context.getCodePath();
+                CodePath   codePath       = context->getCodePath();
                 const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
                 if (!supportedInput)
                 {
@@ -136,13 +136,13 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                                   gridOrdering.second.c_str(),
                                                   computeEnergyAndVirial ? "with" : "without",
                                                   codePathToString(codePath),
-                                                  context.getDescription().c_str(),
+                                                  context->getDescription().c_str(),
                                                   gridSize[XX], gridSize[YY], gridSize[ZZ],
                                                   ewaldCoeff_q, ewaldCoeff_lj
                                                   ));
 
                         /* Running the test */
-                        PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, codePath, context.getDeviceInfo(), box, ewaldCoeff_q, ewaldCoeff_lj);
+                        PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, codePath, context->getPmeGpuProgram(), box, ewaldCoeff_q, ewaldCoeff_lj);
                         pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering.first, nonZeroGridValues);
                         const real     cellVolume = box[0] * box[4] * box[8];
                         //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure

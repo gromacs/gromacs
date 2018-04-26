@@ -47,6 +47,8 @@ gmx_add_libgromacs_sources(
     pme-solve.cpp
     pme-spline-work.cpp
     pme-spread.cpp
+    # Files that implement stubs
+    pme-gpu-program.cpp
     )
 if (GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
@@ -57,9 +59,15 @@ if (GMX_USE_CUDA)
         pme-solve.cu
         pme-spread.cu
         pme-timings.cu
+        pme-gpu-program-impl.cu
         # GPU-specific sources
         pme-gpu.cpp
         pme-gpu-internal.cpp
+        )
+else()
+    gmx_add_libgromacs_sources(
+        # Files that implement stubs
+        pme-gpu-program-impl.cpp
         )
 endif()
 

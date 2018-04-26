@@ -123,7 +123,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
             for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
-                CodePath   codePath       = context.getCodePath();
+                CodePath   codePath       = context->getCodePath();
                 const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
                 if (!supportedInput)
                 {
@@ -139,14 +139,14 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                     SCOPED_TRACE(formatString("Testing %s with %s %sfor PME grid size %d %d %d"
                                               ", order %d, %zu atoms",
                                               option.second.c_str(), codePathToString(codePath),
-                                              context.getDescription().c_str(),
+                                              context->getDescription().c_str(),
                                               gridSize[XX], gridSize[YY], gridSize[ZZ],
                                               pmeOrder,
                                               atomCount));
 
                     /* Running the test */
 
-                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getDeviceInfo(), coordinates, charges, box);
+                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context->getPmeGpuProgram(), coordinates, charges, box);
 
                     const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
                     const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);

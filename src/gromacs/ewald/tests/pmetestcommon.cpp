@@ -101,7 +101,7 @@ gmx_uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 //! PME initialization - internal
 static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       CodePath                  mode,
-                                      gmx_device_info_t        *gpuInfo,
+                                      PmeGpuProgramHandle       pmeGpuProgram,
                                       size_t                    atomCount,
                                       const Matrix3x3          &box,
                                       real                      ewaldCoeff_q = 1.0f,
@@ -109,6 +109,9 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       )
 {
     const MDLogger dummyLogger;
+    // this const_cast is only needed because of NVML handling in init_gpu(),
+    // and PME unit tests coudln't possibly care for NVML
+    auto *gpuInfo = const_cast<gmx_device_info_t *>(pmeGpuProgram ? pmeGpuProgram->getDeviceInfo() : nullptr);
     if (gpuInfo)
     {
         init_gpu(dummyLogger, gpuInfo);
@@ -117,7 +120,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     t_commrec      dummyCommrec  = {0};
     NumPmeDomains  numPmeDomains = { 1, 1 };
     gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, atomCount, false, false, true,
-                                                ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger);
+                                                ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, pmeGpuProgram, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -153,20 +156,20 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
                             CodePath                  mode,
-                            gmx_device_info_t        *gpuInfo,
+                            PmeGpuProgramHandle       pmeGpuProgram,
                             const Matrix3x3          &box,
                             real                      ewaldCoeff_q,
                             real                      ewaldCoeff_lj
                             )
 {
-    return pmeInitInternal(inputRec, mode, gpuInfo, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    return pmeInitInternal(inputRec, mode, pmeGpuProgram, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
     // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
 //! PME initialization with atom data
 PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             CodePath                  mode,
-                            gmx_device_info_t        *gpuInfo,
+                            PmeGpuProgramHandle       pmeGpuProgram,
                             const CoordinatesVector  &coordinates,
                             const ChargesVector      &charges,
                             const Matrix3x3          &box
@@ -174,7 +177,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
 {
     const size_t    atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, atomCount, box);
+    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, pmeGpuProgram, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
 
     switch (mode)
