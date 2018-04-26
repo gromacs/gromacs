@@ -41,10 +41,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include <cmath>
-
-#include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -133,26 +129,29 @@ static void pullAllReduce(const t_commrec *cr,
     }
 }
 
-static void pull_set_pbcatom(const t_commrec *cr, pull_group_work_t *pgrp,
-                             const rvec *x,
-                             rvec x_pbc)
+/* Copies the coordinates of the PBC atom of pgrp to x_pbc.
+ * When those coordinates are not available on this rank, clears x_pbc.
+ */
+static void setPbcAtomCoords(const pull_group_work_t &pgrp,
+                             const rvec              *x,
+                             rvec                     x_pbc)
 {
-    int a;
-
-    if (cr != nullptr && DOMAINDECOMP(cr))
+    if (pgrp.pbcAtomSet != nullptr)
     {
-        if (ga2la_get_home(cr->dd->ga2la, pgrp->params.pbcatom, &a))
+        if (pgrp.pbcAtomSet->numAtomsLocal() > 0)
         {
-            copy_rvec(x[a], x_pbc);
+            /* We have the atom locally, copy its coordinates */
+            copy_rvec(x[pgrp.pbcAtomSet->localIndex()[0]], x_pbc);
         }
         else
         {
+            /* Another rank has it, clear the coordinates for MPI_Allreduce */
             clear_rvec(x_pbc);
         }
     }
     else
     {
-        copy_rvec(x[pgrp->params.pbcatom], x_pbc);
+        copy_rvec(x[pgrp.params.pbcatom], x_pbc);
     }
 }
 
@@ -160,22 +159,22 @@ static void pull_set_pbcatoms(const t_commrec *cr, struct pull_t *pull,
                               const rvec *x,
                               rvec *x_pbc)
 {
-    int n = 0;
+    int numPbcAtoms = 0;
     for (size_t g = 0; g < pull->group.size(); g++)
     {
-        if (!pull->group[g].needToCalcCom ||
-            pull->group[g].params.pbcatom == -1)
+        const pull_group_work_t &group = pull->group[g];
+        if (group.needToCalcCom && group.epgrppbc == epgrppbcREFAT)
         {
-            clear_rvec(x_pbc[g]);
+            setPbcAtomCoords(pull->group[g], x, x_pbc[g]);
+            numPbcAtoms++;
         }
         else
         {
-            pull_set_pbcatom(cr, &pull->group[g], x, x_pbc[g]);
-            n++;
+            clear_rvec(x_pbc[g]);
         }
     }
 
-    if (cr && PAR(cr) && n > 0)
+    if (cr && PAR(cr) && numPbcAtoms > 0)
     {
         /* Sum over participating ranks to get x_pbc from the home ranks.
          * This can be very expensive at high parallelization, so we only
