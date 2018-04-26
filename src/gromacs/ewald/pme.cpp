@@ -608,6 +608,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                         PmeRunMode           runMode,
                         PmeGpu              *pmeGpu,
                         gmx_device_info_t   *gpuInfo,
+                        PmeGpuProgramHandle  pmeGpuProgram,
                         const gmx::MDLogger  & /*mdlog*/)
 {
     int               use_threads, sum_use_threads, i;
@@ -954,7 +955,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
             }
         }
 
-        pme_gpu_reinit(pme.get(), gpuInfo);
+        pme_gpu_reinit(pme.get(), gpuInfo, pmeGpuProgram);
     }
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
@@ -1007,7 +1008,7 @@ void gmx_pme_reinit(struct gmx_pme_t **pmedata,
         NumPmeDomains numPmeDomains = { pme_src->nnodes_major, pme_src->nnodes_minor };
         *pmedata = gmx_pme_init(cr, numPmeDomains,
                                 &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
-                                pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
+                                pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, nullptr, dummyLogger);
         //TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
