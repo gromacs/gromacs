@@ -69,6 +69,9 @@ struct gmx_wallcycle;
 struct NumPmeDomains;
 
 enum class GpuTaskCompletion;
+class PmeGpuProgram;
+//! Convenience name.
+using PmeGpuProgramHandle = const PmeGpuProgram *;
 
 namespace gmx
 {
@@ -123,6 +126,11 @@ bool gmx_pme_check_restrictions(int pme_order,
  *
  * \throws   gmx::InconsistentInputError if input grid sizes/PME order are inconsistent.
  * \returns  Pointer to newly allocated and initialized PME data.
+ *
+ * \todo We should evolve something like a \c GpuManager that holds \c
+ * gmx_device_info_t * and \c PmeGpuProgramHandle and perhaps other
+ * related things whose lifetime can/should exceed that of a task (or
+ * perhaps task manager).
  */
 gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         const NumPmeDomains &numPmeDomains,
@@ -134,6 +142,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         PmeRunMode runMode,
                         PmeGpu *pmeGpu,
                         gmx_device_info_t *gpuInfo,
+                        PmeGpuProgramHandle pmeGpuProgram,
                         const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/

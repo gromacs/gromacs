@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
@@ -66,32 +67,38 @@ enum class CodePath
 const char *codePathToString(CodePath codePath);
 
 /*! \internal \brief
- * A structure to describe a hardware context - an abstraction over
- * gmx_device_info_t with a human-readable string.
+ * A structure to describe a hardware context  that persists over the lifetime
+ * of the test binary - an abstraction over PmeGpuProgram with a human-readable string.
  */
 struct TestHardwareContext
 {
     //! Hardware path for the code being tested.
-    CodePath           codePath_;
+    CodePath                codePath_;
     //! Readable description
-    std::string        description_;
+    std::string             description_;
     //! Device information pointer
-    gmx_device_info_t *deviceInfo_;
+    gmx_device_info_t        *deviceInfo_;
+    //! Persistent compiled GPU kernels for PME.
+    PmeGpuProgramStorage    program_;
 
     public:
         //! Retuns the code path for this context.
         CodePath getCodePath() const { return codePath_; }
         //! Returns a human-readable context description line
-        std::string        getDescription() const{return description_; }
+        std::string         getDescription() const{return description_; }
         //! Returns the device info pointer
         gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
+        //! Returns the persistent PME GPU kernels
+        PmeGpuProgramHandle getPmeGpuProgram() const{return program_.get(); }
         //! Constructs the context
         TestHardwareContext(CodePath codePath, const char *description, gmx_device_info_t *deviceInfo) :
-            codePath_(codePath), description_(description), deviceInfo_(deviceInfo){}
+            codePath_(codePath), description_(description), deviceInfo_(deviceInfo),
+            program_(buildPmeGpuProgram(deviceInfo_)) {}
+        ~TestHardwareContext();
 };
 
-//! A container of hardware contexts
-typedef std::vector<TestHardwareContext> TestHardwareContexts;
+//! A container of handles to hardware contexts
+typedef std::vector < std::unique_ptr < TestHardwareContext>> TestHardwareContexts;
 
 /*! \internal \brief
  * This class performs one-time test initialization (enumerating the hardware)
