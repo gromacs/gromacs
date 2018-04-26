@@ -144,6 +144,13 @@ if (SPHINX_FOUND)
         reference-manual/restraints.rst
         # Topologies chapter
         reference-manual/topologies.rst
+        reference-manual/particle-type.rst
+        reference-manual/parameter-files.rst
+        reference-manual/molecule-definition.rst
+        reference-manual/constraint-algorithm-section.rst
+        reference-manual/pdb2gmx-input-files.rst
+        reference-manual/topology-file-formats.rst
+        reference-manual/force-field-organization.rst
         # File formats chapter
         reference-manual/file-formats.rst
         # Special topics chapter
