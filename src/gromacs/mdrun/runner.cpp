@@ -59,6 +59,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
@@ -1035,13 +1036,17 @@ int Mdrunner::mdrunner()
         }
     }
 
-    gmx_device_info_t *pmeDeviceInfo = nullptr;
+    // Later, this program could contain kernels that might be later
+    // re-used as auto-tuning progresses, or subsequent simulations
+    // are invoked.
+    PmeGpuProgramStorage pmeGpuProgram;
     // This works because only one task of each type is currently permitted.
-    auto               pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
+    auto                 pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
     if (pmeGpuTaskMapping != gpuTaskAssignment.end())
     {
-        pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
+        gmx_device_info_t *pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
         init_gpu(mdlog, pmeDeviceInfo);
+        pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
     }
 
     /* getting number of PP/PME threads
@@ -1234,7 +1239,7 @@ int Mdrunner::mdrunner()
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
                                        nthreads_pme,
-                                       pmeRunMode, nullptr, pmeDeviceInfo, mdlog);
+                                       pmeRunMode, nullptr, pmeGpuProgram.get(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1359,7 +1364,10 @@ int Mdrunner::mdrunner()
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, physicalNodeComm);
     free_gpu(nonbondedDeviceInfo);
-    free_gpu(pmeDeviceInfo);
+    if (pmeGpuProgram)
+    {
+        free_gpu(pmeGpuProgram->getDeviceInfo());
+    }
     done_forcerec(fr, mtop.molblock.size(), mtop.groups.grps[egcENER].nr);
     sfree(fcd);
 

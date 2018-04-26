@@ -349,13 +349,13 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
                          kernelParamsPtr->fractShiftsTableTexture,
                          pmeGpu->common->fsh.data(),
                          newFractShiftsSize,
-                         pmeGpu->deviceInfo);
+                         pmeGpu->programHandle_->getDeviceInfo());
 
     initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                          kernelParamsPtr->gridlineIndicesTableTexture,
                          pmeGpu->common->nn.data(),
                          newFractShiftsSize,
-                         pmeGpu->deviceInfo);
+                         pmeGpu->programHandle_->getDeviceInfo());
 }
 
 void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
@@ -363,10 +363,10 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
     auto *kernelParamsPtr = pmeGpu->kernelParams.get();
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture,
-                            pmeGpu->deviceInfo);
+                            pmeGpu->programHandle_->getDeviceInfo());
     destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture,
-                            pmeGpu->deviceInfo);
+                            pmeGpu->programHandle_->getDeviceInfo());
 }
 
 bool pme_gpu_stream_query(const PmeGpu *pmeGpu)
@@ -459,9 +459,9 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
     pmeGpu->archSpecific->useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
 
     // Prepare to use the device that this PME task was assigned earlier.
-    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
+    CU_RET_ERR(cudaSetDevice(pmeGpu->programHandle_->getDeviceInfo()->id), "Switching to PME CUDA device");
 
-    pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
+    pmeGpu->maxGridWidthX = pmeGpu->programHandle_->getDeviceInfo()->prop.maxGridSize[0];
 
     /* Creating a PME CUDA stream */
     cudaError_t stat;
