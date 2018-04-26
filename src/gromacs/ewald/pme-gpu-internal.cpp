@@ -53,12 +53,12 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "pme-gpu-constants.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
 #include "pme-grid.h"
@@ -210,11 +210,13 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
 
 /*! \libinternal \brief
  * Initializes the PME GPU data at the beginning of the run.
+ * TODO: this should become PmeGpu::PmeGpu()
  *
- * \param[in,out] pme       The PME structure.
- * \param[in,out] gpuInfo   The GPU information structure.
+ * \param[in,out] pme            The PME structure.
+ * \param[in]     gpuInfo        The GPU information structure.
+ * \param[in]     contextHandle  The handle to the context data created outside (e.g. in unit tests)
  */
-static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+static void pme_gpu_init(gmx_pme_t *pme, const gmx_device_info_t *gpuInfo, PmeGpuContextHandle contextHandle)
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
@@ -229,10 +231,14 @@ static void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     pme_gpu_set_testing(pmeGpu, false);
 
-    pmeGpu->deviceInfo = gpuInfo;
+    pmeGpu->contextHandle_ = contextHandle;
+    if (!pmeGpu->contextHandle_)
+    {
+        pmeGpu->context_       = buildPmeGpuContext(gpuInfo);
+        pmeGpu->contextHandle_ = pmeGpu->context_.get();
+    }
 
     pme_gpu_init_internal(pmeGpu);
-    pme_gpu_init_sync_events(pmeGpu);
     pme_gpu_alloc_energy_virial(pmeGpu);
 
     pme_gpu_copy_common_data_from(pme);
@@ -314,7 +320,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu *pmeGpu, gmx::IVec *gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, PmeGpuContextHandle persistent)
 {
     if (!pme_gpu_active(pme))
     {
@@ -324,7 +330,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo);
+        pme_gpu_init(pme, gpuInfo, persistent);
     }
     else
     {
@@ -362,7 +368,6 @@ void pme_gpu_destroy(PmeGpu *pmeGpu)
     pme_gpu_free_grids(pmeGpu);
 
     pme_gpu_destroy_3dfft(pmeGpu);
-    pme_gpu_destroy_sync_events(pmeGpu);
 
     /* Free the GPU-framework specific data last */
     pme_gpu_destroy_specific(pmeGpu);

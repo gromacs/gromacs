@@ -58,20 +58,22 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
+#include "pme-gpu-context.h"
+
+#if GMX_GPU != GMX_GPU_NONE
+struct PmeGpuSpecific;
+#else
+/*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
+typedef int PmeGpuSpecific;
+#endif
+
 #if GMX_GPU == GMX_GPU_CUDA
-
-struct PmeGpuCuda;
-/*! \brief A typedef for including the GPU host data by pointer */
-typedef PmeGpuCuda PmeGpuSpecific;
-
 struct PmeGpuCudaKernelParams;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
 
 #else
 
-/*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
-typedef int PmeGpuSpecific;
 /*! \brief A dummy typedef for the GPU kernel arguments data placeholder on non-GPU builds */
 typedef int PmeGpuKernelParams;
 
@@ -171,6 +173,12 @@ struct PmeGpu
     /*! \brief The information copied once per reinit from the CPU structure. */
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 
+    //! A handle to the context either created by pme_gpu_init() (context_) or the caller
+    PmeGpuContextHandle contextHandle_;
+
+    //! Storage for the GPU context
+    PmeGpuContextStorage context_;
+
     /*! \brief The settings. */
     PmeGpuSettings settings;
 
@@ -194,9 +202,6 @@ struct PmeGpu
      * kernelParams.atoms.nAtoms is the actual atom count to be used for most data copying.
      */
     int nAtomsAlloc;
-
-    /*! \brief A pointer to the device used during the execution. */
-    gmx_device_info_t *deviceInfo;
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.

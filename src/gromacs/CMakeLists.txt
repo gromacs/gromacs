@@ -39,6 +39,7 @@ if (GMX_CLANG_CUDA)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -55,6 +56,10 @@ endfunction ()
 
 function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+endfunction ()
+
+function (gmx_add_libgromacs_gpu_impl_sources)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
 function (gmx_install_headers)
@@ -158,11 +163,19 @@ gmx_configure_version_file(
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
+# Mark some shared GPU implementation files to compile with CUDA if needed
+if (GMX_USE_CUDA)
+    get_property(LIBGROMACS_GPU_IMPL_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
+    set_source_files_properties(${LIBGROMACS_GPU_IMPL_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+endif()
+
 # set up CUDA compilation with clang
 if (GMX_CLANG_CUDA)
     foreach (_file ${LIBGROMACS_SOURCES})
         get_filename_component(_ext ${_file} EXT)
-        if (${_ext} STREQUAL ".cu")
+        get_source_file_property(_cuda_source_format ${_file} CUDA_SOURCE_PROPERTY_FORMAT)
+        if (${_ext} STREQUAL ".cu" OR _cuda_source_format)
+            message(STATUS ${_file})
             gmx_compile_cuda_file_with_clang(${_file})
         endif()
     endforeach()
@@ -180,6 +193,15 @@ if (GMX_USE_CUDA)
     target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
+endif()
+
+# TODO: installed clFFT should be preferred, if possible;
+# src/external/src/clFFT/FindclFFT.cmake should help with that.
+# Redmine issue #2500
+set(CLFFT_LIBRARIES "")
+if (GMX_USE_OPENCL)
+    add_subdirectory(../external/clFFT/src "${CMAKE_CURRENT_BINARY_DIR}/clFFT-build")
+    set(CLFFT_LIBRARIES "clFFT")
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
@@ -207,7 +229,8 @@ target_link_libraries(libgromacs
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${LMFIT_LIBRARIES_TO_LINK}
-                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OpenCL_LIBRARIES}
+                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
+                      ${OpenCL_LIBRARIES} ${CLFFT_LIBRARIES}
                       ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}

@@ -53,6 +53,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
+#include "pme-gpu-context-impl.h"
 #include "pme-grid.h"
 #include "pme-timings.cuh"
 
@@ -65,17 +66,6 @@
  * TODO: estimate if this should be a boolean parameter (and add it to the unit test if so).
  */
 #define PME_GPU_PARALLEL_SPLINE 0
-
-
-//! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
-constexpr int c_spreadMaxWarpsPerBlock = 8;
-/* TODO: it has been observed that the kernel can be faster with smaller block sizes (2 or 4 warps)
- * only on some GPUs (660Ti) with large enough grid (>= 48^3) due to load/store units being overloaded
- * (ldst_fu_utilization metric maxed out in nvprof). Runtime block size choice might be nice to have.
- * This has been tried on architectures up to Maxwell (GTX 750) and it would be good to revisit this.
- */
-//! Spreading max block size in threads
-constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
 
 /*! \brief
@@ -482,6 +472,11 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_spread(const PmeGpu    *pmeGpu,
                     int gmx_unused   gridIndex,
                     real            *h_grid,
@@ -517,31 +512,25 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
         GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
     }
 
-    // These should later check for PME decomposition
-    constexpr bool wrapX = true;
-    constexpr bool wrapY = true;
-    GMX_UNUSED_VALUE(wrapX);
-    GMX_UNUSED_VALUE(wrapY);
-
     int  timingId;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    PmeGpuContextImpl::PmeKernelHandle kernelPtr = nullptr;
     if (computeSplines)
     {
         if (spreadCharges)
         {
             timingId  = gtPME_SPLINEANDSPREAD;
-            kernelPtr = pme_spline_and_spread_kernel<4, true, true, wrapX, wrapY>;
+            kernelPtr = pmeGpu->contextHandle_->impl_->splineAndSpreadKernel;
         }
         else
         {
             timingId  = gtPME_SPLINE;
-            kernelPtr = pme_spline_and_spread_kernel<4, true, false, wrapX, wrapY>;
+            kernelPtr = pmeGpu->contextHandle_->impl_->splineKernel;
         }
     }
     else
     {
         timingId  = gtPME_SPREAD;
-        kernelPtr = pme_spline_and_spread_kernel<4, false, true, wrapX, wrapY>;
+        kernelPtr = pmeGpu->contextHandle_->impl_->spreadKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);

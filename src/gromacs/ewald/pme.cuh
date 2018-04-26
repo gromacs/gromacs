@@ -47,69 +47,12 @@
 
 #include <cassert>
 
-#include <array>
-#include <set>
-
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
-
-#include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
+#include "pme-gpu-constants.h"
+#include "pme-gpu-internal.h"
 #include "pme-gpu-types.h"
+#include "pme-gpu-types-host-impl.h"
 #include "pme-gpu-types-host.h"
 #include "pme-timings.cuh"
-
-class GpuParallel3dFft;
-
-/* Some defines for PME behaviour follow */
-
-/*
-    Here is a current memory layout for the theta/dtheta B-spline float parameter arrays.
-    This is the data in global memory used both by spreading and gathering kernels (with same scheduling).
-    This example has PME order 4 and 2 particles per warp/data chunk.
-    Each particle has 16 threads assigned to it, each thread works on 4 non-sequential global grid contributions.
-
-    ----------------------------------------------------------------------------
-    particles 0, 1                                        | particles 2, 3     | ...
-    ----------------------------------------------------------------------------
-    order index 0           | index 1 | index 2 | index 3 | order index 0 .....
-    ----------------------------------------------------------------------------
-    tx0 tx1 ty0 ty1 tz0 tz1 | ..........
-    ----------------------------------------------------------------------------
-
-    Each data chunk for a single warp is 24 floats. This goes both for theta and dtheta.
-    24 = 2 particles per warp * order 4 * 3 dimensions. 48 floats (1.5 warp size) per warp in total.
-    I have also tried intertwining theta and theta in a single array (they are used in pairs in gathering stage anyway)
-    and it didn't seem to make a performance difference.
-
-    The spline indexing is isolated in the 2 inline functions below:
-    getSplineParamIndexBase() return a base shared memory index corresponding to the atom in the block;
-    getSplineParamIndex() consumes its results and adds offsets for dimension and spline value index.
-
-    The corresponding defines follow.
- */
-
-/*! \brief
- * The number of GPU threads used for computing spread/gather contributions of a single atom as function of the PME order.
- * The assumption is currently that any thread processes only a single atom's contributions.
- */
-#define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
-
-/*! \brief
- * The number of atoms processed by a single warp in spread/gather.
- * This macro depends on the templated order parameter (2 atoms per warp for order 4).
- * It is mostly used for spline data layout tweaked for coalesced access.
- */
-#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
-
-/*! \brief
- * Atom data alignment (in terms of number of atoms).
- * If the GPU atom data buffers are padded (c_usePadding == true),
- * Then the numbers of atoms which would fit in the padded GPU buffers has to be divisible by this.
- * The literal number (16) expresses maximum spread/gather block width in warps.
- * Accordingly, spread and gather block widths in warps should be divisors of this
- * (e.g. in the pme-spread.cu: constexpr int c_spreadMaxThreadsPerBlock = 8 * warp_size;).
- * There are debug asserts for this divisibility.
- */
-#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
 /*! \internal \brief
  * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
@@ -200,79 +143,6 @@ dim3 __host__ inline pmeGpuCreateGrid(const PmeGpu *pmeGpu, int blockCount)
     GMX_ASSERT((colCount * minRowCount - blockCount) < minRowCount, "pmeGpuCreateGrid: excessive blocks");
     return dim3(colCount, minRowCount);
 }
-
-/*! \brief \internal
- * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
- */
-struct PmeGpuCuda
-{
-    /*! \brief The CUDA stream where everything related to the PME happens. */
-    cudaStream_t pmeStream;
-
-    /* Synchronization events */
-    /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
-    cudaEvent_t syncSpreadGridD2H;
-
-    // TODO: consider moving some things below into the non-CUDA struct.
-
-    /* Settings which are set at the start of the run */
-    /*! \brief A boolean which tells whether the complex and real grids for cuFFT are different or same. Currenty true. */
-    bool performOutOfPlaceFFT;
-    /*! \brief A boolean which tells if the CUDA timing events are enabled.
-     *  False by default, can be enabled by setting the environment variable GMX_ENABLE_GPU_TIMING.
-     *  Note: will not be reliable when multiple GPU tasks are running concurrently on the same device context,
-     * as CUDA events on multiple streams are untrustworthy.
-     */
-    bool                                             useTiming;
-
-    std::vector<std::unique_ptr<GpuParallel3dFft > > fftSetup;
-
-    std::array<GpuRegionTimer, gtPME_EVENT_COUNT>    timingEvents;
-
-    std::set<size_t>                                 activeTimers; // indices into timingEvents
-
-    /* GPU arrays element counts (not the arrays sizes in bytes!).
-     * They might be larger than the actual meaningful data sizes.
-     * These are paired: the actual element count + the maximum element count that can fit in the current allocated memory.
-     * These integer pairs are mostly meaningful for the reallocateDeviceBuffer calls.
-     * As such, if DeviceBuffer is refactored into a class, they can be freely changed, too.
-     * The only exceptions are realGridSize and complexGridSize which are also used for grid clearing/copying.
-     * TODO: these should live in a clean buffered container type, and be refactored in the NB/cudautils as well.
-     */
-    /*! \brief The kernelParams.atoms.coordinates float element count (actual)*/
-    int coordinatesSize;
-    /*! \brief The kernelParams.atoms.coordinates float element count (reserved) */
-    int coordinatesSizeAlloc;
-    /*! \brief The kernelParams.atoms.forces float element count (actual) */
-    int forcesSize;
-    /*! \brief The kernelParams.atoms.forces float element count (reserved) */
-    int forcesSizeAlloc;
-    /*! \brief The kernelParams.atoms.gridlineIndices int element count (actual) */
-    int gridlineIndicesSize;
-    /*! \brief The kernelParams.atoms.gridlineIndices int element count (reserved) */
-    int gridlineIndicesSizeAlloc;
-    /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (actual) */
-    int splineDataSize;
-    /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (reserved) */
-    int splineDataSizeAlloc;
-    /*! \brief The kernelParams.atoms.coefficients float element count (actual) */
-    int coefficientsSize;
-    /*! \brief The kernelParams.atoms.coefficients float element count (reserved) */
-    int coefficientsSizeAlloc;
-    /*! \brief The kernelParams.grid.splineValuesArray float element count (actual) */
-    int splineValuesSize;
-    /*! \brief The kernelParams.grid.splineValuesArray float element count (reserved) */
-    int splineValuesSizeAlloc;
-    /*! \brief The kernelParams.grid.realGrid float element count (actual) */
-    int realGridSize;
-    /*! \brief The kernelParams.grid.realGrid float element count (reserved) */
-    int realGridSizeAlloc;
-    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
-    int complexGridSize;
-    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
-    int complexGridSizeAlloc;
-};
-
 
 /*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.

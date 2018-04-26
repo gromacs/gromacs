@@ -78,34 +78,6 @@ enum class GridOrdering
     XYZ
 };
 
-/* Some general constants for PME GPU behaviour follow. */
-
-/*! \brief \libinternal
- * false: The atom data GPU buffers are sized precisely according to the number of atoms.
- *        (Except GPU spline data layout which is regardless intertwined for 2 atoms per warp).
- *        The atom index checks in the spread/gather code potentially hinder the performance.
- * true:  The atom data GPU buffers are padded with zeroes so that the possible number of atoms
- *        fitting in is divisible by PME_ATOM_DATA_ALIGNMENT.
- *        The atom index checks are not performed. There should be a performance win, but how big is it, remains to be seen.
- *        Additional cudaMemsetAsync calls are done occasionally (only charges/coordinates; spline data is always recalculated now).
- * \todo Estimate performance differences
- */
-const bool c_usePadding = true;
-
-/*! \brief \libinternal
- * false: Atoms with zero charges are processed by PME. Could introduce some overhead.
- * true:  Atoms with zero charges are not processed by PME. Adds branching to the spread/gather.
- *        Could be good for performance in specific systems with lots of neutral atoms.
- * \todo Estimate performance differences.
- */
-const bool c_skipNeutralAtoms = false;
-
-/*! \brief \libinternal
- * Number of PME solve output floating point numbers.
- * 6 for symmetric virial matrix + 1 for reciprocal energy.
- */
-const int c_virialAndEnergyCount = 7;
-
 /* A block of CUDA-only functions that live in pme.cu */
 
 /*! \libinternal \brief
@@ -371,20 +343,6 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu);
  * \param[in] pmeGpu  The PME GPU structure.
  */
 void pme_gpu_destroy_specific(const PmeGpu *pmeGpu);
-
-/*! \libinternal \brief
- * Initializes the PME GPU synchronization events.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_init_sync_events(const PmeGpu *pmeGpu);
-
-/*! \libinternal \brief
- * Destroys the PME GPU synchronization events.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_destroy_sync_events(const PmeGpu *pmeGpu);
 
 /*! \libinternal \brief
  * Initializes the CUDA FFT structures.
@@ -673,10 +631,12 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *CUDA_FUNC_ARG
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
+ * \param[in]     context   The PME GPU context data (if initialized outside)
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
-                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo)) CUDA_FUNC_TERM
+                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo),
+                                        PmeGpuContextHandle CUDA_FUNC_ARGUMENT(context)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.
