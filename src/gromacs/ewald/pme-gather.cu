@@ -417,6 +417,10 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_gather_kernel<4, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, false, true, true>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_gather(PmeGpu                *pmeGpu,
                     PmeForceOutputHandling forceTreatment,
                     const float           *h_grid
@@ -467,14 +471,14 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
     // TODO test different cache configs
 
     int  timingId = gtPME_GATHER;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    PmeGpuPersistentData::PmeKernelHandle kernelPtr = nullptr;
     if (forceTreatment == PmeForceOutputHandling::Set)
     {
-        kernelPtr = pme_gather_kernel<4, true, wrapX, wrapY>;
+        kernelPtr = pmeGpu->persistent->gatherKernel;
     }
     else
     {
-        kernelPtr = pme_gather_kernel<4, false, wrapX, wrapY>;
+        kernelPtr = pmeGpu->persistent->gatherReduceWithInputKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);

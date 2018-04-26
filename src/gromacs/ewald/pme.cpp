@@ -589,21 +589,22 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
-                        int                  nnodes_major,
-                        int                  nnodes_minor,
-                        const t_inputrec    *ir,
-                        int                  homenr,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu              *pmeGpu,
-                        gmx_device_info_t   *gpuInfo,
-                        const gmx::MDLogger  & /*mdlog*/)
+gmx_pme_t *gmx_pme_init(const t_commrec        *cr,
+                        int                     nnodes_major,
+                        int                     nnodes_minor,
+                        const t_inputrec       *ir,
+                        int                     homenr,
+                        gmx_bool                bFreeEnergy_q,
+                        gmx_bool                bFreeEnergy_lj,
+                        gmx_bool                bReproducible,
+                        real                    ewaldcoeff_q,
+                        real                    ewaldcoeff_lj,
+                        int                     nthread,
+                        PmeRunMode              runMode,
+                        PmeGpu                 *pmeGpu,
+                        gmx_device_info_t      *gpuInfo,
+                        const gmx::MDLogger     & /*mdlog*/,
+                        PmePersistentDataHandle persistent)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -947,9 +948,10 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
             {
                 GMX_THROW(gmx::NotImplementedError(errorString));
             }
+            //TODO make persistent here?
         }
 
-        pme_gpu_reinit(pme.get(), gpuInfo);
+        pme_gpu_reinit(pme.get(), gpuInfo, persistent);
     }
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);

@@ -403,6 +403,12 @@ __global__ void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParam
     }
 }
 
+//! Kernel instantiations
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+
 void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
                    GridOrdering gridOrdering, bool computeEnergyAndVirial)
 {
@@ -453,28 +459,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
     config.stream       = pmeGpu->archSpecific->pmeStream;
 
     int  timingId = gtPME_SOLVE;
-    void (*kernelPtr)(const PmeGpuCudaKernelParams) = nullptr;
+    PmeGpuPersistentData::PmeKernelHandle kernelPtr = nullptr;
     if (gridOrdering == GridOrdering::YZX)
     {
-        if (computeEnergyAndVirial)
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::YZX, true>;
-        }
-        else
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::YZX, false>;
-        }
+        kernelPtr = computeEnergyAndVirial ? pmeGpu->persistent->solveYZXEnergyKernel : pmeGpu->persistent->solveYZXKernel;
     }
     else if (gridOrdering == GridOrdering::XYZ)
     {
-        if (computeEnergyAndVirial)
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::XYZ, true>;
-        }
-        else
-        {
-            kernelPtr = pme_solve_kernel<GridOrdering::XYZ, false>;
-        }
+        kernelPtr = computeEnergyAndVirial ? pmeGpu->persistent->solveXYZEnergyKernel : pmeGpu->persistent->solveXYZKernel;
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);

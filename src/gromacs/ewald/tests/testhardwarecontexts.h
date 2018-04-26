@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme-persistent-data.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
@@ -71,17 +72,22 @@ enum class CodePath
 struct TestHardwareContext
 {
     //! Readable description
-    std::string        description_;
+    std::string             description_;
     //! Device information pointer
-    gmx_device_info_t *deviceInfo_;
+    gmx_device_info_t      *deviceInfo_;
+    //! Persistent PME data (compiled GPU kernels, etc)
+    PmePersistentDataHandle persistent_;
 
     public:
         //! Returns a human-readable context description line
         std::string getDescription() const{return description_; }
-//! Returns the device info pointer
-        gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
+        //! Returns the device info pointer
+        gmx_device_info_t      *getDeviceInfo() const{return deviceInfo_; }
+        //! Returns the persistent PME data
+        PmePersistentDataHandle getPersistentPmeData() const{return persistent_; }
         //! Constructs the context
-        TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) : description_(description), deviceInfo_(deviceInfo){}
+        explicit TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) :
+            description_(description), deviceInfo_(deviceInfo), persistent_(buildPersistentPmeData(deviceInfo)){}
 };
 
 //! A list of hardware contexts
