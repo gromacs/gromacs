@@ -54,6 +54,7 @@
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gpu-program.h"
 #include "gromacs/gpu_utils/gpu_utils.h"      // for GpuApiCallBehavior
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
@@ -170,6 +171,9 @@ struct PmeGpu
 {
     /*! \brief The information copied once per reinit from the CPU structure. */
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
+
+    //! A handle to the program created by buildPmeGpuProgram()
+    PmeGpuProgramHandle programHandle_;
 
     /*! \brief The settings. */
     PmeGpuSettings settings;
