@@ -2435,7 +2435,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
     pull->nthreads = std::max(1, gmx_omp_nthreads_get(emntDefault));
-    snew(pull->sum_com, pull->nthreads);
+    pull->comSums.resize(pull->nthreads);
 
     comm = &pull->comm;
 
@@ -2468,9 +2468,12 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         fprintf(fplog, "Will use a sub-communicator for pull communication\n");
     }
 
-    comm->rbuf     = nullptr;
-    comm->dbuf     = nullptr;
-    comm->dbuf_cyl = nullptr;
+    comm->pbcAtomBuffer.resize(pull->group.size());
+    comm->comBuffer.resize(pull->group.size()*DIM);
+    if (pull->bCylinder)
+    {
+        comm->cylinderBuffer.resize(pull->coord.size()*c_cylinderBufferStride);
+    }
 
     /* We still need to initialize the PBC reference coordinates */
     pull->bSetPBCatoms = TRUE;
@@ -2544,9 +2547,6 @@ static void destroy_pull(struct pull_t *pull)
         MPI_Comm_free(&pull->comm.mpi_comm_com);
     }
 #endif
-    sfree(pull->comm.rbuf);
-    sfree(pull->comm.dbuf);
-    sfree(pull->comm.dbuf_cyl);
 
     delete pull;
 }
