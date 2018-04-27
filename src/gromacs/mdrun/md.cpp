@@ -145,7 +145,6 @@ using gmx::SimulationSignaller;
 //! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                                gmx_int64_t step,
-                               gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
                                struct nonbonded_verlet_t *nbv,
@@ -180,9 +179,6 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
         reset_dd_statistics_counters(cr->dd);
     }
     init_nrnb(nrnb);
-    ir->init_step += *step_rel;
-    ir->nsteps    -= *step_rel;
-    *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
     walltime_accounting_start(walltime_accounting);
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
@@ -861,7 +857,7 @@ void gmx::Integrator::do_md()
     /* Loop over MD steps or if rerunMD to end of input trajectory,
      * or, if max_hours>0, until max_hours is reached.
      */
-    real max_hours   = mdrunOptions.maximumHoursToRun;
+    const real max_hours = mdrunOptions.maximumHoursToRun;
     bFirstStep       = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
     bInitStep        = !startingFromCheckpoint || EI_VV(ir->eI);
@@ -1906,7 +1902,7 @@ void gmx::Integrator::do_md()
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }
-            reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
+            reset_all_counters(fplog, mdlog, cr, step, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
             wcycle_set_reset_counters(wcycle, -1);
             if (!thisRankHasDuty(cr, DUTY_PME))
@@ -1914,10 +1910,8 @@ void gmx::Integrator::do_md()
                 /* Tell our PME node to reset its counters */
                 gmx_pme_send_resetcounters(cr, step);
             }
-            /* Correct max_hours for the elapsed time */
-            max_hours                -= elapsed_time/(60.0*60.0);
             /* If mdrun -maxh -resethway was active, it can only trigger once */
-            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
+            bResetCountersHalfMaxH = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
             /* Reset can only happen once, so clear the triggering flag. */
             signals[eglsRESETCOUNTERS].set = 0;
         }
