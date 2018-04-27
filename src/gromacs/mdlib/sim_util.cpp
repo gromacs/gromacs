@@ -2752,13 +2752,11 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
         nrnb_tot = nrnb;
     }
 
-    elapsed_time                                 = walltime_accounting_get_elapsed_time(walltime_accounting);
-    elapsed_time_over_all_ranks                  = elapsed_time;
-    elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
-    elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
-#if GMX_MPI
+    elapsed_time                  = walltime_accounting_get_time_since_reset(walltime_accounting);
+    elapsed_time_over_all_threads = walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
     if (cr->nnodes > 1)
     {
+#if GMX_MPI
         /* reduce elapsed_time over all MPI ranks in the current simulation */
         MPI_Allreduce(&elapsed_time,
                       &elapsed_time_over_all_ranks,
@@ -2771,8 +2769,13 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
                       &elapsed_time_over_all_threads_over_all_ranks,
                       1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
-    }
 #endif
+    }
+    else
+    {
+        elapsed_time_over_all_ranks                  = elapsed_time;
+        elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
+    }
 
     if (printReport)
     {
@@ -2820,14 +2823,14 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
         {
             print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
                        elapsed_time_over_all_ranks,
-                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
             print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
                        elapsed_time_over_all_ranks,
-                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t, nbfs, mflop);
         }
     }
