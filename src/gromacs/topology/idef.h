@@ -353,9 +353,6 @@ typedef struct t_idef
 
     t_ilist     il[F_NRE];
     int         ilsort;
-    int         nthreads;
-    int        *il_thread_division;
-    int         il_thread_division_nalloc;
 } t_idef;
 
 /*
@@ -390,15 +387,6 @@ typedef struct t_idef
  *      such as LJ and COUL will have 0 entries.
  *   int ilsort
  *      The state of the sorting of il, values are provided above.
- *   int nthreads
- *      The number of threads used to set il_thread_division.
- *   int *il_thread_division
- *      The division of the normal bonded interactions of threads.
- *      il_thread_division[ftype*(nthreads+1)+t] contains an index
- *      into il[ftype].iatoms; thread th operates on t=th to t=th+1.
- *   int il_thread_division_nalloc
- *      The allocated size of il_thread_division,
- *      should be at least F_NRE*(nthreads+1).
  */
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
