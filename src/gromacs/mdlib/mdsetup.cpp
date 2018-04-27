@@ -140,7 +140,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
         make_local_shells(cr, mdatoms, shellfc);
     }
 
-    setup_bonded_threading(fr, &top->idef);
+    setup_bonded_threading(fr->bondedThreading,
+                           fr->natoms_force,
+                           &top->idef);
 
     gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
     /* This handles the PP+PME rank case where fr->pmedata is valid.
@@ -148,10 +150,4 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
      * TODO: this only handles the GPU logic so far, should handle CPU as well.
      * TODO: this also does not account for TPI.
      */
-}
-
-void mdAlgorithmsTearDownAtomData(bonded_threading_t *bt,
-                                  gmx_localtop_t     *top)
-{
-    tear_down_bonded_threading(bt, &top->idef);
 }

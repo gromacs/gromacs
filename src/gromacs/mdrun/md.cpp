@@ -1997,7 +1997,5 @@ void gmx::Integrator::do_md()
 
     destroy_enerdata(enerd);
     sfree(enerd);
-    mdAlgorithmsTearDownAtomData(fr->bonded_threading, top);
-    fr->bonded_threading = nullptr;
     sfree(top);
 }
