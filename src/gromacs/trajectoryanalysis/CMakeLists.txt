@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp)
+file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp modules/framemodules/*cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
