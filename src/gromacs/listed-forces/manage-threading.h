@@ -49,10 +49,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Divide the listed interactions over the threads
  *
  * Uses fr->nthreads for the number of threads, and sets up the
@@ -60,11 +56,12 @@ extern "C" {
  * bonded setup changes; i.e. at start-up without domain decomposition
  * and at DD.
  */
-void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
+void setup_bonded_threading(bonded_threading_t *bt,
+                            int                 numAtoms,
+                            const t_idef       *idef);
 
 //! Destructor.
-void tear_down_bonded_threading(bonded_threading_t *bt,
-                                t_idef             *idef);
+void tear_down_bonded_threading(bonded_threading_t *bt);
 
 /*! \brief Initialize the bonded threading data structures
  *
@@ -73,9 +70,5 @@ void tear_down_bonded_threading(bonded_threading_t *bt,
  */
 void init_bonded_threading(FILE *fplog, int nenergrp,
                            struct bonded_threading_t **bt_ptr);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
