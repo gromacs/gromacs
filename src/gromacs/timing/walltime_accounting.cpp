@@ -68,11 +68,17 @@
 typedef struct gmx_walltime_accounting {
     //! Seconds since the epoch recorded at the start of the simulation
     double          start_time_stamp;
-    //! Seconds since the epoch recorded at the start of the simulation for this thread
-    double          start_time_stamp_per_thread;
-    //! Total seconds elapsed over the simulation
+    /*! \brief Seconds since the epoch recorded at the reset of
+     * counters for the simulation (or the start, if no reset has
+     * occured). */
+    double          reset_time_stamp;
+    /*! \brief Seconds since the epoch recorded at the reset of
+     * counters for the simulation for this thread (or the start, if
+     * no reset has occured). */
+    double          reset_time_stamp_per_thread;
+    //! Total seconds elapsed over the simulation since counter reset
     double          elapsed_time;
-    //! Total seconds elapsed over the simulation running this thread
+    //! Total seconds elapsed over the simulation since counter reset running this thread
     double          elapsed_time_over_all_threads;
     /*! \brief Number of OpenMP threads that will be launched by this
      * MPI rank.
@@ -84,6 +90,8 @@ typedef struct gmx_walltime_accounting {
      * elapsed_time_over_all_threads over all threads was constant
      * with respect to parallelism implementation. */
     int             numOpenMPThreads;
+    //! Numbers of steps done before reset of counters
+    gmx_int64_t     nsteps_done_at_reset;
     //! Set by integrators to report the amount of work they did
     gmx_int64_t     nsteps_done;
     //! Whether the simulation has finished in a way valid for walltime reporting.
@@ -114,8 +122,10 @@ walltime_accounting_init(int numOpenMPThreads)
 
     snew(walltime_accounting, 1);
     walltime_accounting->start_time_stamp            = 0;
-    walltime_accounting->start_time_stamp_per_thread = 0;
+    walltime_accounting->reset_time_stamp            = 0;
+    walltime_accounting->reset_time_stamp_per_thread = 0;
     walltime_accounting->elapsed_time                = 0;
+    walltime_accounting->nsteps_done_at_reset        = 0;
     walltime_accounting->nsteps_done                 = 0;
     walltime_accounting->numOpenMPThreads            = numOpenMPThreads;
     walltime_accounting->isValidFinish               = false;
@@ -130,24 +140,33 @@ walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting)
 }
 
 void
-walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_reset_time(gmx_walltime_accounting_t walltime_accounting,
+                               gmx_int64_t step)
 {
-    walltime_accounting->start_time_stamp            = gmx_gettime();
-    walltime_accounting->start_time_stamp_per_thread = gmx_gettime_per_thread();
+    walltime_accounting->reset_time_stamp            = gmx_gettime();
+    walltime_accounting->reset_time_stamp_per_thread = gmx_gettime_per_thread();
     walltime_accounting->elapsed_time                = 0;
     walltime_accounting->nsteps_done                 = 0;
+    walltime_accounting->nsteps_done_at_reset        = step;
 }
 
 void
-walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accounting)
+{
+    walltime_accounting_reset_time(walltime_accounting, 0);
+    walltime_accounting->start_time_stamp = walltime_accounting->reset_time_stamp;
+}
+
+void
+walltime_accounting_end_time(gmx_walltime_accounting_t walltime_accounting)
 {
     double now, now_per_thread;
 
     now            = gmx_gettime();
     now_per_thread = gmx_gettime_per_thread();
 
-    walltime_accounting->elapsed_time                  = now - walltime_accounting->start_time_stamp;
-    walltime_accounting->elapsed_time_over_all_threads = now_per_thread - walltime_accounting->start_time_stamp_per_thread;
+    walltime_accounting->elapsed_time                  = now - walltime_accounting->reset_time_stamp;
+    walltime_accounting->elapsed_time_over_all_threads = now_per_thread - walltime_accounting->reset_time_stamp_per_thread;
     /* For thread-MPI, the per-thread CPU timer makes this just
      * work. For OpenMP threads, the per-thread CPU timer measurement
      * needs to be multiplied by the number of OpenMP threads used,
@@ -159,19 +178,19 @@ walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting)
 }
 
 double
-walltime_accounting_get_current_elapsed_time(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_start(gmx_walltime_accounting_t walltime_accounting)
 {
     return gmx_gettime() - walltime_accounting->start_time_stamp;
 }
 
 double
-walltime_accounting_get_elapsed_time(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_reset(gmx_walltime_accounting_t walltime_accounting)
 {
-    return walltime_accounting->elapsed_time;
+    return gmx_gettime() - walltime_accounting->reset_time_stamp;
 }
 
 double
-walltime_accounting_get_elapsed_time_over_all_threads(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_time_since_reset_over_all_threads(gmx_walltime_accounting_t walltime_accounting)
 {
     return walltime_accounting->elapsed_time_over_all_threads;
 }
@@ -183,9 +202,9 @@ walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_acco
 }
 
 gmx_int64_t
-walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting)
+walltime_accounting_get_nsteps_done_since_reset(gmx_walltime_accounting_t walltime_accounting)
 {
-    return walltime_accounting->nsteps_done;
+    return walltime_accounting->nsteps_done - walltime_accounting->nsteps_done_at_reset;
 }
 
 void
