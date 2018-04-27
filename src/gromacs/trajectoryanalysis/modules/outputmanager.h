@@ -61,8 +61,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "framemanager.h"
-
 namespace gmx
 {
 
@@ -89,8 +87,10 @@ class OutputManager
         /*! \brief
          * Minimal used constructor with pointer to the correct selection used for file output.
          */
-        explicit OutputManager(std::string name, const Selection *sel, const gmx_mtop_t *mtop, const t_atoms *atoms) : name_(name), trr_(nullptr), filetype_(efNR), sel_(sel), mtop_(mtop), atoms_(atoms)
+        explicit OutputManager(std::string name, const Selection *sel, const gmx_mtop_t *mtop) : name_(name), trr_(nullptr), filetype_(efNR), sel_(sel), mtop_(mtop)
         {
+            init_atom(&atoms_);
+            atoms_ = gmx_mtop_global_atoms(mtop_);
             initOutput();
         }
         /*! \brief
@@ -126,6 +126,7 @@ class OutputManager
 
         ~OutputManager()
         {
+            done_atom(&atoms_);
             closeFile();
         }
         /*!\brief
@@ -181,6 +182,12 @@ class OutputManager
             return filetype_;
         }
 
+        //! Returns t_atoms data for other modules to use.
+        const t_atoms *getAtoms() const
+        {
+            return &atoms_;
+        }
+
         /*! \brief
          * Write coordinates to disk.
          *
@@ -202,13 +209,13 @@ class OutputManager
          * basically a wrapper about the lower level function that sets the necessary input
          * needed for opening the file.
          */
-        t_trxstatus *trjOpenTng() const;
+        t_trxstatus *trjOpenTng();
         /*! \brief
          * Function used to open all files execpt TNG files.
          *
          * This is just a wrapper around the open_trx function from the file handling routines.
          */
-        t_trxstatus *trjOpenTrr() const;
+        t_trxstatus *trjOpenTrr();
 
         /*! \brief
          * Function used to request opening of a new PDB file.
@@ -216,7 +223,7 @@ class OutputManager
          * Needs to check for stuff such as
          * connections being needed or not, and has to determine how the writing takes place.
          */
-        t_trxstatus *trjOpenPdb() const;
+        t_trxstatus *trjOpenPdb();
 
         /*! \brief
          * Function to request opening of nwe GRO output file.
@@ -224,7 +231,12 @@ class OutputManager
          * Has to perform some limited checks for how to open file and needs to validate that
          * t_atoms is available.
          */
-        t_trxstatus *trjOpenGro() const;
+        t_trxstatus *trjOpenGro();
+
+        /*! \brief
+         * Costum method to clear frame coordinates allocated before.
+         */
+        void clearCoordinateFrame(t_trxframe *frame) const;
 
         /*! \brief
          * Name for the new coordinate file.
@@ -256,7 +268,7 @@ class OutputManager
         //! Local pointer to topology to be able to write TNG files of needed.
         const gmx_mtop_t        *mtop_;
         //! Local pointer to t_atoms data structure if available.
-        const t_atoms           *atoms_;
+        t_atoms                  atoms_;
 
 };
 

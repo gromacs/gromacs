@@ -40,8 +40,8 @@
  * \author
  * \ingroup module_trajectoryanalysis
  */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_OUTPUTSELECTOR_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_OUTPUTSELECTOR_H
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_SETVELOCITY_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_SETVELOCITY_H
 
 #include <algorithm>
 
@@ -70,7 +70,7 @@ namespace gmx
 
 /*!\libinternal
  * \brief
- * OutputSelector class for handling trajectory file opening and data writing
+ * SetVelocities class for handling trajectory file opening and data writing
  *
  * The filehandler keeps both track of the file being currently written too
  * and the correct number of coordinates that should be written, as well as
@@ -81,49 +81,49 @@ namespace gmx
  * \ingroup module_trajectoryanalysis
  *
  */
-class OutputSelector : public IFrameManager
+class SetVelocities : public IFrameManager
 {
     public:
         /*! \brief
-         * Default constructor for OutputSelector should not be used.
+         * Default constructor for SetVelocities should not be used.
          *
          * Class should only be initialized with at least the base selection.
          */
-        OutputSelector() = delete;
+        SetVelocities() = delete;
         /*! \brief
-         * Construct OutputSelector object with initial selection.
+         * Construct SetVelocities object with choice for boolean value
+         * for frame velocity writing.
          *
-         * Can be used to initialize OutputSelector from outside of trajectoryanalysis
+         * Can be used to initialize SetVelocities from outside of trajectoryanalysis
          * framework.
-         * TODO Add initializers for the remaining fields.
          */
-        explicit OutputSelector(Selection *sel) : sel_(sel)
+        explicit SetVelocities(bool velocity) : velocity_(velocity)
         {
         }
         /*! \brief
          * Copy constructor.
          */
-        OutputSelector(const OutputSelector &old) = delete;
+        SetVelocities(const SetVelocities &old) = delete;
         /*! \brief
          * Assignment operator.
          */
-        OutputSelector &operator=(const OutputSelector &old) = delete;
+        SetVelocities &operator=(const SetVelocities &old) = delete;
         /*! \brief
-         * Move constructor for OutputSelector.
+         * Move constructor for SetVelocities.
          */
-        OutputSelector &operator=(OutputSelector &&old)
+        SetVelocities &operator=(SetVelocities &&old)
         {
-            sel_ = std::move(old.sel_);
+            velocity_ = std::move(old.velocity_);
             return *this;
         }
         /*! \brief
-         *  Move constructor for OutputSelector.
+         *  Move constructor for SetVelocities.
          */
-        OutputSelector(OutputSelector &&old) : sel_(std::move(old.sel_))
+        SetVelocities(SetVelocities &&old) : velocity_(std::move(old.velocity_))
         {
         }
 
-        ~OutputSelector() {}
+        ~SetVelocities() {}
         /*! \brief
          * Pass any user input options to the frame manager.
          *
@@ -140,7 +140,7 @@ class OutputSelector : public IFrameManager
          *
          * \param[in] input Coordinate frame to be modified later.
          */
-        virtual void modifyFrame(const t_trxframe *input);
+        virtual void modifyFrame(const t_trxframe &input);
         /*! \brief
          * Sanity check for user input options.
          *
@@ -157,12 +157,12 @@ class OutputSelector : public IFrameManager
          * to disk during processing. All actions that the filehandler performs
          * will only be on those atoms, with the remaining ones being not affected.
          */
-        Selection                            *sel_;
+        bool                            velocity_;
 };
 
 //! Smart pointer to manage the outputselector object.
-typedef std::unique_ptr<OutputSelector>
-    OutputSelectorPointer;
+typedef std::unique_ptr<SetVelocities>
+    SetVelocitiesPointer;
 
 } // namespace gmx
 
