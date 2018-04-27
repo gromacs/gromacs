@@ -3057,7 +3057,7 @@ void init_forcerec(FILE                             *fp,
 
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
-                          &fr->bonded_threading);
+                          &fr->bondedThreading);
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
