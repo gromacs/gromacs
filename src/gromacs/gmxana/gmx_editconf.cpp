@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -707,7 +707,7 @@ int gmx_editconf(int argc, char *argv[])
     int              *bfac_nr = nullptr;
     t_topology       *top     = nullptr;
     char             *grpname, *sgrpname, *agrpname;
-    int               isize, ssize, asize;
+    int               isize, ssize, numAlignmentAtoms;
     int              *index, *sindex, *aindex;
     rvec             *x, *v, gc, rmin, rmax, size;
     int               ePBC;
@@ -1002,28 +1002,28 @@ int gmx_editconf(int argc, char *argv[])
         {
             fprintf(stderr, "\nSelect a group that you want to align:\n");
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm),
-                      1, &asize, &aindex, &agrpname);
+                      1, &numAlignmentAtoms, &aindex, &agrpname);
         }
         else
         {
-            asize = atoms.nr;
-            snew(aindex, asize);
-            for (i = 0; i < asize; i++)
+            numAlignmentAtoms = atoms.nr;
+            snew(aindex, numAlignmentAtoms);
+            for (i = 0; i < numAlignmentAtoms; i++)
             {
                 aindex[i] = i;
             }
         }
-        printf("Aligning %d atoms (out of %d) to %g %g %g, center of rotation %g %g %g\n", asize, natom,
+        printf("Aligning %d atoms (out of %d) to %g %g %g, center of rotation %g %g %g\n", numAlignmentAtoms, natom,
                targetvec[XX], targetvec[YY], targetvec[ZZ],
                aligncenter[XX], aligncenter[YY], aligncenter[ZZ]);
         /*subtract out pivot point*/
-        for (i = 0; i < asize; i++)
+        for (i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_dec(x[aindex[i]], aligncenter);
         }
         /*now determine transform and rotate*/
         /*will this work?*/
-        principal_comp(asize, aindex, atoms.atom, x, trans, princd);
+        principal_comp(numAlignmentAtoms, aindex, atoms.atom, x, trans, princd);
 
         unitv(targetvec, targetvec);
         printf("Using %g %g %g as principal axis\n", trans[0][2], trans[1][2], trans[2][2]);
@@ -1031,14 +1031,14 @@ int gmx_editconf(int argc, char *argv[])
         calc_rotmatrix(tmpvec, targetvec, rotmatrix);
         /* rotmatrix finished */
 
-        for (i = 0; i < asize; ++i)
+        for (i = 0; i < numAlignmentAtoms; ++i)
         {
             mvmul(rotmatrix, x[aindex[i]], tmpvec);
             copy_rvec(tmpvec, x[aindex[i]]);
         }
 
         /*add pivot point back*/
-        for (i = 0; i < asize; i++)
+        for (i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_inc(x[aindex[i]], aligncenter);
         }
