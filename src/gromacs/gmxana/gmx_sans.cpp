@@ -142,9 +142,7 @@ int gmx_sans(int argc, char *argv[])
     gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t                     *oenv;
 
-#define NFILE asize(fnm)
-
-    std::array<t_filenm, 8> filenames =
+    std::array<t_filenm, 8>               filenames =
     { { { efTPR,  "-s",       nullptr,    ffREAD  },
         { efTRX,  "-f",       nullptr,    ffREAD  },
         { efNDX,  nullptr,    nullptr,    ffOPTRD },
@@ -153,7 +151,9 @@ int gmx_sans(int argc, char *argv[])
         { efXVG,  "-sq",      "sq",       ffWRITE },
         { efXVG,  "-prframe", "prframe",  ffOPTWR },
         { efXVG,  "-sqframe", "sqframe",  ffOPTWR } } };
-    t_filenm               *fnm = filenames.data();
+    t_filenm                             *fnm = filenames.data();
+
+    const auto NFILE = filenames.size();
 
     nthreads = gmx_omp_get_max_threads();
 

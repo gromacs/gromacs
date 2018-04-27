@@ -2043,14 +2043,13 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
 {
     int          j;
     gmx_bool     bClear;
-    unsigned int k;
 
     for (j = 0; (j < F_NRE); j++)
     {
         bClear = FALSE;
         if (bRead)
         {
-            for (k = 0; k < NFTUPD; k++)
+            for (int k = 0; k < NFTUPD; k++)
             {
                 if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype))
                 {
