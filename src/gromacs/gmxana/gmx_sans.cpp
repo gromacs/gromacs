@@ -142,9 +142,7 @@ int gmx_sans(int argc, char *argv[])
     gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t                     *oenv;
 
-#define NFILE asize(fnm)
-
-    std::array<t_filenm, 8> filenames =
+    std::array<t_filenm, 8>               filenames =
     { { { efTPR,  "-s",       nullptr,    ffREAD  },
         { efTRX,  "-f",       nullptr,    ffREAD  },
         { efNDX,  nullptr,    nullptr,    ffOPTRD },
@@ -153,12 +151,12 @@ int gmx_sans(int argc, char *argv[])
         { efXVG,  "-sq",      "sq",       ffWRITE },
         { efXVG,  "-prframe", "prframe",  ffOPTWR },
         { efXVG,  "-sqframe", "sqframe",  ffOPTWR } } };
-    t_filenm               *fnm = filenames.data();
+    t_filenm                             *fnm = filenames.data();
 
     nthreads = gmx_omp_get_max_threads();
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                           filenames.size(), fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -216,9 +214,9 @@ int gmx_sans(int argc, char *argv[])
     }
 
     /* Try to read files */
-    fnDAT = ftp2fn(efDAT, NFILE, fnm);
-    fnTPX = ftp2fn(efTPR, NFILE, fnm);
-    fnTRX = ftp2fn(efTRX, NFILE, fnm);
+    fnDAT = ftp2fn(efDAT, filenames.size(), fnm);
+    fnTPX = ftp2fn(efTPR, filenames.size(), fnm);
+    fnTRX = ftp2fn(efTRX, filenames.size(), fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
     fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
@@ -230,7 +228,7 @@ int gmx_sans(int argc, char *argv[])
     read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
-    get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
+    get_index(&(top->atoms), ftp2fn_null(efNDX, filenames.size(), fnm), 1, &isize, &index, grpname);
 
     gsans = gmx_sans_init(top, gnsf);
 
@@ -291,7 +289,7 @@ int gmx_sans(int argc, char *argv[])
         /* convert p(r) to sq */
         sqframecurrent = convert_histogram_to_intensity_curve(prframecurrent, start_q, end_q, q_step);
         /* print frame data if needed */
-        if (opt2fn_null("-prframe", NFILE, fnm))
+        if (opt2fn_null("-prframe", filenames.size(), fnm))
         {
             snew(hdr, 25);
             snew(suffix, GMX_PATH_MAX);
@@ -300,8 +298,8 @@ int gmx_sans(int argc, char *argv[])
             /* prepare output filename */
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()), hdr, "Distance (nm)", "Probability", oenv);
+            add_suffix_to_output_names(fnmdup.data(), filenames.size(), suffix);
+            fp = xvgropen(opt2fn_null("-prframe", filenames.size(), fnmdup.data()), hdr, "Distance (nm)", "Probability", oenv);
             for (i = 0; i < prframecurrent->grn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
@@ -310,7 +308,7 @@ int gmx_sans(int argc, char *argv[])
             sfree(hdr);
             sfree(suffix);
         }
-        if (opt2fn_null("-sqframe", NFILE, fnm))
+        if (opt2fn_null("-sqframe", filenames.size(), fnm))
         {
             snew(hdr, 25);
             snew(suffix, GMX_PATH_MAX);
@@ -319,8 +317,8 @@ int gmx_sans(int argc, char *argv[])
             /* prepare output filename */
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
+            add_suffix_to_output_names(fnmdup.data(), filenames.size(), suffix);
+            fp = xvgropen(opt2fn_null("-sqframe", filenames.size(), fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
             for (i = 0; i < sqframecurrent->qn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);
@@ -345,7 +343,7 @@ int gmx_sans(int argc, char *argv[])
     normalize_probability(pr->grn, pr->gr);
     sq = convert_histogram_to_intensity_curve(pr, start_q, end_q, q_step);
     /* prepare pr.xvg */
-    fp = xvgropen(opt2fn_null("-pr", NFILE, fnm), "G(r)", "Distance (nm)", "Probability", oenv);
+    fp = xvgropen(opt2fn_null("-pr", filenames.size(), fnm), "G(r)", "Distance (nm)", "Probability", oenv);
     for (i = 0; i < pr->grn; i++)
     {
         fprintf(fp, "%10.6f%10.6f\n", pr->r[i], pr->gr[i]);
@@ -353,7 +351,7 @@ int gmx_sans(int argc, char *argv[])
     xvgrclose(fp);
 
     /* prepare sq.xvg */
-    fp = xvgropen(opt2fn_null("-sq", NFILE, fnm), "I(q)", "q (nm^-1)", "s(q)/s(0)", oenv);
+    fp = xvgropen(opt2fn_null("-sq", filenames.size(), fnm), "I(q)", "q (nm^-1)", "s(q)/s(0)", oenv);
     for (i = 0; i < sq->qn; i++)
     {
         fprintf(fp, "%10.6f%10.6f\n", sq->q[i], sq->s[i]);

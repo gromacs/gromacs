@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Provides asize() macro for calculating the static size of an array.
+ * Provides asize() function for calculating the static size of an array at compile time.
  *
  * \inpublicapi
  * \ingroup module_utility
@@ -43,10 +43,15 @@
 #define GMX_UTILITY_ARRAYSIZE_H
 
 /*! \brief
- * Calculates the static number of elements in an array.
+ * Calculates the number of elements in a static array at compile time.
  *
  * \ingroup module_utility
  */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+template <typename T, int N>
+constexpr int asize(T(&)[N])
+{
+    static_assert(N >= 0, "Do negative size arrays exist?");
+    return N;
+}
 
 #endif
