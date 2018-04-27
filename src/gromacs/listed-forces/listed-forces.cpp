@@ -89,7 +89,7 @@ isPairInteraction(int ftype)
 
 /*! \brief Zero thread-local output buffers */
 static void
-zero_thread_output(struct bonded_threading_t *bt, int thread)
+zero_thread_output(bonded_threading_t *bt, int thread)
 {
     if (!bt->haveBondeds)
     {
@@ -141,7 +141,7 @@ zero_thread_output(struct bonded_threading_t *bt, int thread)
 /*! \brief Reduce thread-local force buffers */
 static void
 reduce_thread_forces(int n, rvec *f,
-                     struct bonded_threading_t *bt,
+                     bonded_threading_t *bt,
                      int nthreads)
 {
     if (nthreads > MAX_BONDED_THREADS)
@@ -199,7 +199,7 @@ reduce_thread_forces(int n, rvec *f,
 static void
 reduce_thread_output(int n, rvec *f, rvec *fshift,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
-                     struct bonded_threading_t *bt,
+                     bonded_threading_t *bt,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
@@ -259,6 +259,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
 static real
 calc_one_bond(int thread,
               int ftype, const t_idef *idef,
+              const bonded_threading_t &bondedThreading,
               const rvec x[], rvec4 f[], rvec fshift[],
               const t_forcerec *fr,
               const t_pbc *pbc, const t_graph *g,
@@ -295,8 +296,8 @@ calc_one_bond(int thread,
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
 
-    nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
-    nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
+    nb0 = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread];
+    nbn = bondedThreading.il_thread_division[ftype*(bondedThreading.nthreads+1)+thread+1] - nb0;
 
     if (!isPairInteraction(ftype))
     {
@@ -425,7 +426,7 @@ calcBondedForces(const t_idef     *idef,
                  gmx_bool          bCalcEnerVir,
                  int              *global_atom_index)
 {
-    struct bonded_threading_t *bt = fr->bonded_threading;
+    bonded_threading_t *bt = fr->bondedThreading;
 
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
     for (int thread = 0; thread < bt->nthreads; thread++)
@@ -463,7 +464,8 @@ calcBondedForces(const t_idef     *idef,
             {
                 if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
                 {
-                    v = calc_one_bond(thread, ftype, idef, x,
+                    v = calc_one_bond(thread, ftype, idef,
+                                      *fr->bondedThreading, x,
                                       ft, fshift, fr, pbc_null, g, grpp,
                                       nrnb, lambda, dvdlt,
                                       md, fcd, bCalcEnerVir,
@@ -493,13 +495,11 @@ void calc_listed(const t_commrec             *cr,
                  t_fcdata *fcd, int *global_atom_index,
                  int force_flags)
 {
-    struct bonded_threading_t *bt;
+    bonded_threading_t        *bt;
     gmx_bool                   bCalcEnerVir;
     const  t_pbc              *pbc_null;
 
-    bt = fr->bonded_threading;
-
-    assert(bt->nthreads == idef->nthreads);
+    bt = fr->bondedThreading;
 
     bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
@@ -608,13 +608,14 @@ void calc_listed_lambda(const t_idef *idef,
                         t_fcdata *fcd,
                         int *global_atom_index)
 {
-    int           ftype, nr_nonperturbed, nr;
-    real          v;
-    real          dvdl_dum[efptNR] = {0};
-    rvec4        *f;
-    rvec         *fshift;
-    const  t_pbc *pbc_null;
-    t_idef        idef_fe;
+    int                ftype, nr_nonperturbed, nr;
+    real               v;
+    real               dvdl_dum[efptNR] = {0};
+    rvec4             *f;
+    rvec              *fshift;
+    const  t_pbc      *pbc_null;
+    t_idef             idef_fe;
+    bonded_threading_t bondedThreading;
 
     if (fr->bMolPBC)
     {
@@ -626,9 +627,9 @@ void calc_listed_lambda(const t_idef *idef,
     }
 
     /* Copy the whole idef, so we can modify the contents locally */
-    idef_fe          = *idef;
-    idef_fe.nthreads = 1;
-    snew(idef_fe.il_thread_division, F_NRE*(idef_fe.nthreads+1));
+    idef_fe                  = *idef;
+    bondedThreading.nthreads = 1;
+    snew(bondedThreading.il_thread_division, F_NRE*(bondedThreading.nthreads+1));
 
     /* We already have the forces, so we use temp buffers here */
     snew(f, fr->natoms_force);
@@ -640,17 +641,17 @@ void calc_listed_lambda(const t_idef *idef,
         if (ftype_is_bonded_potential(ftype))
         {
             /* Set the work range of thread 0 to the perturbed bondeds only */
-            nr_nonperturbed                       = idef->il[ftype].nr_nonperturbed;
-            nr                                    = idef->il[ftype].nr;
-            idef_fe.il_thread_division[ftype*2+0] = nr_nonperturbed;
-            idef_fe.il_thread_division[ftype*2+1] = nr;
+            nr_nonperturbed                               = idef->il[ftype].nr_nonperturbed;
+            nr                                            = idef->il[ftype].nr;
+            bondedThreading.il_thread_division[ftype*2+0] = nr_nonperturbed;
+            bondedThreading.il_thread_division[ftype*2+1] = nr;
 
             /* This is only to get the flop count correct */
             idef_fe.il[ftype].nr = nr - nr_nonperturbed;
 
             if (nr - nr_nonperturbed > 0)
             {
-                v = calc_one_bond(0, ftype, &idef_fe,
+                v = calc_one_bond(0, ftype, &idef_fe, bondedThreading,
                                   x, f, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
                                   md, fcd, TRUE,
@@ -663,7 +664,7 @@ void calc_listed_lambda(const t_idef *idef,
     sfree(fshift);
     sfree(f);
 
-    sfree(idef_fe.il_thread_division);
+    sfree(bondedThreading.il_thread_division);
 }
 
 void
