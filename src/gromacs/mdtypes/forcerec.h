@@ -350,7 +350,7 @@ struct t_forcerec {
     real userreal4;
 
     /* Pointer to struct for managing threading of bonded force calculation */
-    struct bonded_threading_t *bonded_threading;
+    struct bonded_threading_t *bondedThreading;
 
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc;
