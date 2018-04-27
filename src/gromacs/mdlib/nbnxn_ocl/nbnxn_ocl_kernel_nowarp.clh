@@ -93,11 +93,13 @@
    "horizontal splitting" over threads.
  */
 
+#define NTHREAD_Z 1
+
 /* NOTE:
    NB_KERNEL_FUNC_NAME differs from the CUDA equivalent as it is not a variadic macro due to OpenCL not having a support for them, this version only takes exactly 2 arguments.
    Thus if more strings need to be appended a new macro must be written or it must be directly appended here.
  */
-__attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, 1)))
+__attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef PRUNE_NBL
     #ifdef CALC_ENERGIES
 __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_opencl)
@@ -178,14 +180,19 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
-    unsigned int tidxi  = get_local_id(0);
-    unsigned int tidxj  = get_local_id(1);
-    unsigned int tidx   = get_local_id(1) * get_local_size(0) + get_local_id(0);
-    unsigned int bidx   = get_group_id(0);
-    unsigned int widx   = tidx / WARP_SIZE; /* warp index */
-    int          sci, ci, cj, ci_offset,
-                 ai, aj,
-                 cij4_start, cij4_end;
+    unsigned int       tidxi  = get_local_id(0);
+    unsigned int       tidxj  = get_local_id(1);
+#if NTHREAD_Z > 1
+    unsigned int       tidxz  = get_local_id(2);
+#else
+    const unsigned int tidxz  = 0;
+#endif
+    unsigned int       tidx   = get_local_id(1) * get_local_size(0) + get_local_id(0);
+    unsigned int       bidx   = get_group_id(0);
+    unsigned int       widx   = tidx / WARP_SIZE; /* warp index */
+    int                sci, ci, cj, ci_offset,
+                       ai, aj,
+                       cij4_start, cij4_end;
 #ifndef LJ_COMB
     int          typei, typej;
 #endif
@@ -225,7 +232,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     __local int *cjs;
 #if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
-    cjs = (__local int *)(LOCAL_OFFSET);
+    cjs = (__local int *)(LOCAL_OFFSET); //TODO for NTHREAD_Z (same as sm_nextSlotPtr in CUDA)
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
 #endif
@@ -245,7 +252,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
 #ifndef REDUCE_SHUFFLE
     /* shmem j force buffer */
-    __local float *f_buf   = (__local float *)(LOCAL_OFFSET);
+    __local float *f_buf   = (__local float *)(LOCAL_OFFSET); //TODO: For NTHREAD_Z>1 not working yet
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET f_buf + CL_SIZE * CL_SIZE * 3
 #endif
@@ -261,23 +268,26 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
     cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    for (i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
+    if (tidxz == 0)
     {
-        /* Pre-load i-atom x and q into shared memory */
-        ci = sci * NCL_PER_SUPERCL + tidxj+i;
-        ai = ci * CL_SIZE + tidxi;
+        for (i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
+        {
+            /* Pre-load i-atom x and q into shared memory */
+            ci = sci * NCL_PER_SUPERCL + tidxj+i;
+            ai = ci * CL_SIZE + tidxi;
 
-        xqbuf    = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
-        xqbuf.w *= nbparam->epsfac;
-        xqib[(tidxj+i) * CL_SIZE + tidxi] = xqbuf;
+            xqbuf    = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+            xqbuf.w *= nbparam->epsfac;
+            xqib[(tidxj+i) * CL_SIZE + tidxi] = xqbuf;
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
-        /* Pre-load the i-atom types into shared memory */
-        atib[(tidxj+i) * CL_SIZE + tidxi]   = atom_types[ai];
+            /* Pre-load the i-atom types into shared memory */
+            atib[(tidxj+i) * CL_SIZE + tidxi]   = atom_types[ai];
 #else
-        ljcpib[(tidxj+i) * CL_SIZE + tidxi] = lj_comb[ai];
+            ljcpib[(tidxj+i) * CL_SIZE + tidxi] = lj_comb[ai];
 #endif
 #endif
+        }
     }
 #ifndef USE_SUBGROUP_ANY
     /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
@@ -321,13 +331,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
         /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #ifdef LJ_EWALD
-        E_lj /= CL_SIZE;
+        E_lj /= CL_SIZE*NTHREAD_Z;
         E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
 #endif  /* LJ_EWALD */
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
         /* Correct for epsfac^2 due to adding qi^2 */
-        E_el /= nbparam->epsfac*CL_SIZE;
+        E_el /= nbparam->epsfac*CL_SIZE*NTHREAD_Z;
 #if defined EL_RF || defined EL_CUTOFF
         E_el *= -0.5f*c_rf;
 #else
@@ -344,7 +354,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
-    for (j4 = cij4_start; j4 < cij4_end; j4++)
+    for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
         imask       = pl_cj4[j4].imei[widx].imask;
