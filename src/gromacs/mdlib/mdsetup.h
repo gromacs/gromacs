@@ -77,12 +77,4 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
 
-/*! \brief Clean up after MD algorithms.
- *
- * \param[out] bt            Manages the bonded threading.
- * \param[out] top           The local topology
- */
-void mdAlgorithmsTearDownAtomData(bonded_threading_t *bt,
-                                  gmx_localtop_t     *top);
-
 #endif
