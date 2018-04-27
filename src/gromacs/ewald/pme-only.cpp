@@ -155,24 +155,18 @@ static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec *cr)
     return pme_pp;
 }
 
-static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
+static void reset_pmeonly_counters(gmx_wallcycle_t           wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
-                                   t_nrnb *nrnb, t_inputrec *ir,
-                                   gmx_int64_t step,
-                                   bool useGpuForPme)
+                                   t_nrnb                   *nrnb,
+                                   gmx_int64_t               step,
+                                   bool                      useGpuForPme)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
     init_nrnb(nrnb);
-    if (ir->nsteps >= 0)
-    {
-        /* ir->nsteps is not used here, but we update it for consistency */
-        ir->nsteps -= step - ir->init_step;
-    }
-    ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
-    walltime_accounting_start(walltime_accounting);
+    walltime_accounting_reset_time(walltime_accounting, step);
 
     if (useGpuForPme)
     {
@@ -602,7 +596,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, step, useGpuForPme);
+                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, step, useGpuForPme);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -616,7 +610,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         if (count == 0)
         {
             wallcycle_start(wcycle, ewcRUN);
-            walltime_accounting_start(walltime_accounting);
+            walltime_accounting_start_time(walltime_accounting);
         }
 
         wallcycle_start(wcycle, ewcPMEMESH);
@@ -669,7 +663,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
-    walltime_accounting_end(walltime_accounting);
+    walltime_accounting_end_time(walltime_accounting);
 
     return 0;
 }

@@ -123,7 +123,7 @@ static void print_em_start(FILE                     *fplog,
                            gmx_wallcycle_t           wcycle,
                            const char               *name)
 {
-    walltime_accounting_start(walltime_accounting);
+    walltime_accounting_start_time(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, name);
 }
@@ -134,7 +134,7 @@ static void em_time_end(gmx_walltime_accounting_t walltime_accounting,
 {
     wallcycle_stop(wcycle, ewcRUN);
 
-    walltime_accounting_end(walltime_accounting);
+    walltime_accounting_end_time(walltime_accounting);
 }
 
 //! Printing a log file and console header
