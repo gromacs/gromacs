@@ -262,7 +262,7 @@ Integrator::do_tpi()
     f.resize(gmx::paddedRVecVectorSize(top_global->natoms));
 
     /* Print to log file  */
-    walltime_accounting_start(walltime_accounting);
+    walltime_accounting_start_time(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
@@ -802,7 +802,7 @@ Integrator::do_tpi()
 
         bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
     }   /* End of the loop  */
-    walltime_accounting_end(walltime_accounting);
+    walltime_accounting_end_time(walltime_accounting);
 
     close_trx(status);
 
