@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Provides asize() macro for calculating the static size of an array.
+ * Provides asize() function for calculating the static size of an array at compile time.
  *
  * \inpublicapi
  * \ingroup module_utility
@@ -43,10 +43,15 @@
 #define GMX_UTILITY_ARRAYSIZE_H
 
 /*! \brief
- * Calculates the static number of elements in an array.
+ * Calculates the number of elements in a static array at compile time.
  *
  * \ingroup module_utility
  */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+template <typename T, int N>
+constexpr int asize(T(&)[N])
+{
+    static_assert(N >= 0, "Do negative size arrays exist?");
+    return N;
+}
 
 #endif
