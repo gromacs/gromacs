@@ -124,8 +124,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
 
 /*! \brief Initializes (or disables) IMD.
  *
- * This function is called before the main MD loop over time steps,
- * and it must be called prior to any call to dd_partition_system if in parallel.
+ * This function is called before the main MD loop over time steps.
  *
  * \param ir           The inputrec structure containing the MD input parameters
  *                     including a pointer to the IMD data structure.
