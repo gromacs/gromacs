@@ -461,6 +461,11 @@ void gmx::Integrator::do_md()
         }
     }
 
+    /* Set up interactive MD (IMD) */
+    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
+             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
+             nfile, fnm, oenv, mdrunOptions);
+
     // Local state only becomes valid now.
     std::unique_ptr<t_state> stateInstance;
     t_state *                state;
@@ -472,6 +477,15 @@ void gmx::Integrator::do_md()
         stateInstance = gmx::compat::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
+
+        /* Distribute the charge groups over the nodes from the master node */
+        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
+                            state_global, top_global, ir,
+                            state, &f, mdAtoms, top, fr,
+                            vsite, constr,
+                            nrnb, nullptr, FALSE);
+        shouldCheckNumberOfBondedInteractions = true;
+        update_realloc(upd, state->natoms);
     }
     else
     {
@@ -487,23 +501,6 @@ void gmx::Integrator::do_md()
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdAtoms, vsite, shellfc);
 
-        update_realloc(upd, state->natoms);
-    }
-
-    /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, ms, top_global, fplog, ir->nstcalcenergy,
-             MASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr,
-             nfile, fnm, oenv, mdrunOptions);
-
-    if (DOMAINDECOMP(cr))
-    {
-        /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
-                            state_global, top_global, ir,
-                            state, &f, mdAtoms, top, fr,
-                            vsite, constr,
-                            nrnb, nullptr, FALSE);
-        shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
     }
 
