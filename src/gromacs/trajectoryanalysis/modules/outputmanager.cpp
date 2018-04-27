@@ -100,7 +100,7 @@ OutputManager::closeFile()
 }
 
 t_trxstatus *
-OutputManager::trjOpenTng() const
+OutputManager::trjOpenTng()
 {
     ArrayRef<const int> index     = sel_->atomIndices();
     int                 natoms    = sel_->atomCount();
@@ -118,7 +118,7 @@ OutputManager::trjOpenTng() const
     else if (haveAtoms())
     {
 
-        convertAtomsToMtop(nullptr, nullptr, const_cast<t_atoms*>(atoms_), &mtop);
+        convertAtomsToMtop(nullptr, nullptr, &atoms_, &mtop);
     }
 
 
@@ -148,13 +148,13 @@ OutputManager::trjOpenTng() const
 }
 
 t_trxstatus *
-OutputManager::trjOpenTrr() const
+OutputManager::trjOpenTrr()
 {
     return open_trx(name_.c_str(), filemode_.c_str());
 }
 
 t_trxstatus *
-OutputManager::trjOpenPdb() const
+OutputManager::trjOpenPdb()
 {
     if (!haveAtoms())
     {
@@ -164,7 +164,7 @@ OutputManager::trjOpenPdb() const
 }
 
 t_trxstatus *
-OutputManager::trjOpenGro() const
+OutputManager::trjOpenGro()
 {
     if (!haveAtoms())
     {
@@ -176,7 +176,7 @@ OutputManager::trjOpenGro() const
 bool
 OutputManager::haveAtoms() const
 {
-    return atoms_ != nullptr ? true : false;
+    return atoms_.nr > 0 ? true : false;
 }
 
 bool

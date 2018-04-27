@@ -42,7 +42,7 @@
 
 #include "gmxpre.h"
 
-#include "outputselector.h"
+#include "setvelocities.h"
 
 #include <algorithm>
 
@@ -70,53 +70,20 @@ namespace gmx
 {
 
 void
-OutputSelector::initFileOptions(IOptionsContainer * /*options*/)
+SetVelocities::initFileOptions(IOptionsContainer * /*options*/)
 {
 }
 
 void
-OutputSelector::checkOptions()
+SetVelocities::checkOptions()
 {
 }
 
 void
-OutputSelector::modifyFrame(const t_trxframe *input)
+SetVelocities::modifyFrame(const t_trxframe &input)
 {
-    int              natoms = sel_->atomCount();
-
     setFrame(input);
-    setNatoms(natoms);
-    setFrameAtoms();
-
-    rvec *xmem = nullptr;
-    rvec *vmem = nullptr;
-    rvec *fmem = nullptr;
-    snew(xmem, natoms);
-    setFrameCoordinates(xmem);
-    if (getbVel())
-    {
-        snew(vmem, natoms);
-        setFrameVelocities(vmem);
-    }
-    if (getbForce())
-    {
-        snew(fmem, natoms);
-        setFrameForces(fmem);
-    }
-
-    for (int i = 0; i < natoms; i++)
-    {
-        int pos = sel_->position(i).refId();
-        copy_rvec(input->x[pos], xmem[i]);
-        if (newFrame_.bV)
-        {
-            copy_rvec(input->v[pos], vmem[i]);
-        }
-        if (newFrame_.bF)
-        {
-            copy_rvec(input->f[pos], fmem[i]);
-        }
-    }
+    setbVel(velocity_ && getbVel());
 }
 
 } // namespace gmx
