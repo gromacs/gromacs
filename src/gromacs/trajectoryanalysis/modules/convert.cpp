@@ -67,7 +67,9 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "outputmanager.h"
-#include "outputselector.h"
+#include "framemodules/outputselector.h"
+#include "framemodules/setatoms.h"
+#include "framemodules/setvelocities.h"
 
 namespace gmx
 {
@@ -101,8 +103,11 @@ class Convert : public TrajectoryAnalysisModule
     private:
         OutputManagerPointer                  output_;
         OutputSelectorPointer                 frame_;
+        SetVelocitiesPointer                  vframe_;
+        SetAtomsPointer                       pframe_;
         Selection                             sel_;
         std::string                           name_;
+        bool                                  velocity_ = false;
 
 };
 
@@ -125,6 +130,8 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
                            .store(&name_).defaultBasename("trajout")
                            .required()
                            .description("Output trajectory after conversion"));
+    options->addOption(BooleanOption("vel").store(&velocity_).defaultValue(false)
+                           .description("Save velocities from frame if possible"));
 
     settings->setHelpText(desc);
     // set correct flags to indicate we need a proper topology for the analysis
@@ -141,10 +148,10 @@ void
 Convert::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
                       const TopologyInformation          &top)
 {
-    frame_ = compat::make_unique<OutputSelector>(&sel_);
-    frame_->setMtop(top.mtop());
-    output_ = compat::make_unique<OutputManager>(name_, &sel_, frame_->getMtop(), frame_->getAtoms());
-
+    output_ = compat::make_unique<OutputManager>(name_, &sel_, top.mtop());
+    frame_  = compat::make_unique<OutputSelector>(&sel_);
+    vframe_ = compat::make_unique<SetVelocities>(velocity_);
+    pframe_ = compat::make_unique<SetAtoms>(output_->getAtoms());
 }
 
 void
@@ -153,7 +160,9 @@ Convert::analyzeFrame(int /*frnr*/, const t_trxframe &fr, t_pbc * /* pbc */,
 {
     // modify frame to write out correct number of coords
     // and actually write out
-    frame_->modifyFrame(&fr);
+    pframe_->modifyFrame(fr);
+    vframe_->modifyFrame(pframe_->getFrame());
+    frame_->modifyFrame(vframe_->getFrame());
     output_->writeFrame(frame_->getFrame());
     frame_->clearFrame();
 }

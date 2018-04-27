@@ -76,23 +76,20 @@ class IFrameManager
          */
         IFrameManager() : prec_(3), time_(0),
                           bGC_(false), bP_(false), bV_(false), bF_(false), bA_(false), bT_(false),
-                          bNewBox_(false), bAtoms_(false), bMtop_(false), fwflags_(0), mtop_(nullptr)
+                          bNewBox_(false), bAtoms_(false), fwflags_(0)
         {
-            init_atom(&atoms_);
-            clear_trxframe(&newFrame_, TRUE);
+            clear_trxframe(&newFrame_, true);
         }
 
         virtual ~IFrameManager()
         {
-            done_atom(&atoms_);
         }
         //! Move constructor for old object.
         explicit IFrameManager(IFrameManager &&old)
             : prec_(std::move(old.prec_)), time_(std::move(old.time_)), bGC_(std::move(old.bGC_)),
               bP_(std::move(old.bP_)), bV_(std::move(old.bV_)), bF_(std::move(old.bF_)),
               bA_(std::move(old.bA_)), bT_(std::move(old.bT_)), bNewBox_(std::move(old.bNewBox_)),
-              bAtoms_(std::move(old.bAtoms_)), bMtop_(std::move(old.bMtop_)),
-              fwflags_(std::move(old.fwflags_)), atoms_(std::move(old.atoms_)), mtop_(std::move(old.mtop_)),
+              bAtoms_(std::move(old.bAtoms_)), fwflags_(std::move(old.fwflags_)),
               newFrame_(std::move(old.newFrame_))
         {
         }
@@ -144,7 +141,7 @@ class IFrameManager
          *
          * \param[in] input Coordinate frame to be modified later.
          */
-        virtual void modifyFrame(const t_trxframe *input) = 0;
+        virtual void modifyFrame(const t_trxframe &input) = 0;
         /*! \brief
          * Sanity check for user input options.
          *
@@ -180,78 +177,11 @@ class IFrameManager
         }
 
         /*! \brief
-         * Set local topology information from Trajectoryanalysis framework.
-         *
-         * \param[in] atoms Pointer to atoms struct from topology.
-         */
-        void setAtoms(t_atoms atoms)
-        {
-            atoms_  = atoms;
-            bAtoms_ = true;
-        }
-
-        /*! \brief
-         * Set complete local topology. Also inits loval t_atoms during this.
-         *
-         * \param[in] mtop Pointer to global mtop topology.
-         */
-        void setMtop(const gmx_mtop_t *mtop)
-        {
-            if (mtop != nullptr)
-            {
-                mtop_ = mtop;
-                setAtoms(gmx_mtop_global_atoms(mtop_));
-                bMtop_ = true;
-            }
-            else
-            {
-                bMtop_ = false;
-            }
-        }
-
-        /*! \brief
          * Checks if t_atoms are available for file output.
          */
-        bool haveAtoms() const
+        bool haveFrameAtoms() const
         {
-            return bAtoms_;
-        }
-        /*! \brief
-         * Checks if full topology is available.
-         */
-        bool haveMtop() const
-        {
-            return bMtop_;
-        }
-
-        /*! \brief
-         * Get access to atom data for file writing.
-         */
-        t_atoms *getAtoms()
-        {
-            if (haveAtoms())
-            {
-                return &atoms_;
-            }
-            else
-            {
-                return nullptr;
-            }
-        }
-
-        /*! \brief
-         * Get access to topology data for file writing.
-         */
-        const gmx_mtop_t *getMtop() const
-        {
-            if (haveMtop())
-            {
-                return mtop_;
-            }
-            else
-            {
-                return nullptr;
-            }
+            return newFrame_.bAtoms;
         }
 
         /*! \brief
@@ -264,9 +194,9 @@ class IFrameManager
         /*! \brief
          * Set the internal frame to the input value provided to the tool.
          */
-        void setFrame(const t_trxframe *frame)
+        void setFrame(const t_trxframe &frame)
         {
-            newFrame_ = *(const_cast<t_trxframe*>(frame));
+            newFrame_ = frame;
         }
         //! Set the number of coordinates in the output.
         void setNatoms(int natoms)
@@ -274,20 +204,51 @@ class IFrameManager
             newFrame_.natoms = natoms;
         }
         //! Set atoms data struct for current frame.
-        void setFrameAtoms()
+        void setFrameAtoms(const t_atoms *atoms, bool haveAtoms)
         {
-            newFrame_.atoms     = &atoms_;
-            newFrame_.bAtoms    = bAtoms_;
+            if (haveAtoms)
+            {
+                newFrame_.atoms     = const_cast<t_atoms*>(atoms);
+            }
+            else if (!haveFrameAtoms() && !haveAtoms)
+            {
+                newFrame_.atoms = nullptr;
+            }
+            newFrame_.bAtoms    = haveAtoms;
         }
         //! Get if we are having velocities in the frame.
         bool getbVel()
         {
             return newFrame_.bV;
         }
+        /*! \brief
+         * Change frame velocity settings.
+         *
+         * Corresponding function to \c getbVel to change frame settings for having
+         * velocities saved.
+         *
+         * \param[in] velocity Boolean value to change frame setting.
+         */
+        void setbVel(bool velocity)
+        {
+            newFrame_.bV = velocity;
+        }
         //! Get if we are having forces in the frame.
         bool getbForce()
         {
             return newFrame_.bF;
+        }
+        /*! \brief
+         * Change frame force settings.
+         *
+         * Corresponding function to \c getbForce to change frame setting for having
+         * forces saved.
+         *
+         * \param[in] force Boolean value to change frame setting.
+         */
+        void setbForce(bool force)
+        {
+            newFrame_.bF = force;
         }
         /*! \brief
          * Set frame coordinates from input.
@@ -337,8 +298,14 @@ class IFrameManager
         void clearFrame()
         {
             sfree(newFrame_.x);
-            sfree(newFrame_.v);
-            sfree(newFrame_.f);
+            if (getbVel())
+            {
+                sfree(newFrame_.v);
+            }
+            if (getbForce())
+            {
+                sfree(newFrame_.f);
+            }
         }
 
         //! Precision for binary file formats.
@@ -361,14 +328,8 @@ class IFrameManager
         bool                                  bNewBox_;
         //! Is the t_atoms struct available.
         bool                                  bAtoms_;
-        //! Is the full topology available.
-        bool                                  bMtop_;
         //! Flags containing information about the coordinate file writing.
         unsigned long                         fwflags_;
-        //! Local atoms struct for plain text files.
-        t_atoms                               atoms_;
-        //! Local mtop topology information.
-        const gmx_mtop_t                     *mtop_;
         //! Local storage of coordiante frame to work with.
         t_trxframe                            newFrame_;
 };
