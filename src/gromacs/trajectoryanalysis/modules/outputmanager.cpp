@@ -100,7 +100,7 @@ OutputManager::closeFile()
 }
 
 t_trxstatus *
-OutputManager::trjOpenTng() const
+OutputManager::trjOpenTng()
 {
     ArrayRef<const int> index     = sel_->atomIndices();
     int                 natoms    = sel_->atomCount();
@@ -119,7 +119,7 @@ OutputManager::trjOpenTng() const
     else if (haveAtoms())
     {
 
-        convertAtomsToMtop(nullptr, nullptr, const_cast<t_atoms*>(atoms_), pMtop);
+        convertAtomsToMtop(nullptr, nullptr, &atoms_, pMtop);
     }
 
 
@@ -148,13 +148,13 @@ OutputManager::trjOpenTng() const
 }
 
 t_trxstatus *
-OutputManager::trjOpenTrr() const
+OutputManager::trjOpenTrr()
 {
     return open_trx(name_.c_str(), filemode_.c_str());
 }
 
 t_trxstatus *
-OutputManager::trjOpenPdb() const
+OutputManager::trjOpenPdb()
 {
     if (!haveAtoms())
     {
@@ -164,19 +164,27 @@ OutputManager::trjOpenPdb() const
 }
 
 t_trxstatus *
-OutputManager::trjOpenGro() const
+OutputManager::trjOpenGro()
 {
     if (!haveAtoms())
     {
         GMX_THROW(InvalidInputError("Need trajectory frame with atom names for pdb file writing"));
     }
     return open_trx(name_.c_str(), filemode_.c_str());
+}
+
+void
+OutputManager::clearCoordinateFrame(t_trxframe *frame) const
+{
+    sfree(frame->x);
+    sfree(frame->v);
+    sfree(frame->f);
 }
 
 bool
 OutputManager::haveAtoms() const
 {
-    return atoms_ != nullptr ? true : false;
+    return atoms_.nr > 0 ? true : false;
 }
 
 bool
@@ -219,6 +227,7 @@ OutputManager::writeFrame(const t_trxframe write) const
     t_trxframe        local  = (*const_cast<t_trxframe*>(&write));
 
     write_trxframe(trr_, &local, nullptr);
+    clearCoordinateFrame(&local);
 }
 
 

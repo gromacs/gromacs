@@ -67,7 +67,10 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "outputmanager.h"
-#include "outputselector.h"
+#include "framemodules/analyse.h"
+#include "framemodules/outputselector.h"
+#include "framemodules/setatoms.h"
+#include "framemodules/setvelocities.h"
 
 namespace gmx
 {
@@ -100,9 +103,10 @@ class Convert : public TrajectoryAnalysisModule
 
     private:
         OutputManagerPointer                  output_;
-        OutputSelectorPointer                 frame_;
+        AnalyseCoordinateFrame                analysisFrame_;
         Selection                             sel_;
         std::string                           name_;
+        bool                                  velocity_ = false;
 
 };
 
@@ -125,6 +129,8 @@ Convert::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *set
                            .store(&name_).defaultBasename("trajout")
                            .required()
                            .description("Output trajectory after conversion"));
+    options->addOption(BooleanOption("vel").store(&velocity_).defaultValue(false)
+                           .description("Save velocities from frame if possible"));
 
     settings->setHelpText(desc);
     // set correct flags to indicate we need a proper topology for the analysis
@@ -141,10 +147,10 @@ void
 Convert::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
                       const TopologyInformation          &top)
 {
-    frame_ = compat::make_unique<OutputSelector>(&sel_);
-    frame_->setMtop(top.mtop());
-    output_ = compat::make_unique<OutputManager>(name_, &sel_, frame_->getMtop(), frame_->getAtoms());
-
+    output_ = compat::make_unique<OutputManager>(name_, &sel_, top.mtop());
+    analysisFrame_.addFrameModule(std::make_shared<OutputSelector>(&sel_));
+    analysisFrame_.addFrameModule(std::make_shared<SetVelocities>(velocity_));
+    analysisFrame_.addFrameModule(std::make_shared<SetAtoms>(output_->getAtoms()));
 }
 
 void
@@ -153,9 +159,8 @@ Convert::analyzeFrame(int /*frnr*/, const t_trxframe &fr, t_pbc * /* pbc */,
 {
     // modify frame to write out correct number of coords
     // and actually write out
-    frame_->modifyFrame(&fr);
-    output_->writeFrame(frame_->getFrame());
-    frame_->clearFrame();
+    analysisFrame_.modifyFrame(fr);
+    output_->writeFrame(analysisFrame_.getFrame());
 }
 
 void
