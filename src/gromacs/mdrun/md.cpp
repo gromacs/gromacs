@@ -142,7 +142,6 @@ using gmx::SimulationSignaller;
 //! Resets all the counters.
 static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                                int64_t step,
-                               int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
                                struct nonbonded_verlet_t *nbv,
@@ -177,11 +176,8 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
         reset_dd_statistics_counters(cr->dd);
     }
     init_nrnb(nrnb);
-    ir->init_step += *step_rel;
-    ir->nsteps    -= *step_rel;
-    *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
-    walltime_accounting_start(walltime_accounting);
+    walltime_accounting_reset_time(walltime_accounting, step);
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
@@ -268,7 +264,6 @@ void gmx::Integrator::do_md()
     t_inputrec       *ir   = inputrec;
     gmx_mdoutf       *outf = nullptr;
     int64_t           step, step_rel;
-    double            elapsed_time;
     double            t, t0, lam0[efptNR];
     gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
@@ -734,7 +729,7 @@ void gmx::Integrator::do_md()
         fprintf(fplog, "\n");
     }
 
-    walltime_accounting_start(walltime_accounting);
+    walltime_accounting_start_time(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
 
@@ -802,10 +797,6 @@ void gmx::Integrator::do_md()
         }
     }
 
-    /* Loop over MD steps or if rerunMD to end of input trajectory,
-     * or, if max_hours>0, until max_hours is reached.
-     */
-    real max_hours   = mdrunOptions.maximumHoursToRun;
     bFirstStep       = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
     bInitStep        = !startingFromCheckpoint || EI_VV(ir->eI);
@@ -1338,7 +1329,7 @@ void gmx::Integrator::do_md()
             copy_mat(state->fvir_prev, force_vir);
         }
 
-        elapsed_time = walltime_accounting_get_current_elapsed_time(walltime_accounting);
+        double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
 
         /* Check whether everything is still allright */
         if ((static_cast<int>(gmx_get_stop_condition()) > handled_stop_condition)
@@ -1385,20 +1376,23 @@ void gmx::Integrator::do_md()
             handled_stop_condition = static_cast<int>(gmx_get_stop_condition());
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&
+                 (mdrunOptions.maximumHoursToRun > 0 &&
+                  secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.99) &&
                  signals[eglsSTOPCOND].sig == 0 && signals[eglsSTOPCOND].set == 0)
         {
             /* Signal to terminate the run */
             signals[eglsSTOPCOND].sig = 1;
             if (fplog)
             {
-                fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n", gmx_step_str(step, sbuf), max_hours*0.99);
+                fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
+                        gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
             }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n", gmx_step_str(step, sbuf), max_hours*0.99);
+            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
+                    gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
         }
 
         if (bResetCountersHalfMaxH && MASTER(cr) &&
-            elapsed_time > max_hours*60.0*60.0*0.495)
+            secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.495)
         {
             /* Set flag that will communicate the signal to all ranks in the simulation */
             signals[eglsRESETCOUNTERS].sig = 1;
@@ -1412,7 +1406,7 @@ void gmx::Integrator::do_md()
         if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
                            cpt_period >= 0 &&
                            (cpt_period == 0 ||
-                            elapsed_time >= nchkpt*cpt_period*60.0)) &&
+                            secondsSinceStart >= nchkpt*cpt_period*60.0)) &&
             signals[eglsCHKPT].set == 0)
         {
             signals[eglsCHKPT].sig = 1;
@@ -1850,7 +1844,7 @@ void gmx::Integrator::do_md()
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }
-            reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
+            reset_all_counters(fplog, mdlog, cr, step, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
             wcycle_set_reset_counters(wcycle, -1);
             if (!thisRankHasDuty(cr, DUTY_PME))
@@ -1858,10 +1852,8 @@ void gmx::Integrator::do_md()
                 /* Tell our PME node to reset its counters */
                 gmx_pme_send_resetcounters(cr, step);
             }
-            /* Correct max_hours for the elapsed time */
-            max_hours                -= elapsed_time/(60.0*60.0);
             /* If mdrun -maxh -resethway was active, it can only trigger once */
-            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
+            bResetCountersHalfMaxH = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
             /* Reset can only happen once, so clear the triggering flag. */
             signals[eglsRESETCOUNTERS].set = 0;
         }
@@ -1877,7 +1869,7 @@ void gmx::Integrator::do_md()
     mdoutf_tng_close(outf);
 
     /* Stop measuring walltime */
-    walltime_accounting_end(walltime_accounting);
+    walltime_accounting_end_time(walltime_accounting);
 
     if (bRerunMD && MASTER(cr))
     {
@@ -1922,7 +1914,7 @@ void gmx::Integrator::do_md()
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(ir->bIMD, ir->imd);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
+    walltime_accounting_set_nsteps_done(walltime_accounting, step);
     if (step_rel >= wcycle_get_reset_counters(wcycle) &&
         signals[eglsRESETCOUNTERS].set == 0 &&
         !bResetCountersHalfMaxH)
