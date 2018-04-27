@@ -3059,7 +3059,7 @@ void init_forcerec(FILE                             *fp,
 
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
-                          &fr->bonded_threading);
+                          &fr->bondedThreading);
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
@@ -3150,5 +3150,7 @@ void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups)
     sfree(fr->nblists);
     done_ns(fr->ns, numEnergyGroups);
     sfree(fr->ewc_t);
+    tear_down_bonded_threading(fr->bondedThreading);
+    fr->bondedThreading = nullptr;
     sfree(fr);
 }
