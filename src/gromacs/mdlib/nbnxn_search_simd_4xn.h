@@ -138,7 +138,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
     InRange = FALSE;
     while (!InRange && jclusterFirst <= jclusterLast)
     {
-#ifdef NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_SEARCH_BB_SIMD4
         d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterFirst, gridj->bbj);
 #else
         d2 = subc_bb_dist2(0, bb_ci, jclusterFirst, gridj->bbj);
@@ -209,7 +209,7 @@ makeClusterListSimd4xn(const nbnxn_grid_t *      gridj,
     InRange = FALSE;
     while (!InRange && jclusterLast > jclusterFirst)
     {
-#ifdef NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_SEARCH_BB_SIMD4
         d2 = subc_bb_dist2_simd4(0, bb_ci, jclusterLast, gridj->bbj);
 #else
         d2 = subc_bb_dist2(0, bb_ci, jclusterLast, gridj->bbj);

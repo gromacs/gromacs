@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,23 +75,23 @@ struct NbnxnListParameters
 /*! \endcond */
 
 /* With GPU kernels the i and j cluster size is 8 atoms */
-static const int c_nbnxnGpuClusterSize = 8;
+static constexpr int c_nbnxnGpuClusterSize = 8;
 
 /* The number of clusters in a super-cluster, used for GPU */
-static const int c_nbnxnGpuNumClusterPerSupercluster = 8;
+static constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
 
 /* With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.
  */
-static const int c_nbnxnGpuJgroupSize = 32/c_nbnxnGpuNumClusterPerSupercluster;
+static constexpr int c_nbnxnGpuJgroupSize = 32/c_nbnxnGpuNumClusterPerSupercluster;
 
 /* In CUDA the number of threads in a warp is 32 and we have cluster pairs
  * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.
  */
-static const int c_nbnxnGpuClusterpairSplit = 2;
+static constexpr int c_nbnxnGpuClusterpairSplit = 2;
 
 /* The fixed size of the exclusion mask array for a half cluster pair */
-static const int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+static constexpr int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
