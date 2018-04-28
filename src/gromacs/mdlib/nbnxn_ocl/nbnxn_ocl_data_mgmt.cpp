@@ -711,7 +711,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
      */
     nb->bPrefetchLjParam =
         (getenv("GMX_OCL_DISABLE_I_PREFETCH") == NULL) &&
-        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL));
+        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (nb->dev_info->vendor_e == OCL_VENDOR_INTEL) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
      * but sadly this is not supported in OpenCL (yet?). Consider adding it if
