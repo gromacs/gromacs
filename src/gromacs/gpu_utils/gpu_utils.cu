@@ -813,9 +813,8 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
 
     gmx_device_info_t *dinfo = &gpu_info.gpu_dev[index];
 
-    bool               bGpuExists =
-        dinfo->stat == egpuCompatible ||
-        dinfo->stat == egpuIncompatible;
+    bool               bGpuExists = (dinfo->stat != egpuNonexistent &&
+                                     dinfo->stat != egpuInsane);
 
     if (!bGpuExists)
     {
