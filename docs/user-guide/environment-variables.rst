@@ -484,6 +484,9 @@ compilation of OpenCL kernels, but they are also used in device selection.
         and allows testing the OpenCL kernels on non-supported platforms
         (like Intel iGPUs) without source code modification.
 
+``GMX_OCL_SHOW_DIAGNOSTICS``
+        Use Intel OpenCL extension to show additional runtime performance
+	diagnostics.
 Analysis and Core Functions
 ---------------------------
 ``GMX_QM_ACCURACY``
