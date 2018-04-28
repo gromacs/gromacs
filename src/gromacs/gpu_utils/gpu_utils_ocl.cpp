@@ -107,13 +107,15 @@ static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
         return egpuCompatible;
     }
 
-    /* Only AMD and NVIDIA GPUs are supported for now */
+    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
     switch (ocl_gpu_device->vendor_e)
     {
         case OCL_VENDOR_NVIDIA:
             return egpuCompatible;
         case OCL_VENDOR_AMD:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
+        case OCL_VENDOR_INTEL:
+            return GMX_OCL_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatible;
         default:
             return egpuIncompatible;
     }
