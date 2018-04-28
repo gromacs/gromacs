@@ -475,6 +475,17 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
     t->dynamicPruneTime.t = 0.0;
 }
 
+
+//! OpenCL notification callback function
+static void CL_CALLBACK
+ocl_notify_fn( const char *pErrInfo, const void *, size_t, void *)
+{
+    if (pErrInfo != NULL)
+    {
+        printf("%s\n", pErrInfo ); // Print error/hint
+    }
+}
+
 /*! \brief Creates context for OpenCL GPU given by \p mygpu
  *
  * A fatal error results if creation fails.
@@ -488,7 +499,7 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
                          const gmx_device_info_t   *devInfo,
                          int                        rank)
 {
-    cl_context_properties     context_properties[3];
+    cl_context_properties     context_properties[5];
     cl_platform_id            platform_id;
     cl_device_id              device_id;
     cl_context                context;
@@ -500,11 +511,17 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
     platform_id      = devInfo->ocl_gpu_id.ocl_platform_id;
     device_id        = devInfo->ocl_gpu_id.ocl_device_id;
 
-    context_properties[0] = CL_CONTEXT_PLATFORM;
-    context_properties[1] = (cl_context_properties) platform_id;
-    context_properties[2] = 0; /* Terminates the list of properties */
+    int i = 0;
+    context_properties[i++] = CL_CONTEXT_PLATFORM;
+    context_properties[i++] = (cl_context_properties) platform_id;
+    if (getenv("GMX_OCL_SHOW_DIAGNOSTICS"))
+    {
+        context_properties[i++] = CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL;
+        context_properties[i++] = CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL | CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL;
+    }
+    context_properties[i++] = 0; /* Terminates the list of properties */
 
-    context = clCreateContext(context_properties, 1, &device_id, NULL, NULL, &cl_error);
+    context = clCreateContext(context_properties, 1, &device_id, ocl_notify_fn, NULL, &cl_error);
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
