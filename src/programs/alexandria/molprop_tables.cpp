@@ -509,12 +509,12 @@ static void atomtype_tab_header(LongTable &lt)
     char             longbuf[STRLEN];
     CompositionSpecs cs;
 
-    lt.setColumns("ccccccc");
+    lt.setColumns("lcccccc");
 
-    snprintf(longbuf, STRLEN, "Atomic polarizability obtained from the decomposition of the experimental isotropic molecular polarizability. $N$ is the number of experimental datapoints used. The columns Ahc and Ahp contain atomic hybrid components~\\protect\\cite{Miller1979a} and atomic hybrid polarizabilites~\\protect\\cite{Miller1990a, Kang1982a}, respectively. The column BS contains the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}. The atom types are according to the General Amber Force Field~\\cite{Wang2004a}. The uncertainty, $\\sigma$, in the Alexandria polarizability values are computed by Bootstrapping with 1000 interations.");
+    snprintf(longbuf, STRLEN, "Atomic polarizability obtained from the decomposition of the experimental isotropic molecular polarizability. $N$ is the number of experimental datapoints used. The columns Ahc and Ahp contain atomic hybrid components~\\protect\\cite{Miller1979a} and atomic hybrid polarizabilites~\\protect\\cite{Miller1990a, Kang1982a}, respectively. The column BS contains the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}. The uncertainty, $\\sigma$, in the Alexandria polarizability values are computed by Bootstrapping with 1000 interations.");
     lt.setCaption(longbuf);
     lt.setLabel("fragments");
-    snprintf(longbuf, STRLEN, "Atom Type  & $N$ & \\multicolumn{4}{c}{Polarizability}");
+    snprintf(longbuf, STRLEN, "Polarizability Type  & $N$ & \\multicolumn{4}{c}{Polarizability}");
     lt.addHeadLine(longbuf);
     snprintf(longbuf, STRLEN, "& & %s ($\\sigma$) & Ahc & Ahp & %s ",
              cs.searchCS(iCalexandria)->name(),

@@ -79,7 +79,7 @@ class AtomIndex
         int         count_;
         bool        const_;
     public:
-        AtomIndex(const std::string name, bool bConst) : name_(name), count_(1), const_(bConst) {};
+        AtomIndex(const std::string name, bool bConst) : name_(name), count_(0), const_(bConst) {};
 
         const std::string name() const { return name_; }
 

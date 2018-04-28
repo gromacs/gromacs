@@ -54,12 +54,12 @@ static void eemprops_zeta_header(LongTable &lt)
     char             longbuf[STRLEN];
     CompositionSpecs cs;
 
-    lt.setColumns("ccc");
+    lt.setColumns("lcc");
 
-    snprintf(longbuf, STRLEN, "The optimized exponent for the polarizable Gaussian and Slater $s$-type orbitals represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. Slater 3s orbital has been optimized rather than the valence Slater $s$-orbital for Bromide and Iodide ({\\it See} THEORY). The atom types are according to the General Amber Force Field~\\cite{Wang2004a}.");
+    snprintf(longbuf, STRLEN, "The optimized exponent for the polarizable Gaussian and Slater $s$-type orbitals represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. Slater 3s orbital has been optimized rather than the valence Slater $s$-orbital for Bromide and Iodide ({\\it See} THEORY).");
     lt.setCaption(longbuf);
     lt.setLabel("orbitalexpoenent");
-    snprintf(longbuf, STRLEN, " Atom Type & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$)");
+    snprintf(longbuf, STRLEN, "Polarizability Type & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$)");
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
