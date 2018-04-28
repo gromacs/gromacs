@@ -50,7 +50,7 @@ struct gmx_device_info_t;
  * incompatible driver/runtime. */
 typedef enum
 {
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane, egpuNR
+    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuIncompatibleClusterSize, egpuInsane, egpuNR
 } e_gpu_detect_res_t;
 
 /* Names of the GPU detection/check results */
