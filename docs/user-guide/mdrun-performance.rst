@@ -969,8 +969,11 @@ TODO In future patch: any tips not covered above
 Running the OpenCL version of mdrun
 -----------------------------------
 
-The current version works with GCN-based AMD GPUs, and NVIDIA CUDA
-GPUs. Make sure that you have the latest drivers installed. For AMD GPUs,
+Currently supported hardware architectures are:
+- GCN-based AMD GPUs;
+- NVIDIA GPUs (with at least OpenCL 1.2 support);
+- Intel iGPUs.
+Make sure that you have the latest drivers installed. For AMD GPUs,
 the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
 and unsupported `fglrx` proprietary driver and runtime is not recommended (but
@@ -979,6 +982,7 @@ In addition Mesa version 17.0 or newer with LLVM 4.0 or newer is also supported.
 For NVIDIA GPUs, using the proprietary driver is
 required as the open source nouveau driver (available in Mesa) does not
 provide the OpenCL support.
+TODO: add Intel driver recommendations
 The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
