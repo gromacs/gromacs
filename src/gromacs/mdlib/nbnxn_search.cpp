@@ -592,7 +592,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
      * The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz...
      * Using 8-wide AVX(2) is not faster on Intel Sandy Bridge and Haswell.
      */
-    assert(c_nbnxnGpuClusterSize == 8);
+    assert(c_nbnxnGpuClusterSize == 8 || c_nbnxnGpuClusterSize == 4);
 
     Simd4Real   rc2_S      = Simd4Real(rlist2);
 
@@ -602,10 +602,14 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
     Simd4Real   ix_S0      = load4(x_i + si*dim_stride + 0*GMX_SIMD4_WIDTH);
     Simd4Real   iy_S0      = load4(x_i + si*dim_stride + 1*GMX_SIMD4_WIDTH);
     Simd4Real   iz_S0      = load4(x_i + si*dim_stride + 2*GMX_SIMD4_WIDTH);
-    Simd4Real   ix_S1      = load4(x_i + si*dim_stride + 3*GMX_SIMD4_WIDTH);
-    Simd4Real   iy_S1      = load4(x_i + si*dim_stride + 4*GMX_SIMD4_WIDTH);
-    Simd4Real   iz_S1      = load4(x_i + si*dim_stride + 5*GMX_SIMD4_WIDTH);
 
+    Simd4Real   ix_S1, iy_S1, iz_S1;
+    if (c_nbnxnGpuClusterSize == 8)
+    {
+        ix_S1      = load4(x_i + si*dim_stride + 3*GMX_SIMD4_WIDTH);
+        iy_S1      = load4(x_i + si*dim_stride + 4*GMX_SIMD4_WIDTH);
+        iz_S1      = load4(x_i + si*dim_stride + 5*GMX_SIMD4_WIDTH);
+    }
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
      */
@@ -644,30 +648,45 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
         dx_S0            = ix_S0 - jx0_S;
         dy_S0            = iy_S0 - jy0_S;
         dz_S0            = iz_S0 - jz0_S;
-        dx_S1            = ix_S1 - jx0_S;
-        dy_S1            = iy_S1 - jy0_S;
-        dz_S1            = iz_S1 - jz0_S;
         dx_S2            = ix_S0 - jx1_S;
         dy_S2            = iy_S0 - jy1_S;
         dz_S2            = iz_S0 - jz1_S;
-        dx_S3            = ix_S1 - jx1_S;
-        dy_S3            = iy_S1 - jy1_S;
-        dz_S3            = iz_S1 - jz1_S;
+        if (c_nbnxnGpuClusterSize == 8)
+        {
+            dx_S1            = ix_S1 - jx0_S;
+            dy_S1            = iy_S1 - jy0_S;
+            dz_S1            = iz_S1 - jz0_S;
+            dx_S3            = ix_S1 - jx1_S;
+            dy_S3            = iy_S1 - jy1_S;
+            dz_S3            = iz_S1 - jz1_S;
+        }
 
         /* rsq = dx*dx+dy*dy+dz*dz */
         rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
-        rsq_S1           = norm2(dx_S1, dy_S1, dz_S1);
         rsq_S2           = norm2(dx_S2, dy_S2, dz_S2);
-        rsq_S3           = norm2(dx_S3, dy_S3, dz_S3);
+        if (c_nbnxnGpuClusterSize == 8)
+        {
+            rsq_S1           = norm2(dx_S1, dy_S1, dz_S1);
+            rsq_S3           = norm2(dx_S3, dy_S3, dz_S3);
+        }
 
         wco_S0           = (rsq_S0 < rc2_S);
-        wco_S1           = (rsq_S1 < rc2_S);
         wco_S2           = (rsq_S2 < rc2_S);
-        wco_S3           = (rsq_S3 < rc2_S);
-
-        wco_any_S01      = wco_S0 || wco_S1;
-        wco_any_S23      = wco_S2 || wco_S3;
-        wco_any_S        = wco_any_S01 || wco_any_S23;
+        if (c_nbnxnGpuClusterSize == 8)
+        {
+            wco_S1           = (rsq_S1 < rc2_S);
+            wco_S3           = (rsq_S3 < rc2_S);
+        }
+        if (c_nbnxnGpuClusterSize == 8)
+        {
+            wco_any_S01      = wco_S0 || wco_S1;
+            wco_any_S23      = wco_S2 || wco_S3;
+            wco_any_S        = wco_any_S01 || wco_any_S23;
+        }
+        else
+        {
+            wco_any_S = wco_S0 || wco_S2;
+        }
 
         if (anyTrue(wco_any_S))
         {
