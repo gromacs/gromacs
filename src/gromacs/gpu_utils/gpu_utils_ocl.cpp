@@ -42,6 +42,8 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,13 +109,15 @@ static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
         return egpuCompatible;
     }
 
-    /* Only AMD and NVIDIA GPUs are supported for now */
+    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
     switch (ocl_gpu_device->vendor_e)
     {
         case OCL_VENDOR_NVIDIA:
             return egpuCompatible;
         case OCL_VENDOR_AMD:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
+        case OCL_VENDOR_INTEL:
+            return GMX_OCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
         default:
             return egpuIncompatible;
     }
@@ -395,9 +399,7 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
 
     gmx_device_info_t  *dinfo = &gpu_info.gpu_dev[index];
 
-    bool                bGpuExists =
-        dinfo->stat == egpuCompatible ||
-        dinfo->stat == egpuIncompatible;
+    bool                bGpuExists = dinfo->stat != egpuNonexistent;
 
     if (!bGpuExists)
     {
