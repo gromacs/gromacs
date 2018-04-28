@@ -1250,13 +1250,14 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 {
                     int i = cell[a]*nbat->fstride;
 
-                    f[a][XX] += fnb[i];
-                    f[a][YY] += fnb[i+1];
-                    f[a][ZZ] += fnb[i+2];
+                    f[a][XX] += .00001*(float)((int*)fnb)[i];
+                    f[a][YY] += .00001*(float)((int*)fnb)[i+1];
+                    f[a][ZZ] += .00001*(float)((int*)fnb)[i+2];
                 }
             }
             else
             {
+                assert(false); //not implemented yet
                 for (int a = a0; a < a1; a++)
                 {
                     int i = cell[a]*nbat->fstride;
@@ -1554,6 +1555,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 
     if (nbat->nout > 1)
     {
+        assert(false); //not implemented yet for int
         if (locality != eatAll)
         {
             gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
