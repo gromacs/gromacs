@@ -580,7 +580,14 @@ float pmecorrF(float z2)
     return polyFN0*polyFD0;
 }
 
+__INLINE__ __device__
+void atomicAdd_g_fi(__global float *f, float fin)
+{
+    atomic_add((__global int*)f, fin*100000);
+}
+
 #if REDUCE_SHUFFLE
+__INLINE__ __device__
 void reduce_force_j_shfl(float3 fin, __global float *fout,
                          int tidxi, int tidxj, int aidx)
 {
@@ -601,7 +608,7 @@ void reduce_force_j_shfl(float3 fin, __global float *fout,
     }
     if (tidxi < 3)
     {
-        atomicAdd_g_f(&fout[3 * aidx + tidxi], fin.x);
+        atomicAdd_g_fi(&fout[3 * aidx + tidxi], fin.x);
     }
 }
 #endif
@@ -667,7 +674,7 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
             fin.x = fin.y;
         }
         /* Threads 0,1 and 2,3 increment x,y for their warp */
-        atomicAdd_g_f(&fout[3*aidx + (tidxj & 1)], fin.x);
+        atomicAdd_g_fi(&fout[3*aidx + (tidxj & 1)], fin.x);
         if (bCalcFshift)
         {
             fshift_buf[0] += fin.x;
@@ -675,7 +682,7 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
         /* Threads 0 and 2 increment z for their warp */
         if ((tidxj & 1) == 0)
         {
-            atomicAdd_g_f(&fout[3*aidx+2], fin.z);
+            atomicAdd_g_fi(&fout[3*aidx+2], fin.z);
             if (bCalcFshift)
             {
                 fshift_buf[1] += fin.z;
