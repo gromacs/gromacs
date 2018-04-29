@@ -50,7 +50,8 @@
  * Note that this should precede the kernel_utils include.
  */
 #define USE_CJ_PREFETCH 0
-
+#define USE_SUBGROUP_ANY 1
+#define USE_SUBGROUP_PRELOAD 1
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,10 +249,12 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET f_buf + CL_SIZE * CL_SIZE * 3
 #endif
+#ifndef USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
     volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
 #undef LOCAL_OFFSET
+#endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
@@ -276,12 +279,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 #endif
     }
+#ifndef USE_SUBGROUP_ANY
     /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
         warp_any[widx] = 0;
     }
-
+#endif
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
@@ -357,6 +361,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
              *
              * Tested with driver 1800.5
              */
+#if USE_SUBGROUP_PRELOAD
+            int cjt = intel_sub_group_block_read((__global uint*)pl_cj4[j4].cj); //loads 8 instead of the 4 which are only needed
+#endif
 #if !defined PRUNE_NBL
 #pragma unroll 4
 #endif
@@ -367,7 +374,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
+#if USE_SUBGROUP_PRELOAD
+                    cj = sub_group_broadcast(cjt, jm);
+#else
                     cj      = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
+#endif
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
@@ -401,6 +412,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                             r2      = norm2(rv);
 
 #ifdef PRUNE_NBL
+#ifndef USE_SUBGROUP_ANY
                             /* vote.. should code shmem serialisation, wonder what the hit will be */
                             if (r2 < rlist_sq)
                             {
@@ -416,6 +428,12 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                             }
 
                             warp_any[widx] = 0;
+#else
+                            if (!sub_group_any(r2 < rlist_sq))
+                            {
+                                imask &= ~mask_ji;
+                            }
+#endif
 #endif
 
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
