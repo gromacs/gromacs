@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@
 
 /* Define the single-cutoff version of the kernel */
 
-#define NB_INDIRECT_1(x,eel,vdw,y) x ## eel ## vdw ## y
-#define NB_INDIRECT_2(x,eel,vdw,y) NB_INDIRECT_1(x,eel,vdw,y)
-#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x,EELNAME,VDWNAME,y)
+#define NB_INDIRECT_1(x, eel, vdw, y) x ## eel ## vdw ## y
+#define NB_INDIRECT_2(x, eel, vdw, y) NB_INDIRECT_1(x, eel, vdw, y)
+#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x, EELNAME, VDWNAME, y)
 
 #include CL_SOURCE_FILE
 
@@ -71,9 +71,9 @@
 
 /* Define the twin-cutoff version of the kernel */
 
-#define NB_INDIRECT_1_TWINCUT(x,eel,vdw,y) x ## eel ## TwinCut ## vdw ## y
-#define NB_INDIRECT_2_TWINCUT(x,eel,vdw,y) NB_INDIRECT_1_TWINCUT(x,eel,vdw,y)
-#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2_TWINCUT(x,EELNAME,VDWNAME,y)
+#define NB_INDIRECT_1_TWINCUT(x, eel, vdw, y) x ## eel ## TwinCut ## vdw ## y
+#define NB_INDIRECT_2_TWINCUT(x, eel, vdw, y) NB_INDIRECT_1_TWINCUT(x, eel, vdw, y)
+#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2_TWINCUT(x, EELNAME, VDWNAME, y)
 
 #define VDW_CUTOFF_CHECK
 

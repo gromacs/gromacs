@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 
 _INLINE_ float norm_f3(float3 a)
 {
-    return sqrt(dot(a,a));
+    return sqrt(dot(a, a));
 }
 _INLINE_ float norm_ref_f3(float3 a)
 {
@@ -63,7 +63,7 @@ _INLINE_ float norm_ref_f3(float3 a)
 }
 _INLINE_ float norm2(float3 a)
 {
-    return dot(a,a);
+    return dot(a, a);
 }
 _INLINE_ float norm2_ref(float3 a)
 {
@@ -71,7 +71,7 @@ _INLINE_ float norm2_ref(float3 a)
 }
 _INLINE_ float dist3_f3(float3 a, float3 b)
 {
-    return distance(b,a);
+    return distance(b, a);
 }
 _INLINE_ float dist3_ref_f3(float3 a, float3 b)
 {
@@ -80,16 +80,18 @@ _INLINE_ float dist3_ref_f3(float3 a, float3 b)
 
 _INLINE_ void atomicAdd_l_f(volatile __local float *addr, float val)
 {
-    union{
+    union {
         unsigned int u32;
         float        f32;
     } next, expected, current;
-	current.f32    = *addr;
-    do{
+    current.f32    = *addr;
+    do
+    {
         expected.f32 = current.f32;
         next.f32     = expected.f32 + val;
-		current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
-    } while( current.u32 != expected.u32 );
+        current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
+    }
+    while (current.u32 != expected.u32);
 }
 _INLINE_ void atomicAdd_l_f3(__local float3 *addr, float3 val)
 {
@@ -99,16 +101,18 @@ _INLINE_ void atomicAdd_l_f3(__local float3 *addr, float3 val)
 }
 _INLINE_ void atomicAdd_g_f(volatile __global float *addr, float val)
 {
-    union{
+    union {
         unsigned int u32;
         float        f32;
     } next, expected, current;
-	current.f32    = *addr;
-    do{
-	    expected.f32 = current.f32;
+    current.f32    = *addr;
+    do
+    {
+        expected.f32 = current.f32;
         next.f32     = expected.f32 + val;
-		current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
-    } while( current.u32 != expected.u32 );
+        current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+    }
+    while (current.u32 != expected.u32);
 }
 
 /* On the host float3, on the device float1 because f3 translates to f4 and messes up memory indexing */
@@ -126,7 +130,7 @@ _INLINE_ void atomicAdd_g_f3(__global float *addr, const float3 val)
 
 _INLINE_ float norm_f4(float4 a)
 {
-    return sqrt(dot(a,a));
+    return sqrt(dot(a, a));
 }
 
 _INLINE_ float norm_ref_f4(float4 a)
