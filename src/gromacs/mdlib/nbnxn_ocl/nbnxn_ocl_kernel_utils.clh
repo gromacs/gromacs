@@ -40,14 +40,29 @@
 
 #define WARP_SIZE  (CL_SIZE*CL_SIZE/2) //Currently only c_nbnxnGpuClusterpairSplit=2 supported
 
-/* Nvidia+AMD don't support subgroup extensions. Code doesn't support CL_SIZE=8.
-   Also uses subgroup extensions which are part of the Intel extension.
- */
-#if _INTEL_SOURCE_ && CL_SIZE == 4
-#define REDUCE_SHUFFLE 1
+#if (defined cl_intel_subgroups || defined cl_khr_subgroups || __OPENCL_VERSION__ >= 210)
+#define HAVE_SUBGROUP 1
 #else
-#define REDUCE_SHUFFLE 0
+#define HAVE_SUBGROUP 0
 #endif
+
+#ifdef cl_intel_subgroups
+#define HAVE_INTEL_SUBGROUP 1
+#else
+#define HAVE_INTEL_SUBGROUP 0
+#endif
+
+#if _INTEL_SOURCE_
+#define SUBGROUP_SIZE 8
+#elif _AMD_SOURCE_
+#define SUBGROUP_SIZE 64
+#else
+#define SUBGROUP_SIZE 32
+#endif
+
+#define REDUCE_SHUFFLE (HAVE_INTEL_SUBGROUP && CL_SIZE == 4 && SUBGROUP_SIZE == WARP_SIZE)
+#define USE_SUBGROUP_ANY (HAVE_SUBGROUP && SUBGROUP_SIZE == WARP_SIZE)
+#define USE_SUBGROUP_PRELOAD HAVE_INTEL_SUBGROUP
 
 #undef KERNEL_UTILS_INLINE
 #ifdef KERNEL_UTILS_INLINE
@@ -163,17 +178,16 @@ typedef struct {
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
-
-/*! \brief Preload cj4 into local memory.
+/*! \brief Preload cj4
  *
  * - For AMD we load once for a wavefront of 64 threads (on 4 threads * NTHREAD_Z)
  * - For NVIDIA once per warp (on 2x4 threads * NTHREAD_Z)
- * - Same as AMD in the nowarp kernel; we do not assume execution width and therefore
- *   the caller needs to sync.
+ * - For Intel(/USE_SUBGROUP_PRELOAD) loads into private memory(/register) instead of local memory
  *
  * It is the caller's responsibility to make sure that data is consumed only when
  * it's ready. This function does not call a barrier.
  */
+#if !USE_SUBGROUP_PRELOAD
 __INLINE__ __device__
 void preloadCj4(__local int        *sm_cjPreload,
                 const __global int *gm_cj,
@@ -198,19 +212,32 @@ void preloadCj4(__local int        *sm_cjPreload,
     {
         sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = gm_cj[tidxi];
     }
-#else // AMD or nowarp
-      /* Note that with "nowarp" / on hardware with wavefronts <64 a barrier is needed after preload. */
+#else // AMD
     if (tidxj == 0 & tidxi < c_nbnxnGpuJgroupSize)
     {
         sm_cjPreload[tidxi] = gm_cj[tidxi];
     }
 #endif
 }
+#else //USE_SUBGROUP_PRELOAD
+__INLINE__ __device__
+void preloadCj4(int                *cjs,
+                const __global int *gm_cj,
+                int                 tidxi,
+                int                 tidxj,
+                bool                iMaskCond)
+{
+    //loads subgroup-size # of elements (8) instead of the 4 required
+    *cjs = intel_sub_group_block_read((const __global uint *)gm_cj);
+}
+#endif //USE_SUBGROUP_PRELOAD
+
 
 /* \brief Load a cj given a jm index.
  *
  * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
  */
+#if !USE_SUBGROUP_PRELOAD
 __INLINE__ __device__
 int loadCj(__local int        *sm_cjPreload,
            const __global int *gm_cj,
@@ -236,6 +263,14 @@ int loadCj(__local int        *sm_cjPreload,
     return gm_cj[jm];
 #endif
 }
+#else //USE_SUBGROUP_PRELOAD
+__INLINE__ __device__
+int loadCj(int        *cjs, const __global int *gm_cj,
+           int jm, int tidxi, int tixdj)
+{
+    return sub_group_broadcast(*cjs, jm);
+}
+#endif
 
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
@@ -827,6 +862,30 @@ void reduce_energy(volatile __local float  *buf,
     buf[              tidx] = E_lj;
     buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+#endif
+}
+
+bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool pred)
+{
+    if (pred)
+    {
+        warp_any[widx] = 1;
+    }
+
+    bool ret = warp_any[widx];
+
+    warp_any[widx] = 0;
+
+    return ret;
+}
+
+//! Returns a true if predicate is true for any work item in warp
+bool gmx_sub_group_any(volatile __local uint *warp_any, int widx, bool pred)
+{
+#if USE_SUBGROUP_ANY
+    return sub_group_any(pred);
+#else
+    return gmx_sub_group_any_localmem(warp_any, widx, pred);
 #endif
 }
 
