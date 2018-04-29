@@ -42,15 +42,6 @@
  *  \ingroup module_mdlib
  */
 
-#if defined _NVIDIA_SOURCE_ || defined _AMD_SOURCE_
-/* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for other vendors
- * Note that this should precede the kernel_utils include.
- */
-#define USE_CJ_PREFETCH 1
-#else
-#define USE_CJ_PREFETCH 0
-#endif
-
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /* Note: the AMD compiler testing was done with (fglrx 15.12) performs best with wg
@@ -123,25 +114,28 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
 
     #define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
     /* shmem buffer for i cj pre-loading */
-    __local int *cjs;
+    CjType cjs;
 #if USE_CJ_PREFETCH
     cjs = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
     #undef LOCAL_OFFSET
     /* Offset calculated using xib because cjs depends on on tidxz! */
     #define LOCAL_OFFSET (((__local int *)(xib + c_numClPerSupercl * c_clSize)) + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
 #endif
-
+#if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
-    #undef LOCAL_OFFSET
-
-    unsigned int warpVoteSlot = NTHREAD_Z*tidxz + widx;
+    volatile __local uint *const warp_any     = (__local uint*)(LOCAL_OFFSET);
+    const unsigned int           warpVoteSlot = NTHREAD_Z*tidxz + widx;
     /* Initialise warp vote.*/
     if (tidx == 0 || tidx == 32)
     {
         warp_any[warpVoteSlot] = 0;
     }
+#else
+    __local uint *const warp_any     = 0;
+    const unsigned int  warpVoteSlot = 0;
+#endif
+    #undef LOCAL_OFFSET
 
     nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
     int         sci         = nb_sci.sci;                   /* super-cluster */
@@ -188,7 +182,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
             imaskCheck = (imaskNew ^ imaskFull);
         }
 
-        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0u);
+        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0u);
 
         if (imaskCheck)
         {
@@ -223,27 +217,17 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
                                 /* If _none_ of the atoms pairs are in cutoff range,
                                    the bit corresponding to the current
                                    cluster-pair in imask gets set to 0. */
-                                if (r2 < rlistOuter_sq)
-                                {
-                                    warp_any[warpVoteSlot] = 1;
-                                }
-                                if (!warp_any[warpVoteSlot])
+                                if (!gmx_sub_group_any(warp_any, warpVoteSlot, r2 < rlistOuter_sq))
                                 {
                                     imaskFull &= ~mask_ji;
                                 }
-                                warp_any[warpVoteSlot] = 0;
                             }
                             /* If any atom pair is within range, set the bit
                                corresponding to the current cluster-pair. */
-                            if (r2 < rlistInner_sq)
-                            {
-                                warp_any[warpVoteSlot] = 1;
-                            }
-                            if (warp_any[warpVoteSlot])
+                            if (gmx_sub_group_any(warp_any, warpVoteSlot, r2 < rlistInner_sq))
                             {
                                 imaskNew |= mask_ji;
                             }
-                            warp_any[warpVoteSlot] = 0;
                         }
 
                         /* shift the mask bit by 1 */
