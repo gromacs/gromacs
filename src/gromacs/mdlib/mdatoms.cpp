@@ -178,7 +178,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     }
 
     md->havePartiallyFrozenAtoms = FALSE;
-    for (int g = 0; g < ir.opts.ngfrz; g++)
+    if (md->cFREEZE)
     {
         for (int d = YY; d < DIM; d++)
         {
