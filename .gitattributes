@@ -2,10 +2,10 @@
 *.c     filter=uncrustify gmx-doxygen
 *.cpp   filter=uncrustify gmx-doxygen
 *.cu    filter=uncrustify
-*.cl    filter=copyright
+*.cl    filter=uncrustify
 *.h     filter=uncrustify gmx-doxygen
 *.cuh   filter=uncrustify
-*.clh   filter=copyright
+*.clh   filter=uncrustify
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright

@@ -55,9 +55,9 @@
 #ifndef NBNXN_OPENCL_KERNEL_UTILS_CLH
 #define NBNXN_OPENCL_KERNEL_UTILS_CLH
 
-__constant sampler_t generic_sampler     = CLK_NORMALIZED_COORDS_FALSE  /* Natural coords */
-                                            | CLK_ADDRESS_NONE          /* No clamp/repeat*/ 
-                                            | CLK_FILTER_NEAREST ;      /* No interpolation */
+__constant sampler_t generic_sampler     = (CLK_NORMALIZED_COORDS_FALSE /* Natural coords */
+                                            | CLK_ADDRESS_NONE          /* No clamp/repeat*/
+                                            | CLK_FILTER_NEAREST);      /* No interpolation */
 
 #define __device__
 
@@ -74,9 +74,9 @@ __constant sampler_t generic_sampler     = CLK_NORMALIZED_COORDS_FALSE  /* Natur
 // TODO: review, improve
 // Replaced real by float for now, to avoid including any other header
 typedef struct {
-    /*real*/float c2;
-    /*real*/float c3;
-    /*real*/float cpot;
+    float c2;
+    float c3;
+    float cpot;
 } shift_consts_t;
 
 /* Used with potential switching:
@@ -87,9 +87,9 @@ typedef struct {
  * potential *= sw
  */
 typedef struct {
-    /*real*/float c3;
-    /*real*/float c4;
-    /*real*/float c5;
+    float c3;
+    float c4;
+    float c5;
 } switch_consts_t;
 
 // Data structure shared between the OpenCL device code and OpenCL host code
@@ -180,13 +180,13 @@ void preloadCj4(__local int        *sm_cjPreload,
 
     /* Pre-load cj into shared memory */
 #if defined _NVIDIA_SOURCE_
-     /* on both warps separately for NVIDIA */
+    /* on both warps separately for NVIDIA */
     if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
     {
         sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = gm_cj[tidxi];
     }
 #else // AMD or nowarp
-    /* Note that with "nowarp" / on hardware with wavefronts <64 a barrier is needed after preload. */
+      /* Note that with "nowarp" / on hardware with wavefronts <64 a barrier is needed after preload. */
     if (tidxj == 0 & tidxi < c_nbnxnGpuJgroupSize)
     {
         sm_cjPreload[tidxi] = gm_cj[tidxi];
@@ -241,7 +241,7 @@ void convert_sigma_epsilon_to_c6_c12(const float  sigma,
 
 
 /*! Apply force switch,  force + energy version. */
- __INLINE__ __device__
+__INLINE__ __device__
 void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
                               float                c6,
                               float                c12,
@@ -464,7 +464,7 @@ void calculate_lj_ewald_comb_LB_F_E(__constant float    *nbfp_comb_climg2d,
     /* Subtract the grid force from the total LJ force */
     *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
 
-    if (with_E_lj==true)
+    if (with_E_lj == true)
     {
         float sh_mask;
 
