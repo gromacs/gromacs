@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,37 +36,45 @@
 
 /* Auxiliary kernels */
 __kernel void
-memset_f3(__global float3 *buf,const float value,const unsigned int Nbuf)
+memset_f3(__global float3 *buf, const float value, const unsigned int Nbuf)
 {
     unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
+    if (tidx < Nbuf)
+    {
         buf[tidx] = value;
+    }
 }
 
 __kernel void
-memset_f2(__global float2 *buf,const float value,const unsigned int Nbuf)
+memset_f2(__global float2 *buf, const float value, const unsigned int Nbuf)
 {
     unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
+    if (tidx < Nbuf)
+    {
         buf[tidx] = value;
+    }
 }
 
 __kernel void
-memset_f(__global float *buf,const float value,const unsigned int Nbuf)
+memset_f(__global float *buf, const float value, const unsigned int Nbuf)
 {
     unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
+    if (tidx < Nbuf)
+    {
         buf[tidx] = value;
+    }
 }
 
 /* Very few data */
 __kernel void
-zero_e_fshift(__global float *fshift,__global float *e_lj,__global float *e_el,const unsigned int Nbuf)
+zero_e_fshift(__global float *fshift, __global float *e_lj, __global float *e_el, const unsigned int Nbuf)
 {
     unsigned int tidx = get_global_id(0);
-    if(tidx < Nbuf)
+    if (tidx < Nbuf)
+    {
         fshift[tidx] = 0.0f;
-    if(tidx==0)
+    }
+    if (tidx == 0)
     {
         *e_lj     = 0.0f;
         *e_el     = 0.0f;
