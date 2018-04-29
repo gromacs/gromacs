@@ -98,8 +98,8 @@
    Thus if more strings need to be appended a new macro must be written or it must be directly appended here.
  */
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, 1)))
-#if REDUCE_SHUFFLE
-__attribute__((intel_reqd_sub_group_size(WARP_SIZE))) //2*WARP_SIZE could be enabled, see comment in reduce_energy_shfl
+#ifdef _INTEL_SOURCE_
+__attribute__((intel_reqd_sub_group_size(SUBGROUP_SIZE)))
 #endif
 #ifdef PRUNE_NBL
     #ifdef CALC_ENERGIES
@@ -220,13 +220,18 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
 
 #define LOCAL_OFFSET (xqib + NCL_PER_SUPERCL * CL_SIZE)
+#if !USE_SUBGROUP_PRELOAD
     __local int *cjs;
 #if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
     cjs = (__local int *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
-#endif
+#endif //USE_CJ_PREFETCH
+#else
+    int  cj_buf;
+    int *cjs = &cj_buf;
+#endif //!USE_SUBGROUP_PRELOAD
 
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
@@ -249,9 +254,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #else
     __local float *f_buf  = 0;
 #endif
+#ifndef USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
     volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
+#else
+    __local uint          *warp_any = 0;
+#endif
 #undef LOCAL_OFFSET
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
@@ -277,12 +286,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 #endif
     }
+#ifndef USE_SUBGROUP_ANY
     /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
         warp_any[widx] = 0;
     }
-
+#endif
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
@@ -363,7 +373,6 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #if !defined PRUNE_NBL && !defined _NVIDIA_SOURCE_
 #pragma unroll 4
 #endif
-
             for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
                 if (imask & (superClInteractionMask << (jm * NCL_PER_SUPERCL)))
@@ -404,21 +413,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                             r2      = norm2(rv);
 
 #ifdef PRUNE_NBL
-                            /* vote.. should code shmem serialisation, wonder what the hit will be */
-                            if (r2 < rlist_sq)
-                            {
-                                warp_any[widx] = 1;
-                            }
-
-                            /* If _none_ of the atoms pairs are in cutoff range,
-                               the bit corresponding to the current
-                               cluster-pair in imask gets set to 0. */
-                            if (!warp_any[widx])
+                            if (!gmx_sub_group_any(warp_any, widx, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
-
-                            warp_any[widx] = 0;
 #endif
 
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
