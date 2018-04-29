@@ -43,6 +43,8 @@
 /* Nvidia+AMD don't support subgroup extensions. Code doesn't support CL_SIZE=8 */
 #if _INTEL_SOURCE_ && CL_SIZE == 4
 #define REDUCE_SHUFFLE 1
+#define USE_SUBGROUP_ANY 1
+#define USE_SUBGROUP_PRELOAD 1
 #endif
 
 #undef KERNEL_UTILS_INLINE
@@ -174,6 +176,7 @@ __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
  * It is the caller's responsibility to make sure that data is consumed only when
  * it's ready. This function does not call a barrier.
  */
+#if !USE_SUBGROUP_PRELOAD
 __INLINE__ __device__
 void preloadCj4(__local int        *sm_cjPreload,
                 const __global int *gm_cj,
@@ -206,11 +209,24 @@ void preloadCj4(__local int        *sm_cjPreload,
     }
 #endif
 }
+#else //USE_SUBGROUP_PRELOAD
+__INLINE__ __device__
+void preloadCj4(int                *cjs,
+                const __global int *gm_cj,
+                int                 tidxi,
+                int                 tidxj,
+                bool                iMaskCond)
+{
+    *cjs = intel_sub_group_block_read((const __global uint *)gm_cj); //loads 8 instead of the 4 which are only needed
+}
+#endif                                                               //USE_SUBGROUP_PRELOAD
+
 
 /* \brief Load a cj given a jm index.
  *
  * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
  */
+#if !USE_SUBGROUP_PRELOAD
 __INLINE__ __device__
 int loadCj(__local int        *sm_cjPreload,
            const __global int *gm_cj,
@@ -236,6 +252,14 @@ int loadCj(__local int        *sm_cjPreload,
     return gm_cj[jm];
 #endif
 }
+#else //USE_SUBGROUP_PRELOAD
+__INLINE__ __device__
+int loadCj(int        *cjs, const __global int *gm_cj,
+           int jm, int tidxi, int tixdj)
+{
+    return sub_group_broadcast(*cjs, jm);
+}
+#endif
 
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
@@ -812,6 +836,29 @@ void reduce_energy(volatile __local float  *buf,
     reduce_energy_pow2(buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
 #else
     reduce_energy_shfl(E_lj, E_el, e_lj, e_el);
+#endif
+}
+
+bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool pred)
+{
+    if (pred)
+    {
+        warp_any[widx] = 1;
+    }
+
+    bool ret = warp_any[widx];
+
+    warp_any[widx] = 0;
+
+    return ret;
+}
+
+bool gmx_sub_group_any(volatile __local uint *warp_any, int widx, bool pred)
+{
+#ifdef USE_SUBGROUP_ANY
+    return sub_group_any(pred);
+#else
+    return gmx_sub_group_any_localmem(warp_any, widx, pred);
 #endif
 }
 
