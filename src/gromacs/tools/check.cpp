@@ -514,7 +514,7 @@ static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tp
     PRINTITEM ( "Box",        bBox );
 }
 
-static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
+static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi, const char *tex)
 {
     int            natom, i, j, k;
     t_topology     top;
@@ -530,7 +530,18 @@ static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     gmx_atomprop_t aps;
 
     fprintf(stderr, "Checking coordinate file %s\n", fn);
-    read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
+    bool haveFullTopology = read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
+    if (tex && !haveFullTopology)
+    {
+        gmx_warning("Need full topology to print methods information. Skipping");
+
+    }
+    else if (tex)
+    {
+        fprintf(stderr, "Printing simulation information to file %s\n", tex);
+        tpx2methods(fn, tex);
+    }
+
     atoms = &top.atoms;
     natom = atoms->nr;
     fprintf(stderr, "%d atoms in file\n", atoms->nr);
@@ -958,7 +969,7 @@ int gmx_check(int argc, char *argv[])
 
     if (ftp2bSet(efTPS, NFILE, fnm))
     {
-        chk_tps(ftp2fn(efTPS, NFILE, fnm), vdw_fac, bon_lo, bon_hi);
+        chk_tps(ftp2fn(efTPS, NFILE, fnm), vdw_fac, bon_lo, bon_hi, tex);
     }
 
     if (ftp2bSet(efNDX, NFILE, fnm))
