@@ -2523,7 +2523,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
         ir->nsteps          += ir->init_step - headerContents.step;
     }
     ir->init_step        = headerContents.step;
-    ir->simulation_part += 1;
+    ir->simulation_part += headerContents.simulation_part;
 }
 
 void read_checkpoint_part_and_step(const char  *filename,
