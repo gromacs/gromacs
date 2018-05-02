@@ -149,7 +149,7 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
     {
         for (int d = YY; d < DIM; d++)
         {
-            if (ir.opts.nFreeze[d] != ir.opts.nFreeze[XX])
+            if (ir.opts.nFreeze[g][d] != ir.opts.nFreeze[g][XX])
             {
                 md->havePartiallyFrozenAtoms = TRUE;
             }

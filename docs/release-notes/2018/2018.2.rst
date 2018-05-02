@@ -32,3 +32,10 @@ Fixes to improve portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Enable SIMD version of the integrator
+"""""""""""""""""""""""""""""""""""""
+
+Fixed a bug so the SIMD version of the integrator is chosen, when possible.
+
+:issue:`2497`
