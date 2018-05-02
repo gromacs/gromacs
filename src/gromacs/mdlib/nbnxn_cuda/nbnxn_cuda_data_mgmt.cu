@@ -808,6 +808,16 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
         sfree(plist_nl);
     }
 
+    /* Free nbst */
+    pfree(nb->nbst.e_lj);
+    nb->nbst.e_lj = NULL;
+
+    pfree(nb->nbst.e_el);
+    nb->nbst.e_el = NULL;
+
+    pfree(nb->nbst.fshift);
+    nb->nbst.fshift = NULL;
+
     sfree(atdat);
     sfree(nbparam);
     sfree(nb->timings);
