@@ -146,10 +146,10 @@ int ocl_copy_H2D_sync(cl_mem d_dest, void * h_src,
                       cl_command_queue command_queue);
 
 /*! \brief Allocate host memory in malloc style */
-void ocl_pmalloc(void **h_ptr, size_t nbytes);
+void pmalloc(void **h_ptr, size_t nbytes);
 
 /*! \brief Free host memory in malloc style */
-void ocl_pfree(void *h_ptr);
+void pfree(void *h_ptr);
 
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error);

@@ -651,9 +651,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     snew(nb->dev_rundata, 1);
 
     /* init nbst */
-    ocl_pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
-    ocl_pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    ocl_pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
+    pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
+    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
@@ -1089,13 +1089,13 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     }
 
     /* Free nbst */
-    ocl_pfree(nb->nbst.e_lj);
+    pfree(nb->nbst.e_lj);
     nb->nbst.e_lj = NULL;
 
-    ocl_pfree(nb->nbst.e_el);
+    pfree(nb->nbst.e_el);
     nb->nbst.e_el = NULL;
 
-    ocl_pfree(nb->nbst.fshift);
+    pfree(nb->nbst.fshift);
     nb->nbst.fshift = NULL;
 
     /* Free command queues */

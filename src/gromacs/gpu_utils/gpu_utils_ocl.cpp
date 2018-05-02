@@ -461,8 +461,8 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
 {
     if (bUseGpuKernels)
     {
-        *nb_alloc = &ocl_pmalloc;
-        *nb_free  = &ocl_pfree;
+        *nb_alloc = &pmalloc;
+        *nb_free  = &pfree;
     }
     else
     {

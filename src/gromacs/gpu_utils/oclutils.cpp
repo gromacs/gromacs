@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,7 +166,7 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
  * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
  * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
  */
-void ocl_pmalloc(void **h_ptr, size_t nbytes)
+void pmalloc(void **h_ptr, size_t nbytes)
 {
     /* Need a temporary type whose size is 1 byte, so that the
      * implementation of snew_aligned can cope without issuing
@@ -181,11 +181,11 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes)
     snew_aligned(*temporary, nbytes, 16);
 }
 
-/*! \brief Frees memory allocated with ocl_pmalloc.
+/*! \brief Frees memory allocated with pmalloc.
  *
- * \param[in]    h_ptr   Buffer allocated with ocl_pmalloc that needs to be freed.
+ * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
  */
-void ocl_pfree(void *h_ptr)
+void pfree(void *h_ptr)
 {
 
     if (h_ptr)
