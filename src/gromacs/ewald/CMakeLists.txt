@@ -64,6 +64,9 @@ if (GMX_USE_CUDA)
         pme-gpu.cpp
         pme-gpu-internal.cpp
         )
+    gmx_compile_cpp_as_cuda(
+        pme-gpu-internal.cpp
+        )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
