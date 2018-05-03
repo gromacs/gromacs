@@ -39,6 +39,7 @@ if (GMX_CLANG_CUDA)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_SHARED_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -51,6 +52,10 @@ function (_gmx_add_files_to_property PROPERTY)
                          ${CMAKE_CURRENT_LIST_DIR}/${_file})
         endif()
     endforeach()
+endfunction ()
+
+function (gmx_add_libgromacs_gpu_shared_sources)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_SHARED_SOURCES ${ARGN})
 endfunction ()
 
 function (gmx_add_libgromacs_sources)
@@ -172,6 +177,10 @@ if (GMX_USE_CUDA)
     # Work around FindCUDA that prevents using target_link_libraries()
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
+
+    get_property(LIBGROMACS_GPU_SHARED_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_GPU_SHARED_SOURCES)
+    set_source_files_properties(${LIBGROMACS_GPU_SHARED_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+
     if (NOT GMX_CLANG_CUDA)
         cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
     else()
