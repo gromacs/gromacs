@@ -1164,7 +1164,7 @@ void gmx::Integrator::do_md()
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, &f, force_vir, mdatoms,
+                                state, f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, t, mu_tot,
                                 vsite,

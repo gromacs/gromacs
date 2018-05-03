@@ -185,7 +185,7 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
 }
 
 void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
-                              int ePBC, matrix box, t_block *cgs,
+                              int ePBC, matrix box, const t_block *cgs,
                               rvec pos[], rvec cg_cm[])
 
 {

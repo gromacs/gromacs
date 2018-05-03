@@ -3885,13 +3885,13 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
 
 
 extern void do_rotation(
-        const t_commrec *cr,
-        t_inputrec      *ir,
-        matrix           box,
-        rvec             x[],
-        real             t,
-        gmx_int64_t      step,
-        gmx_bool         bNS)
+        const t_commrec       *cr,
+        const t_inputrec      *ir,
+        matrix                 box,
+        rvec                   x[],
+        real                   t,
+        gmx_int64_t            step,
+        gmx_bool               bNS)
 {
     int             g, i, ii;
     t_rot          *rot;
