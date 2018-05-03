@@ -239,28 +239,28 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
 
 bool constrain(FILE *fplog, bool bLog, bool bEner,
                Constraints *constr,
-               t_idef *idef, const t_inputrec *ir,
+               const t_idef *idef, const t_inputrec *ir,
                const t_commrec *cr,
                const gmx_multisim_t *ms,
                gmx_int64_t step, int delta_step,
                real step_scaling,
-               t_mdatoms *md,
+               const t_mdatoms *md,
                rvec *x, rvec *xprime, rvec *min_proj,
                bool bMolPBC, matrix box,
                real lambda, real *dvdlambda,
                rvec *v, tensor *vir,
                t_nrnb *nrnb, int econq)
 {
-    bool        bOK, bDump;
-    int         start, homenr;
-    tensor      vir_r_m_dr;
-    real        scaled_delta_t;
-    real        invdt, vir_fac = 0, t;
-    t_ilist    *settle;
-    int         nsettle;
-    t_pbc       pbc, *pbc_null;
-    char        buf[22];
-    int         nth, th;
+    bool           bOK, bDump;
+    int            start, homenr;
+    tensor         vir_r_m_dr;
+    real           scaled_delta_t;
+    real           invdt, vir_fac = 0, t;
+    const t_ilist *settle;
+    int            nsettle;
+    t_pbc          pbc, *pbc_null;
+    char           buf[22];
+    int            nth, th;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {

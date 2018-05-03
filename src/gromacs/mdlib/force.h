@@ -79,10 +79,16 @@ void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
                 t_graph *g, rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-real RF_excl_correction(const t_forcerec *fr, t_graph *g,
-                        const t_mdatoms *mdatoms, const t_blocka *excl,
-                        rvec x[], rvec f[], rvec *fshift, const t_pbc *pbc,
-                        real lambda, real *dvdlambda);
+real RF_excl_correction(const t_forcerec *fr,
+                        const t_graph    *g,
+                        const t_mdatoms  *mdatoms,
+                        const t_blocka   *excl,
+                        rvec              x[],
+                        rvec              f[],
+                        rvec             *fshift,
+                        const t_pbc      *pbc,
+                        real              lambda,
+                        real             *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
  * and force correction for all excluded pairs, including self pairs.
@@ -106,8 +112,15 @@ void make_wall_tables(FILE *fplog,
                       const gmx_groups_t *groups,
                       t_forcerec *fr);
 
-real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
-              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
+real do_walls(const t_inputrec *ir,
+              t_forcerec       *fr,
+              matrix            box,
+              const t_mdatoms  *md,
+              rvec              x[],
+              rvec              f[],
+              real              lambda,
+              real              Vlj[],
+              t_nrnb           *nrnb);
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
                           gmx_bool bPrintNote, const t_commrec *cr, FILE *fp);
@@ -152,22 +165,33 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, t_lambda 
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
-void do_force(FILE *log, const t_commrec *cr,
-              const gmx_multisim_t *ms,
-              t_inputrec *inputrec,
-              gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-              gmx_localtop_t *top,
-              gmx_groups_t *groups,
-              matrix box, gmx::PaddedArrayRef<gmx::RVec> coordinates, history_t *hist,
-              gmx::PaddedArrayRef<gmx::RVec> force,
-              tensor vir_force,
-              t_mdatoms *mdatoms,
-              gmx_enerdata_t *enerd, t_fcdata *fcd,
-              gmx::ArrayRef<real> lambda, t_graph *graph,
-              t_forcerec *fr,
-              gmx_vsite_t *vsite, rvec mu_tot,
-              double t, struct gmx_edsam *ed,
-              int flags,
+void do_force(FILE                                     *log,
+              const t_commrec                          *cr,
+              const gmx_multisim_t                     *ms,
+              const t_inputrec                         *inputrec,
+              gmx_int64_t                               step,
+              t_nrnb                                   *nrnb,
+              gmx_wallcycle_t                           wcycle,
+              // TODO top can be const when the group scheme no longer
+              // does neighbour searching within do_force_cutsGROUP.
+              gmx_localtop_t                           *top,
+              const gmx_groups_t                       *groups,
+              matrix                                    box,
+              gmx::PaddedArrayRef<gmx::RVec>            coordinates,
+              history_t                                *hist,
+              gmx::PaddedArrayRef<gmx::RVec>            force,
+              tensor                                    vir_force,
+              const t_mdatoms                          *mdatoms,
+              gmx_enerdata_t                           *enerd,
+              t_fcdata                                 *fcd,
+              gmx::ArrayRef<real>                       lambda,
+              t_graph                                  *graph,
+              t_forcerec                               *fr,
+              const gmx_vsite_t                        *vsite,
+              rvec                                      mu_tot,
+              double                                    t,
+              const gmx_edsam                          *ed,
+              int                                       flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
@@ -180,25 +204,25 @@ void do_force(FILE *log, const t_commrec *cr,
  * f is always required.
  */
 
-void ns(FILE              *fplog,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        const t_commrec   *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid);
+void ns(FILE               *fplog,
+        t_forcerec         *fr,
+        matrix              box,
+        const gmx_groups_t *groups,
+        gmx_localtop_t     *top,
+        const t_mdatoms    *md,
+        const t_commrec    *cr,
+        t_nrnb             *nrnb,
+        gmx_bool            bFillGrid);
 /* Call the neighborsearcher */
 
 void do_force_lowlevel(t_forcerec   *fr,
-                       t_inputrec   *ir,
-                       t_idef       *idef,
+                       const t_inputrec *ir,
+                       const t_idef *idef,
                        const t_commrec *cr,
                        const gmx_multisim_t *ms,
                        t_nrnb       *nrnb,
                        gmx_wallcycle_t wcycle,
-                       t_mdatoms    *md,
+                       const t_mdatoms *md,
                        rvec         x[],
                        history_t    *hist,
                        rvec         f_shortrange[],
@@ -208,8 +232,8 @@ void do_force_lowlevel(t_forcerec   *fr,
                        matrix       box,
                        t_lambda     *fepvals,
                        real         *lambda,
-                       t_graph      *graph,
-                       t_blocka     *excl,
+                       const t_graph *graph,
+                       const t_blocka *excl,
                        rvec         mu_tot[2],
                        int          flags,
                        float        *cycles_pme);

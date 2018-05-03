@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,12 +74,12 @@ bool ForceProviders::hasForceProvider() const
     return !impl_->providers_.empty();
 }
 
-void ForceProviders::calculateForces(const t_commrec       *cr,
-                                     const t_mdatoms       *mdatoms,
-                                     const matrix           box,
-                                     double                 t,
-                                     const rvec            *x,
-                                     gmx::ForceWithVirial  *forceWithVirial) const
+void ForceProviders::calculateForces(const t_commrec               *cr,
+                                     const t_mdatoms               *mdatoms,
+                                     const matrix                   box,
+                                     double                         t,
+                                     gmx::ArrayRef<const gmx::RVec> x,
+                                     gmx::ForceWithVirial          *forceWithVirial) const
 {
     for (auto provider : impl_->providers_)
     {

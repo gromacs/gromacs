@@ -277,10 +277,10 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
 }
 
 static void pull_potential_wrapper(const t_commrec *cr,
-                                   t_inputrec *ir,
-                                   matrix box, rvec x[],
+                                   const t_inputrec *ir,
+                                   matrix box, ArrayRef<const RVec> x,
                                    ForceWithVirial *force,
-                                   t_mdatoms *mdatoms,
+                                   const t_mdatoms *mdatoms,
                                    gmx_enerdata_t *enerd,
                                    real *lambda,
                                    double t,
@@ -297,7 +297,7 @@ static void pull_potential_wrapper(const t_commrec *cr,
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, force, &dvdl);
+                       cr, t, lambda[efptRESTRAINT], as_rvec_array(x.data()), force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
@@ -333,9 +333,13 @@ static void pme_receive_force_ener(const t_commrec *cr,
     wallcycle_stop(wcycle, ewcPP_PMEWAITRECVF);
 }
 
-static void print_large_forces(FILE *fp, t_mdatoms *md, const t_commrec *cr,
-                               gmx_int64_t step, real forceTolerance,
-                               const rvec *x, const rvec *f)
+static void print_large_forces(FILE            *fp,
+                               const t_mdatoms *md,
+                               const t_commrec *cr,
+                               gmx_int64_t      step,
+                               real             forceTolerance,
+                               const rvec      *x,
+                               const rvec      *f)
 {
     real           force2Tolerance = gmx::square(forceTolerance);
     std::uintmax_t numNonFinite    = 0;
@@ -364,18 +368,21 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, const t_commrec *cr,
     }
 }
 
-static void post_process_forces(const t_commrec *cr,
-                                gmx_int64_t step,
-                                t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                                gmx_localtop_t *top,
-                                matrix box, rvec x[],
-                                rvec f[],
-                                ForceWithVirial *forceWithVirial,
-                                tensor vir_force,
-                                t_mdatoms *mdatoms,
-                                t_graph *graph,
-                                t_forcerec *fr, gmx_vsite_t *vsite,
-                                int flags)
+static void post_process_forces(const t_commrec      *cr,
+                                gmx_int64_t           step,
+                                t_nrnb               *nrnb,
+                                gmx_wallcycle_t       wcycle,
+                                const gmx_localtop_t *top,
+                                matrix                box,
+                                rvec                  x[],
+                                rvec                  f[],
+                                ForceWithVirial      *forceWithVirial,
+                                tensor                vir_force,
+                                const t_mdatoms      *mdatoms,
+                                t_graph              *graph,
+                                t_forcerec           *fr,
+                                const gmx_vsite_t    *vsite,
+                                int                   flags)
 {
     if (fr->haveDirectVirialContributions)
     {
@@ -561,7 +568,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
                              t_forcerec           *fr,
                              rvec                  x[],
                              rvec                  f[],
-                             t_mdatoms            *mdatoms,
+                             const t_mdatoms      *mdatoms,
                              t_lambda             *fepvals,
                              real                 *lambda,
                              gmx_enerdata_t       *enerd,
@@ -815,22 +822,22 @@ static void checkPotentialEnergyValidity(gmx_int64_t           step,
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void
-computeSpecialForces(FILE             *fplog,
-                     const t_commrec  *cr,
-                     t_inputrec       *inputrec,
-                     gmx_int64_t       step,
-                     double            t,
-                     gmx_wallcycle_t   wcycle,
-                     ForceProviders   *forceProviders,
-                     matrix            box,
-                     rvec             *x,
-                     t_mdatoms        *mdatoms,
-                     real             *lambda,
-                     int               forceFlags,
-                     ForceWithVirial  *forceWithVirial,
-                     gmx_enerdata_t   *enerd,
-                     gmx_edsam_t       ed,
-                     gmx_bool          bNS)
+computeSpecialForces(FILE                *fplog,
+                     const t_commrec     *cr,
+                     const t_inputrec    *inputrec,
+                     gmx_int64_t          step,
+                     double               t,
+                     gmx_wallcycle_t      wcycle,
+                     ForceProviders      *forceProviders,
+                     matrix               box,
+                     ArrayRef<const RVec> x,
+                     const t_mdatoms     *mdatoms,
+                     real                *lambda,
+                     int                  forceFlags,
+                     ForceWithVirial     *forceWithVirial,
+                     gmx_enerdata_t      *enerd,
+                     const gmx_edsam     *ed,
+                     gmx_bool             bNS)
 {
     const bool computeForces = (forceFlags & GMX_FORCE_FORCES);
 
@@ -877,7 +884,7 @@ computeSpecialForces(FILE             *fplog,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
+        do_flood(cr, inputrec, as_rvec_array(x.data()), f, ed, box, step, bNS);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
@@ -1035,21 +1042,29 @@ static inline void launchGpuRollingPruning(const t_commrec          *cr,
     }
 }
 
-static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
+static void do_force_cutsVERLET(FILE *fplog,
+                                const t_commrec *cr,
                                 const gmx_multisim_t *ms,
-                                t_inputrec *inputrec,
-                                gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                                gmx_localtop_t *top,
-                                gmx_groups_t gmx_unused *groups,
-                                matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
+                                const t_inputrec *inputrec,
+                                gmx_int64_t step,
+                                t_nrnb *nrnb,
+                                gmx_wallcycle_t wcycle,
+                                const gmx_localtop_t *top,
+                                const gmx_groups_t * /* groups */,
+                                matrix box, gmx::PaddedArrayRef<gmx::RVec> x,
+                                history_t *hist,
                                 gmx::PaddedArrayRef<gmx::RVec> force,
                                 tensor vir_force,
-                                t_mdatoms *mdatoms,
+                                const t_mdatoms *mdatoms,
                                 gmx_enerdata_t *enerd, t_fcdata *fcd,
-                                real *lambda, t_graph *graph,
-                                t_forcerec *fr, interaction_const_t *ic,
-                                gmx_vsite_t *vsite, rvec mu_tot,
-                                double t, gmx_edsam_t ed,
+                                real *lambda,
+                                t_graph *graph,
+                                t_forcerec *fr,
+                                interaction_const_t *ic,
+                                const gmx_vsite_t *vsite,
+                                rvec mu_tot,
+                                double t,
+                                const gmx_edsam *ed,
                                 int flags,
                                 DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                 DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -1527,7 +1542,7 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     wallcycle_stop(wcycle, ewcFORCE);
 
     computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
-                         fr->forceProviders, box, as_rvec_array(x.data()), mdatoms, lambda,
+                         fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
@@ -1722,20 +1737,29 @@ static void do_force_cutsVERLET(FILE *fplog, const t_commrec *cr,
     }
 }
 
-static void do_force_cutsGROUP(FILE *fplog, const t_commrec *cr,
+static void do_force_cutsGROUP(FILE *fplog,
+                               const t_commrec *cr,
                                const gmx_multisim_t *ms,
-                               t_inputrec *inputrec,
-                               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                               const t_inputrec *inputrec,
+                               gmx_int64_t step,
+                               t_nrnb *nrnb,
+                               gmx_wallcycle_t wcycle,
                                gmx_localtop_t *top,
-                               gmx_groups_t *groups,
-                               matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
+                               const gmx_groups_t *groups,
+                               matrix box, gmx::PaddedArrayRef<gmx::RVec> x,
+                               history_t *hist,
                                gmx::PaddedArrayRef<gmx::RVec> force,
                                tensor vir_force,
-                               t_mdatoms *mdatoms,
-                               gmx_enerdata_t *enerd, t_fcdata *fcd,
-                               real *lambda, t_graph *graph,
-                               t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
-                               double t, gmx_edsam_t ed,
+                               const t_mdatoms *mdatoms,
+                               gmx_enerdata_t *enerd,
+                               t_fcdata *fcd,
+                               real *lambda,
+                               t_graph *graph,
+                               t_forcerec *fr,
+                               const gmx_vsite_t *vsite,
+                               rvec mu_tot,
+                               double t,
+                               const gmx_edsam *ed,
                                int flags,
                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -1975,7 +1999,7 @@ static void do_force_cutsGROUP(FILE *fplog, const t_commrec *cr,
     }
 
     computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
-                         fr->forceProviders, box, as_rvec_array(x.data()), mdatoms, lambda,
+                         fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
 
@@ -2045,22 +2069,31 @@ static void do_force_cutsGROUP(FILE *fplog, const t_commrec *cr,
 
 }
 
-void do_force(FILE *fplog, const t_commrec *cr,
-              const gmx_multisim_t *ms,
-              t_inputrec *inputrec,
-              gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-              gmx_localtop_t *top,
-              gmx_groups_t *groups,
-              matrix box, gmx::PaddedArrayRef<gmx::RVec> x, history_t *hist,
-              gmx::PaddedArrayRef<gmx::RVec> force,
-              tensor vir_force,
-              t_mdatoms *mdatoms,
-              gmx_enerdata_t *enerd, t_fcdata *fcd,
-              gmx::ArrayRef<real> lambda, t_graph *graph,
-              t_forcerec *fr,
-              gmx_vsite_t *vsite, rvec mu_tot,
-              double t, gmx_edsam_t ed,
-              int flags,
+void do_force(FILE                                     *fplog,
+              const t_commrec                          *cr,
+              const gmx_multisim_t                     *ms,
+              const t_inputrec                         *inputrec,
+              gmx_int64_t                               step,
+              t_nrnb                                   *nrnb,
+              gmx_wallcycle_t                           wcycle,
+              gmx_localtop_t                           *top,
+              const gmx_groups_t                       *groups,
+              matrix                                    box,
+              gmx::PaddedArrayRef<gmx::RVec>            x,
+              history_t                                *hist,
+              gmx::PaddedArrayRef<gmx::RVec>            force,
+              tensor                                    vir_force,
+              const t_mdatoms                          *mdatoms,
+              gmx_enerdata_t                           *enerd,
+              t_fcdata                                 *fcd,
+              gmx::ArrayRef<real>                       lambda,
+              t_graph                                  *graph,
+              t_forcerec                               *fr,
+              const gmx_vsite_t                        *vsite,
+              rvec                                      mu_tot,
+              double                                    t,
+              const gmx_edsam                          *ed,
+              int                                       flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {

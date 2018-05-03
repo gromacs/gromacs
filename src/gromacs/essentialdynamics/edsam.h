@@ -83,7 +83,7 @@ class Constraints;
  * \param ed                The essential dynamics data.
  */
 void do_edsam(const t_inputrec *ir, gmx_int64_t step,
-              const t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
+              const t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam *ed);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.
@@ -134,8 +134,14 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(const t_commrec *cr, const t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
-              matrix box, gmx_int64_t step, gmx_bool bNS);
+void do_flood(const t_commrec  *cr,
+              const t_inputrec *ir,
+              const rvec        x[],
+              rvec              force[],
+              const gmx_edsam  *ed,
+              matrix            box,
+              gmx_int64_t       step,
+              gmx_bool          bNS);
 
 /*! \brief Clean up
  *

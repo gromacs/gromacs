@@ -590,8 +590,9 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     return shfc;
 }
 
-void make_local_shells(const t_commrec *cr, t_mdatoms *md,
-                       gmx_shellfc_t *shfc)
+void make_local_shells(const t_commrec *cr,
+                       const t_mdatoms *md,
+                       gmx_shellfc_t   *shfc)
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
@@ -889,17 +890,27 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
     }
 }
 
-static void init_adir(FILE *log, gmx_shellfc_t *shfc,
-                      gmx::Constraints *constr, t_idef *idef, t_inputrec *ir,
-                      const t_commrec *cr,
-                      const gmx_multisim_t *ms,
-                      int dd_ac1,
-                      gmx_int64_t step, t_mdatoms *md, int end,
-                      rvec *x_old, rvec *x_init, rvec *x,
-                      rvec *f, rvec *acc_dir,
-                      gmx_bool bMolPBC, matrix box,
-                      gmx::ArrayRef<const real> lambda, real *dvdlambda,
-                      t_nrnb *nrnb)
+static void init_adir(FILE                     *log,
+                      gmx_shellfc_t            *shfc,
+                      gmx::Constraints         *constr,
+                      const t_idef             *idef,
+                      const t_inputrec         *ir,
+                      const t_commrec          *cr,
+                      const gmx_multisim_t     *ms,
+                      int                       dd_ac1,
+                      gmx_int64_t               step,
+                      const t_mdatoms          *md,
+                      int                       end,
+                      rvec                     *x_old,
+                      rvec                     *x_init,
+                      rvec                     *x,
+                      rvec                     *f,
+                      rvec                     *acc_dir,
+                      gmx_bool                  bMolPBC,
+                      matrix                    box,
+                      gmx::ArrayRef<const real> lambda,
+                      real                     *dvdlambda,
+                      t_nrnb                   *nrnb)
 {
     rvec           *xnold, *xnew;
     double          dt, w_dt;
@@ -973,39 +984,46 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
               nullptr, nullptr, nrnb, gmx::econqDeriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
-                         const gmx_multisim_t *ms,
-                         gmx_bool bVerbose,
-                         gmx_int64_t mdstep, t_inputrec *inputrec,
-                         gmx_bool bDoNS, int force_flags,
-                         gmx_localtop_t *top,
-                         gmx::Constraints *constr,
-                         gmx_enerdata_t *enerd, t_fcdata *fcd,
-                         t_state *state, PaddedRVecVector *f,
-                         tensor force_vir,
-                         t_mdatoms *md,
-                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                         t_graph *graph,
-                         gmx_groups_t *groups,
-                         gmx_shellfc_t *shfc,
-                         t_forcerec *fr,
-                         double t, rvec mu_tot,
-                         gmx_vsite_t *vsite,
+void relax_shell_flexcon(FILE                                     *fplog,
+                         const t_commrec                          *cr,
+                         const gmx_multisim_t                     *ms,
+                         gmx_bool                                  bVerbose,
+                         gmx_int64_t                               mdstep,
+                         const t_inputrec                         *inputrec,
+                         gmx_bool                                  bDoNS,
+                         int                                       force_flags,
+                         gmx_localtop_t                           *top,
+                         gmx::Constraints                         *constr,
+                         gmx_enerdata_t                           *enerd,
+                         t_fcdata                                 *fcd,
+                         t_state                                  *state,
+                         gmx::PaddedArrayRef<gmx::RVec>            f,
+                         tensor                                    force_vir,
+                         const t_mdatoms                          *md,
+                         t_nrnb                                   *nrnb,
+                         gmx_wallcycle_t                           wcycle,
+                         t_graph                                  *graph,
+                         const gmx_groups_t                       *groups,
+                         gmx_shellfc_t                            *shfc,
+                         t_forcerec                               *fr,
+                         double                                    t,
+                         rvec                                      mu_tot,
+                         const gmx_vsite_t                        *vsite,
                          DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                          DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
-    int        nshell;
-    t_shell   *shell;
-    t_idef    *idef;
-    rvec      *acc_dir = nullptr, *x_old = nullptr;
-    real       Epot[2], df[2];
-    real       sf_dir, invdt;
-    real       ftol, dum = 0;
-    char       sbuf[22];
-    gmx_bool   bCont, bInit, bConverged;
-    int        nat, dd_ac0, dd_ac1 = 0, i;
-    int        homenr = md->homenr, end = homenr, cg0, cg1;
-    int        nflexcon, number_steps, d, Min = 0, count = 0;
+    int           nshell;
+    t_shell      *shell;
+    const t_idef *idef;
+    rvec         *acc_dir = nullptr, *x_old = nullptr;
+    real          Epot[2], df[2];
+    real          sf_dir, invdt;
+    real          ftol, dum = 0;
+    char          sbuf[22];
+    gmx_bool      bCont, bInit, bConverged;
+    int           nat, dd_ac0, dd_ac1 = 0, i;
+    int           homenr = md->homenr, end = homenr, cg0, cg1;
+    int           nflexcon, number_steps, d, Min = 0, count = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
@@ -1323,7 +1341,7 @@ void relax_shell_flexcon(FILE *fplog, const t_commrec *cr,
 
     /* Copy back the coordinates and the forces */
     std::copy(pos[Min].begin(), pos[Min].end(), state->x.begin());
-    std::copy(force[Min].begin(), force[Min].end(), f->begin());
+    std::copy(force[Min].begin(), force[Min].end(), f.begin());
 }
 
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, gmx_int64_t numSteps)

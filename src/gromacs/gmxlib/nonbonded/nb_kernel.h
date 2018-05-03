@@ -74,7 +74,7 @@ extern "C" {
 typedef struct
 {
     int                flags;
-    t_blocka *         exclusions;
+    const t_blocka    *exclusions;
     real *             lambda;
     real *             dvdl;
 
@@ -94,8 +94,8 @@ typedef void
     nb_kernel_t (t_nblist *                nlist,
                  rvec *                    x,
                  rvec *                    f,
-                 struct t_forcerec *       fr,
-                 t_mdatoms *               mdatoms,
+                 const struct t_forcerec * fr,
+                 const t_mdatoms *         mdatoms,
                  nb_kernel_data_t *        kernel_data,
                  t_nrnb *                  nrnb);
 

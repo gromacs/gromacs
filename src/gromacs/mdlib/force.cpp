@@ -73,15 +73,15 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void ns(FILE              *fp,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        const t_commrec   *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid)
+void ns(FILE               *fp,
+        t_forcerec         *fr,
+        matrix              box,
+        const gmx_groups_t *groups,
+        gmx_localtop_t     *top,
+        const t_mdatoms    *md,
+        const t_commrec    *cr,
+        t_nrnb             *nrnb,
+        gmx_bool            bFillGrid)
 {
     int     nsearch;
 
@@ -134,24 +134,28 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
     }
 }
 
-void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
-                       t_idef     *idef,    const t_commrec *cr,
+void do_force_lowlevel(t_forcerec           *fr,
+                       const t_inputrec     *ir,
+                       const t_idef         *idef,
+                       const t_commrec      *cr,
                        const gmx_multisim_t *ms,
-                       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-                       t_mdatoms  *md,
-                       rvec       x[],      history_t  *hist,
-                       rvec      *forceForUseWithShiftForces,
+                       t_nrnb               *nrnb,
+                       gmx_wallcycle_t       wcycle,
+                       const t_mdatoms      *md,
+                       rvec                  x[],
+                       history_t            *hist,
+                       rvec                 *forceForUseWithShiftForces,
                        gmx::ForceWithVirial *forceWithVirial,
-                       gmx_enerdata_t *enerd,
-                       t_fcdata   *fcd,
-                       matrix     box,
-                       t_lambda   *fepvals,
-                       real       *lambda,
-                       t_graph    *graph,
-                       t_blocka   *excl,
-                       rvec       mu_tot[],
-                       int        flags,
-                       float     *cycles_pme)
+                       gmx_enerdata_t       *enerd,
+                       t_fcdata             *fcd,
+                       matrix                box,
+                       t_lambda             *fepvals,
+                       real                 *lambda,
+                       const t_graph        *graph,
+                       const t_blocka       *excl,
+                       rvec                  mu_tot[],
+                       int                   flags,
+                       float                *cycles_pme)
 {
     int         i, j;
     int         donb_flags;

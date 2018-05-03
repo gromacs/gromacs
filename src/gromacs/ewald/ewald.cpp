@@ -103,7 +103,7 @@ static void calc_lll(const rvec box, rvec lll)
 }
 
 //! Make tables for the structure factor parts
-static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
+static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec **eir, rvec lll)
 {
     int  i, j, m;
 
@@ -136,21 +136,27 @@ static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, 
     }
 }
 
-real do_ewald(t_inputrec *ir,
-              rvec x[],        rvec f[],
-              real chargeA[],  real chargeB[],
-              matrix box,
-              const t_commrec *cr, int natoms,
-              matrix lrvir,    real ewaldcoeff,
-              real lambda,     real *dvdlambda,
-              struct gmx_ewald_tab_t *et)
+real do_ewald(const t_inputrec *ir,
+              const rvec        x[],
+              rvec              f[],
+              const real        chargeA[],
+              const real        chargeB[],
+              matrix            box,
+              const t_commrec  *cr,
+              int               natoms,
+              matrix            lrvir,
+              real              ewaldcoeff,
+              real              lambda,
+              real             *dvdlambda,
+              gmx_ewald_tab_t  *et)
 {
-    real     factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
-    real    *charge, energy_AB[2], energy;
-    rvec     lll;
-    int      lowiy, lowiz, ix, iy, iz, n, q;
-    real     tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
-    gmx_bool bFreeEnergy;
+    real        factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
+    const real *charge;
+    real        energy_AB[2], energy;
+    rvec        lll;
+    int         lowiy, lowiz, ix, iy, iz, n, q;
+    real        tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
+    gmx_bool    bFreeEnergy;
 
     if (cr != nullptr)
     {
