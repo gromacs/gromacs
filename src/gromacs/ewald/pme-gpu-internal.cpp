@@ -53,7 +53,6 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"

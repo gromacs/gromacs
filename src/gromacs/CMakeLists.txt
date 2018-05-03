@@ -39,6 +39,7 @@ if (GMX_CLANG_CUDA)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -55,6 +56,10 @@ endfunction ()
 
 function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+endfunction ()
+
+function (gmx_add_libgromacs_gpu_impl_sources)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
 function (gmx_install_headers)
@@ -169,6 +174,10 @@ if (GMX_CLANG_CUDA)
 endif()
 
 if (GMX_USE_CUDA)
+    # Mark some shared GPU implementation files to compile with CUDA if needed
+    get_property(LIBGROMACS_GPU_IMPL_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
+    set_source_files_properties(${LIBGROMACS_GPU_IMPL_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+
     # Work around FindCUDA that prevents using target_link_libraries()
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
