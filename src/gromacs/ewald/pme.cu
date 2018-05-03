@@ -96,9 +96,8 @@ void pme_gpu_free_energy_virial(PmeGpu *pmeGpu)
 
 void pme_gpu_clear_energy_virial(const PmeGpu *pmeGpu)
 {
-    cudaError_t stat = cudaMemsetAsync(pmeGpu->kernelParams->constants.d_virialAndEnergy, 0,
-                                       c_virialAndEnergyCount * sizeof(float), pmeGpu->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "PME energy/virial cudaMemsetAsync error");
+    clearDeviceBufferAsync(&pmeGpu->kernelParams->constants.d_virialAndEnergy, 0,
+                           c_virialAndEnergyCount, pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_realloc_and_copy_bspline_values(const PmeGpu *pmeGpu)
@@ -183,8 +182,8 @@ void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu)
         const size_t paddingCount = DIM * pmeGpu->nAtomsAlloc - paddingIndex;
         if (paddingCount > 0)
         {
-            cudaError_t stat = cudaMemsetAsync(pmeGpu->kernelParams->atoms.d_coordinates + paddingIndex, 0, paddingCount * sizeof(float), pmeGpu->archSpecific->pmeStream);
-            CU_RET_ERR(stat, "PME failed to clear the padded coordinates");
+            clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coordinates, paddingIndex,
+                                   paddingCount, pmeGpu->archSpecific->pmeStream);
         }
     }
 }
@@ -224,8 +223,8 @@ void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGpu, const flo
         const size_t paddingCount = pmeGpu->nAtomsAlloc - paddingIndex;
         if (paddingCount > 0)
         {
-            cudaError_t stat = cudaMemsetAsync(pmeGpu->kernelParams->atoms.d_coefficients + paddingIndex, 0, paddingCount * sizeof(float), pmeGpu->archSpecific->pmeStream);
-            CU_RET_ERR(stat, "PME failed to clear the padded charges");
+            clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coefficients, paddingIndex,
+                                   paddingCount, pmeGpu->archSpecific->pmeStream);
         }
     }
 }
@@ -326,10 +325,8 @@ void pme_gpu_free_grids(const PmeGpu *pmeGpu)
 
 void pme_gpu_clear_grids(const PmeGpu *pmeGpu)
 {
-    cudaError_t stat = cudaMemsetAsync(pmeGpu->kernelParams->grid.d_realGrid, 0,
-                                       pmeGpu->archSpecific->realGridSize * sizeof(float), pmeGpu->archSpecific->pmeStream);
-    /* Should the complex grid be cleared in some weird case? */
-    CU_RET_ERR(stat, "cudaMemsetAsync on the PME grid error");
+    clearDeviceBufferAsync(&pmeGpu->kernelParams->grid.d_realGrid, 0,
+                           pmeGpu->archSpecific->realGridSize, pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
@@ -418,15 +415,13 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu *pmeGpu)
     auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
     if (c_usePadding)
     {
-        const size_t gridlineIndicesSizePerAtom = DIM * sizeof(int);
-        const size_t splineDataSizePerAtom      = pmeGpu->common->pme_order * DIM * sizeof(float);
         // TODO: could clear only the padding and not the whole thing, but this is a test-exclusive code anyway
-        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_gridlineIndices, 0, pmeGpu->nAtomsAlloc * gridlineIndicesSizePerAtom, pmeGpu->archSpecific->pmeStream),
-                   "PME failed to clear the gridline indices");
-        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_dtheta, 0, pmeGpu->nAtomsAlloc * splineDataSizePerAtom, pmeGpu->archSpecific->pmeStream),
-                   "PME failed to clear the spline derivatives");
-        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_theta, 0, pmeGpu->nAtomsAlloc * splineDataSizePerAtom, pmeGpu->archSpecific->pmeStream),
-                   "PME failed to clear the spline values");
+        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_gridlineIndices, 0,
+                               pmeGpu->nAtomsAlloc * DIM, pmeGpu->archSpecific->pmeStream);
+        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_dtheta, 0,
+                               pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM, pmeGpu->archSpecific->pmeStream);
+        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_theta, 0,
+                               pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM, pmeGpu->archSpecific->pmeStream);
     }
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_dtheta, pmeGpu->staging.h_dtheta,
                        0, splinesCount,

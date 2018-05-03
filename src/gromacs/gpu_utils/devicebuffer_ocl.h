@@ -207,4 +207,32 @@ void copyFromDeviceBuffer(ValueType                     *hostBuffer,
     }
 }
 
+/*! \brief
+ * Clears the device buffer asynchronously.
+ *
+ * \tparam        ValueType        Raw value type of the \p buffer.
+ * \param[in,out] buffer           Pointer to the device-side buffer
+ * \param[in]     startingOffset   Offset (in values) at the device-side buffer to start clearing at.
+ * \param[in]     numValues        Number of values to clear.
+ * \param[in]     stream           GPU stream.
+ */
+template <typename ValueType>
+void clearDeviceBufferAsync(DeviceBuffer<ValueType> *buffer,
+                            size_t                   startingOffset,
+                            size_t                   numValues,
+                            CommandStream            stream)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    const size_t    offset        = startingOffset * sizeof(ValueType);
+    const size_t    bytes         = numValues * sizeof(ValueType);
+    const ValueType pattern       = 0;
+    const cl_uint   numWaitEvents = 0;
+    const cl_event *waitEvents    = nullptr;
+    cl_event        commandEvent;
+    cl_int          clError = clEnqueueFillBuffer(stream, *buffer, &pattern, sizeof(pattern),
+                                                  offset, bytes,
+                                                  numWaitEvents, waitEvents, &commandEvent);
+    GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Couldn't clear the device buffer");
+}
+
 #endif
