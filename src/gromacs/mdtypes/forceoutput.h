@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,16 +72,7 @@ class ForceWithVirial
          */
         ForceWithVirial(ArrayRef<RVec> force, bool computeVirial) :
             force_(force),
-            computeVirial_(computeVirial)
-        {
-            for (int dim1 = 0; dim1 < DIM; dim1++)
-            {
-                for (int dim2 = 0; dim2 < DIM; dim2++)
-                {
-                    virial_[dim1][dim2] = 0;
-                }
-            }
-        }
+            computeVirial_(computeVirial){}
 
         /*! \brief Adds a virial contribution
          *
@@ -133,10 +124,10 @@ class ForceWithVirial
             return virial_;
         }
 
-        const ArrayRef<RVec> force_;         //!< Force accumulation buffer reference
-        const bool           computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
+        const ArrayRef<RVec> force_;          //!< Force accumulation buffer reference
+        const bool           computeVirial_;  //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
     private:
-        matrix               virial_;        //!< Virial accumulation buffer
+        matrix               virial_ = {{0}}; //!< Virial accumulation buffer
 };
 
 }
