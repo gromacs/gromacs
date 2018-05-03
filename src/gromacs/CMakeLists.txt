@@ -39,6 +39,7 @@ if (GMX_CLANG_CUDA)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -55,6 +56,10 @@ endfunction ()
 
 function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+endfunction ()
+
+function (gmx_compile_cpp_as_cuda)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
 function (gmx_install_headers)
@@ -158,11 +163,18 @@ gmx_configure_version_file(
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
+# Mark some shared GPU implementation files to compile with CUDA if needed
+if (GMX_USE_CUDA)
+    get_property(LIBGROMACS_GPU_IMPL_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
+    set_source_files_properties(${LIBGROMACS_GPU_IMPL_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+endif()
+
 # set up CUDA compilation with clang
 if (GMX_CLANG_CUDA)
     foreach (_file ${LIBGROMACS_SOURCES})
         get_filename_component(_ext ${_file} EXT)
-        if (${_ext} STREQUAL ".cu")
+        get_source_file_property(_cuda_source_format ${_file} CUDA_SOURCE_PROPERTY_FORMAT)
+        if (${_ext} STREQUAL ".cu" OR _cuda_source_format)
             gmx_compile_cuda_file_with_clang(${_file})
         endif()
     endforeach()

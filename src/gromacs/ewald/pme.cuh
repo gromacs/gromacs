@@ -209,6 +209,14 @@ struct PmeGpuCuda
     /*! \brief The CUDA stream where everything related to the PME happens. */
     cudaStream_t pmeStream;
 
+    /*! \brief
+     * A handle to the GPU context.
+     * TODO: this is currently extracted from the implementation of pmeGpu->programHandle_,
+     * but should be a constructor parameter to PmeGpu, as well as PmeGpuProgram,
+     * managed by high-level code.
+     */
+    Context context;
+
     /* Synchronization events */
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     cudaEvent_t syncSpreadGridD2H;
