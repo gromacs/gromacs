@@ -23,6 +23,7 @@ This file contains the licenses for the following bodies of code:
 12. Gamma distribution from libc++
 13. md5
 14. lmfit
+15. clFFT
 
 Our chosen method for packaging distributions (CPack) only permits a
 package to have a single license file, so we are unfortunately forced
@@ -1272,4 +1273,19 @@ The package lmfit is distributed under the FreeBSD License:
   contract, strict liability, or tort (including negligence or otherwise)
   arising in any way out of the use of this software, even if advised of the
   possibility of such damage.
+--
+
+15. clFFT
+============================================
+
+   Files: src/external/clFFT/*
+
+The source for clFFT is licensed under the Apache License, Version 2.0
+
+--
+AMD clFFT
+    Copyright 2013 Advanced Micro Devices, Inc.
+
+    This product includes software developed at
+    Advanced Micro Devices, Inc. (http://www.amd.com).
 --
