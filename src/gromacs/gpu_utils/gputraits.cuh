@@ -42,6 +42,8 @@
  * \inlibraryapi
  */
 
+#include <cuda_runtime.h>
+
 //! \brief GPU command stream
 using CommandStream = cudaStream_t;
 //! \brief Single GPU call timing event - meaningless in CUDA
