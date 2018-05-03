@@ -37,6 +37,7 @@ file(GLOB EWALD_GPU_SHARED_SOURCES pme-gpu*.cpp)
 file(GLOB EWALD_CUDA_SOURCES *.cu)
 
 if (GMX_USE_CUDA)
+    gmx_add_libgromacs_gpu_shared_sources(${EWALD_GPU_SHARED_SOURCES})
     gmx_add_libgromacs_sources(${EWALD_CUDA_SOURCES})
 else ()
     # Removing the GPU PME plain C++ fles from the build target
