@@ -38,6 +38,9 @@
  * \brief This file contains internal function implementations
  * for performing the PME calculations on GPU.
  *
+ * Note that this file is compiled as regular C++ source in OpenCL builds, but
+ * it is treated as CUDA source in CUDA-enabled GPU builds.
+ *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
  */
@@ -53,7 +56,6 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
