@@ -199,7 +199,7 @@ extern void communicate_group_positions(
         ivec            *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
         ivec            *extra_shifts, /* (optional) Extra shifts since last time step */
         const gmx_bool   bNS,          /* (optional) NS step, the shifts have changed */
-        rvec            *x_loc,        /* Local positions on this node */
+        const rvec      *x_loc,        /* Local positions on this node */
         const int        nr,           /* Total number of atoms in the group */
         const int        nr_loc,       /* Local number of atoms in the group */
         int             *anrs_loc,     /* Local atom numbers */

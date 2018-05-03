@@ -89,7 +89,7 @@ bool
 constrain_lincs(FILE *log, bool bLog, bool bEner,
                 const t_inputrec *ir,
                 gmx_int64_t step,
-                Lincs *lincsd, t_mdatoms *md,
+                Lincs *lincsd, const t_mdatoms *md,
                 const t_commrec *cr,
                 const gmx_multisim_t *ms,
                 rvec *x, rvec *xprime, rvec *min_proj,

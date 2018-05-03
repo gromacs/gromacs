@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,12 +194,12 @@ class ElectricField final : public IMDModule,
 
         // From IForceProvider
         //! \copydoc IForceProvider::calculateForces()
-        void calculateForces(const t_commrec       *cr,
-                             const t_mdatoms       *mdatoms,
-                             const matrix           box,
-                             double                 t,
-                             const rvec            *x,
-                             gmx::ForceWithVirial  *forceWithVirial) override;
+        void calculateForces(const t_commrec               *cr,
+                             const t_mdatoms               *mdatoms,
+                             const matrix                   box,
+                             double                         t,
+                             gmx::ArrayRef<const gmx::RVec> x,
+                             gmx::ForceWithVirial          *forceWithVirial) override;
 
     private:
         //! Return whether or not to apply a field
@@ -356,12 +356,14 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-void ElectricField::calculateForces(const t_commrec       *cr,
-                                    const t_mdatoms       *mdatoms,
-                                    const matrix           /* box */,
-                                    double                 t,
-                                    const rvec             * /* x */,
-                                    gmx::ForceWithVirial  *forceWithVirial)
+using gmx::ArrayRef;
+
+void ElectricField::calculateForces(const t_commrec           *cr,
+                                    const t_mdatoms           *mdatoms,
+                                    const matrix,
+                                    double                     t,
+                                    ArrayRef<const gmx::RVec>,
+                                    gmx::ForceWithVirial      *forceWithVirial)
 {
     if (isActive())
     {

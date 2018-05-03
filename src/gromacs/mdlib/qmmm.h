@@ -109,10 +109,10 @@ void atomic_number(int nr, char ***atomtype, int *nucnum);
 t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
-void init_QMMMrec(const t_commrec *cr,
-                  gmx_mtop_t      *mtop,
-                  t_inputrec      *ir,
-                  t_forcerec      *fr);
+void init_QMMMrec(const t_commrec  *cr,
+                  gmx_mtop_t       *mtop,
+                  t_inputrec       *ir,
+                  const t_forcerec *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
  * topology->atoms.atomname and topology->atoms.atomtype the atom
@@ -121,11 +121,11 @@ void init_QMMMrec(const t_commrec *cr,
  * and md->cQMMM gives numbers of the MM and QM atoms
  */
 
-void update_QMMMrec(const t_commrec *cr,
-                    t_forcerec      *fr,
-                    const rvec      *x,
-                    const t_mdatoms *md,
-                    const matrix     box);
+void update_QMMMrec(const t_commrec  *cr,
+                    const t_forcerec *fr,
+                    const rvec       *x,
+                    const t_mdatoms  *md,
+                    const matrix      box);
 
 /* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
  * taken froom the neighbourlists of the QM atoms. In a QMMM run this
@@ -133,9 +133,9 @@ void update_QMMMrec(const t_commrec *cr,
  * elements of the t_QMMMrec struct.
  */
 
-real calculate_QMMM(const t_commrec *cr,
-                    rvec             f[],
-                    t_forcerec      *fr);
+real calculate_QMMM(const t_commrec  *cr,
+                    rvec              f[],
+                    const t_forcerec *fr);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC

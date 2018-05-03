@@ -116,8 +116,13 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-extern void do_rotation(const t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_bool bNS);
+extern void do_rotation(const t_commrec  *cr,
+                        const t_inputrec *ir,
+                        matrix            box,
+                        rvec              x[],
+                        real              t,
+                        gmx_int64_t       step,
+                        gmx_bool          bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

@@ -86,12 +86,15 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 //! Destructor.
 void done_ns(gmx_ns_t *ns, int numEnergyGroups);
 
-int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
-                      gmx_localtop_t *top,
-                      gmx_groups_t *groups,
-                      const t_commrec *cr,
-                      t_nrnb *nrnb, t_mdatoms *md,
-                      gmx_bool bFillGrid);
+int search_neighbours(FILE               *log,
+                      t_forcerec         *fr,
+                      matrix              box,
+                      gmx_localtop_t     *top,
+                      const gmx_groups_t *groups,
+                      const t_commrec    *cr,
+                      t_nrnb             *nrnb,
+                      const t_mdatoms    *md,
+                      gmx_bool            bFillGrid);
 
 
 /* Debugging routines from wnblist.c */

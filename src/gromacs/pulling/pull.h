@@ -184,9 +184,9 @@ void clear_pull_forces(struct pull_t *pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
+real pull_potential(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
                     const t_commrec *cr, double t, real lambda,
-                    rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
+                    const rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -203,7 +203,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
+void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
                      const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
@@ -279,13 +279,13 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(const t_commrec  *cr,
-                    struct pull_t    *pull,
-                    t_mdatoms        *md,
-                    struct t_pbc     *pbc,
-                    double            t,
-                    rvec              x[],
-                    rvec             *xp);
+void pull_calc_coms(const t_commrec *cr,
+                    pull_t          *pull,
+                    const t_mdatoms *md,
+                    t_pbc           *pbc,
+                    double           t,
+                    const rvec       x[],
+                    rvec            *xp);
 
 
 /*! \brief Returns if we have pull coordinates with potential pulling.

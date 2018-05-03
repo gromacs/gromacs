@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,7 +115,7 @@ class ElectricFieldTest : public ::testing::Test
             md.chargeA[0] = 1;
 
             t_commrec  *cr = init_commrec();
-            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, &forceWithVirial);
+            forceProviders.calculateForces(cr, &md, nullptr, 0, gmx::EmptyArrayRef {}, &forceWithVirial);
             done_commrec(cr);
 
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);

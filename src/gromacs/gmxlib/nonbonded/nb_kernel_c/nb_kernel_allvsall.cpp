@@ -109,7 +109,7 @@ calc_maxoffset(int i, int natoms)
 
 static void
 setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
-                             t_blocka *              excl,
+                             const t_blocka *        excl,
                              int                     natoms)
 {
     int i, j, k, iexcl;
@@ -200,7 +200,7 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
 
 static void
 setup_aadata(gmx_allvsall_data_t **  p_aadata,
-             t_blocka *              excl,
+             const t_blocka *        excl,
              int                     natoms,
              int *                   type,
              int                     ntype,
@@ -265,7 +265,7 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     real                 vcoul, vctot;
     real                 c6, c12, Vvdw6, Vvdw12, Vvdwtot;
     real                 fscal;
-    t_blocka           * excl;
+    const t_blocka      *excl;
     real           *     f;
     real           *     x;
     real           *     Vvdw;

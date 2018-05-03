@@ -875,7 +875,7 @@ static void update_adaption(t_edpar *edi)
 
 static void do_single_flood(
         FILE            *edo,
-        rvec             x[],
+        const rvec       x[],
         rvec             force[],
         t_edpar         *edi,
         gmx_int64_t      step,
@@ -980,9 +980,9 @@ static void do_single_flood(
 /* Main flooding routine, called from do_force */
 extern void do_flood(const t_commrec  *cr,
                      const t_inputrec *ir,
-                     rvec              x[],
+                     const rvec        x[],
                      rvec              force[],
-                     gmx_edsam_t       ed,
+                     const gmx_edsam  *ed,
                      matrix            box,
                      gmx_int64_t       step,
                      gmx_bool          bNS)

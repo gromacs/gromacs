@@ -2781,16 +2781,33 @@ Integrator::do_nm()
                 if (shellfc)
                 {
                     /* Now is the time to relax the shells */
-                    (void) relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, step,
-                                               inputrec, bNS, force_flags,
-                                               top,
-                                               constr, enerd, fcd,
-                                               &state_work.s, &state_work.f, vir, mdatoms,
-                                               nrnb, wcycle, graph, &top_global->groups,
-                                               shellfc, fr, t, mu_tot,
-                                               vsite,
-                                               DdOpenBalanceRegionBeforeForceComputation::no,
-                                               DdCloseBalanceRegionAfterForceComputation::no);
+                    relax_shell_flexcon(fplog,
+                                        cr,
+                                        ms,
+                                        mdrunOptions.verbose,
+                                        step,
+                                        inputrec,
+                                        bNS,
+                                        force_flags,
+                                        top,
+                                        constr,
+                                        enerd,
+                                        fcd,
+                                        &state_work.s,
+                                        state_work.f,
+                                        vir,
+                                        mdatoms,
+                                        nrnb,
+                                        wcycle,
+                                        graph,
+                                        &top_global->groups,
+                                        shellfc,
+                                        fr,
+                                        t,
+                                        mu_tot,
+                                        vsite,
+                                        DdOpenBalanceRegionBeforeForceComputation::no,
+                                        DdCloseBalanceRegionAfterForceComputation::no);
                     bNS = false;
                     step++;
                 }
