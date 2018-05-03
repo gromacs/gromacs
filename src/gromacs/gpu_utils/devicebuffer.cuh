@@ -189,4 +189,27 @@ void copyFromDeviceBuffer(ValueType                     *hostBuffer,
     }
 }
 
+/*! \brief
+ * Clears the device buffer asynchronously.
+ *
+ * \tparam        ValueType        Raw value type of the \p buffer.
+ * \param[in,out] buffer           Pointer to the device-side buffer
+ * \param[in]     startingOffset   Offset (in values) at the device-side buffer to start clearing at.
+ * \param[in]     numValues        Number of values to clear.
+ * \param[in]     stream           GPU stream.
+ */
+template <typename ValueType>
+void clearDeviceBufferAsync(DeviceBuffer<ValueType> *buffer,
+                            size_t                   startingOffset,
+                            size_t                   numValues,
+                            CommandStream            stream)
+{
+    GMX_ASSERT(buffer, "needs a buffer pointer");
+    const size_t bytes   = numValues * sizeof(ValueType);
+    const char   pattern = 0;
+
+    cudaError_t  stat = cudaMemsetAsync(*((ValueType **)buffer) + startingOffset, pattern, bytes, stream);
+    GMX_RELEASE_ASSERT(stat == cudaSuccess, "Couldn't clear the device buffer");
+}
+
 #endif
