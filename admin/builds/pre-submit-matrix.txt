@@ -15,6 +15,9 @@
 # newer infrastructure in CI, unless it's either easy or of
 # high impact.)
 
+# Test plain release build for warnings
+gcc-7 release
+
 # Test older gcc
 # Test oldest supported CUDA
 # Test oldest supported Ubuntu
