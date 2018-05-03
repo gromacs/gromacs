@@ -33,15 +33,27 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB EWALD_SOURCES *.cpp)
-file(GLOB EWALD_GPU_SHARED_SOURCES pme-gpu*.cpp)
+# EWALD_GPU_ONLY_SOURCES is files with the shared PME GPU logic,
+# which is built for CUDA/OpenCL, and stubbed for CPU builds.
+file(GLOB EWALD_GPU_ONLY_SOURCES pme-gpu*.cpp)
+# EWALD_GPU_IMPL_SOURCES is what will be compiled by CUDA compiler
+# (nvcc/clang) on the CUDA build path, as the compiler needs to know
+# the concrete types like cudaStream_t, and CUDA compiler does all
+# the inclusion job.
+# EWALD_GPU_IMPL_SOURCES is a subset of EWALD_GPU_ONLY_SOURCES.
+# For simplicity it could be same as EWALD_GPU_ONLY_SOURCES,
+# but some of the files like pme-gpu.cpp are currently not compiling
+# cleanly, as nvcc is not aware of OpenMP pragmas.
+file(GLOB EWALD_GPU_IMPL_SOURCES pme-gpu-internal.cpp)
 file(GLOB EWALD_CUDA_SOURCES *.cu)
 
 if (GMX_USE_CUDA)
     gmx_add_libgromacs_sources(${EWALD_CUDA_SOURCES})
+    gmx_compile_cpp_as_cuda(${EWALD_GPU_IMPL_SOURCES})
 else ()
     # Removing the GPU PME plain C++ fles from the build target
     # TODO: not remove them for GMX_USE_OPENCL.
-    foreach (GPU_ONLY_SOURCE ${EWALD_GPU_SHARED_SOURCES})
+    foreach (GPU_ONLY_SOURCE ${EWALD_GPU_ONLY_SOURCES})
         list(REMOVE_ITEM EWALD_SOURCES ${GPU_ONLY_SOURCE})
     endforeach()
 endif()
