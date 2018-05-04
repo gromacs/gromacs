@@ -46,6 +46,10 @@ if(GMX_USE_CUDA)
     get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
 endif()
 
+if(GMX_USE_OPENCL)
+    add_subdirectory(external/build-clFFT)
+endif()  
+
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)

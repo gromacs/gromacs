@@ -299,7 +299,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* CUDA kernel launch-related stuff */
-    int                  shmem, nblock;
+    int                  nblock;
     dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
@@ -414,26 +414,23 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
     dim_block = dim3(c_clSize, c_clSize, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
+    size_t shmem = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
 
     if (debug)
     {
         fprintf(debug, "Non-bonded GPU launch configuration:\n\tThread block: %ux%ux%u\n\t"
                 "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
-                "\tShMem: %d\n",
+                "\tShMem: %zu\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c,
                 shmem);
     }
 
-    void* kernel_args[4];
-    kernel_args[0] = adat;
-    kernel_args[1] = nbp;
-    kernel_args[2] = plist;
-    kernel_args[3] = &bCalcFshift;
-
-    cudaLaunchKernel((void *)nb_kernel, dim_grid, dim_block, kernel_args, shmem, stream);
+    KernelLaunchConfig p {
+        dim_grid, dim_block, shmem, stream
+    };
+    launchGpuKernel(p, nb_kernel, adat, nbp, plist, &bCalcFshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (bDoTime)
@@ -531,37 +528,33 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int  num_threads_z  = c_cudaPruneKernelJ4Concurrency;
-    int  nblock         = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
-    dim3 dim_block      = dim3(c_clSize, c_clSize, num_threads_z);
-    dim3 dim_grid       = dim3(nblock, 1, 1);
-    int  shmem          = calc_shmem_required_prune(num_threads_z);
+    int    num_threads_z  = c_cudaPruneKernelJ4Concurrency;
+    int    nblock         = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
+    dim3   dim_block      = dim3(c_clSize, c_clSize, num_threads_z);
+    dim3   dim_grid       = dim3(nblock, 1, 1);
+    size_t shmem          = calc_shmem_required_prune(num_threads_z);
 
     if (debug)
     {
         fprintf(debug, "Pruning GPU kernel launch configuration:\n\tThread block: %ux%ux%u\n\t"
                 "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
-                "\tShMem: %d\n",
+                "\tShMem: %zu\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, numSciInPart*c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c,
                 shmem);
     }
 
-    void* kernel_args[5];
-    kernel_args[0] = adat;
-    kernel_args[1] = nbp;
-    kernel_args[2] = plist;
-    kernel_args[3] = &numParts;
-    kernel_args[4] = &part;
-
+    KernelLaunchConfig p {
+        dim_grid, dim_block, shmem, stream
+    };
     if (plist->haveFreshList)
     {
-        cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true>, dim_grid, dim_block, kernel_args, shmem, stream);
+        launchGpuKernel(p, nbnxn_kernel_prune_cuda<true>, adat, nbp, plist, &numParts, &part);
     }
     else
     {
-        cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<false>, dim_grid, dim_block, kernel_args, shmem, stream);
+        launchGpuKernel(p, nbnxn_kernel_prune_cuda<false>, adat, nbp, plist, &numParts, &part);
     }
     CU_LAUNCH_ERR("k_pruneonly");
 

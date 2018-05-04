@@ -61,6 +61,11 @@
 
 #include "pme-gpu-types-host.h"
 
+#include <vector>
+
+#include "pme.h"
+
+
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;
 

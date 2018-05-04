@@ -84,14 +84,14 @@ class PmeTest : public MdrunTestFixture
         //! Before any test is run, work out whether any compatible GPUs exist.
         static void SetUpTestCase();
         //! Store whether any compatible GPUs exist.
-        static bool s_hasCompatibleCudaGpus;
+        static bool s_hasCompatibleGpus;
         //! Convenience typedef
         using RunModesList = std::map < std::string, std::vector < const char *>>;
         //! Runs the test with the given inputs
         void runTest(const RunModesList &runModes);
 };
 
-bool PmeTest::s_hasCompatibleCudaGpus = false;
+bool PmeTest::s_hasCompatibleGpus = false;
 
 void PmeTest::SetUpTestCase()
 {
@@ -101,11 +101,10 @@ void PmeTest::SetUpTestCase()
     // there is no GPU support in the build.
     //
     // TODO report any error messages gracefully.
-    if (GMX_GPU == GMX_GPU_CUDA &&
-        canDetectGpus(nullptr))
+    if (canDetectGpus(nullptr))
     {
         findGpus(&gpuInfo);
-        s_hasCompatibleCudaGpus = (gpuInfo.n_dev_compatible > 0);
+        s_hasCompatibleGpus = (gpuInfo.n_dev_compatible > 0);
     }
     free_gpu_info(&gpuInfo);
 }
@@ -132,7 +131,7 @@ void PmeTest::runTest(const RunModesList &runModes)
     for (const auto &mode : runModes)
     {
         auto modeTargetsGpus = (mode.first.find("Gpu") != std::string::npos);
-        if (modeTargetsGpus && !s_hasCompatibleCudaGpus)
+        if (modeTargetsGpus && !s_hasCompatibleGpus)
         {
             // This run mode will cause a fatal error from mdrun when
             // it can't find GPUs, which is not something we're trying

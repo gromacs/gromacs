@@ -42,7 +42,10 @@
 #include <nvml.h>
 #endif /* HAVE_NVML */
 
+#include <array>
 #include <string>
+
+#include "gputraits.cuh"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -219,11 +222,12 @@ int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cud
  * \param[in]  devInfo   pointer to the info struct of the device in use
  */
 template <typename T>
-void initParamLookupTable(T                        * &d_ptr,
+void initParamLookupTable(T                         **d_ptr,
                           cudaTextureObject_t        &texObj,
                           const T                    *h_ptr,
                           int                         numElem,
-                          const gmx_device_info_t    *devInfo);
+                          const gmx_device_info_t    *devInfo,
+                          void                       *contextDummy); //FIXME
 
 /*! \brief Destroy parameter lookup table.
  *
@@ -284,6 +288,89 @@ static inline bool haveStreamTasksCompleted(cudaStream_t s)
     GMX_ASSERT(stat == cudaSuccess, "Values other than cudaSuccess should have been explicitly handled");
 
     return true;
+}
+
+/* Kernel launch helpers */
+
+/*! \brief
+ * Switch between chevron and cudaLaunchKernel (supported only in CUDA >=7.0)
+ *  -- only for benchmarking purposes.
+ */
+const bool c_useCudaLaunchKernel = (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == nullptr);
+
+/*! \brief
+ * Compile-time recursive wrapper for launching the CUDA kernel.
+ * This function puts one kernel argument pointer \p arg into \p argArray,
+ * and calls itself on the next argument.
+ *
+ * \tparam        CurrentArg      Type of the current argument
+ * \tparam        RemainingArgs   Types of remaining arguments after the current one
+ * \tparam        FullArgs        Types of all the kernel arguments
+ * \param[in]     config          Kernel configuration for launching
+ * \param[in]     kernel          Kernel function handle
+ * \param[in,out] argArray        Pointer to the argument array to be filled in for cudaLaunchKernel
+ * \param[in]     argIndex        Index of the current argument
+ * \param[in]     arg             A pointer to the current argument
+ * \param[in]     otherArgs       Pointers to arguments remaining to process after the current one
+ */
+template <typename CurrentArg, typename ... RemainingArgs, typename ... FullArgs>
+void launchCudaKernel(const KernelLaunchConfig &config,
+                      void (*kernel)(FullArgs...),
+                      std::array<void *, sizeof ... (FullArgs)> *argArray,
+                      size_t argIndex,
+                      const CurrentArg *arg,
+                      const RemainingArgs *... otherArgs)
+{
+    (*argArray)[argIndex] = (void *)arg;
+    launchCudaKernel(config, kernel, argArray, argIndex + 1, otherArgs ...);
+}
+
+/*! \brief Launches the CUDA kernel with CUDA >= 7.0 API.
+ *  This is the tail of the recursive function above.
+ *  FIXME: The optional timing event is not passed.
+ *
+ * \tparam    FullArgs        Types of all the kernel arguments
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernel          Kernel function handle
+ * \param[in] argIndex        Index of the current argument
+ */
+template <typename ... FullArgs>
+void launchCudaKernel(const KernelLaunchConfig &config,
+                      void (*kernel)(FullArgs...),
+                      std::array<void *, sizeof ... (FullArgs)> *argArray,
+                      size_t gmx_unused argIndex)
+{
+#if GMX_CUDA_VERSION >= 7000
+    cudaLaunchKernel((void *)kernel, config.gridSize, config.blockSize, argArray->data(), config.sharedMemorySize, config.stream);
+#endif
+}
+
+/*! \brief Launches the CUDA kernel.
+ *  Uses either the recursive compile-time wrappers above with cudaLaunchKernel(),
+ *  or the traditional chevron syntax.
+ *
+ * \tparam    Args            Types of kernel arguments
+ * \param[in] config          Kernel configuration for launching
+ * \param[in] kernel          Kernel function handle
+ * \param[in] args            Pointers to the kernel arguments
+ */
+template <typename... Args>
+void launchGpuKernel(const KernelLaunchConfig &config,
+                     void                      (*kernel)(Args...),
+                     const Args      * ...     args)
+{
+    if (c_useCudaLaunchKernel)
+    {
+        std::array<void *, sizeof ... (args)> argArray;
+        launchCudaKernel(config, kernel, &argArray, 0, args ...);
+    }
+    else
+    {
+        kernel<<< config.gridSize, config.blockSize, config.sharedMemorySize, config.stream>>> (*args ...);
+    }
+
+    CU_LAUNCH_ERR("asdfg");
+
 }
 
 #endif

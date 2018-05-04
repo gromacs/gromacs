@@ -45,10 +45,13 @@
 
 #include <cstring>
 
+//FIXME resolve opencl encapsulation
+#include "gromacs/gpu_utils/devicebuffer.h"
+
 #include "gromacs/ewald/pme-gather.h"
-#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-solve.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
@@ -100,6 +103,7 @@ gmx_uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       CodePath                  mode,
                                       gmx_device_info_t        *gpuInfo,
+                                      PmePersistentDataHandle   persistent,
                                       size_t                    atomCount,
                                       const Matrix3x3          &box,
                                       real                      ewaldCoeff_q = 1.0f,
@@ -111,10 +115,10 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     {
         init_gpu(dummyLogger, gpuInfo);
     }
-    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
+    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec  = {0};
     gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
-                                                ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger);
+                                                ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger, persistent);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -151,19 +155,48 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
 PmeSafePointer pmeInitEmpty(const t_inputrec         *inputRec,
                             CodePath                  mode,
                             gmx_device_info_t        *gpuInfo,
+                            PmePersistentDataHandle   persistent,
                             const Matrix3x3          &box,
                             real                      ewaldCoeff_q,
                             real                      ewaldCoeff_lj
                             )
 {
-    return pmeInitInternal(inputRec, mode, gpuInfo, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    return pmeInitInternal(inputRec, mode, gpuInfo, persistent, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
     // hiding the fact that PME actually needs to know the number of atoms in advance
+}
+
+//! Simple PME initialization only to extract the persistent data
+PmeSafePointer pmeInitDummy(CodePath                  mode,
+                            gmx_device_info_t        *gpuInfo)
+{
+    t_inputrec inputRec;
+    inputRec.nkx         = 20;
+    inputRec.nky         = 20;
+    inputRec.nkz         = 20;
+    inputRec.coulombtype = eelPME;
+    inputRec.pme_order   = 4;
+    inputRec.epsilon_r   = 1.0;
+
+    constexpr Matrix3x3 box = {{
+                                   8.0f, 0.0f, 0.0f,
+                                   0.0f, 3.4f, 0.0f,
+                                   0.0f, 0.0f, 2.0f
+                               }};
+    return pmeInitEmpty(&inputRec, CodePath::CUDA, gpuInfo, nullptr, box, 1.0, 1.0);
+}
+
+PmePersistentDataHandle pmeMakePersistentData(CodePath           mode,
+                                              gmx_device_info_t *gpuInfo)
+{
+    const auto pmeDummy = pmeInitDummy(mode, gpuInfo);
+    return pmeGpuAcquirePersistentData(pmeDummy->gpu);
 }
 
 //! PME initialization with atom data
 PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             CodePath                  mode,
                             gmx_device_info_t        *gpuInfo,
+                            PmePersistentDataHandle   persistent,
                             const CoordinatesVector  &coordinates,
                             const ChargesVector      &charges,
                             const Matrix3x3          &box
@@ -171,7 +204,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
 {
     const size_t    atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, atomCount, box);
+    PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, gpuInfo, persistent, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
 
     switch (mode)
@@ -486,7 +519,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
     switch (mode)
     {
         case CodePath::CUDA:
-            memcpy(pme->gpu->staging.h_gridlineIndices, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
+            pmeGpuSetGridlineIndices(pme->gpu, gridLineIndices);
             break;
 
         case CodePath::CPU:
@@ -605,7 +638,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
     switch (mode)
     {
         case CodePath::CUDA:
-            gridLineIndices = arrayRefFromArray(reinterpret_cast<IVec *>(pme->gpu->staging.h_gridlineIndices), atomCount);
+            gridLineIndices = pmeGpuGetGridlineIndices(pme->gpu);
             break;
 
         case CodePath::CPU:

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -395,7 +395,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
                     continue;
                 }
 
@@ -412,7 +412,9 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                               (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                               ));
 
-                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
+                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first,
+                                                          context.getDeviceInfo(), context.getPersistentData(),
+                                                          inputAtomData.coordinates, inputAtomData.charges, box);
 
                     /* Setting some more inputs */
                     pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);

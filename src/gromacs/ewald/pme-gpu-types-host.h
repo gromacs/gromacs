@@ -58,8 +58,9 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU != GMX_GPU_NONE
 
+//FIXME rename
 struct PmeGpuCuda;
 /*! \brief A typedef for including the GPU host data by pointer */
 typedef PmeGpuCuda PmeGpuSpecific;

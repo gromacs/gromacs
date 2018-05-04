@@ -180,11 +180,12 @@ static void setup1DTexture(cudaTextureObject_t &texObj,
 }
 
 template <typename T>
-void initParamLookupTable(T                        * &d_ptr,
+void initParamLookupTable(T                         **d_ptr,
                           cudaTextureObject_t        &texObj,
                           const T                    *h_ptr,
                           int                         numElem,
-                          const gmx_device_info_t    *devInfo)
+                          const gmx_device_info_t    *devInfo,
+                          void                       *contextDummy) //FIXME
 {
     const size_t sizeInBytes = numElem * sizeof(*d_ptr);
     cudaError_t  stat        = cudaMalloc((void **)&d_ptr, sizeInBytes);

@@ -50,14 +50,20 @@
 #include <array>
 #include <set>
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
+#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/gpu_utils/gpuhostsynchronizer.cuh"
+
+//#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 
 #include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
-#include "pme-timings.cuh"
+//#include "pme-timings.cuh"
 
 class GpuParallel3dFft;
+
+#define DEVICE_INLINE __device__ __forceinline__
 
 /* Some defines for PME behaviour follow */
 
@@ -166,7 +172,7 @@ int __host__ __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, 
  * This is called from the spline_and_spread and gather PME kernels.
  * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
  */
-int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
+int DEVICE_INLINE pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
 {
     return c_usePadding ? 1 : (atomDataIndex < nAtomData);
 }
@@ -179,9 +185,9 @@ int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataI
  *
  * This is called from the spline_and_spread and gather PME kernels.
  */
-int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
+int DEVICE_INLINE pme_gpu_check_atom_charge(const float coefficient)
 {
-    assert(isfinite(coefficient));
+    assert(std::isfinite(coefficient));
     return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
 }
 
@@ -207,11 +213,11 @@ dim3 __host__ inline pmeGpuCreateGrid(const PmeGpu *pmeGpu, int blockCount)
 struct PmeGpuCuda
 {
     /*! \brief The CUDA stream where everything related to the PME happens. */
-    cudaStream_t pmeStream;
+    CommandStream pmeStream;
 
     /* Synchronization events */
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
-    cudaEvent_t syncSpreadGridD2H;
+    GpuHostSynchronizer syncSpreadGridD2H;
 
     // TODO: consider moving some things below into the non-CUDA struct.
 
@@ -240,37 +246,39 @@ struct PmeGpuCuda
      * TODO: these should live in a clean buffered container type, and be refactored in the NB/cudautils as well.
      */
     /*! \brief The kernelParams.atoms.coordinates float element count (actual)*/
-    int coordinatesSize;
+    int     coordinatesSize;
     /*! \brief The kernelParams.atoms.coordinates float element count (reserved) */
-    int coordinatesSizeAlloc;
+    int     coordinatesSizeAlloc;
     /*! \brief The kernelParams.atoms.forces float element count (actual) */
-    int forcesSize;
+    int     forcesSize;
     /*! \brief The kernelParams.atoms.forces float element count (reserved) */
-    int forcesSizeAlloc;
+    int     forcesSizeAlloc;
     /*! \brief The kernelParams.atoms.gridlineIndices int element count (actual) */
-    int gridlineIndicesSize;
+    int     gridlineIndicesSize;
     /*! \brief The kernelParams.atoms.gridlineIndices int element count (reserved) */
-    int gridlineIndicesSizeAlloc;
+    int     gridlineIndicesSizeAlloc;
     /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (actual) */
-    int splineDataSize;
+    int     splineDataSize;
     /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (reserved) */
-    int splineDataSizeAlloc;
+    int     splineDataSizeAlloc;
     /*! \brief The kernelParams.atoms.coefficients float element count (actual) */
-    int coefficientsSize;
+    int     coefficientsSize;
     /*! \brief The kernelParams.atoms.coefficients float element count (reserved) */
-    int coefficientsSizeAlloc;
+    int     coefficientsSizeAlloc;
     /*! \brief The kernelParams.grid.splineValuesArray float element count (actual) */
-    int splineValuesSize;
+    int     splineValuesSize;
     /*! \brief The kernelParams.grid.splineValuesArray float element count (reserved) */
-    int splineValuesSizeAlloc;
+    int     splineValuesSizeAlloc;
     /*! \brief The kernelParams.grid.realGrid float element count (actual) */
-    int realGridSize;
+    int     realGridSize;
     /*! \brief The kernelParams.grid.realGrid float element count (reserved) */
-    int realGridSizeAlloc;
+    int     realGridSizeAlloc;
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
-    int complexGridSize;
+    int     complexGridSize;
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
-    int complexGridSizeAlloc;
+    int     complexGridSizeAlloc;
+
+    Context context;
 };
 
 
@@ -281,11 +289,13 @@ struct PmeGpuCuda
  */
 struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
 {
+#if GMX_GPU == GMX_GPU_CUDA
     /* These are CUDA texture objects, related to the grid size. */
     /*! \brief CUDA texture object for accessing grid.d_fractShiftsTable */
     cudaTextureObject_t fractShiftsTableTexture;
     /*! \brief CUDA texture object for accessing grid.d_gridlineIndicesTable */
     cudaTextureObject_t gridlineIndicesTableTexture;
+#endif
 };
 
 #endif

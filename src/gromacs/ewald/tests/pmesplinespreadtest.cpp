@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, coordinates, charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, nullptr, coordinates, charges, box), NotImplementedError);
                     continue;
                 }
 
@@ -151,7 +151,9 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                         /* Running the test */
 
-                        PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), coordinates, charges, box);
+                        PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first,
+                                                              context.getDeviceInfo(), context.getPersistentData(),
+                                                              coordinates, charges, box);
 
                         const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
                         const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
@@ -170,7 +172,6 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                         /* Outputs correctness check */
                         /* All tolerances were picked empirically for single precision on CPU */
-
                         TestReferenceChecker rootChecker(refData.rootChecker());
 
                         const auto           maxGridSize              = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
@@ -182,7 +183,6 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                         if (computeSplines)
                         {
                             const char *dimString[] = { "X", "Y", "Z" };
-
                             /* Spline values */
                             SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
                             TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
@@ -192,7 +192,6 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                                 auto splineValuesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Values, i);
                                 splineValuesChecker.checkSequence(splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
                             }
-
                             /* Spline derivatives */
                             const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
                             /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */

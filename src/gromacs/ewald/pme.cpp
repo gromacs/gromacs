@@ -114,7 +114,13 @@
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
-#include "pme-gpu-internal.h"
+//#include "pme-gpu-internal.h"
+//FIXME
+#include "gromacs/gpu_utils/gpu_macros.h"
+GPU_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *, gmx_device_info_t *, PmePersistentDataHandle) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *, int, const real *) GPU_FUNC_TERM
+
 #include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-redistribute.h"
@@ -146,9 +152,9 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
         errorReasons.push_back("double precision");
     }
 #endif
-#if GMX_GPU != GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_NONE
     {
-        errorReasons.push_back("non-CUDA build of GROMACS");
+        errorReasons.push_back("non-GPU build of GROMACS");
     }
 #endif
     if (ir->cutoff_scheme == ecutsGROUP)
@@ -203,9 +209,9 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
         errorReasons.push_back("double precision");
     }
 #endif
-#if GMX_GPU != GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_NONE
     {
-        errorReasons.push_back("non-CUDA build of GROMACS");
+        errorReasons.push_back("non-GPU build of GROMACS");
     }
 #endif
 
@@ -589,21 +595,22 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
-                        int                  nnodes_major,
-                        int                  nnodes_minor,
-                        const t_inputrec    *ir,
-                        int                  homenr,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu              *pmeGpu,
-                        gmx_device_info_t   *gpuInfo,
-                        const gmx::MDLogger  & /*mdlog*/)
+gmx_pme_t *gmx_pme_init(const t_commrec        *cr,
+                        int                     nnodes_major,
+                        int                     nnodes_minor,
+                        const t_inputrec       *ir,
+                        int                     homenr,
+                        gmx_bool                bFreeEnergy_q,
+                        gmx_bool                bFreeEnergy_lj,
+                        gmx_bool                bReproducible,
+                        real                    ewaldcoeff_q,
+                        real                    ewaldcoeff_lj,
+                        int                     nthread,
+                        PmeRunMode              runMode,
+                        PmeGpu                 *pmeGpu,
+                        gmx_device_info_t      *gpuInfo,
+                        const gmx::MDLogger     & /*mdlog*/,
+                        PmePersistentDataHandle persistent)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -949,7 +956,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
             }
         }
 
-        pme_gpu_reinit(pme.get(), gpuInfo);
+        pme_gpu_reinit(pme.get(), gpuInfo, persistent);
     }
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);

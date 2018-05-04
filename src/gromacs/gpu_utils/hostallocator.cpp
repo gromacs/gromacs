@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,9 +137,12 @@ void HostAllocationPolicy::setPinningPolicy(PinningPolicy pinningPolicy)
 {
     if (GMX_GPU != GMX_GPU_CUDA)
     {
-        GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
+        /* //FIXME
+           GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
                            "A suitable build of GROMACS (e.g. with CUDA) is required for a "
                            "HostAllocationPolicy to be set to a mode that produces pinning.");
+         */
+        return;
     }
     impl_->pinningPolicy_ = pinningPolicy;
 }
