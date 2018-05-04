@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,11 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
@@ -133,28 +137,143 @@ makeGpuIdString(const std::vector<int> &gpuIds,
     return formatAndJoin(resultGpuIds, ",", StringFormatter("%d"));
 }
 
-void checkUserGpuIds(const gmx_gpu_info_t   &gpu_info,
-                     const std::vector<int> &compatibleGpus,
-                     const std::vector<int> &gpuIds)
+std::vector<int>
+determineGpuIdsToUse(const gmx::MDLogger  &mdlog,
+                     ArrayRef<const int>   compatibleGpuIds,
+                     const int             numGpuDevicesDetected,
+                     const std::string    &userGpuIdChoicesString)
 {
-    bool        foundIncompatibleGpuIds = false;
-    std::string message
-        = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
+    StringOutputStream errorStream;
+    TextWriter         errorOutput(&errorStream);
+    errorOutput.wrapperSettings().setLineLength(78);
+    errorOutput.writeLine("You limited the available GPU IDs to the following possibilities:");
+    errorOutput.writeLineFormatted("  '%s'", userGpuIdChoicesString.c_str());
+    errorOutput.writeLine("However, the following problems were detected:");
+    errorOutput.wrapperSettings().setIndent(2);
 
-    for (const auto &gpuId : gpuIds)
+    std::vector<int> userGpuIdChoices;
+    try
     {
-        if (std::find(compatibleGpus.begin(), compatibleGpus.end(), gpuId) == compatibleGpus.end())
+        userGpuIdChoices = parseUserGpuIds(userGpuIdChoicesString);
+    }
+    catch (GromacsException &e)
+    {
+        e.prependContext(errorStream.toString());
+        throw;
+    }
+
+    if (userGpuIdChoices.empty())
+    {
+        // The user didn't restrict the available GPUs with -gpu_id,
+        // so we can use all the compatible devices, without any need
+        // to report that decision to the log, because it is not yet
+        // known whether any GPUs will be used.
+        return copyOf(compatibleGpuIds);
+    }
+
+    // Check that -gpu_id selected compatible GPUs.
+    bool foundInvalidId = false;
+    for (size_t i = 0; i != userGpuIdChoices.size(); ++i)
+    {
+        if (userGpuIdChoices[i] < 0)
         {
-            foundIncompatibleGpuIds = true;
-            message                += gmx::formatString("    GPU #%d: %s\n",
-                                                        gpuId,
-                                                        getGpuCompatibilityDescription(gpu_info, gpuId));
+            foundInvalidId = true;
+            errorOutput.writeLineFormatted
+                ("GPU device ID %d is negative, which is invalid.", userGpuIdChoices[i]);
+        }
+
+        if (userGpuIdChoices[i] > numGpuDevicesDetected)
+        {
+            foundInvalidId = true;
+            errorOutput.writeLineFormatted
+                ("GPU device ID %d is too large for the set of detected GPUs.", userGpuIdChoices[i]);
+        }
+
+        for (size_t j = i+1; j != userGpuIdChoices.size(); ++j)
+        {
+            if (userGpuIdChoices[i] == userGpuIdChoices[j])
+            {
+                foundInvalidId = true;
+                errorOutput.writeLineFormatted
+                    ("GPU device ID %d is used more than once", userGpuIdChoices[i]);
+            }
+        }
+
+        if (std::find(compatibleGpuIds.begin(),
+                      compatibleGpuIds.end(),
+                      userGpuIdChoices[i]) == compatibleGpuIds.end())
+        {
+            foundInvalidId = true;
+            errorOutput.writeLineFormatted
+                ("GPU device ID %d is not for a compatible, available GPU.", userGpuIdChoices[i]);
         }
     }
-    if (foundIncompatibleGpuIds)
+    /* Note that only the GPUs detected on the master rank are
+     * reported, because of the existing limitations of that
+     * reporting.
+     *
+     * \todo Note that the user-selected GPU IDs can be different on
+     * each rank, and the IDs of compatible GPUs can be different on
+     * each node, so this code ought to do communication to determine
+     * whether all ranks are able to proceed. Currently this relies on
+     * the MPI runtime to kill the other processes because GROMACS
+     * lacks the appropriate infrastructure to do a good job of
+     * coordinating error messages and behaviour across MPMD ranks and
+     * multiple simulations. */
+    if (foundInvalidId)
     {
-        GMX_THROW(InconsistentInputError(message));
+        errorOutput.wrapperSettings().setIndent(0);
+        errorOutput.writeLine("List only unique, non-negative IDs of GPUs that have been "
+                              "detected, that are compatible, and available for use. These are:");
+        errorOutput.wrapperSettings().setIndent(2);
+        errorOutput.writeLine(formatAndJoin(compatibleGpuIds, ",", StringFormatter("%d")));
+        GMX_THROW(InvalidInputError(errorStream.toString()));
     }
+    GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
+            "Using user-supplied GPU IDs '%s'", userGpuIdChoicesString.c_str());
+    return userGpuIdChoices;
+}
+
+std::vector<int>
+validateUserGpuTaskAssignment(ArrayRef<const int> gpuIdsToUse,
+                              const std::string  &userGpuTaskAssignmentString)
+{
+    // Check -gputasks refers only to available GPUs.
+    StringOutputStream errorStream;
+    TextWriter         errorOutput(&errorStream);
+    errorOutput.wrapperSettings().setLineLength(78);
+    errorOutput.writeLine("You assigned GPU tasks to devices as:");
+    errorOutput.writeLineFormatted("  '%s'", userGpuTaskAssignmentString.c_str());
+    errorOutput.writeLine("However, the following problems were detected:");
+    errorOutput.wrapperSettings().setIndent(2);
+
+    std::vector<int> userGpuTaskAssignment;
+    try
+    {
+        userGpuTaskAssignment = parseUserGpuIds(userGpuTaskAssignmentString);
+    }
+    catch (GromacsException &e)
+    {
+        e.prependContext(errorStream.toString());
+        throw;
+    }
+
+    bool foundInvalidGpuIds = false;
+    for (const auto &assignedGpuId : userGpuTaskAssignment)
+    {
+        if (std::find(std::begin(gpuIdsToUse), std::end(gpuIdsToUse), assignedGpuId) == std::end(gpuIdsToUse))
+        {
+            errorOutput.writeLineFormatted
+                ("You assigned a task to GPU device ID #%d, but it is not an available compatible GPU. "
+                "Use only available, compatible GPU IDs in your task assignment.", assignedGpuId);
+            foundInvalidGpuIds = true;
+        }
+    }
+    if (foundInvalidGpuIds)
+    {
+        GMX_THROW(InvalidInputError(errorStream.toString()));
+    }
+    return userGpuTaskAssignment;
 }
 
 } // namespace

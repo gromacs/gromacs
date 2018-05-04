@@ -647,7 +647,7 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->nthreads_tmpi,
             hw_opt->nthreads_omp,
             hw_opt->nthreads_omp_pme,
-            hw_opt->gpuIdsAvailable.c_str(),
+            hw_opt->userGpuIdChoices.c_str(),
             hw_opt->userGpuTaskAssignment.c_str());
 }
 

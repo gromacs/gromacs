@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="GpuIdString"><![CDATA[
+You limited the available GPU IDs to the following possibilities:
+  '0,12,12,2,-1,14'
+However, the following problems were detected:
+  GPU device ID 12 is too large for the set of detected GPUs.
+  GPU device ID 12 is used more than once
+  GPU device ID 12 is too large for the set of detected GPUs.
+  GPU device ID 2 is not for a compatible, available GPU.
+  GPU device ID -1 is negative, which is invalid.
+  GPU device ID -1 is not for a compatible, available GPU.
+  GPU device ID 14 is too large for the set of detected GPUs.
+  GPU device ID 14 is not for a compatible, available GPU.
+List only unique, non-negative IDs of GPUs that have been detected, that are
+compatible, and available for use. These are:
+  0,12]]></String>
+</ReferenceData>
