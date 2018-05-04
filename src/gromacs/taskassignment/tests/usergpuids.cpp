@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,12 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/stringstream.h"
+
+#include "testutils/refdata.h"
+#include "testutils/stringtest.h"
 
 namespace gmx
 {
@@ -58,6 +64,9 @@ namespace test
 {
 namespace
 {
+
+using ::testing::IsEmpty;
+using ::testing::ElementsAre;
 
 TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
 {
@@ -115,8 +124,6 @@ TEST(GpuIdStringHandlingTest, ParsingAndReconstructionWork)
 
 TEST(GpuIdStringHandlingTest, EmptyStringCanBeValid)
 {
-    using ::testing::IsEmpty;
-
     auto assignment = parseUserGpuIds("");
     EXPECT_THAT(assignment, IsEmpty());
     EXPECT_EQ("", makeGpuIdString(assignment, 0));
@@ -135,6 +142,105 @@ TEST(GpuIdStringHandlingTest, InvalidInputsThrow)
             EXPECT_THROW(parseUserGpuIds(s), InvalidInputError) << "for string " << s;
         }
     }
+}
+
+TEST(GpuIdStringHandlingTest, ReturnsCompatibleGpusByDefault)
+{
+    MDLogger dummyLogger;
+    int      compatibleGpuIds[] = {0, 1};
+    EXPECT_THAT(determineGpuIdsToUse(dummyLogger, compatibleGpuIds, 3, ""), ElementsAre(0, 1));
+}
+
+TEST(GpuIdStringHandlingTest, LogsValidUserSelection)
+{
+    TestReferenceData    data;
+    TestReferenceChecker checker(data.rootChecker());
+    StringOutputStream   stream;
+    LoggerBuilder        builder;
+    builder.addTargetStream(MDLogger::LogLevel::Info, &stream);
+    LoggerOwner          owner  = builder.build();
+    const MDLogger      &logger = owner.logger();
+
+    int                  compatibleGpuIds[] = {0, 1};
+    EXPECT_THAT(determineGpuIdsToUse(logger, compatibleGpuIds, 3, "1"), ElementsAre(1));
+    StringTestBase::checkText(&checker, stream.toString(), "GpuIdLogging");
+}
+
+TEST(GpuIdStringUserMessageTest, UnparseableGpuIdStringsThrow)
+{
+    TestReferenceData     data;
+    TestReferenceChecker  checker(data.rootChecker());
+    try
+    {
+        MDLogger dummyLogger;
+        int      compatibleGpuIds[] = {0, 12};
+        determineGpuIdsToUse(dummyLogger, compatibleGpuIds, 3, "Unparseable");
+    }
+    catch (GromacsException &e)
+    {
+        StringTestBase::checkText(&checker, formatExceptionMessageToString(e), "UnparseableGpuIdString");
+    }
+}
+
+TEST(GpuIdStringUserMessageTest, InvalidGpuIdChoicesThrow)
+{
+    TestReferenceData     data;
+    TestReferenceChecker  checker(data.rootChecker());
+    try
+    {
+        MDLogger dummyLogger;
+        int      compatibleGpuIds[] = {0, 12};
+        determineGpuIdsToUse(dummyLogger, compatibleGpuIds, 3, "0,12,12,2,-1,14");
+    }
+    catch (GromacsException &e)
+    {
+        StringTestBase::checkText(&checker, formatExceptionMessageToString(e), "GpuIdString");
+    }
+}
+
+TEST(GpuTaskAssignmentStringHandlingTest, HandlesEmptyAssignment)
+{
+    int  availableGpuIds[] = {0, 2};
+    auto assignment        = validateUserGpuTaskAssignment(availableGpuIds, "");
+    EXPECT_THAT(assignment, IsEmpty());
+}
+
+TEST(GpuTaskAssignmentStringHandlingTest, UnparseableGpuIdStringsThrow)
+{
+    TestReferenceData     data;
+    TestReferenceChecker  checker(data.rootChecker());
+    try
+    {
+        int availableGpuIds[] = {0, 2};
+        validateUserGpuTaskAssignment(availableGpuIds, "Unparseable");
+    }
+    catch (GromacsException &e)
+    {
+        StringTestBase::checkText(&checker, formatExceptionMessageToString(e), "UnparseableGpuTaskAssignmentString");
+    }
+}
+
+TEST(GpuTaskAssignmentStringHandlingTest, ThrowsForInvalidAssignment)
+{
+
+    TestReferenceData     data;
+    TestReferenceChecker  checker(data.rootChecker());
+    try
+    {
+        int availableGpuIds[] = {0, 2};
+        validateUserGpuTaskAssignment(availableGpuIds, "11");
+    }
+    catch (GromacsException &e)
+    {
+        StringTestBase::checkText(&checker, formatExceptionMessageToString(e), "InvalidGpuTaskAssignment");
+    }
+}
+
+TEST(GpuTaskAssignmentStringHandlingTest, ValidAssignmentWorks)
+{
+    int  availableGpuIds[] = {0, 2};
+    auto assignment        = validateUserGpuTaskAssignment(availableGpuIds, "2");
+    EXPECT_THAT(assignment, ElementsAre(2));
 }
 
 } // namespace

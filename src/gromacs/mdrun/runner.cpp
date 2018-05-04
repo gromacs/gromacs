@@ -418,32 +418,7 @@ int Mdrunner::mdrunner()
     // Handle task-assignment related user options.
     EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
                                                EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    std::vector<int>    gpuIdsAvailable;
-    try
-    {
-        gpuIdsAvailable = parseUserGpuIds(hw_opt.gpuIdsAvailable);
-        // TODO We could put the GPU IDs into a std::map to find
-        // duplicates, but for the small numbers of IDs involved, this
-        // code is simple and fast.
-        for (size_t i = 0; i != gpuIdsAvailable.size(); ++i)
-        {
-            for (size_t j = i+1; j != gpuIdsAvailable.size(); ++j)
-            {
-                if (gpuIdsAvailable[i] == gpuIdsAvailable[j])
-                {
-                    GMX_THROW(InvalidInputError(formatString("The string of available GPU device IDs '%s' may not contain duplicate device IDs", hw_opt.gpuIdsAvailable.c_str())));
-                }
-            }
-        }
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    std::vector<int> userGpuTaskAssignment;
-    try
-    {
-        userGpuTaskAssignment = parseUserGpuIds(hw_opt.userGpuTaskAssignment);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     auto       nonbondedTarget = findTaskTarget(nbpu_opt);
     auto       pmeTarget       = findTaskTarget(pme_opt);
     auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
@@ -467,32 +442,17 @@ int Mdrunner::mdrunner()
 
     gmx_print_detected_hardware(fplog, cr, ms, mdlog, hwinfo);
 
-    std::vector<int> gpuIdsToUse;
-    auto             compatibleGpus = getCompatibleGpus(hwinfo->gpu_info);
-    if (gpuIdsAvailable.empty())
+    std::vector<int> gpuIdsToUse, userGpuTaskAssignment;
+    try
     {
-        gpuIdsToUse = compatibleGpus;
+        gpuIdsToUse = determineGpuIdsToUse(mdlog,
+                                           getCompatibleGpus(hwinfo->gpu_info),
+                                           hwinfo->gpu_info.n_dev,
+                                           hw_opt.userGpuIdChoices);
+        userGpuTaskAssignment = validateUserGpuTaskAssignment(gpuIdsToUse,
+                                                              hw_opt.userGpuTaskAssignment);
     }
-    else
-    {
-        for (const auto &availableGpuId : gpuIdsAvailable)
-        {
-            bool availableGpuIsCompatible = false;
-            for (const auto &compatibleGpuId : compatibleGpus)
-            {
-                if (availableGpuId == compatibleGpuId)
-                {
-                    availableGpuIsCompatible = true;
-                    break;
-                }
-            }
-            if (!availableGpuIsCompatible)
-            {
-                gmx_fatal(FARGS, "You limited the set of compatible GPUs to a set that included ID #%d, but that ID is not for a compatible GPU. List only compatible GPUs.", availableGpuId);
-            }
-            gpuIdsToUse.push_back(availableGpuId);
-        }
-    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (fplog != nullptr)
     {
@@ -523,7 +483,7 @@ int Mdrunner::mdrunner()
                 gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
             }
 
-            if (!compatibleGpus.empty())
+            if (hwinfo->gpu_info.n_dev_compatible > 0)
             {
                 GMX_LOG(mdlog.warning).asParagraph().appendText(
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
@@ -561,14 +521,14 @@ int Mdrunner::mdrunner()
             // the number of GPUs to choose the number of ranks.
 
             useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
-                    (nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
+                    (nonbondedTarget, gpuIdsToUse, !userGpuTaskAssignment.empty(), emulateGpuNonbonded,
                     inputrec->cutoff_scheme == ecutsVERLET,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
             auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
-                    (useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment,
+                    (useGpuForNonbonded, pmeTarget, gpuIdsToUse, !userGpuTaskAssignment.empty(),
                     canUseGpuForPme, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
 
         }
@@ -624,13 +584,13 @@ int Mdrunner::mdrunner()
         // handle. If unsuitable, we will notice that during task
         // assignment.
         bool gpusWereDetected = hwinfo->ngpu_compatible_tot > 0;
-        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuTaskAssignment,
+        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, !userGpuTaskAssignment.empty(),
                                                                 emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
                                                                 gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, !GMX_THREAD_MPI),
                                                                 gpusWereDetected);
         auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
         auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
-        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuTaskAssignment,
+        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, !userGpuTaskAssignment.empty(),
                                                     canUseGpuForPme, cr->nnodes, domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
 

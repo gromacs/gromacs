@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="UnparseableGpuIdString"><![CDATA[
+You limited the available GPU IDs to the following possibilities:
+  'Unparseable'
+However, the following problems were detected:
+  Invalid character in GPU ID string: "U"]]></String>
+</ReferenceData>
