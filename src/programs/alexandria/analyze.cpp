@@ -329,7 +329,7 @@ static void write_corr_xvg(FILE                             *fplog,
         gmx_stats_get_ab(lsq[i], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq[i],    &rmsd);
         gmx_stats_get_mse_mae(lsq[i], &mse, &mae);        
-        fprintf(fplog, "%-12s %5d %6.3f(%5.4f) %6.3f(%5.4f) %7.2f %8.4f %8.4f %8.4f\n", 
+        fprintf(fplog, "%-12s %5d %6.3f(%.2f) %6.3f(%.2f) %7.2f %8.2f %8.2f %8.2f\n", 
                 q->method().c_str(), n, a, da, b, db, Rfit*100, rmsd, mse, mae);
         gmx_stats_free(lsq[i]);
     }    

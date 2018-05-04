@@ -56,7 +56,7 @@ static void eemprops_zeta_header(LongTable &lt)
 
     lt.setColumns("lcc");
 
-    snprintf(longbuf, STRLEN, "The optimized exponent for the polarizable Gaussian and Slater $s$-type orbitals represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. Slater 3s orbital has been optimized rather than the valence Slater $s$-orbital for Bromide and Iodide ({\\it See} THEORY).");
+    snprintf(longbuf, STRLEN, "The optimized exponent for the polarizable Gaussian and Slater $s$-type orbitals represented by $\\beta$ and $\\zeta$ in nm$^{-1}$, rescpectively. Slater 3s orbital has been optimized rather than the valence Slater $s$-orbital for Bromine and Iodine ({\\it See} THEORY).");
     lt.setCaption(longbuf);
     lt.setLabel("orbitalexpoenent");
     snprintf(longbuf, STRLEN, "Polarizability Type & $\\beta$($\\sigma$) & $\\zeta$($\\sigma$)");
@@ -87,12 +87,12 @@ void alexandria_poldata_eemprops_zeta_table(FILE           *fp,
                 ztype = ztp->substr(pos+2);
             }
             
-            snprintf(longbuf, STRLEN, "%s & %0.3f (%0.3f) & %0.3f (%0.3f)",
+            snprintf(longbuf, STRLEN, "%s & %0.2f (%0.2f) & %0.2f (%0.2f)",
                      ztype.c_str(),
                      AXpg->getZeta(1),
-                     atof(gmx::splitString(AXpg->getZeta_sigma()).back().c_str()),
+                     atof(gmx::splitString(AXpg->getZeta_sigma()).back().c_str()) + 0.005,
                      AXps->getZeta(1),
-                     atof(gmx::splitString(AXps->getZeta_sigma()).back().c_str()));
+                     atof(gmx::splitString(AXps->getZeta_sigma()).back().c_str()) + 0.005);
             lt.printLine(longbuf);
         }
     }
