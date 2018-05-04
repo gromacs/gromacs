@@ -118,7 +118,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitEmpty(&inputRec, mode.first, nullptr, box, ewaldCoeff_q, ewaldCoeff_lj), NotImplementedError);
+		  EXPECT_THROW(pmeInitEmpty(&inputRec, mode.first, nullptr, nullptr, box, ewaldCoeff_q, ewaldCoeff_lj), NotImplementedError);
                     continue;
                 }
 
@@ -146,7 +146,9 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                                                       ));
 
                             /* Running the test */
-                            PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, mode.first, context.getDeviceInfo(), box, ewaldCoeff_q, ewaldCoeff_lj);
+                            PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, mode.first, context.getDeviceInfo(),
+								  context.getPersistentData(),
+								  box, ewaldCoeff_q, ewaldCoeff_lj);
                             pmeSetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first, nonZeroGridValues);
                             const real     cellVolume = box[0] * box[4] * box[8];
                             //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure

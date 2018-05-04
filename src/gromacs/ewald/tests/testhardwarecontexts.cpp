@@ -93,21 +93,28 @@ static gmx_hw_info_t *hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    TestHardwareContext emptyContext("", nullptr);
+    TestHardwareContext emptyContext("", nullptr, nullptr);
     hardwareContextsByMode_[CodePath::CPU].push_back(emptyContext);
 
     hardwareInfo_ = hardwareInit();
 
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     TestHardwareContexts gpuContexts;
+ 
+    
     for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
     {
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        gpuContexts.emplace_back(TestHardwareContext(description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
+        auto *deviceInfo =  getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
+
+        // FIXME chaneg dependency?
+        const auto persistentContextData = pmeMakePersistentData(CodePath::CUDA, deviceInfo);
+	
+        gpuContexts.emplace_back(TestHardwareContext(description.c_str(), deviceInfo, persistentContextData));
     }
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU != GMX_GPU_NONE //FIXME rename CUDA to GPU
     hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
 #endif
 }

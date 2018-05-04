@@ -113,7 +113,13 @@
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
-#include "pme-gpu-internal.h"
+//#include "pme-gpu-internal.h"
+//FIXME
+#include "gromacs/gpu_utils/gpu_macros.h"
+GPU_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *, gmx_device_info_t *, PmePersistentDataHandle) GPU_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *, int, const real *) GPU_FUNC_TERM
+
 #include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-redistribute.h"
@@ -499,7 +505,8 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
                         PmeRunMode           runMode,
                         PmeGpu              *pmeGpu,
                         gmx_device_info_t   *gpuInfo,
-                        const gmx::MDLogger  & /*mdlog*/)
+                        const gmx::MDLogger  & /*mdlog*/,
+			PmePersistentDataHandle persistent)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -832,7 +839,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
-    pme_gpu_reinit(pme.get(), gpuInfo);
+    pme_gpu_reinit(pme.get(), gpuInfo, persistent);
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 

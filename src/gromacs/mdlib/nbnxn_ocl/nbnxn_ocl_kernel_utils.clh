@@ -609,14 +609,4 @@ void reduce_energy_pow2(volatile __local float  *buf,
     }
 }
 
-/*! Writes in debug_buffer the input value.
- *  Each thread has its own unique location in debug_buffer.
- *  Works for 2D global configurations.
- */
-void print_to_debug_buffer_f(__global float* debug_buffer, float value)
-{
-    if (debug_buffer)
-        debug_buffer[get_global_id(1) * get_global_size(0) + get_global_id(0)] = value;
-}
-
 #endif /* NBNXN_OPENCL_KERNEL_UTILS_CLH */

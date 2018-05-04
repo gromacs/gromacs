@@ -484,6 +484,12 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 d1      = p0->re;
                 d2      = p0->im;
 
+                bool valueFilter = (fabs(d1) + fabs(d2) >= 1e-5);
+                //bool indexFilter = ((p0 - grid) < 500);
+                bool indexFilter = ((int)mz == 5) && ((int)my == 7);
+                if (valueFilter && indexFilter)
+                    ;//printf("grid %d %d %d %f %f\n", (kx >= maxkx) ? (kx - nx) : kx, (int)my, (int)mz, d1, d2);
+
                 p0->re  = d1*eterm[kx];
                 p0->im  = d2*eterm[kx];
 

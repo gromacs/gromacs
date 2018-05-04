@@ -56,6 +56,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "gromacs/ewald/pme-persistent-data.h"
+
 struct interaction_const_t;
 struct t_commrec;
 struct t_inputrec;
@@ -132,7 +134,8 @@ gmx_pme_t *gmx_pme_init(const t_commrec *cr,
                         PmeRunMode runMode,
                         PmeGpu *pmeGpu,
                         gmx_device_info_t *gpuInfo,
-                        const gmx::MDLogger &mdlog);
+                        const gmx::MDLogger &mdlog,
+			PmePersistentDataHandle persistent = nullptr);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);

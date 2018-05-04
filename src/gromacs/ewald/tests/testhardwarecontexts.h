@@ -45,11 +45,15 @@
 
 #include <list>
 #include <map>
+#include <memory>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+
+#include "gromacs/ewald/pme-persistent-data.h"
+
 
 namespace gmx
 {
@@ -61,6 +65,10 @@ enum class CodePath
     CPU,
     CUDA
 };
+
+//FIXME fw decl
+ PmePersistentDataHandle pmeMakePersistentData(CodePath mode,
+					      gmx_device_info_t *gpuInfo);
 
 /*! \internal \brief
  * A structure to describe a hardware context - an abstraction over
@@ -74,14 +82,23 @@ struct TestHardwareContext
     std::string        description_;
     //! Device information pointer
     gmx_device_info_t *deviceInfo_;
+    //! A handle to the PME data which should carry over multiple test runs (e.g. to not recompile GPU kernels)
+    PmePersistentDataHandle pmePersistent_;
 
     public:
         //! Returns a human-readable context description line
         std::string getDescription() const{return description_; }
 //! Returns the device info pointer
         gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
+  PmePersistentDataHandle getPersistentData() const{return pmePersistent_; }
         //! Constructs the context
-        TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) : description_(description), deviceInfo_(deviceInfo){}
+        TestHardwareContext(const char *description,
+			    gmx_device_info_t *deviceInfo,
+			    PmePersistentDataHandle pmePersistent) :
+                            description_(description), deviceInfo_(deviceInfo), pmePersistent_(pmePersistent)
+        {
+        }
+        //FIXME delete the rest?
 };
 
 //! A list of hardware contexts

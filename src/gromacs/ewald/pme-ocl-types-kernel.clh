@@ -1,0 +1,179 @@
+#ifndef PMEOCLTYPESKERNEL_CLH
+#define PMEOCLTYPESKERNEL_CLH
+
+// FIXME this files is a total duplicate of pmegputypes.h, meant for inclusion in  OCL kernels
+
+// the only original part
+
+//FIXME find out OpenCL counterpart -  barrier(CLK_LOCAL_MEM_FENCE) is __syncthreads
+#define gmx_syncwarp()
+//barrier(CLK_GLOBAL_MEM_FENCE)
+
+
+#include "pme-ocl-definitely-common.h"
+
+
+//FIXME check if macros are duplicate, and use them correctly
+#define CAN_USE_TEMPLATES !USE_C99_ONLY
+#if CAN_USE_TEMPLATES
+#define TEMPLATE_PARAMETERS2(a, b) <a, b>
+#define TEMPLATE_PARAMETERS3(a, b, c) <a, b, c>
+#else
+#define TEMPLATE_PARAMETERS2(a, b)
+#define TEMPLATE_PARAMETERS3(a, b, c)
+#endif
+
+// No assertions of any kind in OpenCL C, but at least we can compile the common code
+#if USE_C99_ONLY
+#define assert(x)
+#define static_assert(x, y)
+#endif
+
+#define DEVICE_INLINE inline
+
+#define CUDA_COMPILATION 0
+
+#if OPENCL_COMPILATION
+// variable memory spaces
+#define SHARED __local
+#define GLOBAL __global
+// function attributes
+#define KERNEL_FUNC __kernel
+// We could ignoring CUDA kernel execution hints,
+// but they can come with one or 2 arguents, and OpenCL doesn't necessarily support
+// variadic macros, so whatever
+//#define __launch_bounds__ (x, y)
+//#define __launch_bounds__ (x)
+
+DEVICE_INLINE void sharedMemoryBarrier()
+{
+    barrier(CLK_LOCAL_MEM_FENCE);
+}
+
+#define SHARED_MEMORY_BARRIER() barrier(CLK_LOCAL_MEM_FENCE)
+
+#elif CUDA_COMPILATION
+// variable memory spaces
+#define SHARED  __shared__
+#define GLOBAL
+// function attributes
+#define KERNEL_FUNC __global
+
+DEVICE_INLINE void sharedMemoryBarrier()
+{
+    __syncthreads();
+}
+
+#endif
+
+
+#if OPENCL_COMPILATION
+//Device help helpers
+//int or uint?????
+
+DEVICE_INLINE size_t getBlockIndex(size_t dimIndex)
+{
+    //blockIdx.x/y/z
+    return get_group_id(dimIndex);
+}
+
+DEVICE_INLINE size_t getThreadLocalIndex(size_t dimIndex)
+{
+    //threadIdx.x/y/z
+    return get_local_id(dimIndex);
+}
+
+DEVICE_INLINE size_t getThreadLocalIndex3d()
+{
+    //((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
+    return (get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0) + get_local_id(0);
+}
+
+DEVICE_INLINE size_t getThreadLocalIndex2d()
+{
+    //(threadIdx.y * blockDim.x) + threadIdx.x;
+    return get_local_id(1) * get_local_size(0) + get_local_id(0);
+}
+
+DEVICE_INLINE size_t getBlockSize(size_t dimIndex)
+{
+    //blockDim.x
+    return get_local_size(dimIndex);
+}
+
+#endif
+
+
+
+//#include "../gpu_utils/devicebuffer_ocl.h" //FIXME stumbles on gpu_utils.h
+
+//copy of vectypes.h
+#define XX 0
+#define YY 1
+#define ZZ 2
+#define DIM 3
+
+// this is stupid and wrong
+#define PmeGpuKernelParamsBase PmeGpuCudaKernelParams
+
+// more copies
+
+//FIXME copied from vectype_ops.clh
+#if OPENCL_COMPILATION
+
+/*! \brief \internal
+ * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
+ *
+ * \param[in] atomDataIndexGlobal  The atom data index.
+ * \param[in] nAtomData            The atom data array element count.
+ * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
+ *
+ * This is called from the spline_and_spread and gather PME kernels.
+ * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
+ */
+int DEVICE_INLINE pme_gpu_check_atom_data_index(const size_t atomDataIndex, const size_t nAtomData)
+{
+    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
+}
+
+int DEVICE_INLINE pme_gpu_check_atom_charge(const float coefficient)
+{
+    assert(std::isfinite(coefficient));
+    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
+}
+
+#define fetchFromParamLookupTable(d_ptr, somebodyKillMePlease, index) d_ptr[index]
+
+void DEVICE_INLINE atomicAdd_g_f(volatile __global float *addr, float val)
+{
+    union{
+        unsigned int u32;
+        float        f32;
+    } next, expected, current;
+    current.f32    = *addr;
+    do
+    {
+        expected.f32 = current.f32;
+        next.f32     = expected.f32 + val;
+        current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
+    } while( current.u32 != expected.u32 );
+}
+
+void DEVICE_INLINE atomicAdd_l_f(volatile __local float *addr, float val)
+{
+    union{
+        unsigned int u32;
+        float        f32;
+    } next, expected, current;
+    current.f32    = *addr;
+    do{
+        expected.f32 = current.f32;
+        next.f32     = expected.f32 + val;
+        current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
+    } while( current.u32 != expected.u32 );
+}
+
+#define atomicAdd atomicAdd_g_f
+#endif
+
+#endif // PMEOCLTYPESKERNEL_CLH

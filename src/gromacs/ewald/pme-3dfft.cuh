@@ -68,7 +68,7 @@ class GpuParallel3dFft
         /*! \brief Destroys CUDA FFT plans. */
         ~GpuParallel3dFft();
         /*! \brief Performs the FFT transform in given direction */
-        void perform3dFft(gmx_fft_direction dir);
+        void perform3dFft(gmx_fft_direction dir);	
 };
 
 #endif

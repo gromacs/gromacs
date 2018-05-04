@@ -395,7 +395,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+		  EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
                     continue;
                 }
 
@@ -412,7 +412,9 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                               (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
                                               ));
 
-                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
+                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first,
+							  context.getDeviceInfo(), context.getPersistentData(),
+							  inputAtomData.coordinates, inputAtomData.charges, box);
 
                     /* Setting some more inputs */
                     pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);

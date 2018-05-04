@@ -137,9 +137,12 @@ void HostAllocationPolicy::setPinningPolicy(PinningPolicy pinningPolicy)
 {
     if (GMX_GPU != GMX_GPU_CUDA)
     {
-        GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
+        /* //FIXME
+         GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
                            "A suitable build of GROMACS (e.g. with CUDA) is required for a "
                            "HostAllocationPolicy to be set to a mode that produces pinning.");
+        */
+        return;
     }
     impl_->pinningPolicy_ = pinningPolicy;
 }

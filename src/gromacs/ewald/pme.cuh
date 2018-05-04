@@ -50,12 +50,18 @@
 #include <array>
 #include <set>
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
+#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/gpu_utils/gpuhostsynchronizer.cuh"
+
+//#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 
 #include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
-#include "pme-timings.cuh"
+//#include "pme-timings.cuh"
 
 class GpuParallel3dFft;
+
+#define DEVICE_INLINE __device__ __forceinline__
 
 /* Some defines for PME behaviour follow */
 
@@ -118,7 +124,7 @@ class GpuParallel3dFft;
  * This is called from the spline_and_spread and gather PME kernels.
  * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
  */
-int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
+int DEVICE_INLINE pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
 {
     return c_usePadding ? 1 : (atomDataIndex < nAtomData);
 }
@@ -131,9 +137,9 @@ int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataI
  *
  * This is called from the spline_and_spread and gather PME kernels.
  */
-int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
+int DEVICE_INLINE pme_gpu_check_atom_charge(const float coefficient)
 {
-    assert(isfinite(coefficient));
+    assert(std::isfinite(coefficient));
     return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
 }
 
@@ -143,11 +149,11 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
 struct PmeGpuCuda
 {
     /*! \brief The CUDA stream where everything related to the PME happens. */
-    cudaStream_t pmeStream;
+    CommandStream pmeStream;
 
     /* Synchronization events */
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
-    cudaEvent_t syncSpreadGridD2H;
+    GpuHostSynchronizer syncSpreadGridD2H;
 
     // TODO: consider moving some things below into the non-CUDA struct.
 
@@ -207,6 +213,8 @@ struct PmeGpuCuda
     int complexGridSize;
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
     int complexGridSizeAlloc;
+
+    Context context;
 };
 
 
@@ -217,11 +225,13 @@ struct PmeGpuCuda
  */
 struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
 {
-    /* These are CUDA texture objects, related to the grid size. */
+#if GMX_GPU == GMX_GPU_CUDA
+   /* These are CUDA texture objects, related to the grid size. */
     /*! \brief CUDA texture object for accessing grid.d_fractShiftsTable */
     cudaTextureObject_t fractShiftsTableTexture;
     /*! \brief CUDA texture object for accessing grid.d_gridlineIndicesTable */
     cudaTextureObject_t gridlineIndicesTableTexture;
+#endif
 };
 
 #endif

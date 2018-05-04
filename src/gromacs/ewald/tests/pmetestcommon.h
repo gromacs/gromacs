@@ -49,7 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme-gpu-internal.h"
+#include "gromacs/ewald/pme-gpu-internal-real.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -115,19 +115,19 @@ constexpr gmx_int64_t c_splineModuliSinglePrecisionUlps = 1;
  * and thus opportunity for deviation between implementations. */
 gmx_uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 
-// PME stages
-
 // TODO: currently PME initializations do not store CodePath. They probably should (unless we would need mixed CPU-GPU execution?).
 //! Simple PME initialization (no atom data)
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
                             CodePath mode = CodePath::CPU,
                             gmx_device_info_t *gpuInfo = nullptr,
+			    PmePersistentDataHandle persistent = nullptr,
                             const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
                             real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
 //! PME initialization with atom data and system box
 PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
                             CodePath                  mode,
                             gmx_device_info_t        *gpuInfo,
+			    PmePersistentDataHandle persistent,
                             const CoordinatesVector  &coordinates,
                             const ChargesVector      &charges,
                             const Matrix3x3          &box

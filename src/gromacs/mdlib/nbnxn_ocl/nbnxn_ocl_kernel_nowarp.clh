@@ -132,8 +132,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
  __global nbnxn_cj4_t* pl_cj4,                                             /* OUT / IN */
  const __global nbnxn_excl_t* excl,                                        /* IN  */
  int bCalcFshift,                                                          /* IN  */
- __local  float4   *xqib,                                                  /* Pointer to dyn alloc'ed shmem */
- __global float *debug_buffer                                              /* Debug buffer, can be used with print_to_debug_buffer_f */
+ __local  float4   *xqib                                                  /* Pointer to dyn alloc'ed shmem */
  )
 {
     /* convenience variables */

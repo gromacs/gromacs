@@ -51,4 +51,39 @@ using CommandEvent  = cl_event;
 //! \brief Context used explicitly in OpenCL
 using Context       = cl_context;
 
+struct dim3_replacement
+{
+    size_t x, y, z;
+#if defined(__cplusplus)
+    dim3_replacement(unsigned int vx = 1, unsigned int vy = 1, unsigned int vz = 1) : x(vx), y(vy), z(vz) {}
+//    __host__ __device__ operator uint3(void) { uint3 t; t.x = x; t.y = y; t.z = z; return t; }
+#endif
+};
+
+#include <cstdio>
+
+/*! \brief GPU kernels scheduling description.
+ * Currently this is almost same in OpenCL/CUDA.
+ */
+struct KernelLaunchConfig
+{
+    dim3_replacement        gridSize;      //!< Block counts - FIXME!
+    dim3_replacement        blockSize;     //!< Per-block thread counts
+    size_t        sharedMemorySize; //!< Shared memory size in bytes
+    CommandStream stream;           //!< Stream to launch kernel in
+
+    KernelLaunchConfig()
+    {
+        gridSize.x = gridSize.y = gridSize.z = blockSize.x = blockSize.y = blockSize.z = 1;
+        sharedMemorySize = 0;
+        stream = nullptr;
+    }
+};
+
+inline void throwUponFailure(cl_int status)
+{
+  if (status != CL_SUCCESS)
+    throw status;
+}
+
 #endif
