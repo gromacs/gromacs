@@ -269,8 +269,6 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
                                             "number of ranks, or your use of the -nb, -pme, and -npme options.", userGpuTaskAssignment.size(),
                                             host, numGpuTasksOnThisNode)));
             }
-            // Did the user choose compatible GPUs?
-            checkUserGpuIds(hardwareInfo.gpu_info, gpuIdsToUse, userGpuTaskAssignment);
 
             gpuIdsForTaskAssignment = userGpuTaskAssignment;
         }
@@ -312,7 +310,7 @@ runTaskAssignment(const std::vector<int>         &gpuIdsToUse,
     // If the user chose a task assignment, give them some hints where appropriate.
     if (!userGpuTaskAssignment.empty())
     {
-        logPerformanceHints(mdlog, gpuIdsToUse.size(),
+        logPerformanceHints(mdlog, hardwareInfo.gpu_info.n_dev_compatible,
                             numGpuTasksOnThisNode,
                             taskAssignmentOnRanksOfThisNode);
     }

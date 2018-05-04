@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="InvalidGpuTaskAssignment"><![CDATA[
+You assigned GPU tasks to devices as:
+  '11'
+However, the following problems were detected:
+  You assigned a task to GPU device ID #1, but it is not an available
+  compatible GPU. Use only available, compatible GPU IDs in your task
+  assignment.
+  You assigned a task to GPU device ID #1, but it is not an available
+  compatible GPU. Use only available, compatible GPU IDs in your task
+  assignment.]]></String>
+</ReferenceData>

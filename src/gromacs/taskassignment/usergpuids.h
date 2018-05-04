@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@ struct gmx_gpu_info_t;
 namespace gmx
 {
 
+class MDLogger;
+
 /*! \brief Parse a GPU ID string into a container describing the task types and associated device IDs.
  *
  * \param[in]   gpuIdString  String like "013" or "0,1,3" typically
@@ -105,10 +107,38 @@ makeGpuIds(ArrayRef<const int> compatibleGpus,
 std::string
 makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
 
-/*! \brief Check that all user-selected GPUs are compatible.
+
+/*! \brief Return the set of compatible GPUs that can be used.
  *
- * Given the \c gpuIds and \c hardwareInfo, throw if
- * any selected GPUs is not compatible.
+ * If the user chose GPU IDs, throw if the GPU IDs could not be
+ * parsed, were out of range, duplicated any GPU IDs, or referred to
+ * any devices that have unsuitable status. If valid, return the
+ * user-selected GPU IDs, otherwise, return all the IDs of available
+ * compatible GPUs.
+ *
+ * The exception thrown has a suitable descriptive message, which will
+ * have context if this check is done after the hardware detection
+ * results have been reported to the user. However, note that only the
+ * GPUs detected on the master rank are reported, because of the
+ * existing limitations of that reporting.
+ *
+ * \param[in]   mdlog                   Logging object to write to.
+ * \param[in]   compatibleGpuIds        The detected compatible availble GPU IDs.
+ * \param[in]   numGpuDevicesDetected   The total number of GPU devices detected.
+ * \param[in]   userGpuIdChoicesString  The GPU IDs selected by the user.
+ *
+ * \throws  std::bad_alloc     If out of memory.
+ *          InvalidInputError  If the user's GPU ID choices are invalid.
+ * \returns                    The set of compatible GPU IDs that can be used.
+ */
+std::vector<int>
+determineGpuIdsToUse(const gmx::MDLogger  &mdlog,
+                     ArrayRef<const int>   compatibleGpuIds,
+                     const int             numGpuDevicesDetected,
+                     const std::string    &userGpuIdChoicesString);
+
+/*! \brief If the user made a GPU ID task assignment, throw if it
+ * could not be parsed, or does not suit the available GPU IDs.
  *
  * The error is given with a suitable descriptive message, which will
  * have context if this check is done after the hardware detection
@@ -116,24 +146,16 @@ makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
  * GPUs detected on the master rank are reported, because of the
  * existing limitations of that reporting.
  *
- * \todo Note that the selected GPUs can be different on each rank,
- * and the IDs of compatible GPUs can be different on each node, so
- * this routine ought to do communication to determine whether all
- * ranks are able to proceed. Currently this relies on the MPI runtime
- * to kill the other processes because GROMACS lacks the appropriate
- * infrastructure to do a good job of coordinating error messages and
- * behaviour across MPMD ranks and multiple simulations.
+ * \param[in]   gpuIdsToUse                  The GPU IDs previously determined as available to use.
+ * \param[in]   userGpuTaskAssignmentString  The GPU task assignment from the user.
  *
- * \param[in]   gpu_info        Information detected about GPUs
- * \param[in]   compatibleGpus  Vector of GPUs that are compatible
- * \param[in]   gpuIds          The GPU IDs selected by the user.
- *
- * \throws  std::bad_alloc          If out of memory
- *          InconsistentInputError  If the assigned GPUs are not valid
+ * \throws  std::bad_alloc     If out of memory
+ *          InvalidInputError  If the assigned GPUs are not valid
+ * \returns  The validated user GPU task assignment
  */
-void checkUserGpuIds(const gmx_gpu_info_t   &gpu_info,
-                     const std::vector<int> &compatibleGpus,
-                     const std::vector<int> &gpuIds);
+std::vector<int>
+validateUserGpuTaskAssignment(ArrayRef<const int> gpuIdsToUse,
+                              const std::string  &userGpuTaskAssignmentString);
 
 } // namespace
 

@@ -103,7 +103,7 @@ const char * g_specifyEverythingFormatString =
 bool
 decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbondedTarget,
                                                 const std::vector<int>   &gpuIdsToUse,
-                                                const std::vector<int>   &userGpuTaskAssignment,
+                                                bool                      hasUserGpuTaskAssignment,
                                                 const EmulateGpuNonbonded emulateGpuNonbonded,
                                                 const bool                usingVerletScheme,
                                                 const bool                nonbondedOnGpuIsUseful,
@@ -121,7 +121,7 @@ decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget          nonbon
 
     // We now know that NB on GPUs makes sense, if we have any.
 
-    if (!userGpuTaskAssignment.empty())
+    if (hasUserGpuTaskAssignment)
     {
         // Specifying -gputasks requires specifying everything.
         if (nonbondedTarget == TaskTarget::Auto ||
@@ -150,7 +150,7 @@ bool
 decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
                                           const TaskTarget        pmeTarget,
                                           const std::vector<int> &gpuIdsToUse,
-                                          const std::vector<int> &userGpuTaskAssignment,
+                                          bool                    hasUserGpuTaskAssignment,
                                           const bool              canUseGpuForPme,
                                           const int               numRanksPerSimulation,
                                           const int               numPmeRanksPerSimulation)
@@ -167,7 +167,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 
     // We now know that PME on GPUs might make sense, if we have any.
 
-    if (!userGpuTaskAssignment.empty())
+    if (hasUserGpuTaskAssignment)
     {
         // Follow the user's choice of GPU task assignment, if we
         // can. Checking that their IDs are for compatible GPUs comes
@@ -233,7 +233,7 @@ decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbo
 }
 
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarget,
-                                        const std::vector<int>    &userGpuTaskAssignment,
+                                        bool                       hasUserGpuTaskAssignment,
                                         const EmulateGpuNonbonded  emulateGpuNonbonded,
                                         const bool                 usingVerletScheme,
                                         const bool                 nonbondedOnGpuIsUseful,
@@ -241,7 +241,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
 {
     if (nonbondedTarget == TaskTarget::Cpu)
     {
-        if (!userGpuTaskAssignment.empty())
+        if (hasUserGpuTaskAssignment)
         {
             GMX_THROW(InconsistentInputError
                           ("A GPU task assignment was specified, but nonbonded interactions were "
@@ -262,7 +262,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
                           ("Nonbonded interactions on the GPU were required, which is inconsistent "
                           "with choosing emulation. Make no more than one of these choices."));
         }
-        if (!userGpuTaskAssignment.empty())
+        if (hasUserGpuTaskAssignment)
         {
             GMX_THROW(InconsistentInputError
                           ("GPU ID usage was specified, as was GPU emulation. Make no more than one of these choices."));
@@ -295,7 +295,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
         return false;
     }
 
-    if (!userGpuTaskAssignment.empty())
+    if (hasUserGpuTaskAssignment)
     {
         // Specifying -gputasks requires specifying everything.
         if (nonbondedTarget == TaskTarget::Auto)
@@ -322,7 +322,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget           nonbondedTarg
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
-                                  const std::vector<int> &userGpuTaskAssignment,
+                                  bool                    hasUserGpuTaskAssignment,
                                   const bool              canUseGpuForPme,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation,
@@ -356,7 +356,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
     if (pmeTarget == TaskTarget::Cpu)
     {
-        if (!userGpuTaskAssignment.empty())
+        if (hasUserGpuTaskAssignment)
         {
             GMX_THROW(InconsistentInputError
                           ("A GPU task assignment was specified, but PME interactions were "
@@ -366,7 +366,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         return false;
     }
 
-    if (!userGpuTaskAssignment.empty())
+    if (hasUserGpuTaskAssignment)
     {
         // Specifying -gputasks requires specifying everything.
         if (pmeTarget == TaskTarget::Auto)

@@ -99,8 +99,8 @@ using GpuTaskAssignments = std::vector<GpuTaskAssignment>;
  *
  * Releases the taskAssigner once its work is complete.
  *
- * \param[in]  gpuIdsToUse                The compatible GPUs that the user permitted us to use.
- * \param[in]  userGpuTaskAssignment      The user-specified assignment of GPU tasks to device IDs.
+ * \param[in]  gpuIdsToUse                The valid GPU IDs that the user permitted us to use.
+ * \param[in]  userGpuTaskAssignment      The user-specified assignment of GPU tasks to valid IDs.
  * \param[in]  hardwareInfo               The detected hardware
  * \param[in]  mdlog                      Logging object to write to.
  * \param[in]  cr                         Communication object.
