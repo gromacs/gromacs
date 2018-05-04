@@ -1,11 +1,14 @@
 # Generic rules
+#
+# See docs in admin/reformat_all.sh.
+#
 *.c     filter=uncrustify gmx-doxygen
 *.cpp   filter=uncrustify gmx-doxygen
 *.cu    filter=uncrustify
-*.cl    filter=uncrustify
+*.cl    filter
 *.h     filter=uncrustify gmx-doxygen
 *.cuh   filter=uncrustify
-*.clh   filter=uncrustify
+*.clh   filter
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright
