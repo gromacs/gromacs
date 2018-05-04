@@ -259,7 +259,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     const char       *pme_fft_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
-    const char       *gpuIdsAvailable       = "";
+    const char       *userGpuIdChoices      = "";
     const char       *userGpuTaskAssignment = "";
 
     ImdOptions       &imdOptions = mdrunOptions.imdOptions;
@@ -286,7 +286,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&gpuIdsAvailable},
+        { "-gpu_id",  FALSE, etSTR, {&userGpuIdChoices},
           "List of unique GPU device IDs available to use" },
         { "-gputasks",  FALSE, etSTR, {&userGpuTaskAssignment},
           "List of GPU device IDs, mapping each PP task on each node to a device" },
@@ -399,17 +399,17 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
         // command-line options have been seperated.
-        hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
+        hw_opt.userGpuIdChoices      = userGpuIdChoices;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
         const char *env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
-            if (!hw_opt.gpuIdsAvailable.empty())
+            if (!hw_opt.userGpuIdChoices.empty())
             {
                 gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
             }
-            hw_opt.gpuIdsAvailable = env;
+            hw_opt.userGpuIdChoices = env;
         }
 
         env = getenv("GMX_GPUTASKS");
@@ -422,7 +422,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
             hw_opt.userGpuTaskAssignment = env;
         }
 
-        if (!hw_opt.gpuIdsAvailable.empty() && !hw_opt.userGpuTaskAssignment.empty())
+        if (!hw_opt.userGpuIdChoices.empty() && !hw_opt.userGpuTaskAssignment.empty())
         {
             gmx_fatal(FARGS, "-gpu_id and -gputasks cannot be used at the same time");
         }
