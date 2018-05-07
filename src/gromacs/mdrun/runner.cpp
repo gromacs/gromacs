@@ -65,6 +65,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -1036,7 +1037,9 @@ int Mdrunner::mdrunner()
         }
     }
 
-    gmx_device_info_t *pmeDeviceInfo = nullptr;
+    std::unique_ptr<ClfftInitializer> initializedClfftLibrary;
+
+    gmx_device_info_t                *pmeDeviceInfo = nullptr;
     // Later, this program could contain kernels that might be later
     // re-used as auto-tuning progresses, or subsequent simulations
     // are invoked.
@@ -1048,6 +1051,16 @@ int Mdrunner::mdrunner()
         pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
         init_gpu(mdlog, pmeDeviceInfo);
         pmeGpuProgram = buildPmeGpuProgram(pmeDeviceInfo);
+        // TODO It would be nice to move this logic into the factory
+        // function. See Redmine #2535.
+        bool isMasterThread = !GMX_THREAD_MPI || MASTER(cr);
+        if (pmeRunMode == PmeRunMode::GPU && !initializedClfftLibrary && isMasterThread)
+        {
+            // TODO Consider also triggering PME FFT kernel
+            // compilation here, and manage the lifetime of the
+            // resulting kernels. See Redmine #2535.
+            initializedClfftLibrary = initializeClfftLibrary();
+        }
     }
 
     /* getting number of PP/PME threads
