@@ -64,6 +64,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -878,6 +879,8 @@ int Mdrunner::mdrunner()
          */
         gmx_setup_nodecomm(fplog, cr);
     }
+
+    ClfftInitializer clfftInit;
 
 #if GMX_MPI
     if (isMultiSim(ms))
