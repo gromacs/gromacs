@@ -64,6 +64,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -877,6 +878,12 @@ int Mdrunner::mdrunner()
          * we can set up the intra/inter node communication.
          */
         gmx_setup_nodecomm(fplog, cr);
+    }
+
+    std::unique_ptr<ClfftInitializer> clfftInit(nullptr);
+    if (physicalNodeComm.rank_ == 0)
+    {
+        clfftInit.reset(new ClfftInitializer());
     }
 
 #if GMX_MPI
