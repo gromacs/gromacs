@@ -60,11 +60,10 @@
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */
 static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
                                 rvec av, rvec stddev,
-                                const t_commrec *cr_sum)
+                                const MPI_Comm *mpiCommunicator)
 {
     int   *cgindex;
     dvec   s1, s2;
-    double buf[7];
     int    cg, d, k0, k1, k, nrcg;
     real   inv_ncg;
     rvec   cg_cm;
@@ -103,22 +102,33 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
         }
     }
 
-    if (cr_sum != nullptr)
+#if GMX_MPI
+    if (mpiCommunicator)
     {
-        for (d = 0; d < DIM; d++)
+        constexpr int c_bufSize = 7;
+        double        sendBuffer[c_bufSize];
+        double        receiveBuffer[c_bufSize];
+
+        for (int d = 0; d < DIM; d++)
         {
-            buf[d]     = s1[d];
-            buf[DIM+d] = s2[d];
+            sendBuffer[d]       = s1[d];
+            sendBuffer[DIM + d] = s2[d];
         }
-        buf[6] = n;
-        gmx_sumd(7, buf, cr_sum);
-        for (d = 0; d < DIM; d++)
+        sendBuffer[6] = n;
+
+        MPI_Allreduce(sendBuffer, receiveBuffer, c_bufSize, MPI_DOUBLE,
+                      MPI_SUM, *mpiCommunicator);
+
+        for (int d = 0; d < DIM; d++)
         {
-            s1[d] = buf[d];
-            s2[d] = buf[DIM+d];
+            s1[d] = receiveBuffer[d];
+            s2[d] = receiveBuffer[DIM + d];
         }
-        n = (int)(buf[6] + 0.5);
+        n = (int)(receiveBuffer[6] + 0.5);
     }
+#else  // GMX_MPI
+    GMX_UNUSED(mpiCommunicator)
+#endif // GMX_MPI
 
     dsvmul(1.0/n, s1, s1);
     dsvmul(1.0/n, s2, s2);
@@ -240,7 +250,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
 static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
                           gmx_bool bCalcUnboundedSize, int ncg, const t_block *cgs, const rvec *x,
-                          const t_commrec *cr_sum,
+                          const MPI_Comm *mpiCommunicator,
                           gmx_ddbox_t *ddbox)
 {
     rvec av, stddev;
@@ -258,7 +268,7 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
 
     if (ddbox->nboundeddim < DIM && bCalcUnboundedSize)
     {
-        calc_cgcm_av_stddev(cgs, ncg, x, av, stddev, cr_sum);
+        calc_cgcm_av_stddev(cgs, ncg, x, av, stddev, mpiCommunicator);
 
         /* GRID_STDDEV_FAC * stddev
          * gives a uniform load for a rectangular block of cg's.
@@ -281,16 +291,18 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
     set_tric_dir(dd_nc, ddbox, box);
 }
 
-void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, const t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState,
                const t_inputrec *ir, const matrix box,
                gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox)
 {
     if (!bMasterState || DDMASTER(dd))
     {
+        bool needToReduceCoordinateData = (!bMasterState && dd->nnodes > 1);
+
         low_set_ddbox(ir, &dd->nc, box, bCalcUnboundedSize,
                       bMasterState ? cgs->nr : dd->ncg_home, cgs, x,
-                      bMasterState ? nullptr : cr_sum,
+                      needToReduceCoordinateData ? &dd->mpi_comm_all : nullptr,
                       ddbox);
     }
 

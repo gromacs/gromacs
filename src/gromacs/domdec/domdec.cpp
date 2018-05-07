@@ -7289,7 +7289,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
 
     dd = cr->dd;
 
-    set_ddbox(dd, FALSE, cr, ir, state->box,
+    set_ddbox(dd, FALSE, ir, state->box,
               TRUE, &dd->comm->cgs_gl, as_rvec_array(state->x.data()), &ddbox);
 
     LocallyLimited = 0;
@@ -9418,7 +9418,7 @@ void dd_partition_system(FILE                *fplog,
 
         rvec *xGlobal = (SIMMASTER(cr) ? as_rvec_array(state_global->x.data()) : nullptr);
 
-        set_ddbox(dd, bMasterState, cr, ir,
+        set_ddbox(dd, bMasterState, ir,
                   SIMMASTER(cr) ? state_global->box : nullptr,
                   TRUE, cgs_gl, xGlobal,
                   &ddbox);
@@ -9476,7 +9476,7 @@ void dd_partition_system(FILE                *fplog,
 
         dd_set_cginfo(dd->index_gl, 0, dd->ncg_home, fr, comm->bLocalCG);
 
-        set_ddbox(dd, bMasterState, cr, ir, state_local->box,
+        set_ddbox(dd, bMasterState, ir, state_local->box,
                   TRUE, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
 
         bRedist = isDlbOn(comm);
@@ -9495,7 +9495,7 @@ void dd_partition_system(FILE                *fplog,
             copy_rvec(comm->box0, ddbox.box0    );
             copy_rvec(comm->box_size, ddbox.box_size);
         }
-        set_ddbox(dd, bMasterState, cr, ir, state_local->box,
+        set_ddbox(dd, bMasterState, ir, state_local->box,
                   bNStGlobalComm, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
 
         bBoxChanged = TRUE;
