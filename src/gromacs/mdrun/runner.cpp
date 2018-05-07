@@ -383,8 +383,6 @@ static TaskTarget findTaskTarget(const char *optionString)
 int Mdrunner::mdrunner()
 {
     matrix                    box;
-    gmx_ddbox_t               ddbox = {0};
-    int                       npme_major, npme_minor;
     t_nrnb                   *nrnb;
     t_forcerec               *fr               = nullptr;
     t_fcdata                 *fcd              = nullptr;
@@ -844,6 +842,7 @@ int Mdrunner::mdrunner()
                               useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
 
+    /* Initalize the domain decomposition */
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
@@ -851,8 +850,7 @@ int Mdrunner::mdrunner()
 
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
-                                           box, xOnMaster,
-                                           &ddbox, &npme_major, &npme_minor);
+                                           box, xOnMaster);
         // Note that local state still does not exist yet.
     }
     else
@@ -860,8 +858,6 @@ int Mdrunner::mdrunner()
         /* PME, if used, is done on all nodes with 1D decomposition */
         cr->npmenodes = 0;
         cr->duty      = (DUTY_PP | DUTY_PME);
-        npme_major    = 1;
-        npme_minor    = 1;
 
         if (inputrec->ePBC == epbcSCREW)
         {
@@ -1233,7 +1229,9 @@ int Mdrunner::mdrunner()
         {
             try
             {
-                pmedata = gmx_pme_init(cr, npme_major, npme_minor, inputrec,
+                pmedata = gmx_pme_init(cr,
+                                       getNumPmeDomains(cr->dd),
+                                       inputrec,
                                        mtop.natoms, nChargePerturbed, nTypePerturbed,
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q, ewaldcoeff_lj,
