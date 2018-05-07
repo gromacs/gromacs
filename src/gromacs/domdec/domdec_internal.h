@@ -400,6 +400,20 @@ struct gmx_domdec_comm_t
     int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
 };
 
+/*! \brief Data only available on the master rank */
+struct gmx_domdec_master_t
+{
+    /* The cell boundaries */
+    real **cell_x; /**< Cell boundaries, size #dim x #cells_in_dim + 1 */
+    /* The global charge group division */
+    int   *ncg;    /**< Number of home charge groups for each node */
+    int   *index;  /**< Index of nnodes+1 into cg */
+    int   *cg;     /**< Global charge group index */
+    int   *nat;    /**< Number of home atoms for each node. */
+    int   *ibuf;   /**< Buffer for communication */
+    rvec  *vbuf;   /**< Buffer for state scattering and gathering */
+};
+
 /*! \brief DD zone permutation
  *
  * Zone permutation from the Cartesian x-major/z-minor order to an order
@@ -424,6 +438,42 @@ real dd_cutoff_multibody(const gmx_domdec_t *dd);
 
 /*! \brief Returns the DD cut-off distance for two-body interactions */
 real dd_cutoff_twobody(const gmx_domdec_t *dd);
+
+/*! \brief Returns the domain index given the number of domains and the domain coordinates
+ *
+ * This order is required to minimize the coordinate communication in PME
+ * which uses decomposition in the x direction.
+ */
+static inline int dd_index(const ivec numDomains,
+                           const ivec domainCoordinates)
+{
+    return ((domainCoordinates[XX]*numDomains[YY] + domainCoordinates[YY])*numDomains[ZZ]) + domainCoordinates[ZZ];
+};
+
+/*! Returns the size of the buffer to hold fractional cell boundaries for DD dimension index dimIndex */
+static inline int ddCellFractionBufferSize(const gmx_domdec_t *dd,
+                                           int                 dimIndex)
+{
+    return dd->nc[dd->dim[dimIndex ]] + 1 + dimIndex*2 + 1 + dimIndex;
+}
+
+/*! \brief Maximum number of ranks for using send/recv for state scattering and gathering
+ *
+ * Use separate MPI send and receive commands
+ * when #ranks <= c_maxNumRanksUseSendRecvForScatterAndGather
+ * This saves memory (and some copying for small #ranks).
+ * For high parallelization scatter and gather calls are used.
+ */
+static constexpr int c_maxNumRanksUseSendRecvForScatterAndGather = 4;
+
+/*! \brief Make DD cells larger by this factor than the limit to avoid rounding issues */
+static constexpr double DD_CELL_MARGIN       = 1.0001;
+
+/*! \brief Factor for checking DD cell size limitation during DLB, should be in between 1 and DD_CELL_MARGIN */
+static constexpr double DD_CELL_MARGIN2      = 1.00005;
+
+/*! \brief With pressure scaling, keep cell sizes 2% above the limit to allow for some scaling */
+static constexpr double DD_PRES_SCALE_MARGIN = 1.02;
 
 /*! \endcond */
 
