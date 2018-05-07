@@ -45,6 +45,7 @@
 
 #include <cstring>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme-gather.h"
 #include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-grid.h"
@@ -113,7 +114,8 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     }
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
     t_commrec      dummyCommrec  = {0};
-    gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
+    NumPmeDomains  numPmeDomains = { 1, 1 };
+    gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, atomCount, false, false, true,
                                                 ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 

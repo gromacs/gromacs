@@ -66,6 +66,7 @@ struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
+struct NumPmeDomains;
 
 enum class GpuTaskCompletion;
 
@@ -114,7 +115,7 @@ int minimalPmeGridSize(int pmeOrder);
  */
 bool gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
-                                int nnodes_major,
+                                int numPmeDomainsAlongX,
                                 bool useThreads,
                                 bool errorsAreFatal);
 
@@ -124,7 +125,7 @@ bool gmx_pme_check_restrictions(int pme_order,
  * \returns  Pointer to newly allocated and initialized PME data.
  */
 gmx_pme_t *gmx_pme_init(const t_commrec *cr,
-                        int nnodes_major, int nnodes_minor,
+                        const NumPmeDomains &numPmeDomains,
                         const t_inputrec *ir, int homenr,
                         gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                         gmx_bool bReproducible,
