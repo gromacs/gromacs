@@ -316,7 +316,6 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
                                             const gmx_domdec_t   *dd)
 {
     pme_setup_t *set;
-    int          npmeranks_x, npmeranks_y;
     real         fac, sp;
     real         tmpr_coulomb, tmpr_vdw;
     int          d;
@@ -328,7 +327,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     set          = &pme_lb->setup[pme_lb->n-1];
     set->pmedata = nullptr;
 
-    get_pme_nnodes(dd, &npmeranks_x, &npmeranks_y);
+    NumPmeDomains numPmeDomains = getNumPmeDomains(dd);
 
     fac = 1;
     do
@@ -361,7 +360,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          */
         grid_ok = gmx_pme_check_restrictions(pme_order,
                                              set->grid[XX], set->grid[YY], set->grid[ZZ],
-                                             npmeranks_x,
+                                             numPmeDomains.x,
                                              true,
                                              false);
     }

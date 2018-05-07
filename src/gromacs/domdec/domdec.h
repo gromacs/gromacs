@@ -124,9 +124,15 @@ int dd_natoms_vsite(const gmx_domdec_t *dd);
 void dd_get_constraint_range(const gmx_domdec_t *dd,
                              int *at_start, int *at_end);
 
-/*! \brief Get the number of PME nodes along x and y, can be called with dd=NULL */
-void get_pme_nnodes(const struct gmx_domdec_t *dd,
-                    int *npmenodes_x, int *npmenodes_y);
+/*! \libinternal \brief Struct for passing around the number of PME domains */
+struct NumPmeDomains
+{
+    int x; //!< The number of PME domains along dimension x
+    int y; //!< The number of PME domains along dimension y
+};
+
+/*! \brief Returns the number of PME domains, can be called with dd=NULL */
+NumPmeDomains getNumPmeDomains(const gmx_domdec_t *dd);
 
 /*! \brief Returns the set of DD ranks that communicate with pme node cr->nodeid */
 std::vector<int> get_pme_ddranks(const t_commrec *cr, int pmenodeid);
@@ -200,10 +206,7 @@ gmx_domdec_t *init_domain_decomposition(FILE                *fplog,
                                         const gmx_mtop_t    *mtop,
                                         const t_inputrec    *ir,
                                         const matrix         box,
-                                        const rvec          *xGlobal,
-                                        gmx_ddbox_t         *ddbox,
-                                        int                 *npme_x,
-                                        int                 *npme_y);
+                                        const rvec          *xGlobal);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE              *fplog,
