@@ -98,6 +98,12 @@ static inline void vec_rvec_check_alloc(vec_rvec_t *v,
     }
 };
 
+/*! \brief Returns the number of MD steps for which load has been recorded */
+static inline int dd_load_count(const gmx_domdec_comm_t *comm)
+{
+    return (comm->eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
+}
+
 /*! \brief Resize the state and f, if !=nullptr, to natoms */
 void dd_resize_state(t_state          *state,
                      PaddedRVecVector *f,
