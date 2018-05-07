@@ -466,7 +466,7 @@ real dd_choose_grid(FILE *fplog,
 /* In domdec_box.c */
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, const t_commrec *cr_sum,
+void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState,
                const t_inputrec *ir, const matrix box,
                gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox);
