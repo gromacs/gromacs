@@ -48,6 +48,7 @@
 #ifndef GMX_EWALD_PME_H
 #define GMX_EWALD_PME_H
 
+#include <array>
 #include <string>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
@@ -114,7 +115,7 @@ int minimalPmeGridSize(int pmeOrder);
  */
 bool gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
-                                int nnodes_major,
+                                int numPmeDomainsAlongX,
                                 bool useThreads,
                                 bool errorsAreFatal);
 
@@ -124,7 +125,7 @@ bool gmx_pme_check_restrictions(int pme_order,
  * \returns  Pointer to newly allocated and initialized PME data.
  */
 gmx_pme_t *gmx_pme_init(const t_commrec *cr,
-                        int nnodes_major, int nnodes_minor,
+                        const std::array<int, 2> &numPmeDomains,
                         const t_inputrec *ir, int homenr,
                         gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                         gmx_bool bReproducible,

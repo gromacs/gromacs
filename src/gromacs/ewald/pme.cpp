@@ -534,7 +534,7 @@ int minimalPmeGridSize(int pmeOrder)
 
 bool gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
-                                int nnodes_major,
+                                int numPmeDomainsAlongX,
                                 bool useThreads,
                                 bool errorsAreFatal)
 {
@@ -569,15 +569,15 @@ bool gmx_pme_check_restrictions(int pme_order,
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
      * We only allow multiple communication pulses in dim 1, not in dim 0.
      */
-    if (useThreads && (nkx < nnodes_major*pme_order &&
-                       nkx != nnodes_major*(pme_order - 1)))
+    if (useThreads && (nkx < numPmeDomainsAlongX*pme_order &&
+                       nkx != numPmeDomainsAlongX*(pme_order - 1)))
     {
         if (!errorsAreFatal)
         {
             return false;
         }
         gmx_fatal(FARGS, "The number of PME grid lines per rank along x is %g. But when using OpenMP threads, the number of grid lines per rank along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use fewer ranks along x (and possibly more along y and/or z) by specifying -dd manually.",
-                  nkx/(double)nnodes_major, pme_order);
+                  nkx/static_cast<double>(numPmeDomainsAlongX), pme_order);
     }
 
     return true;
@@ -589,21 +589,20 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
-                        int                  nnodes_major,
-                        int                  nnodes_minor,
-                        const t_inputrec    *ir,
-                        int                  homenr,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu              *pmeGpu,
-                        gmx_device_info_t   *gpuInfo,
-                        const gmx::MDLogger  & /*mdlog*/)
+gmx_pme_t *gmx_pme_init(const t_commrec          *cr,
+                        const std::array<int, 2> &numPmeDomains,
+                        const t_inputrec         *ir,
+                        int                       homenr,
+                        gmx_bool                  bFreeEnergy_q,
+                        gmx_bool                  bFreeEnergy_lj,
+                        gmx_bool                  bReproducible,
+                        real                      ewaldcoeff_q,
+                        real                      ewaldcoeff_lj,
+                        int                       nthread,
+                        PmeRunMode                runMode,
+                        PmeGpu                   *pmeGpu,
+                        gmx_device_info_t        *gpuInfo,
+                        const gmx::MDLogger & /*mdlog*/)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -623,17 +622,17 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     pme->nnodes              = 1;
     pme->bPPnode             = TRUE;
 
-    pme->nnodes_major        = nnodes_major;
-    pme->nnodes_minor        = nnodes_minor;
+    pme->nnodes_major        = numPmeDomains[XX];
+    pme->nnodes_minor        = numPmeDomains[YY];
 
 #if GMX_MPI
-    if (nnodes_major*nnodes_minor > 1)
+    if (numPmeDomains[XX]*numPmeDomains[YY] > 1)
     {
         pme->mpi_comm = cr->mpi_comm_mygroup;
 
         MPI_Comm_rank(pme->mpi_comm, &pme->nodeid);
         MPI_Comm_size(pme->mpi_comm, &pme->nnodes);
-        if (pme->nnodes != nnodes_major*nnodes_minor)
+        if (pme->nnodes != numPmeDomains[XX]*numPmeDomains[YY])
         {
             gmx_incons("PME rank count mismatch");
         }
@@ -659,7 +658,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     }
     else
     {
-        if (nnodes_minor == 1)
+        if (numPmeDomains[YY] == 1)
         {
 #if GMX_MPI
             pme->mpi_comm_d[0] = pme->mpi_comm;
@@ -670,7 +669,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
             pme->nodeid_minor = 0;
 
         }
-        else if (nnodes_major == 1)
+        else if (numPmeDomains[XX] == 1)
         {
 #if GMX_MPI
             pme->mpi_comm_d[0] = MPI_COMM_NULL;
@@ -682,16 +681,16 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
         }
         else
         {
-            if (pme->nnodes % nnodes_major != 0)
+            if (pme->nnodes % numPmeDomains[XX] != 0)
             {
                 gmx_incons("For 2D PME decomposition, #PME ranks must be divisible by the number of ranks in the major dimension");
             }
             pme->ndecompdim = 2;
 
 #if GMX_MPI
-            MPI_Comm_split(pme->mpi_comm, pme->nodeid % nnodes_minor,
+            MPI_Comm_split(pme->mpi_comm, pme->nodeid % numPmeDomains[YY],
                            pme->nodeid, &pme->mpi_comm_d[0]);  /* My communicator along major dimension */
-            MPI_Comm_split(pme->mpi_comm, pme->nodeid/nnodes_minor,
+            MPI_Comm_split(pme->mpi_comm, pme->nodeid/numPmeDomains[YY],
                            pme->nodeid, &pme->mpi_comm_d[1]);  /* My communicator along minor dimension */
 
             MPI_Comm_rank(pme->mpi_comm_d[0], &pme->nodeid_major);
@@ -920,7 +919,7 @@ gmx_pme_t *gmx_pme_init(const t_commrec     *cr,
     }
 
     /* Use atc[0] for spreading */
-    init_atomcomm(pme.get(), &pme->atc[0], nnodes_major > 1 ? 0 : 1, TRUE);
+    init_atomcomm(pme.get(), &pme->atc[0], numPmeDomains[XX] > 1 ? 0 : 1, TRUE);
     if (pme->ndecompdim >= 2)
     {
         init_atomcomm(pme.get(), &pme->atc[1], 1, FALSE);
@@ -999,7 +998,8 @@ void gmx_pme_reinit(struct gmx_pme_t **pmedata,
         // so we don't expect the actual logging.
         // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
         GMX_ASSERT(pmedata, "Invalid PME pointer");
-        *pmedata = gmx_pme_init(cr, pme_src->nnodes_major, pme_src->nnodes_minor,
+        std::array<int, 2> numPmeDomains = { pme_src->nnodes_major, pme_src->nnodes_minor };
+        *pmedata = gmx_pme_init(cr, numPmeDomains,
                                 &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
                                 pme_src->nthread, pme_src->runMode, pme_src->gpu, nullptr, dummyLogger);
         //TODO this is mostly passing around current values

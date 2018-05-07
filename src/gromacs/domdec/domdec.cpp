@@ -2004,18 +2004,15 @@ static int dd_simnode2pmenode(const gmx_domdec_t         *dd,
     return pmenode;
 }
 
-void get_pme_nnodes(const gmx_domdec_t *dd,
-                    int *npmenodes_x, int *npmenodes_y)
+std::array<int, 2> getNumPmeDomains(const gmx_domdec_t *dd)
 {
     if (dd != nullptr)
     {
-        *npmenodes_x = dd->comm->npmenodes_x;
-        *npmenodes_y = dd->comm->npmenodes_y;
+        return { dd->comm->npmenodes_x, dd->comm->npmenodes_y };
     }
     else
     {
-        *npmenodes_x = 1;
-        *npmenodes_y = 1;
+        return { 1, 1 };
     }
 }
 
@@ -6345,8 +6342,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    const matrix box, const rvec *xGlobal,
-                                   gmx_ddbox_t *ddbox,
-                                   int *npme_x, int *npme_y)
+                                   gmx_ddbox_t *ddbox)
 {
     real               r_bonded         = -1;
     real               r_bonded_limit   = -1;
@@ -6662,12 +6658,6 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         comm->npmenodes_x   = 0;
         comm->npmenodes_y   = 0;
     }
-
-    /* Technically we don't need both of these,
-     * but it simplifies code not having to recalculate it.
-     */
-    *npme_x = comm->npmenodes_x;
-    *npme_y = comm->npmenodes_y;
 
     snew(comm->slb_frac, DIM);
     if (isDlbDisabled(comm))
@@ -7241,9 +7231,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
                                         const matrix box,
-                                        const rvec *xGlobal,
-                                        gmx_ddbox_t *ddbox,
-                                        int *npme_x, int *npme_y)
+                                        const rvec *xGlobal)
 {
     gmx_domdec_t      *dd;
 
@@ -7259,17 +7247,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     set_dd_envvar_options(fplog, dd, cr->nodeid);
 
+    gmx_ddbox_t ddbox = {0};
     set_dd_limits_and_grid(fplog, cr, dd, options, mdrunOptions,
                            mtop, ir,
                            box, xGlobal,
-                           ddbox,
-                           npme_x, npme_y);
+                           &ddbox);
 
     make_dd_communicators(fplog, cr, dd, options.rankOrder);
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        set_ddgrid_parameters(fplog, dd, options.dlbScaling, mtop, ir, ddbox);
+        set_ddgrid_parameters(fplog, dd, options.dlbScaling, mtop, ir, &ddbox);
 
         setup_neighbor_relations(dd);
     }
