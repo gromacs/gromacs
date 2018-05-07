@@ -196,6 +196,22 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
+# TODO: installed clFFT should be preferred, if possible;
+# src/external/src/clFFT/FindclFFT.cmake should help with that.
+# Redmine issue #2500
+if (GMX_USE_OPENCL)
+    set (_clFFT_dir ../external/clFFT/src)
+    add_subdirectory(${_clFFT_dir} clFFT-build)
+    target_sources(libgromacs PRIVATE
+        $<TARGET_OBJECTS:clFFT>
+        )
+    target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
+    # Use the magic variable for how to link any library needed for
+    # dlopen, etc.  which is -ldl where needed, and empty otherwise
+    # (e.g. Windows, BSD, Mac).
+    target_link_libraries(libgromacs PRIVATE "${CMAKE_DL_LIBS}")
+endif()
+
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
@@ -221,7 +237,8 @@ target_link_libraries(libgromacs
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${LMFIT_LIBRARIES_TO_LINK}
-                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OpenCL_LIBRARIES}
+                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
+                      ${OpenCL_LIBRARIES}
                       ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
