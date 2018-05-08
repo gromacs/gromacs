@@ -1618,7 +1618,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
-        if (hardwareInfo.haveAmdZenCpu)
+        if (!gmx::cpuIsAmdZen(hardwareInfo))
         {
             /* One 256-bit FMA per cycle makes 2xNN faster */
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
@@ -1655,7 +1655,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
         /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
          * of single or double precision and 128 or 256-bit AVX2.
          */
-        if (!hardwareInfo.haveAmdZenCpu)
+        if (!gmx::cpuIsAmdZen(hardwareInfo))
         {
             *ewald_excl = ewaldexclAnalytical;
         }
