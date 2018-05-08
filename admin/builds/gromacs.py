@@ -55,7 +55,8 @@ extra_options = {
     'nranks': Option.string,
     'npme': Option.string,
     'gpu_id': Option.string,
-    'hwloc': Option.bool
+    'hwloc': Option.bool,
+    'skiptests': Option.simple
 }
 
 extra_projects = [Project.REGRESSIONTESTS]
@@ -146,6 +147,13 @@ def do_build(context):
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None, keep_going=True)
+
+    if context.opts.skiptests:
+        # Ensure we create a file so that Jenkins will understand that
+        # the failure to run the real tests is what was intended.
+        with open('Testing/Temporary/dummy.xml', 'w'):
+            pass
+        return
 
     # TODO: Consider if it would be better to split this into a separate build
     # script, since it is somewhat different, even though it benefits from some
