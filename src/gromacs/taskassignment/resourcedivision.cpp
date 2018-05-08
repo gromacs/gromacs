@@ -855,7 +855,8 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
          */
         int numRanksTot     = cr->nnodes*(isMultiSim(ms) ? ms->nsim : 1);
         int numAtomsPerRank = mtop.natoms/cr->nnodes;
-        int numCoresPerRank = hwinfo.ncore_tot/numRanksTot;
+        int numCores        = hwinfo.hardwareTopology->numberOfCores();
+        int numCoresPerRank = numCores/numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold*gmx::square(numCoresPerRank))
         {
             /* Choose one OpenMP thread per physical core */
