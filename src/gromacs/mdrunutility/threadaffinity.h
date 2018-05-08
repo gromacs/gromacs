@@ -117,7 +117,7 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
  */
 void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
+                              gmx_hw_opt_t *hw_opt, int numHardwareThreads,
                               gmx_bool bAfterOpenmpInit);
 
 #endif

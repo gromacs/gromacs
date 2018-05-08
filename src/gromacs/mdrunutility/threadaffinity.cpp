@@ -466,7 +466,7 @@ void
 gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
                               const t_commrec     *cr,
                               gmx_hw_opt_t        *hw_opt,
-                              int  gmx_unused      nthreads_hw_avail,
+                              int                  numHardwareThreads,
                               gmx_bool             bAfterOpenmpInit)
 {
     GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
@@ -533,19 +533,19 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
      * detected CPUs is >= the CPUs in the current set.
      * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
 #ifdef CPU_COUNT
-    if (nthreads_hw_avail < CPU_COUNT(&mask_current))
+    if (numHardwareThreads < CPU_COUNT(&mask_current))
     {
         if (debug)
         {
             fprintf(debug, "%d hardware threads detected, but %d was returned by CPU_COUNT",
-                    nthreads_hw_avail, CPU_COUNT(&mask_current));
+                    numHardwareThreads, CPU_COUNT(&mask_current));
         }
         return;
     }
 #endif /* CPU_COUNT */
 
     gmx_bool bAllSet = TRUE;
-    for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
+    for (int i = 0; (i < numHardwareThreads && i < CPU_SETSIZE); i++)
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
@@ -606,5 +606,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
             fprintf(debug, "Default affinity mask found\n");
         }
     }
+#else  /* HAVE_SCHED_AFFINITY */
+    GMX_UNUSED_VALUE(numHardwareThreads);
 #endif /* HAVE_SCHED_AFFINITY */
 }

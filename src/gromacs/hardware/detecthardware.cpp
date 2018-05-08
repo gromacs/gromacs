@@ -194,13 +194,16 @@ bool cpuIsAmdZen(const gmx_hw_info_t &hardwareInfo)
 static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
                                      const PhysicalNodeCommunicator &physicalNodeComm)
 {
-    const int  ncore        = hwinfo_g->hardwareTopology->numberOfCores();
+    const int ncore = hwinfo_g->hardwareTopology->numberOfCores();
+
+    // Note that if there is no information available, this could be
+    // zero.
+    int numHardwareThreads = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
 
 #if GMX_LIB_MPI
-    int       nhwthread, ngpu, i;
+    int       ngpu, i;
     int       gpu_hash;
 
-    nhwthread = hwinfo_g->nthreads_hw_avail;
     ngpu      = hwinfo_g->gpu_info.n_dev_compatible;
     /* Create a unique hash of the GPU type(s) in this node */
     gpu_hash  = 0;
@@ -231,7 +234,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
         {
             countsLocal[0] = 1;
             countsLocal[1] = ncore;
-            countsLocal[2] = nhwthread;
+            countsLocal[2] = numHardwareThreads;
             countsLocal[3] = ngpu;
         }
 
@@ -247,7 +250,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
          * so we can get max+min with one MPI call.
          */
         maxMinLocal[0]  = ncore;
-        maxMinLocal[1]  = nhwthread;
+        maxMinLocal[1]  = numHardwareThreads;
         maxMinLocal[2]  = ngpu;
         maxMinLocal[3]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
         maxMinLocal[4]  = gpu_hash;
@@ -280,9 +283,9 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo             &cpuInfo,
     hwinfo_g->ncore_tot           = ncore;
     hwinfo_g->ncore_min           = ncore;
     hwinfo_g->ncore_max           = ncore;
-    hwinfo_g->nhwthread_tot       = hwinfo_g->nthreads_hw_avail;
-    hwinfo_g->nhwthread_min       = hwinfo_g->nthreads_hw_avail;
-    hwinfo_g->nhwthread_max       = hwinfo_g->nthreads_hw_avail;
+    hwinfo_g->nhwthread_tot       = numHardwareThreads;
+    hwinfo_g->nhwthread_min       = numHardwareThreads;
+    hwinfo_g->nhwthread_max       = numHardwareThreads;
     hwinfo_g->ngpu_compatible_tot = hwinfo_g->gpu_info.n_dev_compatible;
     hwinfo_g->ngpu_compatible_min = hwinfo_g->gpu_info.n_dev_compatible;
     hwinfo_g->ngpu_compatible_max = hwinfo_g->gpu_info.n_dev_compatible;
@@ -447,9 +450,6 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
         {
             hardwareTopologyDoubleCheckDetection(mdlog, *(hwinfo_g->hardwareTopology));
         }
-
-        // TODO: Get rid of this altogether.
-        hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;

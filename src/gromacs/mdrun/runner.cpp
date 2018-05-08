@@ -67,6 +67,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/printhardware.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
@@ -536,8 +537,9 @@ int Mdrunner::mdrunner()
     check_and_update_hw_opt_1(&hw_opt, cr, domdecOptions.numPmeRanks);
 
     /* Early check for externally set process affinity. */
+    int numHardwareThreads = hwinfo->hardwareTopology->machine().logicalProcessorCount;
     gmx_check_thread_affinity_set(mdlog, cr,
-                                  &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+                                  &hw_opt, numHardwareThreads, FALSE);
 
     if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
@@ -907,7 +909,7 @@ int Mdrunner::mdrunner()
                                             pmeRunMode, mtop);
 
     gmx_omp_nthreads_init(mdlog, cr,
-                          hwinfo->nthreads_hw_avail,
+                          numHardwareThreads,
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
@@ -1078,7 +1080,7 @@ int Mdrunner::mdrunner()
          * since we first checked).
          */
         gmx_check_thread_affinity_set(mdlog, cr,
-                                      &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
+                                      &hw_opt, numHardwareThreads, TRUE);
 
         int numThreadsOnThisNode, intraNodeThreadOffset;
         analyzeThreadsOnThisNode(physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode,

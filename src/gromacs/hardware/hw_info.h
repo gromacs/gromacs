@@ -60,11 +60,7 @@ bool cpuIsAmdZen(const gmx_hw_info_t &hardwareInfo);
 struct gmx_hw_info_t
 {
     /* Data for our local physical node */
-    struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
-
-    int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
-                                                      is based on the number of CPUs reported as available
-                                                      by the OS at the time of detection. */
+    struct gmx_gpu_info_t        gpu_info;         /* Information about GPUs detected in the system */
 
     const gmx::CpuInfo *         cpuInfo;          /* Information about CPU capabilities */
     const gmx::HardwareTopology *hardwareTopology; /* Information about hardware topology */
