@@ -1340,20 +1340,38 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     return imm;
 }
 
-void MyMol::changeCoordinate(ExperimentIterator ei)
+void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
 {
     double  xx, yy, zz;
     int     unit, natom = 0;
 
-    for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+    if (bpolar)
     {
-        unit = string2unit((char *)eia->getUnit().c_str());
-        eia->getCoords(&xx, &yy, &zz);         
-        state_->x[natom][XX] = convert2gmx(xx, unit);
-        state_->x[natom][YY] = convert2gmx(yy, unit);
-        state_->x[natom][ZZ] = convert2gmx(zz, unit);
-
-        natom++;
+        for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+        {
+            unit = string2unit((char *)eia->getUnit().c_str());
+            eia->getCoords(&xx, &yy, &zz); 
+            //core        
+            state_->x[natom][XX]   = convert2gmx(xx, unit);
+            state_->x[natom][YY]   = convert2gmx(yy, unit);
+            state_->x[natom++][ZZ] = convert2gmx(zz, unit);
+            //shell (the same position as the core, but later will be minimzed)
+            state_->x[natom][XX]   = convert2gmx(xx, unit);
+            state_->x[natom][YY]   = convert2gmx(yy, unit);
+            state_->x[natom++][ZZ] = convert2gmx(zz, unit);
+        }
+    }
+    else
+    {
+        for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+        {
+            unit = string2unit((char *)eia->getUnit().c_str());
+            eia->getCoords(&xx, &yy, &zz);         
+            state_->x[natom][XX] = convert2gmx(xx, unit);
+            state_->x[natom][YY] = convert2gmx(yy, unit);
+            state_->x[natom][ZZ] = convert2gmx(zz, unit);
+            natom++;
+        }
     }
 }
 

@@ -284,6 +284,7 @@ MolGen::MolGen()
     bGenVsite_ = false;
     bOptHfac_  = false;
     qsymm_     = false;
+    bQM_       = false;
     J0_min_    = 5;
     Chi0_min_  = 1;
     zeta_min_  = 2;

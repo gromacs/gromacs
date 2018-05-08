@@ -348,36 +348,40 @@ void NonBondParams::analyzeIdef(std::vector<MyMol> &mm,
     }
     for (auto &mymol : mm)
     {
-        for (int i = 0; i < mymol.molProp()->NAtom(); i++)
+        for (int i = 0; i < mymol.topology_->atoms.nr; i++)
         {
-            std::string params;
-            int         index = 0;
-            char        buf[STRLEN];
-            bool        found = false;
-            auto        at    = *mymol.topology_->atoms.atomtype[i];
-            auto        fat   = pd.findAtype(at);
-            if (fat != pd.getAtypeEnd())
+            if (mymol.topology_->atoms.atom[i].ptype == eptAtom ||
+                mymol.topology_->atoms.atom[i].ptype == eptNucleus)
             {
-                sprintf(buf, "%s", at);
-                params    = fat->getVdwparams();
-                index     = fat - pd.getAtypeBegin();
-                found     = true;
-            }
-            if (found)
-            {
-                auto c = std::find_if(at_.begin(), at_.end(),
-                                      [buf](const AtomTypes &at)
-                                      {
-                                          return (at.name().compare(buf) == 0);
-                                      });
-                if (c != at_.end())
+                std::string params;
+                int         index = 0;
+                char        buf[STRLEN];
+                bool        found = false;
+                auto        at    = *mymol.topology_->atoms.atomtype[i];
+                auto        fat   = pd.findAtype(at);
+                if (fat != pd.getAtypeEnd())
                 {
-                    c->inc();
+                    sprintf(buf, "%s", at);
+                    params    = fat->getVdwparams();
+                    index     = fat - pd.getAtypeBegin();
+                    found     = true;
                 }
-                else
+                if (found)
                 {
-                    AtomTypes at(1, buf, params, index);
-                    addNonBonded(at);
+                    auto c = std::find_if(at_.begin(), at_.end(),
+                                          [buf](const AtomTypes &at)
+                                          {
+                                              return (at.name().compare(buf) == 0);
+                                          });
+                    if (c != at_.end())
+                    {
+                        c->inc();
+                    }
+                    else
+                    {
+                        AtomTypes at(1, buf, params, index);
+                        addNonBonded(at);
+                    }
                 }
             }
         }
@@ -838,7 +842,7 @@ class Optimization : public MolGen
         param_type                  param_, lower_, upper_, best_;
         param_type                  De_, orig_, psigma_, pmean_;
         std::vector<gmx_bool>       bOpt_;
-        real factor_;
+        real                        factor_;
         real                        beta0_, D0_, beta_min_, D0_min_;
         const char                 *lot_;
         Bayes <double>              TuneFc_;
@@ -851,8 +855,8 @@ class Optimization : public MolGen
          */
         Optimization()
         {
-            bOpt_.resize(eitNR, FALSE);
-            bOpt_[eitBONDS] = TRUE;
+            bOpt_.resize(eitNR, false);
+            bOpt_[eitBONDS] = true;
             factor_         = 1;
             beta0_          = 0;
             D0_             = 0;
@@ -891,19 +895,9 @@ class Optimization : public MolGen
                 { "-impropers", FALSE, etBOOL, {&bOpt_[eitIMPROPER_DIHEDRALS]},
                   "Optimize improper dihedral parameters" },
                 { "-vdw", FALSE, etBOOL, {&bOpt_[eitVDW]},
-                  "Optimize improper dihedral parameters" },
+                  "Optimize van der Waals parameters" },
                 { "-pairs",  FALSE, etBOOL, {&bOpt_[eitLJ14]},
                   "Optimize 1-4 interaction parameters" },
-                //{ "-fullTensor", FALSE, etBOOL, {&bFullTensor_},
-                //"consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
-                //             { "-dipole", FALSE, etBOOL, {&bDipole_},
-                //"Calibrate parameters to reproduce dipole moment." },
-                //{ "-quadrupole", FALSE, etBOOL, {&bQuadrupole_},
-                //  "Calibrate parameters to reproduce quadrupole tensor." },
-                //{ "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
-                //  "Calibrate atomic polarizability." },
-                //{ "-charge", FALSE, etBOOL, {&bCharge_},
-                //"Calibrate parameters to keep reasonable charges (do not use with ESP)." },
                 { "-factor", FALSE, etREAL, {&factor_},
                   "Factor for something I forgot. Sorry." }
             };
@@ -963,10 +957,12 @@ class Optimization : public MolGen
 
         void Print(FILE *fp);
 
-        void printSpecs(FILE *fp, char *title,
-                        const char *xvg,
-                        const gmx_output_env_t *oenv,
-                        bool bCheckOutliers);
+        void printResults(FILE                   *fp, 
+                          char                   *title,
+                          const char             *xvg,
+                          const char             *HF_xvg,
+                          const gmx_output_env_t *oenv,
+                          bool                    bCheckOutliers);
 
         double calcDeviation();
 
@@ -1065,7 +1061,7 @@ void Optimization::checkSupport(FILE *fp)
         }
 
         bool bSupport = true;
-        for (int bt = 0; bSupport && (bt <= eitNR); bt++)
+        for (int bt = 0; bSupport && (bt < eitNR); bt++)
         {
             int  ft;
             if (bOpt_[bt])
@@ -1390,8 +1386,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     ntest.resize(nD, 0);
     ctest.resize(nD);
 
-    fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n",
-            nD);
+    fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n", nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
     auto fs  = poldata().findForces(eitBONDS);
@@ -1590,9 +1585,10 @@ double Optimization::calcDeviation()
     {
         if (mymol.molProp()->getOptHF(&optHF))
         {
-            int natoms = mymol.molProp()->NAtom();
-            int nOptSP = mymol.molProp()->NOptSP();
-
+            int natoms      = mymol.topology_->atoms.nr;
+            int nOptSP      = mymol.molProp()->NOptSP();
+            gmx_bool bpolar = (mymol.shellfc_ != nullptr);
+            
             if ((mymol.eSupp_ == eSupportLocal) ||
                 (final() && (mymol.eSupp_ == eSupportRemote)))
             {
@@ -1629,8 +1625,8 @@ double Optimization::calcDeviation()
 
                         dbcopy = debug;
                         debug  = nullptr;
-
-                        mymol.changeCoordinate(ei);
+                       
+                        mymol.changeCoordinate(ei, bpolar);
                         mymol.computeForces(debug, commrec());
 
                         debug          = dbcopy;
@@ -1824,18 +1820,22 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
     }
 }
 
-void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
-                       gmx_bool bForce, gmx_bool bMtop)
+void print_mols(FILE                          *fp, 
+                std::vector<alexandria::MyMol> mol,
+                gmx_bool                       bForce, 
+                gmx_bool                       bMtop)
 {
     int j, k;
 
     for (auto mi = mol.begin(); (mi < mol.end()); mi++)
     {
-        fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->molProp()->NAtom());
-        for (j = 0; (j < mi->molProp()->NAtom()); j++)
+        fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->topology_->atoms.nr);
+        for (j = 0; j < mi->topology_->atoms.nr; j++)
         {
-            fprintf(fp, "  %-5s  %-5s  q = %10g", *(mi->topology_->atoms.atomname[j]),
-                    *(mi->topology_->atoms.atomtype[j]), mi->topology_->atoms.atom[j].q);
+            fprintf(fp, "  %-5s  %-5s  q = %10g", 
+                    *(mi->topology_->atoms.atomname[j]),
+                    *(mi->topology_->atoms.atomtype[j]), 
+                    mi->topology_->atoms.atom[j].q);
             if (bForce)
             {
                 fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",
@@ -1864,69 +1864,93 @@ void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 }
 
 
-void Optimization::printSpecs(FILE *fp, char *title,
-                              const char *xvg,
-                              const gmx_output_env_t *oenv,
-                              bool bCheckOutliers)
+void Optimization::printResults(FILE                   *fp, 
+                                char                   *title,
+                                const char             *hform_xvg,
+                                const char             *HF_xvg,
+                                const gmx_output_env_t *oenv,
+                                bool                    bCheckOutliers)
 {
     int         N, i;
     real        a, b;
     real        da, db;
     real        chi2, Rfit;
     double      msd;
-    FILE       *xfp;
+    FILE       *xfp, *hfp;
     gmx_stats_t gst;
 
     gst = gmx_stats_init();
-
-    if (nullptr != xvg)
+    if (nullptr != hform_xvg)
     {
-        xfp = xvgropen(xvg, "Entalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)",
-                       oenv);
+        xfp = xvgropen(hform_xvg, "Entalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)", oenv);
     }
-
+    if (nullptr != HF_xvg)
+    {
+        hfp = xvgropen(HF_xvg, "Eenergy", "B3LYP/aug-cc-pVTZ (kJ/mol)", "Alexandria (kJ/mol)", oenv);
+    }
     fprintf(fp, "%s\n", title);
-
-    fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n",
-            "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
+    fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n", "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
     msd = 0;
     i   = 0;
-
     for (auto mi = mymols().begin(); mi < mymols().end(); mi++, i++)
     {
         real DeltaE = mi->OptEcalc_ - mi->Emol_;
-
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
-                i, mi->molProp()->getMolname().c_str(),
-                mi->Hform_, mi->Emol_, DeltaE, sqrt(mi->OptForce2_),
+                i, 
+                mi->molProp()->getMolname().c_str(),
+                mi->Hform_, 
+                mi->Emol_, 
+                DeltaE, 
+                sqrt(mi->OptForce2_),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-
         msd += gmx::square(DeltaE);
         gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
-
-        if (nullptr != xvg)
+        if (nullptr != hform_xvg)
         {
             fprintf(xfp, "%10g  %10g\n", mi->Hform_, mi->Hform_ + DeltaE);
+        }
+        if (nullptr != HF_xvg)
+        {
+            double   spHF     = 0;
+            double   optHF    = 0;
+            double   deltaEn  = 0;
+            gmx_bool bpolar   = (mi->shellfc_ != nullptr);
+            mi->molProp()->getOptHF(&optHF);
+            for (auto ei = mi->molProp()->BeginExperiment(); ei < mi->molProp()->EndExperiment(); ++ei)
+            {
+                auto jtype = ei->getJobtype();
+                if (jtype == JOB_SP)
+                {
+                    ei->getHF(&spHF);
+                    deltaEn = spHF - optHF;
+                    mi->f_.clear();
+                    mi->f_.resize(2*mi->topology_->atoms.nr);                  
+                    mi->changeCoordinate(ei, bpolar);
+                    mi->computeForces(nullptr, commrec());                                   
+                    fprintf(hfp, "%10g  %10g\n", mi->Emol_ + deltaEn, mi->enerd_->term[F_EPOT]);
+                }
+            }
         }
     }
 
     fprintf(fp, "\n");
-    fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n",
-            sqrt(msd/mymols().size()), static_cast<int>(mymols().size()));
+    fprintf(fp, "RMSD is %g kJ/mol for %zu molecules.\n\n", sqrt(msd/mymols().size()), mymols().size());
     fflush(fp);
-    if (nullptr != xvg)
+    if (nullptr != hform_xvg)
     {
         xvgrclose(xfp);
-        do_view(oenv, xvg, nullptr);
+        do_view(oenv, hform_xvg, nullptr);
+    }
+    if (nullptr != HF_xvg)
+    {
+        xvgrclose(hfp);
+        do_view(oenv, HF_xvg, nullptr);
     }
 
     gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
     gmx_stats_get_npoints(gst, &N);
-
     fprintf(fp, "Regression analysis fit to y = ax + b:\n");
-    fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n",
-            a, b, Rfit*100, chi2, N);
-
+    fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n", a, b, Rfit*100, chi2, N);
     gmx_stats_free(gst);
     fflush(fp);
 }
@@ -1979,6 +2003,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-table", "table",      ffOPTRD },
         { efLOG, "-g",     "tune_fc",    ffWRITE },
         { efXVG, "-x",     "hform-corr", ffWRITE },
+        { efXVG, "-hf",    "hf-corr",    ffWRITE },
         { efXVG, "-conv",  "param-conv", ffWRITE },
         { efXVG, "-epot",  "param-epot", ffWRITE }
     };
@@ -2020,7 +2045,7 @@ int alex_tune_fc(int argc, char *argv[])
     MolSelect             gms;
 
     std::vector<t_pargs>  pargs;
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
+    for (size_t i = 0; i < asize(pa); i++)
     {
         pargs.push_back(pa[i]);
     }
@@ -2061,20 +2086,18 @@ int alex_tune_fc(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    bool        bPolar = (opt.iChargeDistributionModel() == eqdAXpp  ||
-                          opt.iChargeDistributionModel() == eqdAXpg  ||
-                          opt.iChargeDistributionModel() == eqdAXps);
-
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, opt_elem, const_elem,
+             bZero, 
+             opt_elem, 
+             const_elem,
              gms,
              false,
              opt.bOpt(eitLJ14),
              opt.bOpt(eitPROPER_DIHEDRALS),
-             bPolar,
              bZPE,
+             false,
              tabfn);
 
     if (nullptr != fp)
@@ -2086,7 +2109,7 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         opt.InitOpt(fp);
-        print_moldip_mols(fp, opt.mymols(), false, false);
+        print_mols(fp, opt.mymols(), false, false);
     }
 
     if (PAR(opt.commrec()))
@@ -2100,7 +2123,7 @@ int alex_tune_fc(int argc, char *argv[])
     {
         if (MASTER(opt.commrec()))
         {
-            opt.printSpecs(fp, (char *)"Before optimization", nullptr, oenv, false);
+            opt.printResults(fp, (char *)"Before optimization", nullptr, nullptr, oenv, false);
         }
     }
 
@@ -2114,8 +2137,11 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         opt.tuneFc2PolData();
-        print_moldip_mols(fp, opt.mymols(), true, false);
-        opt.printSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);
+        print_mols(fp, opt.mymols(), true, false);
+        opt.printResults(fp, (char *)"After optimization", 
+                         opt2fn("-x", NFILE, fnm), 
+                         opt2fn("-hf", NFILE, fnm), 
+                         oenv, true);
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
         done_filenms(NFILE, fnm);
         gmx_ffclose(fp);

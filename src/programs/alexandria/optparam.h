@@ -79,7 +79,7 @@ class OptParam
                 xvgconv_(nullptr), 
                 xvgepot_(nullptr), 
                 bBound_(false), 
-                seed_(1993), 
+                seed_(-1), 
                 step_(0.02), 
                 temperature_(5), 
                 anneal_(true)

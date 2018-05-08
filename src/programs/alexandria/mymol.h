@@ -517,7 +517,7 @@ class MyMol
          *
          * \param[in] ei   ExperimentIterator
          */
-        void changeCoordinate(ExperimentIterator ei);
+        void changeCoordinate(ExperimentIterator ei, gmx_bool bpolar);
 
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.
