@@ -87,8 +87,8 @@
 /** Binary directory for the build */
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
 
-/** Location of data files in the installation directory */
-#define DATA_INSTALL_DIR        "@DATA_INSTALL_DIR@"
+/** Location of GROMACS-specific data files */
+#define GMX_INSTALL_GMXDATADIR  "@GMX_INSTALL_GMXDATADIR@"
 
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"

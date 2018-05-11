@@ -71,10 +71,10 @@ setenv MANPATH $tmppath
 # If you move gromacs, change the first line.
 ##########################################################
 setenv GMXPREFIX @CMAKE_INSTALL_PREFIX@
-setenv GMXBIN ${GMXPREFIX}/@BIN_INSTALL_DIR@
-setenv GMXLDLIB ${GMXPREFIX}/@LIB_INSTALL_DIR@
-setenv GMXMAN ${GMXPREFIX}/@MAN_INSTALL_DIR@
-setenv GMXDATA ${GMXPREFIX}/@DATA_INSTALL_DIR@
+setenv GMXBIN ${GMXPREFIX}/@CMAKE_INSTALL_BINDIR@
+setenv GMXLDLIB ${GMXPREFIX}/@CMAKE_INSTALL_LIBDIR@
+setenv GMXMAN ${GMXPREFIX}/@CMAKE_INSTALL_MANDIR@
+setenv GMXDATA ${GMXPREFIX}/@GMX_INSTALL_GMXDATADIR@
 setenv GROMACS_DIR ${GMXPREFIX}
 
 #make them begin with :
