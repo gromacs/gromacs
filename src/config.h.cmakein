@@ -251,7 +251,7 @@
 #cmakedefine01 HAVE_NVML
 
 /* Define relative path to OpenCL kernels */
-#define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
+#define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine01 HAVE_FSEEKO
