@@ -231,7 +231,7 @@ getKernelRootPath(const std::string &kernelRelativePath)
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
                                                       kernelRelativePath :
-                                                      OCL_INSTALL_DIR);
+                                                      GMX_INSTALL_OCLDIR);
         kernelRootPath = Path::join(info.path, dataPathSuffix);
     }
     else

@@ -36,13 +36,13 @@ cmake_minimum_required(VERSION 3.4.3)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform")
 
 project(Gromacs)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git
@@ -612,12 +612,12 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+include_directories(BEFORE "${CMAKE_SOURCE_DIR}/src")
 # TODO required at high level because both libgromacs and progs/mdrun
 # require it, both for thread-MPI and its atomics and mutexes.
 include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
-include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
+include_directories(BEFORE "${CMAKE_BINARY_DIR}/src")
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -805,36 +805,30 @@ else()
     set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
 
+# This must be set before GNUInstallDirs initializes CMAKE_INSTALL_DATADIR to the default value
+if(NOT DEFINED CMAKE_INSTALL_DATADIR)
+    if(DEFINED CMAKE_INSTALL_DATAROOTDIR)
+        set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}/gromacs" CACHE PATH "Read-only architecture-independent data")
+    else()
+        set(CMAKE_INSTALL_DATADIR "share/gromacs" CACHE PATH "Read-only architecture-independent data")
+    endif()
+endif()
+
 ########################################################################
 # Specify install locations
 ########################################################################
 # Use GNUInstallDirs to set paths on multiarch systems.
 include(GNUInstallDirs)
 
-# Customization for the installation tree paths.
-set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
-    "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
-set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
-    "Data installation directory under share/ (default: gromacs)")
-mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
-
-# These variables are used internally to provide a central location for
-# customizing the install locations.
-set(LIB_INSTALL_DIR       ${GMX_LIB_INSTALL_DIR})
-set(BIN_INSTALL_DIR       bin)
-# This variable also gets written into config.h for use in finding the data
-# directories.
-set(DATA_INSTALL_DIR      share/${GMX_DATA_INSTALL_DIR})
-set(MAN_INSTALL_DIR       share/man)
 # If the nesting level wrt. the installation root is changed,
 # gromacs-config.cmake.cmakein needs to be adapted.
-set(CMAKE_INSTALL_DIR     share/cmake)
-# TODO: Make GMXRC adapt if this is changed
-set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
-set(OCL_INSTALL_DIR       ${DATA_INSTALL_DIR}/opencl)
-set(INCL_INSTALL_DIR      include)
+set(GMX_INSTALL_CMAKEDIR  "${CMAKE_INSTALL_DATAROOTDIR}/cmake")
 
-list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
+# TODO: Make GMXRC adapt if this is changed
+set(GMX_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+set(GMX_INSTALL_OCLDIR       "${CMAKE_INSTALL_DATADIR}/opencl")
+
+list(APPEND INSTALLED_HEADER_INCLUDE_DIRS "${CMAKE_INSTALL_INCLUDEDIR}")
 
 # Binary and library suffix options
 include(gmxManageSuffixes)
@@ -852,7 +846,7 @@ else()
     # install to lib/, then the installation RPATH works also in the build
     # tree.  This makes installation slightly faster (no need to rewrite the
     # RPATHs), and makes the binaries in the build tree relocatable.
-    if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
+    if(CMAKE_INSTALL_LIBDIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
         if(POLICY CMP0068)
             cmake_policy(SET CMP0068 NEW) # From CMake-3.9
@@ -862,10 +856,10 @@ else()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
-        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+        set(CMAKE_INSTALL_RPATH "@executable_path/../${CMAKE_INSTALL_LIBDIR}")
         set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_RPATH})
     else()
-        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
@@ -873,7 +867,7 @@ endif()
 
 #COPYING file: Only necessary for binary distributions.
 #Simpler to always install.
-install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
+install(FILES COPYING DESTINATION "${CMAKE_INSTALL_DATADIR}" COMPONENT data)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,

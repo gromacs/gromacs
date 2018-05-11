@@ -113,10 +113,10 @@ implementation, which works like this:
    contains :file:`share/{gromacs}/top/gurgle.dat`, this directory is returned
    as the installation prefix.  The file name ``gurgle.dat`` and the location
    are considered unique enough to ensure that the correct directory has been
-   found.  The installation directory for the data files can be customized
-   during CMake configuration by setting ``GMX_DATA_INSTALL_DIR``, which
-   affects the *gromacs* part in the above path (both in the installation
-   structure and in this search logic).
+   found.  The installation directory for read-only architecture-independent
+   data files can be customized during CMake configuration by setting
+   ``CMAKE_INSTALL_DATADIR``. By default this is set by adding ``gromacs``
+   to ``CMAKE_INSTALL_DATAROOTDIR``, which in turn defaults to ``share``.
 
    Note that this search does not resolve symbolic links or normalize the input
    path beforehand: if there are ``..`` components *and* symbolic links in the
