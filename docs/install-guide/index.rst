@@ -821,12 +821,14 @@ CMakeLists.txt.
     The standard location for executables and some scripts.
     Some of the scripts hardcode the absolute installation prefix, which needs
     to be changed if the scripts are relocated.
+    The name of the directory can be changed using ``CMAKE_INSTALL_BINDIR`` CMake
+    variable.
 ``include/gromacs/``
     The standard location for installed headers.
 ``lib/``
     The standard location for libraries. The default depends on the system, and
     is determined by CMake.
-    The name of the directory can be changed using ``GMX_LIB_INSTALL_DIR`` CMake
+    The name of the directory can be changed using ``CMAKE_INSTALL_LIBDIR`` CMake
     variable.
 ``lib/pkgconfig/``
     Information about the installed ``libgromacs`` library for ``pkg-config`` is
@@ -836,9 +838,10 @@ CMakeLists.txt.
 ``share/cmake/``
     CMake package configuration files are installed here.
 ``share/gromacs/``
-    Various data files and some documentation go here.
-    The ``gromacs`` part can be changed using ``GMX_DATA_INSTALL_DIR``. Using this
-    CMake variable is the preferred way of changing the installation path for
+    Various data files and some documentation go here. The first part can
+    be changed using ``CMAKE_INSTALL_DATADIR``, and the second by using
+    ``GMX_INSTALL_DATASUBDIR`` Using these CMake variables is the preferred
+    way of changing the installation path for
     ``share/gromacs/top/``, since the path to this directory is built into
     ``libgromacs`` as well as some scripts, both as a relative and as an absolute
     path (the latter as a fallback if everything else fails).

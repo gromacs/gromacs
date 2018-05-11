@@ -61,7 +61,7 @@ function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
         file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
         install(FILES       ${ARGN}
-                DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
+                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${_dest}"
                 COMPONENT   development)
     endif()
     _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
@@ -226,9 +226,9 @@ gmx_write_installed_header_list()
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
-            LIBRARY DESTINATION ${LIB_INSTALL_DIR}
-            RUNTIME DESTINATION ${BIN_INSTALL_DIR}
-            ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             COMPONENT libraries)
 endif()
 
@@ -247,7 +247,7 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
                 #install also name-links (linker uses those)
                 file(GLOB CUDA_LIBS ${CUDA_LIB}*)
                 install(FILES ${CUDA_LIBS} DESTINATION
-                    ${LIB_INSTALL_DIR} COMPONENT libraries)
+                    ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
             endif()
         endforeach()
     else()
@@ -259,7 +259,7 @@ if(GMX_USE_OPENCL)
     set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
 
     install(FILES ${OPENCL_KERNELS} DESTINATION
-        ${OCL_INSTALL_DIR} COMPONENT libraries)
+        ${GMX_INSTALL_OCLDIR} COMPONENT libraries)
 endif()
 
 if (BUILD_TESTING)
