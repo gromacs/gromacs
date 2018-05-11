@@ -83,7 +83,7 @@ std::string DataFileFinder::Impl::getDefaultPath()
     if (!isNullOrEmpty(installPrefix.path))
     {
         const char *const dataPath
-            = installPrefix.bSourceLayout ? "share" : DATA_INSTALL_DIR;
+            = installPrefix.bSourceLayout ? "share" : CMAKE_INSTALL_DATADIR;
         return Path::join(installPrefix.path, dataPath, "top");
     }
     return std::string();

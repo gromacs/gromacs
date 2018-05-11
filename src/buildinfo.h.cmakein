@@ -88,7 +88,7 @@
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
 
 /** Location of data files in the installation directory */
-#define DATA_INSTALL_DIR        "@DATA_INSTALL_DIR@"
+#define CMAKE_INSTALL_DATADIR     "@CMAKE_INSTALL_DATADIR@"
 
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"

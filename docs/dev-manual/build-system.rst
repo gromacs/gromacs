@@ -208,11 +208,11 @@ Variables affecting compilation/linking
    subcounters which are available.
    Defaults to ``OFF``.
 
-.. cmake:: GMX_DATA_INSTALL_DIR
+.. cmake:: CMAKE_INSTALL_DATADIR
 
-   Sets the directory under :file:`share/` where data files are installed.
-   The default is ``gromacs``, which puts the files under
-   file:`share/gromacs/`.
+   Sets the directory where read-only architecture-independent data files are
+   installed. The default is ``share/gromacs``, where the ``share`` part
+   is set by the value of CMAKE_INSTALL_DATAROOTDIR.
    See :doc:`relocatable-binaries` for how this influences the build.
 
 .. cmake:: GMX_DOUBLE
@@ -265,7 +265,7 @@ Variables affecting compilation/linking
 
     Pass additional CUDA-only compiler flags to clang using this variable.
 
-.. cmake:: GMX_LIB_INSTALL_DIR
+.. cmake:: CMAKE_INSTALL_LIBDIR
 
    Sets the installation directory for libraries (default is determined by
    standard CMake package ``GNUInstallDirs``).
