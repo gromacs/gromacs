@@ -103,7 +103,7 @@ def do_build(context):
             context.env.set_env_var('CUDA_PATH', context.env.cuda_root)
             cmake_opts['GMX_USE_OPENCL'] = 'ON'
         else:
-            cmake_opts['CUDA_TOOLKIT_ROOT_DIR'] = context.env.cuda_root
+            context.env.set_env_var('CUDACXX', context.env.cuda_root)
             if context.opts.clang_cuda:
                 cmake_opts['GMX_CLANG_CUDA'] = 'ON'
             else:

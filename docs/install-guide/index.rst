@@ -642,11 +642,11 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+    cmake .. -DGMX_GPU=ON
 
-(or whichever path has your installation). In some cases, you might
-need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+If your toolkit is installed elsewhere, then you need to set the
+environment variable ``CUDACXX`` equal to e.g. ``/usr/local/cuda``
+(or whichever path has your installation).
 
 By default, code will be generated for the most common CUDA architectures.
 However, to reduce build time and binary size we do not generate code for
