@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,10 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(LIBGROMACS_SOURCES)
-
+add_library(libgromacs "")
 if (GMX_CLANG_CUDA)
     include(gmxClangCudaUtils)
+endif()
+if (GMX_USE_CUDA)
+    target_link_libraries(libgromacs PUBLIC cufft)
+endif()
+if (GMX_OPENMP)
+    target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
@@ -67,7 +72,13 @@ function (_gmx_add_files_to_property PROPERTY)
 endfunction ()
 
 function (gmx_add_libgromacs_sources)
-    _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+            target_sources(libgromacs PRIVATE ${_file})
+        else()
+            target_sources(libgromacs PRIVATE ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
 endfunction ()
 
 # TODO Reconsider this, as the CUDA driver API is probably a simpler
@@ -206,11 +217,11 @@ if (GMX_USE_CUDA)
     if (NOT GMX_CLANG_CUDA)
         cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
     else()
-        add_library(libgromacs ${LIBGROMACS_SOURCES})
+        target_sources(libgromacs PRIVATE ${LIBGROMACS_SOURCES})
     endif()
     target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
 else()
-    add_library(libgromacs ${LIBGROMACS_SOURCES})
+    target_sources(libgromacs PRIVATE ${LIBGROMACS_SOURCES})
 endif()
 
 if (GMX_USE_OPENCL)
@@ -305,7 +316,7 @@ set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
-                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+                      )
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
