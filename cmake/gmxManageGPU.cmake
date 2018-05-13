@@ -75,7 +75,10 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
     endif()
 
-    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    set(CMAKE_CUDA_STANDARD 11)
+    enable_language("CUDA" OPTIONAL)
+    include(CheckLanguage)
+    check_language(CUDA)
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
@@ -112,7 +115,7 @@ https://developer.nvidia.com/cuda-gpus")
 ${_msg}")
         unset(_msg)
 
-    if (NOT CUDA_FOUND)
+    if (NOT CMAKE_CUDA_COMPILER)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
             message(STATUS "No compatible CUDA toolkit found (v5.0+), disabling native GPU acceleration")
@@ -197,9 +200,6 @@ include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
     if(GMX_GPU)
         if(NOT GMX_CLANG_CUDA)
-            if(NOT CUDA_NVCC_EXECUTABLE)
-                message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
-            endif()
             # set up nvcc options
             include(gmxManageNvccConfig)
         else()
@@ -216,7 +216,9 @@ macro(gmx_gpu_setup)
         # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
         # future we should switch to using that version string instead of our own.
         if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
-            MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
+            if (CMAKE_CUDA_COMPILER_VERSION MATCHES "([0-9]+)\.([0-9]+)\.([0-9]+)")
+                MATH(EXPR GMX_CUDA_VERSION "${CMAKE_MATCH_1}*1000 + ${CMAKE_MATCH_2}*10")
+            endif()
         endif()
 
         if (_cuda_version_changed)
