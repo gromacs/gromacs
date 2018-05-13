@@ -17,20 +17,18 @@
 
 # Test older gcc
 # Test oldest supported CUDA
+# Test oldest supported cmake
 # Test oldest supported Ubuntu
 # Test MPI with CUDA
 # Test MPI with gcc
-# Test cmake version from before new FindCUDA support (in 3.8)
 # Test MPMD PME with library MPI
-# Test recent cmake (3.7+), to cover minor FindCUDA changes from 3.7.0
-gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
+gcc-4.8 gpuhw=nvidia cuda-7.0 cmake-3.9.6 mpi npme=1 nranks=2 openmp
 
 # Test non-default use of mdrun -gpu_id
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
-# Test older cmake version (< 3.7)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
+gcc-7 gpuhw=nvidia gpu_id=1 cuda-10.0 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256
 
 # Test with libcxx
 # Test with ThreadSanitizer + OpenMP + SIMD
@@ -44,21 +42,19 @@ clang-7 no-hwloc tsan libcxx-7 openmp cmake-3.12.1 simd=avx2_256
 # Test fftpack fallback
 gcc-8 double x11 no-tng fftpack simd=sse4.1
 
-# Test oldest supported cmake
 # Test older clang
 # Test clang in double precision
 # Test without OpenMP
 # Test thread-MPI
 # Test AVX_128_FMA SIMD + Double (Important for Simd4N=Simd4 and sizeof(SimdInt32)!=4*GMX_SIMD_REAL_WIDTH)
 # Test with TNG support
-clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.4.3 tng
+clang-3.4 double simd=avx_128_fma thread-mpi no-openmp fftpack cmake-3.11.4 tng
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
 clang-7 no-openmp asan cmake-3.11.4
 
-# Test newest cmake at time of release
-# Test with clang-tidy (without OpenMP, cmake>=3.6)
+# Test with clang-tidy (without OpenMP)
 clang-7 no-openmp cmake-3.12.1 tidy
 
 # Test oldest supported MSVC on Windows
@@ -86,6 +82,7 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 gcc-8 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 buildfftw
 
 # TODO
+# Test newest cmake at time of release
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc-2 support
 # Test newest supported LTS Ubuntu
