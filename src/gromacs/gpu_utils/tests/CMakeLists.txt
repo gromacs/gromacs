@@ -48,26 +48,9 @@ if(GMX_USE_CUDA)
     list(APPEND SOURCES_FROM_CXX
         pinnedmemorychecker.cpp
         )
-    # TODO Making a separate library is heavy handed, but nothing else
-    # seems to work. Also don't use a hyphen in its name, because nvcc
-    # can't cope with that.
-    #
-    # Perhaps FindCUDA's support for single compilation units will help?
-    if (NOT GMX_CLANG_CUDA)
-        # Work around FindCUDA that prevents using target_link_libraries()
-        # with keywords otherwise...
-        set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-        cuda_add_library(gpu_utilstest_cuda
-            devicetransfers.cu
-            )
-    else()
-        include(gmxClangCudaUtils)
-        gmx_compile_cuda_file_with_clang(devicetransfers.cu)
-        add_library(gpu_utilstest_cuda
-            devicetransfers.cu
-            )
-    endif()
-
+    add_library(gpu_utilstest_cuda
+        devicetransfers.cu
+        )
     target_link_libraries(gpu_utilstest_cuda PRIVATE ${GMX_EXTRA_LIBRARIES})
 
 elseif(GMX_USE_OPENCL)

@@ -61,21 +61,18 @@ if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
-# We need to call find_package even when we've already done the detection/setup
 if(GMX_GPU OR GMX_GPU_AUTO)
-    if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
-        # Stay quiet when detection has occured and found no GPU.
-        # Noise is acceptable when there is a GPU or the user required one.
-        set(FIND_CUDA_QUIETLY QUIET)
-    endif()
-
+    # TODO what should we do here?
+    #
     # Cmake tries to use the static cuda runtime by default,
     # but this leads to unusable GPU builds on OS X.
     if(APPLE)
         set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
     endif()
 
-    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    set(CMAKE_CUDA_STANDARD 11)
+    include(CheckLanguage)
+    check_language(CUDA)
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
@@ -107,15 +104,15 @@ Compute capability information not available, consult the NVIDIA website:
 https://developer.nvidia.com/cuda-gpus")
     endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Kepler or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
+        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Kepler or later). This requires the NVIDIA CUDA compiler called nvcc, which was not found. Its location can be set with the environment variable CUDACXX (does not work as a CMake variable). The typical location would be /usr/local/cuda[-version]. Note that running on a GPU can be selected at runtime.
 
 ${_msg}")
         unset(_msg)
 
-    if (NOT CUDA_FOUND)
+    if (NOT CMAKE_CUDA_COMPILER)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
-            message(STATUS "No compatible CUDA toolkit found (v5.0+), disabling native GPU acceleration")
+            message(STATUS "No compatible CUDA toolkit found (v7.0+ required), disabling CUDA support")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
             set(CUDA_NOTFOUND_AUTO ON)
         else()
@@ -130,6 +127,13 @@ ${_msg}")
     endif()
 endif()
 
+if (GMX_GPU)
+    enable_language("CUDA")
+endif()
+
+# TODO should we mark these advanced just as a convience thing for
+# users/devs who may have them in scripts even though they're now useless?
+#
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
@@ -197,9 +201,6 @@ include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
     if(GMX_GPU)
         if(NOT GMX_CLANG_CUDA)
-            if(NOT CUDA_NVCC_EXECUTABLE)
-                message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
-            endif()
             # set up nvcc options
             include(gmxManageNvccConfig)
         else()
@@ -216,7 +217,9 @@ macro(gmx_gpu_setup)
         # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
         # future we should switch to using that version string instead of our own.
         if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
-            MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
+            if (CMAKE_CUDA_COMPILER_VERSION MATCHES "([0-9]+)\.([0-9]+)\.([0-9]+)")
+                MATH(EXPR GMX_CUDA_VERSION "${CMAKE_MATCH_1}*1000 + ${CMAKE_MATCH_2}*10")
+            endif()
         endif()
 
         if (_cuda_version_changed)
