@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -301,11 +301,14 @@ target_link_libraries(libgromacs
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
+if (GMX_OPENMP)
+    target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
+endif()
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
-                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+                      )
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
