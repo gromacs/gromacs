@@ -32,20 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(libgromacs "")
 if (GMX_CLANG_CUDA)
     include(gmxClangCudaUtils)
-
-    # Work around FindCUDA that prevents using target_link_libraries()
-    # with keywords otherwise...
-    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-    if (NOT GMX_CLANG_CUDA)
-        cuda_add_library(libgromacs "")
-    else()
-        add_library(libgromacs "")
-    endif()
-    target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
-else()
-    add_library(libgromacs "")
+endif()
+if (GMX_USE_CUDA)
+    target_link_libraries(libgromacs PUBLIC cufft)
+endif()
+if (GMX_OPENMP)
+    target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
@@ -66,14 +61,10 @@ function (gmx_add_libgromacs_sources)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
 	    target_sources(libgromacs PRIVATE ${_file})
-            #set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_file})
         else()
-            #set_property(GLOBAL APPEND PROPERTY ${PROPERTY}
-            #             ${CMAKE_CURRENT_LIST_DIR}/${_file})
 	    target_sources(libgromacs PRIVATE ${CMAKE_CURRENT_LIST_DIR}/${_file})
         endif()
     endforeach()
-
 endfunction ()
 
 function (gmx_install_headers)
@@ -219,8 +210,7 @@ target_link_libraries(libgromacs
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
-                      VERSION ${LIBRARY_VERSION}
-                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+                      VERSION ${LIBRARY_VERSION})
 
 gmx_write_installed_header_list()
 

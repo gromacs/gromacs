@@ -100,7 +100,7 @@ else()
   set(NVML_NAMES nvidia-ml)
 
   set( NVML_LIB_PATHS /usr/lib64 )
-  if(${CUDA_VERSION_STRING} VERSION_LESS "8.0")
+  if(${CMAKE_CUDA_COMPILER_VERSION} VERSION_LESS "8.0")
       # The Linux installer for the GPU Deployment Kit adds a "usr"
       # suffix to a custom path if one is used, so a user could
       # reasonably set GPU_DEPLOYMENT_KIT_ROOT_DIR to the value they
@@ -116,7 +116,7 @@ else()
      list(APPEND NVML_LIB_PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs")
   endif()
 
-  if(${CUDA_VERSION_STRING} VERSION_LESS "8.0")
+  if(${CMAKE_CUDA_COMPILER_VERSION} VERSION_LESS "8.0")
       set( NVML_INC_PATHS /usr/include/nvidia/gdk/ /usr/include )
       if(GPU_DEPLOYMENT_KIT_ROOT_DIR)
           list(APPEND NVML_INC_PATHS

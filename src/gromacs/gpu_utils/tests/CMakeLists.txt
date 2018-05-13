@@ -57,7 +57,7 @@ if(GMX_USE_CUDA)
         # Work around FindCUDA that prevents using target_link_libraries()
         # with keywords otherwise...
         set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-        cuda_add_library(gpu_utilstest_cuda
+        add_library(gpu_utilstest_cuda
             devicetransfers.cu
             )
     else()
