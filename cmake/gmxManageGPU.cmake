@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,7 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
     endif()
 
-    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    enable_language("CUDA")
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
@@ -216,7 +216,9 @@ macro(gmx_gpu_setup)
         # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
         # future we should switch to using that version string instead of our own.
         if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
-            MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
+	    if (CMAKE_CUDA_COMPILER_VERSION MATCHES "([0-9]+)\.([0-9]+)\.([0-9]+)")
+	        MATH(EXPR GMX_CUDA_VERSION "${CMAKE_MATCH_1}*1000 + ${CMAKE_MATCH_2}*10")
+	    endif()
         endif()
 
         if (_cuda_version_changed)
