@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ if(GMX_USE_CUDA)
         # Work around FindCUDA that prevents using target_link_libraries()
         # with keywords otherwise...
         set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-        cuda_add_library(gpu_utilstest_cuda
+        add_library(gpu_utilstest_cuda
             devicetransfers.cu
             )
     else()
