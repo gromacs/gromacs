@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB SELECTION_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${SELECTION_SOURCES})
 
 gmx_install_headers(
     nbsearch.h

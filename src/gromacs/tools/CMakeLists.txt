@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB TOOLS_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOOLS_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${TOOLS_SOURCES})
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

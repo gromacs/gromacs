@@ -34,7 +34,7 @@
 
 file(GLOB GMXCORRFUNC_SOURCES *.cpp)
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${GMXCORRFUNC_SOURCES})
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

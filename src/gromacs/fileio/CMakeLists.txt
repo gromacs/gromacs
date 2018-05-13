@@ -40,7 +40,7 @@ else()
   list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.cpp)
 endif()
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${FILEIO_SOURCES})
 
 gmx_install_headers(
     confio.h

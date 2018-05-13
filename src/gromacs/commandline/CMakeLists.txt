@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB COMMANDLINE_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${COMMANDLINE_SOURCES})
 
 gmx_install_headers(
     cmdlinehelpwriter.h

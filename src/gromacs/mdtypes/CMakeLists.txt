@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB MDTYPES_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MDTYPES_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${MDTYPES_SOURCES})
 
 gmx_install_headers(
     inputrec.h

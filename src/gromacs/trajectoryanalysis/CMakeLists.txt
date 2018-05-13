@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${TRAJECTORYANALYSIS_SOURCES})
 
 gmx_install_headers(
     analysismodule.h

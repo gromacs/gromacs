@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB PBCUTIL_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PBCUTIL_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${PBCUTIL_SOURCES})
 
 gmx_install_headers(
     ishift.h

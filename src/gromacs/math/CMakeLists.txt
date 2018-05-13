@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB MATH_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${MATH_SOURCES})
 
 gmx_install_headers(
     3dtransforms.h

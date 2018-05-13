@@ -46,7 +46,7 @@ else ()
     endforeach()
 endif()
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${EWALD_SOURCES})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

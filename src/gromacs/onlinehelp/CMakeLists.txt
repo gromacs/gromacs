@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB ONLINEHELP_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ONLINEHELP_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${ONLINEHELP_SOURCES})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

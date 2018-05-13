@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB TOPOLOGY_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${TOPOLOGY_SOURCES})
 
 gmx_install_headers(
     atomprop.h

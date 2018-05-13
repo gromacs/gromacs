@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB LISTED_FORCES_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${LISTED_FORCES_SOURCES})
 
 gmx_install_headers(listed-forces.h)
 

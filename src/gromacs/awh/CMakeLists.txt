@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB AWH_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${AWH_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${AWH_SOURCES})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

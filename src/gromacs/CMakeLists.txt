@@ -32,13 +32,22 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(LIBGROMACS_SOURCES)
-
 if (GMX_CLANG_CUDA)
     include(gmxClangCudaUtils)
+
+    # Work around FindCUDA that prevents using target_link_libraries()
+    # with keywords otherwise...
+    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
+    if (NOT GMX_CLANG_CUDA)
+        cuda_add_library(libgromacs "")
+    else()
+        add_library(libgromacs "")
+    endif()
+    target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
+else()
+    add_library(libgromacs "")
 endif()
 
-set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -54,7 +63,17 @@ function (_gmx_add_files_to_property PROPERTY)
 endfunction ()
 
 function (gmx_add_libgromacs_sources)
-    _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+	    target_sources(libgromacs PRIVATE ${_file})
+            #set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_file})
+        else()
+            #set_property(GLOBAL APPEND PROPERTY ${PROPERTY}
+            #             ${CMAKE_CURRENT_LIST_DIR}/${_file})
+	    target_sources(libgromacs PRIVATE ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
+
 endfunction ()
 
 function (gmx_install_headers)
@@ -118,8 +137,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tools)
 endif()
 
-get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
-list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
+target_sources(libgromacs PRIVATE ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly
@@ -129,11 +147,11 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
-list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
+target_sources(libgromacs PRIVATE ${THREAD_MPI_SOURCES})
 
 get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
 include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
-list(APPEND LIBGROMACS_SOURCES ${LMFIT_SOURCES})
+target_sources(libgromacs PRIVATE ${LMFIT_SOURCES})
 
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
@@ -156,30 +174,16 @@ set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
 gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
-list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+target_sources(libgromacs PRIVATE ${GENERATED_VERSION_FILE})
 
 # set up CUDA compilation with clang
 if (GMX_CLANG_CUDA)
-    foreach (_file ${LIBGROMACS_SOURCES})
+    foreach (_file ${LIBGROMACS_SOURCES}) #TODO
         get_filename_component(_ext ${_file} EXT)
         if (${_ext} STREQUAL ".cu")
             gmx_compile_cuda_file_with_clang(${_file})
         endif()
     endforeach()
-endif()
-
-if (GMX_USE_CUDA)
-    # Work around FindCUDA that prevents using target_link_libraries()
-    # with keywords otherwise...
-    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-    if (NOT GMX_CLANG_CUDA)
-        cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
-    else()
-        add_library(libgromacs ${LIBGROMACS_SOURCES})
-    endif()
-    target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
-else()
-    add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which

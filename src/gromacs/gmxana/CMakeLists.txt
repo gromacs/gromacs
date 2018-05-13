@@ -38,7 +38,7 @@ gmx_install_headers(
     gstat.h
     )
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${GMXANA_SOURCES})
 
 if(BUILD_TESTING)
     add_subdirectory(tests)

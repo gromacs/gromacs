@@ -36,7 +36,7 @@ file(GLOB UTILITY_SOURCES *.cpp)
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(cuda_version_information.cu)
 endif()
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
+target_sources(libgromacs PRIVATE ${UTILITY_SOURCES})
 
 gmx_install_headers(
     alignedallocator.h
