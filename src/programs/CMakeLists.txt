@@ -50,8 +50,7 @@ elseif(GMX_BUILD_MDRUN_ONLY)
         ${GMX_STDLIB_LIBRARIES})
     set(BINARY_NAME "mdrun${GMX_BINARY_SUFFIX}")
     set_target_properties(mdrun PROPERTIES
-        OUTPUT_NAME "${BINARY_NAME}"
-        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+        OUTPUT_NAME "${BINARY_NAME}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
          "complete -o nospace -F _gmx_mdrun_compl ${BINARY_NAME}")
@@ -78,8 +77,7 @@ else()
     endif()
     set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
     set_target_properties(gmx PROPERTIES
-        OUTPUT_NAME "${BINARY_NAME}"
-        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+        OUTPUT_NAME "${BINARY_NAME}")
     install(TARGETS gmx
             RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 

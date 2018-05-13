@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.9)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -793,16 +793,6 @@ else()
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
-endif()
-
-if(NOT GMX_OPENMP)
-    #Unset all OpenMP flags in case OpenMP was disabled either by the user
-    #or because it was only partially detected (e.g. only for C but not C++ compiler)
-    unset(OpenMP_C_FLAGS CACHE)
-    unset(OpenMP_CXX_FLAGS CACHE)
-else()
-    set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
-    set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
 
 ########################################################################
