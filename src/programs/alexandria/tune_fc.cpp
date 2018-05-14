@@ -1480,8 +1480,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 void Optimization::InitOpt(FILE *fplog)
 {
     std::vector<unsigned int> fts;
-
-    checkSupport(fplog);
+    
     for (auto fs = poldata().forcesBegin();
          fs != poldata().forcesEnd(); fs++)
     {
@@ -1583,14 +1582,14 @@ double Optimization::calcDeviation()
 
     for (auto &mymol : mymols())
     {
-        if (mymol.molProp()->getOptHF(&optHF))
+        if ((mymol.eSupp_ == eSupportLocal) ||
+            (final() && (mymol.eSupp_ == eSupportRemote)))
         {
             int natoms      = mymol.topology_->atoms.nr;
             int nOptSP      = mymol.molProp()->NOptSP();
             gmx_bool bpolar = (mymol.shellfc_ != nullptr);
             
-            if ((mymol.eSupp_ == eSupportLocal) ||
-                (final() && (mymol.eSupp_ == eSupportRemote)))
+            if (mymol.molProp()->getOptHF(&optHF))
             {
                 for (const auto fc : ForceConstants_)
                 {
@@ -1674,14 +1673,13 @@ double Optimization::calcDeviation()
                 }
                 setEnergy(ermsEPOT, energy(ermsEPOT) / nOptSP);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "There is no optimized structure for %s\n",
-                      mymol.molProp()->getMolname().c_str());
+            else
+            {
+                gmx_fatal(FARGS, "There is no optimized structure for %s\n",
+                          mymol.molProp()->getMolname().c_str());
+            }
         }
     }
-
     /* Compute E-bounds */
     if (MASTER(commrec()))
     {
@@ -1697,12 +1695,10 @@ double Optimization::calcDeviation()
             }
         }
     }
-
     /* Global sum energies */
     sumEnergies();
     normalizeEnergies();
     printEnergies(debug);
-
     return energy(ermsTOT);
 }
 
@@ -1732,25 +1728,22 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
     std::vector<double> optx, opts, optm;
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
-
-    auto                func = [&] (const double v[]) {
-            return objFunction(v);
-        };
-
-    TuneFc_.setFunc(func, param_, lower_, upper_, &chi2);
-
+    
+    auto func = [&] (const double v[]) {
+        return objFunction(v);
+    };
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
         {
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
-                gmx_send_int(commrec(), dest,
-                             (nrun*TuneFc_.maxIter()*param_.size()));
+                gmx_send_int(commrec(), dest, (nrun*TuneFc_.maxIter()*param_.size()));
             }
+            
         }
-
         chi2 = chi2_min  = GMX_REAL_MAX;
+        TuneFc_.setFunc(func, param_, lower_, upper_, &chi2);
         TuneFc_.Init(xvgconv, xvgepot, oenv);
 
         for (int n = 0; n < nrun; n++)
@@ -1759,7 +1752,6 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-
             TuneFc_.simulate();
             TuneFc_.getBestParam(optx);
             TuneFc_.getPsigma(opts);
@@ -1799,24 +1791,15 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
         int niter = gmx_recv_int(commrec(), 0);
         for (int n = 0; n < niter + 2; n++)
         {
-            calcDeviation();
+            chi2 = calcDeviation();
         }
     }
     setFinal();
     if (MASTER(commrec()))
     {
         chi2 = calcDeviation();
-        if (nullptr != fp)
-        {
-            fprintf(fp, "rmsd: %4.3f  ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), energy(ermsBOUNDS), nrun);
-        }
-        if (nullptr != fplog)
-        {
-            fprintf(fplog, "rmsd: %4.3f   ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), energy(ermsBOUNDS), nrun);
-            fflush(fplog);
-        }
+        printEnergies(fp);
+        printEnergies(fplog);
     }
 }
 
@@ -2062,11 +2045,6 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        printf("There are %d threads/processes.\n", opt.commrec()->nnodes);
-    }
-
-    if (MASTER(opt.commrec()))
-    {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
         time(&my_t);
@@ -2099,13 +2077,15 @@ int alex_tune_fc(int argc, char *argv[])
              bZPE,
              false,
              tabfn);
-
+    
+    opt.checkSupport(fp);
+    
     if (nullptr != fp)
     {
         fprintf(fp, "In the total data set of %d molecules we have:\n",
                 static_cast<int>(opt.mymols().size()));
     }
-
+   
     if (MASTER(opt.commrec()))
     {
         opt.InitOpt(fp);
@@ -2118,13 +2098,10 @@ int alex_tune_fc(int argc, char *argv[])
     }
 
     opt.calcDeviation();
-
-    if (!PAR(opt.commrec()))
+    
+    if (MASTER(opt.commrec()))
     {
-        if (MASTER(opt.commrec()))
-        {
-            opt.printResults(fp, (char *)"Before optimization", nullptr, nullptr, oenv, false);
-        }
+        opt.printResults(fp, (char *)"Before optimization", nullptr, nullptr, oenv, false);
     }
 
     opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,

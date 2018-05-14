@@ -292,8 +292,8 @@ void OptEEM::calcDeviation()
                                        gmx::square(qq - mymol.chargeQM(qtCM5)[i++]));
                     }                   
                 }
-                //increaseEnergy(ermsCHARGE,
-                //               gmx::square(qtot - mymol.molProp()->getCharge()));
+                increaseEnergy(ermsCHARGE,
+                               gmx::square(qtot - mymol.molProp()->getCharge()));
             }
             if (weight(ermsESP))
             {

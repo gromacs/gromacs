@@ -83,6 +83,26 @@ static int faculty(int n)
     }
 }
 
+/*
+  ref: Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971.
+*/
+static void hogervorstCombination(double  si,  double  ei,  double  gi,
+                                  double  sj,  double  ej,  double  gj,
+                                  double *sij, double *eij, double *gij)
+{
+    auto si6 = pow(si, 6);
+    auto sj6 = pow(sj, 6);
+    
+    auto Eij = 2.0*((ei*ej)/(ei + ej));
+    auto Gij = 0.5*(gi + gj);
+    auto A   = sqrt(((ei*gi*si6)/(gi - 6))*((ej*gj*sj6)/(gj - 6)));    
+    auto B   = (A*(Gij - 6))/(Eij*Gij);
+    
+    *eij = Eij;
+    *gij = Gij;    
+    *sij = pow(B , (1/6.0));
+}
+
 static double Coulomb_PP(double r)
 {
     if (r == 0)
@@ -116,6 +136,27 @@ static void lj(double r,
 
     *vr   = r_12;             /*  h(x)     Repulsion  */
     *fr   = 12.0*(*vr)/r;     /* -h'(x)               */
+}
+
+static void wbk(double r,   double eps, double sig,
+                double gam, double *vd, double *fd,
+                double *vr, double *fr)
+{
+    auto r2    = r*r;
+    auto r5    = r2*r2*r;
+    auto r6    = r5*r;
+    auto sig2  = sig*sig;
+    auto sig6  = sig2*sig2*sig2;
+    auto sig5  = sig2*sig2*sig;
+    auto A     = std::exp(gam*(1-(r/sig)));
+    auto B     = sig6 + r6;
+    auto C     = gam + 3;
+    
+    *vd        = -2*eps*(1.0/(1-(3.0/C))*(sig6/B));                          /*  g(c)     Dispersion */
+    *fd        = -2*eps*((6*C*r5*sig6)/(gam*(B*B)));                         /* -g'(x)               */
+    
+    *vr        = (2*eps*(1.0/(1-(3.0/C))*(sig6/B)))*((3.0/C)*A);             /*  h(x)     Repulsion  */            
+    *fr        = (6*A*eps*sig5*(gam*r6 + 6*r5*sig + gam*sig6))/(gam*(B*B));  /* -h'(x)               */    
 }
 
 
