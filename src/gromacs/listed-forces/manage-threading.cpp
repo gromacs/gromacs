@@ -66,8 +66,8 @@
 
 /*! \brief struct for passing all data required for a function type */
 typedef struct {
-    int      ftype; /**< the function type index */
     t_ilist *il;    /**< pointer to t_ilist entry corresponding to ftype */
+    int      ftype; /**< the function type index */
     int      nat;   /**< nr of atoms involved in a single ftype interaction */
 } ilist_data_t;
 
