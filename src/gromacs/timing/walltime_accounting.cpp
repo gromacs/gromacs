@@ -261,6 +261,12 @@ walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_acc
     return walltime_accounting->isValidFinish;
 }
 
+//! Return whether the counters were reset during the simulation.
+bool walltime_accounting_reset_done(gmx_walltime_accounting_t walltime_accounting)
+{
+    return walltime_accounting->nsteps_done_at_reset > 0;
+}
+
 static double
 gmx_gettime_per_thread()
 {
