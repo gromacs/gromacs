@@ -336,7 +336,7 @@ void do_force_lowlevel(t_forcerec           *fr,
                     idef, (const rvec *) x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                    DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr,
+                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                     flags);
 
 
