@@ -79,6 +79,7 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
     double                     minFail      = newRange.second;
     double                     maxFail      = newRange.first;
 
+    // NOLINTNEXTLINE(clang-analyzer-security.FloatLoopCounter)
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
         double analyticalDerivative = derivative(x);
@@ -193,6 +194,7 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
     double                     dx          = (newRange.second - newRange.first) / points;
     double                     minQuotient = GMX_REAL_MAX;
 
+    // NOLINTNEXTLINE(clang-analyzer-security.FloatLoopCounter)
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
         minQuotient = std::min(minQuotient, quotientOfFunctionAndSecondDerivative(f(x-h), f(x), f(x+h), h));
@@ -275,6 +277,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
     double                     dx          = (newRange.second - newRange.first) / points;
     double                     minQuotient = GMX_REAL_MAX;
 
+    // NOLINTNEXTLINE(clang-analyzer-security.FloatLoopCounter)
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
         minQuotient = std::min(minQuotient, quotientOfFunctionAndThirdDerivative(f(x-2*h), f(x-h), f(x), f(x+h), f(x+2*h), h));
