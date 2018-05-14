@@ -47,7 +47,10 @@
 
 #include <cstddef>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
@@ -134,15 +137,15 @@ struct gmx_domdec_t {
     /* Communication with the PME only nodes */
     int                    pme_nodeid;
     gmx_bool               pme_receive_vir_ener;
-    gmx_pme_comm_n_box_t  *cnb;
-    int                    nreq_pme;
+    gmx_pme_comm_n_box_t  *cnb = nullptr;
+    int                    nreq_pme = 0;
     MPI_Request            req_pme[8];
 
 
     /* The communication setup, identical for each cell, cartesian index */
     ivec     nc;
     int      ndim;
-    ivec     dim; /* indexed by 0 to ndim */
+    ivec     dim = { { 0 } }; /* indexed by 0 to ndim */
 
     /* PBC from dim 0 to npbcdim */
     int npbcdim;
@@ -154,7 +157,7 @@ struct gmx_domdec_t {
     int  neighbor[DIM][2];
 
     /* Only available on the master node */
-    AtomDistribution *ma;
+    std::unique_ptr<AtomDistribution> ma;
 
     /* Are there inter charge group constraints */
     gmx_bool bInterCGcons;
@@ -169,33 +172,31 @@ struct gmx_domdec_t {
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                *ga2la_vsite;
-    gmx_domdec_specat_comm_t  *vsite_comm;
+    gmx_hash_t                *ga2la_vsite = nullptr;
+    gmx_domdec_specat_comm_t  *vsite_comm = nullptr;
 
     /* Constraint stuff */
-    gmx_domdec_constraints_t *constraints;
-    gmx_domdec_specat_comm_t *constraint_comm;
+    gmx_domdec_constraints_t *constraints = nullptr;
+    gmx_domdec_specat_comm_t *constraint_comm = nullptr;
 
     /* The local to gobal charge group index and local cg to local atom index */
-    int   ncg_home;
-    int   ncg_tot;
-    int  *index_gl;
-    int  *cgindex;
-    int   cg_nalloc;
-    /* Local atom to local cg index, only for special cases */
-    int  *la2lc;
-    int   la2lc_nalloc;
+    int              ncg_home = 0;
+    std::vector<int> globalAtomGroupIndices;
+    gmx::BlockRanges atomGroups_;
+    const gmx::BlockRanges &atomGroups() const
+    {
+        return atomGroups_;
+    }
+    /* Local atom to local atom-group index, only for special cases */
+    std::vector<int> localAtomGroupFromAtom;
 
     /* The number of home atoms */
-    int   nat_home;
-    /* The total number of atoms: home and received zones */
-    int   nat_tot;
-    /* Index from the local atoms to the global atoms */
-    int  *gatindex;
-    int   gatindex_nalloc;
+    int   nat_home = 0;
+    /* Index from the local atoms to the global atoms, covers home and received zones */
+    std::vector<int> globalAtomIndices;
 
     /* Global atom number to local atom number list */
-    gmx_ga2la_t  *ga2la;
+    gmx_ga2la_t  *ga2la = nullptr;
 
     /* Communication stuff */
     gmx_domdec_comm_t *comm;
@@ -205,9 +206,8 @@ struct gmx_domdec_t {
 
 
     /* gmx_pme_recv_f buffer */
-    int   pme_recv_f_alloc;
-    rvec *pme_recv_f_buf;
-
+    int   pme_recv_f_alloc = 0;
+    rvec *pme_recv_f_buf   = nullptr;
 };
 
 #endif
