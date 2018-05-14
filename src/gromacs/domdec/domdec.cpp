@@ -547,7 +547,7 @@ void dd_move_f(gmx_domdec_t             *dd,
             {
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
-                assert(NULL != fshift);
+                assert(nullptr != fshift);
                 for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
@@ -1428,11 +1428,15 @@ NumPmeDomains getNumPmeDomains(const gmx_domdec_t *dd)
 {
     if (dd != nullptr)
     {
-        return { dd->comm->npmenodes_x, dd->comm->npmenodes_y };
+        return {
+                   dd->comm->npmenodes_x, dd->comm->npmenodes_y
+        };
     }
     else
     {
-        return { 1, 1 };
+        return {
+                   1, 1
+        };
     }
 }
 

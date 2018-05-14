@@ -743,7 +743,7 @@ void setStateDependentAwhParams(AwhParams *awhParams,
      * when read_awhParams is called (in get ir).
      * It is known first after do_index has been called in grompp.cpp.
      */
-    if (inputrecGroupOptions->ref_t == NULL ||
+    if (inputrecGroupOptions->ref_t == nullptr ||
         inputrecGroupOptions->ref_t[0] <= 0)
     {
         gmx_fatal(FARGS, "AWH biasing is only supported for temperatures > 0");

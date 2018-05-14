@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ void output_env_init(gmx_output_env_t **oenvp,
         oenv->xvg_format  = xvg_format;
         oenv->verbosity   = verbosity;
         const char *env = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
-        oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, NULL, 10) : 1);
+        oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, nullptr, 10) : 1);
 
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

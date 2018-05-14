@@ -799,7 +799,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                     maxentries += 1024;
                     srenew(b->a, maxentries);
                 }
-                assert(b->a != NULL); // for clang analyzer
+                assert(b->a != nullptr); // for clang analyzer
                 b->a[i] = strtol(str, nullptr, 10)-1;
                 b->index[b->nr]++;
                 (b->nra)++;
@@ -811,7 +811,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 
     for (i = 0; (i < b->nr); i++)
     {
-        assert(b->a != NULL); // for clang analyzer
+        assert(b->a != nullptr); // for clang analyzer
         for (j = b->index[i]; (j < b->index[i+1]); j++)
         {
             if (b->a[j] < 0)

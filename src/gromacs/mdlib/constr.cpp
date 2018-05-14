@@ -156,7 +156,7 @@ class Constraints::Impl
         gmx_edsam_t           ed = nullptr;
 
         //! Thread-local virial contribution.
-        tensor            *vir_r_m_dr_th = {0};
+        tensor            *vir_r_m_dr_th = {nullptr};
         //! Did a settle error occur?
         bool              *bSettleErrorHasOccurred = nullptr;
 
