@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,27 +114,27 @@ dd_sendrecv2_rvec(const struct gmx_domdec_t *dd,
 
 /*! \brief Broadcasts \p nbytes from \p data on \p DDMASTERRANK to all PP ranks */
 void
-dd_bcast(struct gmx_domdec_t *dd, int nbytes, void *data);
+dd_bcast(const struct gmx_domdec_t *dd, int nbytes, void *data);
 
 /*! \brief Copies \p nbytes from \p src to \p dest on \p DDMASTERRANK
  * and then broadcasts to \p dest on all PP ranks */
 void
-dd_bcastc(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
+dd_bcastc(const struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
 
 /*! \brief Scatters \p nbytes from \p src on \p DDMASTERRANK to all PP ranks, received in \p dest */
 void
-dd_scatter(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
+dd_scatter(const struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
 
 /*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMASTERRANK */
 void
-dd_gather(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
+dd_gather(const struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
 
 /*! \brief Scatters \p scounts bytes from \p src on \p DDMASTERRANK to all PP ranks, receiving \p rcount bytes in \p dest.
  *
  * See man MPI_Scatterv for details of how to construct scounts and disps.
  * If rcount==0, rbuf is allowed to be NULL */
 void
-dd_scatterv(struct gmx_domdec_t *dd,
+dd_scatterv(const struct gmx_domdec_t *dd,
             int *scounts, int *disps, const void *sbuf,
             int rcount, void *rbuf);
 
@@ -144,7 +144,7 @@ dd_scatterv(struct gmx_domdec_t *dd,
  *
  * If scount==0, sbuf is allowed to be NULL */
 void
-dd_gatherv(struct gmx_domdec_t *dd,
+dd_gatherv(const struct gmx_domdec_t *dd,
            int scount, const void *sbuf,
            int *rcounts, int *disps, void *rbuf);
 

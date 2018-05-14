@@ -1050,6 +1050,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         /* Calculate the average structure in each cluster,               *
          * all structures are fitted to the first struture of the cluster */
         snew(xav, natom);
+        GMX_ASSERT(xav, "");
     }
 
     if (transfn || ntransfn)

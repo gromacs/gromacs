@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,14 +225,14 @@ void linearGridindexToMultiDim(const Grid &grid,
                                int         indexLinear,
                                awh_ivec    indexMulti)
 {
-    awh_ivec numPointsDim;
-
-    for (int d = 0; d < grid.numDimensions(); d++)
+    awh_ivec  numPointsDim;
+    const int numDimensions = grid.numDimensions();
+    for (int d = 0; d < numDimensions; d++)
     {
         numPointsDim[d] = grid.axis(d).numPoints();
     }
 
-    linearArrayIndexToMultiDim(indexLinear, grid.numDimensions(), numPointsDim, indexMulti);
+    linearArrayIndexToMultiDim(indexLinear, numDimensions, numPointsDim, indexMulti);
 }
 
 

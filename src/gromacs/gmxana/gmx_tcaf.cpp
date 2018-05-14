@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,11 +67,11 @@
 
 #define NKC  6
 #define NKC0 4
-int  kset_c[NKC+1] = { 0, 3, 9, 13, 16, 19, NK };
+static const int  kset_c[NKC+1] = { 0, 3, 9, 13, 16, 19, NK };
 
-rvec v0[NK] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, -1, 0}, {1, 0, 1}, {1, 0, -1}, {0, 1, 1}, {0, 1, -1}, {1, 1, 1}, {1, 1, -1}, {1, -1, 1}, {-1, 1, 1}, {2, 0, 0}, {0, 2, 0}, {0, 0, 2}, {3, 0, 0}, {0, 3, 0}, {0, 0, 3}, {4, 0, 0}, {0, 4, 0}, {0, 0, 4}};
-rvec v1[NK] = {{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 0, 1}, {0, 0, 1}, {0, 1, 0}, {0, 1, 0}, {1, 0, 0}, {1, 0, 0}, {1, -1, 0}, {1, -1, 0}, {1, 0, -1}, { 0, 1, -1}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}};
-rvec v2[NK] = {{0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {1, -1, 0}, {1, 1, 0}, {1, 0, -1}, {1, 0, 1}, {0, 1, -1}, {0, 1, 1}, {1, 1, -2}, {1, 1, 2}, {1, 2, 1}, { 2, 1, 1}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}};
+rvec              v0[NK] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, -1, 0}, {1, 0, 1}, {1, 0, -1}, {0, 1, 1}, {0, 1, -1}, {1, 1, 1}, {1, 1, -1}, {1, -1, 1}, {-1, 1, 1}, {2, 0, 0}, {0, 2, 0}, {0, 0, 2}, {3, 0, 0}, {0, 3, 0}, {0, 0, 3}, {4, 0, 0}, {0, 4, 0}, {0, 0, 4}};
+rvec              v1[NK] = {{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 0, 1}, {0, 0, 1}, {0, 1, 0}, {0, 1, 0}, {1, 0, 0}, {1, 0, 0}, {1, -1, 0}, {1, -1, 0}, {1, 0, -1}, { 0, 1, -1}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}};
+rvec              v2[NK] = {{0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {1, -1, 0}, {1, 1, 0}, {1, 0, -1}, {1, 0, 1}, {0, 1, -1}, {0, 1, 1}, {1, 1, -2}, {1, 1, 2}, {1, 2, 1}, { 2, 1, 1}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}};
 
 static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                          real rho, real wt, const char *fn_trans,
@@ -369,6 +369,7 @@ int gmx_tcaf(int argc, char *argv[])
         nkc = NKC0;
     }
     nk  = kset_c[nkc];
+    GMX_ASSERT(nk >= 16, "");
     ntc = nk*NPK;
 
     sprintf(title, "Velocity Autocorrelation Function for %s", grpname);
