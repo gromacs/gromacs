@@ -75,7 +75,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
             for (zi = 0; zi < dd_zones->n; zi++)
             {
-                ca1[zi] = dd->cgindex[dd_zones->cg_range[zi+1]];
+                ca1[zi] = dd->atomGroups().index[dd_zones->cg_range[zi + 1]];
             }
             i = 0;
             for (zi = 0; zi < dd_zones->nizone && zi < dd_zones->n; zi++)
