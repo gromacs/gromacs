@@ -77,7 +77,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     if (usingDomDec)
     {
         numAtomIndex = dd_natoms_mdatoms(cr->dd);
-        atomIndex    = cr->dd->gatindex;
+        atomIndex    = cr->dd->globalAtomIndices.data();
         numHomeAtoms = cr->dd->nat_home;
     }
     else
