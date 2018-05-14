@@ -587,7 +587,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
            we call this routine... */
         if (!cur->bRead && cur->iFTP != efCPT)
         {
-            outputfiles.push_back(gmx_file_position_t {});
+            outputfiles.emplace_back();
 
             std::strncpy(outputfiles.back().filename, cur->fn, STRLEN - 1);
 

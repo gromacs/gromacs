@@ -127,19 +127,19 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     std::list<std::string> errorReasons;
     if (!EEL_PME(ir->coulombtype))
     {
-        errorReasons.push_back("systems that do not use PME for electrostatics");
+        errorReasons.emplace_back("systems that do not use PME for electrostatics");
     }
     if (ir->pme_order != 4)
     {
-        errorReasons.push_back("interpolation orders other than 4");
+        errorReasons.emplace_back("interpolation orders other than 4");
     }
     if (ir->efep != efepNO)
     {
-        errorReasons.push_back("free energy calculations (multiple grids)");
+        errorReasons.emplace_back("free energy calculations (multiple grids)");
     }
     if (EVDW_PME(ir->vdwtype))
     {
-        errorReasons.push_back("Lennard-Jones PME");
+        errorReasons.emplace_back("Lennard-Jones PME");
     }
 #if GMX_DOUBLE
     {
@@ -148,16 +148,16 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
 #endif
 #if GMX_GPU != GMX_GPU_CUDA
     {
-        errorReasons.push_back("non-CUDA build of GROMACS");
+        errorReasons.emplace_back("non-CUDA build of GROMACS");
     }
 #endif
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        errorReasons.push_back("group cutoff scheme");
+        errorReasons.emplace_back("group cutoff scheme");
     }
     if (EI_TPI(ir->eI))
     {
-        errorReasons.push_back("test particle insertion");
+        errorReasons.emplace_back("test particle insertion");
     }
 
     bool inputSupported = errorReasons.empty();
@@ -184,19 +184,19 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
     std::list<std::string> errorReasons;
     if (pme->nnodes != 1)
     {
-        errorReasons.push_back("PME decomposition");
+        errorReasons.emplace_back("PME decomposition");
     }
     if (pme->pme_order != 4)
     {
-        errorReasons.push_back("interpolation orders other than 4");
+        errorReasons.emplace_back("interpolation orders other than 4");
     }
     if (pme->bFEP)
     {
-        errorReasons.push_back("free energy calculations (multiple grids)");
+        errorReasons.emplace_back("free energy calculations (multiple grids)");
     }
     if (pme->doLJ)
     {
-        errorReasons.push_back("Lennard-Jones PME");
+        errorReasons.emplace_back("Lennard-Jones PME");
     }
 #if GMX_DOUBLE
     {
@@ -205,7 +205,7 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
 #endif
 #if GMX_GPU != GMX_GPU_CUDA
     {
-        errorReasons.push_back("non-CUDA build of GROMACS");
+        errorReasons.emplace_back("non-CUDA build of GROMACS");
     }
 #endif
 

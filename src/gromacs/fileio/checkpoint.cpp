@@ -1938,7 +1938,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
-        (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), NULL) < 0) ||
+        (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
@@ -2309,7 +2309,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         state->awhHistory = std::shared_ptr<gmx::AwhHistory>(new gmx::AwhHistory());
     }
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
-                     headerContents->flags_awhh, state->awhHistory.get(), NULL);
+                     headerContents->flags_awhh, state->awhHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2597,7 +2597,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
-                     headerContents.flags_awhh, state->awhHistory.get(), NULL);
+                     headerContents.flags_awhh, state->awhHistory.get(), nullptr);
     if (ret)
     {
         cp_error();

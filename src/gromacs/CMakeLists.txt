@@ -43,8 +43,10 @@ set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libgromacs_external OBJECT "")
+add_library(libgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
+    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
 endif()
 
 function (_gmx_add_files_to_property PROPERTY)
@@ -162,7 +164,8 @@ gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libgromacs_external>)
+     $<TARGET_OBJECTS:libgromacs_external>
+     $<TARGET_OBJECTS:libgromacs_generated>)
 
 # set up CUDA compilation with clang
 if (GMX_CLANG_CUDA)
@@ -233,7 +236,7 @@ if (GMX_CLANG_TIDY)
    if(CMAKE_VERSION VERSION_LESS "3.6")
        message(ERROR "clang-tidy support requires cmake 3.6.")
    endif()
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy;-warnings-as-errors=*")
+   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy,modernize-use-nullptr,modernize-use-emplace;-warnings-as-errors=*;-fix")
 endif()
 
 gmx_write_installed_header_list()

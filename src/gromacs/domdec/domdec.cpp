@@ -589,7 +589,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
             {
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
-                assert(NULL != fshift);
+                assert(nullptr != fshift);
                 for (i = 0; i < ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];

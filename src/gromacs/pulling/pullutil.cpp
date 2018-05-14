@@ -626,7 +626,7 @@ void pull_calc_coms(const t_commrec *cr,
                     pgrp->nat_loc == 1 &&
                     md->massT[pgrp->ind_loc[0]] == 0)
                 {
-                    GMX_ASSERT(xp == NULL, "We should not have groups with zero mass with constraints, i.e. xp!=NULL");
+                    GMX_ASSERT(xp == nullptr, "We should not have groups with zero mass with constraints, i.e. xp!=NULL");
 
                     /* Copy the single atom coordinate */
                     for (int d = 0; d < DIM; d++)
