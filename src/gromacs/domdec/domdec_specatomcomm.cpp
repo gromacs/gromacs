@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -531,16 +531,11 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             }
             nrecv_local += buf[0];
             spas->nrecv  = buf[1];
-            if (nat_tot_specat + spas->nrecv > dd->gatindex_nalloc)
-            {
-                dd->gatindex_nalloc =
-                    over_alloc_dd(nat_tot_specat + spas->nrecv);
-                srenew(dd->gatindex, dd->gatindex_nalloc);
-            }
+            dd->globalAtomIndices.resize(nat_tot_specat + spas->nrecv);
             /* Send and receive the indices */
             dd_sendrecv_int(dd, d, dir == 0 ? dddirBackward : dddirForward,
                             spac->ibuf, spas->nsend,
-                            dd->gatindex+nat_tot_specat, spas->nrecv);
+                            dd->globalAtomIndices.data() + nat_tot_specat, spas->nrecv);
             nat_tot_specat += spas->nrecv;
         }
 
@@ -566,7 +561,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         /* Make a global to local index for the communication atoms */
         for (i = nat_tot_prev; i < nat_tot_specat; i++)
         {
-            gmx_hash_change_or_set(ga2la_specat, dd->gatindex[i], i);
+            gmx_hash_change_or_set(ga2la_specat, dd->globalAtomIndices[i], i);
         }
     }
 
