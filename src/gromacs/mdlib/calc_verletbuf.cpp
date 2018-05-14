@@ -896,7 +896,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     particle_distance = std::cbrt(boxvol*std::sqrt(2)/mtop->natoms);
 
     get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
-    assert(att != NULL && natt >= 0);
+    assert(att != nullptr && natt >= 0);
 
     if (debug)
     {

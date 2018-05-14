@@ -91,7 +91,7 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    GMX_ASSERT(pr->nr != 0 || pr->param == NULL, "Invalid t_params object");
+    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid t_params object");
     if (pr->nr+extra > pr->maxnr)
     {
         pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);

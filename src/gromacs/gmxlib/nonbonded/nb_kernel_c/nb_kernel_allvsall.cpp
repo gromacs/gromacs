@@ -286,7 +286,7 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     Vc                  = kernel_data->energygrp_elec;
     Vvdw                = kernel_data->energygrp_vdw;
 
-    if (aadata == NULL)
+    if (aadata == nullptr)
     {
         setup_aadata(&aadata, excl, natoms, type, fr->ntype, fr->nbfp);
         fr->AllvsAll_work  = aadata;

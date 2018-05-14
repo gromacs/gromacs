@@ -287,7 +287,8 @@ if (GMX_CLANG_TIDY)
        -misc-misplaced-const,\
        -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
        -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\
-       -readability-non-const-parameter,-readability-implicit-bool-conversion;-warnings-as-errors=*;-fix")
+       -readability-non-const-parameter,-readability-implicit-bool-conversion,\
+       modernize-use-nullptr,modernize-use-emplace;-warnings-as-errors=*;-fix")
 endif()
 
 gmx_write_installed_header_list()

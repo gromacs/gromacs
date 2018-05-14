@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -405,7 +405,7 @@ setDynamicPairlistPruningParameters(const t_inputrec             *ir,
         listParams->nstlistPrune = tunedNstlistPrune;
         calc_verlet_buffer_size(mtop, det(box), ir,
                                 tunedNstlistPrune, listLifetime,
-                                -1, &listSetup, NULL,
+                                -1, &listSetup, nullptr,
                                 &listParams->rlistInner);
 
         /* On the GPU we apply the dynamic pruning in a rolling fashion
@@ -498,14 +498,14 @@ void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
     const bool useGpu             = (nbnxnKernelType == nbnxnk8x8x8_GPU);
 
     if (supportsDynamicPairlistGenerationInterval(*ir) &&
-        getenv("GMX_DISABLE_DYNAMICPRUNING") == NULL)
+        getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
     {
         /* Note that nstlistPrune can have any value independently of nstlist.
          * Actually applying rolling pruning is only useful when
          * nstlistPrune < nstlist -1
          */
         char *env                 = getenv("GMX_NSTLIST_DYNAMICPRUNING");
-        bool  userSetNstlistPrune = (env != NULL);
+        bool  userSetNstlistPrune = (env != nullptr);
 
         if (userSetNstlistPrune)
         {

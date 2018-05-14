@@ -537,7 +537,7 @@ void dd_move_f(gmx_domdec_t             *dd,
             {
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
-                assert(NULL != fshift);
+                assert(nullptr != fshift);
                 for (int g : ind.index)
                 {
                     for (int j : atomGrouping.block(g))
