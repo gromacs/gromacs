@@ -674,6 +674,7 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
     real     d, dp;
     rvec     dx, dv;
 
+    GMX_ASSERT(v, "Input has to be non-null");
     fprintf(log,
             "    i     mi      j     mj      before       after   should be\n");
     ia = iatom;

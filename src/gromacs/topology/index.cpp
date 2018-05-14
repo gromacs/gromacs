@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,10 +343,10 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
 }
 
 /*! \brief
- * Cata necessary to construct a single (protein) index group in
+ * Data necessary to construct a single (protein) index group in
  * analyse_prot().
  */
-typedef struct gmx_help_make_index_group
+typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /** The set of atom names that will be used to form this index group */
     const char **defining_atomnames;
