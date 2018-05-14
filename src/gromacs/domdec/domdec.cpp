@@ -2979,35 +2979,23 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 #endif
 }
 
-static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
-                                                     int ncg, int natoms)
+static int numRanks(const ivec numCells)
 {
-    gmx_domdec_master_t *ma;
-    int                  i;
+    return numCells[XX]*numCells[YY]*numCells[ZZ];
+}
 
-    snew(ma, 1);
-
-    snew(ma->ncg, dd->nnodes);
-    snew(ma->index, dd->nnodes+1);
-    snew(ma->cg, ncg);
-    snew(ma->nat, dd->nnodes);
-    snew(ma->ibuf, dd->nnodes*2);
-    snew(ma->cell_x, DIM);
-    for (i = 0; i < DIM; i++)
+AtomGroupDistribution::AtomGroupDistribution(const ivec numCells,
+                                             int        numAtomGroups,
+                                             int        numAtoms) :
+    domainGroups(numRanks(numCells)),
+    atomGroups(numAtomGroups),
+    intBuffer(2*numRanks(numCells)),
+    rvecBuffer(numRanks(numCells) > c_maxNumRanksUseSendRecvForScatterAndGather ? numAtoms : 0)
+{
+    for (int d = 0; d < DIM; d++)
     {
-        snew(ma->cell_x[i], dd->nc[i]+1);
+        cellSizesBuffer[d].resize(numCells[d] + 1);
     }
-
-    if (dd->nnodes <= c_maxNumRanksUseSendRecvForScatterAndGather)
-    {
-        ma->vbuf = nullptr;
-    }
-    else
-    {
-        snew(ma->vbuf, natoms);
-    }
-
-    return ma;
 }
 
 static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
@@ -3232,9 +3220,9 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
 
     if (DDMASTER(dd))
     {
-        dd->ma = init_gmx_domdec_master_t(dd,
-                                          comm->cgs_gl.nr,
-                                          comm->cgs_gl.index[comm->cgs_gl.nr]);
+        dd->ma = new AtomGroupDistribution(dd->nc,
+                                           comm->cgs_gl.nr,
+                                           comm->cgs_gl.index[comm->cgs_gl.nr]);
     }
 }
 

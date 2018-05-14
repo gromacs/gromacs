@@ -43,8 +43,11 @@
 #ifndef GMX_DOMDEC_DOMDEC_CELLSIZES_H
 #define GMX_DOMDEC_DOMDEC_CELLSIZES_H
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_ddbox_t;
 struct gmx_domdec_comm_t;
@@ -63,9 +66,17 @@ real grid_jump_limit(const gmx_domdec_comm_t *comm,
                      real                     cutoff,
                      int                      dim_ind);
 
-/*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing */
-void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
-                           int setmode, ivec npulse);
+/*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing
+ *
+ * The number of communication pulses per dimension is returned in numPulses.
+ * When setmode==setcellsizeslbMASTER, the cell boundaries per dimension are
+ * returned, otherwise an empty arrayref is returned.
+ */
+gmx::ArrayRef<const std::vector<real>>
+set_dd_cell_sizes_slb(gmx_domdec_t      *dd,
+                      const gmx_ddbox_t *ddbox,
+                      int                setmode,
+                      ivec               numPulses);
 
 /*! \brief General cell size adjustment, possibly applying dynamic load balancing */
 void set_dd_cell_sizes(gmx_domdec_t *dd,

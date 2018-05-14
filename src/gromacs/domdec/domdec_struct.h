@@ -37,6 +37,7 @@
 /*! \libinternal \file
  * \brief Declares structures related to domain decomposition.
  *
+ * \author Berk Hess <hess@kth.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inlibraryapi
  * \ingroup module_domdec
@@ -58,9 +59,9 @@
 //! Are we the master node for domain decomposition
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
+struct AtomGroupDistribution;
 struct gmx_domdec_comm_t;
 struct gmx_domdec_constraints_t;
-struct gmx_domdec_master_t;
 struct gmx_domdec_specat_comm_t;
 struct gmx_ga2la_t;
 struct gmx_hash_t;
@@ -153,7 +154,7 @@ struct gmx_domdec_t {
     int  neighbor[DIM][2];
 
     /* Only available on the master node */
-    gmx_domdec_master_t *ma;
+    AtomGroupDistribution *ma;
 
     /* Are there inter charge group constraints */
     gmx_bool bInterCGcons;

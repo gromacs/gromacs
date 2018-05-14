@@ -58,39 +58,33 @@
 static void dd_collect_cg(gmx_domdec_t  *dd,
                           const t_state *state_local)
 {
-    gmx_domdec_master_t *ma = nullptr;
-    int                  buf2[2], *ibuf, i, ncg_home = 0, nat_home = 0;
-
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
         /* The master has the correct distribution */
         return;
     }
 
-    const int *cg;
+    gmx::ArrayRef<const int> atomGroups;
+    int                      nat_home = 0;
 
     if (state_local->ddp_count == dd->ddp_count)
     {
         /* The local state and DD are in sync, use the DD indices */
-        ncg_home = dd->ncg_home;
-        cg       = dd->index_gl;
-        nat_home = dd->nat_home;
+        atomGroups = gmx::constArrayRefFromArray(dd->index_gl, dd->ncg_home);
+        nat_home   = dd->nat_home;
     }
     else if (state_local->ddp_count_cg_gl == state_local->ddp_count)
     {
         /* The DD is out of sync with the local state, but we have stored
          * the cg indices with the local state, so we can use those.
          */
-        t_block *cgs_gl;
+        const t_block &cgs_gl = dd->comm->cgs_gl;
 
-        cgs_gl = &dd->comm->cgs_gl;
-
-        ncg_home = state_local->cg_gl.size();
-        cg       = state_local->cg_gl.data();
-        nat_home = 0;
-        for (i = 0; i < ncg_home; i++)
+        atomGroups = state_local->cg_gl;
+        nat_home   = 0;
+        for (const int &i : atomGroups)
         {
-            nat_home += cgs_gl->index[cg[i]+1] - cgs_gl->index[cg[i]];
+            nat_home += cgs_gl.index[i + 1] - cgs_gl.index[i];
         }
     }
     else
@@ -98,53 +92,55 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
         gmx_incons("Attempted to collect a vector for a state for which the charge group distribution is unknown");
     }
 
-    buf2[0] = ncg_home;
-    buf2[1] = nat_home;
-    if (DDMASTER(dd))
-    {
-        ma   = dd->ma;
-        ibuf = ma->ibuf;
-    }
-    else
-    {
-        ibuf = nullptr;
-    }
+    AtomGroupDistribution *ma = dd->ma;
+
     /* Collect the charge group and atom counts on the master */
-    dd_gather(dd, 2*sizeof(int), buf2, ibuf);
+    int localBuffer[2] = { static_cast<int>(atomGroups.size()), nat_home };
+    dd_gather(dd, 2*sizeof(int), localBuffer,
+              DDMASTER(dd) ? ma->intBuffer.data() : nullptr);
 
     if (DDMASTER(dd))
     {
-        ma->index[0] = 0;
-        for (i = 0; i < dd->nnodes; i++)
+        int groupOffset = 0;
+        for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            ma->ncg[i]     = ma->ibuf[2*i];
-            ma->nat[i]     = ma->ibuf[2*i+1];
-            ma->index[i+1] = ma->index[i] + ma->ncg[i];
+            auto &domainGroups       = ma->domainGroups[rank];
+            int   numGroups          = ma->intBuffer[2*rank];
 
+            domainGroups.atomGroups  = gmx::constArrayRefFromArray(ma->atomGroups.data() + groupOffset, numGroups);
+
+            domainGroups.numAtoms    = ma->intBuffer[2*rank + 1];
+
+            groupOffset             += numGroups;
         }
-        /* Make byte counts and indices */
-        for (i = 0; i < dd->nnodes; i++)
-        {
-            ma->ibuf[i]            = ma->ncg[i]*sizeof(int);
-            ma->ibuf[dd->nnodes+i] = ma->index[i]*sizeof(int);
-        }
+
         if (debug)
         {
             fprintf(debug, "Initial charge group distribution: ");
-            for (i = 0; i < dd->nnodes; i++)
+            for (int rank = 0; rank < dd->nnodes; rank++)
             {
-                fprintf(debug, " %d", ma->ncg[i]);
+                fprintf(debug, " %zu", ma->domainGroups[rank].atomGroups.size());
             }
             fprintf(debug, "\n");
+        }
+
+        /* Make byte counts and indices */
+        int offset = 0;
+        for (int rank = 0; rank < dd->nnodes; rank++)
+        {
+            int numGroups                     = ma->domainGroups[rank].atomGroups.size();
+            ma->intBuffer[rank]               = numGroups*sizeof(int);
+            ma->intBuffer[dd->nnodes + rank]  = offset*sizeof(int);
+            offset                           += numGroups;
         }
     }
 
     /* Collect the charge group indices on the master */
     dd_gatherv(dd,
-               ncg_home*sizeof(int), cg,
-               DDMASTER(dd) ? ma->ibuf : nullptr,
-               DDMASTER(dd) ? ma->ibuf+dd->nnodes : nullptr,
-               DDMASTER(dd) ? ma->cg : nullptr);
+               atomGroups.size()*sizeof(int), atomGroups.data(),
+               DDMASTER(dd) ? ma->intBuffer.data() : nullptr,
+               DDMASTER(dd) ? ma->intBuffer.data() + dd->nnodes : nullptr,
+               DDMASTER(dd) ? ma->atomGroups.data() : nullptr);
 
     dd->comm->master_cg_ddp_count = state_local->ddp_count;
 }
@@ -153,12 +149,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                                     gmx::ArrayRef<const gmx::RVec> lv,
                                     gmx::ArrayRef<gmx::RVec>       v)
 {
-    gmx_domdec_master_t *ma;
-    int                  n, i, c, a, nalloc = 0;
-    rvec                *buf = nullptr;
-    t_block             *cgs_gl;
-
-    ma = dd->ma;
+    AtomGroupDistribution *ma = dd->ma;
 
     if (!DDMASTER(dd))
     {
@@ -170,42 +161,48 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     else
     {
         /* Copy the master coordinates to the global array */
-        cgs_gl = &dd->comm->cgs_gl;
+        const t_block &cgs_gl    = dd->comm->cgs_gl;
 
-        n = dd->masterrank;
-        a = 0;
-        for (i = ma->index[n]; i < ma->index[n+1]; i++)
+        int            rank      = dd->masterrank;
+        int            localAtom = 0;
+        for (const int &i : ma->domainGroups[rank].atomGroups)
         {
-            for (c = cgs_gl->index[ma->cg[i]]; c < cgs_gl->index[ma->cg[i]+1]; c++)
+            for (int globalAtom = cgs_gl.index[i]; globalAtom < cgs_gl.index[i + 1]; globalAtom++)
             {
-                copy_rvec(lv[a++], v[c]);
+                copy_rvec(lv[localAtom++], v[globalAtom]);
             }
         }
 
-        for (n = 0; n < dd->nnodes; n++)
+        for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            if (n != dd->rank)
+            if (rank != dd->rank)
             {
-                if (ma->nat[n] > nalloc)
+                const auto &domainGroups = ma->domainGroups[rank];
+
+                GMX_RELEASE_ASSERT(v.data() != ma->rvecBuffer.data(), "We need different communication and return buffers");
+
+                /* When we send/recv instead of scatter/gather, we might need
+                 * to increase the communication buffer size here.
+                 */
+                if (static_cast<size_t>(domainGroups.numAtoms) > ma->rvecBuffer.size())
                 {
-                    nalloc = over_alloc_dd(ma->nat[n]);
-                    srenew(buf, nalloc);
+                    ma->rvecBuffer.resize(domainGroups.numAtoms);
                 }
+
 #if GMX_MPI
-                MPI_Recv(buf, ma->nat[n]*sizeof(rvec), MPI_BYTE, n,
-                         n, dd->mpi_comm_all, MPI_STATUS_IGNORE);
+                MPI_Recv(ma->rvecBuffer.data(), domainGroups.numAtoms*sizeof(rvec), MPI_BYTE, rank,
+                         rank, dd->mpi_comm_all, MPI_STATUS_IGNORE);
 #endif
-                a = 0;
-                for (i = ma->index[n]; i < ma->index[n+1]; i++)
+                int localAtom = 0;
+                for (const int &cg : domainGroups.atomGroups)
                 {
-                    for (c = cgs_gl->index[ma->cg[i]]; c < cgs_gl->index[ma->cg[i]+1]; c++)
+                    for (int globalAtom = cgs_gl.index[cg]; globalAtom < cgs_gl.index[cg + 1]; globalAtom++)
                     {
-                        copy_rvec(buf[a++], v[c]);
+                        copy_rvec(ma->rvecBuffer[localAtom++], v[globalAtom]);
                     }
                 }
             }
         }
-        sfree(buf);
     }
 }
 
@@ -213,35 +210,32 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
                                    gmx::ArrayRef<const gmx::RVec> lv,
                                    gmx::ArrayRef<gmx::RVec>       v)
 {
-    gmx_domdec_master_t *ma;
-    int                 *rcounts = nullptr, *disps = nullptr;
-    int                  n, i, c, a;
-    rvec                *buf = nullptr;
-    t_block             *cgs_gl;
-
-    ma = dd->ma;
+    int *recvCounts    = nullptr;
+    int *displacements = nullptr;
 
     if (DDMASTER(dd))
     {
-        get_commbuffer_counts(dd, &rcounts, &disps);
-
-        buf = ma->vbuf;
+        get_commbuffer_counts(dd, &recvCounts, &displacements);
     }
 
-    dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), rcounts, disps, buf);
+    dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), recvCounts, displacements,
+               DDMASTER(dd) ? dd->ma->rvecBuffer.data() : nullptr);
 
     if (DDMASTER(dd))
     {
-        cgs_gl = &dd->comm->cgs_gl;
+        const AtomGroupDistribution &ma     = *dd->ma;
 
-        a = 0;
-        for (n = 0; n < dd->nnodes; n++)
+        const t_block               &cgs_gl = dd->comm->cgs_gl;
+
+        int bufferAtom = 0;
+        for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            for (i = ma->index[n]; i < ma->index[n+1]; i++)
+            const auto &domainGroups = ma.domainGroups[rank];
+            for (const int &cg : domainGroups.atomGroups)
             {
-                for (c = cgs_gl->index[ma->cg[i]]; c < cgs_gl->index[ma->cg[i]+1]; c++)
+                for (int globalAtom = cgs_gl.index[cg]; globalAtom < cgs_gl.index[cg + 1]; globalAtom++)
                 {
-                    copy_rvec(buf[a++], v[c]);
+                    copy_rvec(ma.rvecBuffer[bufferAtom++], v[globalAtom]);
                 }
             }
         }
