@@ -117,6 +117,8 @@ walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounti
 bool
 walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_accounting);
 
+bool walltime_accounting_reset_done(gmx_walltime_accounting_t walltime_accounting);
+
 /*! \brief
  * Calls system timing routines (e.g. clock_gettime) to get the (fractional)
  * number of seconds elapsed since the epoch.
