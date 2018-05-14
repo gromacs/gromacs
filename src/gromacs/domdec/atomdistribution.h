@@ -34,54 +34,53 @@
  */
 /*! \internal \file
  *
- * \brief Declares DD cell-size related functions.
+ * \brief Declares the AtomDistribution struct.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_domdec
  */
+#ifndef GMX_DOMDEC_ATOMDISTRIBUTION_H
+#define GMX_DOMDEC_ATOMDISTRIBUTION_H
 
-#ifndef GMX_DOMDEC_DOMDEC_CELLSIZES_H
-#define GMX_DOMDEC_DOMDEC_CELLSIZES_H
-
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_ddbox_t;
-struct gmx_domdec_comm_t;
-struct gmx_domdec_t;
-
-/*! \brief Options for setting up a regular, possibly static load balanced, cell grid geometry */
-enum
+/*! \internal
+ * \brief Distribution of atom groups over the domain (only available on the master rank)
+ */
+struct AtomDistribution
 {
-    setcellsizeslbLOCAL,      //!< Set cell sizes locally on each rank
-    setcellsizeslbMASTER,     //!< Set cell sizes on master rank only
-    setcellsizeslbPULSE_ONLY  //!< Only set the communication pulses, not the cell sizes
+    /*! \brief Collection of local group and atom counts for a domain */
+    struct DomainAtomGroups
+    {
+        gmx::ArrayRef<const int> atomGroups;  /**< List of our atom groups */
+        int                      numAtoms;    /**< Our number of local atoms */
+    };
+
+    /*! \brief Constructor */
+    AtomDistribution(const ivec numCells,
+                     int        numAtomGroups,
+                     int        numAtoms);
+
+    std::vector<DomainAtomGroups> domainGroups; /**< Group and atom division over ranks/domains */
+    std::vector<int>              atomGroups;   /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
+
+    /* Temporary buffers, stored permanently here to avoid reallocation */
+    std::array<std::vector<real>, DIM> cellSizesBuffer; /**< Cell boundaries, size #dim x #cells_in_dim + 1 */
+    std::vector<int>                   intBuffer;       /**< Buffer for communicating cg and atom counts */
+    std::vector<gmx::RVec>             rvecBuffer;      /**< Buffer for state scattering and gathering */
 };
 
-/*! \brief Returns the minimum allowed distance between lower and upper bounds of zones along dimension dim_ind */
-real grid_jump_limit(const gmx_domdec_comm_t *comm,
-                     real                     cutoff,
-                     int                      dim_ind);
-
-/*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing
+/*! \brief Returns state scatter/gather buffer element counts and displacements
  *
- * The number of communication pulses per dimension is returned in numPulses.
- * When setmode==setcellsizeslbMASTER, the cell boundaries per dimension are
- * returned, otherwise an empty arrayref is returned.
+ * NOTE: Should only be called with a pointer to a valid ma struct
+ *       (only available on the master rank).
  */
-gmx::ArrayRef < const std::vector < real>>
-set_dd_cell_sizes_slb(gmx_domdec_t      *dd,
-                      const gmx_ddbox_t *ddbox,
-                      int                setmode,
-                      ivec               numPulses);
-
-/*! \brief General cell size adjustment, possibly applying dynamic load balancing */
-void set_dd_cell_sizes(gmx_domdec_t *dd,
-                       gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                       gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
-                       gmx_wallcycle_t wcycle);
+void get_commbuffer_counts(AtomDistribution  *ma,
+                           int              **counts,
+                           int              **disps);
 
 #endif

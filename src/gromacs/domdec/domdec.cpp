@@ -109,6 +109,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "atomdistribution.h"
 #include "cellsizes.h"
 #include "distribute.h"
 #include "domdec_constraints.h"
@@ -2979,37 +2980,6 @@ static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
 #endif
 }
 
-static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
-                                                     int ncg, int natoms)
-{
-    gmx_domdec_master_t *ma;
-    int                  i;
-
-    snew(ma, 1);
-
-    snew(ma->ncg, dd->nnodes);
-    snew(ma->index, dd->nnodes+1);
-    snew(ma->cg, ncg);
-    snew(ma->nat, dd->nnodes);
-    snew(ma->ibuf, dd->nnodes*2);
-    snew(ma->cell_x, DIM);
-    for (i = 0; i < DIM; i++)
-    {
-        snew(ma->cell_x[i], dd->nc[i]+1);
-    }
-
-    if (dd->nnodes <= c_maxNumRanksUseSendRecvForScatterAndGather)
-    {
-        ma->vbuf = nullptr;
-    }
-    else
-    {
-        snew(ma->vbuf, natoms);
-    }
-
-    return ma;
-}
-
 static void split_communicator(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                DdRankOrder gmx_unused rankOrder,
                                int gmx_unused reorder)
@@ -3232,9 +3202,9 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
 
     if (DDMASTER(dd))
     {
-        dd->ma = init_gmx_domdec_master_t(dd,
-                                          comm->cgs_gl.nr,
-                                          comm->cgs_gl.index[comm->cgs_gl.nr]);
+        dd->ma = new AtomDistribution(dd->nc,
+                                      comm->cgs_gl.nr,
+                                      comm->cgs_gl.index[comm->cgs_gl.nr]);
     }
 }
 
