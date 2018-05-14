@@ -130,8 +130,8 @@ read_inpfile(gmx::TextInputStream *stream, const char *fn,
         if (found_index == -1)
         {
             /* add a new item */
-            inp.push_back(t_inpfile(0, 1, false, false, false,
-                                    tokens[0], tokens[1]));
+            inp.emplace_back(0, 1, false, false, false,
+                             tokens[0], tokens[1]);
         }
         else
         {
@@ -316,8 +316,8 @@ static int get_einp(std::vector<t_inpfile> *inp, const char *name)
     if (i == -1)
     {
         notfound = true;
-        inpRef.push_back(t_inpfile(0, 0, false, true, false,
-                                   name, ""));
+        inpRef.emplace_back(0, 0, false, true, false,
+                            name, "");
         i = inpRef.size() - 1;
         if (inpRef.size()  == 1)
         {
@@ -520,7 +520,7 @@ printStringNewline(std::vector<t_inpfile> *inp, const char *line)
 {
     std::string tmp("\n; ");
     tmp.append(line);
-    get_estr(inp, tmp.c_str(), NULL);
+    get_estr(inp, tmp.c_str(), nullptr);
 }
 
 void
@@ -528,7 +528,7 @@ printStringNoNewline(std::vector<t_inpfile> *inp, const char *line)
 {
     std::string tmp("; ");
     tmp.append(line);
-    get_estr(inp, tmp.c_str(), NULL);
+    get_estr(inp, tmp.c_str(), nullptr);
 }
 void
 setStringEntry(std::vector<t_inpfile> *inp, const char *name, char *newName, const char *def)

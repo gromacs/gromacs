@@ -738,7 +738,7 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
         period[d]     = dimParams[d].scaleUserInputToInternal(awhDimParams[d].period);
         static_assert(c_numPointsPerSigma >= 1.0, "The number of points per sigma should be at least 1.0 to get a uniformly covering the reaction using Gaussians");
         double pointDensity = std::sqrt(dimParams[d].betak)*c_numPointsPerSigma;
-        axis_.push_back(GridAxis(origin, end, period[d], pointDensity));
+        axis_.emplace_back(origin, end, period[d], pointDensity);
         numPoints *= axis_[d].numPoints();
     }
 
@@ -809,8 +809,8 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
     /* The data grid has the data that was read and the properties of the AWH grid */
     for (int d = 0; d < grid.numDimensions(); d++)
     {
-        axis_.push_back(GridAxis(data[d][0], data[d][numDataPoints - 1],
-                                 grid.axis(d).period(), numPoints[d]));
+        axis_.emplace_back(data[d][0], data[d][numDataPoints - 1],
+                           grid.axis(d).period(), numPoints[d]);
     }
 
     /* Map each grid point to a data point. No interpolation, just pick the nearest one.
