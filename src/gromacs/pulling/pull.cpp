@@ -1717,7 +1717,7 @@ real pull_potential(struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc,
 {
     real V = 0;
 
-    assert(pull != NULL);
+    assert(pull != nullptr);
 
     /* Ideally we should check external potential registration only during
      * the initialization phase, but that requires another function call
@@ -1772,7 +1772,7 @@ void pull_constraint(struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc,
                      const t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir)
 {
-    assert(pull != NULL);
+    assert(pull != nullptr);
 
     if (pull->comm.bParticipate)
     {
@@ -1932,7 +1932,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
             /* This might be an extremely expensive operation, so we try
              * to avoid this splitting as much as possible.
              */
-            assert(dd != NULL);
+            assert(dd != nullptr);
             MPI_Comm_split(dd->mpi_comm_all, bWillParticipate ? 0 : 1, dd->rank,
                            &comm->mpi_comm_com);
 #endif
@@ -2179,7 +2179,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     for (int c = 0; c < pull->params.ncoord; c++)
     {
         /* Construct a pull coordinate, copying all coordinate parameters */
-        pull->coord.push_back(pull_params->coord[c]);
+        pull->coord.emplace_back(pull_params->coord[c]);
 
         pull_coord_work_t *pcrd = &pull->coord.back();
 
