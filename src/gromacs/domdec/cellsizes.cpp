@@ -52,8 +52,8 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
+#include "atomdistribution.h"
 #include "domdec_internal.h"
 #include "utility.h"
 
@@ -208,30 +208,33 @@ static real cellsize_min_dlb(gmx_domdec_comm_t *comm, int dim_ind, int dim)
  * setmode determine if and where the boundaries are stored, use enum above.
  * Returns the number communication pulses in npulse.
  */
-void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
-                           int setmode, ivec npulse)
+gmx::ArrayRef < const std::vector < real>>
+set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
+                      int setmode, ivec npulse)
 {
-    gmx_domdec_comm_t *comm;
-    int                d, j;
-    rvec               cellsize_min;
-    real              *cell_x, cell_dx, cellsize;
+    gmx_domdec_comm_t *comm = dd->comm;
 
-    comm = dd->comm;
+    gmx::ArrayRef < std::vector < real>> cell_x_master;
+    if (setmode == setcellsizeslbMASTER)
+    {
+        cell_x_master = dd->ma->cellSizesBuffer;
+    }
 
-    for (d = 0; d < DIM; d++)
+    rvec cellsize_min;
+    for (int d = 0; d < DIM; d++)
     {
         cellsize_min[d] = ddbox->box_size[d]*ddbox->skew_fac[d];
         npulse[d]       = 1;
         if (dd->nc[d] == 1 || comm->slb_frac[d] == nullptr)
         {
             /* Uniform grid */
-            cell_dx = ddbox->box_size[d]/dd->nc[d];
+            real cell_dx = ddbox->box_size[d]/dd->nc[d];
             switch (setmode)
             {
                 case setcellsizeslbMASTER:
-                    for (j = 0; j < dd->nc[d]+1; j++)
+                    for (int j = 0; j < dd->nc[d]+1; j++)
                     {
-                        dd->ma->cell_x[d][j] = ddbox->box0[d] + j*cell_dx;
+                        cell_x_master[d][j] = ddbox->box0[d] + j*cell_dx;
                     }
                     break;
                 case setcellsizeslbLOCAL:
@@ -241,7 +244,7 @@ void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                 default:
                     break;
             }
-            cellsize = cell_dx*ddbox->skew_fac[d];
+            real cellsize = cell_dx*ddbox->skew_fac[d];
             while (cellsize*npulse[d] < comm->cutoff)
             {
                 npulse[d]++;
@@ -255,20 +258,23 @@ void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
              * all cell borders in a loop to obtain identical values
              * to the master distribution case and to determine npulse.
              */
+            gmx::ArrayRef<real> cell_x;
+            std::vector<real>   cell_x_buffer;
             if (setmode == setcellsizeslbMASTER)
             {
-                cell_x = dd->ma->cell_x[d];
+                cell_x = cell_x_master[d];
             }
             else
             {
-                snew(cell_x, dd->nc[d]+1);
+                cell_x_buffer.resize(dd->nc[d] + 1);
+                cell_x = cell_x_buffer;
             }
             cell_x[0] = ddbox->box0[d];
-            for (j = 0; j < dd->nc[d]; j++)
+            for (int j = 0; j < dd->nc[d]; j++)
             {
-                cell_dx     = ddbox->box_size[d]*comm->slb_frac[d][j];
-                cell_x[j+1] = cell_x[j] + cell_dx;
-                cellsize    = cell_dx*ddbox->skew_fac[d];
+                real cell_dx  = ddbox->box_size[d]*comm->slb_frac[d][j];
+                cell_x[j+1]   = cell_x[j] + cell_dx;
+                real cellsize = cell_dx*ddbox->skew_fac[d];
                 while (cellsize*npulse[d] < comm->cutoff &&
                        npulse[d] < dd->nc[d]-1)
                 {
@@ -280,10 +286,6 @@ void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
             {
                 comm->cell_x0[d] = cell_x[dd->ci[d]];
                 comm->cell_x1[d] = cell_x[dd->ci[d]+1];
-            }
-            if (setmode != setcellsizeslbMASTER)
-            {
-                sfree(cell_x);
             }
         }
         /* The following limitation is to avoid that a cell would receive
@@ -319,12 +321,14 @@ void set_dd_cell_sizes_slb(gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
         copy_rvec(cellsize_min, comm->cellsize_min);
     }
 
-    for (d = 0; d < comm->npmedecompdim; d++)
+    for (int d = 0; d < comm->npmedecompdim; d++)
     {
         set_pme_maxshift(dd, &comm->ddpme[d],
                          comm->slb_frac[dd->dim[d]] == nullptr, ddbox,
                          comm->ddpme[d].slb_dim_f);
     }
+
+    return cell_x_master;
 }
 
 

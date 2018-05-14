@@ -32,33 +32,55 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/* \internal \file
  *
- * \brief Declares the atom distribution function.
+ * \brief Implements the atom distribution constructor
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_domdec
  */
-#ifndef GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
-#define GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
 
-#include <cstdio>
+#include "gmxpre.h"
 
-#include "gromacs/math/paddedvector.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "atomdistribution.h"
 
-struct gmx_ddbox_t;
-struct gmx_domdec_t;
-struct t_block;
-class t_state;
+#include "gromacs/math/vec.h"
 
-/*! \brief Distributes the state from the master rank to all DD ranks */
-void distributeState(FILE                *fplog,
-                     gmx_domdec_t        *dd,
-                     t_state             *state_global,
-                     const t_block       &cgs_gl,
-                     const gmx_ddbox_t   &ddbox,
-                     t_state             *state_local,
-                     PaddedRVecVector    *f);
+#include "domdec_internal.h"
 
-#endif
+/*! \brief Returns the total number of rank, determined from the DD grid dimensions */
+static int numRanks(const ivec numCells)
+{
+    return numCells[XX]*numCells[YY]*numCells[ZZ];
+}
+
+AtomDistribution::AtomDistribution(const ivec numCells,
+                                   int        numAtomGroups,
+                                   int        numAtoms) :
+    domainGroups(numRanks(numCells)),
+    atomGroups(numAtomGroups),
+    intBuffer(2*numRanks(numCells)),
+    rvecBuffer(numRanks(numCells) > c_maxNumRanksUseSendRecvForScatterAndGather ? numAtoms : 0)
+{
+    for (int d = 0; d < DIM; d++)
+    {
+        cellSizesBuffer[d].resize(numCells[d] + 1);
+    }
+}
+
+void get_commbuffer_counts(AtomDistribution  *ma,
+                           int              **counts,
+                           int              **disps)
+{
+    GMX_ASSERT(ma != nullptr, "Need a valid AtomDistribution struct (on the master rank)");
+
+    /* Make the rvec count and displacement arrays */
+    int numRanks = ma->intBuffer.size()/2;
+    *counts      = ma->intBuffer.data();
+    *disps       = ma->intBuffer.data() + numRanks;
+    for (int rank = 0; rank < numRanks; rank++)
+    {
+        (*counts)[rank] = ma->domainGroups[rank].numAtoms*sizeof(rvec);
+        (*disps)[rank]  = (rank == 0 ? 0 : (*disps)[rank - 1] + (*counts)[rank - 1]);
+    }
+}

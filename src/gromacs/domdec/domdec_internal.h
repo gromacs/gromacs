@@ -400,20 +400,6 @@ struct gmx_domdec_comm_t
     int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
 };
 
-/*! \brief Data only available on the master rank */
-struct gmx_domdec_master_t
-{
-    /* The cell boundaries */
-    real **cell_x; /**< Cell boundaries, size #dim x #cells_in_dim + 1 */
-    /* The global charge group division */
-    int   *ncg;    /**< Number of home charge groups for each node */
-    int   *index;  /**< Index of nnodes+1 into cg */
-    int   *cg;     /**< Global charge group index */
-    int   *nat;    /**< Number of home atoms for each node. */
-    int   *ibuf;   /**< Buffer for communication */
-    rvec  *vbuf;   /**< Buffer for state scattering and gathering */
-};
-
 /*! \brief DD zone permutation
  *
  * Zone permutation from the Cartesian x-major/z-minor order to an order
