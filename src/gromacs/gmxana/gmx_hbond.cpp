@@ -2848,10 +2848,10 @@ int gmx_hbond(int argc, char *argv[])
     bEdge_xjj, bEdge_yjj) \
     default(shared)
     {                           /* Start of parallel region */
-#if !defined __clang_analyzer__ // clang complains about unused value.
-        threadNr = gmx_omp_get_thread_num();
-#endif
-
+        if (bOMP)
+        {
+            threadNr = gmx_omp_get_thread_num();
+        }
         do
         {
 

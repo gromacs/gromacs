@@ -55,6 +55,7 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -401,6 +402,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         }
         else
         {
+            GMX_ASSERT(dval, "TODO");
             snew(name, strlen(dval)+1);
             sscanf(dval, "%s", name);
             for (i = 0; (i < ndef); i++)
@@ -465,6 +467,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* Check for include statements */
     if (strcmp(dname, "include") == 0)
     {
+        GMX_ASSERT(dval, "TODO");
         len = -1;
         i0  = 0;
         for (i1 = 0; (i1 < strlen(dval)); i1++)
@@ -516,6 +519,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #define statement */
     if (strcmp(dname, "define") == 0)
     {
+        GMX_ASSERT(dval, "TODO");
         /* Split it into name and value. */
         ptr = dval;
         while ((*ptr != '\0') && !isspace(*ptr))
@@ -537,6 +541,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #undef statement */
     if (strcmp(dname, "undef") == 0)
     {
+        GMX_ASSERT(dval, "TODO");
         snew(name, strlen(dval)+1);
         sscanf(dval, "%s", name);
         for (i = 0; (i < ndef); i++)

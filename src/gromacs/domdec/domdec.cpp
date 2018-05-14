@@ -1207,6 +1207,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                     nalloc = over_alloc_dd(ma->nat[n]);
                     srenew(buf, nalloc);
                 }
+                GMX_ASSERT(buf, "buf has to be non-null!");
 #if GMX_MPI
                 MPI_Recv(buf, ma->nat[n]*sizeof(rvec), MPI_BYTE, DDRANK(dd, n),
                          n, dd->mpi_comm_all, MPI_STATUS_IGNORE);
@@ -1225,7 +1226,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     }
 }
 
-static void get_commbuffer_counts(gmx_domdec_t *dd,
+static void get_commbuffer_counts(const gmx_domdec_t *dd,
                                   int **counts, int **disps)
 {
     gmx_domdec_master_t *ma;
@@ -1243,7 +1244,7 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     }
 }
 
-static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
+static void dd_collect_vec_gatherv(const gmx_domdec_t            *dd,
                                    gmx::ArrayRef<const gmx::RVec> lv,
                                    gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -1255,7 +1256,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     ma = dd->ma;
 
-    if (DDMASTER(dd))
+    const bool isMaster = DDMASTER(dd);
+    if (isMaster)
     {
         get_commbuffer_counts(dd, &rcounts, &disps);
 
@@ -1264,7 +1266,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), rcounts, disps, buf);
 
-    if (DDMASTER(dd))
+    if (isMaster)
     {
         cgs_gl = &dd->comm->cgs_gl;
 
@@ -1403,7 +1405,7 @@ static void dd_check_alloc_ncg(t_forcerec       *fr,
     }
 }
 
-static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec_sendrecv(const gmx_domdec_t *dd, t_block *cgs,
                                        const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
@@ -1412,6 +1414,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "On master input has to be non-zero!");
         ma  = dd->ma;
 
         for (n = 0; n < dd->nnodes; n++)
@@ -1423,6 +1426,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
                     nalloc = over_alloc_dd(ma->nat[n]);
                     srenew(buf, nalloc);
                 }
+                GMX_ASSERT(buf, "buf has to be non-null!");
                 /* Use lv as a temporary buffer */
                 a = 0;
                 for (i = ma->index[n]; i < ma->index[n+1]; i++)
@@ -1464,7 +1468,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, t_block *cgs,
     }
 }
 
-static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec_scatterv(const gmx_domdec_t *dd, t_block *cgs,
                                        const rvec *v, rvec *lv)
 {
     gmx_domdec_master_t *ma;
@@ -1474,6 +1478,7 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "input vector has to be non-null on master!");
         ma  = dd->ma;
 
         get_commbuffer_counts(dd, &scounts, &disps);
@@ -1495,7 +1500,7 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, t_block *cgs,
     dd_scatterv(dd, scounts, disps, buf, dd->nat_home*sizeof(rvec), lv);
 }
 
-static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs,
+static void dd_distribute_vec(const gmx_domdec_t *dd, t_block *cgs,
                               const rvec *v, rvec *lv)
 {
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)

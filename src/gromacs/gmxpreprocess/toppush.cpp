@@ -585,6 +585,7 @@ static void push_bondtype(t_params     *       bt,
             bool identicalParameters = true;
             for (int j = 0; (j < nrfp); j++)
             {
+                // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
                 identicalParameters = identicalParameters && (bt->param[i].c[j] == b->c[j]);
             }
 

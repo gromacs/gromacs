@@ -747,6 +747,7 @@ static void sample_coll_insert_sample(sample_coll_t *sc, samples_t *s,
                                       sample_range_t *r)
 {
     /* first check if it belongs here */
+    GMX_ASSERT(sc->next->s, "Next not properly initialized!");
     if (sc->temp != s->temp)
     {
         gmx_fatal(FARGS, "Temperatures in files %s and %s are not the same!",
