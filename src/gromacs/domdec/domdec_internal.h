@@ -45,10 +45,14 @@
 
 #include "config.h"
 
+#include <array>
+#include <vector>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 
 struct t_commrec;
 
@@ -173,7 +177,7 @@ enum {
     edlbsNR                    /**< The number of DLB states */
 };
 
-/*! \brief The PME domain decomposition for one dimension */
+/*! \internal \brief The PME domain decomposition for one dimension */
 typedef struct
 {
     int      dim;       /**< The dimension */
@@ -400,18 +404,28 @@ struct gmx_domdec_comm_t
     int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
 };
 
-/*! \brief Data only available on the master rank */
-struct gmx_domdec_master_t
+/*! \brief Distribution of atom groups over the domain (only available on the master rank) */
+struct AtomGroupDistribution
 {
-    /* The cell boundaries */
-    real **cell_x; /**< Cell boundaries, size #dim x #cells_in_dim + 1 */
-    /* The global charge group division */
-    int   *ncg;    /**< Number of home charge groups for each node */
-    int   *index;  /**< Index of nnodes+1 into cg */
-    int   *cg;     /**< Global charge group index */
-    int   *nat;    /**< Number of home atoms for each node. */
-    int   *ibuf;   /**< Buffer for communication */
-    rvec  *vbuf;   /**< Buffer for state scattering and gathering */
+    /*! \brief Collection of local group and atom counts for a domain */
+    struct DomainAtomGroups
+    {
+        gmx::ArrayRef<const int> atomGroups;  /**< List of our atom groups */
+        int                      numAtoms;    /**< Our number of local atoms */
+    };
+
+    /*! \brief Constructor */
+    AtomGroupDistribution(const ivec numCells,
+                          int        numAtomGroups,
+                          int        numAtoms);
+
+    std::vector<DomainAtomGroups> domainGroups; /**< Group and atom division over ranks/domains */
+    std::vector<int>              atomGroups;   /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
+
+    /* Temporary buffers, stored permanently here to avoid reallocation */
+    std::array<std::vector<real>, DIM> cellSizesBuffer; /**< Cell boundaries, size #dim x #cells_in_dim + 1 */
+    std::vector<int>                   intBuffer;       /**< Buffer for communicating cg and atom counts */
+    std::vector<gmx::RVec>             rvecBuffer;      /**< Buffer for state scattering and gathering */
 };
 
 /*! \brief DD zone permutation
