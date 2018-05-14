@@ -743,6 +743,8 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
     int         i, j, jmax, nf_int;
     gmx_bool    bPrint;
 
+    GMX_ASSERT(effnNparams(fitfn) < static_cast<int>(sizeof(fitparm)/sizeof(double)),
+               "Fitting function with more than 3 parameters not supported!");
     bPrint = bVerbose || bDebugMode();
 
     if (bPrint)

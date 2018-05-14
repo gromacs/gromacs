@@ -43,6 +43,11 @@ set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
+add_library(libgromacs_external OBJECT "")
+if (BUILD_SHARED_LIBS)
+    set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
+endif()
+
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
@@ -136,7 +141,7 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
-list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
+target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
 
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
@@ -159,7 +164,8 @@ set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
 gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
-list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
+     $<TARGET_OBJECTS:libgromacs_external>)
 
 # Mark some shared GPU implementation files to compile with CUDA if needed
 if (GMX_USE_CUDA)
@@ -257,6 +263,18 @@ set_target_properties(libgromacs PROPERTIES
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
+
+if (GMX_CLANG_TIDY)
+   find_program(CLANG_TIDY_EXE NAMES "clang-tidy"
+       DOC "Path to clang-tidy executable")
+   if(NOT CLANG_TIDY_EXE)
+       message(ERROR "clang-tidy not found.")
+   endif()
+   if(CMAKE_VERSION VERSION_LESS "3.6")
+       message(ERROR "clang-tidy support requires cmake 3.6.")
+   endif()
+   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy,-clang-analyzer-core.NullDereference;-warnings-as-errors=*")
+endif()
 
 gmx_write_installed_header_list()
 
