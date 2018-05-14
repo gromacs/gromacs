@@ -95,6 +95,7 @@
 #include "gromacs/mdlib/repl_ex.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/signalhandlers.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -141,48 +142,6 @@
 #endif
 
 using gmx::SimulationSignaller;
-
-//! Resets all the counters.
-static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
-                               gmx_int64_t step,
-                               gmx_wallcycle_t wcycle, t_nrnb *nrnb,
-                               gmx_walltime_accounting_t walltime_accounting,
-                               struct nonbonded_verlet_t *nbv,
-                               struct gmx_pme_t *pme)
-{
-    char sbuf[STEPSTRSIZE];
-
-    /* Reset all the counters related to performance over the run */
-    GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-            "step %s: resetting all time and cycle counters",
-            gmx_step_str(step, sbuf));
-
-    if (use_GPU(nbv))
-    {
-        nbnxn_gpu_reset_timings(nbv);
-    }
-
-    if (pme_gpu_task_enabled(pme))
-    {
-        pme_gpu_reset_timings(pme);
-    }
-
-    if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
-    {
-        resetGpuProfiler();
-    }
-
-    wallcycle_stop(wcycle, ewcRUN);
-    wallcycle_reset_all(wcycle);
-    if (DOMAINDECOMP(cr))
-    {
-        reset_dd_statistics_counters(cr->dd);
-    }
-    init_nrnb(nrnb);
-    wallcycle_start(wcycle, ewcRUN);
-    walltime_accounting_reset_time(walltime_accounting, step);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
-}
 
 /*! \brief Copy the state from \p rerunFrame to \p globalState and, if requested, construct vsites
  *
@@ -266,14 +225,14 @@ void gmx::Integrator::do_md()
     // will go away eventually.
     t_inputrec       *ir   = inputrec;
     gmx_mdoutf       *outf = nullptr;
-    gmx_int64_t       step, step_rel;
+    gmx_int64_t       step, step_rel = 0;
     double            t, t0, lam0[efptNR];
-    gmx_bool          bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool          bNS, bNStList, bSimAnn, bStopCM,
+    gmx_bool          bGStatEveryStep, bGStat = FALSE, bCalcVir, bCalcEnerStep, bCalcEner;
+    gmx_bool          bNS = FALSE, bNStList, bSimAnn, bStopCM,
                       bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE, bCPT;
+                      bForceUpdate = FALSE;
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
@@ -296,7 +255,6 @@ void gmx::Integrator::do_md()
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t    *shellfc;
     gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
     real              dvdl_constr;
     rvec             *cbuf        = nullptr;
@@ -311,7 +269,6 @@ void gmx::Integrator::do_md()
     t_extmass         MassQ;
     int             **trotter_seq;
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-    int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
 
 
     /* PME load balancing data for GPU kernels */
@@ -348,18 +305,6 @@ void gmx::Integrator::do_md()
         // interface.
         GMX_LOG(mdlog.info).asParagraph().
             appendText("The -noconfout functionality is deprecated, and may be removed in a future version.");
-    }
-    if (mdrunOptions.timingOptions.resetHalfway)
-    {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -resethway functionality is deprecated, and may be removed in a future version.");
-        if (ir->nsteps > 0)
-        {
-            /* Signal to reset the counters half the simulation steps. */
-            wcycle_set_reset_counters(wcycle, ir->nsteps/2);
-        }
-        /* Signal to reset the counters halfway the simulation time. */
-        bResetCountersHalfMaxH = (mdrunOptions.maximumHoursToRun > 0);
     }
 
     /* md-vv uses averaged full step velocities for T-control
@@ -785,6 +730,57 @@ void gmx::Integrator::do_md()
         fprintf(fplog, "\n");
     }
 
+    auto checkpointSignalSetter  = std::unique_ptr<CheckpointSignalSetter>(nullptr);
+    auto checkpointSignalHandler = std::unique_ptr<CheckpointSignalHandler>(nullptr);
+    auto stopSignalSetters       = std::vector<std::unique_ptr<ISignalSetter>>();
+    auto stopSignalHandler       = std::unique_ptr<StopSignalHandler>(nullptr);
+    auto resetSignalSetter       = std::unique_ptr<ResetSignalSetter>(nullptr);
+    auto resetSignalHandler      = std::unique_ptr<ResetSignalHandler>(nullptr);
+
+    bool simulationsShareState = false;
+    int  nstSignalComm         = nstglobalcomm;
+    {
+        // TODO This implementation of ensemble orientation restraints is nasty because
+        // a user can't just do multi-sim with single-sim orientation restraints.
+        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || (ms && fcd->orires.nr);
+        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && ms);
+
+        // Replica exchange, ensemble restraints and AWH need all
+        // simulations to remain synchronized, so they need
+        // checkpoints and stop conditions to act on the same step, so
+        // the propagation of such signals must take place between
+        // simulations, not just within simulations.
+        // TODO: Make algorithm initializers set these flags.
+        simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
+        bool resetCountersIsLocal = true;
+
+        if (simulationsShareState)
+        {
+            // Inter-simulation signal communication does not need to happen
+            // often, so we use a minimum of 200 steps to reduce overhead.
+            const int c_minimumInterSimulationSignallingInterval = 200;
+            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
+        }
+
+        auto checkpointSignalPair = SignalHelper::makeCheckpointSignalClasses(
+                &signals[eglsCHKPT], ir, cr, mdrunOptions, simulationsShareState,
+                bNS, bLastStep, step, bGStat, walltime_accounting);
+        auto stopSignalPair = SignalHelper::makeStopSignalClasses(
+                &signals[eglsSTOPCOND], simulationsShareState, ir, cr,
+                mdrunOptions, nstSignalComm, fplog, bNS, step, walltime_accounting);
+        auto resetSignalPair = SignalHelper::makeResetSignalClasses(
+                &signals[eglsRESETCOUNTERS], !resetCountersIsLocal, ir, cr, mdrunOptions,
+                walltime_accounting, wcycle, mdlog, step, step_rel, fplog,
+                (use_GPU(fr->nbv) ? fr->nbv : nullptr), fr->pmedata, nrnb, pme_loadbal);
+
+        checkpointSignalSetter  = std::move(checkpointSignalPair.first);
+        checkpointSignalHandler = std::move(checkpointSignalPair.second);
+        stopSignalSetters       = std::move(stopSignalPair.first);
+        stopSignalHandler       = std::move(stopSignalPair.second);
+        resetSignalSetter       = std::move(resetSignalPair.first);
+        resetSignalHandler      = std::move(resetSignalPair.second);
+    }
+
     walltime_accounting_start_time(walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     print_start(fplog, cr, walltime_accounting, "mdrun");
@@ -859,35 +855,6 @@ void gmx::Integrator::do_md()
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
-
-    bool simulationsShareState = false;
-    int  nstSignalComm         = nstglobalcomm;
-    {
-        // TODO This implementation of ensemble orientation restraints is nasty because
-        // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints = (fcd->disres.nsystems > 1) || (ms && fcd->orires.nr);
-        bool awhUsesMultiSim         = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && ms);
-
-        // Replica exchange, ensemble restraints and AWH need all
-        // simulations to remain synchronized, so they need
-        // checkpoints and stop conditions to act on the same step, so
-        // the propagation of such signals must take place between
-        // simulations, not just within simulations.
-        // TODO: Make algorithm initializers set these flags.
-        simulationsShareState     = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
-        bool resetCountersIsLocal = true;
-        signals[eglsCHKPT]         = SimulationSignal(!simulationsShareState);
-        signals[eglsSTOPCOND]      = SimulationSignal(!simulationsShareState);
-        signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
-
-        if (simulationsShareState)
-        {
-            // Inter-simulation signal communication does not need to happen
-            // often, so we use a minimum of 200 steps to reduce overhead.
-            const int c_minimumInterSimulationSignallingInterval = 200;
-            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1)/nstglobalcomm)*nstglobalcomm;
-        }
-    }
 
     DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion   = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
     DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
@@ -1010,12 +977,8 @@ void gmx::Integrator::do_md()
             bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
-        /* < 0 means stop at next step, > 0 means stop at next NS step */
-        if ( (signals[eglsSTOPCOND].set < 0) ||
-             ( (signals[eglsSTOPCOND].set > 0 ) && ( bNS || ir->nstlist == 0)))
-        {
-            bLastStep = TRUE;
-        }
+        stopSignalHandler->handleSignal();
+        bLastStep = bLastStep || stopSignalHandler->stoppingThisStep();
 
         /* do_log triggers energy and virial calculation. Because this leads
          * to different code paths, forces can be different. Thus for exact
@@ -1092,17 +1055,9 @@ void gmx::Integrator::do_md()
         }
         clear_mat(force_vir);
 
-        /* We write a checkpoint at this MD step when:
-         * either at an NS step when we signalled through gs,
-         * or at the last step (but not when we do not want confout),
-         * but never at the first step or with rerun.
-         */
-        bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
-                 (bLastStep && mdrunOptions.writeConfout)) &&
-                step > ir->init_step && !bRerunMD);
-        if (bCPT)
+        if (checkpointSignalHandler != nullptr)
         {
-            signals[eglsCHKPT].set = 0;
+            checkpointSignalHandler->handleSignal();
         }
 
         /* Determine the energy and pressure:
@@ -1171,7 +1126,7 @@ void gmx::Integrator::do_md()
                do_md_trajectory_writing (then containing update_awh_history).
                The checkpointing will in the future probably moved to the start of the md loop which will
                rid of this issue. */
-            if (ir->bDoAwh && bCPT && MASTER(cr))
+            if (ir->bDoAwh && checkpointSignalHandler->doCheckpointThisStep() && MASTER(cr))
             {
                 ir->awh->updateHistory(state_global->awhHistory.get());
             }
@@ -1370,7 +1325,7 @@ void gmx::Integrator::do_md()
                                  top_global, fr,
                                  outf, mdebin, ekind, f,
                                  &nchkpt,
-                                 bCPT, bRerunMD, bLastStep,
+                                 checkpointSignalHandler->doCheckpointThisStep(), bRerunMD, bLastStep,
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
@@ -1383,87 +1338,18 @@ void gmx::Integrator::do_md()
             copy_mat(state->fvir_prev, force_vir);
         }
 
-        double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-
-        /* Check whether everything is still allright */
-        if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#if GMX_THREAD_MPI
-            && MASTER(cr)
-#endif
-            )
+        /* Check whether everything is still alright */
+        if (checkpointSignalSetter != nullptr)
         {
-            int nsteps_stop = -1;
-
-            /* this just makes signals[].sig compatible with the hack
-               of sending signals around by MPI_Reduce together with
-               other floats */
-            if ((gmx_get_stop_condition() == gmx_stop_cond_next_ns) ||
-                (mdrunOptions.reproducible &&
-                 gmx_get_stop_condition() == gmx_stop_cond_next))
-            {
-                /* We need at least two global communication steps to pass
-                 * around the signal. We stop at a pair-list creation step
-                 * to allow for exact continuation, when possible.
-                 */
-                signals[eglsSTOPCOND].sig = 1;
-                nsteps_stop               = std::max(ir->nstlist, 2*nstSignalComm);
-            }
-            else if (gmx_get_stop_condition() == gmx_stop_cond_next)
-            {
-                /* Stop directly after the next global communication step.
-                 * This breaks exact continuation.
-                 */
-                signals[eglsSTOPCOND].sig = -1;
-                nsteps_stop               = nstSignalComm + 1;
-            }
-            if (fplog)
-            {
-                fprintf(fplog,
-                        "\n\nReceived the %s signal, stopping within %d steps\n\n",
-                        gmx_get_signal_name(), nsteps_stop);
-                fflush(fplog);
-            }
-            fprintf(stderr,
-                    "\n\nReceived the %s signal, stopping within %d steps\n\n",
-                    gmx_get_signal_name(), nsteps_stop);
-            fflush(stderr);
-            handled_stop_condition = (int)gmx_get_stop_condition();
+            checkpointSignalSetter->setSignal();
         }
-        else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (mdrunOptions.maximumHoursToRun > 0 &&
-                  secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.99) &&
-                 signals[eglsSTOPCOND].sig == 0 && signals[eglsSTOPCOND].set == 0)
+        for (auto&& setter : stopSignalSetters)
         {
-            /* Signal to terminate the run */
-            signals[eglsSTOPCOND].sig = 1;
-            if (fplog)
-            {
-                fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
-                        gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
-            }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",
-                    gmx_step_str(step, sbuf), mdrunOptions.maximumHoursToRun*0.99);
+            setter->setSignal();
         }
-
-        if (bResetCountersHalfMaxH && MASTER(cr) &&
-            secondsSinceStart > mdrunOptions.maximumHoursToRun*60.0*60.0*0.495)
+        if (resetSignalSetter != nullptr)
         {
-            /* Set flag that will communicate the signal to all ranks in the simulation */
-            signals[eglsRESETCOUNTERS].sig = 1;
-        }
-
-        /* In parallel we only have to check for checkpointing in steps
-         * where we do global communication,
-         *  otherwise the other nodes don't know.
-         */
-        const real cpt_period = mdrunOptions.checkpointOptions.period;
-        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-                           cpt_period >= 0 &&
-                           (cpt_period == 0 ||
-                            secondsSinceStart >= nchkpt*cpt_period*60.0)) &&
-            signals[eglsCHKPT].set == 0)
-        {
-            signals[eglsCHKPT].sig = 1;
+            resetSignalSetter->setSignal();
         }
 
         /* #########   START SECOND UPDATE STEP ################# */
@@ -1878,40 +1764,9 @@ void gmx::Integrator::do_md()
             step_rel++;
         }
 
-        /* TODO make a counter-reset module */
-        /* If it is time to reset counters, set a flag that remains
-           true until counters actually get reset */
-        if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            signals[eglsRESETCOUNTERS].set != 0)
+        if (resetSignalHandler != nullptr)
         {
-            if (pme_loadbal_is_active(pme_loadbal))
-            {
-                /* Do not permit counter reset while PME load
-                 * balancing is active. The only purpose for resetting
-                 * counters is to measure reliable performance data,
-                 * and that can't be done before balancing
-                 * completes.
-                 *
-                 * TODO consider fixing this by delaying the reset
-                 * until after load balancing completes,
-                 * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
-                gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                          "reset mdrun counters at step %" GMX_PRId64 ". Try "
-                          "resetting counters later in the run, e.g. with gmx "
-                          "mdrun -resetstep.", step);
-            }
-            reset_all_counters(fplog, mdlog, cr, step, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : nullptr, fr->pmedata);
-            wcycle_set_reset_counters(wcycle, -1);
-            if (!thisRankHasDuty(cr, DUTY_PME))
-            {
-                /* Tell our PME node to reset its counters */
-                gmx_pme_send_resetcounters(cr, step);
-            }
-            /* If mdrun -maxh -resethway was active, it can only trigger once */
-            bResetCountersHalfMaxH = FALSE; /* TODO move this to where signals[eglsRESETCOUNTERS].sig is set */
-            /* Reset can only happen once, so clear the triggering flag. */
-            signals[eglsRESETCOUNTERS].set = 0;
+            resetSignalHandler->handleSignal();
         }
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
@@ -1979,12 +1834,6 @@ void gmx::Integrator::do_md()
     IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
-    if (step_rel >= wcycle_get_reset_counters(wcycle) &&
-        signals[eglsRESETCOUNTERS].set == 0 &&
-        !bResetCountersHalfMaxH)
-    {
-        walltime_accounting_set_valid_finish(walltime_accounting);
-    }
 
     destroy_enerdata(enerd);
     sfree(enerd);
