@@ -349,8 +349,10 @@ static real est_prot_area(pos_ins_t *pos_ins, rvec *r, t_block *ins_at, mem_t *m
     memmin = mem_p->zmin+0.1*(mem_p->zmax-mem_p->zmin);
     memmax = mem_p->zmax-0.1*(mem_p->zmax-mem_p->zmin);
 
+    //NOLINTNEXTLINE(clang-analyzer-security.FloatLoopCounter)
     for (x = pos_ins->xmin[XX]; x < pos_ins->xmax[XX]; x += dx)
     {
+        //NOLINTNEXTLINE(clang-analyzer-security.FloatLoopCounter)
         for (y = pos_ins->xmin[YY]; y < pos_ins->xmax[YY]; y += dy)
         {
             c   = 0;

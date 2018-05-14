@@ -580,13 +580,7 @@ static void push_bondtype(t_params     *       bt,
         if (equalEitherForwardOrBackward(bParams, testParams))
         {
             GMX_ASSERT(nrfp <= MAXFORCEPARAM, "This is ensured in other places, but we need this assert to keep the clang analyzer happy");
-            // TODO consider improving the following code by using:
-            // bool identicalParameters = std::equal(bt->param[i].c, bt->param[i].c + nrfp, b->c);
-            bool identicalParameters = true;
-            for (int j = 0; (j < nrfp); j++)
-            {
-                identicalParameters = identicalParameters && (bt->param[i].c[j] == b->c[j]);
-            }
+            const bool identicalParameters = std::equal(bt->param[i].c, bt->param[i].c + nrfp, b->c);
 
             if (!bAllowRepeat || identicalParameters)
             {

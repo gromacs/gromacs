@@ -87,12 +87,9 @@ nbnxn_kernel_prune_2xnn(nbnxn_pairlist_t *         nbl,
         SimdReal shZ_S   = SimdReal(shiftvec[ish3 + 2]);
 
 #if UNROLLJ <= 4
-        int      sci     = ci*STRIDE;
-        int      scix    = sci*DIM;
+        int      scix    = ci*STRIDE*DIM;
 #else
-        int      sci     = (ci >> 1)*STRIDE;
-        int      scix    = sci*DIM + (ci & 1)*(STRIDE >> 1);
-        sci             += (ci & 1)*(STRIDE >> 1);
+        int      scix    = (ci >> 1)*STRIDE*DIM + (ci & 1)*(STRIDE >> 1);
 #endif
 
         /* Load i atom data */
