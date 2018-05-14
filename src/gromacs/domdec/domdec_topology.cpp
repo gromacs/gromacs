@@ -190,7 +190,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
     int  nril_mol = ril->index[nat_mol];
     snew(assigned, nmol*nril_mol);
 
-    int *gatindex = cr->dd->gatindex;
+    gmx::ArrayRef<const int> gatindex = cr->dd->globalAtomIndices;
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (dd_check_ftype(ftype, rt->bBCheck, rt->bConstr, rt->bSettle))
@@ -1093,26 +1093,18 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
     }
 }
 
-/*! \brief Update the local atom to local charge group index */
-static void make_la2lc(gmx_domdec_t *dd)
+/*! \brief Build the index that maps each local atom to its local atom group */
+static void makeLocalAtomGroupFromAtom(gmx_domdec_t *dd)
 {
-    int *cgindex, *la2lc, cg, a;
+    const gmx::BlockRanges &atomGroups = dd->atomGroups();
 
-    cgindex = dd->cgindex;
+    dd->localAtomGroupFromAtom.clear();
 
-    if (dd->nat_tot > dd->la2lc_nalloc)
+    for (size_t g = 0; g < dd->globalAtomGroupIndices.size(); g++)
     {
-        dd->la2lc_nalloc = over_alloc_dd(dd->nat_tot);
-        snew(dd->la2lc, dd->la2lc_nalloc);
-    }
-    la2lc = dd->la2lc;
-
-    /* Make the local atom to local cg index */
-    for (cg = 0; cg < dd->ncg_tot; cg++)
-    {
-        for (a = cgindex[cg]; a < cgindex[cg+1]; a++)
+        for (int a = atomGroups.index[g]; a < atomGroups.index[g + 1]; a++)
         {
-            la2lc[a] = cg;
+            dd->localAtomGroupFromAtom.push_back(g);
         }
     }
 }
@@ -1538,7 +1530,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              int izone,
                              int at_start, int at_end)
 {
-    int                i, i_gl, mb, mt, mol, i_mol;
+    int                mb, mt, mol, i_mol;
     int               *index, *rtil;
     gmx_bool           bBCheck;
     gmx_reverse_top_t *rt;
@@ -1550,10 +1542,10 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
 
     nbonded_local = 0;
 
-    for (i = at_start; i < at_end; i++)
+    for (int i = at_start; i < at_end; i++)
     {
         /* Get the global atom number */
-        i_gl = dd->gatindex[i];
+        const int i_gl = dd->globalAtomIndices[i];
         global_atomnr_to_moltype_ind(rt, i_gl, &mb, &mt, &mol, &i_mol);
         /* Check all intramolecular interactions assigned to this atom */
         index = rt->ril_mt[mt].index;
@@ -1607,12 +1599,10 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
 static void set_no_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    int iz, t_blocka *lexcls)
 {
-    int  a0, a1, a;
+    int a0 = dd->atomGroups().index[zones->cg_range[iz]];
+    int a1 = dd->atomGroups().index[zones->cg_range[iz + 1]];
 
-    a0 = dd->cgindex[zones->cg_range[iz]];
-    a1 = dd->cgindex[zones->cg_range[iz+1]];
-
-    for (a = a0+1; a < a1+1; a++)
+    for (int a = a0 + 1; a < a1 + 1; a++)
     {
         lexcls->index[a] = lexcls->nra;
     }
@@ -1633,48 +1623,49 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    int iz,
                                    int cg_start, int cg_end)
 {
-    int               n_excl_at_max, n, count, jla0, jla1, jla;
-    int               cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
+    int               n_excl_at_max;
+    int               mb, mt, mol;
     const t_blocka   *excls;
     gmx_ga2la_t      *ga2la;
     int               cell;
 
     ga2la = dd->ga2la;
 
-    jla0 = dd->cgindex[zones->izone[iz].jcg0];
-    jla1 = dd->cgindex[zones->izone[iz].jcg1];
+    int jla0 = dd->atomGroups().index[zones->izone[iz].jcg0];
+    int jla1 = dd->atomGroups().index[zones->izone[iz].jcg1];
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
     /* We set the end index, but note that we might not start at zero here */
-    lexcls->nr = dd->cgindex[cg_end];
+    lexcls->nr = dd->atomGroups().index[cg_end];
 
-    n     = lexcls->nra;
-    count = 0;
-    for (cg = cg_start; cg < cg_end; cg++)
+    int n     = lexcls->nra;
+    int count = 0;
+    for (int cg = cg_start; cg < cg_end; cg++)
     {
         if (n + (cg_end - cg_start)*n_excl_at_max > lexcls->nalloc_a)
         {
             lexcls->nalloc_a = over_alloc_large(n + (cg_end - cg_start)*n_excl_at_max);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
-        la0 = dd->cgindex[cg];
-        la1 = dd->cgindex[cg+1];
+        int la0 = dd->atomGroups().index[cg];
+        int la1 = dd->atomGroups().index[cg + 1];
         if (GET_CGINFO_EXCL_INTER(cginfo[cg]) ||
             !GET_CGINFO_EXCL_INTRA(cginfo[cg]))
         {
             /* Copy the exclusions from the global top */
-            for (la = la0; la < la1; la++)
+            for (int la = la0; la < la1; la++)
             {
                 lexcls->index[la] = n;
-                a_gl              = dd->gatindex[la];
+                int a_gl          = dd->globalAtomIndices[la];
+                int a_mol;
                 global_atomnr_to_moltype_ind(dd->reverse_top, a_gl, &mb, &mt, &mol, &a_mol);
                 excls = &moltype[mt].excls;
-                for (j = excls->index[a_mol]; j < excls->index[a_mol+1]; j++)
+                for (int j = excls->index[a_mol]; j < excls->index[a_mol+1]; j++)
                 {
-                    aj_mol = excls->a[j];
+                    int aj_mol = excls->a[j];
                     /* This computation of jla is only correct intra-cg */
-                    jla = la + aj_mol - a_mol;
+                    int jla = la + aj_mol - a_mol;
                     if (jla >= la0 && jla < la1)
                     {
                         /* This is an intra-cg exclusion. We can skip
@@ -1734,10 +1725,10 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
              */
             if (iz == 0)
             {
-                for (la = la0; la < la1; la++)
+                for (int la = la0; la < la1; la++)
                 {
                     lexcls->index[la] = n;
-                    for (j = la0; j < la1; j++)
+                    for (int j = la0; j < la1; j++)
                     {
                         lexcls->a[n++] = j;
                     }
@@ -1747,7 +1738,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             else
             {
                 /* We don't need exclusions for this cg */
-                for (la = la0; la < la1; la++)
+                for (int la = la0; la < la1; la++)
                 {
                     lexcls->index[la] = n;
                 }
@@ -1771,13 +1762,12 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
                                  int at_start, int at_end)
 {
     gmx_ga2la_t *ga2la;
-    int          jla0, jla1;
     int          n_excl_at_max, n, at;
 
     ga2la = dd->ga2la;
 
-    jla0 = dd->cgindex[zones->izone[iz].jcg0];
-    jla1 = dd->cgindex[zones->izone[iz].jcg1];
+    int jla0 = dd->atomGroups().index[zones->izone[iz].jcg0];
+    int jla1 = dd->atomGroups().index[zones->izone[iz].jcg1];
 
     n_excl_at_max = dd->reverse_top->n_excl_at_max;
 
@@ -1805,7 +1795,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
 
             /* Copy the exclusions from the global top */
             lexcls->index[at] = n;
-            a_gl              = dd->gatindex[at];
+            a_gl              = dd->globalAtomIndices[at];
             global_atomnr_to_moltype_ind(dd->reverse_top, a_gl,
                                          &mb, &mt, &mol, &a_mol);
             excls = &moltype[mt].excls;
@@ -1854,14 +1844,11 @@ static void check_alloc_index(t_blocka *ba, int nindex_max)
 static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    t_blocka *lexcls)
 {
-    int nr;
-    int thread;
-
-    nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    int nr = dd->atomGroups().index[zones->izone[zones->nizone - 1].cg1];
 
     check_alloc_index(lexcls, nr);
 
-    for (thread = 1; thread < dd->reverse_top->nthread; thread++)
+    for (int thread = 1; thread < dd->reverse_top->nthread; thread++)
     {
         check_alloc_index(&dd->reverse_top->th_work[thread].excl, nr);
     }
@@ -1871,17 +1858,15 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                     t_blocka *lexcls)
 {
-    int la0, la;
-
-    lexcls->nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    lexcls->nr = dd->atomGroups().index[zones->izone[zones->nizone - 1].cg1];
 
     if (dd->n_intercg_excl == 0)
     {
         /* There are no exclusions involving non-home charge groups,
          * but we need to set the indices for neighborsearching.
          */
-        la0 = dd->cgindex[zones->izone[0].cg1];
-        for (la = la0; la < lexcls->nr; la++)
+        int la0 = dd->atomGroups().index[zones->izone[0].cg1];
+        for (int la = la0; la < lexcls->nr; la++)
         {
             lexcls->index[la] = lexcls->nra;
         }
@@ -1889,7 +1874,7 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         /* nr is only used to loop over the exclusions for Ewald and RF,
          * so we can set it to the number of home atoms for efficiency.
          */
-        lexcls->nr = dd->cgindex[zones->izone[0].cg1];
+        lexcls->nr = dd->atomGroups().index[zones->izone[0].cg1];
     }
 }
 
@@ -2016,7 +2001,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                       idef_t,
                                       vsite_pbc, vsite_pbc_nalloc,
                                       izone,
-                                      dd->cgindex[cg0t], dd->cgindex[cg1t]);
+                                      dd->atomGroups().index[cg0t],
+                                      dd->atomGroups().index[cg1t]);
 
                 if (izone < nzone_excl)
                 {
@@ -2031,7 +2017,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         excl_t->nra = 0;
                     }
 
-                    if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot &&
+                    int numAtomGroups = dd->globalAtomGroupIndices.size();
+                    if (dd->atomGroups().index[numAtomGroups] == numAtomGroups &&
                         !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
@@ -2100,8 +2087,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs)
 {
-    lcgs->nr    = dd->ncg_tot;
-    lcgs->index = dd->cgindex;
+    lcgs->nr    = dd->globalAtomGroupIndices.size();
+    lcgs->index = dd->atomGroups_.index.data();
 }
 
 void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
@@ -2167,7 +2154,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         }
         if (bRCheckMB || bRCheck2B)
         {
-            make_la2lc(dd);
+            makeLocalAtomGroupFromAtom(dd);
             if (fr->bMolPBC)
             {
                 pbc_null = set_pbc_dd(&pbc, fr->ePBC, dd->nc, TRUE, box);
@@ -2182,7 +2169,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     dd->nbonded_local =
         make_local_bondeds_excls(dd, zones, mtop, fr->cginfo,
                                  bRCheckMB, rcheck, bRCheck2B, rc,
-                                 dd->la2lc,
+                                 dd->localAtomGroupFromAtom.data(),
                                  pbc_null, cgcm_or_x,
                                  &ltop->idef, vsite,
                                  &ltop->excls, &nexcl);
