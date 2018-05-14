@@ -184,9 +184,9 @@ BiasWriter::BiasWriter(const Bias &bias)
         }
         for (int b = 0; b < outputTypeNumBlock[outputType]; b++)
         {
-            block_.push_back(AwhEnergyBlock(numPoints,
-                                            pair.second,
-                                            getNormalizationValue(outputType, bias, b)));
+            block_.emplace_back(numPoints,
+                                pair.second,
+                                getNormalizationValue(outputType, bias, b));
         }
     }
 }

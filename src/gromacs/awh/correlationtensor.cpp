@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -283,7 +283,7 @@ CorrelationTensor::CorrelationTensor(int    numDim,
 
     for (int n = 0; n < numBlockData; n++)
     {
-        blockDataList_.push_back(CorrelationBlockData(numDim, scaling*blockLengthInit));
+        blockDataList_.emplace_back(numDim, scaling*blockLengthInit);
         scaling <<= 1; /* Double block length */
     }
 }

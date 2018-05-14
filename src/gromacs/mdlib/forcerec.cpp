@@ -1872,7 +1872,7 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
             bUsesSimpleTables = TRUE;
             break;
         case ecutsVERLET:
-            assert(NULL != nbv && NULL != nbv->grp);
+            assert(nullptr != nbv);
             grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
             bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
             break;
@@ -2083,7 +2083,7 @@ init_interaction_const(FILE                       *fp,
         if (ic->eeltype != eelGRF)
         {
             calc_rffac(fp, ic->eeltype, ic->epsilon_r, ic->epsilon_rf,
-                       ic->rcoulomb, 0, 0, NULL,
+                       ic->rcoulomb, 0, 0, nullptr,
                        &ic->k_rf, &ic->c_rf);
         }
 

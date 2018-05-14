@@ -423,7 +423,7 @@ int gmx_nmr(int argc, char *argv[])
         "Instantaneous"
     };
 
-    FILE              /* *out     = NULL,*/ *out_disre = NULL, *fp_pairs = NULL, *fort = NULL, *fodt = NULL, *foten = NULL;
+    FILE              /* *out     = NULL,*/ *out_disre = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
     ener_file_t        fp;
     int                timecheck = 0;
     gmx_mtop_t         mtop;
@@ -432,13 +432,13 @@ int gmx_nmr(int argc, char *argv[])
     t_enxframe         fr;
     int                nre, teller, teller_disre;
     int                nor     = 0, nex = 0, norfr = 0, enx_i = 0;
-    real              *bounds  = NULL, *violaver = NULL, *oobs = NULL, *orient = NULL, *odrms = NULL;
-    int               *index   = NULL, *pair = NULL, norsel = 0, *orsel = NULL, *or_label = NULL;
+    real              *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
+    int               *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
     int                nbounds = 0, npairs;
     gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
     gmx_bool           bCont;
     double             sumaver, sumt;
-    int               *set     = NULL, i, j, k, nset, sss;
+    int               *set     = nullptr, i, j, k, nset, sss;
     char             **pairleg, **odtleg, **otenleg;
     char             **leg = nullptr;
     const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
