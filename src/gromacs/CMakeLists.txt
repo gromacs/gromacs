@@ -43,8 +43,10 @@ set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libgromacs_external OBJECT "")
+add_library(libgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
+    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
 endif()
 
 function (_gmx_add_files_to_property PROPERTY)
@@ -205,7 +207,7 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
-target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:libgromacs_external>)
+target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:libgromacs_external> $<TARGET_OBJECTS:libgromacs_generated>)
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
@@ -230,7 +232,7 @@ if (GMX_CLANG_TIDY)
    if(NOT CLANG_TIDY_EXE)
        message(ERROR "clang-tidy not found.")
    endif()
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy;-warnings-as-errors=*")
+   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy,modernize-use-nullptr,modernize-use-emplace;-warnings-as-errors=*;-fix")
 endif()
 
 gmx_write_installed_header_list()

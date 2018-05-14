@@ -382,7 +382,7 @@ void calc_disres_R_6(const t_commrec *cr,
             Rtav_6[res] *= invn;
         }
 
-        GMX_ASSERT(cr != NULL && ms != NULL, "We need multisim with nsystems>1");
+        GMX_ASSERT(cr != nullptr && ms != nullptr, "We need multisim with nsystems>1");
         gmx_sum_sim(2*dd->nres, dd->Rt_6, ms);
 
         if (DOMAINDECOMP(cr))

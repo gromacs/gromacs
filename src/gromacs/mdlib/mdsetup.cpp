@@ -123,7 +123,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     if (!usingDomDec && ir->ePBC != epbcNONE && !fr->bMolPBC)
     {
-        GMX_ASSERT(graph != NULL, "We use a graph with PBC (no periodic mols) and without DD");
+        GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
         *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
     }

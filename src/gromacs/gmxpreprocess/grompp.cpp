@@ -602,7 +602,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
      * a priori if the number of atoms in confin matches what we expect.
      */
     state->flags |= (1 << estX);
-    if (v != NULL)
+    if (v != nullptr)
     {
         state->flags |= (1 << estV);
     }

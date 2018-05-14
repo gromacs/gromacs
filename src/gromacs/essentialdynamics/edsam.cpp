@@ -2644,7 +2644,7 @@ gmx_edsam_t init_edsam(
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
         edi = ed->edpar;
-        GMX_ASSERT(NULL != edi,
+        GMX_ASSERT(nullptr != edi,
                    "The pointer to the essential dynamics parameters is undefined");
 
         nED = EDstate->nED;

@@ -163,7 +163,7 @@ Awh::Awh(FILE                 *fplog,
             GMX_RELEASE_ASSERT(awhDimParams.eCoordProvider == eawhcoordproviderPULL, "Currently only the pull code is supported as coordinate provider");
             const t_pull_coord &pullCoord         = inputRecord.pull->coord[awhDimParams.coordIndex];
             double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
-            dimParams.push_back(DimParams(conversionFactor, awhDimParams.forceConstant, beta));
+            dimParams.emplace_back(conversionFactor, awhDimParams.forceConstant, beta);
 
             pullCoordIndex.push_back(awhDimParams.coordIndex);
         }
