@@ -271,7 +271,7 @@ static void get_f_norm_max(const t_commrec *cr,
 
     if (la_max >= 0 && DOMAINDECOMP(cr))
     {
-        a_max = cr->dd->gatindex[la_max];
+        a_max = cr->dd->globalAtomIndices[la_max];
     }
     else
     {

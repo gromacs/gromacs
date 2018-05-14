@@ -1579,7 +1579,7 @@ update_sd_second_half(gmx_int64_t                    step,
                     as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()),
                     as_rvec_array(state->v.data()), nullptr,
                     step, inputrec->ld_seed,
-                    DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1880,7 +1880,7 @@ void update_coords(gmx_int64_t                    step,
                             md->cFREEZE, md->cACC, md->cTC,
                             x_rvec, xp_rvec, v_rvec, f_rvec,
                             step, inputrec->ld_seed,
-                            DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                            DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     }
                     break;
                 case (eiBD):
@@ -1890,7 +1890,7 @@ void update_coords(gmx_int64_t                    step,
                                  x_rvec, xp_rvec, v_rvec, f_rvec,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
-                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
+                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (eiVV):
                 case (eiVVAK):

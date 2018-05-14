@@ -629,7 +629,7 @@ void make_local_shells(const t_commrec *cr,
             }
             if (dd)
             {
-                shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
+                shell[nshell] = shfc->shell_gl[ind[dd->globalAtomIndices[i]]];
             }
             else
             {

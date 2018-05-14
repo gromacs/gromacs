@@ -1115,7 +1115,7 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     if (DOMAINDECOMP(cr))
     {
-        cg1 = cr->dd->ncg_tot;
+        cg1 = cr->dd->globalAtomGroupIndices.size();
     }
     else
     {
@@ -1785,7 +1785,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     cg0 = 0;
     if (DOMAINDECOMP(cr))
     {
-        cg1 = cr->dd->ncg_tot;
+        cg1 = cr->dd->globalAtomGroupIndices.size();
     }
     else
     {

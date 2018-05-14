@@ -260,7 +260,7 @@ static void write_constr_pdb(const char *fn, const char *title,
             {
                 continue;
             }
-            ii = dd->gatindex[i];
+            ii = dd->globalAtomIndices[i];
         }
         else
         {

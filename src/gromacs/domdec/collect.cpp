@@ -71,7 +71,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
     if (state_local->ddp_count == dd->ddp_count)
     {
         /* The local state and DD are in sync, use the DD indices */
-        atomGroups = gmx::constArrayRefFromArray(dd->index_gl, dd->ncg_home);
+        atomGroups = gmx::constArrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home);
         nat_home   = dd->nat_home;
     }
     else if (state_local->ddp_count_cg_gl == state_local->ddp_count)
@@ -93,7 +93,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
         gmx_incons("Attempted to collect a vector for a state for which the charge group distribution is unknown");
     }
 
-    AtomDistribution *ma = dd->ma;
+    AtomDistribution *ma = dd->ma.get();
 
     /* Collect the charge group and atom counts on the master */
     int localBuffer[2] = { static_cast<int>(atomGroups.size()), nat_home };
@@ -150,8 +150,6 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                                     gmx::ArrayRef<const gmx::RVec> lv,
                                     gmx::ArrayRef<gmx::RVec>       v)
 {
-    AtomDistribution *ma = dd->ma;
-
     if (!DDMASTER(dd))
     {
 #if GMX_MPI
@@ -161,12 +159,14 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     }
     else
     {
+        AtomDistribution &ma = *dd->ma.get();
+
         /* Copy the master coordinates to the global array */
         const t_block &cgs_gl    = dd->comm->cgs_gl;
 
         int            rank      = dd->masterrank;
         int            localAtom = 0;
-        for (const int &i : ma->domainGroups[rank].atomGroups)
+        for (const int &i : ma.domainGroups[rank].atomGroups)
         {
             for (int globalAtom = cgs_gl.index[i]; globalAtom < cgs_gl.index[i + 1]; globalAtom++)
             {
@@ -178,20 +178,20 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
         {
             if (rank != dd->rank)
             {
-                const auto &domainGroups = ma->domainGroups[rank];
+                const auto &domainGroups = ma.domainGroups[rank];
 
-                GMX_RELEASE_ASSERT(v.data() != ma->rvecBuffer.data(), "We need different communication and return buffers");
+                GMX_RELEASE_ASSERT(v.data() != ma.rvecBuffer.data(), "We need different communication and return buffers");
 
                 /* When we send/recv instead of scatter/gather, we might need
                  * to increase the communication buffer size here.
                  */
-                if (static_cast<size_t>(domainGroups.numAtoms) > ma->rvecBuffer.size())
+                if (static_cast<size_t>(domainGroups.numAtoms) > ma.rvecBuffer.size())
                 {
-                    ma->rvecBuffer.resize(domainGroups.numAtoms);
+                    ma.rvecBuffer.resize(domainGroups.numAtoms);
                 }
 
 #if GMX_MPI
-                MPI_Recv(ma->rvecBuffer.data(), domainGroups.numAtoms*sizeof(rvec), MPI_BYTE, rank,
+                MPI_Recv(ma.rvecBuffer.data(), domainGroups.numAtoms*sizeof(rvec), MPI_BYTE, rank,
                          rank, dd->mpi_comm_all, MPI_STATUS_IGNORE);
 #endif
                 int localAtom = 0;
@@ -199,7 +199,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                 {
                     for (int globalAtom = cgs_gl.index[cg]; globalAtom < cgs_gl.index[cg + 1]; globalAtom++)
                     {
-                        copy_rvec(ma->rvecBuffer[localAtom++], v[globalAtom]);
+                        copy_rvec(ma.rvecBuffer[localAtom++], v[globalAtom]);
                     }
                 }
             }
@@ -216,7 +216,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     if (DDMASTER(dd))
     {
-        get_commbuffer_counts(dd->ma, &recvCounts, &displacements);
+        get_commbuffer_counts(dd->ma.get(), &recvCounts, &displacements);
     }
 
     dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), recvCounts, displacements,
