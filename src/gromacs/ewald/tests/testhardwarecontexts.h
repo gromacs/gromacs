@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,30 +62,36 @@ enum class CodePath
     CUDA
 };
 
+//! Return a string useful for human-readable messages describing a \c codePath.
+const char *codePathToString(CodePath codePath);
+
 /*! \internal \brief
  * A structure to describe a hardware context - an abstraction over
  * gmx_device_info_t with a human-readable string.
- * TODO: currently this does not know which CodePath it belongs too.
- * It probably should! That would save us one loop in all the PME tests.
  */
 struct TestHardwareContext
 {
+    //! Hardware path for the code being tested.
+    CodePath           codePath_;
     //! Readable description
     std::string        description_;
     //! Device information pointer
     gmx_device_info_t *deviceInfo_;
 
     public:
+        //! Retuns the code path for this context.
+        CodePath getCodePath() const { return codePath_; }
         //! Returns a human-readable context description line
-        std::string getDescription() const{return description_; }
-//! Returns the device info pointer
+        std::string        getDescription() const{return description_; }
+        //! Returns the device info pointer
         gmx_device_info_t *getDeviceInfo() const{return deviceInfo_; }
         //! Constructs the context
-        TestHardwareContext(const char *description, gmx_device_info_t *deviceInfo) : description_(description), deviceInfo_(deviceInfo){}
+        TestHardwareContext(CodePath codePath, const char *description, gmx_device_info_t *deviceInfo) :
+            codePath_(codePath), description_(description), deviceInfo_(deviceInfo){}
 };
 
-//! A list of hardware contexts
-typedef std::list<TestHardwareContext> TestHardwareContexts;
+//! A container of hardware contexts
+typedef std::vector<TestHardwareContext> TestHardwareContexts;
 
 /*! \internal \brief
  * This class performs one-time test initialization (enumerating the hardware)
@@ -95,17 +101,17 @@ class PmeTestEnvironment : public ::testing::Environment
 {
     private:
         //! General hardware info
-        gmx_hw_info_t *hardwareInfo_;
+        gmx_hw_info_t       *hardwareInfo_;
         //! Storage of hardware contexts
-        std::map<CodePath, TestHardwareContexts> hardwareContextsByMode_;
+        TestHardwareContexts hardwareContexts_;
 
     public:
         //! This is called by GTest framework once to query the hardware
         virtual void SetUp();
         //! This is called by GTest framework once to clean up
         virtual void TearDown();
-        //! Get available hardware contexts for given code path
-        const TestHardwareContexts &getHardwareContexts(CodePath mode) const {return hardwareContextsByMode_.at(mode); }
+        //! Get available hardware contexts.
+        const TestHardwareContexts &getHardwareContexts() const {return hardwareContexts_; }
 };
 
 //! Get the test environment

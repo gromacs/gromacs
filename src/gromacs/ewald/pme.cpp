@@ -123,6 +123,38 @@
 #include "pme-spline-work.h"
 #include "pme-spread.h"
 
+/*! \brief Help build a descriptive message in \c error if there are
+ * \c errorReasons why PME on GPU is not supported.
+ *
+ * \returns Whether the lack of errorReasons indicate there is support. */
+static bool
+addMessageIfNotSupported(const std::list<std::string> &errorReasons,
+                         std::string                  *error)
+{
+    bool foundErrorReasons = errorReasons.empty();
+    if (!foundErrorReasons && error)
+    {
+        std::string regressionTestMarker = "PME GPU does not support";
+        // this prefix is tested for in the regression tests script gmxtest.pl
+        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
+    }
+    return foundErrorReasons;
+}
+
+bool pme_gpu_supports_build(std::string *error)
+{
+    std::list<std::string> errorReasons;
+    if (GMX_DOUBLE)
+    {
+        errorReasons.push_back("double precision");
+    }
+    if (GMX_GPU != GMX_GPU_CUDA)
+    {
+        errorReasons.push_back("non-CUDA build of GROMACS");
+    }
+    return addMessageIfNotSupported(errorReasons, error);
+}
+
 bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
 {
     std::list<std::string> errorReasons;
@@ -142,16 +174,6 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     {
         errorReasons.push_back("Lennard-Jones PME");
     }
-#if GMX_DOUBLE
-    {
-        errorReasons.push_back("double precision");
-    }
-#endif
-#if GMX_GPU != GMX_GPU_CUDA
-    {
-        errorReasons.push_back("non-CUDA build of GROMACS");
-    }
-#endif
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         errorReasons.push_back("group cutoff scheme");
@@ -160,15 +182,7 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
     {
         errorReasons.push_back("test particle insertion");
     }
-
-    bool inputSupported = errorReasons.empty();
-    if (!inputSupported && error)
-    {
-        std::string regressionTestMarker = "PME GPU does not support";
-        // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
-    }
-    return inputSupported;
+    return addMessageIfNotSupported(errorReasons, error);
 }
 
 /*! \brief \libinternal
@@ -199,25 +213,16 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
     {
         errorReasons.push_back("Lennard-Jones PME");
     }
-#if GMX_DOUBLE
+    if (GMX_DOUBLE)
     {
         errorReasons.push_back("double precision");
     }
-#endif
-#if GMX_GPU != GMX_GPU_CUDA
+    if (GMX_GPU != GMX_GPU_CUDA)
     {
         errorReasons.push_back("non-CUDA build of GROMACS");
     }
-#endif
 
-    bool inputSupported = errorReasons.empty();
-    if (!inputSupported && error)
-    {
-        std::string regressionTestMarker = "PME GPU does not support";
-        // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
-    }
-    return inputSupported;
+    return addMessageIfNotSupported(errorReasons, error);
 }
 
 PmeRunMode pme_run_mode(const gmx_pme_t *pme)

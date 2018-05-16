@@ -44,8 +44,7 @@
 
 #include "testhardwarecontexts.h"
 
-#include "config.h"
-
+#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
@@ -57,6 +56,20 @@ namespace gmx
 {
 namespace test
 {
+
+const char *codePathToString(CodePath codePath)
+{
+    switch (codePath)
+    {
+        case CodePath::CPU:
+            return "CPU";
+        case CodePath::CUDA:
+            return "CUDA";
+        default:
+            GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
+    }
+    return "";
+}
 
 /* Implements the "construct on first use" idiom to avoid any static
  * initialization order fiasco.
@@ -87,20 +100,20 @@ void callAddGlobalTestEnvironment()
 //! Simple hardware initialization
 static gmx_hw_info_t *hardwareInit()
 {
-    LoggerBuilder                        builder;
-    LoggerOwner                          logOwner(builder.build());
-    MDLogger                             log(logOwner.logger());
     PhysicalNodeCommunicator             physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
-    return gmx_detect_hardware(log, physicalNodeComm);
+    return gmx_detect_hardware(MDLogger {}, physicalNodeComm);
 }
 
 void PmeTestEnvironment::SetUp()
 {
-    TestHardwareContext emptyContext("", nullptr);
-    hardwareContextsByMode_[CodePath::CPU].push_back(emptyContext);
+    hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CPU, "", nullptr));
 
     hardwareInfo_ = hardwareInit();
-
+    if (!pme_gpu_supports_build(nullptr))
+    {
+        // PME can only run on the CPU, so don't make any more test contexts.
+        return;
+    }
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     TestHardwareContexts gpuContexts;
     for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
@@ -108,11 +121,9 @@ void PmeTestEnvironment::SetUp()
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        gpuContexts.emplace_back(TestHardwareContext(description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
+        // TODO should this be CodePath::GPU?
+        hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CUDA, description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
     }
-#if GMX_GPU == GMX_GPU_CUDA
-    hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
-#endif
 }
 
 void PmeTestEnvironment::TearDown()
