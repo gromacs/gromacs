@@ -105,7 +105,7 @@ function (gmx_register_gtest_test NAME EXENAME)
         set(_timeout 30)
         if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
-            set(_timeout 120)
+            set(_timeout 180) # TODO: customize this for GPU-using tests #2529
             gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         elseif (ARG_SLOW_TEST)
             list(APPEND _labels SlowTest)
