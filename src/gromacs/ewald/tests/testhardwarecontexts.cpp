@@ -66,8 +66,8 @@ const char *codePathToString(CodePath codePath)
     {
         case CodePath::CPU:
             return "CPU";
-        case CodePath::CUDA:
-            return "CUDA";
+        case CodePath::GPU:
+            return "GPU";
         default:
             GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
     }
@@ -127,9 +127,8 @@ void PmeTestEnvironment::SetUp()
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
-        // TODO should this be CodePath::GPU?
         hardwareContexts_.emplace_back(compat::make_unique<TestHardwareContext>
-                                           (CodePath::CUDA, description.c_str(),
+                                           (CodePath::GPU, description.c_str(),
                                            deviceInfo));
     }
 }

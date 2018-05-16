@@ -47,13 +47,15 @@
 #include "gromacs/gpu_utils/ocl_compiler.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h" // for GridOrdering enum
 #include "pme-gpu-program-impl.h"
 #include "pme-gpu-types-host.h"
+#include "pme-grid.h"
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
 {
-    // Context creation (which should happen outside of this class: #2522
+    // Context creation (which should happen outside of this class: #2522)
     cl_platform_id        platformId = deviceInfo->ocl_gpu_id.ocl_platform_id;
     cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
     cl_context_properties contextProperties[3];
@@ -72,11 +74,167 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
 
     warpSize = gmx::ocl::getWarpSize(context, deviceId);
 
-    //TODO: OpenCL kernel compilation should be here.
+    compileKernels(deviceInfo);
 }
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl()
 {
     // TODO: log releasing errors
-    clReleaseContext(context);
+    cl_int gmx_used_in_debug stat = 0;
+    stat |= clReleaseKernel(splineAndSpreadKernel);
+    stat |= clReleaseKernel(splineKernel);
+    stat |= clReleaseKernel(spreadKernel);
+    stat |= clReleaseKernel(gatherKernel);
+    stat |= clReleaseKernel(gatherReduceWithInputKernel);
+    stat |= clReleaseKernel(solveXYZKernel);
+    stat |= clReleaseKernel(solveXYZEnergyKernel);
+    stat |= clReleaseKernel(solveYZXKernel);
+    stat |= clReleaseKernel(solveYZXEnergyKernel);
+    stat |= clReleaseContext(context);
+    GMX_ASSERT(stat == CL_SUCCESS, gmx::formatString("Failed to release PME OpenCL resources %d: %s",
+                                                     stat, ocl_get_error_string(stat).c_str()).c_str());
+}
+
+void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
+{
+    // We might consider storing program as a member variable if it's needed later
+    cl_program program = nullptr;
+    /* Need to catch std::bad_alloc here and during compilation string handling. */
+    try
+    {
+        /* Here we pass macros and static const int variables defined in include
+         * files outside as macros, to avoid including those files
+         * in the JIT compilation that happens at runtime.
+         */
+
+        constexpr int order = 4;
+
+//FIXME the spline indcies shoudl go into an inlien function like they did in CUDA kernels
+
+//FIXME thsi is duplicated in pme-gpu-internal.cpp and should be a method
+        const int  c_gatherMaxThreadsPerBlock = std::min(c_gatherMaxWarpsPerBlock * warpSize,
+                                                         deviceInfo->maxWorkGroupSize);
+        const int  c_spreadMaxThreadsPerBlock = std::min(c_spreadMaxWarpsPerBlock * warpSize,
+                                                         deviceInfo->maxWorkGroupSize);
+        const int  c_solveMaxThreadsPerBlock = std::min(c_solveMaxWarpsPerBlock * warpSize,
+                                                        deviceInfo->maxWorkGroupSize);
+
+        const std::string commonDefines = gmx::formatString(
+                    "-Dwarp_size=%d "
+                    "-Dorder=%d "
+                    "-DPME_SPREADGATHER_ATOMS_PER_WARP=%d "
+                    "-DPME_SPREADGATHER_THREADS_PER_ATOM=%d "
+                    // forwarding from pme-grid.h, used for spline computation table sizes only
+                    "-Dc_pmeMaxUnitcellShift=%f "
+                    // forwarding PME behavior constants from pme-gpu-constants.h
+                    "-Dc_usePadding=%d "
+                    "-Dc_skipNeutralAtoms=%d "
+                    "-Dc_virialAndEnergyCount=%d "
+                    // forwarding kernel work sizes
+                    "-Dc_spreadMaxThreadsPerBlock=%d "
+                    "-Dc_solveMaxThreadsPerBlock=%d "
+                    "-Dc_gatherMaxThreadsPerBlock=%d "
+                    // forwarding from vectypes.h
+                    "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
+                    // decomposition parameter placeholders
+                    "-DwrapX=true -DwrapY=true ",
+                    warpSize,
+                    order,
+                    warpSize / PME_SPREADGATHER_THREADS_PER_ATOM,
+                    PME_SPREADGATHER_THREADS_PER_ATOM,
+                    static_cast<float>(c_pmeMaxUnitcellShift),
+                    c_usePadding,
+                    c_skipNeutralAtoms,
+                    c_virialAndEnergyCount,
+                    c_spreadMaxThreadsPerBlock,
+                    c_solveMaxThreadsPerBlock,
+                    c_gatherMaxThreadsPerBlock,
+                    DIM, XX, YY, ZZ);
+        try
+        {
+            /* TODO when we have a proper MPI-aware logging module,
+               the log output here should be written there */
+            program = gmx::ocl::compileProgram(stderr,
+                                               "src/gromacs/ewald",
+                                               "pme-program.cl",
+                                               commonDefines,
+                                               context,
+                                               deviceInfo->ocl_gpu_id.ocl_device_id,
+                                               deviceInfo->vendor_e);
+        }
+        catch (gmx::GromacsException &e)
+        {
+            e.prependContext(gmx::formatString("Failed to compile PME kernels for GPU #%s\n",
+                                               deviceInfo->device_name));
+            throw;
+        }
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    constexpr cl_uint      expectedKernelCount = 9;
+    // Has to be equal or larger than the number of kernel instances.
+    // If it is not, CL_INVALID_VALUE will be thrown.
+    std::vector<cl_kernel> kernels(expectedKernelCount, nullptr);
+    cl_uint                actualKernelCount = 0;
+    cl_int                 clError           = clCreateKernelsInProgram(program, kernels.size(), kernels.data(), &actualKernelCount);
+    if (clError != CL_SUCCESS)
+    {
+        const std::string errorString = gmx::formatString("Failed to create kernels for PME on GPU #%s:\n OpenCL error %d: %s",
+                                                          deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+        GMX_THROW(gmx::InternalError(errorString));
+    }
+    kernels.resize(actualKernelCount);
+
+    std::array<char, 100> kernelNamesBuffer;
+    for (const auto &kernel : kernels)
+    {
+        clError = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME,
+                                  kernelNamesBuffer.size(), kernelNamesBuffer.data(), nullptr);
+        if (clError != CL_SUCCESS)
+        {
+            const std::string errorString = gmx::formatString("Failed to parse kernels for PME on GPU #%s:\n OpenCL error %d: %s",
+                                                              deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+            GMX_THROW(gmx::InternalError(errorString));
+        }
+
+        // The names below must correspond to those defined in pme-program.cl
+        // TODO use a map with string key instead?
+        if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernel"))
+        {
+            splineKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernel"))
+        {
+            splineAndSpreadKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernel"))
+        {
+            spreadKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernel"))
+        {
+            gatherKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherReduceWithInputKernel"))
+        {
+            gatherReduceWithInputKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))
+        {
+            solveYZXKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernel"))
+        {
+            solveYZXEnergyKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernel"))
+        {
+            solveXYZKernel = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernel"))
+        {
+            solveXYZEnergyKernel = kernel;
+        }
+    }
+    clReleaseProgram(program);
 }

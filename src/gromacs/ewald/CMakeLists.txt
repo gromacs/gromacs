@@ -65,6 +65,7 @@ if (GMX_USE_CUDA)
         )
     gmx_compile_cpp_as_cuda(
         pme-gpu-internal.cpp
+        pme-gpu-program.cpp
         pme-gpu-timings.cpp
         )
 elseif (GMX_USE_OPENCL)
@@ -77,6 +78,8 @@ elseif (GMX_USE_OPENCL)
         pme-gpu-internal.cpp
         pme-gpu-timings.cpp
         )
+    file(GLOB EWALD_OPENCL_RUNTIME_SOURCES pme-spread.cl pme-solve.cl pme-gather.cl pme-program.cl pme-gpu-types.h)
+    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} ${EWALD_OPENCL_RUNTIME_SOURCES} PARENT_SCOPE)
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
