@@ -111,7 +111,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 
             TestReferenceData                     refData;
             const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"},
-                                                                 {CodePath::CUDA, "CUDA"}};
+                                                                 {CodePath::GPU, getGpuImplementationString()}};
             for (const auto &mode : modesToTest)
             {
                 const bool supportedInput = pmeSupportsInputForMode(&inputRec, mode.first);
@@ -123,7 +123,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                 }
 
                 std::map<GridOrdering, std::string> gridOrderingsToTest = {{GridOrdering::YZX, "YZX"}};
-                if (mode.first == CodePath::CUDA)
+                if (mode.first == CodePath::GPU)
                 {
                     gridOrderingsToTest[GridOrdering::XYZ] = "XYZ";
                 }
