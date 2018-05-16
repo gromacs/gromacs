@@ -87,6 +87,8 @@ struct gmx_device_info_t
     int                 adress_bits;         /**< number of adress bits the device is capable of */
     int                 stat;                /**< device status takes values of e_gpu_detect_res_t */
     ocl_vendor_id_t     vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
+    size_t              maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
+    size_t              maxWorkGroupSize;    /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
 };
 
 /*! \internal
