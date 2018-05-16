@@ -45,7 +45,7 @@
 
 #include <random>
 
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/collect.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

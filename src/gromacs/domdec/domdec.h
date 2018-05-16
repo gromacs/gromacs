@@ -261,16 +261,6 @@ void dd_dlb_unlock(struct gmx_domdec_t *dd);
 void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    int                  gpu_id);
 
-/*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
-void dd_collect_vec(struct gmx_domdec_t           *dd,
-                    const t_state                 *state_local,
-                    gmx::ArrayRef<const gmx::RVec> lv,
-                    gmx::ArrayRef<gmx::RVec>       v);
-
-/*! \brief Collects the local state \p state_local to \p state on the master rank */
-void dd_collect_state(struct gmx_domdec_t *dd,
-                      const t_state *state_local, t_state *state);
-
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum {
     ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
