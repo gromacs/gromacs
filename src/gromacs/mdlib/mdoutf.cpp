@@ -37,7 +37,7 @@
 #include "mdoutf.h"
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
