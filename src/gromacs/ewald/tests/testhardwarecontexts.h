@@ -60,7 +60,7 @@ namespace test
 enum class CodePath
 {
     CPU,
-    CUDA
+    GPU
 };
 
 /*! \internal \brief
