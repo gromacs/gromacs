@@ -282,6 +282,10 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
                     gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkItemSizes, nullptr);
+
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
+
                     gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
