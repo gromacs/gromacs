@@ -47,9 +47,7 @@
 #include "gromacs/utility/classhelpers.h"
 
 #if GMX_GPU == GMX_GPU_CUDA
-// TODO uncomment when we learn to compile .cpp with CUDA compiler
-//! include "gromacs/gpu_utils/gputraits.cuh"
-using Context = void *;
+#include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #elif GMX_GPU == GMX_GPU_NONE
@@ -112,6 +110,8 @@ struct PmeGpuProgramImpl
      * Spreading kernels also have hardcoded X/Y indices wrapping parameters,
      * as a placeholder for implementing 1/2D decomposition.
      */
+    size_t          spreadWorkGroupSize;
+
     PmeKernelHandle splineKernel;
     PmeKernelHandle spreadKernel;
     PmeKernelHandle splineAndSpreadKernel;
@@ -121,6 +121,8 @@ struct PmeGpuProgramImpl
     /** Same for gather: hardcoded X/Y unwrap parameters, order of 4, plus
      * it can either reduce with previous forces in the host buffer, or ignore them.
      */
+    size_t          gatherWorkGroupSize;
+
     PmeKernelHandle gatherReduceWithInputKernel;
     PmeKernelHandle gatherKernel;
     //@}
@@ -129,6 +131,8 @@ struct PmeGpuProgramImpl
     /** Solve kernel doesn't care about the interpolation order, but can optionally
      * compute energy and virial, and supports XYZ and YZX grid orderings.
      */
+    size_t          solveMaxWorkGroupSize;
+
     PmeKernelHandle solveYZXKernel;
     PmeKernelHandle solveXYZKernel;
     PmeKernelHandle solveYZXEnergyKernel;
@@ -140,6 +144,10 @@ struct PmeGpuProgramImpl
     explicit PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
+
+    private:
+        // Compiles kernels, if supported. Called by the constructor.
+        void compileKernels(const gmx_device_info_t *deviceInfo);
 };
 
 #endif
