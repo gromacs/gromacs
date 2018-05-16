@@ -47,9 +47,7 @@
 #include "gromacs/utility/classhelpers.h"
 
 #if GMX_GPU == GMX_GPU_CUDA
-// TODO uncomment when we learn to compile .cpp with CUDA compiler
-//! include "gromacs/gpu_utils/gputraits.cuh"
-using Context = void *;
+#include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #elif GMX_GPU == GMX_GPU_NONE
@@ -140,6 +138,10 @@ struct PmeGpuProgramImpl
     explicit PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
+
+    private:
+        // Compiles kernels, if supported. Called by the constructor.
+        void compileKernels(const gmx_device_info_t *deviceInfo);
 };
 
 #endif
