@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -386,58 +386,53 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             inputRec.coulombtype = eelPME;
             inputRec.epsilon_r   = 1.0;
 
-            TestReferenceData                     refData;
-            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"},
-                                                                 {CodePath::CUDA, "CUDA"}};
-            for (const auto &mode : modesToTest)
+            TestReferenceData refData;
+            for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
-                const bool supportedInput = pmeSupportsInputForMode(&inputRec, mode.first);
+                CodePath   codePath       = context.getCodePath();
+                const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
                     continue;
                 }
 
-                const auto contextsToTest = getPmeTestEnv()->getHardwareContexts(mode.first);
-                for (const auto &context : contextsToTest)
+                /* Describing the test uniquely */
+                SCOPED_TRACE(formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
+                                          ", order %d, %zu atoms, %s",
+                                          codePathToString(codePath), context.getDescription().c_str(),
+                                          gridSize[XX], gridSize[YY], gridSize[ZZ],
+                                          pmeOrder,
+                                          atomCount,
+                                          (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
+                                          ));
+
+                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
+
+                /* Setting some more inputs */
+                pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
+                pmeSetGridLineIndices(pmeSafe.get(), codePath, inputAtomData.gridLineIndices);
+                for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
                 {
-                    /* Describing the test uniquely */
-                    SCOPED_TRACE(formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
-                                              ", order %d, %zu atoms, %s",
-                                              mode.second.c_str(), context.getDescription().c_str(),
-                                              gridSize[XX], gridSize[YY], gridSize[ZZ],
-                                              pmeOrder,
-                                              atomCount,
-                                              (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput) ? "with reduction" : "without reduction"
-                                              ));
-
-                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), inputAtomData.coordinates, inputAtomData.charges, box);
-
-                    /* Setting some more inputs */
-                    pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
-                    pmeSetGridLineIndices(pmeSafe.get(), mode.first, inputAtomData.gridLineIndices);
-                    for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
-                    {
-                        pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
-                        pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
-                    }
-
-                    /* Explicitly copying the sample forces to be able to modify them */
-                    auto inputForcesFull(c_sampleForcesFull);
-                    GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
-                    auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
-
-                    /* Running the force gathering itself */
-                    pmePerformGather(pmeSafe.get(), mode.first, inputForceTreatment, forces);
-                    pmeFinalizeTest(pmeSafe.get(), mode.first);
-
-                    /* Check the output forces correctness */
-                    TestReferenceChecker forceChecker(refData.rootChecker());
-                    const auto           ulpTolerance = 3 * pmeOrder;
-                    forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
-                    forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
+                    pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
+                    pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
                 }
+
+                /* Explicitly copying the sample forces to be able to modify them */
+                auto inputForcesFull(c_sampleForcesFull);
+                GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
+                auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
+
+                /* Running the force gathering itself */
+                pmePerformGather(pmeSafe.get(), codePath, inputForceTreatment, forces);
+                pmeFinalizeTest(pmeSafe.get(), codePath);
+
+                /* Check the output forces correctness */
+                TestReferenceChecker forceChecker(refData.rootChecker());
+                const auto           ulpTolerance = 3 * pmeOrder;
+                forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
+                forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
             }
         }
 };

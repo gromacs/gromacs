@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,118 +121,115 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
             // This is just a hack for a single specific output though.
             // What would be much better TODO is to split different codepaths into separate tests,
             // while making them use the same reference files.
-            bool   gridValuesSizeAssigned = false;
-            size_t previousGridValuesSize;
+            bool       gridValuesSizeAssigned = false;
+            size_t     previousGridValuesSize;
 
-            for (const auto &mode : modesToTest)
+            for (const auto &context : getPmeTestEnv()->getHardwareContexts())
             {
-                const bool supportedInput = pmeSupportsInputForMode(&inputRec, mode.first);
+                CodePath   codePath       = context.getCodePath();
+                const bool supportedInput = pmeSupportsInputForMode(&inputRec, codePath);
                 if (!supportedInput)
                 {
                     /* Testing the failure for the unsupported input */
-                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, nullptr, coordinates, charges, box), NotImplementedError);
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, codePath, nullptr, coordinates, charges, box), NotImplementedError);
                     continue;
                 }
 
-                const auto contextsToTest = getPmeTestEnv()->getHardwareContexts(mode.first);
-                for (const auto &context : contextsToTest)
+                for (const auto &option : optionsToTest)
                 {
-                    for (const auto &option : optionsToTest)
+                    /* Describing the test uniquely in case it fails */
+
+                    SCOPED_TRACE(formatString("Testing %s with %s %sfor PME grid size %d %d %d"
+                                              ", order %d, %zu atoms",
+                                              option.second.c_str(), codePathToString(codePath),
+                                              context.getDescription().c_str(),
+                                              gridSize[XX], gridSize[YY], gridSize[ZZ],
+                                              pmeOrder,
+                                              atomCount));
+
+                    /* Running the test */
+
+                    PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, codePath, context.getDeviceInfo(), coordinates, charges, box);
+
+                    const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
+                    const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
+
+                    if (!computeSplines)
                     {
-                        /* Describing the test uniquely in case it fails */
+                        // Here we should set up the results of the spline computation so that the spread can run.
+                        // What is lazy and works is running the separate spline so that it will set it up for us:
+                        pmePerformSplineAndSpread(pmeSafe.get(), codePath, true, false);
+                        // We know that it is tested in another iteration.
+                        // TODO: Clean alternative: read and set the reference gridline indices, spline params
+                    }
 
-                        SCOPED_TRACE(formatString("Testing %s with %s %sfor PME grid size %d %d %d"
-                                                  ", order %d, %zu atoms",
-                                                  option.second.c_str(), mode.second.c_str(),
-                                                  context.getDescription().c_str(),
-                                                  gridSize[XX], gridSize[YY], gridSize[ZZ],
-                                                  pmeOrder,
-                                                  atomCount));
+                    pmePerformSplineAndSpread(pmeSafe.get(), codePath, computeSplines, spreadCharges);
+                    pmeFinalizeTest(pmeSafe.get(), codePath);
 
-                        /* Running the test */
+                    /* Outputs correctness check */
+                    /* All tolerances were picked empirically for single precision on CPU */
 
-                        PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, context.getDeviceInfo(), coordinates, charges, box);
+                    TestReferenceChecker rootChecker(refData.rootChecker());
 
-                        const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
-                        const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
+                    const auto           maxGridSize              = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
+                    const auto           ulpToleranceSplineValues = 4 * (pmeOrder - 2) * maxGridSize;
+                    /* 4 is a modest estimate for amount of operations; (pmeOrder - 2) is a number of iterations;
+                     * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
+                     */
 
-                        if (!computeSplines)
+                    if (computeSplines)
+                    {
+                        const char *dimString[] = { "X", "Y", "Z" };
+
+                        /* Spline values */
+                        SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
+                        TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
+                        splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
+                        for (int i = 0; i < DIM; i++)
                         {
-                            // Here we should set up the results of the spline computation so that the spread can run.
-                            // What is lazy and works is running the separate spline so that it will set it up for us:
-                            pmePerformSplineAndSpread(pmeSafe.get(), mode.first, true, false);
-                            // We know that it is tested in another iteration.
-                            // TODO: Clean alternative: read and set the reference gridline indices, spline params
+                            auto splineValuesDim = pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Values, i);
+                            splineValuesChecker.checkSequence(splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
                         }
 
-                        pmePerformSplineAndSpread(pmeSafe.get(), mode.first, computeSplines, spreadCharges);
-                        pmeFinalizeTest(pmeSafe.get(), mode.first);
-
-                        /* Outputs correctness check */
-                        /* All tolerances were picked empirically for single precision on CPU */
-
-                        TestReferenceChecker rootChecker(refData.rootChecker());
-
-                        const auto           maxGridSize              = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
-                        const auto           ulpToleranceSplineValues = 4 * (pmeOrder - 2) * maxGridSize;
-                        /* 4 is a modest estimate for amount of operations; (pmeOrder - 2) is a number of iterations;
-                         * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
-                         */
-
-                        if (computeSplines)
+                        /* Spline derivatives */
+                        const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
+                        /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
+                        SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %ld", ulpToleranceSplineDerivatives));
+                        TestReferenceChecker splineDerivativesChecker(rootChecker.checkCompound("Splines", "Derivatives"));
+                        splineDerivativesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
+                        for (int i = 0; i < DIM; i++)
                         {
-                            const char *dimString[] = { "X", "Y", "Z" };
-
-                            /* Spline values */
-                            SCOPED_TRACE(formatString("Testing spline values with tolerance of %ld", ulpToleranceSplineValues));
-                            TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
-                            splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
-                            for (int i = 0; i < DIM; i++)
-                            {
-                                auto splineValuesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Values, i);
-                                splineValuesChecker.checkSequence(splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
-                            }
-
-                            /* Spline derivatives */
-                            const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
-                            /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
-                            SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %ld", ulpToleranceSplineDerivatives));
-                            TestReferenceChecker splineDerivativesChecker(rootChecker.checkCompound("Splines", "Derivatives"));
-                            splineDerivativesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
-                            for (int i = 0; i < DIM; i++)
-                            {
-                                auto splineDerivativesDim = pmeGetSplineData(pmeSafe.get(), mode.first, PmeSplineDataType::Derivatives, i);
-                                splineDerivativesChecker.checkSequence(splineDerivativesDim.begin(), splineDerivativesDim.end(), dimString[i]);
-                            }
-
-                            /* Particle gridline indices */
-                            auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), mode.first);
-                            rootChecker.checkSequence(gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
+                            auto splineDerivativesDim = pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Derivatives, i);
+                            splineDerivativesChecker.checkSequence(splineDerivativesDim.begin(), splineDerivativesDim.end(), dimString[i]);
                         }
 
-                        if (spreadCharges)
-                        {
-                            /* The wrapped grid */
-                            SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), mode.first);
-                            TestReferenceChecker       gridValuesChecker(rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
-                            const auto                 ulpToleranceGrid = 2 * ulpToleranceSplineValues * (int)(ceil(sqrt(atomCount)));
-                            /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
-                            SCOPED_TRACE(formatString("Testing grid values with tolerance of %ld", ulpToleranceGrid));
-                            if (!gridValuesSizeAssigned)
-                            {
-                                previousGridValuesSize = nonZeroGridValues.size();
-                                gridValuesSizeAssigned = true;
-                            }
-                            else
-                            {
-                                EXPECT_EQ(previousGridValuesSize, nonZeroGridValues.size());
-                            }
+                        /* Particle gridline indices */
+                        auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), codePath);
+                        rootChecker.checkSequence(gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
+                    }
 
-                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
-                            for (const auto &point : nonZeroGridValues)
-                            {
-                                gridValuesChecker.checkReal(point.second, point.first.c_str());
-                            }
+                    if (spreadCharges)
+                    {
+                        /* The wrapped grid */
+                        SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), codePath);
+                        TestReferenceChecker       gridValuesChecker(rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
+                        const auto                 ulpToleranceGrid = 2 * ulpToleranceSplineValues * (int)(ceil(sqrt(atomCount)));
+                        /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
+                        SCOPED_TRACE(formatString("Testing grid values with tolerance of %ld", ulpToleranceGrid));
+                        if (!gridValuesSizeAssigned)
+                        {
+                            previousGridValuesSize = nonZeroGridValues.size();
+                            gridValuesSizeAssigned = true;
+                        }
+                        else
+                        {
+                            EXPECT_EQ(previousGridValuesSize, nonZeroGridValues.size());
+                        }
+
+                        gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+                        for (const auto &point : nonZeroGridValues)
+                        {
+                            gridValuesChecker.checkReal(point.second, point.first.c_str());
                         }
                     }
                 }

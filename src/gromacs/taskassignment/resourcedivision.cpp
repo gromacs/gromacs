@@ -361,7 +361,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     if (pmeOnGpu)
     {
         GMX_RELEASE_ASSERT((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) &&
-                           pme_gpu_supports_input(inputrec, nullptr),
+                           pme_gpu_supports_build(nullptr) && pme_gpu_supports_input(inputrec, nullptr),
                            "PME can't be on GPUs unless we are using PME");
 
         // PME on GPUs supports a single PME rank with PP running on the same or few other ranks.

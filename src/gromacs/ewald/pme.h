@@ -234,13 +234,24 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *ch
 
 /* A block of PME GPU functions */
 
+/*! \brief Checks whether the GROMACS build allows to run PME on GPU.
+ * TODO: this partly duplicates an internal PME assert function
+ * pme_gpu_check_restrictions(), except that works with a
+ * formed gmx_pme_t structure. Should that one go away/work with inputrec?
+ *
+ * \param[out] error  If non-null, the error message when PME is not supported on GPU.
+ *
+ * \returns true if PME can run on GPU on this build, false otherwise.
+ */
+bool pme_gpu_supports_build(std::string *error);
+
 /*! \brief Checks whether the input system allows to run PME on GPU.
- * TODO: this mostly duplicates an internal PME assert function
+ * TODO: this partly duplicates an internal PME assert function
  * pme_gpu_check_restrictions(), except that works with a
  * formed gmx_pme_t structure. Should that one go away/work with inputrec?
  *
  * \param[in]  ir     Input system.
- * \param[out] error  The error message if the input is not supported on GPU.
+ * \param[out] error  If non-null, the error message if the input is not supported on GPU.
  *
  * \returns true if PME can run on GPU with this input, false otherwise.
  */
