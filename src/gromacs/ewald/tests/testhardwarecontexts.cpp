@@ -108,7 +108,7 @@ void PmeTestEnvironment::SetUp()
         std::string description = "(GPU " + std::string(stmp) + ") ";
         gpuContexts.emplace_back(TestHardwareContext(description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
     }
-    hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
+    hardwareContextsByMode_[CodePath::GPU] = gpuContexts;
 }
 
 void PmeTestEnvironment::TearDown()
