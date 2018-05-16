@@ -122,7 +122,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                 }
 
                 std::map<GridOrdering, std::string> gridOrderingsToTest = {{GridOrdering::YZX, "YZX"}};
-                if (codePath == CodePath::CUDA)
+                if (codePath == CodePath::GPU)
                 {
                     gridOrderingsToTest[GridOrdering::XYZ] = "XYZ";
                 }
