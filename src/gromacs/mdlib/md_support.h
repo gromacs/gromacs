@@ -58,6 +58,7 @@ namespace gmx
 class Constraints;
 class MDLogger;
 class SimulationSignaller;
+template<typename VarType> class ActionSetVariableValue;
 }
 
 /* Define a number of flags to better control the information
@@ -104,7 +105,7 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
                                 gmx_int64_t           value);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bLastStep);
+                         gmx_bool bLastStep, gmx::ActionSetVariableValue<gmx_bool> *stop_action);
 
 /* Set the lambda values in the global state from a frame read with rerun */
 void setCurrentLambdasRerun(gmx_int64_t step, const t_lambda *fepvals,
