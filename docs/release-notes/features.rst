@@ -20,13 +20,6 @@ files needed for :ref:`gmx trjconv` to split up trajectories into frames corresp
 to the clusters were not written. This adds support for writing this :ref:`index <ndx>` file
 as well as proper :ref:`PDB <pdb>` files.
 
-Intel integrated GPUs are now supported for GPU offload with OpenCL
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-On Intel CPUs with integrated GPUs, it is now possible to offload nonbonded tasks
-to the GPU the same way as offload is done to other GPU architectures.
-This can have performance benefits, in particular on modern desktop and mobile
-Intel CPUs this offload can give up to 20% higher simulation performance.
-
 Allow using COM of previous step as PBC reference
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

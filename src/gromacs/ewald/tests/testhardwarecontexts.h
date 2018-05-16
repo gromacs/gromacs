@@ -60,7 +60,7 @@ namespace test
 enum class CodePath
 {
     CPU,
-    CUDA
+    GPU
 };
 
 //! Return a string useful for human-readable messages describing a \c codePath.
