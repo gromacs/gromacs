@@ -42,6 +42,8 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <list>
 
 #include "gromacs/ewald/ewald-utils.h"
@@ -301,7 +303,9 @@ bool pme_gpu_try_finish_task(const gmx_pme_t                *pme,
 
     wallcycle_start_nocount(wcycle, ewcWAIT_GPU_PME_GATHER);
 
-    if (completionKind == GpuTaskCompletion::Check)
+    constexpr bool c_streamQuerySupported = (GMX_GPU == GMX_GPU_CUDA);
+    // TODO: implement c_streamQuerySupported with an additional GpuEventSynchronizer per stream (#2521)
+    if ((completionKind == GpuTaskCompletion::Check) && c_streamQuerySupported)
     {
         // Query the PME stream for completion of all tasks enqueued and
         // if we're not done, stop the timer before early return.

@@ -34,10 +34,8 @@
  */
 
 /*! \internal \file
- * \brief This file defines the PME CUDA-specific data structure,
- * various compile-time constants shared among the PME CUDA kernels,
- * and also names some PME CUDA memory management routines.
- * TODO: consider changing defines into variables where possible; have inline getters.
+ * \brief This file defines the PME CUDA-specific kernel parameter data structure.
+ * \todo Rename the file (pme-gpu-types.cuh?), reconsider inheritance approach.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  */
@@ -45,42 +43,11 @@
 #ifndef GMX_EWALD_PME_CUH
 #define GMX_EWALD_PME_CUH
 
-#include <cassert>
+#include "gromacs/math/vectypes.h" // for DIM
 
 #include "pme-gpu-constants.h"
-#include "pme-gpu-internal.h"
+#include "pme-gpu-internal.h"      // for GridOrdering
 #include "pme-gpu-types.h"
-#include "pme-gpu-types-host.h"
-#include "pme-gpu-types-host-impl.h"
-
-/*! \brief \internal
- * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
- *
- * \param[in] atomDataIndexGlobal  The atom data index.
- * \param[in] nAtomData            The atom data array element count.
- * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
- */
-int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
-{
-    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
-}
-
-/*! \brief \internal
- * An inline CUDA function for skipping the zero-charge atoms.
- *
- * \returns                        Non-0 if atom should be processed, 0 otherwise.
- * \param[in] coefficient          The atom charge.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- */
-int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
-{
-    assert(isfinite(coefficient));
-    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
-}
 
 /*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.
