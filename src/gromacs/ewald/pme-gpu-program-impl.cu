@@ -45,8 +45,7 @@
 
 #include "pme-gpu-program-impl.h"
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // only for warp_size
-
+#include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h"                    // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
@@ -77,7 +76,11 @@ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 {
-    warpSize = warp_size;
+    // kernel parameters
+    warpSize              = warp_size;
+    spreadWorkGroupSize   = c_spreadMaxThreadsPerBlock;
+    solveMaxWorkGroupSize = c_solveMaxThreadsPerBlock;
+    gatherWorkGroupSize   = c_gatherMaxThreadsPerBlock;
 
     // PME interpolation order
     constexpr int  pmeOrder = 4;
