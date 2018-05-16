@@ -78,7 +78,7 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             implemented = true;
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             implemented = pme_gpu_supports_input(inputRec, nullptr);
             break;
 
@@ -115,7 +115,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     {
         init_gpu(dummyLogger, gpuInfo);
     }
-    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
+    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec  = {0};
     NumPmeDomains  numPmeDomains = { 1, 1 };
     gmx_pme_t     *pmeDataRaw    = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, atomCount, false, false, true,
@@ -140,7 +140,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
             invertBoxMatrix(boxTemp, pme->recipbox);
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             pme_gpu_set_testing(pme->gpu, true);
             pme_gpu_update_input_box(pme->gpu, boxTemp);
             break;
@@ -188,7 +188,7 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
             /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
             pme_gpu_copy_input_coordinates(pmeSafe->gpu, as_rvec_array(coordinates.data()));
             break;
@@ -221,7 +221,7 @@ static void pmeGetRealGridSizesInternal(const gmx_pme_t      *pme,
             gmx_parallel_3dfft_real_limits(pme->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             pme_gpu_get_real_grid_sizes(pme->gpu, &gridSize, &paddedGridSize);
             break;
 
@@ -291,7 +291,7 @@ void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode, // TODO const qual
             }
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             pme_gpu_spread(pme->gpu, gridIndex, fftgrid, computeSplines, spreadCharges);
             break;
 
@@ -355,7 +355,7 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
             }
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
@@ -400,7 +400,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             gather_f_bsplines(pme, pmegrid, !forceReductionWithInput, atc, &atc->spline[threadIndex], scale);
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
             auto stagingForces = pme_gpu_get_forces(pme->gpu);
@@ -433,7 +433,7 @@ void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode)
         case CodePath::CPU:
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             pme_gpu_synchronize(pme->gpu);
             break;
 
@@ -459,7 +459,7 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
             std::copy(splineValues.begin(), splineValues.end(), splineBuffer);
             break;
 
-        case CodePath::CUDA:
+        case CodePath::GPU:
             std::copy(splineValues.begin(), splineValues.end(), splineBuffer);
             pme_gpu_transform_spline_atom_data(pme->gpu, atc, type, dimIndex, PmeLayoutTransform::HostToGpu);
             break;
@@ -490,7 +490,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 
     switch (mode)
     {
-        case CodePath::CUDA:
+        case CodePath::GPU:
             memcpy(pme->gpu->staging.h_gridlineIndices, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
             break;
 
@@ -537,7 +537,7 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
 
     switch (mode)
     {
-        case CodePath::CUDA: // intentional absence of break, the grid will be copied from the host buffer in testing mode
+        case CodePath::GPU: // intentional absence of break, the grid will be copied from the host buffer in testing mode
         case CodePath::CPU:
             std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
             for (const auto &gridValue : gridValues)
@@ -585,7 +585,7 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
     SplineParamsDimVector    result;
     switch (mode)
     {
-        case CodePath::CUDA:
+        case CodePath::GPU:
             pme_gpu_transform_spline_atom_data(pme->gpu, atc, type, dimIndex, PmeLayoutTransform::GpuToHost);
         // fallthrough
 
@@ -609,7 +609,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
     GridLineIndicesVector gridLineIndices;
     switch (mode)
     {
-        case CodePath::CUDA:
+        case CodePath::GPU:
             gridLineIndices = arrayRefFromArray(reinterpret_cast<IVec *>(pme->gpu->staging.h_gridlineIndices), atomCount);
             break;
 
@@ -633,7 +633,7 @@ static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme
     SparseGridValuesOutput<ValueType> gridValues;
     switch (mode)
     {
-        case CodePath::CUDA: // intentional absence of break
+        case CodePath::GPU: // intentional absence of break
         case CodePath::CPU:
             gridValues.clear();
             for (int ix = 0; ix < gridSize[XX]; ix++)
@@ -698,7 +698,7 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
                     GMX_THROW(InternalError("Test not implemented for this mode"));
             }
             break;
-        case CodePath::CUDA:
+        case CodePath::GPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:

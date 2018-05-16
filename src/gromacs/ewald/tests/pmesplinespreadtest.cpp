@@ -108,7 +108,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
             TestReferenceData                                      refData;
 
             const std::map<CodePath, std::string>                  modesToTest   = {{CodePath::CPU, "CPU"},
-                                                                                    {CodePath::CUDA, "CUDA"}};
+                                                                                    {CodePath::GPU, getGpuImplementationString()}};
 
             const std::map<PmeSplineAndSpreadOptions, std::string> optionsToTest = {{PmeSplineAndSpreadOptions::SplineAndSpreadUnified, "spline computation and charge spreading (fused)"},
                                                                                     {PmeSplineAndSpreadOptions::SplineOnly, "spline computation"},
