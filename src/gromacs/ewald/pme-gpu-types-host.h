@@ -205,6 +205,8 @@ struct PmeGpu
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.
+     * OpenCL seems to not have readily available global work size limit, so we just assign a large arbitrary constant to this instead.
+     * TODO: this should be in PmeGpuProgram(Impl)
      */
     std::intmax_t maxGridWidthX;
 
