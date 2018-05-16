@@ -79,7 +79,8 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             break;
 
         case CodePath::CUDA:
-            implemented = pme_gpu_supports_input(inputRec, nullptr);
+            implemented = (pme_gpu_supports_build(nullptr) &&
+                           pme_gpu_supports_input(inputRec, nullptr));
             break;
 
         default:
