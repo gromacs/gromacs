@@ -47,6 +47,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/action.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
@@ -529,11 +530,11 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bLastStep)
+                         gmx_bool bLastStep, gmx::ActionSetVariableValue<gmx_bool> *stop_action)
 {
     rvec    *xp, *vp;
 
-    if (MASTER(cr) && *bLastStep)
+    if (MASTER(cr) && bLastStep)
     {
         fr->natoms = -1;
     }
@@ -543,7 +544,10 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     fr->x = xp;
     fr->v = vp;
 
-    *bLastStep = (fr->natoms < 0);
+    if (fr->natoms < 0)
+    {
+        (*stop_action)();
+    }
 
 }
 
