@@ -52,6 +52,7 @@
 #include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testhardwarecontexts.h"
