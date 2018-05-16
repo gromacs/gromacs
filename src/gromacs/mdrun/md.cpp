@@ -74,6 +74,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/action.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/deform.h"
@@ -344,6 +345,9 @@ void gmx::Integrator::do_md()
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
+
+    // Triggers
+    gmx::ActionSetVariableValue<gmx_bool> stop_action(&bLastStep, TRUE);
 
     if (!mdrunOptions.writeConfout)
     {
@@ -821,9 +825,12 @@ void gmx::Integrator::do_md()
         rerun_fr.natoms = 0;
         if (MASTER(cr))
         {
-            bLastStep = !read_first_frame(oenv, &status,
-                                          opt2fn("-rerun", nfile, fnm),
-                                          &rerun_fr, TRX_NEED_X | TRX_READ_V);
+            if (!read_first_frame(oenv, &status,
+                                  opt2fn("-rerun", nfile, fnm),
+                                  &rerun_fr, TRX_NEED_X | TRX_READ_V))
+            {
+                stop_action();
+            }
             if (rerun_fr.natoms != top_global->natoms)
             {
                 gmx_fatal(FARGS,
@@ -846,7 +853,7 @@ void gmx::Integrator::do_md()
 
         if (PAR(cr))
         {
-            rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
+            rerun_parallel_comm(cr, &rerun_fr, bLastStep, &stop_action);
         }
 
         if (ir->ePBC != epbcNONE)
@@ -922,7 +929,11 @@ void gmx::Integrator::do_md()
     }
 
     /* and stop now if we should */
-    bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
+    if (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps))
+    {
+        stop_action();
+    }
+
     while (!bLastStep)
     {
 
@@ -961,7 +972,10 @@ void gmx::Integrator::do_md()
         }
         else
         {
-            bLastStep = (step_rel == ir->nsteps);
+            if (step_rel == ir->nsteps)
+            {
+                stop_action();
+            }
             t         = t0 + step*ir->delta_t;
         }
 
@@ -1023,7 +1037,7 @@ void gmx::Integrator::do_md()
         if ( (signals[eglsSTOPCOND].set < 0) ||
              ( (signals[eglsSTOPCOND].set > 0 ) && ( bNS || ir->nstlist == 0)))
         {
-            bLastStep = TRUE;
+            stop_action();
         }
 
         /* do_log triggers energy and virial calculation. Because this leads
@@ -1862,12 +1876,15 @@ void gmx::Integrator::do_md()
             if (MASTER(cr))
             {
                 /* read next frame from input trajectory */
-                bLastStep = !read_next_frame(oenv, status, &rerun_fr);
+                if (!read_next_frame(oenv, status, &rerun_fr))
+                {
+                    stop_action();
+                }
             }
 
             if (PAR(cr))
             {
-                rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
+                rerun_parallel_comm(cr, &rerun_fr, bLastStep, &stop_action);
             }
         }
 
