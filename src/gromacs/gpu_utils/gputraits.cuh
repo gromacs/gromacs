@@ -62,4 +62,8 @@ struct KernelLaunchConfig
     CommandStream stream           = nullptr;   //!< Stream to launch kernel in
 };
 
+//! Tells whether device code can use arrays which embedded in structs
+#define c_canEmbedBuffers true
+// TODO thsi should be constexpr bool
+
 #endif

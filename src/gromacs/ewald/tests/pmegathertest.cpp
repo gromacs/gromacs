@@ -388,7 +388,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
 
             TestReferenceData                     refData;
             const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"},
-                                                                 {CodePath::CUDA, "CUDA"}};
+                                                                 {CodePath::GPU, "CUDA"}};
             for (const auto &mode : modesToTest)
             {
                 const bool supportedInput = pmeSupportsInputForMode(&inputRec, mode.first);

@@ -64,4 +64,9 @@ struct KernelLaunchConfig
     CommandStream stream           = nullptr;   //!< Stream to launch kernel in
 };
 
+/*! \brief Tells whether device code can use arrays which embedded in structs
+ * Note that OpenCL 2.x might be able to do this, but we use 1.2.
+ */
+#define c_canEmbedBuffers false
+
 #endif

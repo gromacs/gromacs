@@ -108,7 +108,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
             TestReferenceData                                      refData;
 
             const std::map<CodePath, std::string>                  modesToTest   = {{CodePath::CPU, "CPU"},
-                                                                                    {CodePath::CUDA, "CUDA"}};
+                                                                                    {CodePath::GPU, "CUDA"}};
 
             const std::map<PmeSplineAndSpreadOptions, std::string> optionsToTest = {{PmeSplineAndSpreadOptions::SplineAndSpreadUnified, "spline computation and charge spreading (fused)"},
                                                                                     {PmeSplineAndSpreadOptions::SplineOnly, "spline computation"},
@@ -246,7 +246,8 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 /*! \brief Test for spline parameter computation and charge spreading. */
 TEST_P(PmeSplineAndSpreadTest, ReproducesOutputs)
 {
-    EXPECT_NO_THROW(runTest());
+    /*FIXME EXPECT_NO_THROW*/
+    (runTest());
 }
 
 /* Valid input instances */
