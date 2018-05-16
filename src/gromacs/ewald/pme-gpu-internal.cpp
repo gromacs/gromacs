@@ -106,7 +106,8 @@ int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
     GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_SPREADGATHER_ATOMS_PER_WARP;
 #else
-    GMX_THROW(gmx::NotImplementedError("A stub: atom alignment per warp has to be deduced dynamically for OpenCL"));
+    //FIXME GMX_THROW(gmx::NotImplementedError("A stub: atom alignment per warp has to be deduced dynamically for OpenCL"));
+    return 2;
     GMX_UNUSED_VALUE(pmeGpu);
 #endif
 }

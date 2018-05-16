@@ -47,6 +47,10 @@ PmeGpuContext::PmeGpuContext(const gmx_device_info_t *deviceInfo) :
 
 PmeGpuContextStorage buildPmeGpuContext(const gmx_device_info_t *deviceInfo)
 {
+    if (!deviceInfo)
+    {
+        return nullptr;
+    }
     PmeGpuContextStorage result(new PmeGpuContext(deviceInfo));
     return result;
 }
