@@ -148,9 +148,9 @@ bool pme_gpu_supports_build(std::string *error)
     {
         errorReasons.emplace_back("double precision");
     }
-    if (GMX_GPU != GMX_GPU_CUDA)
+    if (GMX_GPU == GMX_GPU_NONE)
     {
-        errorReasons.emplace_back("non-CUDA build of GROMACS");
+        errorReasons.emplace_back("non-GPU build of GROMACS");
     }
     return addMessageIfNotSupported(errorReasons, error);
 }
@@ -217,9 +217,9 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t *pme, std::string *error)
     {
         errorReasons.emplace_back("double precision");
     }
-    if (GMX_GPU != GMX_GPU_CUDA)
+    if (GMX_GPU == GMX_GPU_NONE)
     {
-        errorReasons.emplace_back("non-CUDA build of GROMACS");
+        errorReasons.emplace_back("non-GPU build of GROMACS");
     }
 
     return addMessageIfNotSupported(errorReasons, error);
