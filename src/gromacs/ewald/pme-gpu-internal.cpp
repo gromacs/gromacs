@@ -517,7 +517,9 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
 #if GMX_GPU == GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = pmeGpu->contextHandle_->getDeviceInfo()->prop.maxGridSize[0];
 #elif GMX_GPU == GMX_GPU_OPENCL
-    //TODO we'll need work size checks for OpenCL too
+    pmeGpu->maxGridWidthX = INT32_MAX / 2;
+    // TODO: is there no really global work size limit in OpenCL?
+    // TODO: we'll need work size checks for OpenCL too
 #endif
 
     /* Creating a PME GPU stream - high priority with CUDA, normal one with OpenCL */
@@ -1006,7 +1008,21 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
 
     pme_gpu_start_timing(pmeGpu, timingId);
     auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#if c_canEmbedBuffers
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                      &kernelParamsPtr->atoms.d_theta,
+                                                      &kernelParamsPtr->atoms.d_dtheta,
+                                                      &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                      &kernelParamsPtr->grid.d_realGrid,
+                                                      &kernelParamsPtr->grid.d_fractShiftsTable,
+                                                      &kernelParamsPtr->grid.d_gridlineIndicesTable,
+                                                      &kernelParamsPtr->atoms.d_coefficients,
+                                                      &kernelParamsPtr->atoms.d_coordinates
+                                                      );
+#endif
+
     launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
@@ -1091,7 +1107,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
 
     pme_gpu_start_timing(pmeGpu, timingId);
     auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#if c_canEmbedBuffers
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                      &kernelParamsPtr->grid.d_splineModuli,
+                                                      &kernelParamsPtr->constants.d_virialAndEnergy,
+                                                      &kernelParamsPtr->grid.d_fourierGrid);
+#endif
     launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
@@ -1163,7 +1186,17 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
 
     pme_gpu_start_timing(pmeGpu, timingId);
     auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#if c_canEmbedBuffers
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+#else
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr,
+                                                      &kernelParamsPtr->atoms.d_coefficients,
+                                                      &kernelParamsPtr->grid.d_realGrid,
+                                                      &kernelParamsPtr->atoms.d_theta,
+                                                      &kernelParamsPtr->atoms.d_dtheta,
+                                                      &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                      &kernelParamsPtr->atoms.d_forces);
+#endif
     launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
