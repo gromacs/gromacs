@@ -80,6 +80,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -2494,6 +2495,24 @@ void init_forcerec(FILE                             *fp,
         if (fp != nullptr)
         {
             fprintf(fp, "\n%s\n", note);
+        }
+    }
+
+    if (fr->cutoff_scheme == ecutsVERLET)
+    {
+        fr->updateGroups  = new std::vector<gmx::RangePartitioning>;
+        *fr->updateGroups = gmx::makeUpdateGroups(*mtop);
+        if (cr == nullptr || cr->nodeid == 0)
+        {
+            for (auto &groups : *fr->updateGroups)
+            {
+                printf("updateGroups nr: %d\n", groups.numBlocks());
+            }
+            if (fr->updateGroups->size() > 0)
+            {
+                printf("updateGroups max radius %5.3f nm\n",
+                       computeMaxUpdateGroupRadius(*mtop,  *fr->updateGroups));
+            }
         }
     }
 

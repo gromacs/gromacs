@@ -56,6 +56,11 @@ struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;
 
+namespace gmx
+{
+class RangePartitioning;
+} // namespace
+
 /* macros for the cginfo data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
@@ -129,6 +134,14 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     rvec                        posres_comB;
 
     gmx_bool                    use_simd_kernels;
+
+    /* Groups that need to be kept together for independent updating */
+#ifdef __cplusplus
+    /* TODO: Replace the pointer by an object once we got rid of C */
+    std::vector<gmx::RangePartitioning> *updateGroups;
+#else
+    void                                *updateGroups_dummy;
+#endif
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
