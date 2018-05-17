@@ -415,9 +415,9 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeG
  * \param[in]  direction       Transform direction (real-to-complex or complex-to-real)
  * \param[in]  gridIndex       Index of the PME grid - unused, assumed to be 0.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_3dfft(const PmeGpu          *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                       enum gmx_fft_direction CUDA_FUNC_ARGUMENT(direction),
-                                       const int              CUDA_FUNC_ARGUMENT(gridIndex)) CUDA_FUNC_TERM
+void pme_gpu_3dfft(const PmeGpu          *pmeGpu,
+                   enum gmx_fft_direction direction,
+                   const int              gridIndex);
 
 /*! \libinternal \brief
  * A GPU Fourier space solving function.
