@@ -43,12 +43,6 @@
 
 struct gmx_domdec_zones_t;
 
-/* Allocate and initialize numGrids pair search grids in nbs.
- * One grid is required per domain decomposition zone.
- */
-void nbnxn_grids_init(nbnxn_search_t nbs,
-                      int            numGrids);
-
 /* Put the atoms on the pair search grid.
  * Only atoms atomStart to atomEnd in x are put on the grid.
  * The atom_density is used to determine the grid size.

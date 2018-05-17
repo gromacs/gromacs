@@ -274,10 +274,8 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
                        gmx_bool                   bFEP,
                        int                        nthread_max)
 {
-    nbnxn_search_t nbs;
-    int            ngrid;
+    nbnxn_search_t nbs = new nbnxn_search;
 
-    snew(nbs, 1);
     *nbs_ptr = nbs;
 
     nbs->bFEP   = bFEP;
@@ -285,7 +283,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     nbs->DomDec = (n_dd_cells != nullptr);
 
     clear_ivec(nbs->dd_dim);
-    ngrid = 1;
+    int numGrids = 1;
     if (nbs->DomDec)
     {
         nbs->zones = zones;
@@ -296,12 +294,12 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
             {
                 nbs->dd_dim[d] = 1;
                 /* Each grid matches a DD zone */
-                ngrid *= 2;
+                numGrids *= 2;
             }
         }
     }
 
-    nbnxn_grids_init(nbs, ngrid);
+    nbs->grid.resize(numGrids);
 
     nbs->cell        = nullptr;
     nbs->cell_nalloc = 0;
@@ -403,17 +401,16 @@ static void get_cell_range(real b0, real b1,
  */
 
 /* Plain C code calculating the distance^2 between two bounding boxes */
-static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
-                           int csj, const nbnxn_bb_t *bb_j_all)
+static float subc_bb_dist2(int                              si,
+                           const nbnxn_bb_t                *bb_i_ci,
+                           int                              csj,
+                           gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
 {
-    const nbnxn_bb_t *bb_i, *bb_j;
-    float             d2;
+    const nbnxn_bb_t *bb_i = bb_i_ci         +  si;
+    const nbnxn_bb_t *bb_j = bb_j_all.data() + csj;
+
+    float             d2 = 0;
     float             dl, dh, dm, dm0;
-
-    bb_i = bb_i_ci  +  si;
-    bb_j = bb_j_all + csj;
-
-    d2 = 0;
 
     dl  = bb_i->lower[BB_X] - bb_j->upper[BB_X];
     dh  = bb_j->lower[BB_X] - bb_i->upper[BB_X];
@@ -439,8 +436,10 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
 #if NBNXN_SEARCH_BB_SIMD4
 
 /* 4-wide SIMD code for bb distance for bb format xyz0 */
-static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
-                                 int csj, const nbnxn_bb_t *bb_j_all)
+static float subc_bb_dist2_simd4(int                              si,
+                                 const nbnxn_bb_t                *bb_i_ci,
+                                 int                              csj,
+                                 gmx::ArrayRef<const nbnxn_bb_t>  bb_j_all)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
@@ -1371,7 +1370,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
 #if NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
-        subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
+        subc_bb_dist2_simd4_xxxx(gridj->pbb.data() + (cj >> STRIDE_PBB_2LOG)*NNBSBB_XXXX + (cj & (STRIDE_PBB-1)),
                                  ci1, pbb_ci, d2l);
         *numDistanceChecks += c_nbnxnGpuClusterSize*2;
 #endif
@@ -2449,7 +2448,8 @@ static void clear_pairlist_fep(t_nblist *nl)
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
+static inline void set_icell_bb_simple(gmx::ArrayRef<const nbnxn_bb_t> bb,
+                                       int ci,
                                        real shx, real shy, real shz,
                                        nbnxn_bb_t *bb_ci)
 {
@@ -2463,7 +2463,8 @@ static inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
 
 #if NBNXN_BBXXXX
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-static void set_icell_bbxxxx_supersub(const float *bb, int ci,
+static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb,
+                                      int ci,
                                       real shx, real shy, real shz,
                                       float *bb_ci)
 {
@@ -2484,7 +2485,8 @@ static void set_icell_bbxxxx_supersub(const float *bb, int ci,
 #endif
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-gmx_unused static void set_icell_bb_supersub(const nbnxn_bb_t *bb, int ci,
+gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const nbnxn_bb_t> bb,
+                                             int ci,
                                              real shx, real shy, real shz,
                                              nbnxn_bb_t *bb_ci)
 {
@@ -3212,12 +3214,13 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               shift;
     real              shx, shy, shz;
     int               cell0_i;
-    const nbnxn_bb_t *bb_i = nullptr;
+    gmx::ArrayRef<const nbnxn_bb_t> bb_i;
 #if NBNXN_BBXXXX
-    const float      *pbb_i = nullptr;
+    gmx::ArrayRef<const float>      pbb_i;
 #endif
-    const float      *bbcz_i, *bbcz_j;
-    const int        *flags_i;
+    gmx::ArrayRef<const float>      bbcz_i;
+    gmx::ArrayRef<const float>      bbcz_j;
+    gmx::ArrayRef<const int>        flags_i;
     real              bx0, bx1, by0, by1, bz0, bz1;
     real              bz1_frac;
     real              d2cx, d2z, d2z_cx, d2z_cy, d2zx, d2zxy, d2xy;
