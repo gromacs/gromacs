@@ -56,11 +56,13 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "pme-gpu-3dfft.h"
 #include "pme-gpu-constants.h"
 #include "pme-gpu-timings.h"
 #include "pme-gpu-types.h"
@@ -406,4 +408,12 @@ void pme_gpu_reinit_atoms(PmeGpu *pmeGpu, const int nAtoms, const real *charges)
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }
+}
+
+void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
+{
+    int timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
+    pme_gpu_start_timing(pmeGpu, timerId);
+    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
+    pme_gpu_stop_timing(pmeGpu, timerId);
 }

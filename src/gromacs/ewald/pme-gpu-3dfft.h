@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,42 +33,64 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
- *  \brief Defines the CUDA 3D-FFT functions for PME.
+/*! \internal \file
+ *  \brief Declares the 3D FFT class for PME.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  \ingroup module_ewald
  */
 
-#ifndef GMX_EWALD_PME_3DFFT_CUH
-#define GMX_EWALD_PME_3DFFT_CUH
+#ifndef GMX_EWALD_PME_GPU_3DFFT_H
+#define GMX_EWALD_PME_GPU_3DFFT_H
 
-#include <cufft.h>                  // for the cufft types
+#include "config.h"
+
+#include <vector>
+
+#if GMX_GPU == GMX_GPU_CUDA
+#include <cufft.h>
+#elif GMX_GPU == GMX_GPU_OPENCL
+#include <clFFT.h>
+
+#include "gromacs/gpu_utils/gmxopencl.h"
+#endif
 
 #include "gromacs/fft/fft.h"        // for the enum gmx_fft_direction
 
 struct PmeGpu;
 
-/*! \brief \internal A 3D FFT class for performing R2C/C2R transforms
+/*! \internal \brief
+ * A 3D FFT class for performing R2C/C2R transforms
  * \todo Make this class actually parallel over multiple GPUs
  */
 class GpuParallel3dFft
 {
-    cufftHandle   planR2C_;
-    cufftHandle   planC2R_;
-    cufftReal    *realGrid_;
-    cufftComplex *complexGrid_;
-
     public:
         /*! \brief
-         * Constructs CUDA FFT plans for performing 3D FFT on a PME grid.
+         * Constructs CUDA/OpenCL FFT plans for performing 3D FFT on a PME grid.
          *
          * \param[in] pmeGpu                  The PME GPU structure.
          */
         GpuParallel3dFft(const PmeGpu *pmeGpu);
-        /*! \brief Destroys CUDA FFT plans. */
+        /*! \brief Destroys the FFT plans. */
         ~GpuParallel3dFft();
         /*! \brief Performs the FFT transform in given direction */
         void perform3dFft(gmx_fft_direction dir);
+
+    private:
+#if GMX_GPU == GMX_GPU_CUDA
+        cufftHandle   planR2C_;
+        cufftHandle   planC2R_;
+        cufftReal    *realGrid_;
+        cufftComplex *complexGrid_;
+#elif GMX_GPU == GMX_GPU_OPENCL
+        clfftPlanHandle planR2C_;
+        clfftPlanHandle               planC2R_;
+        std::vector<cl_command_queue> commandStreams_;
+        cl_mem realGrid_;
+        cl_mem complexGrid_;
+#endif
+
 };
 
 #endif
