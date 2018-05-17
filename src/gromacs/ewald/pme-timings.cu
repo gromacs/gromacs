@@ -45,7 +45,9 @@
 
 #include "gromacs/utility/gmxassert.h"
 
-#include "pme.cuh"
+#include "pme-gpu-internal.h"
+#include "pme-gpu-types-host.h"
+#include "pme-gpu-types-host-impl.h"
 
 /*! \brief \internal
  * Tells if CUDA-based performance tracking is enabled for PME.
