@@ -274,10 +274,8 @@ typedef struct nbnxn_search {
     struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
     std::vector<nbnxn_grid_t>  grid;            /* Array of grids, size ngrid                 */
-    int                       *cell;            /* Actual allocated cell array for all grids  */
-    int                        cell_nalloc;     /* Allocation size of cell                    */
-    int                       *a;               /* Atom index for grid, the inverse of cell   */
-    int                        a_nalloc;        /* Allocation size of a                       */
+    std::vector<int>           cell;            /* Actual allocated cell array for all grids  */
+    std::vector<int>           a;               /* Atom index for grid, the inverse of cell   */
 
     int                        natoms_local;    /* The local atoms run from 0 to natoms_local */
     int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
