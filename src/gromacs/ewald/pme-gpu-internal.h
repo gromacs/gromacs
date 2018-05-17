@@ -78,34 +78,6 @@ enum class GridOrdering
     XYZ
 };
 
-/* Some general constants for PME GPU behaviour follow. */
-
-/*! \brief \libinternal
- * false: The atom data GPU buffers are sized precisely according to the number of atoms.
- *        (Except GPU spline data layout which is regardless intertwined for 2 atoms per warp).
- *        The atom index checks in the spread/gather code potentially hinder the performance.
- * true:  The atom data GPU buffers are padded with zeroes so that the possible number of atoms
- *        fitting in is divisible by PME_ATOM_DATA_ALIGNMENT.
- *        The atom index checks are not performed. There should be a performance win, but how big is it, remains to be seen.
- *        Additional cudaMemsetAsync calls are done occasionally (only charges/coordinates; spline data is always recalculated now).
- * \todo Estimate performance differences
- */
-const bool c_usePadding = true;
-
-/*! \brief \libinternal
- * false: Atoms with zero charges are processed by PME. Could introduce some overhead.
- * true:  Atoms with zero charges are not processed by PME. Adds branching to the spread/gather.
- *        Could be good for performance in specific systems with lots of neutral atoms.
- * \todo Estimate performance differences.
- */
-const bool c_skipNeutralAtoms = false;
-
-/*! \brief \libinternal
- * Number of PME solve output floating point numbers.
- * 6 for symmetric virial matrix + 1 for reciprocal energy.
- */
-const int c_virialAndEnergyCount = 7;
-
 /* A block of CUDA-only functions that live in pme.cu */
 
 /*! \libinternal \brief
