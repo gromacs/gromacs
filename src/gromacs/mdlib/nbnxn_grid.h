@@ -43,28 +43,35 @@
 
 struct gmx_domdec_zones_t;
 
-/* Allocate and initialize ngrid pair search grids in nbs */
-void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
+/* Allocate and initialize numGrids pair search grids in nbs.
+ * One grid is required per domain decomposition zone.
+ */
+void nbnxn_grids_init(nbnxn_search_t nbs,
+                      int            numGrids);
 
 /* Put the atoms on the pair search grid.
- * Only atoms a0 to a1 in x are put on the grid.
+ * Only atoms atomStart to atomEnd in x are put on the grid.
  * The atom_density is used to determine the grid size.
- * When atom_density<=0, the density is determined from a1-a0 and the corners.
+ * When atomDensity<=0, the density is determined from atomEnd-atomStart and the corners.
  * With domain decomposition part of the n particles might have migrated,
  * but have not been removed yet. This count is given by nmoved.
  * When move[i] < 0 particle i has migrated and will not be put on the grid.
  * Without domain decomposition move will be NULL.
  */
-void nbnxn_put_on_grid(nbnxn_search_t nbs,
-                       int ePBC, matrix box,
-                       int dd_zone,
-                       rvec corner0, rvec corner1,
-                       int a0, int a1,
-                       real atom_density,
-                       const int *atinfo,
-                       rvec *x,
-                       int nmoved, int *move,
-                       int nb_kernel_type,
+void nbnxn_put_on_grid(nbnxn_search_t    nbs,
+                       int               ePBC,
+                       const matrix      box,
+                       int               ddZone,
+                       const rvec        lowerCorner,
+                       const rvec        upperCorner,
+                       int               atomStart,
+                       int               atomEnd,
+                       real              atomDensity,
+                       const int        *atinfo,
+                       const rvec       *x,
+                       int               numAtomsMoved,
+                       const int        *move,
+                       int               nb_kernel_type,
                        nbnxn_atomdata_t *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms
@@ -74,7 +81,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 const struct gmx_domdec_zones_t *zones,
                                 const int                       *atinfo,
-                                rvec                            *x,
+                                const rvec                      *x,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat);
 
