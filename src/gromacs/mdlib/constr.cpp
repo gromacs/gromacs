@@ -79,6 +79,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
@@ -610,81 +611,94 @@ real constr_rmsd(const Constraints *constr)
     }
 }
 
-t_blocka make_at2con(int start, int natoms,
-                     const t_ilist *ilist, const t_iparams *iparams,
-                     bool bDynamics, int *nflexiblecons)
+FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegrator)
 {
-    int      *count, ncon, con, con_tot, nflexcon, ftype, i, a;
-    t_iatom  *ia;
-    t_blocka  at2con;
-    bool      bFlexCon;
-
-    snew(count, natoms);
-    nflexcon = 0;
-    for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    if (haveDynamicsIntegrator)
     {
-        ncon = ilist[ftype].nr/3;
-        ia   = ilist[ftype].iatoms;
-        for (con = 0; con < ncon; con++)
+        return FlexibleConstraintTreatment::Include;
+    }
+    else
+    {
+        return FlexibleConstraintTreatment::Exclude;
+    }
+}
+
+t_blocka make_at2con(int                          numAtoms,
+                     const t_ilist               *ilists,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment,
+                     int                         *numFlexibleConstraints)
+{
+    GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::NoFlexibleConstraintsPresent || iparams != nullptr, "With flexible constraint detection we need valid iparams");
+
+    std::vector<int> count(numAtoms);
+
+    int              numFlexCon = 0;
+    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    {
+        const t_ilist &ilist  = ilists[ftype];
+        const int      stride = 1 + NRAL(ftype);
+        for (int i = 0; i < ilist.nr; i += stride)
         {
-            bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-                        iparams[ia[0]].constr.dB == 0);
-            if (bFlexCon)
+            bool isFlexible = (flexibleConstraintTreatment != FlexibleConstraintTreatment::NoFlexibleConstraintsPresent &&
+                               isConstraintFlexible(iparams, ilist.iatoms[i]));
+            if (isFlexible)
             {
-                nflexcon++;
+                numFlexCon++;
             }
-            if (bDynamics || !bFlexCon)
+            if (flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || !isFlexible)
             {
-                for (i = 1; i < 3; i++)
+                for (int j = 1; j < 3; j++)
                 {
-                    a = ia[i] - start;
+                    int a = ilist.iatoms[i + j];
                     count[a]++;
                 }
             }
-            ia += 3;
         }
     }
-    *nflexiblecons = nflexcon;
 
-    at2con.nr           = natoms;
-    at2con.nalloc_index = at2con.nr+1;
+    if (numFlexibleConstraints)
+    {
+        *numFlexibleConstraints = numFlexCon;
+    }
+
+    t_blocka at2con;
+    at2con.nr           = numAtoms;
+    at2con.nalloc_index = at2con.nr + 1;
     snew(at2con.index, at2con.nalloc_index);
     at2con.index[0] = 0;
-    for (a = 0; a < natoms; a++)
+    for (int a = 0; a < numAtoms; a++)
     {
-        at2con.index[a+1] = at2con.index[a] + count[a];
-        count[a]          = 0;
+        at2con.index[a + 1] = at2con.index[a] + count[a];
+        count[a]            = 0;
     }
-    at2con.nra      = at2con.index[natoms];
+    at2con.nra      = at2con.index[at2con.nr];
     at2con.nalloc_a = at2con.nra;
     snew(at2con.a, at2con.nalloc_a);
 
     /* The F_CONSTRNC constraints have constraint numbers
      * that continue after the last F_CONSTR constraint.
      */
-    con_tot = 0;
-    for (ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    int numConstraints = 0;
+    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        ncon = ilist[ftype].nr/3;
-        ia   = ilist[ftype].iatoms;
-        for (con = 0; con < ncon; con++)
+        const t_ilist &ilist  = ilists[ftype];
+        const int      stride = 1 + NRAL(ftype);
+        for (int i = 0; i < ilist.nr; i += stride)
         {
-            bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-                        iparams[ia[0]].constr.dB == 0);
-            if (bDynamics || !bFlexCon)
+            bool isFlexible = (flexibleConstraintTreatment != FlexibleConstraintTreatment::NoFlexibleConstraintsPresent &&
+                               isConstraintFlexible(iparams, ilist.iatoms[i]));
+            if (!isFlexible)
             {
-                for (i = 1; i < 3; i++)
+                for (int j = 1; j < 3; j++)
                 {
-                    a = ia[i] - start;
-                    at2con.a[at2con.index[a]+count[a]++] = con_tot;
+                    int a = ilist.iatoms[i + j];
+                    at2con.a[at2con.index[a] + count[a]++] = numConstraints;
                 }
             }
-            con_tot++;
-            ia += 3;
+            numConstraints++;
         }
     }
-
-    sfree(count);
 
     return at2con;
 }
@@ -790,10 +804,11 @@ Constraints *init_constraints(FILE *fplog,
         for (int mt = 0; mt < static_cast<int>(mtop->moltype.size()); mt++)
         {
             int nflexcon;
-            constr->at2con_mt[mt] = make_at2con(0, mtop->moltype[mt].atoms.nr,
+            constr->at2con_mt[mt] = make_at2con(mtop->moltype[mt].atoms.nr,
                                                 mtop->moltype[mt].ilist,
                                                 mtop->ffparams.iparams,
-                                                EI_DYNAMICS(ir->eI), &nflexcon);
+                                                flexibleConstraintTreatment(EI_DYNAMICS(ir->eI)),
+                                                &nflexcon);
             for (const gmx_molblock_t &molblock : mtop->molblock)
             {
                 if (molblock.type == mt)
