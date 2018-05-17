@@ -204,6 +204,8 @@ To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
 |REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
 use with GCN-based AMD GPUs, on Linux we recommend the ROCm runtime.
+For Intel GPUs it is required to compile with ``-DGMX_OCL_NB_CLUSTER_SIZE=4`` and
+the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is recommended.
 It is also supported with NVIDIA GPUs, but using
 the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
 recommended. Also note that there are performance limitations (inherent
