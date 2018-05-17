@@ -37,4 +37,5 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
                   mdebin.cpp
                   settle.cpp
                   shake.cpp
-                  simulationsignal.cpp)
+                  simulationsignal.cpp
+                  updategroups.cpp)
