@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">report</String>
+  <OutputFiles Name="Files">
+    <File Name="-m">
+      <String Name="Contents"><![CDATA[
+\section{Methods}
+\subsection{Simulation system}
+A system of 8 molecules (24 atoms) was simulated.
+
+\subsection{Simulation settings}
+A total of 0.05 ns were simulated with a time step of 2 fs.
+Neighbor searching was performed every 5 steps.
+The PME algorithm was used for electrostatic interactions.
+with a cut-off of 0.9 nm.
+A reciprocal grid of 32 x 32 x 32 cells was used with 4th order B-spline interpolation.
+A single cut-off of 0.9 was used for Van der Waals interactions.
+Temperature coupling was done with the Nose-Hoover algorithm.
+Pressure coupling was done with the Parrinello-Rahman algorithm.
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
