@@ -49,7 +49,9 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_edsam;
@@ -58,13 +60,10 @@ struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct t_blocka;
 struct t_commrec;
-struct t_idef;
-struct t_ilist;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
-union t_iparams;
 class t_state;
 
 namespace gmx
@@ -153,16 +152,52 @@ void set_constraints(Constraints             *constr,
                      const t_mdatoms         *md,
                      const t_commrec         *cr);
 
+/*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
+static inline bool isConstraintFlexible(const t_iparams *iparams,
+                                        int              iparamsIndex)
+{
+    GMX_ASSERT(iparams != nullptr, "Need a valid iparams array");
+
+    return (iparams[iparamsIndex].constr.dA == 0 &&
+            iparams[iparamsIndex].constr.dB == 0);
+};
+
 /* The at2con t_blocka struct returned by the routines below
  * contains a list of constraints per atom.
  * The F_CONSTRNC constraints in this structure number consecutively
  * after the F_CONSTR constraints.
  */
 
-/*! \brief Returns a block struct to go from atoms to constraints */
-t_blocka make_at2con(int start, int natoms,
-                     const t_ilist *ilist, const t_iparams *iparams,
-                     bool bDynamics, int *nflexiblecons);
+/*! \brief Tells make_at2con how to treat flexible constraints */
+enum class FlexibleConstraintTreatment
+{
+    Include,                      //!< Include all flexible constraints
+    Exclude,                      //!< Exclude all flexible constraints
+    NoFlexibleConstraintsPresent  //!< There are no flexible constraints in the ilist
+};
+
+/*! \brief Returns the flexible constraint treatment based whether the integrator is dynamic */
+FlexibleConstraintTreatment
+flexibleConstraintTreatment(bool haveDynamicsIntegrator);
+
+/*! \brief Returns a block struct to go from atoms to constraints
+ *
+ * The block struct will contain constraint indices with lower indices
+ * directly matching the order in F_CONSTR and higher indices matching
+ * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ *
+ * \param[in]  numAtoms  The number of atoms to construct the list for
+ * \param[in]  ilist     Interaction list, size F_NRE
+ * \param[in]  iparams   Interaction parameters, can be null when flexibleConstraintTreatment=NoFlexibleConstraintsPresent
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
+ * \param[out] numFlexibleConstraints       Will contain the number of flexible constraints present, when not nulll
+ * \returns a block struct with all constraints for each atom
+ */
+t_blocka make_at2con(int                          numAtoms,
+                     const t_ilist               *ilist,
+                     const t_iparams             *iparams,
+                     FlexibleConstraintTreatment  flexibleConstraintTreatment,
+                     int                         *numFlexibleConstraints);
 
 /*! \brief Returns an array of atom to constraints lists for the moltypes */
 const t_blocka *atom2constraints_moltype(const Constraints *constr);
