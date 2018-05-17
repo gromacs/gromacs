@@ -68,17 +68,6 @@
 #define PME_GPU_PARALLEL_SPLINE 0
 
 
-//! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
-constexpr int c_spreadMaxWarpsPerBlock = 8;
-/* TODO: it has been observed that the kernel can be faster with smaller block sizes (2 or 4 warps)
- * only on some GPUs (660Ti) with large enough grid (>= 48^3) due to load/store units being overloaded
- * (ldst_fu_utilization metric maxed out in nvprof). Runtime block size choice might be nice to have.
- * This has been tried on architectures up to Maxwell (GTX 750) and it would be good to revisit this.
- */
-//! Spreading max block size in threads
-constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
-
-
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *

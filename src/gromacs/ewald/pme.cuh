@@ -50,66 +50,13 @@
 #include <array>
 #include <set>
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
-
-#include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
+#include "pme-gpu-constants.h"
+#include "pme-gpu-internal.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
 #include "pme-timings.cuh"
 
 class GpuParallel3dFft;
-
-/* Some defines for PME behaviour follow */
-
-/*
-    Here is a current memory layout for the theta/dtheta B-spline float parameter arrays.
-    This is the data in global memory used both by spreading and gathering kernels (with same scheduling).
-    This example has PME order 4 and 2 particles per warp/data chunk.
-    Each particle has 16 threads assigned to it, each thread works on 4 non-sequential global grid contributions.
-
-    ----------------------------------------------------------------------------
-    particles 0, 1                                        | particles 2, 3     | ...
-    ----------------------------------------------------------------------------
-    order index 0           | index 1 | index 2 | index 3 | order index 0 .....
-    ----------------------------------------------------------------------------
-    tx0 tx1 ty0 ty1 tz0 tz1 | ..........
-    ----------------------------------------------------------------------------
-
-    Each data chunk for a single warp is 24 floats. This goes both for theta and dtheta.
-    24 = 2 particles per warp * order 4 * 3 dimensions. 48 floats (1.5 warp size) per warp in total.
-    I have also tried intertwining theta and theta in a single array (they are used in pairs in gathering stage anyway)
-    and it didn't seem to make a performance difference.
-
-    The spline indexing is isolated in the 2 inline functions below:
-    getSplineParamIndexBase() return a base shared memory index corresponding to the atom in the block;
-    getSplineParamIndex() consumes its results and adds offsets for dimension and spline value index.
-
-    The corresponding defines follow.
- */
-
-/*! \brief
- * The number of GPU threads used for computing spread/gather contributions of a single atom as function of the PME order.
- * The assumption is currently that any thread processes only a single atom's contributions.
- */
-#define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
-
-/*! \brief
- * The number of atoms processed by a single warp in spread/gather.
- * This macro depends on the templated order parameter (2 atoms per warp for order 4).
- * It is mostly used for spline data layout tweaked for coalesced access.
- */
-#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
-
-/*! \brief
- * Atom data alignment (in terms of number of atoms).
- * If the GPU atom data buffers are padded (c_usePadding == true),
- * Then the numbers of atoms which would fit in the padded GPU buffers has to be divisible by this.
- * The literal number (16) expresses maximum spread/gather block width in warps.
- * Accordingly, spread and gather block widths in warps should be divisors of this
- * (e.g. in the pme-spread.cu: constexpr int c_spreadMaxThreadsPerBlock = 8 * warp_size;).
- * There are debug asserts for this divisibility.
- */
-#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
 /*! \internal \brief
  * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
