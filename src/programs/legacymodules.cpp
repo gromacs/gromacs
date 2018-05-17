@@ -56,6 +56,7 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
+#include "gromacs/tools/report-methods.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -190,6 +191,12 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager, gmx::InsertMoleculesInfo::name(),
             gmx::InsertMoleculesInfo::shortDescription(),
             &gmx::InsertMoleculesInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::ReportMethodsInfo::name,
+            gmx::ReportMethodsInfo::shortDescription,
+            &gmx::ReportMethodsInfo::create);
+
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -425,6 +432,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
+        group.addModule("report");
     }
     {
         gmx::CommandLineModuleGroup group =
