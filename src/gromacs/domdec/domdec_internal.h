@@ -404,7 +404,7 @@ struct gmx_domdec_comm_t
     int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
 };
 
-/*! \brief Distribution of atom groups over the domain (only available on the master rank) */
+/*! \internal \brief Distribution of atom groups over the domain (only available on the master rank) */
 struct AtomGroupDistribution
 {
     /*! \brief Collection of local group and atom counts for a domain */
