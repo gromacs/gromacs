@@ -61,29 +61,6 @@
 
 struct gmx_domdec_zones_t;
 
-static void nbnxn_grid_init(nbnxn_grid_t * grid)
-{
-    grid->cxy_na      = nullptr;
-    grid->cxy_ind     = nullptr;
-    grid->cxy_nalloc  = 0;
-    grid->bb          = nullptr;
-    grid->bbj         = nullptr;
-    grid->nc_nalloc   = 0;
-}
-
-void nbnxn_grids_init(nbnxn_search_t nbs, int numGrids)
-{
-    int g;
-
-    nbs->ngrid = numGrids;
-
-    snew(nbs->grid, nbs->ngrid);
-    for (g = 0; g < nbs->ngrid; g++)
-    {
-        nbnxn_grid_init(&nbs->grid[g]);
-    }
-}
-
 static real grid_atom_density(int        numAtoms,
                               const rvec lowerCorner,
                               const rvec upperCorner)
@@ -169,12 +146,9 @@ static int set_grid_size_xy(const nbnxn_search_t  nbs,
     }
 
     /* We need one additional cell entry for particles moved by DD */
-    if (grid->ncx*grid->ncy+1 > grid->cxy_nalloc)
-    {
-        grid->cxy_nalloc = over_alloc_large(grid->ncx*grid->ncy+1);
-        srenew(grid->cxy_na, grid->cxy_nalloc);
-        srenew(grid->cxy_ind, grid->cxy_nalloc+1);
-    }
+    grid->cxy_na.resize(grid->ncx*grid->ncy + 1);
+    grid->cxy_ind.resize(grid->ncx*grid->ncy + 1);
+
     for (int t = 0; t < nbs->nthread_max; t++)
     {
         if (grid->ncx*grid->ncy+1 > nbs->work[t].cxy_na_nalloc)
@@ -195,50 +169,42 @@ static int set_grid_size_xy(const nbnxn_search_t  nbs,
         maxNumCells = numAtoms/grid->na_sc + grid->ncx*grid->ncy*grid->na_cj/grid->na_c;
     }
 
-    if (maxNumCells > grid->nc_nalloc)
-    {
-        grid->nc_nalloc = over_alloc_large(maxNumCells);
-        srenew(grid->nsubc, grid->nc_nalloc);
-        srenew(grid->bbcz, grid->nc_nalloc*NNBSBB_D);
+    grid->nsubc.resize(maxNumCells);
+    grid->bbcz.resize(maxNumCells*NNBSBB_D);
 
-        sfree_aligned(grid->bb);
-        /* This snew also zeros the contents, this avoid possible
-         * floating exceptions in SIMD with the unused bb elements.
-         */
-        if (grid->bSimple)
+    /* This resize also zeros the contents, this avoid possible
+     * floating exceptions in SIMD with the unused bb elements.
+     */
+    if (grid->bSimple)
+    {
+        grid->bb.resize(maxNumCells);
+    }
+    else
+    {
+#if NBNXN_BBXXXX
+        grid->pbb.resize(maxNumCells*c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX);
+#else
+        grid->bb.resize(maxNumCells*c_gpuNumClusterPerCell);
+#endif
+    }
+
+    if (grid->bSimple)
+    {
+        if (grid->na_cj == grid->na_c)
         {
-            snew_aligned(grid->bb, grid->nc_nalloc, 16);
+            grid->bbj = grid->bb;
         }
         else
         {
-#if NBNXN_BBXXXX
-            int pbb_nalloc;
-
-            pbb_nalloc = grid->nc_nalloc*c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX;
-            snew_aligned(grid->pbb, pbb_nalloc, 16);
-#else
-            snew_aligned(grid->bb, grid->nc_nalloc*c_gpuNumClusterPerCell, 16);
-#endif
+            grid->bbjStorage.resize(maxNumCells*grid->na_c/grid->na_cj);
+            grid->bbj = grid->bbjStorage;
         }
+    }
 
-        if (grid->bSimple)
-        {
-            if (grid->na_cj == grid->na_c)
-            {
-                grid->bbj = grid->bb;
-            }
-            else
-            {
-                sfree_aligned(grid->bbj);
-                snew_aligned(grid->bbj, grid->nc_nalloc*grid->na_c/grid->na_cj, 16);
-            }
-        }
-
-        srenew(grid->flags, grid->nc_nalloc);
-        if (nbs->bFEP)
-        {
-            srenew(grid->fep, grid->nc_nalloc*grid->na_sc/grid->na_c);
-        }
+    grid->flags.resize(maxNumCells);
+    if (nbs->bFEP)
+    {
+        grid->fep.resize(maxNumCells*grid->na_sc/grid->na_c);
     }
 
     copy_rvec(lowerCorner, grid->c0);
@@ -628,7 +594,8 @@ static void calc_bounding_box_xxxx_simd4(int na, const float *x,
 
 
 /* Combines pairs of consecutive bounding boxes */
-static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
+static void combine_bounding_box_pairs(nbnxn_grid_t                    *grid,
+                                       gmx::ArrayRef<const nbnxn_bb_t>  bb)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
@@ -849,7 +816,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
          * will not affect the atom order.
          */
         sort_cluster_on_flag(grid->na_c, atomStart, atomEnd, atinfo, nbs->a,
-                             grid->flags + (atomStart >> grid->na_c_2log) - grid->cell0);
+                             grid->flags.data() + (atomStart >> grid->na_c_2log) - grid->cell0);
     }
 
     if (nbs->bFEP)
@@ -881,13 +848,13 @@ static void fill_cell(const nbnxn_search_t   nbs,
     {
         /* Store the bounding boxes as xyz.xyz. */
         size_t      offset = (atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log;
-        nbnxn_bb_t *bb_ptr = grid->bb + offset;
+        nbnxn_bb_t *bb_ptr = grid->bb.data() + offset;
 
 #if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
             calc_bounding_box_x_x4_halves(numAtoms, nbat->x + atom_to_x_index<c_packX4>(atomStart), bb_ptr,
-                                          grid->bbj + offset*2);
+                                          grid->bbj.data() + offset*2);
         }
         else
 #endif
@@ -899,7 +866,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
     {
         /* Store the bounding boxes as xyz.xyz. */
         size_t      offset = (atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log;
-        nbnxn_bb_t *bb_ptr = grid->bb + offset;
+        nbnxn_bb_t *bb_ptr = grid->bb.data() + offset;
 
         calc_bounding_box_x_x8(numAtoms, nbat->x +  atom_to_x_index<c_packX8>(atomStart), bb_ptr);
     }
@@ -910,7 +877,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
          * for SIMD4 calculations: xxxxyyyyzzzz...
          */
         float *pbb_ptr =
-            grid->pbb +
+            grid->pbb.data() +
             ((atomStart - grid->cell0*grid->na_sc) >> (grid->na_c_2log + STRIDE_PBB_2LOG))*NNBSBB_XXXX +
             (((atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log) & (STRIDE_PBB - 1));
 
@@ -939,7 +906,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
     else
     {
         /* Store the bounding boxes as xyz.xyz. */
-        nbnxn_bb_t *bb_ptr = grid->bb + ((atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log);
+        nbnxn_bb_t *bb_ptr = grid->bb.data() + ((atomStart - grid->cell0*grid->na_sc) >> grid->na_c_2log);
 
         calc_bounding_box(numAtoms, nbat->xstride, nbat->x + atomStart*nbat->xstride,
                           bb_ptr);
