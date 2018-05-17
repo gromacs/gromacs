@@ -2024,7 +2024,9 @@ void set_lincs(const t_idef         &idef,
     {
         natoms = md.homenr;
     }
-    at2con = make_at2con(0, natoms, idef.il, idef.iparams, bDynamics);
+
+    at2con = make_at2con(natoms, idef.il, idef.iparams,
+                         flexibleConstraintTreatment(bDynamics));
 
     ncon_tot = idef.il[F_CONSTR].nr/3;
 
