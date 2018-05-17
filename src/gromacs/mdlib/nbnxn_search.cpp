@@ -301,11 +301,6 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
 
     nbs->grid.resize(numGrids);
 
-    nbs->cell        = nullptr;
-    nbs->cell_nalloc = 0;
-    nbs->a           = nullptr;
-    nbs->a_nalloc    = 0;
-
     nbs->nthread_max = nthread_max;
 
     /* Initialize the work data structures for each thread */
@@ -1584,11 +1579,11 @@ setExclusionsForSimpleIentry(const nbnxn_search_t  nbs,
         return;
     }
 
-    const JListRanges  ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
+    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
 
-    const int          iCluster = iEntry.ci;
+    const int                iCluster = iEntry.ci;
 
-    const int         *cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = nbs->cell;
 
     /* Loop over the atoms in the i-cluster */
     for (int i = 0; i < nbl->na_sc; i++)
@@ -2073,12 +2068,12 @@ setExclusionsForGpuIentry(const nbnxn_search_t  nbs,
                              nbl->cj4);
 
     GMX_ASSERT(nbl->na_ci == c_nbnxnGpuClusterSize, "na_ci should match the GPU cluster size");
-    constexpr int  c_clusterSize      = c_nbnxnGpuClusterSize;
-    constexpr int  c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster*c_nbnxnGpuClusterSize;
+    constexpr int            c_clusterSize      = c_nbnxnGpuClusterSize;
+    constexpr int            c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster*c_nbnxnGpuClusterSize;
 
-    const int      iSuperCluster = iEntry.sci;
+    const int                iSuperCluster = iEntry.sci;
 
-    const int     *cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = nbs->cell;
 
     /* Loop over the atoms in the i super-cluster */
     for (int i = 0; i < c_superClusterSize; i++)
