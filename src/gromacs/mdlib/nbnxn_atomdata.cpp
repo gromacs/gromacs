@@ -793,17 +793,15 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
                                          const nbnxn_search_t nbs,
                                          const int           *type)
 {
-    for (int g = 0; g < nbs->ngrid; g++)
+    for (const nbnxn_grid_t &grid : nbs->grid)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
-
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid->ncx*grid->ncy; i++)
+        for (int i = 0; i < grid.ncx*grid.ncy; i++)
         {
-            int ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
-            int ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
+            int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
+            int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
 
-            copy_int_to_nbat_int(nbs->a+ash, grid->cxy_na[i], ncz*grid->na_sc,
+            copy_int_to_nbat_int(nbs->a+ash, grid.cxy_na[i], ncz*grid.na_sc,
                                  type, nbat->ntype-1, nbat->type+ash);
         }
     }
@@ -815,35 +813,33 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
 {
     if (nbat->comb_rule != ljcrNONE)
     {
-        for (int g = 0; g < nbs->ngrid; g++)
+        for (const nbnxn_grid_t &grid : nbs->grid)
         {
-            const nbnxn_grid_t * grid = &nbs->grid[g];
-
             /* Loop over all columns and copy and fill */
-            for (int i = 0; i < grid->ncx*grid->ncy; i++)
+            for (int i = 0; i < grid.ncx*grid.ncy; i++)
             {
-                int ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
-                int ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
+                int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
+                int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
 
                 if (nbat->XFormat == nbatX4)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX4>(nbat->nbfp_comb,
                                                       nbat->type + ash,
-                                                      ncz*grid->na_sc,
+                                                      ncz*grid.na_sc,
                                                       nbat->lj_comb + ash*2);
                 }
                 else if (nbat->XFormat == nbatX8)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX8>(nbat->nbfp_comb,
                                                       nbat->type + ash,
-                                                      ncz*grid->na_sc,
+                                                      ncz*grid.na_sc,
                                                       nbat->lj_comb + ash*2);
                 }
                 else if (nbat->XFormat == nbatXYZQ)
                 {
                     copy_lj_to_nbat_lj_comb<1>(nbat->nbfp_comb,
                                                nbat->type + ash,
-                                               ncz*grid->na_sc,
+                                               ncz*grid.na_sc,
                                                nbat->lj_comb + ash*2);
                 }
             }
@@ -856,23 +852,19 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
                                        const nbnxn_search_t nbs,
                                        const real          *charge)
 {
-    int                 i;
-    real               *q;
-
-    for (int g = 0; g < nbs->ngrid; g++)
+    for (const nbnxn_grid_t &grid : nbs->grid)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
-
         /* Loop over all columns and copy and fill */
-        for (int cxy = 0; cxy < grid->ncx*grid->ncy; cxy++)
+        for (int cxy = 0; cxy < grid.ncx*grid.ncy; cxy++)
         {
-            int ash      = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
-            int na       = grid->cxy_na[cxy];
-            int na_round = (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+            int ash      = (grid.cell0 + grid.cxy_ind[cxy])*grid.na_sc;
+            int na       = grid.cxy_na[cxy];
+            int na_round = (grid.cxy_ind[cxy+1] - grid.cxy_ind[cxy])*grid.na_sc;
 
             if (nbat->XFormat == nbatXYZQ)
             {
-                q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
+                real *q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
+                int   i;
                 for (i = 0; i < na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
@@ -887,7 +879,8 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
             }
             else
             {
-                q = nbat->q + ash;
+                real *q = nbat->q + ash;
+                int   i;
                 for (i = 0; i < na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
@@ -927,10 +920,9 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
         stride_q = 1;
     }
 
-    for (int g = 0; g < nbs->ngrid; g++)
+    for (const nbnxn_grid_t &grid : nbs->grid)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
-        if (grid->bSimple)
+        if (grid.bSimple)
         {
             nsubc = 1;
         }
@@ -939,20 +931,20 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
             nsubc = c_gpuNumClusterPerCell;
         }
 
-        int c_offset = grid->cell0*grid->na_sc;
+        int c_offset = grid.cell0*grid.na_sc;
 
         /* Loop over all columns and copy and fill */
-        for (int c = 0; c < grid->nc*nsubc; c++)
+        for (int c = 0; c < grid.nc*nsubc; c++)
         {
             /* Does this cluster contain perturbed particles? */
-            if (grid->fep[c] != 0)
+            if (grid.fep[c] != 0)
             {
-                for (int i = 0; i < grid->na_c; i++)
+                for (int i = 0; i < grid.na_c; i++)
                 {
                     /* Is this a perturbed particle? */
-                    if (grid->fep[c] & (1 << i))
+                    if (grid.fep[c] & (1 << i))
                     {
-                        int ind = c_offset + c*grid->na_c + i;
+                        int ind = c_offset + c*grid.na_c + i;
                         /* Set atom type and charge to non-interacting */
                         nbat->type[ind] = nbat->ntype - 1;
                         q[ind*stride_q] = 0;
@@ -1003,19 +995,17 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
         return;
     }
 
-    for (int g = 0; g < nbs->ngrid; g++)
+    for (const nbnxn_grid_t &grid : nbs->grid)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
-
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid->ncx*grid->ncy; i++)
+        for (int i = 0; i < grid.ncx*grid.ncy; i++)
         {
-            int ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
-            int ash = (grid->cell0 + grid->cxy_ind[i])*grid->na_sc;
+            int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
+            int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
 
-            copy_egp_to_nbat_egps(nbs->a+ash, grid->cxy_na[i], ncz*grid->na_sc,
+            copy_egp_to_nbat_egps(nbs->a+ash, grid.cxy_na[i], ncz*grid.na_sc,
                                   nbat->na_c, nbat->neg_2log,
-                                  atinfo, nbat->energrp+(ash>>grid->na_c_2log));
+                                  atinfo, nbat->energrp+(ash>>grid.na_c_2log));
         }
     }
 }
@@ -1073,7 +1063,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     {
         case eatAll:
             g0 = 0;
-            g1 = nbs->ngrid;
+            g1 = nbs->grid.size();
             break;
         case eatLocal:
             g0 = 0;
@@ -1081,7 +1071,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
             break;
         case eatNonlocal:
             g0 = 1;
-            g1 = nbs->ngrid;
+            g1 = nbs->grid.size();
             break;
     }
 
