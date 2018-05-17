@@ -47,17 +47,12 @@
 
 #include <cassert>
 
-#include <array>
-#include <set>
-
-#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
+#include "pme-gpu-types-host-impl.h"
 #include "pme-timings.cuh"
-
-class GpuParallel3dFft;
 
 /*! \internal \brief
  * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
@@ -148,79 +143,6 @@ dim3 __host__ inline pmeGpuCreateGrid(const PmeGpu *pmeGpu, int blockCount)
     GMX_ASSERT((colCount * minRowCount - blockCount) < minRowCount, "pmeGpuCreateGrid: excessive blocks");
     return dim3(colCount, minRowCount);
 }
-
-/*! \brief \internal
- * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
- */
-struct PmeGpuCuda
-{
-    /*! \brief The CUDA stream where everything related to the PME happens. */
-    cudaStream_t pmeStream;
-
-    /* Synchronization events */
-    /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
-    GpuEventSynchronizer syncSpreadGridD2H;
-
-    // TODO: consider moving some things below into the non-CUDA struct.
-
-    /* Settings which are set at the start of the run */
-    /*! \brief A boolean which tells whether the complex and real grids for cuFFT are different or same. Currenty true. */
-    bool performOutOfPlaceFFT;
-    /*! \brief A boolean which tells if the CUDA timing events are enabled.
-     *  False by default, can be enabled by setting the environment variable GMX_ENABLE_GPU_TIMING.
-     *  Note: will not be reliable when multiple GPU tasks are running concurrently on the same device context,
-     * as CUDA events on multiple streams are untrustworthy.
-     */
-    bool                                             useTiming;
-
-    std::vector<std::unique_ptr<GpuParallel3dFft > > fftSetup;
-
-    std::array<GpuRegionTimer, gtPME_EVENT_COUNT>    timingEvents;
-
-    std::set<size_t>                                 activeTimers; // indices into timingEvents
-
-    /* GPU arrays element counts (not the arrays sizes in bytes!).
-     * They might be larger than the actual meaningful data sizes.
-     * These are paired: the actual element count + the maximum element count that can fit in the current allocated memory.
-     * These integer pairs are mostly meaningful for the reallocateDeviceBuffer calls.
-     * As such, if DeviceBuffer is refactored into a class, they can be freely changed, too.
-     * The only exceptions are realGridSize and complexGridSize which are also used for grid clearing/copying.
-     * TODO: these should live in a clean buffered container type, and be refactored in the NB/cudautils as well.
-     */
-    /*! \brief The kernelParams.atoms.coordinates float element count (actual)*/
-    int coordinatesSize;
-    /*! \brief The kernelParams.atoms.coordinates float element count (reserved) */
-    int coordinatesSizeAlloc;
-    /*! \brief The kernelParams.atoms.forces float element count (actual) */
-    int forcesSize;
-    /*! \brief The kernelParams.atoms.forces float element count (reserved) */
-    int forcesSizeAlloc;
-    /*! \brief The kernelParams.atoms.gridlineIndices int element count (actual) */
-    int gridlineIndicesSize;
-    /*! \brief The kernelParams.atoms.gridlineIndices int element count (reserved) */
-    int gridlineIndicesSizeAlloc;
-    /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (actual) */
-    int splineDataSize;
-    /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (reserved) */
-    int splineDataSizeAlloc;
-    /*! \brief The kernelParams.atoms.coefficients float element count (actual) */
-    int coefficientsSize;
-    /*! \brief The kernelParams.atoms.coefficients float element count (reserved) */
-    int coefficientsSizeAlloc;
-    /*! \brief The kernelParams.grid.splineValuesArray float element count (actual) */
-    int splineValuesSize;
-    /*! \brief The kernelParams.grid.splineValuesArray float element count (reserved) */
-    int splineValuesSizeAlloc;
-    /*! \brief The kernelParams.grid.realGrid float element count (actual) */
-    int realGridSize;
-    /*! \brief The kernelParams.grid.realGrid float element count (reserved) */
-    int realGridSizeAlloc;
-    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
-    int complexGridSize;
-    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
-    int complexGridSizeAlloc;
-};
-
 
 /*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.

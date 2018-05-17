@@ -60,20 +60,20 @@
 
 #include "pme-gpu-context.h"
 
+#if GMX_GPU != GMX_GPU_NONE
+struct PmeGpuSpecific;
+#else
+/*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
+typedef int PmeGpuSpecific;
+#endif
+
 #if GMX_GPU == GMX_GPU_CUDA
-
-struct PmeGpuCuda;
-/*! \brief A typedef for including the GPU host data by pointer */
-typedef PmeGpuCuda PmeGpuSpecific;
-
 struct PmeGpuCudaKernelParams;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
 
 #else
 
-/*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
-typedef int PmeGpuSpecific;
 /*! \brief A dummy typedef for the GPU kernel arguments data placeholder on non-GPU builds */
 typedef int PmeGpuKernelParams;
 
