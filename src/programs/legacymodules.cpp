@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
+#include "gromacs/tools/report.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -190,6 +191,12 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager, gmx::InsertMoleculesInfo::name,
             gmx::InsertMoleculesInfo::shortDescription,
             &gmx::InsertMoleculesInfo::create);
+
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::ReportInfo::name,
+            gmx::ReportInfo::shortDescription,
+            &gmx::ReportInfo::create);
+
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -425,6 +432,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("mk_angndx");
         group.addModule("trjorder");
         group.addModule("xpm2ps");
+        group.addModule("report");
     }
     {
         gmx::CommandLineModuleGroup group =
