@@ -801,7 +801,7 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
             int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
             int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
 
-            copy_int_to_nbat_int(nbs->a+ash, grid.cxy_na[i], ncz*grid.na_sc,
+            copy_int_to_nbat_int(nbs->a.data() + ash, grid.cxy_na[i], ncz*grid.na_sc,
                                  type, nbat->ntype-1, nbat->type+ash);
         }
     }
@@ -1003,7 +1003,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
             int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
             int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
 
-            copy_egp_to_nbat_egps(nbs->a+ash, grid.cxy_na[i], ncz*grid.na_sc,
+            copy_egp_to_nbat_egps(nbs->a.data() + ash, grid.cxy_na[i], ncz*grid.na_sc,
                                   nbat->na_c, nbat->neg_2log,
                                   atinfo, nbat->energrp+(ash>>grid.na_c_2log));
         }
@@ -1117,7 +1117,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                          */
                         na_fill = na;
                     }
-                    copy_rvec_to_nbat_real(nbs->a+ash, na, na_fill, x,
+                    copy_rvec_to_nbat_real(nbs->a.data() + ash, na, na_fill, x,
                                            nbat->XFormat, nbat->x, ash);
                 }
             }
@@ -1222,10 +1222,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                                     int a0, int a1,
                                     rvec *f)
 {
-    const int  *cell;
-    const real *fnb;
-
-    cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = nbs->cell;
 
     /* Loop over all columns and copy and fill */
     switch (nbat->FFormat)
@@ -1234,7 +1231,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
         case nbatXYZQ:
             if (nfa == 1)
             {
-                fnb = out[0].f;
+                const real *fnb = out[0].f;
 
                 for (int a = a0; a < a1; a++)
                 {
@@ -1263,7 +1260,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
         case nbatX4:
             if (nfa == 1)
             {
-                fnb = out[0].f;
+                const real *fnb = out[0].f;
 
                 for (int a = a0; a < a1; a++)
                 {
@@ -1292,7 +1289,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
         case nbatX8:
             if (nfa == 1)
             {
-                fnb = out[0].f;
+                const real *fnb = out[0].f;
 
                 for (int a = a0; a < a1; a++)
                 {

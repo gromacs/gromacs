@@ -301,11 +301,6 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
 
     nbs->grid.resize(numGrids);
 
-    nbs->cell        = nullptr;
-    nbs->cell_nalloc = 0;
-    nbs->a           = nullptr;
-    nbs->a_nalloc    = 0;
-
     nbs->nthread_max = nthread_max;
 
     /* Initialize the work data structures for each thread */
@@ -1584,11 +1579,11 @@ setExclusionsForSimpleIentry(const nbnxn_search_t  nbs,
         return;
     }
 
-    const JListRanges  ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
+    const JListRanges        ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
 
-    const int          iCluster = iEntry.ci;
+    const int                iCluster = iEntry.ci;
 
-    const int         *cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = nbs->cell;
 
     /* Loop over the atoms in the i-cluster */
     for (int i = 0; i < nbl->na_sc; i++)
@@ -2073,12 +2068,12 @@ setExclusionsForGpuIentry(const nbnxn_search_t  nbs,
                              nbl->cj4);
 
     GMX_ASSERT(nbl->na_ci == c_nbnxnGpuClusterSize, "na_ci should match the GPU cluster size");
-    constexpr int  c_clusterSize      = c_nbnxnGpuClusterSize;
-    constexpr int  c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster*c_nbnxnGpuClusterSize;
+    constexpr int            c_clusterSize      = c_nbnxnGpuClusterSize;
+    constexpr int            c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster*c_nbnxnGpuClusterSize;
 
-    const int      iSuperCluster = iEntry.sci;
+    const int                iSuperCluster = iEntry.sci;
 
-    const int     *cell = nbs->cell;
+    gmx::ArrayRef<const int> cell = nbs->cell;
 
     /* Loop over the atoms in the i super-cluster */
     for (int i = 0; i < c_superClusterSize; i++)
@@ -3213,14 +3208,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     ivec              shp;
     int               shift;
     real              shx, shy, shz;
-    int               cell0_i;
-    gmx::ArrayRef<const nbnxn_bb_t> bb_i;
-#if NBNXN_BBXXXX
-    gmx::ArrayRef<const float>      pbb_i;
-#endif
-    gmx::ArrayRef<const float>      bbcz_i;
-    gmx::ArrayRef<const float>      bbcz_j;
-    gmx::ArrayRef<const int>        flags_i;
     real              bx0, bx1, by0, by1, bz0, bz1;
     real              bz1_frac;
     real              d2cx, d2z, d2z_cx, d2z_cy, d2zx, d2zxy, d2xy;
@@ -3306,7 +3293,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         }
     }
 
+    gmx::ArrayRef<const nbnxn_bb_t> bb_i;
 #if NBNXN_BBXXXX
+    gmx::ArrayRef<const float>      pbb_i;
     if (gridi->bSimple)
     {
         bb_i  = gridi->bb;
@@ -3319,11 +3308,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     /* We use the normal bounding box format for both grid types */
     bb_i  = gridi->bb;
 #endif
-    bbcz_i  = gridi->bbcz;
-    flags_i = gridi->flags;
-    cell0_i = gridi->cell0;
-
-    bbcz_j = gridj->bbcz;
+    gmx::ArrayRef<const float> bbcz_i  = gridi->bbcz;
+    gmx::ArrayRef<const int>   flags_i = gridi->flags;
+    gmx::ArrayRef<const float> bbcz_j  = gridj->bbcz;
+    int                        cell0_i = gridi->cell0;
 
     if (debug)
     {
