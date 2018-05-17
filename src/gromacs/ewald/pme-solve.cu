@@ -51,12 +51,6 @@
 #include "pme-gpu-program-impl.h"
 #include "pme-timings.cuh"
 
-//! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
-//! (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
-constexpr int c_solveMaxWarpsPerBlock = 8;
-//! Solving kernel max block size in threads
-constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
-
 /*! \brief
  * PME complex grid solver kernel function.
  *
