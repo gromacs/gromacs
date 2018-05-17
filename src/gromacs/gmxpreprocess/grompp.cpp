@@ -1387,10 +1387,11 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
 
     const t_atom * atom = molt->atoms.atom;
 
-    int            numFlexibleConstraints;
-    t_blocka       atomToConstraints = gmx::make_at2con(0, molt->atoms.nr,
-                                                        molt->ilist, iparams,
-                                                        FALSE, &numFlexibleConstraints);
+    t_blocka       atomToConstraints =
+        gmx::make_at2con(molt->atoms.nr,
+                         molt->ilist, iparams,
+                         gmx::FlexibleConstraintTreatment::Exclude,
+                         nullptr);
 
     bool           haveDecoupledMode = false;
     for (int ftype = 0; ftype < F_NRE; ftype++)
