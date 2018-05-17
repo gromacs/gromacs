@@ -147,7 +147,7 @@ static int set_grid_size_xy(const nbnxn_search_t  nbs,
 
     /* We need one additional cell entry for particles moved by DD */
     grid->cxy_na.resize(grid->ncx*grid->ncy + 1);
-    grid->cxy_ind.resize(grid->ncx*grid->ncy + 1);
+    grid->cxy_ind.resize(grid->ncx*grid->ncy + 2);
 
     for (int t = 0; t < nbs->nthread_max; t++)
     {
@@ -723,12 +723,12 @@ static void print_bbsizes_supersub(FILE                *fp,
 /* Set non-bonded interaction flags for the current cluster.
  * Sorts atoms on LJ coefficients: !=0 first, ==0 at the end.
  */
-static void sort_cluster_on_flag(int        numAtomsInCluster,
-                                 int        atomStart,
-                                 int        atomEnd,
-                                 const int *atinfo,
-                                 int       *order,
-                                 int       *flags)
+static void sort_cluster_on_flag(int                 numAtomsInCluster,
+                                 int                 atomStart,
+                                 int                 atomEnd,
+                                 const int          *atinfo,
+                                 gmx::ArrayRef<int>  order,
+                                 int                *flags)
 {
     constexpr int c_maxNumAtomsInCluster = 8;
     int           sort1[c_maxNumAtomsInCluster];
@@ -841,7 +841,7 @@ static void fill_cell(const nbnxn_search_t   nbs,
         nbs->cell[nbs->a[at]] = at;
     }
 
-    copy_rvec_to_nbat_real(nbs->a + atomStart, numAtoms, grid->na_c, x,
+    copy_rvec_to_nbat_real(nbs->a.data() + atomStart, numAtoms, grid->na_c, x,
                            nbat->XFormat, nbat->x, atomStart);
 
     if (nbat->XFormat == nbatX4)
@@ -952,7 +952,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
-                   nbs->a+ash, na, x,
+                   nbs->a.data() + ash, na, x,
                    grid->c0[ZZ],
                    1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
@@ -1028,7 +1028,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
-                   nbs->a + ash, numAtomsInColumn, x,
+                   nbs->a.data() + ash, numAtomsInColumn, x,
                    grid->c0[ZZ],
                    1.0/grid->size[ZZ], numCellsInColumn*grid->na_sc,
                    sort_work);
@@ -1061,7 +1061,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
             {
                 /* Sort the atoms along y */
                 sort_atoms(YY, (sub_z & 1), dd_zone,
-                           nbs->a + ash_z, na_z, x,
+                           nbs->a.data() + ash_z, na_z, x,
                            grid->c0[YY] + gridY*grid->sy,
                            grid->inv_sy, subdiv_z,
                            sort_work);
@@ -1076,7 +1076,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 {
                     /* Sort the atoms along x */
                     sort_atoms(XX, ((cz*c_gpuNumClusterPerCellY + sub_y) & 1), dd_zone,
-                               nbs->a + ash_y, na_y, x,
+                               nbs->a.data() + ash_y, na_y, x,
                                grid->c0[XX] + gridX*grid->sx,
                                grid->inv_sx, subdiv_y,
                                sort_work);
@@ -1108,7 +1108,7 @@ static void calc_column_indices(nbnxn_grid_t *grid,
                                 const rvec *x,
                                 int dd_zone, const int *move,
                                 int thread, int nthread,
-                                int *cell,
+                                gmx::ArrayRef<int> cell,
                                 int *cxy_na)
 {
     /* We add one extra cell for particles which moved during DD */
@@ -1458,20 +1458,12 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
 
     int maxNumCells = grid->cell0 + maxNumCellsOnThisGrid;
 
-    if (atomEnd > nbs->cell_nalloc)
-    {
-        nbs->cell_nalloc = over_alloc_large(atomEnd);
-        srenew(nbs->cell, nbs->cell_nalloc);
-    }
+    nbs->cell.resize(atomEnd);
 
     /* To avoid conditionals we store the moved particles at the end of a,
      * make sure we have enough space.
      */
-    if (maxNumCells*grid->na_sc + numAtomsMoved > nbs->a_nalloc)
-    {
-        nbs->a_nalloc = over_alloc_large(maxNumCells*grid->na_sc + numAtomsMoved);
-        srenew(nbs->a, nbs->a_nalloc);
-    }
+    nbs->a.resize(maxNumCells*grid->na_sc + numAtomsMoved);
 
     /* We need padding up to a multiple of the buffer flag size: simply add */
     if (maxNumCells*grid->na_sc + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
@@ -1533,7 +1525,7 @@ void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n)
     grid = &nbs->grid[0];
 
     /* Return the atom order for the home cell (index 0) */
-    *a  = nbs->a;
+    *a  = nbs->a.data();
 
     *n = grid->cxy_ind[grid->ncx*grid->ncy]*grid->na_sc;
 }
