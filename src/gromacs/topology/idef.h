@@ -271,6 +271,15 @@ extractILists(const InteractionLists &ilists,
     return handles;
 }
 
+/*! \brief Returns the stride for the iatoms array in \p ilistHandle
+ *
+ * \param[in] ilistHandle  The ilist to return the stride for
+ */
+static inline int ilistStride(const InteractionListHandle &ilistHandle)
+{
+    return 1 + NRAL(ilistHandle.functionType);
+}
+
 struct gmx_cmapdata_t
 {
     std::vector<real> cmap; /* Has length 4*grid_spacing*grid_spacing, */
