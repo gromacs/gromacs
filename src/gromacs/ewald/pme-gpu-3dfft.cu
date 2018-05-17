@@ -37,19 +37,20 @@
  *  \brief Implements CUDA FFT routines for PME GPU.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  \ingroup module_ewald
  */
 
 #include "gmxpre.h"
 
-#include "pme-3dfft.cuh"
+#include "pme-gpu-3dfft.h"
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
-#include "pme-gpu-timings.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
+#include "pme-gpu-types-host-impl.h"
 
 static void handleCufftError(cufftResult_t status, const char *msg)
 {
@@ -137,12 +138,4 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir)
         result = cufftExecC2R(planC2R_, complexGrid_, realGrid_);
         handleCufftError(result, "cuFFT C2R execution failure");
     }
-}
-
-void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
-{
-    int timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
-    pme_gpu_start_timing(pmeGpu, timerId);
-    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
-    pme_gpu_stop_timing(pmeGpu, timerId);
 }
