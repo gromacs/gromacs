@@ -36,11 +36,15 @@
 #ifndef _nbnxn_internal_h
 #define _nbnxn_internal_h
 
+#include <vector>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -146,7 +150,8 @@ typedef struct {
 
 
 /* A pair-search grid struct for one domain decomposition zone */
-typedef struct {
+struct nbnxn_grid_t
+{
     rvec          c0;               /* The lower corner of the (local) grid        */
     rvec          c1;               /* The upper corner of the (local) grid        */
     rvec          size;             /* c1 - c0                                     */
@@ -169,22 +174,26 @@ typedef struct {
 
     int           cell0;            /* Index in nbs->cell corresponding to cell 0  */
 
-    int          *cxy_na;           /* The number of atoms for each column in x,y  */
-    int          *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
-    int           cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
+    /* Grid data */
+    std::vector<int> cxy_na;        /* The number of atoms for each column in x,y  */
+    std::vector<int> cxy_ind;       /* Grid (super)cell index, offset from cell0   */
 
-    int          *nsubc;            /* The number of sub cells for each super cell */
-    float        *bbcz;             /* Bounding boxes in z for the super cells     */
-    nbnxn_bb_t   *bb;               /* 3D bounding boxes for the sub cells         */
-    nbnxn_bb_t   *bbj;              /* 3D j-bounding boxes for the case where      *
-                                     * the i- and j-cluster sizes are different    */
-    float        *pbb;              /* 3D b. boxes in xxxx format per super cell   */
-    int          *flags;            /* Flag for the super cells                    */
-    unsigned int *fep;              /* FEP signal bits for sub cells               */
-    int           nc_nalloc;        /* Allocation size for the pointers above      */
+    std::vector<int> nsubc;         /* The number of sub cells for each super cell */
 
-    int           nsubc_tot;        /* Total number of subcell, used for printing  */
-} nbnxn_grid_t;
+    /* Bounding boxes */
+    std::vector<float>                                    bbcz;           /* Bounding boxes in z for the cells */
+    std::vector < nbnxn_bb_t, AlignedAllocator < nbnxn_bb_t>> bb;         /* 3D bounding boxes for the sub cells */
+    std::vector < nbnxn_bb_t, AlignedAllocator < nbnxn_bb_t>> bbjStorage; /* 3D j-bounding boxes for the case where
+                                                                           * the i- and j-cluster sizes are different */
+    gmx::ArrayRef<nbnxn_bb_t>                              bbj;           /* 3D j-bounding boxes */
+    std::vector < float, AlignedAllocator < float>>            pbb;       /* 3D b. boxes in xxxx format per super cell   */
+
+    /* Bit-flag information */
+    std::vector<int>          flags;     /* Flags for properties of clusters in each cell */
+    std::vector<unsigned int> fep;       /* FEP signal bits for atoms in each cluster */
+
+    int                       nsubc_tot; /* Total number of subcell, used for printing  */
+};
 
 /* Working data for the actual i-supercell during pair search */
 typedef struct nbnxn_list_work {
@@ -264,8 +273,7 @@ typedef struct nbnxn_search {
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
     struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
-    int                        ngrid;           /* The number of grids, equal to #DD-zones    */
-    nbnxn_grid_t              *grid;            /* Array of grids, size ngrid                 */
+    std::vector<nbnxn_grid_t>  grid;            /* Array of grids, size ngrid                 */
     int                       *cell;            /* Actual allocated cell array for all grids  */
     int                        cell_nalloc;     /* Allocation size of cell                    */
     int                       *a;               /* Atom index for grid, the inverse of cell   */
