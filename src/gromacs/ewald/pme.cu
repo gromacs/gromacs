@@ -54,7 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme.cuh"
-#include "pme-3dfft.cuh"
+#include "pme-gpu-3dfft.h"
 #include "pme-gpu-context-impl.h"
 #include "pme-grid.h"
 
