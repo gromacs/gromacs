@@ -83,22 +83,6 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
 }
 
 /*! \brief \internal
- * Given possibly large \p blockCount, returns a compact 1D or 2D grid for kernel scheduling,
- * to minimize number of unused blocks.
- */
-template <typename PmeGpu>
-dim3 __host__ inline pmeGpuCreateGrid(const PmeGpu *pmeGpu, int blockCount)
-{
-    // How many maximum widths in X do we need (hopefully just one)
-    const int minRowCount = (blockCount + pmeGpu->maxGridWidthX - 1) / pmeGpu->maxGridWidthX;
-    // Trying to make things even
-    const int colCount = (blockCount + minRowCount - 1) / minRowCount;
-    GMX_ASSERT((colCount * minRowCount - blockCount) >= 0, "pmeGpuCreateGrid: totally wrong");
-    GMX_ASSERT((colCount * minRowCount - blockCount) < minRowCount, "pmeGpuCreateGrid: excessive blocks");
-    return dim3(colCount, minRowCount);
-}
-
-/*! \brief \internal
  * A single structure encompassing all the PME data used in CUDA kernels.
  * This inherits from PmeGpuKernelParamsBase and adds a couple cudaTextureObject_t handles,
  * which we would like to avoid in plain C++.

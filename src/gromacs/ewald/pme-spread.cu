@@ -46,15 +46,9 @@
 
 #include <cassert>
 
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
-#include "pme-gpu-program-impl.h"
-#include "pme-gpu-timings.h"
 #include "pme-gpu-utils.h"
 #include "pme-grid.h"
 
@@ -477,77 +471,3 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
 template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true>(const PmeGpuCudaKernelParams);
-
-void pme_gpu_spread(const PmeGpu    *pmeGpu,
-                    int gmx_unused   gridIndex,
-                    real            *h_grid,
-                    bool             computeSplines,
-                    bool             spreadCharges)
-{
-    GMX_ASSERT(computeSplines || spreadCharges, "PME spline/spread kernel has invalid input (nothing to do)");
-    const auto   *kernelParamsPtr = pmeGpu->kernelParams.get();
-    GMX_ASSERT(kernelParamsPtr->atoms.nAtoms > 0, "No atom data in PME GPU spread");
-
-    const int order         = pmeGpu->common->pme_order;
-    const int atomsPerBlock = c_spreadMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
-    // TODO: pick smaller block size in runtime if needed
-    // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
-    // If doing so, change atomsPerBlock in the kernels as well.
-    // TODO: test varying block sizes on modern arch-s as well
-    // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
-    //(for spline data mostly, together with varying PME_GPU_PARALLEL_SPLINE define)
-    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. spreading block size");
-
-    const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
-    auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
-
-    KernelLaunchConfig config;
-    config.blockSize[0] = config.blockSize[1] = order;
-    config.blockSize[2] = atomsPerBlock;
-    config.gridSize[0]  = dimGrid.x;
-    config.gridSize[1]  = dimGrid.y;
-    config.stream       = pmeGpu->archSpecific->pmeStream;
-
-    if (order != 4)
-    {
-        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
-    }
-
-    int  timingId;
-    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
-    if (computeSplines)
-    {
-        if (spreadCharges)
-        {
-            timingId  = gtPME_SPLINEANDSPREAD;
-            kernelPtr = pmeGpu->programHandle_->impl_->splineAndSpreadKernel;
-        }
-        else
-        {
-            timingId  = gtPME_SPLINE;
-            kernelPtr = pmeGpu->programHandle_->impl_->splineKernel;
-        }
-    }
-    else
-    {
-        timingId  = gtPME_SPREAD;
-        kernelPtr = pmeGpu->programHandle_->impl_->spreadKernel;
-    }
-
-    pme_gpu_start_timing(pmeGpu, timingId);
-    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
-    pme_gpu_stop_timing(pmeGpu, timingId);
-
-    const bool copyBackGrid = spreadCharges && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu));
-    if (copyBackGrid)
-    {
-        pme_gpu_copy_output_spread_grid(pmeGpu, h_grid);
-    }
-    const bool copyBackAtomData = computeSplines && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_gather(pmeGpu));
-    if (copyBackAtomData)
-    {
-        pme_gpu_copy_output_spread_atom_data(pmeGpu);
-    }
-}
