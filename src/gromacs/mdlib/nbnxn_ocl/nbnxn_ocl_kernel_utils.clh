@@ -832,6 +832,37 @@ void reduce_energy(volatile __local float  *buf,
 #endif
 }
 
+__INLINE__ __device__ unsigned int
+initWarpVoteSlot(unsigned int tidxz,
+                 unsigned int widx)
+{
+#ifdef USE_SUBGROUP_ANY
+    return 0;
+#else
+    return NTHREAD_Z*tidxz + widx;
+#endif
+}
+
+__INLINE__ __device__ __local uint *
+initWarpAny(unsigned int warpVoteSlot,
+            __local int *LOCAL_OFFSET,
+            unsigned int tidx)
+{
+#ifdef USE_SUBGROUP_ANY
+    return 0;
+#else
+    /* Local buffer used to implement __any warp vote function from CUDA.
+       volatile is used to avoid compiler optimizations for AMD builds. */
+    __local uint *const warpAny = (__local uint*)(LOCAL_OFFSET);
+    /* Initialise warp vote.*/
+    if (tidx == 0 || tidx == WARP_SIZE)
+    {
+        warpAny[warpVoteSlot] = 0;
+    }
+    return warpAny;
+#endif
+}
+
 bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool pred)
 {
     if (pred)

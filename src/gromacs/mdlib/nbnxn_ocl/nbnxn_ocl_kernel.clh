@@ -251,13 +251,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #else
     __local float *f_buf  = 0;
 #endif
-#ifndef USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
-#else
-    __local uint          *warp_any = 0;
-#endif
+    volatile __local uint *warpAny = setWarpAny(widx, LOCAL_OFFSET, tidx);
 #undef LOCAL_OFFSET
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
@@ -283,13 +279,6 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 #endif
     }
-#ifndef USE_SUBGROUP_ANY
-    /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
-    if (tidx == 0 || tidx == WARP_SIZE)
-    {
-        warp_any[widx] = 0;
-    }
-#endif
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
@@ -410,7 +399,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                             r2      = norm2(rv);
 
 #ifdef PRUNE_NBL
-                            if (!gmx_sub_group_any(warp_any, widx, r2 < rlist_sq))
+                            if (!gmx_sub_group_any(warpAny, widx, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
