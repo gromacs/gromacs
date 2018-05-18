@@ -49,6 +49,9 @@
 
 #if GMX_GPU == GMX_GPU_CUDA
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#else
+#define warp_size 32 // FIXME remove this and rework macros
+#define PME_SPREADGATHER_ATOMS_PER_WARP 2
 #endif
 
 /* General settings for PME GPU behaviour */
@@ -115,14 +118,8 @@ constexpr int c_virialAndEnergyCount = 7;
 #define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
 
 /*! \brief
- * The number of atoms processed by a single warp in spread/gather.
- * This macro depends on the templated order parameter (2 atoms per warp for order 4).
- * It is mostly used for spline data layout tweaked for coalesced access.
- */
-#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
-
-/*! \brief
  * Atom data alignment (in terms of number of atoms).
+ * The value is (16 * PME_SPREADGATHER_ATOMS_PER_WARP).
  * If the GPU atom data buffers are padded (c_usePadding == true),
  * Then the numbers of atoms which would fit in the padded GPU buffers has to be divisible by this.
  * The literal number (16) expresses maximum spread/gather block width in warps.
@@ -130,14 +127,21 @@ constexpr int c_virialAndEnergyCount = 7;
  * (e.g. in the pme-spread.cu: constexpr int c_spreadMaxThreadsPerBlock = 8 * warp_size;).
  * There are debug asserts for this divisibility.
  */
-#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
-
-
+#define PME_ATOM_DATA_ALIGNMENT 32
 
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.
  * TODO: adjust those for OpenCL.
  */
+
+#if GMX_GPU == GMX_GPU_CUDA
+
+/*! \brief
+ * The number of atoms processed by a single warp in spread/gather.
+ * This macro depends on the templated order parameter (2 atoms per warp for order 4).
+ * It is mostly used for spline data layout tweaked for coalesced access.
+ */
+#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
 
 //! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
 constexpr int c_spreadMaxWarpsPerBlock = 8;
@@ -162,5 +166,6 @@ constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
 //! Gathering min blocks per CUDA multiprocessor - for CC2.x, we just take the CUDA limit of 8 to avoid the warning
 constexpr int c_gatherMinBlocksPerMP = (GMX_PTX_ARCH < 300) ? GMX_CUDA_MAX_BLOCKS_PER_MP : (GMX_CUDA_MAX_THREADS_PER_MP / c_gatherMaxThreadsPerBlock);
 
+#endif // GMX_GPU == GMX_GPU_CUDA
 
 #endif

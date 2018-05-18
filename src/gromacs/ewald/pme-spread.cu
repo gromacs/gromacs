@@ -55,6 +55,7 @@
 #include "pme.cuh"
 #include "pme-gpu-program-impl.h"
 #include "pme-gpu-timings.h"
+#include "pme-gpu-utils.h"
 #include "pme-grid.h"
 
 /*

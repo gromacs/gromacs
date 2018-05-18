@@ -57,6 +57,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
@@ -74,6 +75,7 @@
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
+#include "pme-gpu-utils.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 
@@ -99,15 +101,29 @@ int pme_gpu_get_atom_data_alignment(const PmeGpu *pmeGpu)
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
 {
+#if GMX_GPU == GMX_GPU_CUDA
     const int order = pmeGpu->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_SPREADGATHER_ATOMS_PER_WARP;
+#else
+    GMX_THROW(gmx::NotImplementedError("A stub: atom alignment per warp has to be deduced dynamically for OpenCL"));
+    GMX_UNUSED_VALUE(pmeGpu);
+#endif
 }
 
 void pme_gpu_synchronize(const PmeGpu *pmeGpu)
 {
+    //TODO this should be in gpu_utils
+#if GMX_GPU == GMX_GPU_CUDA
     cudaError_t stat = cudaStreamSynchronize(pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "Failed to synchronize the PME GPU stream!");
+#elif GMX_GPU == GMX_GPU_OPENCL
+    cl_int stat = clFinish(pmeGpu->archSpecific->pmeStream);
+    if (stat != CL_SUCCESS)
+    {
+        GMX_THROW(gmx::InternalError("Failed to synchronize the PME GPU stream!"));
+    }
+#endif
 }
 
 void pme_gpu_alloc_energy_virial(const PmeGpu *pmeGpu)
@@ -375,6 +391,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
 
     const int    newFractShiftsSize  = cellCount * (nx + ny + nz);
 
+#if GMX_GPU == GMX_GPU_CUDA
     initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                          kernelParamsPtr->fractShiftsTableTexture,
                          pmeGpu->common->fsh.data(),
@@ -386,17 +403,33 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu *pmeGpu)
                          pmeGpu->common->nn.data(),
                          newFractShiftsSize,
                          pmeGpu->programHandle_->getDeviceInfo());
+#elif GMX_GPU == GMX_GPU_OPENCL
+    // No dedicated texture routines....
+    allocateDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, newFractShiftsSize, pmeGpu->archSpecific->context);
+    allocateDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, newFractShiftsSize, pmeGpu->archSpecific->context);
+    copyToDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, pmeGpu->common->fsh.data(),
+                       0, newFractShiftsSize,
+                       pmeGpu->archSpecific->pmeStream, GpuApiCallBehavior::Async, nullptr);
+    copyToDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, pmeGpu->common->nn.data(),
+                       0, newFractShiftsSize,
+                       pmeGpu->archSpecific->pmeStream, GpuApiCallBehavior::Async, nullptr);
+#endif
 }
 
 void pme_gpu_free_fract_shifts(const PmeGpu *pmeGpu)
 {
     auto *kernelParamsPtr = pmeGpu->kernelParams.get();
+#if GMX_GPU == GMX_GPU_CUDA
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture,
                             pmeGpu->programHandle_->getDeviceInfo());
     destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture,
                             pmeGpu->programHandle_->getDeviceInfo());
+#elif GMX_GPU == GMX_GPU_OPENCL
+    freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
+    freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
+#endif
 }
 
 bool pme_gpu_stream_query(const PmeGpu *pmeGpu)
@@ -489,9 +522,14 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
     // TODO: this is just a convenient reuse because programHandle_ currently is in charge of creating context
     pmeGpu->archSpecific->context = pmeGpu->programHandle_->impl_->context;
 
+#if GMX_GPU == GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = pmeGpu->programHandle_->getDeviceInfo()->prop.maxGridSize[0];
+#elif GMX_GPU == GMX_GPU_OPENCL
+    //TODO we'll need work size checks for OpenCL too
+#endif
 
-    /* Creating a PME CUDA stream */
+    /* Creating a PME GPU stream - high priority with CUDA, normal one with OpenCL */
+#if GMX_GPU == GMX_GPU_CUDA
     cudaError_t stat;
     int         highest_priority, lowest_priority;
     stat = cudaDeviceGetStreamPriorityRange(&lowest_priority, &highest_priority);
@@ -500,13 +538,32 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
                                         cudaStreamDefault, //cudaStreamNonBlocking,
                                         highest_priority);
     CU_RET_ERR(stat, "cudaStreamCreateWithPriority on the PME stream failed");
+#elif GMX_GPU == GMX_GPU_OPENCL
+    cl_command_queue_properties queueProperties = pmeGpu->archSpecific->useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
+    cl_device_id                device_id       = pmeGpu->programHandle_->getDeviceInfo()->ocl_gpu_id.ocl_device_id;
+    cl_int                      clError;
+    pmeGpu->archSpecific->pmeStream = clCreateCommandQueue(pmeGpu->archSpecific->context,
+                                                           device_id, queueProperties, &clError);
+    if (clError != CL_SUCCESS)
+    {
+        GMX_THROW(gmx::InternalError("Failed to create PME command queue"));
+    }
+#endif
 }
 
 void pme_gpu_destroy_specific(const PmeGpu *pmeGpu)
 {
+#if GMX_GPU == GMX_GPU_CUDA
     /* Destroy the CUDA stream */
     cudaError_t stat = cudaStreamDestroy(pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME cudaStreamDestroy error");
+#elif GMX_GPU == GMX_GPU_OPENCL
+    cl_int clError = clReleaseCommandQueue(pmeGpu->archSpecific->pmeStream);
+    if (clError != CL_SUCCESS)
+    {
+        gmx_warning("Failed to destroy PME command queue");
+    }
+#endif
 }
 
 void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu)
