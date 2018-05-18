@@ -296,7 +296,7 @@ inline bool pme_gpu_task_enabled(const gmx_pme_t *pme)
  *
  * \param[in] pme            The PME structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t *CUDA_FUNC_ARGUMENT(pme)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM
 
 /*! \brief
  * Copies the PME GPU timings to the gmx_wallclock_gpu_pme_t structure (for log output). To be called at the run end.
@@ -304,8 +304,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t *CUDA_FUNC_ARGUME
  * \param[in] pme               The PME structure.
  * \param[in] timings           The gmx_wallclock_gpu_pme_t structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t         *CUDA_FUNC_ARGUMENT(pme),
-                                             gmx_wallclock_gpu_pme_t *CUDA_FUNC_ARGUMENT(timings)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t         *GPU_FUNC_ARGUMENT(pme),
+                                            gmx_wallclock_gpu_pme_t *GPU_FUNC_ARGUMENT(timings)) GPU_FUNC_TERM
 
 /* The main PME GPU functions */
 
@@ -318,11 +318,11 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t         *CUDA_FUNC_
  * \param[in] flags             The combination of flags to affect this PME computation.
  *                              The flags are the GMX_PME_ flags from pme.h.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *CUDA_FUNC_ARGUMENT(pme),
-                                                     bool            CUDA_FUNC_ARGUMENT(needToUpdateBox),
-                                                     const matrix    CUDA_FUNC_ARGUMENT(box),
-                                                     gmx_wallcycle  *CUDA_FUNC_ARGUMENT(wcycle),
-                                                     int             CUDA_FUNC_ARGUMENT(flags)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
+                                                    bool            GPU_FUNC_ARGUMENT(needToUpdateBox),
+                                                    const matrix    GPU_FUNC_ARGUMENT(box),
+                                                    gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle),
+                                                    int             GPU_FUNC_ARGUMENT(flags)) GPU_FUNC_TERM
 
 /*! \brief
  * Launches first stage of PME on GPU - H2D input transfers, spreading kernel, and D2H grid transfer if needed.
@@ -331,9 +331,9 @@ CUDA_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t      *CUDA_FUNC_A
  * \param[in] x                 The array of local atoms' coordinates.
  * \param[in] wcycle            The wallclock counter.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *CUDA_FUNC_ARGUMENT(pme),
-                                               const rvec     *CUDA_FUNC_ARGUMENT(x),
-                                               gmx_wallcycle  *CUDA_FUNC_ARGUMENT(wcycle)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *GPU_FUNC_ARGUMENT(pme),
+                                              const rvec     *GPU_FUNC_ARGUMENT(x),
+                                              gmx_wallcycle  *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -341,8 +341,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t      *CUDA_FUNC_ARGUMEN
  * \param[in] pme               The PME data structure.
  * \param[in] wcycle            The wallclock counter.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *CUDA_FUNC_ARGUMENT(pme),
-                                                           gmx_wallcycle   *CUDA_FUNC_ARGUMENT(wcycle)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *GPU_FUNC_ARGUMENT(pme),
+                                                          gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
 /*! \brief
  * Launches last stage of PME on GPU - force gathering and D2H force transfer.
@@ -353,9 +353,9 @@ CUDA_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t       *CUDA
  *                               the output reciprocal forces into the host array, or copies its contents to the GPU first
  *                               and accumulates. The reduction is non-atomic.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *CUDA_FUNC_ARGUMENT(pme),
-                                               gmx_wallcycle          *CUDA_FUNC_ARGUMENT(wcycle),
-                                               PmeForceOutputHandling  CUDA_FUNC_ARGUMENT(forceTreatment)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *GPU_FUNC_ARGUMENT(pme),
+                                              gmx_wallcycle          *GPU_FUNC_ARGUMENT(wcycle),
+                                              PmeForceOutputHandling  GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM
 
 /*! \brief
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
@@ -367,11 +367,11 @@ CUDA_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t        *CUDA_FUNC
  * \param[out] virial         The output virial matrix.
  * \param[out] energy         The output energy.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_wait_finish_task(const gmx_pme_t                *CUDA_FUNC_ARGUMENT(pme),
-                                                  gmx_wallcycle                  *CUDA_FUNC_ARGUMENT(wcycle),
-                                                  gmx::ArrayRef<const gmx::RVec> *CUDA_FUNC_ARGUMENT(forces),
-                                                  matrix                          CUDA_FUNC_ARGUMENT(virial),
-                                                  real                           *CUDA_FUNC_ARGUMENT(energy)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_wait_finish_task(const gmx_pme_t                *GPU_FUNC_ARGUMENT(pme),
+                                                 gmx_wallcycle                  *GPU_FUNC_ARGUMENT(wcycle),
+                                                 gmx::ArrayRef<const gmx::RVec> *GPU_FUNC_ARGUMENT(forces),
+                                                 matrix                          GPU_FUNC_ARGUMENT(virial),
+                                                 real                           *GPU_FUNC_ARGUMENT(energy)) GPU_FUNC_TERM
 /*! \brief
  * Attempts to complete PME GPU tasks.
  *
@@ -393,12 +393,12 @@ CUDA_FUNC_QUALIFIER void pme_gpu_wait_finish_task(const gmx_pme_t               
  * \param[in]  completionKind  Indicates whether PME task completion should only be checked rather than waited for
  * \returns                   True if the PME GPU tasks have completed
  */
-CUDA_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *CUDA_FUNC_ARGUMENT(pme),
-                                                 gmx_wallcycle                  *CUDA_FUNC_ARGUMENT(wcycle),
-                                                 gmx::ArrayRef<const gmx::RVec> *CUDA_FUNC_ARGUMENT(forces),
-                                                 matrix                          CUDA_FUNC_ARGUMENT(virial),
-                                                 real                           *CUDA_FUNC_ARGUMENT(energy),
-                                                 GpuTaskCompletion               CUDA_FUNC_ARGUMENT(completionKind)) CUDA_FUNC_TERM_WITH_RETURN(false)
+GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                *GPU_FUNC_ARGUMENT(pme),
+                                                gmx_wallcycle                  *GPU_FUNC_ARGUMENT(wcycle),
+                                                gmx::ArrayRef<const gmx::RVec> *GPU_FUNC_ARGUMENT(forces),
+                                                matrix                          GPU_FUNC_ARGUMENT(virial),
+                                                real                           *GPU_FUNC_ARGUMENT(energy),
+                                                GpuTaskCompletion               GPU_FUNC_ARGUMENT(completionKind)) GPU_FUNC_TERM_WITH_RETURN(false)
 
 /*! \brief
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
@@ -413,7 +413,7 @@ CUDA_FUNC_QUALIFIER bool pme_gpu_try_finish_task(const gmx_pme_t                
  * \param[in] pme            The PME data structure.
  * \param[in] wcycle         The wallclock counter.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
-                                                    gmx_wallcycle   *CUDA_FUNC_ARGUMENT(wcycle)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
+                                                   gmx_wallcycle   *GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM
 
 #endif

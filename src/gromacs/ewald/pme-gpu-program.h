@@ -73,7 +73,6 @@ using PmeGpuProgramHandle = const PmeGpuProgram *;
 
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.
- * \todo This should shortly become GPU_FUNC to support OpenCL.
  */
 PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *);
 
