@@ -115,6 +115,8 @@ void nbnxn_realloc_void(void **ptr,
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n)
 {
+    GMX_ASSERT(nbat->nalloc >= nbat->natoms, "We should have at least as many elelements allocated as there are set");
+
     int t;
 
     nbnxn_realloc_void((void **)&nbat->type,
