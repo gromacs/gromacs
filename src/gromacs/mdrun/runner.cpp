@@ -1017,8 +1017,9 @@ int Mdrunner::mdrunner()
     // are invoked.
     PmeGpuProgramStorage pmeGpuProgram;
     // This works because only one task of each type is currently permitted.
-    auto                 pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
-    if (pmeGpuTaskMapping != gpuTaskAssignment.end())
+    auto                 pmeGpuTaskMapping     = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
+    const bool           thisRankHasPmeGpuTask = (pmeGpuTaskMapping != gpuTaskAssignment.end());
+    if (thisRankHasPmeGpuTask)
     {
         pmeDeviceInfo = getDeviceInfo(hwinfo->gpu_info, pmeGpuTaskMapping->deviceId_);
         init_gpu(mdlog, pmeDeviceInfo);
@@ -1132,16 +1133,15 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        const bool useGpuForPme = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Mixed);
-        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, useGpuForPme && thisRankHasDuty(cr, DUTY_PME));
-        if (globalState)
+        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask);
+        if (globalState && thisRankHasPmeGpuTask)
         {
             // The pinning of coordinates in the global state object works, because we only use
             // PME on GPU without DD or on a separate PME rank, and because the local state pointer
             // points to the global state object without DD.
             // FIXME: MD and EM separately set up the local state - this should happen in the same function,
             // which should also perform the pinning.
-            changePinningPolicy(&globalState->x, useGpuForPme ? PinningPolicy::CanBePinned : PinningPolicy::CannotBePinned);
+            changePinningPolicy(&globalState->x, pme_get_pinning_policy());
         }
 
         /* Initialize the virtual site communication */

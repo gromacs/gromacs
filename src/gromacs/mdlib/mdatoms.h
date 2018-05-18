@@ -94,7 +94,7 @@ class MDAtoms
         //! Builder function.
         friend std::unique_ptr<MDAtoms>
         makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-                    bool useGpuForPme);
+                    const bool rankHasPmeGpuTask);
 };
 
 //! Builder function for MdAtomsWrapper.
