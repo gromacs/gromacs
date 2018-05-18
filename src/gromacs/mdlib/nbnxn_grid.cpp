@@ -78,13 +78,13 @@ static real grid_atom_density(int        numAtoms,
     return numAtoms/(size[XX]*size[YY]*size[ZZ]);
 }
 
-static int set_grid_size_xy(const nbnxn_search_t  nbs,
-                            nbnxn_grid_t         *grid,
-                            int                   ddZone,
-                            int                   numAtoms,
-                            const rvec            lowerCorner,
-                            const rvec            upperCorner,
-                            real                  atomDensity)
+static void set_grid_size_xy(const nbnxn_search_t  nbs,
+                             nbnxn_grid_t         *grid,
+                             int                   ddZone,
+                             int                   numAtoms,
+                             const rvec            lowerCorner,
+                             const rvec            upperCorner,
+                             real                  atomDensity)
 {
     rvec size;
     real tlen, tlen_x, tlen_y;
@@ -210,8 +210,6 @@ static int set_grid_size_xy(const nbnxn_search_t  nbs,
     copy_rvec(lowerCorner, grid->c0);
     copy_rvec(upperCorner, grid->c1);
     copy_rvec(size,        grid->size);
-
-    return maxNumCells;
 }
 
 /* We need to sort paricles in grid columns on z-coordinate.
@@ -1194,6 +1192,30 @@ static void calc_column_indices(nbnxn_grid_t *grid,
     }
 }
 
+/* Resizes grid and atom data which depend on the number of cells */
+static void resizeForNumberOfCells(const nbnxn_grid_t &grid,
+                                   int                 numAtomsMoved,
+                                   nbnxn_search       *nbs,
+                                   nbnxn_atomdata_t   *nbat)
+{
+    int numNbnxnAtoms = (grid.cell0 + grid.nc)*grid.na_sc;
+
+    /* Note: nbs->cell was already resized before */
+
+    /* To avoid conditionals we store the moved particles at the end of a,
+     * make sure we have enough space.
+     */
+    nbs->a.resize(numNbnxnAtoms + numAtomsMoved);
+
+    /* We need padding up to a multiple of the buffer flag size: simply add */
+    if (numNbnxnAtoms + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
+    {
+        nbnxn_atomdata_realloc(nbat, numNbnxnAtoms + NBNXN_BUFFERFLAG_SIZE);
+    }
+
+    nbat->natoms = numNbnxnAtoms;
+}
+
 /* Determine in which grid cells the atoms should go */
 static void calc_cell_indices(const nbnxn_search_t  nbs,
                               int                   ddZone,
@@ -1202,9 +1224,13 @@ static void calc_cell_indices(const nbnxn_search_t  nbs,
                               int                   atomEnd,
                               const int            *atinfo,
                               const rvec           *x,
+                              int                   numAtomsMoved,
                               const int            *move,
                               nbnxn_atomdata_t     *nbat)
 {
+    /* First compute all grid/column indices and store them in nbs->cell */
+    nbs->cell.resize(atomEnd);
+
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
@@ -1249,7 +1275,7 @@ static void calc_cell_indices(const nbnxn_search_t  nbs,
     }
     grid->nc = grid->cxy_ind[grid->ncx*grid->ncy] - grid->cxy_ind[0];
 
-    nbat->natoms = (grid->cell0 + grid->nc)*grid->na_sc;
+    resizeForNumberOfCells(*grid, numAtomsMoved, nbs, nbat);
 
     if (debug)
     {
@@ -1450,29 +1476,12 @@ void nbnxn_put_on_grid(nbnxn_search_t    nbs,
     /* We always use the home zone (grid[0]) for setting the cell size,
      * since determining densities for non-local zones is difficult.
      */
-    int maxNumCellsOnThisGrid =
-        set_grid_size_xy(nbs, grid,
-                         ddZone, n - numAtomsMoved,
-                         lowerCorner, upperCorner,
-                         nbs->grid[0].atom_density);
+    set_grid_size_xy(nbs, grid,
+                     ddZone, n - numAtomsMoved,
+                     lowerCorner, upperCorner,
+                     nbs->grid[0].atom_density);
 
-    int maxNumCells = grid->cell0 + maxNumCellsOnThisGrid;
-
-    nbs->cell.resize(atomEnd);
-
-    /* To avoid conditionals we store the moved particles at the end of a,
-     * make sure we have enough space.
-     */
-    nbs->a.resize(maxNumCells*grid->na_sc + numAtomsMoved);
-
-    /* We need padding up to a multiple of the buffer flag size: simply add */
-    if (maxNumCells*grid->na_sc + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
-    {
-        nbnxn_atomdata_realloc(nbat,
-                               maxNumCells*grid->na_sc + NBNXN_BUFFERFLAG_SIZE);
-    }
-
-    calc_cell_indices(nbs, ddZone, grid, atomStart, atomEnd, atinfo, x, move, nbat);
+    calc_cell_indices(nbs, ddZone, grid, atomStart, atomEnd, atinfo, x, numAtomsMoved, move, nbat);
 
     if (ddZone == 0)
     {
