@@ -34,14 +34,15 @@
  */
 
 /*! \internal \file
- *  \brief Implements PME GPU timing events in CUDA.
+ *  \brief Implements PME GPU timing events wrappers.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \ingroup module_ewald
  */
 
 #include "gmxpre.h"
 
-#include "pme-timings.cuh"
+#include "pme-gpu-timings.h"
 
 #include "gromacs/utility/gmxassert.h"
 
@@ -49,10 +50,10 @@
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
 
-/*! \brief \internal
+/*! \brief
  * Tells if CUDA-based performance tracking is enabled for PME.
  *
- * \param[in] pme            The PME data structure.
+ * \param[in] pmeGpu         The PME GPU data structure.
  * \returns                  True if timings are enabled, false otherwise.
  */
 inline bool pme_gpu_timings_enabled(const PmeGpu *pmeGpu)

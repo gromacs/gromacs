@@ -44,7 +44,7 @@ file(GLOB EWALD_GPU_ONLY_SOURCES pme-gpu*.cpp)
 # For simplicity it could be same as EWALD_GPU_ONLY_SOURCES,
 # but some of the files like pme-gpu.cpp are currently not compiling
 # cleanly, as nvcc is not aware of OpenMP pragmas.
-file(GLOB EWALD_GPU_IMPL_SOURCES pme-gpu-internal.cpp)
+file(GLOB EWALD_GPU_IMPL_SOURCES pme-gpu-internal.cpp pme-gpu-timings.cpp)
 file(GLOB EWALD_CUDA_SOURCES *.cu)
 
 if (GMX_USE_CUDA)

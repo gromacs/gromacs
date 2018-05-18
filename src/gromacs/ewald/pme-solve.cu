@@ -49,7 +49,7 @@
 
 #include "pme.cuh"
 #include "pme-gpu-context-impl.h"
-#include "pme-timings.cuh"
+#include "pme-gpu-timings.h"
 
 /*! \brief
  * PME complex grid solver kernel function.
