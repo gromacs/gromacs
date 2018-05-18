@@ -77,6 +77,7 @@ namespace gmx
 {
 class ForceWithVirial;
 class MDLogger;
+enum class PinningPolicy : int;
 }
 
 enum {
@@ -274,6 +275,12 @@ bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error);
  * \returns active PME codepath.
  */
 PmeRunMode pme_run_mode(const gmx_pme_t *pme);
+
+/*! \libinternal \brief
+ * Return the pinning policy appropriate for this build configuration
+ * for relevant buffers used for PME task on this rank (e.g. running
+ * on a GPU). */
+gmx::PinningPolicy pme_get_pinning_policy();
 
 /*! \brief
  * Tells if PME is enabled to run on GPU (not necessarily active at the moment).

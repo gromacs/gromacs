@@ -560,8 +560,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
     {
-        changePinningPolicy(&pme_pp->chargeA, gmx::PinningPolicy::CanBePinned);
-        changePinningPolicy(&pme_pp->x, gmx::PinningPolicy::CanBePinned);
+        changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
+        changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
     }
 
     init_nrnb(mynrnb);
