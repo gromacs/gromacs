@@ -43,13 +43,7 @@
 
 #include <cassert>
 
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
-
 #include "pme.cuh"
-#include "pme-gpu-context-impl.h"
-#include "pme-gpu-timings.h"
 #include "pme-gpu-utils.h"
 
 /*! \brief
@@ -415,62 +409,3 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
 //! Kernel instantiations
 template __global__ void pme_gather_kernel<4, true, true, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_gather_kernel<4, false, true, true>(const PmeGpuCudaKernelParams);
-
-void pme_gpu_gather(PmeGpu                *pmeGpu,
-                    PmeForceOutputHandling forceTreatment,
-                    const float           *h_grid
-                    )
-{
-    /* Copying the input CPU forces for reduction */
-    if (forceTreatment != PmeForceOutputHandling::Set)
-    {
-        pme_gpu_copy_input_forces(pmeGpu);
-    }
-
-    const int    order           = pmeGpu->common->pme_order;
-    const auto  *kernelParamsPtr = pmeGpu->kernelParams.get();
-
-    if (!pme_gpu_performs_FFT(pmeGpu) || pme_gpu_is_testing(pmeGpu))
-    {
-        pme_gpu_copy_input_gather_grid(pmeGpu, const_cast<float *>(h_grid));
-    }
-
-    if (pme_gpu_is_testing(pmeGpu))
-    {
-        pme_gpu_copy_input_gather_atom_data(pmeGpu);
-    }
-
-    const int atomsPerBlock  =  (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
-    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
-
-    const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
-    auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
-
-    KernelLaunchConfig config;
-    config.blockSize[0] = config.blockSize[1] = order;
-    config.blockSize[2] = atomsPerBlock;
-    config.gridSize[0]  = dimGrid.x;
-    config.gridSize[1]  = dimGrid.y;
-    config.stream       = pmeGpu->archSpecific->pmeStream;
-
-    if (order != 4)
-    {
-        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
-    }
-
-    // TODO test different cache configs
-
-    int  timingId = gtPME_GATHER;
-    // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuContextImpl
-    PmeGpuContextImpl::PmeKernelHandle kernelPtr = (forceTreatment == PmeForceOutputHandling::Set) ?
-        pmeGpu->contextHandle_->impl_->gatherKernel :
-        pmeGpu->contextHandle_->impl_->gatherReduceWithInputKernel;
-
-    pme_gpu_start_timing(pmeGpu, timingId);
-    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
-    pme_gpu_stop_timing(pmeGpu, timingId);
-
-    pme_gpu_copy_output_forces(pmeGpu);
-}
