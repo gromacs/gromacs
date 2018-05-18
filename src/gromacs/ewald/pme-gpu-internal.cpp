@@ -62,8 +62,10 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "pme-gpu-constants.h"
+#include "pme-gpu-timings.h"
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
+#include "pme-gpu-types-host-impl.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 
