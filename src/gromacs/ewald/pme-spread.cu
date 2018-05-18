@@ -54,8 +54,8 @@
 
 #include "pme.cuh"
 #include "pme-gpu-program-impl.h"
+#include "pme-gpu-timings.h"
 #include "pme-grid.h"
-#include "pme-timings.cuh"
 
 /*
  * This define affects the spline calculation behaviour in the kernel.
