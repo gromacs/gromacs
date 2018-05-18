@@ -78,8 +78,6 @@ enum class GridOrdering
     XYZ
 };
 
-/* A block of CUDA-only functions that live in pme.cu */
-
 /*! \libinternal \brief
  * Returns the number of atoms per chunk in the atom charges/coordinates data layout.
  * Depends on CUDA-specific block sizes, needed for the atom data padding.
