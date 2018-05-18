@@ -945,3 +945,248 @@ void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
     pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
     pme_gpu_stop_timing(pmeGpu, timerId);
 }
+
+/*! \brief
+ * Given possibly large \p blockCount, returns a compact 1D or 2D grid for kernel scheduling,
+ * to minimize number of unused blocks.
+ */
+std::pair<int, int> inline pmeGpuCreateGrid(const PmeGpu *pmeGpu, int blockCount)
+{
+    // How many maximum widths in X do we need (hopefully just one)
+    const int minRowCount = (blockCount + pmeGpu->maxGridWidthX - 1) / pmeGpu->maxGridWidthX;
+    // Trying to make things even
+    const int colCount = (blockCount + minRowCount - 1) / minRowCount;
+    GMX_ASSERT((colCount * minRowCount - blockCount) >= 0, "pmeGpuCreateGrid: totally wrong");
+    GMX_ASSERT((colCount * minRowCount - blockCount) < minRowCount, "pmeGpuCreateGrid: excessive blocks");
+    return std::pair<int, int>(colCount, minRowCount);
+}
+
+void pme_gpu_spread(const PmeGpu    *pmeGpu,
+                    int gmx_unused   gridIndex,
+                    real            *h_grid,
+                    bool             computeSplines,
+                    bool             spreadCharges)
+{
+    GMX_ASSERT(computeSplines || spreadCharges, "PME spline/spread kernel has invalid input (nothing to do)");
+    const auto   *kernelParamsPtr = pmeGpu->kernelParams.get();
+    GMX_ASSERT(kernelParamsPtr->atoms.nAtoms > 0, "No atom data in PME GPU spread");
+
+#if GMX_GPU == GMX_GPU_OPENCL
+    const int c_spreadMaxThreadsPerBlock = 1; //FIXME make a runtime decision
+#endif
+
+    const int order         = pmeGpu->common->pme_order;
+    const int atomsPerBlock = c_spreadMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
+    // TODO: pick smaller block size in runtime if needed
+    // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
+    // If doing so, change atomsPerBlock in the kernels as well.
+    // TODO: test varying block sizes on modern arch-s as well
+    // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
+    //(for spline data mostly, together with varying PME_GPU_PARALLEL_SPLINE define)
+    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. spreading block size");
+
+    const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
+
+    KernelLaunchConfig config;
+    config.blockSize[0] = config.blockSize[1] = order;
+    config.blockSize[2] = atomsPerBlock;
+    config.gridSize[0]  = dimGrid.first;
+    config.gridSize[1]  = dimGrid.second;
+    config.stream       = pmeGpu->archSpecific->pmeStream;
+
+    if (order != 4)
+    {
+        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
+    }
+
+    int  timingId;
+    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
+    if (computeSplines)
+    {
+        if (spreadCharges)
+        {
+            timingId  = gtPME_SPLINEANDSPREAD;
+            kernelPtr = pmeGpu->programHandle_->impl_->splineAndSpreadKernel;
+        }
+        else
+        {
+            timingId  = gtPME_SPLINE;
+            kernelPtr = pmeGpu->programHandle_->impl_->splineKernel;
+        }
+    }
+    else
+    {
+        timingId  = gtPME_SPREAD;
+        kernelPtr = pmeGpu->programHandle_->impl_->spreadKernel;
+    }
+
+    pme_gpu_start_timing(pmeGpu, timingId);
+    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+    launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
+    pme_gpu_stop_timing(pmeGpu, timingId);
+
+    const bool copyBackGrid = spreadCharges && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu));
+    if (copyBackGrid)
+    {
+        pme_gpu_copy_output_spread_grid(pmeGpu, h_grid);
+    }
+    const bool copyBackAtomData = computeSplines && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_gather(pmeGpu));
+    if (copyBackAtomData)
+    {
+        pme_gpu_copy_output_spread_atom_data(pmeGpu);
+    }
+}
+
+void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
+                   GridOrdering gridOrdering, bool computeEnergyAndVirial)
+{
+    const bool   copyInputAndOutputGrid = pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu);
+
+    auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
+
+    float       *h_gridFloat = reinterpret_cast<float *>(h_grid);
+    if (copyInputAndOutputGrid)
+    {
+        copyToDeviceBuffer(&kernelParamsPtr->grid.d_fourierGrid, h_gridFloat,
+                           0, pmeGpu->archSpecific->complexGridSize,
+                           pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+    }
+
+    int majorDim = -1, middleDim = -1, minorDim = -1;
+    switch (gridOrdering)
+    {
+        case GridOrdering::YZX:
+            majorDim  = YY;
+            middleDim = ZZ;
+            minorDim  = XX;
+            break;
+
+        case GridOrdering::XYZ:
+            majorDim  = XX;
+            middleDim = YY;
+            minorDim  = ZZ;
+            break;
+
+        default:
+            GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
+    }
+
+#if GMX_GPU == GMX_GPU_OPENCL
+    const int c_solveMaxThreadsPerBlock = 1; //FIXME make a runtime decision
+#endif
+
+    const int maxBlockSize      = c_solveMaxThreadsPerBlock;
+    const int gridLineSize      = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
+    const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
+    const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
+    const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
+    const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
+
+
+    KernelLaunchConfig config;
+    config.blockSize[0] = blockSize;
+    config.gridSize[0]  = blocksPerGridLine;
+    // rounding up to full warps so that shuffle operations produce defined results
+    config.gridSize[1]  = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1) / gridLinesPerBlock;
+    config.gridSize[2]  = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
+    config.stream       = pmeGpu->archSpecific->pmeStream;
+
+    int  timingId = gtPME_SOLVE;
+    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
+    if (gridOrdering == GridOrdering::YZX)
+    {
+        kernelPtr = computeEnergyAndVirial ?
+            pmeGpu->programHandle_->impl_->solveYZXEnergyKernel :
+            pmeGpu->programHandle_->impl_->solveYZXKernel;
+    }
+    else if (gridOrdering == GridOrdering::XYZ)
+    {
+        kernelPtr = computeEnergyAndVirial ?
+            pmeGpu->programHandle_->impl_->solveXYZEnergyKernel :
+            pmeGpu->programHandle_->impl_->solveXYZKernel;
+    }
+
+    pme_gpu_start_timing(pmeGpu, timingId);
+    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+    launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelArgs);
+    pme_gpu_stop_timing(pmeGpu, timingId);
+
+    if (computeEnergyAndVirial)
+    {
+        copyFromDeviceBuffer(pmeGpu->staging.h_virialAndEnergy, &kernelParamsPtr->constants.d_virialAndEnergy,
+                             0, c_virialAndEnergyCount,
+                             pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+    }
+
+    if (copyInputAndOutputGrid)
+    {
+        copyFromDeviceBuffer(h_gridFloat, &kernelParamsPtr->grid.d_fourierGrid,
+                             0, pmeGpu->archSpecific->complexGridSize,
+                             pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+    }
+}
+
+void pme_gpu_gather(PmeGpu                *pmeGpu,
+                    PmeForceOutputHandling forceTreatment,
+                    const float           *h_grid
+                    )
+{
+    /* Copying the input CPU forces for reduction */
+    if (forceTreatment != PmeForceOutputHandling::Set)
+    {
+        pme_gpu_copy_input_forces(pmeGpu);
+    }
+
+    const int    order           = pmeGpu->common->pme_order;
+    const auto  *kernelParamsPtr = pmeGpu->kernelParams.get();
+
+    if (!pme_gpu_performs_FFT(pmeGpu) || pme_gpu_is_testing(pmeGpu))
+    {
+        pme_gpu_copy_input_gather_grid(pmeGpu, const_cast<float *>(h_grid));
+    }
+
+    if (pme_gpu_is_testing(pmeGpu))
+    {
+        pme_gpu_copy_input_gather_atom_data(pmeGpu);
+    }
+
+#if GMX_GPU == GMX_GPU_OPENCL
+    const int c_gatherMaxThreadsPerBlock = 1; //FIXME make a runtime decision
+#endif
+    const int atomsPerBlock  =  (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
+    GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
+
+    const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    auto               dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
+
+    KernelLaunchConfig config;
+    config.blockSize[0] = config.blockSize[1] = order;
+    config.blockSize[2] = atomsPerBlock;
+    config.gridSize[0]  = dimGrid.first;
+    config.gridSize[1]  = dimGrid.second;
+    config.stream       = pmeGpu->archSpecific->pmeStream;
+
+    if (order != 4)
+    {
+        GMX_THROW(gmx::NotImplementedError("The code for pme_order != 4 was not implemented!"));
+    }
+
+    // TODO test different cache configs
+
+    int  timingId = gtPME_GATHER;
+    // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuProgramImpl
+    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = (forceTreatment == PmeForceOutputHandling::Set) ?
+        pmeGpu->programHandle_->impl_->gatherKernel :
+        pmeGpu->programHandle_->impl_->gatherReduceWithInputKernel;
+
+    pme_gpu_start_timing(pmeGpu, timingId);
+    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+    launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
+    pme_gpu_stop_timing(pmeGpu, timingId);
+
+    pme_gpu_copy_output_forces(pmeGpu);
+}

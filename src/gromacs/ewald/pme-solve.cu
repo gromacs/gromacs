@@ -41,15 +41,11 @@
 
 #include "gmxpre.h"
 
+#include <cassert>
+
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
 
 #include "pme.cuh"
-#include "pme-gpu-program-impl.h"
-#include "pme-gpu-timings.h"
 
 /*! \brief
  * PME complex grid solver kernel function.
@@ -404,90 +400,3 @@ template __global__ void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuC
 template __global__ void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
 template __global__ void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
 template __global__ void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
-
-void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
-                   GridOrdering gridOrdering, bool computeEnergyAndVirial)
-{
-    const bool   copyInputAndOutputGrid = pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu);
-
-    cudaStream_t stream          = pmeGpu->archSpecific->pmeStream;
-    auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
-
-    float       *h_gridFloat = reinterpret_cast<float *>(h_grid);
-    if (copyInputAndOutputGrid)
-    {
-        copyToDeviceBuffer(&kernelParamsPtr->grid.d_fourierGrid, h_gridFloat,
-                           0, pmeGpu->archSpecific->complexGridSize,
-                           stream, pmeGpu->settings.transferKind, nullptr);
-    }
-
-    int majorDim = -1, middleDim = -1, minorDim = -1;
-    switch (gridOrdering)
-    {
-        case GridOrdering::YZX:
-            majorDim  = YY;
-            middleDim = ZZ;
-            minorDim  = XX;
-            break;
-
-        case GridOrdering::XYZ:
-            majorDim  = XX;
-            middleDim = YY;
-            minorDim  = ZZ;
-            break;
-
-        default:
-            GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
-    }
-
-    const int maxBlockSize      = c_solveMaxThreadsPerBlock;
-    const int gridLineSize      = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
-    const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
-    const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
-    const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
-
-
-    KernelLaunchConfig config;
-    config.blockSize[0] = blockSize;
-    config.gridSize[0]  = blocksPerGridLine;
-    // rounding up to full warps so that shuffle operations produce defined results
-    config.gridSize[1]  = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1) / gridLinesPerBlock;
-    config.gridSize[2]  = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
-    config.stream       = pmeGpu->archSpecific->pmeStream;
-
-    int  timingId = gtPME_SOLVE;
-    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
-    if (gridOrdering == GridOrdering::YZX)
-    {
-        kernelPtr = computeEnergyAndVirial ?
-            pmeGpu->programHandle_->impl_->solveYZXEnergyKernel :
-            pmeGpu->programHandle_->impl_->solveYZXKernel;
-    }
-    else if (gridOrdering == GridOrdering::XYZ)
-    {
-        kernelPtr = computeEnergyAndVirial ?
-            pmeGpu->programHandle_->impl_->solveXYZEnergyKernel :
-            pmeGpu->programHandle_->impl_->solveXYZKernel;
-    }
-
-    pme_gpu_start_timing(pmeGpu, timingId);
-    auto      *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-    const auto kernelArgs  = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelArgs);
-    pme_gpu_stop_timing(pmeGpu, timingId);
-
-    if (computeEnergyAndVirial)
-    {
-        copyFromDeviceBuffer(pmeGpu->staging.h_virialAndEnergy, &kernelParamsPtr->constants.d_virialAndEnergy,
-                             0, c_virialAndEnergyCount,
-                             stream, pmeGpu->settings.transferKind, nullptr);
-    }
-
-    if (copyInputAndOutputGrid)
-    {
-        copyFromDeviceBuffer(h_gridFloat, &kernelParamsPtr->grid.d_fourierGrid,
-                             0, pmeGpu->archSpecific->complexGridSize,
-                             stream, pmeGpu->settings.transferKind, nullptr);
-    }
-}
