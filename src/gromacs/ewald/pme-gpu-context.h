@@ -69,6 +69,6 @@ using PmeGpuContextHandle = const PmeGpuContext *;
  * Factory function used to build persistent data for the device at once.
  * \todo This should shortly become GPU_FUNC to support OpenCL.
  */
-CUDA_FUNC_QUALIFIER PmeGpuContextStorage buildPmeGpuContext(const gmx_device_info_t *) CUDA_FUNC_TERM_WITH_RETURN(nullptr)
+GPU_FUNC_QUALIFIER PmeGpuContextStorage buildPmeGpuContext(const gmx_device_info_t *) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 #endif

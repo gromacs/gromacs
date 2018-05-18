@@ -44,7 +44,7 @@ file(GLOB EWALD_GPU_ONLY_SOURCES pme-gpu*.cpp)
 # For simplicity it could be same as EWALD_GPU_ONLY_SOURCES,
 # but some of the files like pme-gpu.cpp are currently not compiling
 # cleanly, as nvcc is not aware of OpenMP pragmas.
-file(GLOB EWALD_GPU_IMPL_SOURCES pme-gpu-internal.cpp pme-gpu-timings.cpp)
+file(GLOB EWALD_GPU_IMPL_SOURCES pme-gpu-internal.cpp pme-gpu-timings.cpp pme-gpu-context-impl.cpp)
 file(GLOB EWALD_CUDA_SOURCES *.cu)
 file(GLOB EWALD_OPENCL_SOURCES *-ocl.cpp)
 foreach (OPENCL_SOURCE ${EWALD_OPENCL_SOURCES})
@@ -56,10 +56,6 @@ if (GMX_USE_CUDA)
     gmx_add_libgromacs_gpu_impl_sources(${EWALD_GPU_IMPL_SOURCES})
 elseif (GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(${EWALD_OPENCL_SOURCES})
-    # TODO: not remove those for GMX_USE_OPENCL.
-    foreach (GPU_ONLY_SOURCE ${EWALD_GPU_ONLY_SOURCES})
-        list(REMOVE_ITEM EWALD_SOURCES ${GPU_ONLY_SOURCE})
-    endforeach()
 else ()
     # Removing the GPU PME C++ files from the build target
     foreach (GPU_ONLY_SOURCE ${EWALD_GPU_ONLY_SOURCES})

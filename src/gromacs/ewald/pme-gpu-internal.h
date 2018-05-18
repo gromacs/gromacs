@@ -47,7 +47,7 @@
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
 #include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
-#include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
+#include "gromacs/gpu_utils/gpu_macros.h"      // for the GPU_FUNC_ macros
 #include "gromacs/utility/arrayref.h"
 
 #include "pme-gpu-types-host.h"                     // for the inline functions accessing PmeGpu members
@@ -100,7 +100,7 @@ int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu);
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_synchronize(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_synchronize(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Allocates the fixed size energy and virial buffer both on GPU and CPU.
@@ -193,8 +193,8 @@ void pme_gpu_realloc_coordinates(const PmeGpu *pmeGpu);
  *
  * Needs to be called for every PME computation. The coordinates are then used in the spline calculation.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                        const rvec   *CUDA_FUNC_ARGUMENT(h_coordinates)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_copy_input_coordinates(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                       const rvec   *GPU_FUNC_ARGUMENT(h_coordinates)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Frees the coordinates on the GPU.
@@ -537,7 +537,7 @@ inline bool pme_gpu_is_testing(const PmeGpu *pmeGpu)
  * \param[in] pmeGpu             The PME GPU structure.
  * \returns                      The input/output forces.
  */
-CUDA_FUNC_QUALIFIER gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM_WITH_RETURN(gmx::EmptyArrayRef())
+GPU_FUNC_QUALIFIER gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(gmx::EmptyArrayRef())
 
 /*! \libinternal \brief
  * Returns the output virial and energy of the PME solving.
@@ -546,9 +546,9 @@ CUDA_FUNC_QUALIFIER gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *CUDA_FUN
  * \param[out] energy            The output energy.
  * \param[out] virial            The output virial matrix.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_get_energy_virial(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                   real *CUDA_FUNC_ARGUMENT(energy),
-                                                   matrix CUDA_FUNC_ARGUMENT(virial)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_get_energy_virial(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                  real *GPU_FUNC_ARGUMENT(energy),
+                                                  matrix GPU_FUNC_ARGUMENT(virial)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
@@ -556,8 +556,8 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_energy_virial(const PmeGpu *CUDA_FUNC_ARGUM
  * \param[in] pmeGpu         The PME GPU structure.
  * \param[in] box            The unit cell box.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                  const matrix CUDA_FUNC_ARGUMENT(box)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                 const matrix GPU_FUNC_ARGUMENT(box)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Finishes the PME GPU computation, waiting for the output forces and/or energy/virial to be copied to the host.
@@ -588,11 +588,11 @@ enum class PmeLayoutTransform
  * \param[in]  dimIndex   Dimension index.
  * \param[in]  transform  Layout transform type
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                            const pme_atomcomm_t *CUDA_FUNC_ARGUMENT(atc),
-                                                            PmeSplineDataType CUDA_FUNC_ARGUMENT(type),
-                                                            int CUDA_FUNC_ARGUMENT(dimIndex),
-                                                            PmeLayoutTransform CUDA_FUNC_ARGUMENT(transform)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                           const pme_atomcomm_t *GPU_FUNC_ARGUMENT(atc),
+                                                           PmeSplineDataType GPU_FUNC_ARGUMENT(type),
+                                                           int GPU_FUNC_ARGUMENT(dimIndex),
+                                                           PmeLayoutTransform GPU_FUNC_ARGUMENT(transform)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Gets a unique index to an element in a spline parameter buffer (theta/dtheta),
@@ -620,9 +620,9 @@ int getSplineParamFullIndex(int order,
  * \param[out] gridSize          Pointer to the grid dimensions to fill in.
  * \param[out] paddedGridSize    Pointer to the padded grid dimensions to fill in.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                                     gmx::IVec *CUDA_FUNC_ARGUMENT(gridSize),
-                                                     gmx::IVec *CUDA_FUNC_ARGUMENT(paddedGridSize)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                                    gmx::IVec *GPU_FUNC_ARGUMENT(gridSize),
+                                                    gmx::IVec *GPU_FUNC_ARGUMENT(paddedGridSize)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
@@ -632,16 +632,16 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu *CUDA_FUNC_ARG
  * \param[in]     context   The PME GPU context data (if initialized outside)
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *CUDA_FUNC_ARGUMENT(pme),
-                                        gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo),
-                                        PmeGpuContextHandle CUDA_FUNC_ARGUMENT(context)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t *GPU_FUNC_ARGUMENT(pme),
+                                       gmx_device_info_t *GPU_FUNC_ARGUMENT(gpuInfo),
+                                       PmeGpuContextHandle GPU_FUNC_ARGUMENT(context)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.
  *
  * \param[in] pmeGpu     The PME GPU structure.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * Reallocates the local atoms data (charges, coordinates, etc.). Copies the charges to the GPU.
@@ -653,9 +653,9 @@ CUDA_FUNC_QUALIFIER void pme_gpu_destroy(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu)) CUD
  * This is a function that should only be called in the beginning of the run and on domain decomposition.
  * Should be called before the pme_gpu_set_io_ranges.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                              const int         CUDA_FUNC_ARGUMENT(nAtoms),
-                                              const real       *CUDA_FUNC_ARGUMENT(charges)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu *GPU_FUNC_ARGUMENT(pmeGpu),
+                                             const int         GPU_FUNC_ARGUMENT(nAtoms),
+                                             const real       *GPU_FUNC_ARGUMENT(charges)) GPU_FUNC_TERM
 
 /*! \brief \libinternal
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
