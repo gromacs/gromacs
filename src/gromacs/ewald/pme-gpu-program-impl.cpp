@@ -45,10 +45,17 @@
 
 #include "pme-gpu-program-impl.h"
 
+#include "config.h"
+
 #include "pme-gpu-internal.h" // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
-//! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
+#if GMX_GPU == GMX_GPU_CUDA
+//@{
+/**
+ * PME CUDA kernels forward declarations. Kernels are documented in their respective files.
+ * TODO: just include kernel files instead?
+ */
 template <
     const int order,
     const bool computeSplines,
@@ -71,10 +78,12 @@ template <
     const bool wrapY
     >
 void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
-
+//@}
+#endif
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 {
+#if GMX_GPU == GMX_GPU_CUDA
     // PME interpolation order
     constexpr int  pmeOrder = 4;
     GMX_UNUSED_VALUE(pmeOrder);
@@ -92,6 +101,9 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
     solveXYZEnergyKernel        = pme_solve_kernel<GridOrdering::XYZ, true>;
     solveYZXKernel              = pme_solve_kernel<GridOrdering::YZX, false>;
     solveYZXEnergyKernel        = pme_solve_kernel<GridOrdering::YZX, true>;
+#elif GMX_GPU == GMX_GPU_OPENCL
+    //TODO: an OpenCL kernel compilation should be here.
+#endif
 }
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl()
