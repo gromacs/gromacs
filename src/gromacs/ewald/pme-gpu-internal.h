@@ -400,11 +400,11 @@ void pme_gpu_get_timings(const PmeGpu            *pmeGpu,
  * \param[in]  computeSplines  Should the computation of spline parameters and gridline indices be performed.
  * \param[in]  spreadCharges   Should the charges/coefficients be spread on the grid.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                        int              CUDA_FUNC_ARGUMENT(gridIndex),
-                                        real            *CUDA_FUNC_ARGUMENT(h_grid),
-                                        bool             CUDA_FUNC_ARGUMENT(computeSplines),
-                                        bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu),
+                                       int              GPU_FUNC_ARGUMENT(gridIndex),
+                                       real            *GPU_FUNC_ARGUMENT(h_grid),
+                                       bool             GPU_FUNC_ARGUMENT(computeSplines),
+                                       bool             GPU_FUNC_ARGUMENT(spreadCharges)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * 3D FFT R2C/C2R routine.
@@ -425,10 +425,10 @@ void pme_gpu_3dfft(const PmeGpu          *pmeGpu,
  * \param[in]     gridOrdering            Specifies the dimenion ordering of the complex grid. TODO: store this information?
  * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should also be performed.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                       t_complex       *CUDA_FUNC_ARGUMENT(h_grid),
-                                       GridOrdering     CUDA_FUNC_ARGUMENT(gridOrdering),
-                                       bool             CUDA_FUNC_ARGUMENT(computeEnergyAndVirial)) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *GPU_FUNC_ARGUMENT(pmeGpu),
+                                      t_complex       *GPU_FUNC_ARGUMENT(h_grid),
+                                      GridOrdering     GPU_FUNC_ARGUMENT(gridOrdering),
+                                      bool             GPU_FUNC_ARGUMENT(computeEnergyAndVirial)) GPU_FUNC_TERM
 
 /*! \libinternal \brief
  * A GPU force gathering function.
@@ -438,10 +438,10 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu    *CUDA_FUNC_ARGUMENT(pmeGp
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
  * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *CUDA_FUNC_ARGUMENT(pmeGpu),
-                                        PmeForceOutputHandling CUDA_FUNC_ARGUMENT(forceTreatment),
-                                        const float           *CUDA_FUNC_ARGUMENT(h_grid)
-                                        ) CUDA_FUNC_TERM
+GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu                *GPU_FUNC_ARGUMENT(pmeGpu),
+                                       PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
+                                       const float           *GPU_FUNC_ARGUMENT(h_grid)
+                                       ) GPU_FUNC_TERM
 
 
 /* The inlined convenience PME GPU status getters */
