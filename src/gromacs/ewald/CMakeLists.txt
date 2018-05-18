@@ -58,14 +58,15 @@ if (GMX_USE_CUDA)
         pme-gather.cu
         pme-solve.cu
         pme-spread.cu
-        pme-timings.cu
         pme-gpu-program-impl.cu
         # GPU-specific sources
         pme-gpu.cpp
         pme-gpu-internal.cpp
+        pme-gpu-timings.cpp
         )
     gmx_compile_cpp_as_cuda(
         pme-gpu-internal.cpp
+        pme-gpu-timings.cpp
         )
 else()
     gmx_add_libgromacs_sources(

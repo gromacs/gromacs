@@ -33,17 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
+/*! \internal \file
  *  \brief Defines PME GPU timing functions.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \ingroup module_ewald
  */
 
-#ifndef GMX_EWALD_PME_TIMINGS_CUH
-#define GMX_EWALD_PME_TIMINGS_CUH
+#ifndef GMX_EWALD_PME_GPU_TIMINGS_H
+#define GMX_EWALD_PME_GPU_TIMINGS_H
 
-#include "gromacs/gpu_utils/gpuregiontimer.cuh"
-#include "gromacs/timing/gpu_timing.h"       // TODO: move include to the source files
+#include "config.h"
+
+#if GMX_GPU == GMX_GPU_CUDA
+#include "gromacs/gpu_utils/gputraits.cuh"
+#elif GMX_GPU == GMX_GPU_OPENCL
+#include "gromacs/gpu_utils/gputraits_ocl.h"
+#endif
 
 struct PmeGpu;
 

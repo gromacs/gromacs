@@ -52,7 +52,6 @@
 #include "pme-gpu-types.h"
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
-#include "pme-timings.cuh"
 
 /*! \internal \brief
  * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),

@@ -358,7 +358,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu *pmeGpu);
  */
 void pme_gpu_destroy_3dfft(const PmeGpu *pmeGpu);
 
-/* Several CUDA event-based timing functions that live in pme-timings.cu */
+/* Several GPU event-based timing functions that live in pme-gpu-timings.cpp */
 
 /*! \libinternal \brief
  * Finalizes all the active PME GPU stage timings for the current computation. Should be called at the end of every computation.
