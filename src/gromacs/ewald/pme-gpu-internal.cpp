@@ -70,6 +70,8 @@
 #include "gromacs/gpu_utils/gmxopencl.h"
 #endif
 
+#include "gromacs/ewald/pme.h"
+
 #include "pme-gpu-3dfft.h"
 #include "pme-gpu-constants.h"
 #include "pme-gpu-program-impl.h"
@@ -757,7 +759,7 @@ static void pme_gpu_init(gmx_pme_t          *pme,
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
-    changePinningPolicy(&pmeGpu->staging.h_forces, gmx::PinningPolicy::CanBePinned);
+    changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
     pmeGpu->common = std::shared_ptr<PmeShared>(new PmeShared());
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
