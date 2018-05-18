@@ -306,7 +306,7 @@ TYPED_TEST(HostAllocatorTest, ManualPinningOperationsWorkWithCuda)
     EXPECT_NE(oldInputData, input.data());
 }
 
-#else
+#elif GMX_GPU != GMX_GPU_OPENCL // Redmine #2498
 
 TYPED_TEST(HostAllocatorTest, ChangingPinningPolicyRequiresCuda)
 {
