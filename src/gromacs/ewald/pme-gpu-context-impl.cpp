@@ -45,9 +45,12 @@
 
 #include "pme-gpu-context-impl.h"
 
+#include "config.h"
+
 #include "pme-gpu-internal.h" // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
+#if GMX_GPU == GMX_GPU_CUDA
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
 template <
     const int order,
@@ -71,10 +74,11 @@ template <
     const bool wrapY
     >
 void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
-
+#endif
 
 PmeGpuContextImpl::PmeGpuContextImpl(const gmx_device_info_t *)
 {
+#if GMX_GPU == GMX_GPU_CUDA
     // PME interpolation order
     constexpr int  pmeOrder = 4;
     GMX_UNUSED_VALUE(pmeOrder);
@@ -92,6 +96,9 @@ PmeGpuContextImpl::PmeGpuContextImpl(const gmx_device_info_t *)
     solveXYZEnergyKernel        = pme_solve_kernel<GridOrdering::XYZ, true>;
     solveYZXKernel              = pme_solve_kernel<GridOrdering::YZX, false>;
     solveYZXEnergyKernel        = pme_solve_kernel<GridOrdering::YZX, true>;
+#elif GMX_GPU == GMX_GPU_OPENCL
+    //TODO: an OpenCL context creation should be here.
+#endif
 }
 
 PmeGpuContextImpl::~PmeGpuContextImpl()
