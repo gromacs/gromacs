@@ -62,6 +62,7 @@ struct t_complex;
 namespace gmx
 {
 class MDLogger;
+enum class PinningPolicy : int;
 }
 
 //! Type of spline data
@@ -387,6 +388,12 @@ void pme_gpu_reset_timings(const PmeGpu *pmeGpu);
  */
 void pme_gpu_get_timings(const PmeGpu            *pmeGpu,
                          gmx_wallclock_gpu_pme_t *timings);
+
+/*! \libinternal \brief
+ * Return the pinning policy appropriate for this build configuration
+ * for relevant buffers used for PME task on this rank running on a
+ * GPU. */
+gmx::PinningPolicy pme_gpu_get_pinning_policy();
 
 /* The PME stages themselves */
 

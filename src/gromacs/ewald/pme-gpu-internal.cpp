@@ -757,7 +757,7 @@ static void pme_gpu_init(gmx_pme_t          *pme,
 {
     pme->gpu          = new PmeGpu();
     PmeGpu *pmeGpu = pme->gpu;
-    changePinningPolicy(&pmeGpu->staging.h_forces, gmx::PinningPolicy::CanBePinned);
+    changePinningPolicy(&pmeGpu->staging.h_forces, pme_gpu_get_pinning_policy());
     pmeGpu->common = std::shared_ptr<PmeShared>(new PmeShared());
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
@@ -944,4 +944,18 @@ void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
     pme_gpu_start_timing(pmeGpu, timerId);
     pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
     pme_gpu_stop_timing(pmeGpu, timerId);
+}
+
+gmx::PinningPolicy pme_gpu_get_pinning_policy()
+{
+    // When the OpenCL implementation of HostAllocationPolicy
+    // implements an form of host-side pinning, amend this logic.
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        return gmx::PinningPolicy::CanBePinned;
+    }
+    else
+    {
+        return gmx::PinningPolicy::CannotBePinned;
+    }
 }

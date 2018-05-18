@@ -231,6 +231,16 @@ PmeRunMode pme_run_mode(const gmx_pme_t *pme)
     return pme->runMode;
 }
 
+gmx::PinningPolicy pme_get_pinning_policy()
+{
+    return pme_gpu_get_pinning_policy();
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        return gmx::PinningPolicy::CanBePinned;
+    }
+    return gmx::PinningPolicy::CannotBePinned;
+}
+
 /*! \brief Number of bytes in a cache line.
  *
  * Must also be a multiple of the SIMD and SIMD4 register size, to
