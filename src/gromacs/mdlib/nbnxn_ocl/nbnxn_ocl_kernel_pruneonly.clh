@@ -51,11 +51,9 @@
 #define USE_CJ_PREFETCH 0
 #endif
 
-#include "nbnxn_ocl_kernel_utils.clh"
-
 /* Note: the AMD compiler testing was done with (fglrx 15.12) performs best with wg
  * size 256 (this is an artificial compiler limitation). The compiler is also
- * sensitive to tidx/widx declaration and warp_any initialization.
+ * sensitive to tidx/widx declaration and warpAny initialization.
  * With the current tweaks the regular prune kenel achieves 90%, the rolling 100%
  * occupancy with both Fiji and Hawaii.
  * TODO: if the wg size limit is removed in an upcoming AMD compiler the NTHREAD_Z=4
@@ -63,6 +61,8 @@
  *
  */
 #define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+
+#include "nbnxn_ocl_kernel_utils.clh"
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
@@ -132,23 +132,13 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
     #define LOCAL_OFFSET (((__local int *)(xib + c_numClPerSupercl * c_clSize)) + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
 #endif
 #else
-    int  cj_buf;
-    int *cjs = &cj_buf;
+    int                cj_buf;
+    int               *cjs = &cj_buf;
 #endif
-#ifndef USE_SUBGROUP_ANY
+    const unsigned int warpVoteSlot = setWarpVoteSLot(tidxz, widx);
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint *const warp_any     = (__local uint*)(LOCAL_OFFSET);
-    const unsigned int           warpVoteSlot = NTHREAD_Z*tidxz + widx;
-    /* Initialise warp vote.*/
-    if (tidx == 0 || tidx == 32)
-    {
-        warp_any[warpVoteSlot] = 0;
-    }
-#else
-    __local uint *const warp_any     = 0;
-    const unsigned int  warpVoteSlot = 0;
-#endif
+    volatile __local uint *warpAny = setWarpAny(warpVoteSlot, LOCAL_OFFSET, tidx);
     #undef LOCAL_OFFSET
 
     nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
@@ -231,14 +221,14 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
                                 /* If _none_ of the atoms pairs are in cutoff range,
                                    the bit corresponding to the current
                                    cluster-pair in imask gets set to 0. */
-                                if (!gmx_sub_group_any(warp_any, warpVoteSlot, r2 < rlistOuter_sq))
+                                if (!gmx_sub_group_any(warpAny, warpVoteSlot, r2 < rlistOuter_sq))
                                 {
                                     imaskFull &= ~mask_ji;
                                 }
                             }
                             /* If any atom pair is within range, set the bit
                                corresponding to the current cluster-pair. */
-                            if (gmx_sub_group_any(warp_any, warpVoteSlot, r2 < rlistInner_sq))
+                            if (gmx_sub_group_any(warpAny, warpVoteSlot, r2 < rlistInner_sq))
                             {
                                 imaskNew |= mask_ji;
                             }
