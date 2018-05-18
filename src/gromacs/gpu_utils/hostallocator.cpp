@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,8 +135,9 @@ PinningPolicy HostAllocationPolicy::pinningPolicy() const
 
 void HostAllocationPolicy::setPinningPolicy(PinningPolicy pinningPolicy)
 {
-    if (GMX_GPU != GMX_GPU_CUDA)
+    if (GMX_GPU == GMX_GPU_NONE)
     {
+        // TODO: redesign the pinning allocator functionality for OpenCL (Redmine #2498)
         GMX_RELEASE_ASSERT(pinningPolicy == PinningPolicy::CannotBePinned,
                            "A suitable build of GROMACS (e.g. with CUDA) is required for a "
                            "HostAllocationPolicy to be set to a mode that produces pinning.");
@@ -157,6 +158,8 @@ void HostAllocationPolicy::pin() const noexcept
 #if GMX_GPU == GMX_GPU_CUDA
     pinBuffer(impl_->pointer_, impl_->numBytes_);
     impl_->pinnedPointer_ = impl_->pointer_;
+#elif GMX_GPU == GMX_GPU_OPENCL
+    // Not implemented, Redmine #2498
 #else
     const char *errorMessage = "Could not register the host memory for pinning.";
 
@@ -179,6 +182,8 @@ void HostAllocationPolicy::unpin() const noexcept
 
     unpinBuffer(impl_->pointer_);
     impl_->pinnedPointer_ = nullptr;
+#elif GMX_GPU == GMX_GPU_OPENCL
+    // Not implemented, Redmine #2498
 #else
     GMX_RELEASE_ASSERT(impl_->pinnedPointer_ == nullptr,
                        "Since the build configuration does not support pinning, then "
