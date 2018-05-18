@@ -53,51 +53,6 @@
 #include "pme-gpu-types-host.h"
 #include "pme-gpu-types-host-impl.h"
 
-/*! \internal \brief
- * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
- * which is laid out for GPU spread/gather kernels. The base only corresponds to the atom index within the execution block.
- * Feed the result into getSplineParamIndex() to get a full index.
- * TODO: it's likely that both parameters can be just replaced with a single atom index, as they are derived from it.
- * Do that, verifying that the generated code is not bloated, and/or revise the spline indexing scheme.
- * Removing warp dependency would also be nice (and would probably coincide with removing PME_SPREADGATHER_ATOMS_PER_WARP).
- *
- * \tparam    order            PME order
- * \param[in] warpIndex        Warp index wrt the block.
- * \param[in] atomWarpIndex    Atom index wrt the warp (from 0 to PME_SPREADGATHER_ATOMS_PER_WARP - 1).
- *
- * \returns Index into theta or dtheta array using GPU layout.
- */
-template <int order>
-int __host__ __device__ __forceinline__ getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
-{
-    assert((atomWarpIndex >= 0) && (atomWarpIndex < PME_SPREADGATHER_ATOMS_PER_WARP));
-    const int dimIndex    = 0;
-    const int splineIndex = 0;
-    // The zeroes are here to preserve the full index formula for reference
-    return (((splineIndex + order * warpIndex) * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex);
-}
-
-/*! \internal \brief
- * Gets a unique index to an element in a spline parameter buffer (theta/dtheta),
- * which is laid out for GPU spread/gather kernels. The index is wrt to the execution block,
- * in range(0, atomsPerBlock * order * DIM).
- * This function consumes result of getSplineParamIndexBase() and adjusts it for \p dimIndex and \p splineIndex.
- *
- * \tparam    order            PME order
- * \param[in] paramIndexBase   Must be result of getSplineParamIndexBase().
- * \param[in] dimIndex         Dimension index (from 0 to 2)
- * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
- *
- * \returns Index into theta or dtheta array using GPU layout.
- */
-template <int order>
-int __host__ __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
-{
-    assert((dimIndex >= XX) && (dimIndex < DIM));
-    assert((splineIndex >= 0) && (splineIndex < order));
-    return (paramIndexBase + (splineIndex * DIM + dimIndex) * PME_SPREADGATHER_ATOMS_PER_WARP);
-}
-
 /*! \brief \internal
  * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
  *

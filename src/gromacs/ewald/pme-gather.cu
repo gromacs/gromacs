@@ -50,6 +50,7 @@
 #include "pme.cuh"
 #include "pme-gpu-program-impl.h"
 #include "pme-gpu-timings.h"
+#include "pme-gpu-utils.h"
 
 /*! \brief
  * An inline CUDA function: unroll the dynamic index accesses to the constant grid sizes to avoid local memory operations.
