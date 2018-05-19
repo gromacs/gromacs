@@ -137,18 +137,18 @@ see the Reference Manual. The most important of these are
         members of its domain. A GPU may perform work for more than
         one PP rank, but it is normally most efficient to use a single
         PP rank per GPU and for that rank to have thousands of
-        particles. When the work of a PP rank is done on the CPU, :ref:`mdrun <gmx mdrun>`
-        will make extensive use of the SIMD capabilities of the
-        core. There are various :ref:`command-line options
-        <controlling-the-domain-decomposition-algorithm>` to control
-        the behaviour of the DD algorithm.
+        particles. When the work of a PP rank is done on the CPU,
+        :ref:`mdrun <gmx mdrun>` will make extensive use of the SIMD
+        capabilities of the core. There are various
+        :ref:`command-line options <controlling-the-domain-decomposition-algorithm>`
+        to control the behaviour of the DD algorithm.
 
     Particle-mesh Ewald
         The particle-mesh Ewald (PME) algorithm treats the long-ranged
-        components of the non-bonded interactions (Coulomb and/or
+        component of the non-bonded interactions (Coulomb and/or
         Lennard-Jones).  Either all, or just a subset of ranks may
-        participate in the work for computing long-ranged component
-        (often inaccurately called simple the "PME"
+        participate in the work for computing the long-ranged component
+        (often inaccurately called simply the "PME"
         component). Because the algorithm uses a 3D FFT that requires
         global communication, its performance gets worse as more ranks
         participate, which can mean it is fastest to use just a subset
@@ -335,8 +335,8 @@ of simulation being run.
 
     gmx mdrun -ntmpi 2 -ntomp 4
 
-Starts :ref:`mdrun <gmx mdrun>` using eight total threads, with four thread-MPI
-ranks and two OpenMP threads per core. You should only use
+Starts :ref:`mdrun <gmx mdrun>` using eight total threads, with two thread-MPI
+ranks and four OpenMP threads per rank. You should only use
 these options when seeking optimal performance, and
 must take care that the ranks you create can have
 all of their OpenMP threads run on the same socket.
@@ -363,14 +363,15 @@ be split evenly between the ranks using OpenMP threads.
 
 ::
 
-    gmx mdrun -nt 6 -pin on -pinoffset 0
-    gmx mdrun -nt 6 -pin on -pinoffset 3
+    gmx mdrun -nt 6 -pin on -pinoffset 0 -pinstride 1
+    gmx mdrun -nt 6 -pin on -pinoffset 6 -pinstride 1
 
-Starts two :ref:`mdrun <gmx mdrun>` processes, each with six total threads.
+Starts two :ref:`mdrun <gmx mdrun>` processes, each with six total threads
+arranged so that the processes affect each other as little as possible by
+being assigned to disjoint sets of physical cores.
 Threads will have their affinities set to particular
-logical cores, beginning from the logical core
-with rank 0 or 3, respectively. The above would work
-well on an Intel CPU with six physical cores and
+logical cores, beginning from the first and 7th logical cores, respectively. The
+above would work well on an Intel CPU with six physical cores and
 hyper-threading enabled. Use this kind of setup only
 if restricting :ref:`mdrun <gmx mdrun>` to a subset of cores to share a
 node with other processes.
@@ -494,7 +495,7 @@ each.
 
 ::
 
-    mpirun -np 4 gmx mdrun -ntomp 6 -nb gpu -gputasks 00
+    mpirun -np 4 gmx_mpi mdrun -ntomp 6 -nb gpu -gputasks 00
 
 Starts :ref:`mdrun_mpi` on a machine with two nodes, using
 four total ranks, each rank with six OpenMP threads,
@@ -502,7 +503,7 @@ and both ranks on a node sharing GPU with ID 0.
 
 ::
 
-    mpirun -np 8 gmx mdrun -ntomp 3 -gputasks 0000
+    mpirun -np 8 gmx_mpi mdrun -ntomp 3 -gputasks 0000
 
 Using a same/similar hardware as above,
 starts :ref:`mdrun_mpi` on a machine with two nodes, using
@@ -571,7 +572,7 @@ parallel hardware.
 
 ``-rcon``
     When constraints are present, option ``-rcon`` influences
-    the cell size limit as well.  
+    the cell size limit as well.
     Particles connected by NC constraints, where NC is the LINCS order
     plus 1, should not be beyond the smallest cell size. A error
     message is generated when this happens, and the user should change
@@ -655,9 +656,9 @@ The counters are an average of the time/cycles different parts of the simulation
 hence can not directly reveal fluctuations during a single run (although comparisons across
 multiple runs are still very useful).
 
-Counters will appear in MD log file only if the related parts of the code were
+Counters will appear in an MD log file only if the related parts of the code were
 executed during the :ref:`gmx mdrun` run. There is also a special counter called "Rest" which
-indicated for the amount of time not accounted for by any of the counters above. Theerfore,
+indicates the amount of time not accounted for by any of the counters above. Therefore,
 a significant amount "Rest" time (more than a few percent) will often be an indication of
 parallelization inefficiency (e.g. serial code) and it is recommended to be reported to the
 developers.
@@ -739,7 +740,7 @@ on :ref:`domain decomposition <gmx-domain-decomp>`.
 Of all calculations required for an MD step,
 GROMACS aims to optimize performance bottom-up for each step
 from the lowest level (SIMD unit, cores, sockets, accelerators, etc.).
-Therefore much of the indivdual computation units are
+Therefore many of the individual computation units are
 highly tuned for the lowest level of hardware parallelism: the SIMD units.
 Additionally, with GPU accelerators used as *co-processors*, some of the work
 can be *offloaded*, that is calculated simultaneously/concurrently with the CPU
@@ -832,7 +833,7 @@ One overview over the possible task assignments is given below:
   task can run wholly on the GPU, or have its latter stages run only on the CPU.
 
   Limitations are that PME on GPU does not support PME domain decomposition,
-  so that only one PME task can be offloaded to a single GPU 
+  so that only one PME task can be offloaded to a single GPU
   assigned to a separate PME rank, while NB can be decomposed and offloaded to multiple GPUs.
 
 .. Future |Gromacs| versions past 2018:
@@ -848,8 +849,8 @@ One overview over the possible task assignments is given below:
 Performance considerations for GPU tasks
 ........................................
 
-#) The performace balance depends on how many (and how fast) CPU
-   cores you have, vs. how many and how fast the GPUs are that you have.
+#) The performance balance depends on the speed and number of CPU cores you
+   have vs the speed and number of GPUs you have.
 
 #) With slow/old GPUs and/or fast/modern CPUs with many
    cores, it might make more sense to let the CPU do PME calculation,
@@ -885,20 +886,20 @@ Delays in CPU execution are caused by the latency of launching GPU tasks,
 an overhead that can become significant as simulation ns/day increases
 (i.e. with shorter wall-time per step).
 The overhead is measured by :ref:`gmx mdrun` and reported in the performance
-summary section of the log file ("Launch GPU ops" row). 
-A few percent of runtime spent in this category is normal, 
+summary section of the log file ("Launch GPU ops" row).
+A few percent of runtime spent in this category is normal,
 but in fast-iterating and multi-GPU parallel runs 10% or larger overheads can be observed.
-In general, there a user can do little to avoid such overheads, but there
+In general, a user can do little to avoid such overheads, but there
 are a few cases where tweaks can give performance benefits.
 In single-rank runs timing of GPU tasks is by default enabled and,
 while in most cases its impact is small, in fast runs performance can be affected.
 The performance impact will be most significant on NVIDIA GPUs with CUDA,
 less on AMD with OpenCL.
 In these cases, when more than a few percent of "Launch GPU ops" time is observed,
-it is recommended turning off timing by setting the ``GMX_DISABLE_GPU_TIMING``
+it is recommended to turn off timing by setting the ``GMX_DISABLE_GPU_TIMING``
 environment variable.
-In parallel runs with with many ranks sharing a GPU
-launch overheads can also be reduced by staring fewer thread-MPI
+In parallel runs with many ranks sharing a GPU,
+launch overheads can also be reduced by starting fewer thread-MPI
 or MPI ranks per GPU; e.g. most often one rank per thread or core is not optimal.
 
 The second type of overhead, interference of the GPU driver with CPU computation,
@@ -910,7 +911,7 @@ This effect is most pronounced when using AMD GPUs with OpenCL with
 older driver releases (e.g. fglrx 12.15).
 To minimize the overhead it is recommended to
 leave a CPU hardware thread unused when launching :ref:`gmx mdrun`,
-especially on CPUs with high core count and/or HyperThreading enabled.
+especially on CPUs with high core counts and/or HyperThreading enabled.
 E.g. on a machine with a 4-core CPU and eight threads (via HyperThreading) and an AMD GPU,
 try ``gmx mdrun -ntomp 7 -pin on``.
 This will leave free CPU resources for the GPU task scheduling
@@ -943,7 +944,7 @@ are known to work, but before doing production runs always make sure that the |G
 pass successfully on the hardware.
 
 The OpenCL GPU kernels are compiled at run time. Hence,
-building the OpenCL program can take a few seconds introducing a slight
+building the OpenCL program can take a few seconds, introducing a slight
 delay in the :ref:`gmx mdrun` startup. This is not normally a
 problem for long production MD, but you might prefer to do some kinds
 of work, e.g. that runs very few steps, on just the CPU (e.g. see ``-nb`` above).
@@ -996,7 +997,7 @@ of 2. So it can be useful go through the checklist.
   cases, the correct flags are automatically configured).
 * On x86, use gcc or icc as the compiler (not pgi or the Cray compiler).
 * On POWER, use gcc instead of IBM's xlc.
-* Use a new compiler version, especially for gcc (e.g. from the version 5 to 6
+* Use a new compiler version, especially for gcc (e.g. from version 5 to 6
   the performance of the compiled code improved a lot).
 * MPI library: OpenMPI usually has good performance and causes little trouble.
 * Make sure your compiler supports OpenMP (some versions of Clang don't).
@@ -1013,7 +1014,7 @@ Run setup
 ^^^^^^^^^
 
 * For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of 2 fs, use :mdp:`cutoff-scheme` = :mdp-value:`constraints=h-bonds`
+* When using a time-step of 2 fs, use :mdp-value:`constraints=h-bonds`
   (and not :mdp-value:`constraints=all-bonds`), since this is faster, especially with GPUs,
   and most force fields have been parametrized with only bonds involving
   hydrogens constrained.
