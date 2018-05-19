@@ -82,7 +82,7 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 mpi simd=avx2_256
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
 # Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma gpuhw=amd opencl-1.2 clFFT-2.14
+gcc-7 openmp simd=avx2_256 opencl-1.2 clFFT-2.14 gpuhw=amd
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
@@ -92,3 +92,4 @@ gcc-5 openmp simd=avx_128_fma gpuhw=amd opencl-1.2 clFFT-2.14
 # Update to test gcc 8
 # Update to test clang 7
 # Update to test CUDA 10
+# Add tests that trigger make ocl-kernel
