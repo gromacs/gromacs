@@ -76,9 +76,12 @@ icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
 # Test icc with SIMD in mixed precision in release mode
 icc-18 openmp opencl cuda-7.5 mpi release simd=avx2_256
 
-# Test AMD OpenCL
 # Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
+gcc-5 openmp simd=avx_128_fma
+
+# Test AMD OpenCL
+# Test latest gcc
+gcc-8 openmp simd=avx2_256 opencl release
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
