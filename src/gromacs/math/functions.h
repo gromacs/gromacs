@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -439,6 +440,24 @@ erfinv(double x);
  */
 float
 erfinv(float x);
+
+/*! \brief Exact integer division, 32bit.
+ *
+ * \param a dividend. Function asserts that it is a multiple of divisor
+ * \param b divisor
+ *
+ * \return quotient of division
+ */
+constexpr int32_t exactDiv(int32_t a, int32_t b)
+{
+    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+}
+
+//! Exact integer division, 64bit.
+constexpr int64_t exactDiv(int64_t a, int64_t b)
+{
+    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+}
 
 } // namespace gmx
 

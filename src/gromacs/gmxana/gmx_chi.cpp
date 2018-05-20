@@ -884,15 +884,15 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
 static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                     gmx_bool bViol, gmx_bool bRamOmega, const gmx_output_env_t *oenv)
 {
-    FILE    *fp, *gp = nullptr;
-    gmx_bool bOm;
-    char     fn[256];
-    int      i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
-#define NMAT 120
-    real   **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
-    t_rgb    rlo  = { 1.0, 0.0, 0.0 };
-    t_rgb    rmid = { 1.0, 1.0, 1.0 };
-    t_rgb    rhi  = { 0.0, 0.0, 1.0 };
+    FILE         *fp, *gp = nullptr;
+    gmx_bool      bOm;
+    char          fn[256];
+    int           i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
+    constexpr int NMAT = 120;
+    real        **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
+    t_rgb         rlo  = { 1.0, 0.0, 0.0 };
+    t_rgb         rmid = { 1.0, 1.0, 1.0 };
+    t_rgb         rhi  = { 0.0, 0.0, 1.0 };
 
     for (i = 0; (i < nlist); i++)
     {
@@ -910,7 +910,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 for (j = 0; (j < NMAT); j++)
                 {
                     snew(mat[j], NMAT);
-                    axis[j] = -180+(360*j)/NMAT;
+                    axis[j] = -180+gmx::exactDiv(360*j, NMAT);
                 }
             }
             if (bViol)
@@ -932,7 +932,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 if (bOm)
                 {
                     omega = RAD2DEG*dih[Om][j];
-                    mat[static_cast<int>(((phi*NMAT)/360)+NMAT/2)][static_cast<int>(((psi*NMAT)/360)+NMAT/2)]
+                    mat[static_cast<int>(((phi*NMAT)/360)+gmx::exactDiv(NMAT, 2))][static_cast<int>(((psi*NMAT)/360)+gmx::exactDiv(NMAT, 2))]
                         += omega;
                 }
             }
