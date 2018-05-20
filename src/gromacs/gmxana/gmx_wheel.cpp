@@ -113,7 +113,7 @@ static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, ch
     }
     ring  = (2+slen)*fontwidth;
     outer = inner+ring;
-    box   = inner*1.5+(1+(nres / 18))*ring;
+    box   = inner*1.5+(1+(int)(nres / 18))*ring;
 
     bPh = bPhobics(nres, resnm);
 
@@ -174,7 +174,7 @@ static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *tit
     fprintf(stderr, "slen = %d\n", slen);
     ring  = slen*fontwidth;
     outer = inner+ring;
-    box   = (1+(nres / (2*angle)))*outer;
+    box   = (1+(int)(nres / (2*angle)))*outer;
 
     out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
     xc  = box;

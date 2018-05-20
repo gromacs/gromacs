@@ -506,7 +506,7 @@ int gmx_dos(int argc, char *argv[])
         }
     }
     /* Normalize it */
-    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, nframes/4, &stddev);
+    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, nframes/4., &stddev);
     if (bNormalizeDos)
     {
         for (j = 0; (j < nframes/4); j++)
@@ -585,7 +585,7 @@ int gmx_dos(int argc, char *argv[])
         dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff +
                           dos[DOS_SOLID][j]*wEsolid(nu[j], beta));
     }
-    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2, &stddev);
+    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2., &stddev);
     DiffCoeff = 1000*DiffCoeff/3.0;
     fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
             DiffCoeff);
@@ -593,7 +593,7 @@ int gmx_dos(int argc, char *argv[])
             1000*DoS0/(12*tmass*beta));
 
     cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], nullptr,
-                                   nframes/4, &stddev);
+                                   nframes/4., &stddev);
     fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
     fprintf(fplog, "\nArrivederci!\n");
     gmx_fio_fclose(fplog);

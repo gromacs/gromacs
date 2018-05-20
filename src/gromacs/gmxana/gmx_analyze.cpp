@@ -336,7 +336,7 @@ static void average(const char *avfile, int avbar_opt,
             fprintf(fp, "@TYPE xydydy\n");
             edge = static_cast<int>(nset*0.05+0.5);
             fprintf(stdout, "Errorbars: discarding %d points on both sides: %d%%"
-                    " interval\n", edge, static_cast<int>(100*(nset-2*edge)/nset+0.5));
+                    " interval\n", edge, static_cast<int>(100.*(nset-2*edge)/nset+0.5));
         }
         else
         {

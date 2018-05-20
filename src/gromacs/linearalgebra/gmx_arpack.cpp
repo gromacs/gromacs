@@ -1376,7 +1376,7 @@ F77_FUNC(dsconv, DSCONV) (int *     n,
                           double *  tol,
                           int *     nconv)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2/3.;
     int    i__1;
     double d__2, d__3;
 
@@ -1833,7 +1833,7 @@ F77_FUNC(dsaup2, DSAUP2) (int *     ido,
                           int *     iwork,
                           int *     info)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2/3.;
     int    c__1 = 1;
     int    c__0 = 0;
 
@@ -2400,7 +2400,7 @@ F77_FUNC(dseupd, DSEUPD) (int *     rvec,
                           int *     lworkl,
                           int *     info)
 {
-    double c_b21  = 2/3;
+    double c_b21  = 2/3.;
     int    c__1   = 1;
     double c_b102 = 1.;
     int    v_dim1, v_offset, z_dim1, z_offset, i__1;
@@ -4239,7 +4239,7 @@ F77_FUNC(ssconv, SSCONV) (int *     n,
                           float *  tol,
                           int *     nconv)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2/3.;
     int   i__1;
     float d__2, d__3;
 
@@ -4696,7 +4696,7 @@ F77_FUNC(ssaup2, SSAUP2) (int *     ido,
                           int *     iwork,
                           int *     info)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2/3.;
     int   c__1 = 1;
     int   c__0 = 0;
 
@@ -5264,7 +5264,7 @@ F77_FUNC(sseupd, SSEUPD) (int *     rvec,
                           int *     lworkl,
                           int *     info)
 {
-    float c_b21  = 2/3;
+    float c_b21  = 2/3.;
     int   c__1   = 1;
     float c_b102 = 1.;
     int   v_dim1, v_offset, z_dim1, z_offset, i__1;

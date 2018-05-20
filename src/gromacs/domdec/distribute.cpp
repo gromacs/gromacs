@@ -318,7 +318,7 @@ static void distribute_cg(FILE *fplog,
     snew(tmp_ind, dd->nnodes);
     for (i = 0; i < dd->nnodes; i++)
     {
-        tmp_nalloc[i] = over_alloc_large(cgs->nr/dd->nnodes+1);
+        tmp_nalloc[i] = over_alloc_large((int)(cgs->nr/dd->nnodes)+1);
         snew(tmp_ind[i], tmp_nalloc[i]);
     }
 

@@ -625,7 +625,7 @@ static real rms_diff(int natom, real **d, real **d_r)
             r2 += r*r;
         }
     }
-    r2 /= (natom*(natom-1))/2;
+    r2 /= (natom*(natom-1))/2.;
 
     return std::sqrt(r2);
 }

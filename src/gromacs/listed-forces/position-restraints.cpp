@@ -421,7 +421,7 @@ posres_wrapper(t_nrnb               *nrnb,
      * but if k changes, it is not.
      */
     enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, idef->il[F_POSRES].nr/2);
+    inc_nrnb(nrnb, eNR_POSRES, (int)( idef->il[F_POSRES].nr/2));
 }
 
 void
@@ -477,5 +477,5 @@ void fbposres_wrapper(t_nrnb               *nrnb,
                  fr->ePBC == epbcNONE ? nullptr : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, idef->il[F_FBPOSRES].nr/2);
+    inc_nrnb(nrnb, eNR_FBPOSRES, (int)(idef->il[F_FBPOSRES].nr/2));
 }

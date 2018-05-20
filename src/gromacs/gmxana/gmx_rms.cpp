@@ -840,7 +840,7 @@ int gmx_rms(int argc, char *argv[])
             if (bDeltaLog)
             {
                 delta_scalex = 8.0/std::log(2.0);
-                delta_xsize  = static_cast<int>(std::log(static_cast<real>(tel_mat/2))*delta_scalex+0.5)+1;
+                delta_xsize  = static_cast<int>(std::log(tel_mat/2.)*delta_scalex+0.5)+1;
             }
             else
             {
@@ -949,7 +949,7 @@ int gmx_rms(int argc, char *argv[])
         }
         else
         {
-            rmsd_avg /= tel_mat*(tel_mat - 1)/2;
+            rmsd_avg /= tel_mat*(tel_mat - 1)/2.;
         }
         if (bMat && (avl > 0))
         {

@@ -113,7 +113,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
         phi += r360;
     }
 
-    rot_width   = 360/multiplicity;
+    rot_width   = 360./multiplicity;
     core_width  = core_frac * rot_width;
     core_offset = (rot_width - core_width)/2.0;
     for (bin = 1; bin <= multiplicity; bin++)

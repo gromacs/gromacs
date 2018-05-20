@@ -888,7 +888,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
     gmx_bool bOm;
     char     fn[256];
     int      i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
-#define NMAT 120
+    constexpr int NMAT = 120;
     real   **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
     t_rgb    rlo  = { 1.0, 0.0, 0.0 };
     t_rgb    rmid = { 1.0, 1.0, 1.0 };
@@ -910,7 +910,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 for (j = 0; (j < NMAT); j++)
                 {
                     snew(mat[j], NMAT);
-                    axis[j] = -180+(360*j)/NMAT;
+                    axis[j] = -180+(int)((360*j)/NMAT);
                 }
             }
             if (bViol)
@@ -932,7 +932,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 if (bOm)
                 {
                     omega = RAD2DEG*dih[Om][j];
-                    mat[static_cast<int>(((phi*NMAT)/360)+NMAT/2)][static_cast<int>(((psi*NMAT)/360)+NMAT/2)]
+                    mat[static_cast<int>(((phi*NMAT)/360)+(int)(NMAT/2))][static_cast<int>(((psi*NMAT)/360)+(int)(NMAT/2))]
                         += omega;
                 }
             }
