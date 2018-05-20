@@ -48,19 +48,9 @@
 #include "gromacs/utility/basedefinitions.h"
 
 void
-gmx_nonbonded_setup(t_forcerec *fr,
-                    gmx_bool    bGenericKernelOnly);
-
-
-
-
-
-void
 gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
                                   t_nblist *   nl,
                                   gmx_bool     bElecAndVdwSwitchDiffers);
-
-
 
 #define GMX_NONBONDED_DO_FORCE          (1<<1)
 #define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
@@ -68,18 +58,5 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 #define GMX_NONBONDED_DO_POTENTIAL      (1<<4)
 #define GMX_NONBONDED_DO_SR             (1<<5)
 
-void
-do_nonbonded(const t_forcerec  *fr,
-             rvec               x[],
-             rvec               f_shortrange[],
-             const t_mdatoms   *md,
-             const t_blocka    *excl,
-             gmx_grppairener_t *grppener,
-             t_nrnb            *nrnb,
-             real              *lambda,
-             real               dvdlambda[],
-             int                nls,
-             int                eNL,
-             int                flags);
 
 #endif

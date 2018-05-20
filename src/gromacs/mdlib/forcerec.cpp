@@ -3051,11 +3051,6 @@ void init_forcerec(FILE                             *fp,
     snew(fr->ns, 1);
     init_ns(fp, cr, fr->ns, fr, mtop);
 
-    if (thisRankHasDuty(cr, DUTY_PP))
-    {
-        gmx_nonbonded_setup(fr, bGenericKernelOnly);
-    }
-
     /* Initialize the thread working data for bonded interactions */
     init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
                           &fr->bonded_threading);

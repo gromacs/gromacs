@@ -108,18 +108,10 @@ SimulationRunner::SimulationRunner(TestFileManager *fileManager) :
 #endif
 }
 
-// TODO The combination of defaulting to Verlet cut-off scheme, NVE,
-// and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
-// things that way, this function should be renamed. For now,
-// force the use of the group scheme.
-// TODO There is possible outstanding unexplained behaviour of mdp
-// input parsing e.g. Redmine 2074, so this particular set of mdp
-// contents is also tested with GetIrTest in gmxpreprocess-test.
 void
 SimulationRunner::useEmptyMdpFile()
 {
-    // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
-    useStringAsMdpFile("cutoff-scheme = Group\n");
+    useStringAsMdpFile("cutoff-scheme = Verlet\n");
 }
 
 void

@@ -157,8 +157,7 @@ void do_force_lowlevel(t_forcerec           *fr,
                        int                   flags,
                        float                *cycles_pme)
 {
-    int         i, j;
-    int         donb_flags;
+    int         i;
     int         pme_flags;
     t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
@@ -206,52 +205,7 @@ void do_force_lowlevel(t_forcerec           *fr,
      * calls are done from do_force_cutsVERLET(). */
     if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
     {
-        donb_flags = 0;
-        /* Add short-range interactions */
-        donb_flags |= GMX_NONBONDED_DO_SR;
-
-        /* Currently all group scheme kernels always calculate (shift-)forces */
-        if (flags & GMX_FORCE_FORCES)
-        {
-            donb_flags |= GMX_NONBONDED_DO_FORCE;
-        }
-        if (flags & GMX_FORCE_VIRIAL)
-        {
-            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
-        }
-        if (flags & GMX_FORCE_ENERGY)
-        {
-            donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
-        }
-
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                     &enerd->grpp, nrnb,
-                     lambda, dvdl_nb, -1, -1, donb_flags);
-
-        /* If we do foreign lambda and we have soft-core interactions
-         * we have to recalculate the (non-linear) energies contributions.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
-        {
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                real lam_i[efptNR];
-
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, forceForUseWithShiftForces, md, excl,
-                             &(enerd->foreign_grpp), nrnb,
-                             lam_i, dvdl_dum, -1, -1,
-                             (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
+        GMX_RELEASE_ASSERT(false, "Old group kernels have been removed");
     }
 
 #if GMX_MPI
