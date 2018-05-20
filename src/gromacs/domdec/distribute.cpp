@@ -442,6 +442,8 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
 
     if (bMaster)
     {
+        GMX_ASSERT(box && pos, "box or pos not set on master");
+
         if (dd->bScrewPBC)
         {
             check_screw_box(box);
