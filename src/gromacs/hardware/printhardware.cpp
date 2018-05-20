@@ -223,7 +223,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         s += gmx::formatString("    Features:");
         for (auto &f : cpuInfo.featureSet())
         {
-            s += gmx::formatString(" %s", cpuInfo.featureString(f).c_str());;
+            s += gmx::formatString(" %s", gmx::CpuInfo::featureString(f).c_str());
         }
         s += gmx::formatString("\n");
     }

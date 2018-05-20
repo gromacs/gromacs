@@ -1459,7 +1459,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
     std::string filenameModified(filename);
     if (numBias > 1)
     {
-        size_t n = filenameModified.rfind(".");
+        size_t n = filenameModified.rfind('.');
         GMX_RELEASE_ASSERT(n != std::string::npos, "The filename should contain an extension starting with .");
         filenameModified.insert(n, formatString("%d", biasIndex));
     }
