@@ -366,7 +366,7 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
  *
  * This factor leads to 4 realloc calls to double the array size.
  */
-#define OVER_ALLOC_FAC 1.19
+constexpr float OVER_ALLOC_FAC = 1.19;
 
 /*! \brief
  * Turns over allocation for variable size atoms/cg/top arrays on or off,
@@ -388,9 +388,11 @@ void set_over_alloc_dd(gmx_bool set);
 int over_alloc_dd(int n);
 
 /** Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
+template<typename T>
+constexpr T over_alloc_small(T n) { return OVER_ALLOC_FAC*n + 8000; }
 
 /** Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
+template<typename T>
+constexpr T over_alloc_large(T n) { return OVER_ALLOC_FAC*n + 1000; }
 
 #endif

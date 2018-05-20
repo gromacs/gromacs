@@ -316,7 +316,7 @@ static real rms_dist(int isize, real **d, real **d_r)
             r2 += r*r;
         }
     }
-    r2 /= (isize*(isize-1))/2;
+    r2 /= gmx::exactDiv(isize*(isize-1), 2);
 
     return std::sqrt(r2);
 }

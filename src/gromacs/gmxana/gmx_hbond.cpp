@@ -2106,8 +2106,8 @@ static void do_hbac(const char *fn, t_hbdata *hb,
         tail  += ct[j];
         tail2 += ct[j]*ct[j];
     }
-    tail  /= (nn - nn/2);
-    tail2 /= (nn - nn/2);
+    tail  /= (nn - int{nn/2});
+    tail2 /= (nn - int{nn/2});
     dtail  = std::sqrt(tail2-tail*tail);
 
     /* Check whether the ACF is long enough */
