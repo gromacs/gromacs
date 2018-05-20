@@ -445,5 +445,5 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     /* 12 flops per outer iteration
      * 19 flops per inner iteration
      */
-    inc_nrnb(nrnb, eNR_NBKERNEL_ELEC_VDW_VF, (ni1-ni0)*12 + ((ni1-ni0)*natoms/2)*19);
+    inc_nrnb(nrnb, eNR_NBKERNEL_ELEC_VDW_VF, (ni1-ni0)*12 + ((ni1-ni0)*(int)(natoms/2))*19);
 }

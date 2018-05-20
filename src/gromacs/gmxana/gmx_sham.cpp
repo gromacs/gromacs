@@ -749,13 +749,13 @@ static void do_sham(const char *fn, const char *ndx,
         fp = gmx_ffopen(pdb, "w");
         for (i = 0; (i < ibox[0]); i++)
         {
-            xxx[XX] = 3*(i+0.5-ibox[0]/2);
+            xxx[XX] = 3*(i+0.5-(int)(ibox[0]/2));
             for (j = 0; (j < ibox[1]); j++)
             {
-                xxx[YY] = 3*(j+0.5-ibox[1]/2);
+                xxx[YY] = 3*(j+0.5-(int)(ibox[1]/2));
                 for (k = 0; (k < ibox[2]); k++)
                 {
-                    xxx[ZZ] = 3*(k+0.5-ibox[2]/2);
+                    xxx[ZZ] = 3*(k+0.5-(int)(ibox[2]/2));
                     index   = index3(ibox, i, j, k);
                     if (P[index] > 0)
                     {

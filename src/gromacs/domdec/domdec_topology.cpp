@@ -1212,7 +1212,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 if ((ild->nr + n)/nral1 > vsite->vsite_pbc_loc_nalloc[ftv])
                 {
                     vsite->vsite_pbc_loc_nalloc[ftv] =
-                        over_alloc_large((ild->nr + n)/nral1);
+                        over_alloc_large((int)((ild->nr + n)/nral1));
                     srenew(vsite->vsite_pbc_loc[ftv],
                            vsite->vsite_pbc_loc_nalloc[ftv]);
                 }
