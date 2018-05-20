@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ static gmx_bool hbond(rvec x[], int i, int j, real distance)
 }
 
 static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
-                      gmx_bool donor[], gmx_bool accept[], real dist)
+                      const gmx_bool donor[], const gmx_bool accept[], real dist)
 {
     int i, j, k, ii, natom;
 
@@ -143,7 +143,7 @@ static void pr_hbonds(FILE *fp, t_blocka *hb, t_atoms *pdba)
 }
 
 static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
-                           gmx_bool ad[], gmx_bool hbond[], rvec xh,
+                           const gmx_bool ad[], gmx_bool hbond[], rvec xh,
                            real angle, real dist)
 {
     gmx_bool bHB;

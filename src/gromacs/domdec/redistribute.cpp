@@ -69,7 +69,7 @@
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
 
-static int compact_and_copy_vec_at(int ncg, int *move,
+static int compact_and_copy_vec_at(int ncg, const int *move,
                                    const gmx::RangePartitioning &atomGroups,
                                    int nvec, int vec,
                                    rvec *src, gmx_domdec_comm_t *comm,
@@ -113,7 +113,7 @@ static int compact_and_copy_vec_at(int ncg, int *move,
     return home_pos;
 }
 
-static int compact_and_copy_vec_cg(int ncg, int *move,
+static int compact_and_copy_vec_cg(int ncg, const int *move,
                                    const gmx::RangePartitioning &atomGroups,
                                    int nvec, rvec *src, gmx_domdec_comm_t *comm,
                                    gmx_bool bCompact)
@@ -344,9 +344,9 @@ static int *getMovedBuffer(gmx_domdec_comm_t *comm,
 static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                          gmx_domdec_t *dd,
                          t_state *state,
-                         ivec tric_dir, matrix tcm,
-                         rvec cell_x0, rvec cell_x1,
-                         rvec limitd, rvec limit0, rvec limit1,
+                         const ivec tric_dir, matrix tcm,
+                         const rvec cell_x0, const rvec cell_x1,
+                         rvec limitd, const rvec limit0, const rvec limit1,
                          const gmx::RangePartitioning &atomGroups,
                          int cg_start, int cg_end,
                          rvec *cg_cm,

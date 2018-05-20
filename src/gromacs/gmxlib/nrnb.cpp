@@ -520,7 +520,7 @@ static const int    constr_index[] = {
 #define NCONSTR_INDEX asize(constr_index)
 
 static double pr_av(FILE *log, t_commrec *cr,
-                    double fav, double ftot[], const char *title)
+                    double fav, const double ftot[], const char *title)
 {
     int    i, perc;
     double dperc, unb;

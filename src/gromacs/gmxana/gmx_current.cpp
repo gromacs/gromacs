@@ -186,7 +186,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
     }
 }
 
-static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, int index0[], \
+static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, const int index0[], \
                     rvec fr[], rvec mj, real mass2[], real qmol[])
 {
 
@@ -272,7 +272,7 @@ static real calceps(real prefactor, real md2, real mj2, real cor, real eps_rf, g
 }
 
 
-static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int nfr, int vfr[], int ei, int nshift)
+static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int nfr, const int vfr[], int ei, int nshift)
 {
 
     int  i;
@@ -323,7 +323,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
 }
 
-static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
+static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, const real refr[])
 {
 
     int     i;
@@ -350,7 +350,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        int ePBC, t_topology top, t_trxframe fr, real temp,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
-                       int *index0, int indexm[], real mass2[],
+                       const int *index0, int indexm[], real mass2[],
                        real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;

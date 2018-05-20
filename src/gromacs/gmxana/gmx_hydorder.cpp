@@ -61,7 +61,7 @@
 
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
-                                  rvec x[], int maxidx, int index[],
+                                  rvec x[], int maxidx, const int index[],
                                   real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)

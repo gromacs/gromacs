@@ -869,7 +869,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          gmx_int64_t step, double t,
                          real reftemp,
                          enerdata_t *edat,
-                         int nset, int set[], gmx_bool *bIsEner,
+                         int nset, const int set[], const gmx_bool *bIsEner,
                          char **leg, gmx_enxnm_t *enm,
                          real Vaver, real ezero,
                          int nbmin, int nbmax,
@@ -1205,7 +1205,7 @@ static void print1(FILE *fp, gmx_bool bDp, real e)
 }
 
 static void fec(const char *ene2fn, const char *runavgfn,
-                real reftemp, int nset, int set[], char *leg[],
+                real reftemp, int nset, const int set[], char *leg[],
                 enerdata_t *edat, double time[],
                 const gmx_output_env_t *oenv)
 {

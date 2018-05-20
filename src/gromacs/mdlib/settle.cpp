@@ -316,7 +316,7 @@ void settle_set_constraints(settledata       *settled,
 }
 
 void settle_proj(settledata *settled, ConstraintVariable econq,
-                 int nsettle, t_iatom iatoms[],
+                 int nsettle, const t_iatom iatoms[],
                  const t_pbc *pbc,
                  const rvec x[],
                  rvec *der, rvec *derp,

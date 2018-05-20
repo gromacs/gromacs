@@ -59,7 +59,7 @@ void reset_bin(t_bin *b);
 
 int add_binr(t_bin *b, int nr, const real r[]);
 int add_binr(t_bin *b, gmx::ArrayRef<const real> r);
-int add_bind(t_bin *b, int nr, double r[]);
+int add_bind(t_bin *b, int nr, const double r[]);
 /* Add reals to the bin. Returns index */
 
 void sum_bin(t_bin *b, const t_commrec *cr);

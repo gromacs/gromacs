@@ -75,7 +75,7 @@ static int ce = 0, cb = 0;
 
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-static void p_integrate(double *result, double data[], int ndata, double slWidth)
+static void p_integrate(double *result, const double data[], int ndata, double slWidth)
 {
     int    i, slice;
     double sum;

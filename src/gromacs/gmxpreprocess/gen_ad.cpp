@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -276,7 +276,7 @@ static void cpparam(t_param *dest, t_param *src)
     }
 }
 
-static void set_p(t_param *p, int ai[4], real *c, char *s)
+static void set_p(t_param *p, const int ai[4], const real *c, char *s)
 {
     int j;
 
@@ -349,7 +349,7 @@ static void sort_id(int nr, t_param ps[])
     }
 }
 
-static int n_hydro(int a[], char ***atomname)
+static int n_hydro(const int a[], char ***atomname)
 {
     int  i, nh = 0;
     char c0, c1, *aname;
@@ -570,7 +570,7 @@ static gmx_bool is_hydro(t_atoms *atoms, int ai)
 }
 
 static void get_atomnames_min(int n, char **anm,
-                              int resind, t_atoms *atoms, int *a)
+                              int resind, t_atoms *atoms, const int *a)
 {
     int m;
 

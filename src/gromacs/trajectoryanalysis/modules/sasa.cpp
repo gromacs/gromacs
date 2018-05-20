@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -196,7 +196,7 @@ void do_conect(const char *fn, int n, rvec x[])
 /*! \brief
  * Plots the surface into a PDB file, optionally including the original atoms.
  */
-void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *atoms,
+void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_atoms *atoms,
                    t_symtab *symtab, int ePBC, const matrix box, gmx_bool bIncludeSolute)
 {
     const char *const  atomnm = "DOT";

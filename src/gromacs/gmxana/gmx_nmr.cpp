@@ -281,7 +281,7 @@ static int get_bounds(const char *topnm,
     return nb;
 }
 
-static void calc_violations(real rt[], real rav3[], int nb, int index[],
+static void calc_violations(real rt[], real rav3[], int nb, const int index[],
                             real bounds[], real *viol, double *st, double *sa)
 {
     const   real sixth = 1.0/6.0;

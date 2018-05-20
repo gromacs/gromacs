@@ -496,8 +496,8 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
 }
 
 static void print_bonds(FILE *fp, int o2n[],
-                        int nrHatoms, int Hatoms[], int Heavy,
-                        int nrheavies, int heavies[])
+                        int nrHatoms, const int Hatoms[], int Heavy,
+                        int nrheavies, const int heavies[])
 {
     int i;
 

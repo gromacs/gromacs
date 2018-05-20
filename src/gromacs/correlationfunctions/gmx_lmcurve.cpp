@@ -108,7 +108,7 @@ bool lmfit_exp(int          nfit,
                const double x[],
                const double y[],
                const double dy[],
-               double       parm[],
+               double       parm[], // NOLINT(readability-non-const-parameter)
                bool         bVerbose,
                int          eFitFn,
                int          nfix)

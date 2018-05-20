@@ -63,7 +63,7 @@ static const int NOTSET = -92637;
 
 gmx_bool         bCase = FALSE;
 
-static int or_groups(int nr1, int *at1, int nr2, int *at2,
+static int or_groups(int nr1, const int *at1, int nr2, const int *at2,
                      int *nr, int *at)
 {
     int      i1, i2, max = 0;
@@ -123,7 +123,7 @@ static int or_groups(int nr1, int *at1, int nr2, int *at2,
     return *nr;
 }
 
-static int and_groups(int nr1, int *at1, int nr2, int *at2,
+static int and_groups(int nr1, const int *at1, int nr2, const int *at2,
                       int *nr, int *at)
 {
     int i1, i2;
@@ -686,7 +686,7 @@ static int select_residuenames(const t_atoms *atoms, int n_names, char **names,
     return *nr;
 }
 
-static void copy2block(int n, int *index, t_blocka *block)
+static void copy2block(int n, const int *index, t_blocka *block)
 {
     int i, n0;
 

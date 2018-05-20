@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -335,7 +335,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
 }
 
 
-extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, int * index,
+extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, const int * index,
                              int isize, const t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf)
 /* given the group's index, return the (continuous) array of atoms */
 {

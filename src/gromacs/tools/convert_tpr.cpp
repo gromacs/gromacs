@@ -94,7 +94,7 @@ static int *invind(int gnx, int natoms, int index[])
     return inv;
 }
 
-static void reduce_block(gmx_bool bKeep[], t_block *block,
+static void reduce_block(const gmx_bool bKeep[], t_block *block,
                          const char *name)
 {
     int     *index;
@@ -125,7 +125,7 @@ static void reduce_block(gmx_bool bKeep[], t_block *block,
     block->nr    = newi;
 }
 
-static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
+static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka *block,
                           const char *name)
 {
     int     *index, *a;
@@ -161,7 +161,7 @@ static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
     block->nra   = newj;
 }
 
-static void reduce_rvec(int gnx, int index[], rvec vv[])
+static void reduce_rvec(int gnx, const int index[], rvec vv[])
 {
     rvec *ptr;
     int   i;
@@ -178,7 +178,7 @@ static void reduce_rvec(int gnx, int index[], rvec vv[])
     sfree(ptr);
 }
 
-static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
+static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomname,
                         int *nres, t_resinfo *resinfo)
 {
     t_atom    *ptr;
@@ -218,7 +218,7 @@ static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
     sfree(rinfo);
 }
 
-static void reduce_ilist(int invindex[], gmx_bool bKeep[],
+static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
                          t_ilist *il, int nratoms, const char *name)
 {
     t_iatom *ia;
@@ -306,7 +306,7 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->natoms           = top.atoms.nr;
 }
 
-static void zeroq(int index[], gmx_mtop_t *mtop)
+static void zeroq(const int index[], gmx_mtop_t *mtop)
 {
     for (gmx_moltype_t &moltype : mtop->moltype)
     {
