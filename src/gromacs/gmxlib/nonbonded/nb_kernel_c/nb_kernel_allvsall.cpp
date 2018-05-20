@@ -199,12 +199,12 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
 }
 
 static void
-setup_aadata(gmx_allvsall_data_t **  p_aadata,
-             const t_blocka *        excl,
-             int                     natoms,
-             int *                   type,
-             int                     ntype,
-             real *                  pvdwparam)
+setup_aadata(gmx_allvsall_data_t       **  p_aadata,
+             const t_blocka       *        excl,
+             int                           natoms,
+             const int *                   type,
+             int                           ntype,
+             const real *                  pvdwparam)
 {
     int                  i, j, idx;
     gmx_allvsall_data_t *aadata;

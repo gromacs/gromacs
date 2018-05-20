@@ -63,7 +63,7 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-static void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
+static void calc_h2order(const char *fn, const int index[], int ngx, rvec **slDipole,
                          real **slOrder, real *slWidth, int *nslices,
                          const t_topology *top, int ePBC,
                          int axis, gmx_bool bMicel, int micel[], int nmic,

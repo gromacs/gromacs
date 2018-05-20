@@ -511,7 +511,7 @@ AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
 
 
 void
-AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
+AnalysisDataVectorPlotModule::setWriteMask(const bool bWrite[DIM + 1])
 {
     for (int i = 0; i < DIM + 1; ++i)
     {

@@ -59,7 +59,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc,
-                         int index[], rvec xref, int ePBC)
+                         const int index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;

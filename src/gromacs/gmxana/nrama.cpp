@@ -117,7 +117,7 @@ static int find_atom(const char *find, char ***names, int start, int nr)
     return -1;
 }
 
-static void add_xr(t_xrama *xr, int ff[5], const t_atoms *atoms)
+static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
 {
     char buf[12];
     int  i;

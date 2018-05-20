@@ -100,6 +100,6 @@ struct bonded_threading_t
  * numbers starting at 1.  When global_atom_index=NULL returns i+1.
  */
 int
-glatnr(int *global_atom_index, int i);
+glatnr(const int *global_atom_index, int i);
 
 #endif

@@ -2713,7 +2713,7 @@ static double filename2lambda(const char *fn)
     return lambda;
 }
 
-static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
+static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
                                   lambda_components_t *lc)
 {
     int          i;

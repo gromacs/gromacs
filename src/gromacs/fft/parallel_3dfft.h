@@ -82,7 +82,7 @@ typedef struct gmx_parallel_3dfft *
  */
 int
     gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
-                               ivec                      ndata,
+                               const ivec                      ndata,
                                real **real_data,
                                t_complex **complex_data,
                                MPI_Comm                  comm[2],

@@ -46,7 +46,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
+gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
 {
     int   i, j, k;
     real *out;
@@ -90,7 +90,7 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
 /* Assuming kernel is shorter than x */
 
 gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
-                              real *kernel)
+                              const real *kernel)
 {
     int   i, j, idx;
     real *filtered;

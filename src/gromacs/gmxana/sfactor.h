@@ -73,7 +73,7 @@ double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, doubl
 
 int return_atom_type (const char *name, gmx_structurefactors_t *gsf);
 
-void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, int * index,
+void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, const int * index,
                       int isize, const t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
 
 int do_scattering_intensity (const char* fnTPS, const char* fnNDX,

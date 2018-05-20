@@ -396,7 +396,7 @@ AbstractAverageHistogram::scaleAll(real factor)
 
 
 void
-AbstractAverageHistogram::scaleAllByVector(real factor[])
+AbstractAverageHistogram::scaleAllByVector(const real factor[])
 {
     for (int c = 0; c < columnCount(); ++c)
     {

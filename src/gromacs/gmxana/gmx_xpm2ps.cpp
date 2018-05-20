@@ -1181,7 +1181,7 @@ static void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
 
 static void write_combined_matrix(int ecombine, const char *fn,
                                   int nmat, t_matrix *mat1, t_matrix *mat2,
-                                  real *cmin, real *cmax)
+                                  const real *cmin, const real *cmax)
 {
     int        i, j, k, nlevels;
     FILE      *out;
@@ -1318,7 +1318,7 @@ static void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
     }
 }
 
-static void gradient_map(rvec grad, int nmap, t_mapping map[])
+static void gradient_map(const rvec grad, int nmap, t_mapping map[])
 {
     int  i;
     real c;

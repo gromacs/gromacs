@@ -42,7 +42,7 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/utility/real.h"
 
-void add_param(t_params *ps, int ai, int aj, real *c, char *s);
+void add_param(t_params *ps, int ai, int aj, const real *c, char *s);
 
 void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, char *s);

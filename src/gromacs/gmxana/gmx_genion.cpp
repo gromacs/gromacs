@@ -60,7 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void insert_ion(int nsa, int *nwater,
+static void insert_ion(int nsa, const int *nwater,
                        gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
@@ -137,7 +137,7 @@ static char *aname(const char *mname)
     return str;
 }
 
-static void sort_ions(int nsa, int nw, int repl[], int index[],
+static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                       t_atoms *atoms, rvec x[],
                       const char *p_name, const char *n_name)
 {

@@ -45,9 +45,9 @@ extern "C"
 #endif
 
 extern gmx_bool convolution(int dataSize, real* in, int kernelSize,
-                            real* kernel);
+                            const real* kernel);
 extern gmx_bool periodic_convolution(int dsize, real *in, int ksize,
-                                     real* kernel);
+                                     const real* kernel);
 extern void gausskernel(real *out, int size, real var);
 
 #ifdef __cplusplus

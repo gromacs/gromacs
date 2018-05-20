@@ -87,7 +87,7 @@ static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
     axis[c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
 }
 
-static void calc_axes(rvec x[], t_atom atom[], int gnx[], int *index[],
+static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int *index[],
                       gmx_bool bRot, t_bundle *bun)
 {
     int   end, i, div, d;

@@ -106,8 +106,8 @@ static int *res_natm(t_atoms *atoms)
     return natm;
 }
 
-static void calc_mat(int nres, int natoms, int rndx[],
-                     rvec x[], int *index,
+static void calc_mat(int nres, int natoms, const int rndx[],
+                     rvec x[], const int *index,
                      real trunc, real **mdmat, int **nmat, int ePBC, matrix box)
 {
     int   i, j, resi, resj;

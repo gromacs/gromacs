@@ -86,7 +86,7 @@ static int calc_nbegin(int nx, real x[], real tbegin)
     return nbegin;
 }
 
-static real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], real dy[],
+static real numerical_deriv(int nx, real x[], const real y[], const real fity[], real combined[], real dy[],
                             real tendInt, int nsmooth)
 {
     FILE *tmpfp;
@@ -151,7 +151,7 @@ static real numerical_deriv(int nx, real x[], real y[], real fity[], real combin
     return integralSmth;
 }
 
-static void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
+static void do_four(const char *fn, const char *cn, int nx, const real x[], const real dy[],
                     real eps0, real epsRF, const gmx_output_env_t *oenv)
 {
     FILE      *fp, *cp;

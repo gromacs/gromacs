@@ -77,7 +77,7 @@
 
 static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
-                                    rvec x[], int maxidx, int index[],
+                                    rvec x[], int maxidx, const int index[],
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -348,7 +348,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
 
 
 /* Print name of first atom in all groups in index file */
-static void print_types(int index[], int a[], int ngrps,
+static void print_types(const int index[], int a[], int ngrps,
                         char *groups[], const t_topology *top)
 {
     int i;
@@ -372,7 +372,7 @@ static void check_length(real length, int a, int b)
     }
 }
 
-static void calc_order(const char *fn, int *index, int *a, rvec **order,
+static void calc_order(const char *fn, const int *index, int *a, rvec **order,
                        real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
                        gmx_bool bUnsat, const t_topology *top, int ePBC, int ngrps, int axis,
                        gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
@@ -832,7 +832,7 @@ static void order_plot(rvec order[], real *slOrder[], const char *afile, const c
     xvgrclose(slOrd);
 }
 
-static void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, int ngrps, real **order, const t_topology *top, real **distvals, gmx_output_env_t *oenv)
+static void write_bfactors(t_filenm  *fnm, int nfile, const int *index, const int *a, int nslices, int ngrps, real **order, const t_topology *top, real **distvals, gmx_output_env_t *oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/

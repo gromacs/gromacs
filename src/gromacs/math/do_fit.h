@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
+real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
                       rvec x[], rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 
@@ -66,7 +66,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[]);
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
-void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x,
+void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x,
                 matrix R);
 /* Calculates the rotation matrix R for which
  * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)

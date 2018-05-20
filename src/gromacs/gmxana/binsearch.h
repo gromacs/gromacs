@@ -46,12 +46,12 @@ void rangeArray(int *ar, int size);
 
 void insertionSort(real *ar, int *perm, int start, int end, int direction);
 
-int BinarySearch(real *ar, int start, int end, real key, int direction);
+int BinarySearch(const real *ar, int start, int end, real key, int direction);
 
 int start_binsearch(real *array, int *perm, int low, int high,
                     real key, int direction);
 
-int LinearSearch(double *array, int startindx, int stopindx,
+int LinearSearch(const double *array, int startindx, int stopindx,
                  double key, int *count, int direction);
 
 #ifdef __cplusplus

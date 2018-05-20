@@ -90,7 +90,7 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
+static int filter_enerdterm(const real *afrom, gmx_bool bToBuffer, real *ato,
                             gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner)
 {
     int i, to, from;

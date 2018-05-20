@@ -45,7 +45,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void my_calc_xcm(int nbb, int bbind[], rvec x[], rvec xcm)
+static void my_calc_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
 {
     int    i, m, ai;
 
@@ -61,7 +61,7 @@ static void my_calc_xcm(int nbb, int bbind[], rvec x[], rvec xcm)
     }
 }
 
-static void my_sub_xcm(int nbb, int bbind[], rvec x[], rvec xcm)
+static void my_sub_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
 {
     int i, ai;
 

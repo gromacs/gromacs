@@ -404,7 +404,7 @@ void dd_make_local_cgs(struct gmx_domdec_t *dd, t_block *lcgs);
 /*! \brief Generate the local topology and virtual site data */
 void dd_make_local_top(struct gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
-                       rvec cellsize_min, ivec npulse,
+                       rvec cellsize_min, const ivec npulse,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,

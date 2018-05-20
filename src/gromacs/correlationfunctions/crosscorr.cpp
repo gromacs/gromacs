@@ -83,7 +83,7 @@ static void complexConjugatMult(t_complex *in1, t_complex *in2)
  * \param[out] corr output correlation
  * \param[in] fft FFT data structure
  */
-static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft)
+static void cross_corr_low(int n, const real f[], const real g[], real corr[], gmx_fft_t fft)
 {
     int             i;
     const int       size = zeroPaddingSize(n);

@@ -48,7 +48,7 @@ struct t_atoms;
 extern "C" {
 #endif
 
-void rotate_atoms(int gnx, int index[], rvec x[], matrix trans);
+void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
 /* Rotate all atoms in index using matrix trans */
 
 void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
@@ -75,7 +75,7 @@ real sub_xcm(rvec x[], int gnx, const int *index, const t_atom atom[], rvec xcm,
  * Returns the total mass
  */
 
-void add_xcm(rvec x[], int gnx, int *index, rvec xcm);
+void add_xcm(rvec x[], int gnx, const int *index, rvec xcm);
 /* Increment all atoms in index with xcm */
 
 #ifdef __cplusplus

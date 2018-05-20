@@ -120,7 +120,7 @@ t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, const t_inputrec *ir)
     return vcm;
 }
 
-static void update_tensor(rvec x, real m0, tensor I)
+static void update_tensor(const rvec x, real m0, tensor I)
 {
     real xy, xz, yz;
 

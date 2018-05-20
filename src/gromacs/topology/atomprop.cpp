@@ -80,7 +80,7 @@ enum {
 
 /* return number of matching characters,
    or NOTFOUND if not at least all characters in char *database match */
-static int dbcmp_len(char *search, char *database)
+static int dbcmp_len(const char *search, const char *database)
 {
     int i;
 

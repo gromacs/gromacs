@@ -182,7 +182,7 @@ gmx_ana_selmethod_t sm_compare = {
  * \ref CMP_INVALID is returned.
  */
 static e_comparison_t
-comparison_type(char *str)
+comparison_type(const char *str)
 {
     switch (str[0])
     {

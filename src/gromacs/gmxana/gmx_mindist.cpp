@@ -64,7 +64,7 @@
 
 
 static void periodic_dist(int ePBC,
-                          matrix box, rvec x[], int n, int index[],
+                          matrix box, rvec x[], int n, const int index[],
                           real *rmin, real *rmax, int *min_ind)
 {
 #define NSHIFT_MAX 26
@@ -597,7 +597,7 @@ static void dist_plot(const char *fn, const char *afile, const char *dfile,
     sfree(x0);
 }
 
-static int find_residues(const t_atoms *atoms, int n, int index[], int **resindex)
+static int find_residues(const t_atoms *atoms, int n, const int index[], int **resindex)
 {
     int  i;
     int  nres      = 0, resnr, presnr = 0;

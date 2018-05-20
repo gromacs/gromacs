@@ -53,7 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans, real angle,
-                     rvec head, rvec tail, int isize, int index[],
+                     rvec head, rvec tail, int isize, const int index[],
                      rvec xout[], rvec vout[])
 {
     rvec     arrow, xcm;

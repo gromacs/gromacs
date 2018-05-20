@@ -46,7 +46,7 @@ gather_f_bsplines(const struct gmx_pme_t *pme, const real *grid,
                   real scale);
 
 real
-gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
+gather_energy_bsplines(struct gmx_pme_t *pme, const real *grid,
                        pme_atomcomm_t *atc);
 
 #endif

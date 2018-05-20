@@ -170,7 +170,7 @@ static int sizeofint(const int size)
  | So I don't need to call 'sizeofints for those calls.
  */
 
-static int sizeofints( const int num_of_ints, unsigned int sizes[])
+static int sizeofints( const int num_of_ints, const unsigned int sizes[])
 {
     int          i, num;
     int          bytes[32];
@@ -336,7 +336,7 @@ static int receivebits(int buf[], int num_of_bits)
  */
 
 static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
-                        unsigned int sizes[], int nums[])
+                        const unsigned int sizes[], int nums[])
 {
     int bytes[32];
     int i, j, num_of_bytes, p, num;

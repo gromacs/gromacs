@@ -49,7 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
+real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
                       rvec x[], rvec xp[])
 {
     int  i, j, d;
@@ -111,7 +111,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
     return calc_similar_ind(TRUE, natoms, nullptr, mass, x, xp);
 }
 
-void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matrix R)
+void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x, matrix R)
 {
     int      c, r, n, j, i, irot, s;
     double **omega, **om;

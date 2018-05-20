@@ -85,7 +85,7 @@ void rotate_conf(int natom, rvec *x, rvec *v, real alfa, real beta, real gamma)
 }
 
 /* Make a new box around a configuration*/
-void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
+void make_new_box(int natoms, rvec *x, matrix box, const rvec box_space,
                   gmx_bool bCenter)
 {
     int  i, m;

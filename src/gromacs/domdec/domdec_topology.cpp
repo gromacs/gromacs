@@ -511,7 +511,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
                                   gmx_bool bBCheck,
-                                  int *r_index, int *r_il,
+                                  const int *r_index, int *r_il,
                                   gmx_bool bLinkToAllAtoms,
                                   gmx_bool bAssign)
 {
@@ -904,7 +904,7 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
 }
 
 /*! \brief Store a bonded interaction at the end of \p il */
-static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static inline void add_ifunc(int nral, const t_iatom *tiatoms, t_ilist *il)
 {
     t_iatom *liatoms;
     int      k;
@@ -1289,7 +1289,7 @@ check_assign_interactions_atom(int i, int i_gl,
                                const gmx_domdec_t *dd,
                                const gmx_domdec_zones_t *zones,
                                const gmx_molblock_t *molb,
-                               gmx_bool bRCheckMB, ivec rcheck, gmx_bool bRCheck2B,
+                               gmx_bool bRCheckMB, const ivec rcheck, gmx_bool bRCheck2B,
                                real rc2,
                                int *la2lc,
                                t_pbc *pbc_null,
@@ -2107,7 +2107,7 @@ void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs)
 
 void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
-                       rvec cellsize_min, ivec npulse,
+                       rvec cellsize_min, const ivec npulse,
                        t_forcerec *fr,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,

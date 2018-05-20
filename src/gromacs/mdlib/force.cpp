@@ -648,7 +648,7 @@ void destroy_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-static real sum_v(int n, real v[])
+static real sum_v(int n, const real v[])
 {
     real t;
     int  i;

@@ -315,7 +315,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
         /*! \brief
          * Set mask for what to write.
          */
-        void setWriteMask(bool bWrite[4]);
+        void setWriteMask(const bool bWrite[4]);
 
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 

@@ -55,7 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     gmx::DefaultRandomEngine * rng, rvec max_rot)
+                     gmx::DefaultRandomEngine * rng, const rvec max_rot)
 {
     mat4 mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec xcm;

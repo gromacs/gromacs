@@ -190,16 +190,16 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
 }
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
-        gmx_sans_t  *gsans,
-        rvec        *x,
-        matrix       box,
-        int         *index,
-        int          isize,
-        double       binwidth,
-        gmx_bool     bMC,
-        gmx_bool     bNORM,
-        real         mcover,
-        unsigned int seed)
+        gmx_sans_t        *gsans,
+        rvec              *x,
+        matrix             box,
+        const int         *index,
+        int                isize,
+        double             binwidth,
+        gmx_bool           bMC,
+        gmx_bool           bNORM,
+        real               mcover,
+        unsigned int       seed)
 {
     gmx_radial_distribution_histogram_t    *pr = nullptr;
     rvec                                    dist;

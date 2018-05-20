@@ -53,14 +53,14 @@ struct gmx_parallel_3dfft  {
 };
 
 int
-gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
-                           ivec                          ndata,
-                           real     **                   real_data,
-                           t_complex     **              complex_data,
-                           MPI_Comm                      comm[2],
-                           gmx_bool                      bReproducible,
-                           int                           nthreads,
-                           gmx::PinningPolicy            realGridAllocation)
+gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t           *    pfft_setup,
+                           const ivec                          ndata,
+                           real           **                   real_data,
+                           t_complex           **              complex_data,
+                           MPI_Comm                            comm[2],
+                           gmx_bool                            bReproducible,
+                           int                                 nthreads,
+                           gmx::PinningPolicy                  realGridAllocation)
 {
     int        rN      = ndata[2], M = ndata[1], K = ndata[0];
     int        flags   = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */

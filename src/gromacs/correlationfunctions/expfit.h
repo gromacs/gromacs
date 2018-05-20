@@ -126,7 +126,7 @@ double fit_function(const int eFitFn, const double parm[], const double x);
  * \param[in] fn_fitted If not NULL file to print the data and fitted curve to
  * \return integral.
  */
-real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
+real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
               real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
               const char *fn_fitted);

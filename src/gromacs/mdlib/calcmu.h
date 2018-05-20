@@ -43,7 +43,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
-void calc_mu(int start, int homenr, gmx::ArrayRef<gmx::RVec> x, real q[], real qB[],
+void calc_mu(int start, int homenr, gmx::ArrayRef<gmx::RVec> x, const real q[], const real qB[],
              int nChargePerturbed,
              dvec mu, dvec mu_B);
 

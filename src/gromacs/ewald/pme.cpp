@@ -1051,7 +1051,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
 static void
-calc_initial_lb_coeffs(struct gmx_pme_t *pme, real *local_c6, real *local_sigma)
+calc_initial_lb_coeffs(struct gmx_pme_t *pme, const real *local_c6, const real *local_sigma)
 {
     int  i;
     for (i = 0; i < pme->atc[0].n; ++i)
@@ -1066,7 +1066,7 @@ calc_initial_lb_coeffs(struct gmx_pme_t *pme, real *local_c6, real *local_sigma)
 
 /*! \brief Calculate next Lorentz-Berthelot coefficients for LJ-PME */
 static void
-calc_next_lb_coeffs(struct gmx_pme_t *pme, real *local_sigma)
+calc_next_lb_coeffs(struct gmx_pme_t *pme, const real *local_sigma)
 {
     int  i;
 

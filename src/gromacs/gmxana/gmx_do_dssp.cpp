@@ -62,7 +62,7 @@
 #include "gromacs/utility/strdb.h"
 
 static int strip_dssp(char *dsspfile, int nres,
-                      gmx_bool bPhobres[], real t,
+                      const gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
                       t_matrix *mat, int average_area[],
                       const gmx_output_env_t *oenv)
@@ -237,7 +237,7 @@ static void check_oo(t_atoms *atoms)
 }
 
 static void norm_acc(t_atoms *atoms, int nres,
-                     real av_area[], real norm_av_area[])
+                     const real av_area[], real norm_av_area[])
 {
     int     i, n, n_surf;
 

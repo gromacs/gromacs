@@ -1948,7 +1948,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull, t_mdato
 
 static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
                                   int g, pull_group_work_t *pg,
-                                  gmx_bool bConstraint, ivec pulldim_con,
+                                  gmx_bool bConstraint, const ivec pulldim_con,
                                   const gmx_mtop_t *mtop,
                                   const t_inputrec *ir, real lambda)
 {

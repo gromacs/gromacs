@@ -882,7 +882,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     return fp;
 }
 
-static void copy_energy(t_mdebin *md, real e[], real ecpy[])
+static void copy_energy(t_mdebin *md, const real e[], real ecpy[])
 {
     int i, j;
 

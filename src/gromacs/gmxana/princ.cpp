@@ -197,7 +197,7 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
     sfree(ev);
 }
 
-void rotate_atoms(int gnx, int *index, rvec x[], matrix trans)
+void rotate_atoms(int gnx, const int *index, rvec x[], matrix trans)
 {
     real   xt, yt, zt;
     int    i, ii;
@@ -269,7 +269,7 @@ real sub_xcm(rvec x[], int gnx, const int *index, const t_atom atom[], rvec xcm,
     return tm;
 }
 
-void add_xcm(rvec x[], int gnx, int *index, rvec xcm)
+void add_xcm(rvec x[], int gnx, const int *index, rvec xcm)
 {
     int  i, ii;
 

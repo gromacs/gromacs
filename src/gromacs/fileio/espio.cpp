@@ -443,7 +443,7 @@ int get_espresso_coordnum(const char *infile)
 }
 
 void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 const t_atoms *atoms, int nx, int *index,
+                                 const t_atoms *atoms, int nx, const int *index,
                                  const rvec *x, const rvec *v, const matrix box)
 {
     int i, j;

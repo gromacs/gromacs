@@ -313,8 +313,8 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
 
 static void inprod_matrix(const char *matfile, int natoms,
                           int nvec1, int *eignr1, rvec **eigvec1,
-                          int nvec2, int *eignr2, rvec **eigvec2,
-                          gmx_bool bSelect, int noutvec, int *outvec)
+                          int nvec2, const int *eignr2, rvec **eigvec2,
+                          gmx_bool bSelect, int noutvec, const int *outvec)
 {
     FILE   *out;
     real  **mat;
@@ -450,7 +450,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
                     int nextr, const t_atoms *atoms, int natoms, int *index,
                     gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
-                    real *sqrtm, rvec *xav,
+                    const real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
                     const gmx_output_env_t *oenv)
@@ -818,7 +818,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
 static void components(const char *outfile, int natoms,
                        int *eignr, rvec **eigvec,
-                       int noutvec, int *outvec,
+                       int noutvec, const int *outvec,
                        const gmx_output_env_t *oenv)
 {
     int   g, s, v, i;
@@ -860,9 +860,9 @@ static void components(const char *outfile, int natoms,
     fprintf(stderr, "\n");
 }
 
-static void rmsf(const char *outfile, int natoms, real *sqrtm,
+static void rmsf(const char *outfile, int natoms, const real *sqrtm,
                  int *eignr, rvec **eigvec,
-                 int noutvec, int *outvec,
+                 int noutvec, const int *outvec,
                  real *eigval, int neig,
                  const gmx_output_env_t *oenv)
 {

@@ -109,7 +109,7 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
 }
 
 static void calc_gyro_z(rvec x[], matrix box,
-                        int gnx, int index[], t_atom atom[],
+                        int gnx, const int index[], t_atom atom[],
                         int nz, real time, FILE *out)
 {
     static dvec   *inertia = nullptr;

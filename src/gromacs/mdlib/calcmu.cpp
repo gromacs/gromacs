@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 
-void calc_mu(int start, int homenr, gmx::ArrayRef<gmx::RVec> x, real q[], real qB[],
+void calc_mu(int start, int homenr, gmx::ArrayRef<gmx::RVec> x, const real q[], const real qB[],
              int nChargePerturbed,
              dvec mu, dvec mu_B)
 {

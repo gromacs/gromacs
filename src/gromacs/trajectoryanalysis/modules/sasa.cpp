@@ -196,7 +196,7 @@ void do_conect(const char *fn, int n, rvec x[])
 /*! \brief
  * Plots the surface into a PDB file, optionally including the original atoms.
  */
-void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *atoms,
+void connolly_plot(const char *fn, int ndots, const real dots[], rvec x[], t_atoms *atoms,
                    t_symtab *symtab, int ePBC, const matrix box, gmx_bool bIncludeSolute)
 {
     const char *const  atomnm = "DOT";

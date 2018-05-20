@@ -115,7 +115,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
     low_mspeed(tempi, mtop, v, &rng);
 }
 
-static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
+static real calc_cm(int natoms, const real mass[], rvec x[], rvec v[],
                     rvec xcm, rvec vcm, rvec acm, matrix L)
 {
     rvec dx, a0;

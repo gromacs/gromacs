@@ -109,7 +109,7 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 }
 
 
-int BinarySearch (real *array, int low, int high, real key, int direction)
+int BinarySearch (const real *array, int low, int high, real key, int direction)
 {
     int iMid, iMax, iMin;
     iMax = high+2;
@@ -159,7 +159,7 @@ int start_binsearch(real *array, int *perm, int low, int high,
     return BinarySearch(array, low, high, key, direction);
 }
 
-int LinearSearch (double *array, int startindx, int stopindx,
+int LinearSearch (const double *array, int startindx, int stopindx,
                   double key, int *count, int direction)
 {
     /*Iterative implementation - assume elements sorted*/

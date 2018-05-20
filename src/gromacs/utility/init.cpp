@@ -63,7 +63,7 @@ int g_initializationCounter = 0;
 #endif
 }
 
-void init(int *argc, char ***argv)
+void init(const int *argc, char ***argv)
 {
 #if GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;

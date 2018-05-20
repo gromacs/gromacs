@@ -118,7 +118,7 @@ static void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int 
     }
 }
 
-static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
+static void GenerateWeightedGibbsProbabilities(const real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
 {
 
     int   i;
@@ -171,7 +171,7 @@ static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *p
     sfree(nene);
 }
 
-static int FindMinimum(real *min_metric, int N)
+static int FindMinimum(const real *min_metric, int N)
 {
 
     real min_val;
@@ -191,7 +191,7 @@ static int FindMinimum(real *min_metric, int N)
     return min_nval;
 }
 
-static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
+static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
 {
 
     int      i;

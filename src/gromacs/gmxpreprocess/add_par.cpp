@@ -71,7 +71,7 @@ static void clear_force_param(int i0, real c[])
     }
 }
 
-void add_param(t_params *ps, int ai, int aj, real *c, char *s)
+void add_param(t_params *ps, int ai, int aj, const real *c, char *s)
 {
     int i;
 

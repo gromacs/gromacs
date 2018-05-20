@@ -272,7 +272,7 @@ static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
     fprintf(stderr, "\n");
 }
 
-static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
+static void copy_dih_data(const real in[], real out[], int nf, gmx_bool bLEAVE)
 {
     /* if bLEAVE, do nothing to data in copying to out
      * otherwise multiply by 180/pi to convert rad to deg */
@@ -437,7 +437,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
 static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
-                          int index[],
+                          const int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, const t_atoms *atoms,

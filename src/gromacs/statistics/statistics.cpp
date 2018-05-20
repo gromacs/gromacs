@@ -681,7 +681,7 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     return ok;
 }
 
-static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
+static int low_lsq_y_ax_b(int n, const real *xr, const double *xd, real yr[],
                           real *a, real *b, real *r, real *chi2)
 {
     gmx_stats_t lsq = gmx_stats_init();

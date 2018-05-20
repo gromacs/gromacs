@@ -103,7 +103,7 @@ real ellipticity(int nres, t_bb bb[])
     return ell;
 }
 
-real ahx_len(int gnx, int index[], rvec x[])
+real ahx_len(int gnx, const int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     rvec dx;
@@ -113,7 +113,7 @@ real ahx_len(int gnx, int index[], rvec x[])
     return norm(dx);
 }
 
-real radius(FILE *fp, int nca, int ca_index[], rvec x[])
+real radius(FILE *fp, int nca, const int ca_index[], rvec x[])
 /* Assume we have all the backbone */
 {
     real dl2, dlt;
@@ -140,7 +140,7 @@ real radius(FILE *fp, int nca, int ca_index[], rvec x[])
     return std::sqrt(dlt/nca);
 }
 
-static real rot(rvec x1, rvec x2)
+static real rot(rvec x1, const rvec x2)
 {
     real phi1, dphi, cp, sp;
     real xx, yy;
@@ -156,7 +156,7 @@ static real rot(rvec x1, rvec x2)
     return dphi;
 }
 
-real twist(int nca, int caindex[], rvec x[])
+real twist(int nca, const int caindex[], rvec x[])
 {
     real pt, dphi;
     int  i, a0, a1;
@@ -179,7 +179,7 @@ real twist(int nca, int caindex[], rvec x[])
     return (pt/(nca-1));
 }
 
-real ca_phi(int gnx, int index[], rvec x[])
+real ca_phi(int gnx, const int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real phi, phitot;
@@ -227,7 +227,7 @@ real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
     return norm(dipje);
 }
 
-real rise(int gnx, int index[], rvec x[])
+real rise(int gnx, const int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real z, z0, ztot;

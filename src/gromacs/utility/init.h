@@ -79,7 +79,7 @@ namespace gmx
  *
  * \ingroup module_utility
  */
-void init(int *argc, char ***argv);
+void init(const int *argc, char ***argv);
 /*! \brief
  * Deinitializes the \Gromacs library.
  *

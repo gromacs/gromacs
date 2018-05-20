@@ -258,7 +258,7 @@ static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
 }
 
 static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
-                                    int n, gmx_bool bX, rvec *x, real *data,
+                                    int n, gmx_bool bX, rvec *x, const real *data,
                                     pme_atomcomm_t *atc)
 {
     int *commnode, *buf_index;

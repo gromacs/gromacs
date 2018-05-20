@@ -64,7 +64,7 @@ gmx_sum_qgrid_dd(gmx_pme_t *pme, real *grid, int direction);
 #endif
 
 int
-copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index);
+copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index);
 
 int
 copy_fftgrid_to_pmegrid(gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,

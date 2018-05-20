@@ -120,7 +120,7 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
     (*nrbonded)++;
 }
 
-static void get_bondeds(int nrat, t_iatom atoms[],
+static void get_bondeds(int nrat, const t_iatom atoms[],
                         at2vsitebond_t *at2vb,
                         int *nrbond, t_mybonded **bonds,
                         int *nrang,  t_mybonded **angles,
@@ -1001,7 +1001,7 @@ typedef struct {
 } t_pindex;
 
 static void check_vsite_constraints(t_params *plist,
-                                    int cftype, int vsite_type[])
+                                    int cftype, const int vsite_type[])
 {
     int       i, k, n;
     int       atom;
@@ -1029,7 +1029,7 @@ static void check_vsite_constraints(t_params *plist,
 }
 
 static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
-                              int cftype, int vsite_type[])
+                              int cftype, const int vsite_type[])
 {
     int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
     int          nconverted, nremoved;
@@ -1293,7 +1293,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 }
 
 static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
-                               int cftype, int vsite_type[],
+                               int cftype, const int vsite_type[],
                                at2vsitecon_t *at2vc)
 {
     int          i, j, k, m, n, nvsite, kept_i;
@@ -1430,7 +1430,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 }
 
 static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
-                             int cftype, int vsite_type[])
+                             int cftype, const int vsite_type[])
 {
     int       i, kept_i;
     t_params *ps;
