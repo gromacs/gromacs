@@ -266,7 +266,7 @@ static void calc_electron_density(const char *fn, int **index, int gnx[],
                 /* determine which slice atom is in */
                 if (bCenter)
                 {
-                    slice = static_cast<int>(std::floor( (z-(boxSz/2.0)) / (*slWidth) ) + *nslices/2);
+                    slice = static_cast<int>(std::floor( (z-(boxSz/2.0)) / (*slWidth) ) + *nslices/2.);
                 }
                 else
                 {
@@ -445,7 +445,7 @@ static void calc_density(const char *fn, int **index, int gnx[],
                 /* determine which slice atom is in */
                 if (bCenter)
                 {
-                    slice = static_cast<int>(std::floor( (z-(boxSz/2.0)) / (*slWidth) ) + *nslices/2);
+                    slice = static_cast<int>(std::floor( (z-(boxSz/2.0)) / (*slWidth) ) + *nslices/2.);
                 }
                 else
                 {
