@@ -442,10 +442,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
     gmx_ffclose(fp);
-    if (mtop)
-    {
-        delete mtop;
-    }
+    delete mtop;
     sfree(t_x);
     sfree(t_y);
     for (i = 0; (i < n_x); i++)

@@ -380,7 +380,7 @@ void do_nonbonded(const t_forcerec  *fr,
          * someone assumes that extending the group-scheme table-type
          * enumeration is something that GROMACS supports. */
         /* cppcheck-suppress duplicateExpression */
-        assert(etiNR == 3);
+        static_assert(etiNR == 3, "");
 
         kernel_data.table_elec              = nblists->table_elec;
         kernel_data.table_vdw               = nblists->table_vdw;
