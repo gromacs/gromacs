@@ -1152,6 +1152,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
                     nalloc = over_alloc_dd(ma->nat[n]);
                     srenew(buf, nalloc);
                 }
+                GMX_ASSERT(buf, "buf has to be non-null!");
 #if GMX_MPI
                 MPI_Recv(buf, ma->nat[n]*sizeof(rvec), MPI_BYTE, n,
                          n, dd->mpi_comm_all, MPI_STATUS_IGNORE);
@@ -1170,7 +1171,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     }
 }
 
-static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
+static void dd_collect_vec_gatherv(const gmx_domdec_t            *dd,
                                    gmx::ArrayRef<const gmx::RVec> lv,
                                    gmx::ArrayRef<gmx::RVec>       v)
 {
@@ -1182,7 +1183,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     ma = dd->ma;
 
-    if (DDMASTER(dd))
+    const bool isMaster = DDMASTER(dd);
+    if (isMaster)
     {
         get_commbuffer_counts(dd, &rcounts, &disps);
 
@@ -1191,7 +1193,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
 
     dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), rcounts, disps, buf);
 
-    if (DDMASTER(dd))
+    if (isMaster)
     {
         cgs_gl = &dd->comm->cgs_gl;
 
@@ -1655,11 +1657,15 @@ NumPmeDomains getNumPmeDomains(const gmx_domdec_t *dd)
 {
     if (dd != nullptr)
     {
-        return { dd->comm->npmenodes_x, dd->comm->npmenodes_y };
+        return {
+                   dd->comm->npmenodes_x, dd->comm->npmenodes_y
+        };
     }
     else
     {
-        return { 1, 1 };
+        return {
+                   1, 1
+        };
     }
 }
 

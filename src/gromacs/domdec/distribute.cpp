@@ -58,9 +58,9 @@
 #include "domdec_internal.h"
 #include "utility.h"
 
-void get_commbuffer_counts(gmx_domdec_t  *dd,
-                           int          **counts,
-                           int          **disps)
+void get_commbuffer_counts(const gmx_domdec_t  *dd,
+                           int                **counts,
+                           int                **disps)
 {
     gmx_domdec_master_t *ma;
     int                  n;
@@ -86,6 +86,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, const t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "");
         ma  = dd->ma;
 
         for (n = 0; n < dd->nnodes; n++)
@@ -101,6 +102,7 @@ static void dd_distribute_vec_sendrecv(gmx_domdec_t *dd, const t_block *cgs,
                 a = 0;
                 for (i = ma->index[n]; i < ma->index[n+1]; i++)
                 {
+                    GMX_ASSERT(buf, "");
                     for (c = cgs->index[ma->cg[i]]; c < cgs->index[ma->cg[i]+1]; c++)
                     {
                         copy_rvec(v[c], buf[a++]);
@@ -148,6 +150,7 @@ static void dd_distribute_vec_scatterv(gmx_domdec_t *dd, const t_block *cgs,
 
     if (DDMASTER(dd))
     {
+        GMX_ASSERT(v, "");
         ma  = dd->ma;
 
         get_commbuffer_counts(dd, &scounts, &disps);
@@ -490,6 +493,8 @@ static void get_cg_distribution(FILE *fplog, gmx_domdec_t *dd,
 
     if (bMaster)
     {
+        GMX_ASSERT(box && pos, "");
+
         ma = dd->ma;
 
         if (dd->bScrewPBC)

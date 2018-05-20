@@ -56,9 +56,9 @@ class t_state;
  *
  * NOTE: Should only be called on the master rank.
  */
-void get_commbuffer_counts(gmx_domdec_t  *dd,
-                           int          **counts,
-                           int          **disps);
+void get_commbuffer_counts(const gmx_domdec_t *dd,
+                           int               **counts,
+                           int               **disps);
 
 /*! \brief Distributes the state from the master rank to all DD ranks */
 void distributeState(FILE                *fplog,
