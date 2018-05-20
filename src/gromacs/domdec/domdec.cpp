@@ -183,7 +183,7 @@ static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx
    }
  */
 
-static void ddindex2xyz(ivec nc, int ind, ivec xyz)
+static void ddindex2xyz(const ivec nc, int ind, ivec xyz)
 {
     xyz[XX] = ind / (nc[YY]*nc[ZZ]);
     xyz[YY] = (ind / nc[ZZ]) % nc[YY];
@@ -4982,7 +4982,7 @@ void dd_dlb_unlock(gmx_domdec_t *dd)
 static void merge_cg_buffers(int ncell,
                              gmx_domdec_comm_dim_t *cd, int pulse,
                              int  *ncg_cell,
-                             int  *index_gl, int  *recv_i,
+                             int  *index_gl, const int  *recv_i,
                              rvec *cg_cm,    rvec *recv_vr,
                              int *cgindex,
                              cginfo_mb_t *cginfo_mb, int *cginfo)
@@ -5082,7 +5082,7 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t *cd,
     }
 }
 
-static gmx_bool missing_link(t_blocka *link, int cg_gl, char *bLocalCG)
+static gmx_bool missing_link(t_blocka *link, int cg_gl, const char *bLocalCG)
 {
     int      i;
     gmx_bool bMiss;
@@ -5218,18 +5218,18 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                    int dim0, int dim1, int dim2,
                    real r_comm2, real r_bcomm2,
                    matrix box,
-                   ivec tric_dist,
+                   const ivec tric_dist,
                    rvec *normal,
                    real skew_fac2_d, real skew_fac_01,
                    rvec *v_d, rvec *v_0, rvec *v_1,
                    const dd_corners_t *c,
-                   rvec sf2_round,
+                   const rvec sf2_round,
                    gmx_bool bDistBonded,
                    gmx_bool bBondComm,
                    gmx_bool bDist2B,
                    gmx_bool bDistMB,
                    rvec *cg_cm,
-                   int *cginfo,
+                   const int *cginfo,
                    gmx_domdec_ind_t *ind,
                    int **ibuf, int *ibuf_nalloc,
                    vec_rvec_t *vbuf,

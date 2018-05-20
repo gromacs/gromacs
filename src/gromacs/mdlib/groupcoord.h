@@ -130,7 +130,7 @@ extern void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
 extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
                                         ivec *extra_shifts, const gmx_bool bNS,
                                         const rvec *x_loc, const int nr, const int nr_loc,
-                                        int *anrs_loc, int *coll_ind, rvec *xcoll_old,
+                                        const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
                                         matrix box);
 
 /*! \brief Calculates the center of the positions x locally.

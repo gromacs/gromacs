@@ -514,7 +514,7 @@ static void init_resize(t_block *ins_at, rvec *r_ins, pos_ins_t *pos_ins, mem_t 
 }
 
 /* resize performed in the md loop */
-static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins, rvec fac)
+static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins, const rvec fac)
 {
     int i, j, k, at, c = 0;
     for (k = 0; k < pos_ins->pieces; k++)

@@ -150,7 +150,7 @@ static void pr_shell(FILE *fplog, int ns, t_shell s[])
  * removed. */
 static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                            int ns, t_shell s[],
-                           real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
+                           const real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
 {
     int                   i, m, s1, n1, n2, n3;
     real                  dt_1, fudge, tm, m1, m2, m3;

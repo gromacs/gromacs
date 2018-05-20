@@ -113,7 +113,7 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     gmx_ffclose(out);
 }
 
-void add_grp(t_blocka *b, char ***gnames, int nra, int a[], const char *name)
+void add_grp(t_blocka *b, char ***gnames, int nra, const int a[], const char *name)
 {
     int i;
 
@@ -132,7 +132,7 @@ void add_grp(t_blocka *b, char ***gnames, int nra, int a[], const char *name)
 
 /* compare index in `a' with group in `b' at `index',
    when `index'<0 it is relative to end of `b' */
-static gmx_bool grp_cmp(t_blocka *b, int nra, int a[], int index)
+static gmx_bool grp_cmp(t_blocka *b, int nra, const int a[], int index)
 {
     int i;
 
@@ -734,7 +734,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 }
 
 
-void check_index(char *gname, int n, int index[], char *traj, int natoms)
+void check_index(const char *gname, int n, int index[], const char *traj, int natoms)
 {
     int i;
 

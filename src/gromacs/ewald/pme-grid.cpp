@@ -235,7 +235,7 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 #endif
 
 
-int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index)
+int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, const real *pmegrid, real *fftgrid, int grid_index)
 {
     ivec    local_fft_ndata, local_fft_offset, local_fft_size;
     ivec    local_pme_size;

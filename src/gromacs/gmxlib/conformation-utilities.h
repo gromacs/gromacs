@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@ extern "C" {
 void rotate_conf(int natom, rvec *x, rvec *v, real alfa, real beta, real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
-void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
+void make_new_box(int natoms, rvec *x, matrix box, const rvec box_space,
                   gmx_bool bCenter);
 /* Generates a box around a configuration, box_space is optional extra
  * space around it. If bCenter then coordinates will be centered in

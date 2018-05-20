@@ -129,7 +129,7 @@ static int get_electrons(t_electron **eltab, const char *fn)
     return nr;
 }
 
-static void center_coords(t_atoms *atoms, int *index_center, int ncenter,
+static void center_coords(t_atoms *atoms, const int *index_center, int ncenter,
                           matrix box, rvec x0[])
 {
     int  i, k, m;
@@ -167,7 +167,7 @@ static void center_coords(t_atoms *atoms, int *index_center, int ncenter,
     }
 }
 
-static void calc_electron_density(const char *fn, int **index, int gnx[],
+static void calc_electron_density(const char *fn, int **index, const int gnx[],
                                   double ***slDensity, int *nslices, t_topology *top,
                                   int ePBC,
                                   int axis, int nr_grps, real *slWidth,
@@ -326,7 +326,7 @@ static void calc_electron_density(const char *fn, int **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-static void calc_density(const char *fn, int **index, int gnx[],
+static void calc_density(const char *fn, int **index, const int gnx[],
                          double ***slDensity, int *nslices, t_topology *top, int ePBC,
                          int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                          int *index_center, int ncenter,

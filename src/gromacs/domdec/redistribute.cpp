@@ -70,8 +70,8 @@
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
 
-static int compact_and_copy_vec_at(int ncg, int *move,
-                                   int *cgindex,
+static int compact_and_copy_vec_at(int ncg, const int *move,
+                                   const int *cgindex,
                                    int nvec, int vec,
                                    rvec *src, gmx_domdec_comm_t *comm,
                                    gmx_bool bCompact)
@@ -124,8 +124,8 @@ static int compact_and_copy_vec_at(int ncg, int *move,
     return home_pos;
 }
 
-static int compact_and_copy_vec_cg(int ncg, int *move,
-                                   int *cgindex,
+static int compact_and_copy_vec_cg(int ncg, const int *move,
+                                   const int *cgindex,
                                    int nvec, rvec *src, gmx_domdec_comm_t *comm,
                                    gmx_bool bCompact)
 {
@@ -170,7 +170,7 @@ static int compact_and_copy_vec_cg(int ncg, int *move,
     return home_pos;
 }
 
-static int compact_ind(int ncg, int *move,
+static int compact_ind(int ncg, const int *move,
                        int *index_gl, int *cgindex,
                        int *gatindex,
                        gmx_ga2la_t *ga2la, char *bLocalCG,
@@ -222,8 +222,8 @@ static int compact_ind(int ncg, int *move,
     return home_pos;
 }
 
-static void clear_and_mark_ind(int ncg, int *move,
-                               int *index_gl, int *cgindex, int *gatindex,
+static void clear_and_mark_ind(int ncg, const int *move,
+                               const int *index_gl, const int *cgindex, int *gatindex,
                                gmx_ga2la_t *ga2la, char *bLocalCG,
                                int *cell_index)
 {
@@ -349,9 +349,9 @@ static int *get_moved(gmx_domdec_comm_t *comm, int natoms)
 static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                          gmx_domdec_t *dd,
                          t_state *state,
-                         ivec tric_dir, matrix tcm,
-                         rvec cell_x0, rvec cell_x1,
-                         rvec limitd, rvec limit0, rvec limit1,
+                         const ivec tric_dir, matrix tcm,
+                         const rvec cell_x0, const rvec cell_x1,
+                         rvec limitd, const rvec limit0, const rvec limit1,
                          const int *cgindex,
                          int cg_start, int cg_end,
                          rvec *cg_cm,

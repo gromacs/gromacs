@@ -111,7 +111,7 @@ static void power_fit(int n, int nset, real **val, real *t)
     sfree(x);
 }
 
-static real cosine_content(int nhp, int n, real *y)
+static real cosine_content(int nhp, int n, const real *y)
 /* Assumes n equidistant points */
 {
     double fac, cosyint, yyint;
@@ -396,7 +396,7 @@ static void average(const char *avfile, int avbar_opt,
  *
  * See Eqn A17, Hess, JCP 116 (2002) 209-217 for details.
  */
-static real optimal_error_estimate(double sigma, double fitparm[], real tTotal)
+static real optimal_error_estimate(double sigma, const double fitparm[], real tTotal)
 {
     double ss = fitparm[1]*fitparm[0]+(1-fitparm[1])*fitparm[2];
     if ((tTotal <= 0) || (ss <= 0))

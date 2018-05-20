@@ -2259,7 +2259,7 @@ void do_constrain_first(FILE *fplog, Constraints *constr,
 
 
 static void
-integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
+integrate_table(const real vdwtab[], real scale, int offstart, int rstart, int rend,
                 double *enerout, double *virout)
 {
     double enersum, virsum;

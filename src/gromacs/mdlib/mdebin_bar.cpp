@@ -64,7 +64,7 @@ static void mde_delta_h_reset(t_mde_delta_h *dh)
 static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
                              double dx, unsigned int  ndhmax,
                              int type, int derivative, int nlambda,
-                             double *lambda)
+                             const double *lambda)
 {
     int i;
 

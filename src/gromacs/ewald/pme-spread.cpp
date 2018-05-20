@@ -263,7 +263,7 @@ static void make_thread_local_ind(const pme_atomcomm_t *atc,
     }
 
 static void make_bsplines(splinevec theta, splinevec dtheta, int order,
-                          rvec fractx[], int nr, int ind[], real coefficient[],
+                          rvec fractx[], int nr, const int ind[], const real coefficient[],
                           gmx_bool bDoSplines)
 {
     /* construct splines for local atoms */

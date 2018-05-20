@@ -594,7 +594,7 @@ static inline real gaussian_weight(rvec curr_x, t_rotgrp *rotg, int n)
 
 /* Returns the weight in a single slab, also calculates the Gaussian- and mass-
  * weighted sum of positions for that slab */
-static real get_slab_weight(int j, t_rotgrp *rotg, rvec xc[], real mc[], rvec *x_weighted_sum)
+static real get_slab_weight(int j, t_rotgrp *rotg, rvec xc[], const real mc[], rvec *x_weighted_sum)
 {
     rvec            curr_x;           /* The position of an atom                      */
     rvec            curr_x_weighted;  /* The gaussian-weighted position               */
@@ -1281,13 +1281,13 @@ static void weigh_coords(rvec* str, real* weight, int natoms)
 
 
 static real opt_angle_analytic(
-        rvec* ref_s,
-        rvec* act_s,
-        real* weight,
-        int   natoms,
-        rvec  ref_com,
-        rvec  act_com,
-        rvec  axis)
+        rvec      * ref_s,
+        rvec      * act_s,
+        real      * weight,
+        int         natoms,
+        const rvec  ref_com,
+        const rvec  act_com,
+        rvec        axis)
 {
     int      i, j, k;
     rvec    *ref_s_1 = nullptr;

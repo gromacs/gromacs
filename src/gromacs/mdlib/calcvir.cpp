@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -147,8 +147,8 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 
 
 static void lo_fcv(int i0, int i1,
-                   real x[], real f[], tensor vir,
-                   int is[], real box[], gmx_bool bTriclinic)
+                   const real x[], const real f[], tensor vir,
+                   const int is[], const real box[], gmx_bool bTriclinic)
 {
     int      i, i3, tx, ty, tz;
     real     xx, yy, zz;

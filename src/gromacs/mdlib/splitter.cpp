@@ -114,7 +114,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     return ng;
 }
 
-static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
+static int first_colour(int fC, egCol Col, t_graph *g, const egCol egc[])
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */
