@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -840,7 +840,7 @@ int gmx_rms(int argc, char *argv[])
             if (bDeltaLog)
             {
                 delta_scalex = 8.0/std::log(2.0);
-                delta_xsize  = static_cast<int>(std::log(static_cast<real>(tel_mat/2))*delta_scalex+0.5)+1;
+                delta_xsize  = static_cast<int>(std::log(tel_mat/2.)*delta_scalex+0.5)+1;
             }
             else
             {
@@ -949,7 +949,7 @@ int gmx_rms(int argc, char *argv[])
         }
         else
         {
-            rmsd_avg /= tel_mat*(tel_mat - 1)/2;
+            rmsd_avg /= tel_mat*(tel_mat - 1)/2.;
         }
         if (bMat && (avl > 0))
         {

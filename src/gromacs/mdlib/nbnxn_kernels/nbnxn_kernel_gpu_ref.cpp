@@ -378,6 +378,6 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         fprintf(debug, "generic kernel non-zero pair interactions:   %d\n",
                 npair_tot);
         fprintf(debug, "ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot/(double)(nhwu_pruned*nbl->na_ci/2*nbl->na_ci));
+                npair_tot/(double)(nhwu_pruned*gmx::exactDiv(nbl->na_ci, 2)*nbl->na_ci));
     }
 }
