@@ -481,7 +481,7 @@ static inline void add_j_to_nblist(t_nblist *nlist, int j_atom)
 
 static inline void add_j_to_nblist_cg(t_nblist *nlist,
                                       int j_start, int j_end,
-                                      t_excl *bexcl, gmx_bool i_is_j)
+                                      const t_excl *bexcl, gmx_bool i_is_j)
 {
     int nrj = nlist->nrj;
     int j;
@@ -526,15 +526,15 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
 }
 
 typedef void
-    put_in_list_t (gmx_bool              bHaveVdW[],
+    put_in_list_t (const gmx_bool        bHaveVdW[],
                    int                   ngid,
                    const t_mdatoms      *md,
                    int                   icg,
                    int                   jgid,
                    int                   nj,
-                   int                   jjcg[],
-                   int                   index[],
-                   t_excl                bExcl[],
+                   const int             jjcg[],
+                   const int             index[],
+                   const t_excl          bExcl[],
                    int                   shift,
                    t_forcerec     *      fr,
                    gmx_bool              bDoVdW,
@@ -542,20 +542,20 @@ typedef void
                    int                   solvent_opt);
 
 static void
-put_in_list_at(gmx_bool              bHaveVdW[],
-               int                   ngid,
-               const t_mdatoms      *md,
-               int                   icg,
-               int                   jgid,
-               int                   nj,
-               int                   jjcg[],
-               int                   index[],
-               t_excl                bExcl[],
-               int                   shift,
-               t_forcerec     *      fr,
-               gmx_bool              bDoVdW,
-               gmx_bool              bDoCoul,
-               int                   solvent_opt)
+put_in_list_at(const gmx_bool              bHaveVdW[],
+               int                         ngid,
+               const t_mdatoms            *md,
+               int                         icg,
+               int                         jgid,
+               int                         nj,
+               const int                   jjcg[],
+               const int                   index[],
+               const t_excl                bExcl[],
+               int                         shift,
+               t_forcerec           *      fr,
+               gmx_bool                    bDoVdW,
+               gmx_bool                    bDoCoul,
+               int                         solvent_opt)
 {
     /* The a[] index has been removed,
      * to put it back in i_atom should be a[i0] and jj should be a[jj].
@@ -1048,15 +1048,15 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 }
 
 static void
-put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
+put_in_list_qmmm(const gmx_bool gmx_unused        bHaveVdW[],
                  int                              ngid,
                  const t_mdatoms                  * /* md */,
                  int                              icg,
                  int                              jgid,
                  int                              nj,
-                 int                              jjcg[],
-                 int                              index[],
-                 t_excl                           bExcl[],
+                 const int                        jjcg[],
+                 const int                        index[],
+                 const t_excl                     bExcl[],
                  int                              shift,
                  t_forcerec                *      fr,
                  gmx_bool  gmx_unused             bDoVdW,
@@ -1112,15 +1112,15 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
 }
 
 static void
-put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
+put_in_list_cg(const gmx_bool  gmx_unused       bHaveVdW[],
                int                              ngid,
                const t_mdatoms                  * /* md */,
                int                              icg,
                int                              jgid,
                int                              nj,
-               int                              jjcg[],
-               int                              index[],
-               t_excl                           bExcl[],
+               const int                        jjcg[],
+               const int                        index[],
+               const t_excl                     bExcl[],
                int                              shift,
                t_forcerec                *      fr,
                gmx_bool   gmx_unused            bDoVdW,
@@ -1259,8 +1259,8 @@ int calc_naaj(int icg, int cgtot)
  *
  ************************************************/
 
-static real calc_image_tric(rvec xi, rvec xj, matrix box,
-                            rvec b_inv, int *shift)
+static real calc_image_tric(const rvec xi, const rvec xj, matrix box,
+                            const rvec b_inv, int *shift)
 {
     /* This code assumes that the cut-off is smaller than
      * a half times the smallest diagonal element of the box.
@@ -1301,8 +1301,8 @@ static real calc_image_tric(rvec xi, rvec xj, matrix box,
     return r2;
 }
 
-static real calc_image_rect(rvec xi, rvec xj, rvec box_size,
-                            rvec b_inv, int *shift)
+static real calc_image_rect(const rvec xi, const rvec xj, const rvec box_size,
+                            const rvec b_inv, int *shift)
 {
     const real h15 = 1.5;
     real       ddx, ddy, ddz;
@@ -1363,22 +1363,22 @@ static void add_simple(t_ns_buf       * nsbuf,
     nsbuf->nj               += nrj;
 }
 
-static void ns_inner_tric(rvec             x[],
-                          int              icg,
-                          int             *i_egp_flags,
-                          int              njcg,
-                          int              jcg[],
-                          matrix           box,
-                          rvec             b_inv,
-                          real             rcut2,
-                          t_block         *cgs,
-                          t_ns_buf       **ns_buf,
-                          gmx_bool         bHaveVdW[],
-                          int              ngid,
-                          const t_mdatoms *md,
-                          t_excl           bexcl[],
-                          t_forcerec      *fr,
-                          put_in_list_t   *put_in_list)
+static void ns_inner_tric(rvec                   x[],
+                          int                    icg,
+                          const int             *i_egp_flags,
+                          int                    njcg,
+                          const int              jcg[],
+                          matrix                 box,
+                          rvec                   b_inv,
+                          real                   rcut2,
+                          t_block               *cgs,
+                          t_ns_buf             **ns_buf,
+                          gmx_bool               bHaveVdW[],
+                          int                    ngid,
+                          const t_mdatoms       *md,
+                          t_excl                 bexcl[],
+                          t_forcerec            *fr,
+                          put_in_list_t         *put_in_list)
 {
     int       shift;
     int       j, nrj, jgid;
@@ -1404,23 +1404,23 @@ static void ns_inner_tric(rvec             x[],
     }
 }
 
-static void ns_inner_rect(rvec             x[],
-                          int              icg,
-                          int             *i_egp_flags,
-                          int              njcg,
-                          int              jcg[],
-                          gmx_bool         bBox,
-                          rvec             box_size,
-                          rvec             b_inv,
-                          real             rcut2,
-                          t_block         *cgs,
-                          t_ns_buf       **ns_buf,
-                          gmx_bool         bHaveVdW[],
-                          int              ngid,
-                          const t_mdatoms *md,
-                          t_excl           bexcl[],
-                          t_forcerec      *fr,
-                          put_in_list_t   *put_in_list)
+static void ns_inner_rect(rvec                   x[],
+                          int                    icg,
+                          const int             *i_egp_flags,
+                          int                    njcg,
+                          const int              jcg[],
+                          gmx_bool               bBox,
+                          rvec                   box_size,
+                          rvec                   b_inv,
+                          real                   rcut2,
+                          t_block               *cgs,
+                          t_ns_buf             **ns_buf,
+                          gmx_bool               bHaveVdW[],
+                          int                    ngid,
+                          const t_mdatoms       *md,
+                          t_excl                 bexcl[],
+                          t_forcerec            *fr,
+                          put_in_list_t         *put_in_list)
 {
     int       shift;
     int       j, nrj, jgid;
@@ -1707,7 +1707,7 @@ static int nsgrid_core(const t_commrec *cr,
                        gmx_localtop_t  *top,
                        t_grid          *grid,
                        t_excl           bexcl[],
-                       gmx_bool        *bExcludeAlleg,
+                       const gmx_bool  *bExcludeAlleg,
                        const t_mdatoms *md,
                        put_in_list_t   *put_in_list,
                        gmx_bool         bHaveVdW[],
