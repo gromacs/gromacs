@@ -833,7 +833,7 @@ static double tabulated_pot(double dist, t_UmbrellaOptions *opt)
  * After rapid convergence (using only substiantal contributions), we always switch to
  * full precision.
  */
-static void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
+static void setup_acc_wham(const double *profile, t_UmbrellaWindow * window, int nWindows,
                            t_UmbrellaOptions *opt)
 {
     int           i, j, k, nGrptot = 0, nContrib = 0, nTot = 0;
@@ -1001,7 +1001,7 @@ static void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindow
 }
 
 //! Compute the free energy offsets z (one of the two main WHAM routines)
-static double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
+static double calc_z(const double * profile, t_UmbrellaWindow * window, int nWindows,
                      t_UmbrellaOptions *opt, gmx_bool bExact)
 {
     double min     = opt->min, dz = opt->dz, ztot_half, ztot;
@@ -1324,7 +1324,7 @@ static void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
  *
  *  This is used to generate a random sequence distributed according to a histogram
  */
-static void searchCumulative(double xx[], int n, double x, int *j)
+static void searchCumulative(const double xx[], int n, double x, int *j)
 {
     int ju, jm, jl;
 

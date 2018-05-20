@@ -260,7 +260,7 @@ static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
     }
 }
 
-static gmx_bool is_hb(unsigned int hbexist[], int frame)
+static gmx_bool is_hb(const unsigned int hbexist[], int frame)
 {
     return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
 }
@@ -682,7 +682,7 @@ static void add_h2d(int id, int ih, t_donors *ddd)
     }
 }
 
-static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *datable)
+static void add_dh(t_donors *ddd, int id, int ih, int grp, const unsigned char *datable)
 {
     int i;
 
@@ -912,7 +912,7 @@ static void reset_nhbonds(t_donors *ddd)
     }
 }
 
-static void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+static void pbc_correct_gem(rvec dx, matrix box, const rvec hbox);
 static void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
@@ -1079,7 +1079,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     }
 }
 
-static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
+static void count_da_grid(const ivec ngrid, t_gridcell ***grid, t_icell danr)
 {
     int gr, xi, yi, zi;
 
@@ -1169,7 +1169,7 @@ static void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 /* New GMX record! 5 * in a row. Congratulations!
  * Sorry, only four left.
  */
-static void free_grid(ivec ngrid, t_gridcell ****grid)
+static void free_grid(const ivec ngrid, t_gridcell ****grid)
 {
     int           y, z;
     t_gridcell ***g = *grid;
@@ -1186,7 +1186,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
     g = nullptr;
 }
 
-static void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
+static void pbc_correct_gem(rvec dx, matrix box, const rvec hbox)
 {
     int      m;
     gmx_bool bDone = FALSE;
@@ -1869,7 +1869,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     }
 }
 
-void compute_derivative(int nn, real x[], real y[], real dydx[])
+void compute_derivative(int nn, const real x[], const real y[], real dydx[])
 {
     int j;
 
@@ -2226,7 +2226,7 @@ static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t
 
 static void dump_hbmap(t_hbdata *hb,
                        int nfile, t_filenm fnm[], gmx_bool bTwo,
-                       gmx_bool bContact, int isize[], int *index[], char *grpnames[],
+                       gmx_bool bContact, const int isize[], int *index[], char *grpnames[],
                        const t_atoms *atoms)
 {
     FILE    *fp, *fplog;

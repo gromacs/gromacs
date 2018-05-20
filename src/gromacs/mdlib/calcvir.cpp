@@ -148,8 +148,8 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
 
 
 static void lo_fcv(int i0, int i1,
-                   real x[], real f[], tensor vir,
-                   int is[], real box[], gmx_bool bTriclinic)
+                   const real x[], const real f[], tensor vir,
+                   const int is[], const real box[], gmx_bool bTriclinic)
 {
     int      i, i3, tx, ty, tz;
     real     xx, yy, zz;

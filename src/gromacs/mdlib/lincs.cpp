@@ -2282,7 +2282,7 @@ void set_lincs(const t_idef         &idef,
 
 //! Issues a warning when LINCS constraints cannot be satisfied.
 static void lincs_warning(gmx_domdec_t *dd, const rvec *x, rvec *xprime, t_pbc *pbc,
-                          int ncons, int *bla, real *bllen, real wangle,
+                          int ncons, const int *bla, real *bllen, real wangle,
                           int maxwarn, int *warncount)
 {
     int  b, i, j;

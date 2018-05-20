@@ -111,7 +111,7 @@ static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 }
 
 static void average_residues(double f[], double **U, int uind,
-                             int isize, int index[], real w_rls[],
+                             int isize, const int index[], const real w_rls[],
                              const t_atoms *atoms)
 {
     int    i, j, start;

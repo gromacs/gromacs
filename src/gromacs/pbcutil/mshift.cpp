@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ static void add_gbond(t_graph *g, int a0, int a1)
 
 static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                       int at_start, int at_end,
-                      int *part)
+                      const int *part)
 {
     t_iatom *ia;
     int      i, j, np;
@@ -504,7 +504,7 @@ void done_graph(t_graph *g)
  ************************************************************/
 
 static void mk_1shift_tric(int npbcdim, const matrix box, const rvec hbox,
-                           const rvec xi, const rvec xj, int *mi, int *mj)
+                           const rvec xi, const rvec xj, const int *mi, int *mj)
 {
     /* Calculate periodicity for triclinic box... */
     int  m, d;
@@ -542,7 +542,7 @@ static void mk_1shift_tric(int npbcdim, const matrix box, const rvec hbox,
 }
 
 static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj,
-                      int *mi, int *mj)
+                      const int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  m;
@@ -572,7 +572,7 @@ static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj
 }
 
 static void mk_1shift_screw(const matrix box, const rvec hbox,
-                            const rvec xi, const rvec xj, int *mi, int *mj)
+                            const rvec xi, const rvec xj, const int *mi, int *mj)
 {
     /* Calculate periodicity for rectangular box... */
     int  signi, m;
@@ -698,7 +698,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     return ng;
 }
 
-static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
+static int first_colour(int fC, egCol Col, t_graph *g, const egCol egc[])
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */

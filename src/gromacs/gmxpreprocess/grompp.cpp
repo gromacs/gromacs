@@ -1054,11 +1054,11 @@ static int nrdf_internal(t_atoms *atoms)
 }
 
 static void
-spline1d( double        dx,
-          double *      y,
-          int           n,
-          double *      u,
-          double *      y2 )
+spline1d( double              dx,
+          const double *      y,
+          int                 n,
+          double       *      u,
+          double       *      y2 )
 {
     int    i;
     double p, q;
@@ -1084,13 +1084,13 @@ spline1d( double        dx,
 
 
 static void
-interpolate1d( double     xmin,
-               double     dx,
-               double *   ya,
-               double *   y2a,
-               double     x,
-               double *   y,
-               double *   y1)
+interpolate1d( double           xmin,
+               double           dx,
+               const double *   ya,
+               const double *   y2a,
+               double           x,
+               double       *   y,
+               double       *   y1)
 {
     int    ix;
     double a, b;
@@ -1106,10 +1106,10 @@ interpolate1d( double     xmin,
 
 
 static void
-setup_cmap (int              grid_spacing,
-            int              nc,
-            real *           grid,
-            gmx_cmap_t *     cmap_grid)
+setup_cmap (int                    grid_spacing,
+            int                    nc,
+            const real *           grid,
+            gmx_cmap_t       *     cmap_grid)
 {
     double *tmp_u, *tmp_u2, *tmp_yy, *tmp_y1, *tmp_t2, *tmp_grid;
 

@@ -65,8 +65,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void low_print_data(FILE *fp, real time, rvec x[], int n, int *index,
-                           gmx_bool bDim[], const char *sffmt)
+static void low_print_data(FILE *fp, real time, rvec x[], int n, const int *index,
+                           const gmx_bool bDim[], const char *sffmt)
 {
     int i, ii, d;
 
@@ -96,8 +96,8 @@ static void low_print_data(FILE *fp, real time, rvec x[], int n, int *index,
     fprintf(fp, "\n");
 }
 
-static void average_data(rvec x[], rvec xav[], real *mass,
-                         int ngrps, int isize[], int **index)
+static void average_data(rvec x[], rvec xav[], const real *mass,
+                         int ngrps, const int isize[], int **index)
 {
     int    g, i, ind, d;
     real   m;
@@ -209,7 +209,7 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
 }
 
 static void make_legend(FILE *fp, int ngrps, int isize, int index[],
-                        char **name, gmx_bool bCom, gmx_bool bMol, gmx_bool bDim[],
+                        char **name, gmx_bool bCom, gmx_bool bMol, const gmx_bool bDim[],
                         const gmx_output_env_t *oenv)
 {
     char      **leg;
@@ -259,7 +259,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
     sfree(leg);
 }
 
-static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
+static real ekrot(rvec x[], rvec v[], const real mass[], int isize, const int index[])
 {
     real          TCM[5][5], L[5][5];
     double        tm, m0, lxx, lxy, lxz, lyy, lyz, lzz, ekrot;
@@ -337,7 +337,7 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
     return ekrot;
 }
 
-static real ektrans(rvec v[], real mass[], int isize, int index[])
+static real ektrans(rvec v[], const real mass[], int isize, const int index[])
 {
     dvec   mvcom;
     double mtot;
@@ -358,7 +358,7 @@ static real ektrans(rvec v[], real mass[], int isize, int index[])
     return dnorm2(mvcom)/(mtot*2);
 }
 
-static real temp(rvec v[], real mass[], int isize, int index[])
+static real temp(rvec v[], const real mass[], int isize, const int index[])
 {
     double ekin2;
     int    i, j;
@@ -408,7 +408,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                            const char *title, t_atoms *atoms, int ePBC, matrix box,
                            int isize, int *index, int nfr_x, rvec *x,
                            int nfr_v, rvec *sum,
-                           gmx_bool bDim[], real scale_factor,
+                           const gmx_bool bDim[], real scale_factor,
                            const gmx_output_env_t *oenv)
 {
     FILE       *fp;
@@ -526,7 +526,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
     }
 }
 
-static void update_histo(int gnx, int index[], rvec v[],
+static void update_histo(int gnx, const int index[], rvec v[],
                          int *nhisto, int **histo, real binwidth)
 {
     int  i, m, in, nnn;

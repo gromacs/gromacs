@@ -318,7 +318,7 @@ static char *search_resrename(int nrr, rtprename_t *rr,
 }
 
 
-static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end,
+static void rename_resrtp(t_atoms *pdba, int nterpairs, const int *r_start, const int *r_end,
                           int nrr, rtprename_t *rr, t_symtab *symtab,
                           gmx_bool bVerbose)
 {

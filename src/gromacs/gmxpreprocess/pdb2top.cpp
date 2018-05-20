@@ -698,7 +698,7 @@ void print_top_mols(FILE *out,
     }
 }
 
-void write_top(FILE *out, char *pr, char *molname,
+void write_top(FILE *out, char *pr, const char *molname,
                t_atoms *at, gmx_bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl)
@@ -1022,7 +1022,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nres, t_resinfo *resinfo,
                         int nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
-                        int *rn, int *rc,
+                        const int *rn, const int *rc,
                         gmx_bool bAllowMissing)
 {
     int         i, j, k, l;

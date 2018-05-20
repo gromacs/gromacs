@@ -78,7 +78,7 @@ enum {
 
 
 static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
-                             rvec x[], int index[], matrix box)
+                             rvec x[], const int index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -408,7 +408,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     }
 }
 
-static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, int ci[])
+static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, const int ci[])
 {
     int  i, m, ai;
     rvec cmin, cmax, box_center, dx;

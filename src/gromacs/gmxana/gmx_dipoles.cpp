@@ -176,7 +176,7 @@ static void rvec2sprvec(rvec dipcart, rvec dipsp)
 
 
 static void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
-                   int mindex[], rvec x[], rvec mu[],
+                   const int mindex[], rvec x[], rvec mu[],
                    int ePBC, const matrix box, const t_atom *atom, const int *nAtom)
 {
     static rvec *xcm[2] = { nullptr, nullptr};
@@ -410,7 +410,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
     xvgrclose(fp);
 }
 
-static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
+static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec mu, real *vol,
                                  real *t, int nre, t_enxframe *fr)
 {
     int          i;
@@ -440,7 +440,7 @@ static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, re
     return bCont;
 }
 
-static void neutralize_mols(int n, int *index, const t_block *mols, t_atom *atom)
+static void neutralize_mols(int n, const int *index, const t_block *mols, t_atom *atom)
 {
     double mtot, qtot;
     int    ncharged, m, a0, a1, a;
