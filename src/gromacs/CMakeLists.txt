@@ -278,7 +278,7 @@ if (GMX_CLANG_TIDY)
        message(ERROR "clang-tidy support requires cmake 3.6.")
    endif()
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=\
-       -clang-analyzer-security.insecureAPI.strcpy,-clang-analyzer-core.NullDereference,\
+       -clang-analyzer-security.insecureAPI.strcpy,\
        bugprone-*,misc-*,readability-*,performance-*,mpi-*,\
        -misc-misplaced-widening-cast,-readability-named-parameter,\
        -misc-misplaced-const,\
