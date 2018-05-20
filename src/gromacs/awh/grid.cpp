@@ -768,7 +768,6 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
 {
     /* Transform the data into a grid in order to map each grid point to a data point
        using the grid functions. */
-    std::vector<GridAxis> axis_;
 
     /* Count the number of points for each dimension. Each dimension
        has its own stride. */
@@ -805,6 +804,8 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
         GMX_THROW(InvalidInputError(mesg));
     }
 
+    std::vector<GridAxis> axis_;
+    axis_.reserve(grid.numDimensions());
     /* The data grid has the data that was read and the properties of the AWH grid */
     for (int d = 0; d < grid.numDimensions(); d++)
     {

@@ -341,11 +341,7 @@ static void analyzeThermochemistry(FILE                      *fp,
                                    real                       scale_factor,
                                    real                       linear_toler)
 {
-    std::vector<int> index;
-    for (auto &ai : atom_index)
-    {
-        index.push_back(static_cast<int>(ai));
-    }
+    std::vector<int>       index(atom_index.begin(), atom_index.end());
 
     rvec                   xcm;
     double                 tmass = calc_xcm(top_x, index.size(),

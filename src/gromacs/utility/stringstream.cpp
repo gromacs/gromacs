@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ bool StringInputStream::readLine(std::string *line)
     }
     else
     {
-        size_t newpos = input_.find("\n", pos_);
+        size_t newpos = input_.find('\n', pos_);
         if (newpos == std::string::npos)
         {
             newpos = input_.size();

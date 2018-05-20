@@ -1608,10 +1608,7 @@ Lincs *init_lincs(FILE *fplog, const gmx_mtop_t &mtop,
 
 void done_lincs(Lincs *li)
 {
-    if (li)
-    {
-        delete li;
-    }
+    delete li;
 }
 
 /*! \brief Sets up the work division over the threads. */

@@ -44,8 +44,10 @@ set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libgromacs_external OBJECT "")
+add_library(libgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
+    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
 endif()
 
 function (_gmx_add_files_to_property PROPERTY)
@@ -165,7 +167,8 @@ gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libgromacs_external>)
+     $<TARGET_OBJECTS:libgromacs_external>
+     $<TARGET_OBJECTS:libgromacs_generated>)
 
 # Mark some shared GPU implementation files to compile with CUDA if needed
 if (GMX_USE_CUDA)
@@ -273,7 +276,18 @@ if (GMX_CLANG_TIDY)
    if(CMAKE_VERSION VERSION_LESS "3.6")
        message(ERROR "clang-tidy support requires cmake 3.6.")
    endif()
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=-clang-analyzer-security.insecureAPI.strcpy,-clang-analyzer-core.NullDereference,bugprone-*,-bugprone-integer-division;-warnings-as-errors=*")
+   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--checks=\
+       -clang-analyzer-security.insecureAPI.strcpy,-clang-analyzer-core.NullDereference,\
+       bugprone-*,misc-*,readability-*,performance-*,mpi-*,-bugprone-integer-division,\
+       -readability-redundant-smartptr-get,-readability-redundant-string-cstr,-readability-simplify-boolean-expr,\
+       -misc-misplaced-widening-cast,-readability-named-parameter,-performance-noexcept-move-constructor,\
+       -readability-misleading-indentation,-readability-container-size-empty,-misc-suspicious-string-compare,\
+       -readability-redundant-control-flow,-performance-unnecessary-value-param,\
+       -readability-static-definition-in-anonymous-namespace,-misc-suspicious-missing-comma,\
+       -readability-redundant-member-init,-misc-misplaced-const,-performance-type-promotion-in-math-fn,\
+       -misc-incorrect-roundings,-misc-macro-parentheses,-readability-function-size,-readability-else-after-return,\
+       -readability-inconsistent-declaration-parameter-name,-misc-throw-by-value-catch-by-reference,\
+       -readability-non-const-parameter,-readability-implicit-bool-conversion;-warnings-as-errors=*")
 endif()
 
 gmx_write_installed_header_list()
