@@ -588,7 +588,7 @@ void HelpExportReStructuredText::exportModuleHelp(
         = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
     TextWriter              writer(file);
     writer.writeLine(formatString(".. _%s:", displayName.c_str()));
-    if (0 == displayName.compare(binaryName_ + " mdrun"))
+    if (displayName == binaryName_ + " mdrun")
     {
         // Make an extra link target for the convenience of
         // MPI-specific documentation
