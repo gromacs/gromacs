@@ -72,7 +72,7 @@ const int nstmin_harmonic          = 20;
 
 t_inputrec::t_inputrec()
 {
-    std::memset(this, 0, sizeof(*this));
+    std::memset(this, 0, sizeof(*this)); // NOLINT(bugprone-undefined-memory-manipulation)
     snew(fepvals, 1);
     snew(expandedvals, 1);
     snew(simtempvals, 1);
