@@ -1229,7 +1229,7 @@ class MindistAction
          * stores the pointers for later use.
          * See the class description for additional semantics.
          */
-        MindistAction(int *closestPoint, real *minDist2, rvec *dx)
+        MindistAction(int *closestPoint, real *minDist2, rvec *dx) // NOLINT(readability-non-const-parameter)
             : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
         {
         }
