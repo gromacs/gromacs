@@ -96,8 +96,8 @@ typedef struct {
                                  point. */
 } t_corr;
 
-typedef real t_calc_func (t_corr *curr, int nx, int index[], int nx0, rvec xc[],
-                          rvec dcom, gmx_bool bTen, matrix mat);
+typedef real t_calc_func (t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
+                          const rvec dcom, gmx_bool bTen, matrix mat);
 
 static real thistime(t_corr *curr)
 {
@@ -265,8 +265,8 @@ static void calc_corr(t_corr *curr, int nr, int nx, int index[], rvec xc[],
 }
 
 /* the non-mass-weighted mean-squared displacement calcuation */
-static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
-                       rvec dcom, gmx_bool bTen, matrix mat)
+static real calc1_norm(t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
+                       const rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i, ix, m, m2;
     real g, r, r2;
@@ -324,7 +324,7 @@ static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
 }
 
 /* calculate the com of molecules in x and put it into xa */
-static void calc_mol_com(int nmol, int *molindex, const t_block *mols, const t_atoms *atoms,
+static void calc_mol_com(int nmol, const int *molindex, const t_block *mols, const t_atoms *atoms,
                          rvec *x, rvec *xa)
 {
     int  m, mol, i, d;
@@ -350,7 +350,7 @@ static void calc_mol_com(int nmol, int *molindex, const t_block *mols, const t_a
 }
 
 static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
-                        rvec dcom, gmx_bool bTen, matrix mat)
+                        const rvec dcom, gmx_bool bTen, matrix mat)
 {
     real r2, r, mm;
     rvec rv;
@@ -403,8 +403,8 @@ static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
 }
 
 /* the normal, mass-weighted mean-squared displacement calcuation */
-static real calc1_mw(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
-                     rvec dcom, gmx_bool bTen, matrix mat)
+static real calc1_mw(t_corr *curr, int nx, const int index[], int nx0, rvec xc[],
+                     const rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
     real g, tm;
@@ -431,7 +431,7 @@ static real calc1_mw(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
    xcur = the current coordinates
    xprev = the previous coordinates
    box = the box matrix */
-static void prep_data(gmx_bool bMol, int gnx, int index[],
+static void prep_data(gmx_bool bMol, int gnx, const int index[],
                       rvec xcur[], rvec xprev[], matrix box)
 {
     int  i, m, ind;
@@ -519,8 +519,8 @@ static void calc_com(gmx_bool bMol, int gnx, int index[],
 }
 
 
-static real calc1_mol(t_corr *curr, int nx, int gmx_unused index[], int nx0, rvec xc[],
-                      rvec dcom, gmx_bool bTen, matrix mat)
+static real calc1_mol(t_corr *curr, int nx, const int gmx_unused index[], int nx0, rvec xc[],
+                      const rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
     real g, tm, gtot, tt;
@@ -545,7 +545,7 @@ static real calc1_mol(t_corr *curr, int nx, int gmx_unused index[], int nx0, rve
 }
 
 static void printmol(t_corr *curr, const char *fn,
-                     const char *fn_pdb, int *molindex, const t_topology *top,
+                     const char *fn_pdb, const int *molindex, const t_topology *top,
                      rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
 #define NDIST 100
