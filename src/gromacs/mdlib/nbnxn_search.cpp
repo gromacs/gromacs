@@ -304,7 +304,6 @@ nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
                            int                       nthread_max) :
     bFEP(bFEP),
     ePBC(epbcNONE), // The correct value will be set during the gridding
-    DomDec(n_dd_cells != nullptr),
     zones(zones),
     natoms_local(0),
     natoms_nonlocal(0),
@@ -315,6 +314,7 @@ nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
     clear_mat(box);
     clear_ivec(dd_dim);
     int numGrids = 1;
+    DomDec = n_dd_cells != nullptr;
     if (DomDec)
     {
         for (int d = 0; d < DIM; d++)
@@ -3236,7 +3236,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
-    if (gridj->bSimple != nbl->bSimple)
+    if (gridj->bSimple != nbl->bSimple || gridi->bSimple != nbl->bSimple)
     {
         gmx_incons("Grid incompatible with pair-list");
     }
@@ -3309,11 +3309,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
         }
     }
-
+    const bool bSimple = nbl->bSimple;
     gmx::ArrayRef<const nbnxn_bb_t> bb_i;
 #if NBNXN_BBXXXX
     gmx::ArrayRef<const float>      pbb_i;
-    if (gridi->bSimple)
+    if (bSimple)
     {
         bb_i  = gridi->bb;
     }
@@ -3347,7 +3347,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     ci_y = 0;
     while (next_ci(gridi, nth, ci_block, &ci_x, &ci_y, &ci_b, &ci))
     {
-        if (nbl->bSimple && flags_i[ci] == 0)
+        if (bSimple && flags_i[ci] == 0)
         {
             continue;
         }
@@ -3357,7 +3357,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         d2cx = 0;
         if (gridj != gridi && shp[XX] == 0)
         {
-            if (nbl->bSimple)
+            if (bSimple)
             {
                 bx1 = bb_i[ci].upper[BB_X];
             }
@@ -3417,7 +3417,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             {
                 shy = ty*box[YY][YY] + tz*box[ZZ][YY];
 
-                if (nbl->bSimple)
+                if (bSimple)
                 {
                     by0 = bb_i[ci].lower[BB_Y] + shy;
                     by1 = bb_i[ci].upper[BB_Y] + shy;
@@ -3459,7 +3459,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                     shx = tx*box[XX][XX] + ty*box[YY][XX] + tz*box[ZZ][XX];
 
-                    if (nbl->bSimple)
+                    if (bSimple)
                     {
                         bx0 = bb_i[ci].lower[BB_X] + shx;
                         bx1 = bb_i[ci].upper[BB_X] + shx;
@@ -3480,7 +3480,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         continue;
                     }
 
-                    if (nbl->bSimple)
+                    if (bSimple)
                     {
                         new_ci_entry(nbl, cell0_i+ci, shift, flags_i[ci]);
                     }
@@ -3499,7 +3499,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         cxf = ci_x;
                     }
 
-                    if (nbl->bSimple)
+                    if (bSimple)
                     {
                         set_icell_bb_simple(bb_i, ci, shx, shy, shz,
                                             nbl->work->bb_ci);
@@ -3655,7 +3655,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     /* For f buffer flags with simple lists */
                                     ncj_old_j = nbl->ncj;
 
-                                    if (nbl->bSimple)
+                                    if (bSimple)
                                     {
                                         /* We have a maximum of 2 j-clusters
                                          * per i-cluster sized cell.
@@ -3728,7 +3728,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
                     /* Set the exclusions for this ci list */
-                    if (nbl->bSimple)
+                    if (bSimple)
                     {
                         setExclusionsForSimpleIentry(nbs,
                                                      nbl,
@@ -3765,7 +3765,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
                     /* Close this ci list */
-                    if (nbl->bSimple)
+                    if (bSimple)
                     {
                         close_ci_entry_simple(nbl);
                     }
@@ -3796,7 +3796,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     {
         fprintf(debug, "number of distance checks %d\n", numDistanceChecks);
 
-        if (nbl->bSimple)
+        if (bSimple)
         {
             print_nblist_statistics_simple(debug, nbl, nbs, rlist);
         }

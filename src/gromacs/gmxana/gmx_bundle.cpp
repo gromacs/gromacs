@@ -160,6 +160,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
     static rvec *xout = nullptr;
     int          i;
 
+    GMX_ASSERT(outat->nr >= bun->n, "");
     if (xout == nullptr)
     {
         snew(xout, outat->nr);
