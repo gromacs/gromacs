@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -778,7 +778,7 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
 
 
 static void write_xpm_map_split(FILE *out, int n_x, int n_y,
-                                int *nlevel_top, real lo_top, real hi_top,
+                                const int *nlevel_top, real lo_top, real hi_top,
                                 t_rgb rlo_top, t_rgb rhi_top,
                                 gmx_bool bDiscreteColor,
                                 int *nlevel_bot, real lo_bot, real hi_bot,

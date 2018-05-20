@@ -585,7 +585,7 @@ static void scale_velocities(t_state *state, real fac)
     }
 }
 
-static void print_transition_matrix(FILE *fplog, int n, int **nmoves, int *nattempt)
+static void print_transition_matrix(FILE *fplog, int n, int **nmoves, const int *nattempt)
 {
     int   i, j, ntot;
     float Tprint;
@@ -622,7 +622,7 @@ static void print_transition_matrix(FILE *fplog, int n, int **nmoves, int *natte
     }
 }
 
-static void print_ind(FILE *fplog, const char *leg, int n, int *ind, gmx_bool *bEx)
+static void print_ind(FILE *fplog, const char *leg, int n, int *ind, const gmx_bool *bEx)
 {
     int i;
 

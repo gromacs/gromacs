@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,6 +100,6 @@ struct bonded_threading_t
  * numbers starting at 1.  When global_atom_index=NULL returns i+1.
  */
 int
-glatnr(int *global_atom_index, int i);
+glatnr(const int *global_atom_index, int i);
 
 #endif

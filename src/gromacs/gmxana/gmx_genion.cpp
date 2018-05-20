@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void insert_ion(int nsa, int *nwater,
+static void insert_ion(int nsa, const int *nwater,
                        gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
@@ -137,7 +137,7 @@ static char *aname(const char *mname)
     return str;
 }
 
-static void sort_ions(int nsa, int nw, int repl[], int index[],
+static void sort_ions(int nsa, int nw, const int repl[], const int index[],
                       t_atoms *atoms, rvec x[],
                       const char *p_name, const char *n_name)
 {

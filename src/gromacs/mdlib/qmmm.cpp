@@ -252,7 +252,7 @@ static t_MMrec *mk_MMrec(void)
     return mm;
 } /* mk_MMrec */
 
-static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
+static void init_QMrec(int grpnr, t_QMrec *qm, int nr, const int *atomarray,
                        gmx_mtop_t *mtop, t_inputrec *ir)
 {
     /* fills the t_QMrec struct of QM group grpnr

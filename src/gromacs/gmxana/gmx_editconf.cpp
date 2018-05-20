@@ -87,7 +87,7 @@ static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     return tmass;
 }
 
-static real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
+static real calc_geom(int isize, const int *index, rvec *x, rvec geom_center, rvec minval,
                       rvec maxval, gmx_bool bDiam)
 {
     real  diam2, d;
@@ -178,7 +178,7 @@ static void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
     }
 }
 
-static void scale_conf(int natom, rvec x[], matrix box, rvec scale)
+static void scale_conf(int natom, rvec x[], matrix box, const rvec scale)
 {
     int i, j;
 
@@ -366,7 +366,7 @@ static void visualize_images(const char *fn, int ePBC, matrix box)
     sfree(img);
 }
 
-static void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
+static void visualize_box(FILE *out, int a0, int r0, matrix box, const rvec gridsize)
 {
     int  *edge;
     rvec *vert, shift;

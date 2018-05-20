@@ -454,7 +454,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
     *z  = ci;
 }
 
-static int ci_not_used(ivec n)
+static int ci_not_used(const ivec n)
 {
     /* Return an improbable value */
     return xyz2ci(n[YY], n[ZZ], 3*n[XX], 3*n[YY], 3*n[ZZ]);

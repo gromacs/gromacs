@@ -78,10 +78,10 @@ real calc_entropy_quasi_harmonic(int      n,
     return S*RGAS;
 }
 
-real calc_entropy_schlitter(int      n,
-                            real     eigval[],
-                            real     temperature,
-                            gmx_bool bLinear)
+real calc_entropy_schlitter(int            n,
+                            const real     eigval[],
+                            real           temperature,
+                            gmx_bool       bLinear)
 {
     int    nskip  = bLinear ? 5 : 6;
     double hbar   = PLANCK1/(2*M_PI);             // J s

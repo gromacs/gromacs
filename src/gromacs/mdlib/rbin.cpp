@@ -66,7 +66,7 @@ void reset_bin(t_bin *b)
     b->nreal = 0;
 }
 
-int add_binr(t_bin *b, int nr, real r[])
+int add_binr(t_bin *b, int nr, const real r[])
 {
 #define MULT 4
     int     i, rest, index;
@@ -99,7 +99,7 @@ int add_binr(t_bin *b, int nr, real r[])
     return index;
 }
 
-int add_bind(t_bin *b, int nr, double r[])
+int add_bind(t_bin *b, int nr, const double r[])
 {
 #define MULT 4
     int     i, rest, index;

@@ -263,7 +263,7 @@ get_thread_affinity_layout(const gmx::MDLogger &mdlog,
 }
 
 static bool set_affinity(const t_commrec *cr, int nthread_local, int intraNodeThreadOffset,
-                         int offset, int core_pinning_stride, int *localityOrder,
+                         int offset, int core_pinning_stride, const int *localityOrder,
                          gmx::IThreadAffinityAccess *affinityAccess)
 {
     // Set the per-thread affinity. In order to be able to check the success

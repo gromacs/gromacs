@@ -62,7 +62,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-static void calc_dist(int nind, int index[], const rvec x[], int ePBC, matrix box,
+static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, matrix box,
                       real **d)
 {
     int      i, j;
@@ -83,7 +83,7 @@ static void calc_dist(int nind, int index[], const rvec x[], int ePBC, matrix bo
     }
 }
 
-static void calc_dist_tot(int nind, int index[], rvec x[],
+static void calc_dist_tot(int nind, const int index[], rvec x[],
                           int ePBC, matrix box,
                           real **d, real **dtot, real **dtot2,
                           gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
@@ -281,7 +281,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 }
 
 static int analyze_noe_equivalent(const char *eq_fn,
-                                  const t_atoms *atoms, int isize, int *index,
+                                  const t_atoms *atoms, int isize, const int *index,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
 {
@@ -465,7 +465,7 @@ static char *noe2scale(real r3, real r6, real rmax)
     return buf;
 }
 
-static void calc_noe(int isize, int *noe_index,
+static void calc_noe(int isize, const int *noe_index,
                      real **dtot1_3, real **dtot1_6, int gnr, t_noe **noe)
 {
     int i, j, gi, gj;

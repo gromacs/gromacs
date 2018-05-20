@@ -103,7 +103,7 @@ static void calc_lll(const rvec box, rvec lll)
 }
 
 //! Make tables for the structure factor parts
-static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec **eir, rvec lll)
+static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec **eir, const rvec lll)
 {
     int  i, j, m;
 

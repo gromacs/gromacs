@@ -59,12 +59,12 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static int index2(int *ibox, int x, int y)
+static int index2(const int *ibox, int x, int y)
 {
     return (ibox[1]*x+y);
 }
 
-static int index3(int *ibox, int x, int y, int z)
+static int index3(const int *ibox, int x, int y, int z)
 {
     return (ibox[2]*(ibox[1]*x+y)+z);
 }
@@ -139,7 +139,7 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     gmx_ffclose(fp);
 }
 
-static void write_xplor(const char *file, real *data, int *ibox, real dmin[], real dmax[])
+static void write_xplor(const char *file, const real *data, int *ibox, const real dmin[], const real dmax[])
 {
     XplorMap *xm;
     int       i, j, k, n;
@@ -176,7 +176,7 @@ static void write_xplor(const char *file, real *data, int *ibox, real dmin[], re
     sfree(xm);
 }
 
-static void normalize_p_e(int len, double *P, int *nbin, real *E, real pmin)
+static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmin)
 {
     int    i;
     double Ptot = 0;
@@ -244,11 +244,11 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 }
 
 static inline
-gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_min,
-                                     int              neighbour_index,
-                                     real            *W)
+gmx_bool is_local_minimum_from_below(const t_minimum       *this_min,
+                                     int                    dimension_index,
+                                     int                    dimension_min,
+                                     int                    neighbour_index,
+                                     const real            *W)
 {
     return ((dimension_index == dimension_min) ||
             ((dimension_index > dimension_min) &&
@@ -257,11 +257,11 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
 }
 
 static inline
-gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_max,
-                                     int              neighbour_index,
-                                     real            *W)
+gmx_bool is_local_minimum_from_above(const t_minimum       *this_min,
+                                     int                    dimension_index,
+                                     int                    dimension_max,
+                                     int                    neighbour_index,
+                                     const real            *W)
 {
     return ((dimension_index == dimension_max) ||
             ((dimension_index < dimension_max) &&
@@ -419,8 +419,8 @@ static void do_sham(const char *fn, const char *ndx,
                     gmx_bool bGE, int nenerT, real **enerT,
                     real Tref,
                     real pmax, real gmax,
-                    real *emin, real *emax, int nlevels, real pmin,
-                    int *idim, int *ibox,
+                    const real *emin, const real *emax, int nlevels, real pmin,
+                    const int *idim, int *ibox,
                     gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
 {
     FILE        *fp;

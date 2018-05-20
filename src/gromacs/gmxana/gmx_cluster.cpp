@@ -752,7 +752,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
     clust->ncl = k-1;
 }
 
-static rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
+static rvec **read_whole_trj(const char *fn, int isize, const int index[], int skip,
                              int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;

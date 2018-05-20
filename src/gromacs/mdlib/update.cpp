@@ -670,9 +670,9 @@ static void do_update_md(int                         start,
 }
 
 static void do_update_vv_vel(int start, int nrend, real dt,
-                             rvec accel[], ivec nFreeze[], real invmass[],
-                             unsigned short ptype[], unsigned short cFREEZE[],
-                             unsigned short cACC[], rvec v[], const rvec f[],
+                             rvec accel[], ivec nFreeze[], const real invmass[],
+                             const unsigned short ptype[], const unsigned short cFREEZE[],
+                             const unsigned short cACC[], rvec v[], const rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
     int    gf = 0, ga = 0;
@@ -718,7 +718,7 @@ static void do_update_vv_vel(int start, int nrend, real dt,
 
 static void do_update_vv_pos(int start, int nrend, real dt,
                              ivec nFreeze[],
-                             unsigned short ptype[], unsigned short cFREEZE[],
+                             const unsigned short ptype[], const unsigned short cFREEZE[],
                              const rvec x[], rvec xprime[], rvec v[],
                              gmx_bool bExtended, real veta)
 {
@@ -897,11 +897,11 @@ static void
 doSDUpdateGeneral(gmx_stochd_t *sd,
                   int start, int nrend, real dt,
                   rvec accel[], ivec nFreeze[],
-                  real invmass[], unsigned short ptype[],
-                  unsigned short cFREEZE[], unsigned short cACC[],
-                  unsigned short cTC[],
+                  const real invmass[], const unsigned short ptype[],
+                  const unsigned short cFREEZE[], const unsigned short cACC[],
+                  const unsigned short cTC[],
                   const rvec x[], rvec xprime[], rvec v[], const rvec f[],
-                  gmx_int64_t step, int seed, int *gatindex)
+                  gmx_int64_t step, int seed, const int *gatindex)
 {
     if (updateType != SDUpdate::FrictionAndNoiseOnly)
     {
@@ -982,12 +982,12 @@ doSDUpdateGeneral(gmx_stochd_t *sd,
 
 static void do_update_bd(int start, int nrend, real dt,
                          ivec nFreeze[],
-                         real invmass[], unsigned short ptype[],
-                         unsigned short cFREEZE[], unsigned short cTC[],
+                         const real invmass[], const unsigned short ptype[],
+                         const unsigned short cFREEZE[], const unsigned short cTC[],
                          const rvec x[], rvec xprime[], rvec v[],
                          const rvec f[], real friction_coefficient,
-                         real *rf, gmx_int64_t step, int seed,
-                         int* gatindex)
+                         const real *rf, gmx_int64_t step, int seed,
+                         const int* gatindex)
 {
     /* note -- these appear to be full step velocities . . .  */
     int    gf = 0, gt = 0;

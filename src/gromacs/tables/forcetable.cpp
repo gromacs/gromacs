@@ -383,7 +383,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
 }
 
 static void copy2table(int n, int offset, int stride,
-                       double x[], double Vtab[], double Ftab[], real scalefactor,
+                       const double x[], const double Vtab[], const double Ftab[], real scalefactor,
                        real dest[])
 {
 /* Use double prec. for the intermediary variables
@@ -434,7 +434,7 @@ static void init_table(int n, int nx0,
     }
 }
 
-static void spline_forces(int nx, double h, double v[], gmx_bool bS3, gmx_bool bE3,
+static void spline_forces(int nx, double h, const double v[], gmx_bool bS3, gmx_bool bE3,
                           double f[])
 {
     int    start, end, i;

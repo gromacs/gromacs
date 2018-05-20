@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -404,7 +404,7 @@ static int read_conffile(const char *confin, rvec **x)
 }
 
 
-static void read_eigenvalues(int vecs[], const char *eigfile, real values[],
+static void read_eigenvalues(const int vecs[], const char *eigfile, real values[],
                              gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
@@ -505,7 +505,7 @@ static void init_edx(struct edix *edx)
 }
 
 static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                       int igro[], const rvec *x, const char* structure)
+                       const int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */

@@ -58,10 +58,10 @@
  * \param[in] linear       True if this is a linear molecule (typically a diatomic molecule).
  * \return the entropy (J/mol K)
  */
-real calc_entropy_schlitter(int      n,
-                            real     eigval[],
-                            real     temperature,
-                            gmx_bool linear);
+real calc_entropy_schlitter(int            n,
+                            const real     eigval[],
+                            real           temperature,
+                            gmx_bool       linear);
 
 /*! \brief Compute entropy using Quasi-Harmonic formula
  *

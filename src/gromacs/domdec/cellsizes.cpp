@@ -866,7 +866,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
     }
 }
 
-static void realloc_comm_ind(gmx_domdec_t *dd, ivec npulse)
+static void realloc_comm_ind(gmx_domdec_t *dd, const ivec npulse)
 {
     int                    d, np, i;
     gmx_domdec_comm_dim_t *cd;

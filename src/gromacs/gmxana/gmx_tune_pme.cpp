@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -854,17 +854,17 @@ static gmx_bool can_scale_rvdw(int vdwtype)
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
 static void make_benchmark_tprs(
-        const char     *fn_sim_tpr,      /* READ : User-provided tpr file                 */
-        char           *fn_bench_tprs[], /* WRITE: Names of benchmark tpr files           */
-        gmx_int64_t     benchsteps,      /* Number of time steps for benchmark runs       */
-        gmx_int64_t     statesteps,      /* Step counter in checkpoint file               */
-        real            rmin,            /* Minimal Coulomb radius                        */
-        real            rmax,            /* Maximal Coulomb radius                        */
-        real            bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
-        int            *ntprs,           /* No. of TPRs to write, each with a different
-                                            rcoulomb and fourierspacing                   */
-        t_inputinfo    *info,            /* Contains information about mdp file options   */
-        FILE           *fp)              /* Write the output here                         */
+        const char           *fn_sim_tpr,      /* READ : User-provided tpr file                 */
+        char                 *fn_bench_tprs[], /* WRITE: Names of benchmark tpr files           */
+        gmx_int64_t           benchsteps,      /* Number of time steps for benchmark runs       */
+        gmx_int64_t           statesteps,      /* Step counter in checkpoint file               */
+        real                  rmin,            /* Minimal Coulomb radius                        */
+        real                  rmax,            /* Maximal Coulomb radius                        */
+        real                  bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
+        const int            *ntprs,           /* No. of TPRs to write, each with a different
+                                                  rcoulomb and fourierspacing                   */
+        t_inputinfo          *info,            /* Contains information about mdp file options   */
+        FILE                 *fp)              /* Write the output here                         */
 {
     int           i, j, d;
     t_state       state;
