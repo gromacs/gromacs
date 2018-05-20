@@ -621,7 +621,7 @@ static void do_edfit(int natoms, rvec *xp, rvec *x, matrix R, t_edpar *edi)
 }
 
 
-static void rmfit(int nat, rvec *xcoll, rvec transvec, matrix rotmat)
+static void rmfit(int nat, rvec *xcoll, const rvec transvec, matrix rotmat)
 {
     rvec   vec;
     matrix tmat;

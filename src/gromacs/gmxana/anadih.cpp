@@ -621,7 +621,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
 
 }
 
-void calc_distribution_props(int nh, int histo[], real start,
+void calc_distribution_props(int nh, const int histo[], real start,
                              int nkkk, t_karplus kkk[],
                              real *S2)
 {
@@ -696,7 +696,7 @@ static void calc_angles(struct t_pbc *pbc,
     }
 }
 
-static real calc_fraction(real angles[], int nangles)
+static real calc_fraction(const real angles[], int nangles)
 {
     int  i;
     real trans = 0, gauche = 0;
@@ -730,7 +730,7 @@ static real calc_fraction(real angles[], int nangles)
 }
 
 static void calc_dihs(struct t_pbc *pbc,
-                      int n4, int index[], real ang[], rvec x_s[])
+                      int n4, const int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
@@ -785,7 +785,7 @@ void make_histo(FILE *log,
     }
 }
 
-void normalize_histo(int npoints, int histo[], real dx, real normhisto[])
+void normalize_histo(int npoints, const int histo[], real dx, real normhisto[])
 {
     int    i;
     double d, fac;

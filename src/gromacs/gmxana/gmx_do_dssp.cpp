@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@
 #include "gromacs/utility/strdb.h"
 
 static int strip_dssp(char *dsspfile, int nres,
-                      gmx_bool bPhobres[], real t,
+                      const gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
                       t_matrix *mat, int average_area[],
                       const gmx_output_env_t *oenv)
@@ -237,7 +237,7 @@ static void check_oo(t_atoms *atoms)
 }
 
 static void norm_acc(t_atoms *atoms, int nres,
-                     real av_area[], real norm_av_area[])
+                     const real av_area[], real norm_av_area[])
 {
     int     i, n, n_surf;
 

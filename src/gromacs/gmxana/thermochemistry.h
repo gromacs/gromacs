@@ -87,11 +87,11 @@ double calcTranslationalEntropy(real mass,
  * \param[in] sigma_r      Symmetry factor, should be >= 1
  * \returns The rotational entropy
  */
-double calcRotationalEntropy(real     temperature,
-                             int      natom,
-                             gmx_bool linear,
-                             rvec     theta,
-                             real     sigma_r);
+double calcRotationalEntropy(real       temperature,
+                             int        natom,
+                             gmx_bool   linear,
+                             const rvec theta,
+                             real       sigma_r);
 
 /*! \brief Compute internal energy due to vibrational motion
  *

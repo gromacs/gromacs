@@ -124,7 +124,7 @@ double MPI_Wtime()
 #endif
 #endif
 
-static int vmax(int* a, int s)
+static int vmax(const int* a, int s)
 {
     int i, max = 0;
     for (i = 0; i < s; i++)
@@ -684,7 +684,7 @@ enum order {
    NG, MG, KG is size of global data*/
 static void splitaxes(t_complex* lout, const t_complex* lin,
                       int maxN, int maxM, int maxK, int pM,
-                      int P, int NG, int *N, int* oN, int starty, int startz, int endy, int endz)
+                      int P, int NG, const int *N, const int* oN, int starty, int startz, int endy, int endz)
 {
     int x, y, z, i;
     int in_i, out_i, in_z, out_z, in_y, out_y;
@@ -738,7 +738,7 @@ static void splitaxes(t_complex* lout, const t_complex* lin,
    KG global size*/
 static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
                             int maxN, int maxM, int maxK, int pM,
-                            int P, int KG, int* K, int* oK, int starty, int startx, int endy, int endx)
+                            int P, int KG, const int* K, const int* oK, int starty, int startx, int endy, int endx)
 {
     int i, x, y, z;
     int out_i, in_i, out_x, in_x, out_z, in_z;
@@ -790,7 +790,7 @@ static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
    N,M,K local size
    MG, global size*/
 static void joinAxesTrans12(t_complex* lout, const t_complex* lin, int maxN, int maxM, int maxK, int pN,
-                            int P, int MG, int* M, int* oM, int startx, int startz, int endx, int endz)
+                            int P, int MG, const int* M, const int* oM, int startx, int startz, int endx, int endz)
 {
     int i, z, y, x;
     int out_i, in_i, out_z, in_z, out_x, in_x;

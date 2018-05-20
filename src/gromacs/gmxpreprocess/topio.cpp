@@ -1028,7 +1028,7 @@ char **do_top(gmx_bool                      bVerbose,
 }
 
 
-static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
+static void generate_qmexcl_moltype(gmx_moltype_t *molt, const unsigned char *grpnr,
                                     t_inputrec *ir, warninp_t wi)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */

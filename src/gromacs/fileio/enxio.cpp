@@ -1250,9 +1250,9 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
     sfree(fr);
 }
 
-static real ener_tensor_diag(int n, int *ind1, int *ind2,
+static real ener_tensor_diag(int n, const int *ind1, const int *ind2,
                              gmx_enxnm_t *enm1,
-                             int *tensi, int i,
+                             const int *tensi, int i,
                              t_energy e1[], t_energy e2[])
 {
     int    d1, d2;

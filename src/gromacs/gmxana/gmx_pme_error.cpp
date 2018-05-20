@@ -418,16 +418,16 @@ static void calc_recipbox(matrix box, matrix recipbox)
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
 static real estimate_reciprocal(
-        t_inputinfo       *info,
-        rvec               x[], /* array of particles */
-        real               q[], /* array of charges */
-        int                nr,  /* number of charges = size of the charge array */
-        FILE  gmx_unused  *fp_out,
-        gmx_bool           bVerbose,
-        int                seed,     /* The seed for the random number generator */
-        int               *nsamples, /* Return the number of samples used if Monte Carlo
-                                      * algorithm is used for self energy error estimate */
-        t_commrec         *cr)
+        t_inputinfo             *info,
+        rvec                     x[], /* array of particles */
+        const real               q[], /* array of charges */
+        int                      nr,  /* number of charges = size of the charge array */
+        FILE  gmx_unused        *fp_out,
+        gmx_bool                 bVerbose,
+        int                      seed,     /* The seed for the random number generator */
+        int                     *nsamples, /* Return the number of samples used if Monte Carlo
+                                            * algorithm is used for self energy error estimate */
+        t_commrec               *cr)
 {
     real      e_rec   = 0; /* reciprocal error estimate */
     real      e_rec1  = 0; /* Error estimate term 1*/

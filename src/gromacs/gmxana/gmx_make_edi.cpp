@@ -411,7 +411,7 @@ static int read_conffile(const char *confin, rvec **x)
 }
 
 
-static void read_eigenvalues(int vecs[], const char *eigfile, real values[],
+static void read_eigenvalues(const int vecs[], const char *eigfile, real values[],
                              gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
@@ -512,7 +512,7 @@ static void init_edx(struct edix *edx)
 }
 
 static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                       int igro[], const rvec *x, const char* structure)
+                       const int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */

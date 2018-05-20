@@ -367,7 +367,7 @@ void gather_f_bsplines(const gmx_pme_t *pme, const real *grid,
 }
 
 
-real gather_energy_bsplines(gmx_pme_t *pme, real *grid,
+real gather_energy_bsplines(gmx_pme_t *pme, const real *grid,
                             pme_atomcomm_t *atc)
 {
     splinedata_t *spline;

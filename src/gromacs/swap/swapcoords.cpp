@@ -288,11 +288,11 @@ static void print_ionlist(
  * reference atom and determine the center with respect to this reference.
  */
 static void get_molecule_center(
-        rvec   x[],
-        int    nat,
-        real  *weights,
-        rvec   center,
-        t_pbc *pbc)
+        rvec         x[],
+        int          nat,
+        const real  *weights,
+        rvec         center,
+        t_pbc       *pbc)
 {
     int  i;
     rvec weightedPBCimage;
@@ -1338,10 +1338,10 @@ static real getRequestedChargeImbalance(t_swap *s)
  * of which the indices were lumped together in the older version of the code.
  */
 static void copyIndicesToGroup(
-        int         *indIons,
-        int          nIons,
-        t_swapGroup *g,
-        t_commrec   *cr)
+        const int         *indIons,
+        int                nIons,
+        t_swapGroup       *g,
+        t_commrec         *cr)
 {
     g->nat = nIons;
 

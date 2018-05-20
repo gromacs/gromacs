@@ -63,7 +63,7 @@
 
 static const int NOTSET = -9368163;
 
-static void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm)
+static void calc_rm_cm(int isize, const int index[], const t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;
     real tm, m;
@@ -87,7 +87,7 @@ static void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], r
     }
 }
 
-static int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
+static int build_res_index(int isize, const int index[], t_atom atom[], int rindex[])
 {
     int i, r;
 
@@ -106,7 +106,7 @@ static int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
     return r;
 }
 
-static int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
+static int find_res_end(int i, int isize, const int index[], const t_atoms *atoms)
 {
     int rnr;
 
@@ -127,9 +127,9 @@ static int debug_strcmp(char s1[], char s2[])
     return std::strcmp(s1, s2);
 }
 
-static int find_next_match_atoms_in_res(int *i1, int index1[],
+static int find_next_match_atoms_in_res(int *i1, const int index1[],
                                         int m1, char **atnms1[],
-                                        int *i2, int index2[],
+                                        int *i2, const int index2[],
                                         int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
@@ -195,9 +195,9 @@ static int find_next_match_atoms_in_res(int *i1, int index1[],
 }
 
 static int find_next_match_res(int *rnr1, int isize1,
-                               int index1[], t_resinfo *resinfo1,
+                               const int index1[], t_resinfo *resinfo1,
                                int *rnr2, int isize2,
-                               int index2[], t_resinfo *resinfo2)
+                               const int index2[], t_resinfo *resinfo2)
 {
     int      dx, dy, dmax, cmp, rr1, rr2;
     gmx_bool bFW = FALSE, bFF = FALSE;
@@ -308,7 +308,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     return cmp;
 }
 
-static int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
+static int find_first_atom_in_res(int rnr, int isize, const int index[], t_atom atom[])
 {
     int i;
 

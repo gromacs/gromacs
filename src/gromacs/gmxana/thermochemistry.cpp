@@ -128,11 +128,11 @@ double calcTranslationalEntropy(real mass,
     return RGAS*(std::log(qT) + 2.5);
 }
 
-double calcRotationalEntropy(real     temperature,
-                             int      natom,
-                             gmx_bool linear,
-                             rvec     theta,
-                             real     sigma_r)
+double calcRotationalEntropy(real       temperature,
+                             int        natom,
+                             gmx_bool   linear,
+                             const rvec theta,
+                             real       sigma_r)
 {
     GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
     GMX_RELEASE_ASSERT(temperature > 0, "Temperature should be larger than zero");

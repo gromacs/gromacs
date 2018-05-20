@@ -105,7 +105,7 @@ int add_binr(t_bin *b, gmx::ArrayRef<const real> r)
     return add_binr(b, r.size(), r.data());
 }
 
-int add_bind(t_bin *b, int nr, double r[])
+int add_bind(t_bin *b, int nr, const double r[])
 {
 #define MULT 4
     int     i, rest, index;

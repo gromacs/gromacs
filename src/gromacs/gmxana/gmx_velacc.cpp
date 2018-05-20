@@ -121,7 +121,7 @@ static void precalc(const t_topology &top, real normm[])
 
 }
 
-static void calc_spectrum(int n, real c[], real dt, const char *fn,
+static void calc_spectrum(int n, const real c[], real dt, const char *fn,
                           gmx_output_env_t *oenv, gmx_bool bRecip)
 {
     FILE     *fp;

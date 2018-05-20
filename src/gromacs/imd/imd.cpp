@@ -1094,10 +1094,10 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
 
 /*! \brief Copied and modified from groupcoord.c shift_positions_group(). */
 static void shift_positions(
-        matrix box,
-        rvec   x[],      /* The positions [0..nr] */
-        ivec   is,       /* The shift [0..nr] */
-        int    nr)       /* The number of positions */
+        matrix       box,
+        rvec         x[], /* The positions [0..nr] */
+        const ivec   is,  /* The shift [0..nr] */
+        int          nr)  /* The number of positions */
 {
     int      i, tx, ty, tz;
 

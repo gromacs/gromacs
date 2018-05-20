@@ -78,7 +78,7 @@ static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
 }
 
 static void hacksearch_atom(int *ii, int *jj, char *name,
-                            int nab[], t_hack *ab[],
+                            const int nab[], t_hack *ab[],
                             int resind, t_atoms *pdba)
 {
     int  i, j;
@@ -107,7 +107,7 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
 
 }
 
-static void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
+static void dump_ab(FILE *out, int natom, const int nab[], t_hack *ab[], gmx_bool bHeader)
 {
     int i, j;
 
@@ -138,7 +138,7 @@ static void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHea
 static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
                                    int nterpairs,
                                    t_hackblock **ntdb, t_hackblock **ctdb,
-                                   int *rN, int *rC)
+                                   const int *rN, const int *rC)
 {
     int          i, rnr;
     t_hackblock *hb, *ahptr;
@@ -289,7 +289,7 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
 
 static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
                               int nab[], t_hack *ab[],
-                              int nterpairs, int *rN, int *rC)
+                              int nterpairs, const int *rN, const int *rC)
 {
     int      i, j;
     gmx_bool bN, bC;
@@ -317,7 +317,7 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
     }
 }
 
-static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
+static int check_atoms_present(t_atoms *pdba, const int nab[], t_hack *ab[])
 {
     int i, j, k, rnr, nadd;
 

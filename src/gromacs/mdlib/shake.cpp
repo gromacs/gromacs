@@ -435,9 +435,9 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
 
 //! Implements RATTLE (ie. SHAKE for velocity verlet integrators)
 static void
-crattle(int iatom[], int ncon, int *nnit, int maxnit,
-        real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
-        const real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
+crattle(const int iatom[], int ncon, int *nnit, int maxnit,
+        const real constraint_distance_squared[], real vp[], const real rij[], const real m2[], real omega,
+        const real invmass[], const real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
         int *nerror, real invdt)
 {
     /*

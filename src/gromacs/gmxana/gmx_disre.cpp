@@ -158,7 +158,7 @@ static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec4 f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
-                       int clust_id, int isize, int index[], real vvindex[],
+                       int clust_id, int isize, const int index[], real vvindex[],
                        t_fcdata *fcd)
 {
     t_iatom         *forceatoms;
@@ -373,7 +373,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
     }
 }
 
-static gmx_bool is_core(int i, int isize, int index[])
+static gmx_bool is_core(int i, int isize, const int index[])
 {
     int      kk;
     gmx_bool bIC = FALSE;

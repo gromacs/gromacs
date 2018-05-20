@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@ extern "C" {
 struct t_atoms;
 struct t_blocka;
 
-void check_index(char *gname, int n, int index[],
-                 char *traj, int natoms);
+void check_index(const char *gname, int n, int index[],
+                 const char *traj, int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
  * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
  * and traj (if traj=NULL, "the trajectory" is used).
@@ -95,7 +95,7 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
 void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(struct t_blocka *b, char ***gnames, int nra, int a[], const char *name);
+void add_grp(struct t_blocka *b, char ***gnames, int nra, const int a[], const char *name);
 /* Ads group a with name name to block b and namelist gnames */
 
 void analyse(const t_atoms *atoms, struct t_blocka *gb, char ***gn,

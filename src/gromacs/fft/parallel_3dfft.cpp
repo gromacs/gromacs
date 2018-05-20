@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,14 +53,14 @@ struct gmx_parallel_3dfft  {
 };
 
 int
-gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
-                           ivec                          ndata,
-                           real     **                   real_data,
-                           t_complex     **              complex_data,
-                           MPI_Comm                      comm[2],
-                           gmx_bool                      bReproducible,
-                           int                           nthreads,
-                           gmx::PinningPolicy            realGridAllocation)
+gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t           *    pfft_setup,
+                           const ivec                          ndata,
+                           real           **                   real_data,
+                           t_complex           **              complex_data,
+                           MPI_Comm                            comm[2],
+                           gmx_bool                            bReproducible,
+                           int                                 nthreads,
+                           gmx::PinningPolicy                  realGridAllocation)
 {
     int        rN      = ndata[2], M = ndata[1], K = ndata[0];
     int        flags   = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */

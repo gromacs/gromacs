@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ static void complexConjugatMult(t_complex *in1, t_complex *in2)
  * \param[out] corr output correlation
  * \param[in] fft FFT data structure
  */
-static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft)
+static void cross_corr_low(int n, const real f[], const real g[], real corr[], gmx_fft_t fft)
 {
     int             i;
     const int       size = zeroPaddingSize(n);

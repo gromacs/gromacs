@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ static int calc_nbegin(int nx, real x[], real tbegin)
     return nbegin;
 }
 
-static real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], real dy[],
+static real numerical_deriv(int nx, real x[], const real y[], const real fity[], real combined[], real dy[],
                             real tendInt, int nsmooth)
 {
     FILE *tmpfp;
@@ -151,7 +151,7 @@ static real numerical_deriv(int nx, real x[], real y[], real fity[], real combin
     return integralSmth;
 }
 
-static void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
+static void do_four(const char *fn, const char *cn, int nx, const real x[], const real dy[],
                     real eps0, real epsRF, const gmx_output_env_t *oenv)
 {
     FILE      *fp, *cp;
