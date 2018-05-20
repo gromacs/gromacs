@@ -2615,7 +2615,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         lossFraction    = dd_force_imb_perf_loss(dd);
 
         std::string msg         = "\n Dynamic load balancing report:\n";
-        std::string dlbStateStr = "";
+        std::string dlbStateStr;
 
         switch (dd->comm->dlbState)
         {

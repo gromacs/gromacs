@@ -244,7 +244,7 @@ class AnalysisNeighborhoodSearchImpl
          * is over a periodic boundary from `centerCell`, triclinic shifts
          * should have been applied to `centerCell` X/Y components.
          */
-        real computeCutoffExtent(const RVec centerCell, const ivec cell, int dim) const;
+        real computeCutoffExtent(RVec centerCell, const ivec cell, int dim) const;
         /*! \brief
          * Advances cell pair loop to the next cell.
          *

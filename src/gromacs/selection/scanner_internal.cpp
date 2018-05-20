@@ -301,7 +301,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
     {
-        gmx::SelectionTreeElementPointer var = symbol->variableValue();
+        const gmx::SelectionTreeElementPointer &var = symbol->variableValue();
         /* Return simple tokens for constant variables */
         if (var->type == SEL_CONST)
         {

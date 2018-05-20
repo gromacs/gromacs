@@ -52,8 +52,6 @@
 namespace gmx
 {
 
-using internal::OptionsImpl;
-
 namespace
 {
 

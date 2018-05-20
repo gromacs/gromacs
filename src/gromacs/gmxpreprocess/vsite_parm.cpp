@@ -1083,7 +1083,6 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     }
                     oatom = ps->param[i].a[1-k]; /* the other atom */
                     if (vsite_type[oatom] == NOTSET &&
-                        vsite_type[oatom] != F_VSITEN &&
                         oatom == plist[pindex[atom].ftype].param[pindex[atom].parnr].aj())
                     {
                         /* if the other atom isn't a vsite, and it is AI */
@@ -1181,7 +1180,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
             for (k = 0; (k < 2) && !bKeep; k++) /* for all atoms in the bond */
             {
                 atom = ps->param[i].a[k];
-                if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+                if (vsite_type[atom] == NOTSET)
                 {
                     bUsed = FALSE;
                     for (m = 0; (m < vsnral) && !bUsed; m++)
@@ -1372,7 +1371,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 3) && !bKeep; k++) /* for all atoms in the angle */
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == NOTSET)
             {
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
@@ -1517,7 +1516,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
             GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == NOTSET)
             {
                 /* vsnral will be set here, we don't get here with nvsite==0 */
                 bUsed = FALSE;
