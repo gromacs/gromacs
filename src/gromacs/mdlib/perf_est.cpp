@@ -253,7 +253,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         if (bExcl)
         {
-            ndtot_c += molb.nmol*(molt->excls.nra - molt->atoms.nr)/2;
+            ndtot_c += molb.nmol*(molt->excls.nra - molt->atoms.nr)/2.;
         }
     }
 
@@ -549,7 +549,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     if (EEL_PME(ir->coulombtype))
     {
-        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+        double grid = ir->nkx*ir->nky*int((ir->nkz + 1)/2);
 
         int    f     = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
         cost_redist +=   c_pme_redist*nq_tot;
@@ -560,7 +560,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     if (EVDW_PME(ir->vdwtype))
     {
-        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+        double grid = ir->nkx*ir->nky*int((ir->nkz + 1)/2);
 
         int    f     = ((ir->efep != efepNO && bTypePerturbed) ? 2 : 1);
         if (ir->ljpme_combination_rule == eljpmeLB)

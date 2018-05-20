@@ -603,7 +603,9 @@ void update_QMMMrec(const t_commrec  *cr,
     t_nblist
        *QMMMlist;
     rvec
-        dx, crd;
+        dx;
+    ivec
+        crd;
     t_QMrec
        *qm;
     t_MMrec
@@ -674,7 +676,7 @@ void update_QMMMrec(const t_commrec  *cr,
                 crd[0] = IS2X(QMMMlist->shift[i]) + IS2X(qm_i_particles[i].shift);
                 crd[1] = IS2Y(QMMMlist->shift[i]) + IS2Y(qm_i_particles[i].shift);
                 crd[2] = IS2Z(QMMMlist->shift[i]) + IS2Z(qm_i_particles[i].shift);
-                is     = static_cast<int>(XYZ2IS(crd[0], crd[1], crd[2]));
+                is     = XYZ2IS(crd[0], crd[1], crd[2]);
                 for (j = QMMMlist->jindex[i];
                      j < QMMMlist->jindex[i+1];
                      j++)
