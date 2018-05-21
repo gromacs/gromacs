@@ -238,6 +238,7 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
     const int    atomsPerBlock  = (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
     const int    atomDataSize   = PME_SPREADGATHER_THREADS_PER_ATOM; /* Number of data components and threads for a single atom */
     const int    blockSize      = atomsPerBlock * atomDataSize;
+    const int    atomsPerWarp   = PME_SPREADGATHER_ATOMS_PER_WARP;
 
     const int    blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
 
@@ -308,13 +309,13 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
         const int    pny       = kernelParams.grid.realGridSizePadded[YY];
         const int    pnz       = kernelParams.grid.realGridSizePadded[ZZ];
 
-        const int    atomWarpIndex = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
-        const int    warpIndex     = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex = atomIndexLocal % atomsPerWarp;
+        const int    warpIndex     = atomIndexLocal / atomsPerWarp;
 
-        const int    splineIndexBase = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
-        const int    splineIndexY    = getSplineParamIndex<order>(splineIndexBase, YY, ithy);
+        const int    splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
+        const int    splineIndexY    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
         const float2 tdy             = sm_splineParams[splineIndexY];
-        const int    splineIndexZ    = getSplineParamIndex<order>(splineIndexBase, ZZ, ithz);
+        const int    splineIndexZ    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
         const float2 tdz             = sm_splineParams[splineIndexZ];
 
         const int    ixBase         = sm_gridlineIndices[atomIndexLocal * DIM + XX];
@@ -342,7 +343,7 @@ __global__ void pme_gather_kernel(const PmeGpuCudaKernelParams    kernelParams)
             assert(gridIndexGlobal >= 0);
             const float   gridValue    = gm_grid[gridIndexGlobal];
             assert(isfinite(gridValue));
-            const int     splineIndexX = getSplineParamIndex<order>(splineIndexBase, XX, ithx);
+            const int     splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2  tdx          = sm_splineParams[splineIndexX];
             const float   fxy1         = tdz.x * gridValue;
             const float   fz1          = tdz.y * gridValue;

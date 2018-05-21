@@ -60,5 +60,10 @@ PmeGpuProgram::~PmeGpuProgram() = default;
 
 PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *deviceInfo)
 {
+    if (!deviceInfo)
+    {
+        // This workaround is only needed for CodePath::CPU dummy in testhardwarecontexts.cpp
+        return nullptr;
+    }
     return gmx::compat::make_unique<PmeGpuProgram>(deviceInfo);
 }

@@ -35,16 +35,48 @@
 
 /*! \internal \file
  * \brief
- * Implements PmeGpuProgramImpl for non-GPU builds.
+ * Implements PmeGpuProgramImpl, which stores permanent PME GPU context-derived data,
+ * such as (compiled) kernel handles.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
  */
-
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/ocl_compiler.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "pme-gpu-internal.h" // for GridOrdering enum
 #include "pme-gpu-program-impl.h"
+#include "pme-gpu-types-host.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t * /*unused*/) : warpSize(0){}
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
+{
+    // Context creation (which should happen outside of this class: #2522
+    cl_platform_id        platformId = deviceInfo->ocl_gpu_id.ocl_platform_id;
+    cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_context_properties contextProperties[3];
+    contextProperties[0] = CL_CONTEXT_PLATFORM;
+    contextProperties[1] = (cl_context_properties) platformId;
+    contextProperties[2] = 0; /* Terminates the list of properties */
 
-PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;
+    cl_int  clError;
+    context = clCreateContext(contextProperties, 1, &deviceId, nullptr, nullptr, &clError);
+    if (clError != CL_SUCCESS)
+    {
+        const std::string errorString = gmx::formatString("Failed to create context for PME on GPU #%s:\n OpenCL error %d: %s",
+                                                          deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+        GMX_THROW(gmx::InternalError(errorString));
+    }
+
+    warpSize = gmx::ocl::getWarpSize(context, deviceId);
+
+    //TODO: OpenCL kernel compilation should be here.
+}
+
+PmeGpuProgramImpl::~PmeGpuProgramImpl()
+{
+    // TODO: log releasing errors
+    clReleaseContext(context);
+}
