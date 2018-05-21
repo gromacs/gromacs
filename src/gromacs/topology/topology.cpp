@@ -82,6 +82,7 @@ void init_mtop(gmx_mtop_t *mtop)
     mtop->ffparams.cmap_grid.ngrid        = 0;
     mtop->ffparams.cmap_grid.grid_spacing = 0;
     mtop->ffparams.cmap_grid.cmapdata     = nullptr;
+    mtop->ffparams.ntypes                 = 0;
 
     mtop->moltype.clear();
     mtop->molblock.clear();
