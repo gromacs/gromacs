@@ -45,6 +45,6 @@
 
 #include "pme-gpu-program-impl.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *) {};
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *) : warpSize(0){}
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;

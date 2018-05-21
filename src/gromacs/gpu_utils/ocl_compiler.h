@@ -53,6 +53,21 @@ namespace gmx
 namespace ocl
 {
 
+/*! \brief Get the warp size reported by device
+ *
+ *  This is platform implementation dependent and seems to only work on the Nvidia and AMD platforms!
+ *  Nvidia reports 32, AMD for GPU 64. Intel seems to reports 16, but that is not correct,
+ *  as it actually picks execution width in run time.
+ *  Moreover, this should actually be queried for each kernel individually (Redmine #2520).
+ *
+ *  \param  context   Current OpenCL context
+ *  \param  deviceId OpenCL device with the context
+ *  \return cl_int value of the warp size
+ *
+ * \throws InternalError if an OpenCL error was encountered
+ */
+size_t getWarpSize(cl_context context, cl_device_id deviceId);
+
 /*! \brief Compile the specified kernel for the context and device.
  *
  * \param[out] fplog                 Open file pointer for log output
