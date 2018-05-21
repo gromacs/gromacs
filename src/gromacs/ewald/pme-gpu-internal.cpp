@@ -101,14 +101,9 @@ int pme_gpu_get_atom_data_alignment(const PmeGpu *pmeGpu)
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu *pmeGpu)
 {
-#if GMX_GPU == GMX_GPU_CUDA
     const int order = pmeGpu->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
-    return PME_SPREADGATHER_ATOMS_PER_WARP;
-#else
-    GMX_THROW(gmx::NotImplementedError("A stub: atom alignment per warp has to be deduced dynamically for OpenCL"));
-    GMX_UNUSED_VALUE(pmeGpu);
-#endif
+    return pmeGpu->programHandle_->impl_->warpSize / PME_SPREADGATHER_THREADS_PER_ATOM;
 }
 
 void pme_gpu_synchronize(const PmeGpu *pmeGpu)
@@ -583,7 +578,7 @@ void pme_gpu_destroy_3dfft(const PmeGpu *pmeGpu)
     pmeGpu->archSpecific->fftSetup.resize(0);
 }
 
-int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int warpIndex, int atomWarpIndex)
+int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIndex, int atomsPerWarp)
 {
     if (order != 4)
     {
@@ -591,8 +586,21 @@ int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int warpIn
     }
     constexpr int fixedOrder = 4;
     GMX_UNUSED_VALUE(fixedOrder);
-    const int     indexBase  = getSplineParamIndexBase<fixedOrder>(warpIndex, atomWarpIndex);
-    return getSplineParamIndex<fixedOrder>(indexBase, dimIndex, splineIndex);
+
+    const int atomWarpIndex = atomIndex % atomsPerWarp;
+    const int warpIndex     = atomIndex / atomsPerWarp;
+    int       indexBase, result;
+    switch (atomsPerWarp)
+    {
+        case 2:
+            indexBase = getSplineParamIndexBase<fixedOrder, 2>(warpIndex, atomWarpIndex);
+            result    = getSplineParamIndex<fixedOrder, 2>(indexBase, dimIndex, splineIndex);
+            break;
+
+        default:
+            GMX_THROW(gmx::NotImplementedError(gmx::formatString("Test function call not unrolled for atomsPerWarp = %d in getSplineParamFullIndex", atomsPerWarp)));
+    }
+    return result;
 }
 
 gmx::ArrayRef<gmx::RVec> pme_gpu_get_forces(PmeGpu *pmeGpu)
@@ -796,11 +804,9 @@ void pme_gpu_transform_spline_atom_data(const PmeGpu *pmeGpu, const pme_atomcomm
 
     for (auto atomIndex = 0; atomIndex < atomCount; atomIndex++)
     {
-        auto atomWarpIndex = atomIndex % atomsPerWarp;
-        auto warpIndex     = atomIndex / atomsPerWarp;
         for (auto orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
         {
-            const auto gpuValueIndex = getSplineParamFullIndex(pmeOrder, orderIndex, dimIndex, warpIndex, atomWarpIndex);
+            const auto gpuValueIndex = getSplineParamFullIndex(pmeOrder, orderIndex, dimIndex, atomIndex, atomsPerWarp);
             const auto cpuValueIndex = atomIndex * pmeOrder + orderIndex;
             GMX_ASSERT(cpuValueIndex < atomCount * pmeOrder, "Atom spline data index out of bounds (while transforming GPU data layout for host)");
             switch (transform)
@@ -948,12 +954,10 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     const auto   *kernelParamsPtr = pmeGpu->kernelParams.get();
     GMX_ASSERT(kernelParamsPtr->atoms.nAtoms > 0, "No atom data in PME GPU spread");
 
-#if GMX_GPU == GMX_GPU_OPENCL
-    const int c_spreadMaxThreadsPerBlock = 1; //FIXME make a runtime decision
-#endif
-
+    const int maxThreadsPerBlock = c_spreadMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
+    // TODO take device limitations (CL_DEVICE_MAX_WORK_GROUP_SIZE) into account for all 3 kernels
     const int order         = pmeGpu->common->pme_order;
-    const int atomsPerBlock = c_spreadMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
+    const int atomsPerBlock = maxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
     // TODO: pick smaller block size in runtime if needed
     // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
     // If doing so, change atomsPerBlock in the kernels as well.
@@ -1050,16 +1054,14 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
             GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
     }
 
-#if GMX_GPU == GMX_GPU_OPENCL
-    const int c_solveMaxThreadsPerBlock = 1; //FIXME make a runtime decision
-#endif
-
-    const int maxBlockSize      = c_solveMaxThreadsPerBlock;
-    const int gridLineSize      = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
-    const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
-    const int cellsPerBlock     = gridLineSize * gridLinesPerBlock;
-    const int blockSize         = (cellsPerBlock + warp_size - 1) / warp_size * warp_size;
+    const int    maxThreadsPerBlock = c_solveMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
+    const int    maxBlockSize       = maxThreadsPerBlock;
+    const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
+    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1);
+    const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
+    const int    cellsPerBlock      = gridLineSize * gridLinesPerBlock;
+    const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
+    const int    blockSize          = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
 
     KernelLaunchConfig config;
@@ -1130,10 +1132,8 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
     }
 
-#if GMX_GPU == GMX_GPU_OPENCL
-    const int c_gatherMaxThreadsPerBlock = 1; //FIXME make a runtime decision
-#endif
-    const int atomsPerBlock  =  (c_gatherMaxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM);
+    const int maxThreadsPerBlock = c_gatherMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
+    const int atomsPerBlock      =  maxThreadsPerBlock / PME_SPREADGATHER_THREADS_PER_ATOM;
     GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
 
     const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;

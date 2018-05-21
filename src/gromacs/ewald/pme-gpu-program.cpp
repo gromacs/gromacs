@@ -59,6 +59,11 @@ PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t *deviceInfo) :
 
 PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *deviceInfo)
 {
+    if (!deviceInfo)
+    {
+        // This is only needed for emptyContext on CPU path of Ewald unit tests
+        return nullptr;
+    }
     PmeGpuProgramStorage result(new PmeGpuProgram(deviceInfo));
     return result;
 }

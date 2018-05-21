@@ -602,16 +602,16 @@ GPU_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu *GPU_FUN
  * \param[in] order            PME order
  * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
  * \param[in] dimIndex         Dimension index (from 0 to 2)
- * \param[in] warpIndex        Warp index wrt the block.
- * \param[in] atomWarpIndex    Atom index wrt the warp (0 or 1).
+ * \param[in] atomIndex        Atom index wrt the block.
+ * \param[in] atomsPerWarp     Number of atoms processed by a warp.
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
 int getSplineParamFullIndex(int order,
                             int splineIndex,
                             int dimIndex,
-                            int warpIndex,
-                            int atomWarpIndex);
+                            int atomIndex,
+                            int atomsPerWarp);
 
 /*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.

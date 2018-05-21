@@ -50,7 +50,15 @@
 #include "pme-gpu-internal.h" // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_OPENCL
+
+#include "gromacs/gpu_utils/ocl_compiler.h"
+#include "gromacs/utility/stringutil.h"
+
+#elif GMX_GPU == GMX_GPU_CUDA
+
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // only for warp_size
+
 //@{
 /**
  * PME CUDA kernels forward declarations. Kernels are documented in their respective files.
@@ -81,9 +89,14 @@ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 //@}
 #endif
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
 {
 #if GMX_GPU == GMX_GPU_CUDA
+
+    GMX_UNUSED_VALUE(deviceInfo);
+
+    warpSize = warp_size;
+
     // PME interpolation order
     constexpr int  pmeOrder = 4;
     GMX_UNUSED_VALUE(pmeOrder);
@@ -101,11 +114,36 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
     solveXYZEnergyKernel        = pme_solve_kernel<GridOrdering::XYZ, true>;
     solveYZXKernel              = pme_solve_kernel<GridOrdering::YZX, false>;
     solveYZXEnergyKernel        = pme_solve_kernel<GridOrdering::YZX, true>;
+
 #elif GMX_GPU == GMX_GPU_OPENCL
-    //TODO: an OpenCL kernel compilation should be here.
+
+    // Context creation (which should happen outside of this class, actually)
+    cl_platform_id        platformId = deviceInfo->ocl_gpu_id.ocl_platform_id;
+    cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_context_properties contextProperties[3];
+    contextProperties[0] = CL_CONTEXT_PLATFORM;
+    contextProperties[1] = (cl_context_properties) platformId;
+    contextProperties[2] = 0; /* Terminates the list of properties */
+
+    cl_int  clError;
+    context = clCreateContext(contextProperties, 1, &deviceId, nullptr, nullptr, &clError);
+    if (clError != CL_SUCCESS)
+    {
+        const std::string errorString = gmx::formatString("Failed to create context for PME on GPU #%s:\n OpenCL error %d: %s",
+                                                          deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+        GMX_THROW(gmx::InternalError(errorString));
+    }
+
+    warpSize = gmx::ocl::getWarpSize(context, deviceId);
+
+    //TODO: OpenCL kernel compilation should be here.
 #endif
 }
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl()
 {
+#if GMX_GPU == GMX_GPU_OPENCL
+    // TODO: log releasing errors
+    clReleaseContext(context);
+#endif
 }

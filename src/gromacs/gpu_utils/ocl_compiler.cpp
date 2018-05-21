@@ -248,19 +248,7 @@ getKernelRootPath(const std::string &kernelRelativePath)
     return Path::normalize(kernelRootPath);
 }
 
-/*!  \brief Get the warp size reported by device
- *
- *  This is platform implementation dependant and seems to only work on the Nvidia and AMD platforms!
- *  Nvidia reports 32, AMD for GPU 64. Ignore the rest
- *
- *  \param  context   Current OpenCL context
- *  \param  deviceId OpenCL device with the context
- *  \return cl_int value of the warp size
- *
- * \throws InternalError if an OpenCL error was encountered
- */
-static size_t
-getWarpSize(cl_context context, cl_device_id deviceId)
+size_t getWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
