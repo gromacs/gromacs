@@ -61,7 +61,7 @@
 //! Prints an initial indentation for a line.
 int pr_indent(FILE *fp, int n);
 //! Returns whether \p is available (not null), and prints a note if it is not.
-int available(FILE *fp, const void *p, int indent, const char *title);
+bool available(FILE *fp, const void *p, int indent, const char *title);
 //! Prints a title for a dumped section.
 int pr_title(FILE *fp, int indent, const char *title);
 //! Prints a title for a dumped section with a number suffixed.
