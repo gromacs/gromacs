@@ -453,8 +453,8 @@ static gmx_bool lambda_vec_same(const lambda_vec_t *a, const lambda_vec_t *b)
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
-                                       const lambda_vec_t *b)
+static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
+                                  const lambda_vec_t *b)
 {
     int      i;
     double   norm_a    = 0, norm_b = 0;
@@ -507,8 +507,8 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_native(const lambda_vec_t *a,
-                                      const lambda_vec_t *b)
+static int lambda_vec_cmp_native(const lambda_vec_t *a,
+                                 const lambda_vec_t *b)
 {
     if (a->lc != b->lc)
     {
