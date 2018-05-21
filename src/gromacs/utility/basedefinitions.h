@@ -59,7 +59,7 @@
  * The only way around this is to NOT assume anything about the C++ type,
  * so we cannot use the name 'bool' in our C code anymore.
  */
-typedef int gmx_bool;
+typedef bool gmx_bool;
 
 #ifndef FALSE
 /** False value for ::gmx_bool. */

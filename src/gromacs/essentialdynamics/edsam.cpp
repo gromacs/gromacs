@@ -2210,7 +2210,7 @@ static void write_edo(t_edpar *edi, FILE *fp, real rmsd)
 }
 
 /* Returns if any constraints are switched on */
-static int ed_constraints(gmx_bool edtype, t_edpar *edi)
+static int ed_constraints(int edtype, t_edpar *edi)
 {
     if (edtype == eEDedsam || edtype == eEDflood)
     {
