@@ -152,27 +152,24 @@ typedef struct {
 /* A pair-search grid struct for one domain decomposition zone */
 struct nbnxn_grid_t
 {
-    rvec          c0;               /* The lower corner of the (local) grid        */
-    rvec          c1;               /* The upper corner of the (local) grid        */
-    rvec          size;             /* c1 - c0                                     */
-    real          atom_density;     /* The atom number density for the local grid  */
+    rvec     c0;                   /* The lower corner of the (local) grid        */
+    rvec     c1;                   /* The upper corner of the (local) grid        */
+    rvec     size;                 /* c1 - c0                                     */
+    real     atom_density;         /* The atom number density for the local grid  */
 
-    gmx_bool      bSimple;          /* Is this grid simple or super/sub            */
-    int           na_c;             /* Number of atoms per cluster                 */
-    int           na_cj;            /* Number of atoms for list j-clusters         */
-    int           na_sc;            /* Number of atoms per super-cluster           */
-    int           na_c_2log;        /* 2log of na_c                                */
+    gmx_bool bSimple;              /* Is this grid simple or super/sub            */
+    int      na_c;                 /* Number of atoms per cluster                 */
+    int      na_cj;                /* Number of atoms for list j-clusters         */
+    int      na_sc;                /* Number of atoms per super-cluster           */
+    int      na_c_2log;            /* 2log of na_c                                */
 
-    int           ncx;              /* Number of (super-)cells along x             */
-    int           ncy;              /* Number of (super-)cells along y             */
-    int           nc;               /* Total number of (super-)cells               */
+    int      numCells[DIM - 1];    /* Number of cells along x/y                   */
+    int      nc;                   /* Total number of cells                       */
 
-    real          sx;               /* x-size of a (super-)cell                    */
-    real          sy;               /* y-size of a (super-)cell                    */
-    real          inv_sx;           /* 1/sx                                        */
-    real          inv_sy;           /* 1/sy                                        */
+    real     cellSize[DIM - 1];    /* size of a cell                              */
+    real     invCellSize[DIM - 1]; /* 1/cellSize                                  */
 
-    int           cell0;            /* Index in nbs->cell corresponding to cell 0  */
+    int      cell0;                /* Index in nbs->cell corresponding to cell 0  */
 
     /* Grid data */
     std::vector<int> cxy_na;        /* The number of atoms for each column in x,y  */
