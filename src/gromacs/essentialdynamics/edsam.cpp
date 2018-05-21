@@ -75,7 +75,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
+#include "gromacs/utility/strconvert.h"
 
 /* enum to identify the type of ED: none, normal ED, flooding */
 enum {
@@ -451,8 +451,8 @@ static void dump_edi(t_edpar *edpars, const t_commrec *cr, int nr_edi)
     sprintf(fn, "EDdump_rank%d_edi%d", cr->nodeid, nr_edi);
     out = gmx_ffopen(fn, "w");
 
-    fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
-            edpars->nini, edpars->fitmas, edpars->pcamas);
+    fprintf(out, "#NINI\n %d\n#FITMAS\n %s\n#ANALYSIS_MAS\n %s\n",
+            edpars->nini, gmx::boolToString(edpars->fitmas), gmx::boolToString(edpars->pcamas));
     fprintf(out, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq, edpars->maxedsteps, edpars->slope);
     fprintf(out, "#PRESTEPS\n %d\n#DELTA_F0\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n",
@@ -2262,7 +2262,7 @@ static void write_edo(t_edpar *edi, FILE *fp, real rmsd)
 }
 
 /* Returns if any constraints are switched on */
-static int ed_constraints(gmx_bool edtype, t_edpar *edi)
+static int ed_constraints(int edtype, t_edpar *edi)
 {
     if (edtype == eEDedsam || edtype == eEDflood)
     {

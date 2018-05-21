@@ -57,6 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -597,9 +598,9 @@ int gmx_eneconv(int argc, char *argv[])
             if (debug)
             {
                 fprintf(debug,
-                        "fr->step %s, fr->t %.4f, fro->step %s fro->t %.4f, w %d\n",
+                        "fr->step %s, fr->t %.4f, fro->step %s fro->t %.4f, w %s\n",
                         gmx_step_str(fr->step, buf), fr->t,
-                        gmx_step_str(fro->step, buf2), fro->t, bWrite);
+                        gmx_step_str(fro->step, buf2), fro->t, gmx::boolToString(bWrite));
             }
 
             if (bError)

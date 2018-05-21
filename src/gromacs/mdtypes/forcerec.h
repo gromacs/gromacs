@@ -286,7 +286,7 @@ struct t_forcerec {
      * Only the energy difference due to the addition of the last molecule
      * should be calculated.
      */
-    gmx_bool n_tpi;
+    int n_tpi;
 
     /* Neighbor searching stuff */
     struct gmx_ns_t *ns;

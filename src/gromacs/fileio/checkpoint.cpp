@@ -737,6 +737,15 @@ static int do_cpte_int(XDR *xd, StatePart part, int ecpt, int sflags,
     return do_cpte_ints(xd, part, ecpt, sflags, 1, &i, list);
 }
 
+static int do_cpte_bool(XDR *xd, StatePart part, int ecpt, int sflags,
+                        bool *b, FILE *list)
+{
+    int i   = *b;
+    int ret = do_cpte_int(xd, part, ecpt, sflags, &i, list);
+    *b = i;
+    return ret;
+}
+
 static int do_cpte_doubles(XDR *xd, StatePart part, int ecpt, int sflags,
                            int n, double **v, FILE *list)
 {
@@ -1440,7 +1449,7 @@ static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhis
         {
             switch (i)
             {
-                case edfhBEQUIL:       ret = do_cpte_int(xd, part, i, fflags, &dfhist->bEquil, list); break;
+                case edfhBEQUIL:       ret = do_cpte_bool(xd, part, i, fflags, &dfhist->bEquil, list); break;
                 case edfhNATLAMBDA:    ret = do_cpte_ints(xd, part, i, fflags, nlambda, &dfhist->n_at_lam, list); break;
                 case edfhWLHISTO:      ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->wl_histo, list); break;
                 case edfhWLDELTA:      ret = do_cpte_real(xd, part, i, fflags, &dfhist->wl_delta, list); break;

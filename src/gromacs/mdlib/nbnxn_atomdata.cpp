@@ -66,6 +66,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -605,8 +606,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     }
     if (debug)
     {
-        fprintf(debug, "Combination rules: geometric %d Lorentz-Berthelot %d\n",
-                bCombGeom, bCombLB);
+        fprintf(debug, "Combination rules: geometric %s Lorentz-Berthelot %s\n",
+                gmx::boolToString(bCombGeom), gmx::boolToString(bCombLB));
     }
 
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);

@@ -108,14 +108,7 @@ typedef struct
 /* Returns TRUE when atom is charged */
 static gmx_bool is_charge(real charge)
 {
-    if (charge*charge > GMX_REAL_EPS)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return charge*charge > GMX_REAL_EPS;
 }
 
 

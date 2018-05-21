@@ -80,6 +80,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "pull_internal.h"
 
@@ -1893,8 +1894,8 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull)
 
         if (debug && dd != nullptr)
         {
-            fprintf(debug, "Our DD rank (%3d) pull #atoms>0 or master: %d, will be part %d\n",
-                    dd->rank, bMustParticipate, bWillParticipate);
+            fprintf(debug, "Our DD rank (%3d) pull #atoms>0 or master: %s, will be part %s\n",
+                    dd->rank, gmx::boolToString(bMustParticipate), gmx::boolToString(bWillParticipate));
         }
 
         if (bWillParticipate)

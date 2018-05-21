@@ -403,14 +403,7 @@ static gmx_bool compartment_contains_atom(
     *distance_from_b = (real)fabs(x - bulkOffset*0.5*width);
 
     /* Return TRUE if we now are in area "????" */
-    if ( (x >= w1) &&  (x < w2) )
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return (x >= w1) &&  (x < w2);
 }
 
 
@@ -1439,11 +1432,7 @@ static void convertOldToNewGroupFormat(
 static gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
 {
     // If the last group has no atoms it means we need to convert!
-    if ( (sc->ngrp >= 5) && (0 == sc->grp[4].nat) )
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return (sc->ngrp >= 5) && (0 == sc->grp[4].nat);
 }
 
 

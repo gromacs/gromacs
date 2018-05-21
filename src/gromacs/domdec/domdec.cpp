@@ -109,6 +109,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "atomdistribution.h"
@@ -3176,8 +3177,8 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
         dd->pme_receive_vir_ener = receive_vir_ener(dd, cr);
         if (debug)
         {
-            fprintf(debug, "My pme_nodeid %d receive ener %d\n",
-                    dd->pme_nodeid, dd->pme_receive_vir_ener);
+            fprintf(debug, "My pme_nodeid %d receive ener %s\n",
+                    dd->pme_nodeid, gmx::boolToString(dd->pme_receive_vir_ener));
         }
     }
     else
@@ -3877,9 +3878,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
     if (debug)
     {
-        fprintf(debug, "Bonded atom communication beyond the cut-off: %d\n"
+        fprintf(debug, "Bonded atom communication beyond the cut-off: %s\n"
                 "cellsize limit %f\n",
-                comm->bBondComm, comm->cellsize_limit);
+                gmx::boolToString(comm->bBondComm), comm->cellsize_limit);
     }
 
     if (MASTER(cr))
@@ -4605,12 +4606,7 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
     /* We check whether we should use DLB every c_checkTurnDlbOnInterval
      * partitionings (we do not do this every partioning, so that we
      * avoid excessive communication). */
-    if (dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1)
-    {
-        return TRUE;
-    }
-
-    return FALSE;
+    return dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1;
 }
 
 gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
@@ -5200,7 +5196,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
     if (debug)
     {
-        fprintf(debug, "bBondComm %d, r_bc %f\n", bBondComm, std::sqrt(r_bcomm2));
+        fprintf(debug, "bBondComm %s, r_bc %f\n", gmx::boolToString(bBondComm), std::sqrt(r_bcomm2));
     }
 
     zones = &comm->zones;
