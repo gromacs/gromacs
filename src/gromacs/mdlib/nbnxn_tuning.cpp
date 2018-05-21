@@ -69,6 +69,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
@@ -292,8 +293,8 @@ void increaseNstlist(FILE *fp, t_commrec *cr,
 
         if (debug)
         {
-            fprintf(debug, "nstlist %d rlist %.3f bBox %d bDD %d\n",
-                    ir->nstlist, rlist_new, bBox, bDD);
+            fprintf(debug, "nstlist %d rlist %.3f bBox %s bDD %s\n",
+                    ir->nstlist, rlist_new, gmx::boolToString(bBox), gmx::boolToString(bDD));
         }
 
         bCont = FALSE;

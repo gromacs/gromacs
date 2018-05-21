@@ -370,12 +370,12 @@ static void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
 
     /*Header*/
     fprintf(fp, "#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
-            MAGIC, edpars->nini, edpars->fitmas, edpars->pcamas);
+            MAGIC, edpars->nini, int(edpars->fitmas), int(edpars->pcamas));
     fprintf(fp, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq, edpars->maxedsteps, edpars->slope);
     fprintf(fp, "#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n#CONST_FORCE_FLOODING\n %d\n",
             edpars->presteps, edpars->flood.deltaF0, edpars->flood.deltaF, edpars->flood.tau, edpars->flood.constEfl,
-            edpars->flood.alpha2, edpars->flood.kT, edpars->flood.bHarmonic, edpars->flood.bConstForce);
+            edpars->flood.alpha2, edpars->flood.kT, edpars->flood.bHarmonic, int(edpars->flood.bConstForce));
 
     /* Average and reference positions */
     write_t_edx(fp, edpars->sref, "NREF, XREF");

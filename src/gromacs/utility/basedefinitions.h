@@ -51,27 +51,20 @@
 
 #if defined __cplusplus
 #include <cstddef>
+#else
+#include <stdbool.h>
 #endif
 
-/*! \brief
- * Boolean type for use in \Gromacs C code.
- *
- * There is no standard size for 'bool' in C++, so when
- * we previously defined it to int for C code the data types
- * (and structs) would have different size depending on your compiler,
- * both at \Gromacs build time and when you use the library.
- * The only way around this is to NOT assume anything about the C++ type,
- * so we cannot use the name 'bool' in our C code anymore.
- */
-typedef int gmx_bool;
+//! Identical to bool
+typedef bool gmx_bool;
 
 #ifndef FALSE
 /** False value for ::gmx_bool. */
-#  define FALSE   0
+#  define FALSE   false
 #endif
 #ifndef TRUE
 /** True value for ::gmx_bool. */
-#  define TRUE    1
+#  define TRUE    true
 #endif
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
