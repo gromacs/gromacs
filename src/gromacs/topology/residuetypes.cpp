@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -196,15 +196,8 @@ gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "Protein") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "Protein") == 0;
     return rc;
 }
 
@@ -214,15 +207,8 @@ gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "DNA") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "DNA") == 0;
     return rc;
 }
 
@@ -232,15 +218,8 @@ gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "RNA") == 0)
-    {
-        rc = TRUE;
-    }
-    else
-    {
-        rc = FALSE;
-    }
+    rc = gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
+        gmx_strcasecmp(p_type, "RNA") == 0;
     return rc;
 }
 
