@@ -439,25 +439,25 @@ static gmx_cycles_t gmx_cycles_read(void)
  *       library supports cyclecounters but not the headers, or vice versa.
  */
 #if (GMX_CYCLECOUNTERS == 0)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     return 0;
 }
 #elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
     return 1;
 }
 #elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
-static __inline int gmx_cycles_have_counter(void)
+static __inline bool gmx_cycles_have_counter(void)
 {
     /* 64-bit ARM cycle counters with GCC inline assembly */
     return 1;
 }
 #elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
-static __inline int gmx_cycles_have_counter(void)
+static __inline bool gmx_cycles_have_counter(void)
 {
     /* Armv7A can provide 64-bit cycles by returning two registers. However, it will not work unless
      * the performance registers have been made available from user space by a kernel module -
@@ -472,104 +472,104 @@ static __inline int gmx_cycles_have_counter(void)
     return (c0 != 0 || c1 != 0);
 }
 #elif (defined(_MSC_VER))
-static __inline int gmx_cycles_have_counter(void)
+static __inline bool gmx_cycles_have_counter(void)
 {
     return 1;
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
-static inline int gmx_cycles_have_counter(void)
+static inline bool gmx_cycles_have_counter(void)
 {
     /* HP compiler on ia64, use special instruction to read ITC */
     return 1;
 }
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* Intel compiler on ia64, use special instruction to read ITC */
     return 1;
 }
 #elif defined(__GNUC__) && defined(__ia64__)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* AMD64 with GCC inline assembly - TSC register */
     return 1;
 }
 #elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* HP PA-RISC, inline asm with gcc */
     return 1;
 }
 #elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
-static inline int gmx_cycles_have_counter(void)
+static inline bool gmx_cycles_have_counter(void)
 {
     /* HP PA-RISC, instruction when using HP compiler */
     return 1;
 }
 #elif defined(__GNUC__) && defined(__s390__)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* S390, taken from FFTW who got it from James Treacy */
     return 1;
 }
 #elif defined(__GNUC__) && defined(__alpha__)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* gcc inline assembly on alpha CPUs */
     return 1;
 }
 #elif defined(__GNUC__) && defined(__sparc_v9__)
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* gcc inline assembly on sparc v9 */
     return 1;
 }
 #elif defined(__DECC) && defined(__alpha)
-static __inline int gmx_cycles_have_counter(void)
+static __inline bool gmx_cycles_have_counter(void)
 {
     /* Digital GEM C compiler on alpha */
     return 1;
 }
 #elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
-static __inline int gmx_cycles_have_counter(void)
+static __inline bool gmx_cycles_have_counter(void)
 {
     /* Irix compilers on SGI hardware */
     return 1;
 }
 #elif (defined(__SVR4) && defined (__SUNPRO_CC))
-static inline int gmx_cycles_have_counter(void)
+static inline bool gmx_cycles_have_counter(void)
 {
     /* Solaris high-resolution timers */
     return 1;
 }
 #elif defined(__xlC__) && defined (_AIX)
-static inline int gmx_cycles_have_counter(void)
+static inline bool gmx_cycles_have_counter(void)
 {
     /* AIX compilers */
     return 1;
 }
 #elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
     ( defined(__powerpc__) || defined(__ppc__) ) )
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* PowerPC using gcc inline assembly (and xlc>=7.0 with -qasm=gcc) */
     return 1;
 }
 #elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* Metrowerks on macintosh */
     return 1;
 }
 #elif defined(__sun) && defined(__sparcv9)
 
-static __inline__ int gmx_cycles_have_counter(void)
+static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* Solaris on SPARC*/
     return 1;
 }
 #else
-static int gmx_cycles_have_counter(void)
+static bool gmx_cycles_have_counter(void)
 {
     /* No cycle counter that we know of on this system */
     return 0;

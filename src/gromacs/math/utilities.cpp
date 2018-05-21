@@ -52,20 +52,13 @@
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
-int
+bool
 gmx_within_tol(double   f1,
                double   f2,
                double   tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
+    return fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2));
 }
 
 int

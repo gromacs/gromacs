@@ -561,7 +561,9 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
     {
         gmx_bool  bAllSet_All;
 
-        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+        //tmpi doesn't have MPI_C_BOOL or MPI::BOOL. Because bool has to be
+        //at least one byte and we only address a scalar this is safe.
+        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_CHAR, MPI_LAND, MPI_COMM_WORLD);
         bAllSet = bAllSet_All;
     }
 #endif
