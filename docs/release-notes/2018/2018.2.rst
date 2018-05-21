@@ -27,6 +27,11 @@ during make check/test.
 
 :issue:`2465`
 
+Fixed enemat when the .edr file had no matching energy groups
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2508`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
