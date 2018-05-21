@@ -61,7 +61,7 @@ typedef struct {
     int           size;        /* Size of group arrays                */
     int           stride;      /* Stride for thread data              */
     int           mode;        /* One of the enums above              */
-    gmx_bool      ndim;        /* The number of dimensions for corr.  */
+    int           ndim;        /* The number of dimensions for corr.  */
     real          timeStep;    /* The time step for COMM removal      */
     real         *group_ndf;   /* Number of degrees of freedom        */
     rvec         *group_p;     /* Linear momentum per group           */
