@@ -2018,27 +2018,21 @@ Integrator::do_lbfgs()
 
         // Accept the step if the energy is lower in the new position C (compared to A),
         // or if it is not significantly higher and the line derivative is still negative.
-        if (sc->epot < sa->epot || (gpc < 0 && sc->epot < (sa->epot + tmp)))
-        {
-            // Great, we found a better energy. We no longer try to alter the
-            // stepsize, but simply accept this new better position. The we select a new
-            // search direction instead, which will be much more efficient than continuing
-            // to take smaller steps along a line. Set fnorm based on the new C position,
-            // which will be used to update the stepsize to 1/fnorm further down.
-            foundlower = TRUE;
-        }
-        else
-        {
-            // If we got here, the energy is NOT lower in point C, i.e. it will be the same
-            // or higher than in point A. In this case it is pointless to move to point C,
-            // so we will have to do more iterations along the same line to find a smaller
-            // value in the interval [A=0.0,C].
-            // Here, A is still 0.0, but that will change when we do a search in the interval
-            // [0.0,C] below. That search we will do by interpolation or bisection rather
-            // than with the stepsize, so no need to modify it. For the next search direction
-            // it will be reset to 1/fnorm anyway.
-            foundlower = FALSE;
-        }
+        foundlower = sc->epot < sa->epot || (gpc < 0 && sc->epot < (sa->epot + tmp));
+        // If true, great, we found a better energy. We no longer try to alter the
+        // stepsize, but simply accept this new better position. The we select a new
+        // search direction instead, which will be much more efficient than continuing
+        // to take smaller steps along a line. Set fnorm based on the new C position,
+        // which will be used to update the stepsize to 1/fnorm further down.
+
+        // If false, the energy is NOT lower in point C, i.e. it will be the same
+        // or higher than in point A. In this case it is pointless to move to point C,
+        // so we will have to do more iterations along the same line to find a smaller
+        // value in the interval [A=0.0,C].
+        // Here, A is still 0.0, but that will change when we do a search in the interval
+        // [0.0,C] below. That search we will do by interpolation or bisection rather
+        // than with the stepsize, so no need to modify it. For the next search direction
+        // it will be reset to 1/fnorm anyway.
 
         if (!foundlower)
         {

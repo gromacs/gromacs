@@ -135,7 +135,7 @@ static gmx_bool bAllowed(real phi, real psi)
     y = INDEX(psi);
 #undef INDEX
 
-    return (map[x][y] == '1') ? TRUE : FALSE;
+    return map[x][y] == '1';
 }
 
 static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)

@@ -561,7 +561,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
     {
         gmx_bool  bAllSet_All;
 
-        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
         bAllSet = bAllSet_All;
     }
 #endif

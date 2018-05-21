@@ -303,8 +303,9 @@ static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
     int                nviol, nrestr;
     int                i, kkk;
 
-    for (bCore = FALSE; (bCore <= TRUE); bCore++)
+    for (int iCore = 0; iCore < 2; iCore++)
     {
+        bCore = (iCore == 1);
         for (kkk = 0; (kkk < 3); kkk++)
         {
             viol_tot  = 0;

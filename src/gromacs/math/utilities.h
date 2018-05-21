@@ -125,7 +125,7 @@ enum class MathOptimization
  *
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
-int
+bool
 gmx_within_tol(double   f1,
                double   f2,
                double   tol);

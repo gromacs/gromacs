@@ -117,6 +117,8 @@ typedef struct tmpi_datatype_ *tMPI_Datatype;
     Note that not all are available.  */
 /*! \{ */
 TMPI_EXPORT
+extern const tMPI_Datatype TMPI_C_BOOL;             /**< bool */
+TMPI_EXPORT
 extern const tMPI_Datatype TMPI_CHAR;               /**< char */
 TMPI_EXPORT
 extern const tMPI_Datatype TMPI_SHORT;              /**< short */
