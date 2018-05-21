@@ -45,7 +45,9 @@
 
 #include "pme-gpu-program-impl.h"
 
-#include "pme-gpu-internal.h" // for GridOrdering enum
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // only for warp_size
+
+#include "pme-gpu-internal.h"                    // for GridOrdering enum
 #include "pme-gpu-types-host.h"
 
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
@@ -75,6 +77,8 @@ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 {
+    warpSize = warp_size;
+
     // PME interpolation order
     constexpr int  pmeOrder = 4;
     GMX_UNUSED_VALUE(pmeOrder);
