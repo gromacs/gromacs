@@ -71,12 +71,11 @@ elseif (GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
         pme-gpu-3dfft-ocl.cpp
+        pme-gpu-program-impl-ocl.cpp
         # GPU-specific sources
         pme-gpu.cpp
         pme-gpu-internal.cpp
         pme-gpu-timings.cpp
-        # Files that implement stubs
-        pme-gpu-program-impl.cpp
         )
 else()
     gmx_add_libgromacs_sources(
