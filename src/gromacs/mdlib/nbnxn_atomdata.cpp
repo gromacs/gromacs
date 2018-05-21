@@ -798,7 +798,7 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t    *nbat,
     for (const nbnxn_grid_t &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid.ncx*grid.ncy; i++)
+        for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
         {
             int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
             int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
@@ -818,7 +818,7 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
         for (const nbnxn_grid_t &grid : nbs->grid)
         {
             /* Loop over all columns and copy and fill */
-            for (int i = 0; i < grid.ncx*grid.ncy; i++)
+            for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
             {
                 int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
                 int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
@@ -857,7 +857,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
     for (const nbnxn_grid_t &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int cxy = 0; cxy < grid.ncx*grid.ncy; cxy++)
+        for (int cxy = 0; cxy < grid.numCells[XX]*grid.numCells[YY]; cxy++)
         {
             int ash      = (grid.cell0 + grid.cxy_ind[cxy])*grid.na_sc;
             int na       = grid.cxy_na[cxy];
@@ -1000,7 +1000,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
     for (const nbnxn_grid_t &grid : nbs->grid)
     {
         /* Loop over all columns and copy and fill */
-        for (int i = 0; i < grid.ncx*grid.ncy; i++)
+        for (int i = 0; i < grid.numCells[XX]*grid.numCells[YY]; i++)
         {
             int ncz = grid.cxy_ind[i+1] - grid.cxy_ind[i];
             int ash = (grid.cell0 + grid.cxy_ind[i])*grid.na_sc;
@@ -1091,25 +1091,22 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
         {
             for (int g = g0; g < g1; g++)
             {
-                const nbnxn_grid_t *grid;
-                int                 cxy0, cxy1;
+                const nbnxn_grid_t &grid = nbs->grid[g];
 
-                grid = &nbs->grid[g];
-
-                cxy0 = (grid->ncx*grid->ncy* th   +nth-1)/nth;
-                cxy1 = (grid->ncx*grid->ncy*(th+1)+nth-1)/nth;
+                int cxy0 = (grid.numCells[XX]*grid.numCells[YY]* th   +nth-1)/nth;
+                int cxy1 = (grid.numCells[XX]*grid.numCells[YY]*(th+1)+nth-1)/nth;
 
                 for (int cxy = cxy0; cxy < cxy1; cxy++)
                 {
                     int na, ash, na_fill;
 
-                    na  = grid->cxy_na[cxy];
-                    ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
+                    na  = grid.cxy_na[cxy];
+                    ash = (grid.cell0 + grid.cxy_ind[cxy])*grid.na_sc;
 
                     if (g == 0 && FillLocal)
                     {
                         na_fill =
-                            (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+                            (grid.cxy_ind[cxy+1] - grid.cxy_ind[cxy])*grid.na_sc;
                     }
                     else
                     {
