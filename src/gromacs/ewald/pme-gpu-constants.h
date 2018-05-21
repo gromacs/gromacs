@@ -48,10 +48,7 @@
 #include "config.h"
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
-#else
-#define warp_size 32 // FIXME remove this and rework macros
-#define PME_SPREADGATHER_ATOMS_PER_WARP 2
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 #endif
 
 /* General settings for PME GPU behaviour */
@@ -114,53 +111,60 @@ constexpr int c_virialAndEnergyCount = 7;
 /*! \brief
  * The number of GPU threads used for computing spread/gather contributions of a single atom as function of the PME order.
  * The assumption is currently that any thread processes only a single atom's contributions.
+ * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
  */
 #define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
 
 /*! \brief
  * Atom data alignment (in terms of number of atoms).
- * The value is (16 * PME_SPREADGATHER_ATOMS_PER_WARP).
+ * This is the least common multiple of number of atoms processed by
+ * a single block/workgroup of the spread and gather kernels.
  * If the GPU atom data buffers are padded (c_usePadding == true),
- * Then the numbers of atoms which would fit in the padded GPU buffers has to be divisible by this.
- * The literal number (16) expresses maximum spread/gather block width in warps.
- * Accordingly, spread and gather block widths in warps should be divisors of this
- * (e.g. in the pme-spread.cu: constexpr int c_spreadMaxThreadsPerBlock = 8 * warp_size;).
- * There are debug asserts for this divisibility.
+ * Then the numbers of atoms which would fit in the padded GPU buffers have to be divisible by this.
+ * There are debug asserts for this divisibility in pme_gpu_spread() and pme_gpu_gather().
  */
 #define PME_ATOM_DATA_ALIGNMENT 32
 
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.
- * TODO: adjust those for OpenCL.
+ * TODO: those were tuned for CUDA with assumption of warp size 32; specialize those for OpenCL
+ * (Redmine #2528).
+ * As noted below, these are very approximate maximum sizes; in run time we might have to use
+ * smaller block/workgroup sizes, depending on device capabilities.
  */
-
-#if GMX_GPU == GMX_GPU_CUDA
-
-/*! \brief
- * The number of atoms processed by a single warp in spread/gather.
- * This macro depends on the templated order parameter (2 atoms per warp for order 4).
- * It is mostly used for spline data layout tweaked for coalesced access.
- */
-#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
 
 //! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
 constexpr int c_spreadMaxWarpsPerBlock = 8;
-/* TODO: it has been observed that the kernel can be faster with smaller block sizes (2 or 4 warps)
- * only on some GPUs (660Ti) with large enough grid (>= 48^3) due to load/store units being overloaded
- * (ldst_fu_utilization metric maxed out in nvprof). Runtime block size choice might be nice to have.
- * This has been tried on architectures up to Maxwell (GTX 750) and it would be good to revisit this.
- */
-//! Spreading max block size in threads
-constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
 
 //! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
 //! (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
 constexpr int c_solveMaxWarpsPerBlock = 8;
-//! Solving kernel max block size in threads
-constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
 
 //! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
 constexpr int c_gatherMaxWarpsPerBlock = 4;
+
+
+#if GMX_GPU == GMX_GPU_CUDA
+
+/* All the guys below are dependent on warp_size and should ideally be removed from the host-side code,
+ * as we have to do that for OpenCL already.
+ * They also express maximum desired block/workgroup sizes, while both with CUDA and OpenCL we have to treat
+ * the device runtime limitations gracefully as well.
+ */
+
+/*! \brief
+ * The number of atoms processed by a single warp in spread/gather.
+ * This macro depends on the templated order parameter (2 atoms per warp for order 4 and warp_size of 32).
+ * It is mostly used for spline data layout tweaked for coalesced access.
+ */
+#define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
+
+//! Spreading max block size in threads
+constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;
+
+//! Solving kernel max block size in threads
+constexpr int c_solveMaxThreadsPerBlock = (c_solveMaxWarpsPerBlock * warp_size);
+
 //! Gathering max block size in threads
 constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
 //! Gathering min blocks per CUDA multiprocessor - for CC2.x, we just take the CUDA limit of 8 to avoid the warning
