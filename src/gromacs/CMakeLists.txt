@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -192,8 +192,10 @@ if (HAS_NO_UNUSED)
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
-if(SIMD_AVX_512_CXX_SUPPORTED)
-    # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file
+if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
+    # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
+    # On KNL this can cause illegal instruction because the compiler might use non KNL AVX instructions
+    # with the SIMD_AVX_512_CXX_FLAGS flags.
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
