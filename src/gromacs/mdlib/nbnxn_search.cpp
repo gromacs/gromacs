@@ -344,19 +344,23 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
 /* Determines the cell range along one dimension that
  * the bounding box b0 - b1 sees.
  */
+template<int dim>
 static void get_cell_range(real b0, real b1,
-                           int nc, real c0, real s, real invs,
+                           const nbnxn_grid_t &gridj,
                            real d2, real r2, int *cf, int *cl)
 {
-    *cf = std::max(static_cast<int>((b0 - c0)*invs), 0);
+    real distanceInCells = (b0 - gridj.c0[dim])*gridj.invCellSize[dim];
+    *cf                  = std::max(static_cast<int>(distanceInCells), 0);
 
-    while (*cf > 0 && d2 + gmx::square((b0 - c0) - (*cf-1+1)*s) < r2)
+    while (*cf > 0 &&
+           d2 + gmx::square((b0 - gridj.c0[dim]) - (*cf - 1 + 1)*gridj.cellSize[dim]) < r2)
     {
         (*cf)--;
     }
 
-    *cl = std::min(static_cast<int>((b1 - c0)*invs), nc-1);
-    while (*cl < nc-1 && d2 + gmx::square((*cl+1)*s - (b1 - c0)) < r2)
+    *cl = std::min(static_cast<int>((b1 - gridj.c0[dim])*gridj.invCellSize[dim]), gridj.numCells[dim] - 1);
+    while (*cl < gridj.numCells[dim] - 1 &&
+           d2 + gmx::square((*cl + 1)*gridj.cellSize[dim] - (b1 - gridj.c0[dim])) < r2)
     {
         (*cl)++;
     }
@@ -2553,12 +2557,12 @@ static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
 {
     if (grid->bSimple)
     {
-        return std::min(grid->sx, grid->sy);
+        return std::min(grid->cellSize[XX], grid->cellSize[YY]);
     }
     else
     {
-        return std::min(grid->sx/c_gpuNumClusterPerCellX,
-                        grid->sy/c_gpuNumClusterPerCellY);
+        return std::min(grid->cellSize[XX]/c_gpuNumClusterPerCellX,
+                        grid->cellSize[YY]/c_gpuNumClusterPerCellY);
     }
 }
 
@@ -2690,8 +2694,8 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         return;
     }
 
-    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*c_gpuNumClusterPerCellX);
-    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*c_gpuNumClusterPerCellY);
+    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->numCells[XX]*c_gpuNumClusterPerCellX);
+    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->numCells[YY]*c_gpuNumClusterPerCellY);
     ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
 
     /* The average length of the diagonal of a sub cell */
@@ -3062,10 +3066,10 @@ static gmx_bool next_ci(const nbnxn_grid_t *grid,
         return FALSE;
     }
 
-    while (*ci >= grid->cxy_ind[*ci_x*grid->ncy + *ci_y + 1])
+    while (*ci >= grid->cxy_ind[*ci_x*grid->numCells[YY] + *ci_y + 1])
     {
         *ci_y += 1;
-        if (*ci_y == grid->ncy)
+        if (*ci_y == grid->numCells[YY])
         {
             *ci_x += 1;
             *ci_y  = 0;
@@ -3099,8 +3103,8 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
     real bbx, bby;
     real rbb2;
 
-    bbx = 0.5*(gridi->sx + gridj->sx);
-    bby = 0.5*(gridi->sy + gridj->sy);
+    bbx = 0.5*(gridi->cellSize[XX] + gridj->cellSize[XX]);
+    bby = 0.5*(gridi->cellSize[YY] + gridj->cellSize[YY]);
     if (!simple)
     {
         bbx /= c_gpuNumClusterPerCellX;
@@ -3136,7 +3140,7 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
      * zone boundaries with 3D domain decomposition. At the same time
      * the blocks will not become too small.
      */
-    ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->ncx*nth);
+    ci_block = (gridi->nc*ci_block_enum)/(ci_block_denom*gridi->numCells[XX]*nth);
 
     /* Ensure the blocks are not too small: avoids cache invalidation */
     if (ci_block*gridi->na_sc < ci_block_min_atoms)
@@ -3316,7 +3320,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     if (debug)
     {
         fprintf(debug, "nbl nc_i %d col.av. %.1f ci_block %d\n",
-                gridi->nc, gridi->nc/(double)(gridi->ncx*gridi->ncy), ci_block);
+                gridi->nc, gridi->nc/(double)(gridi->numCells[XX]*gridi->numCells[YY]), ci_block);
     }
 
     numDistanceChecks = 0;
@@ -3346,7 +3350,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
             else
             {
-                bx1 = gridi->c0[XX] + (ci_x+1)*gridi->sx;
+                bx1 = gridi->c0[XX] + (ci_x+1)*gridi->cellSize[XX];
             }
             if (bx1 < gridj->c0[XX])
             {
@@ -3359,7 +3363,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
         }
 
-        ci_xy = ci_x*gridi->ncy + ci_y;
+        ci_xy = ci_x*gridi->numCells[YY] + ci_y;
 
         /* Loop over shift vectors in three dimensions */
         for (int tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
@@ -3407,14 +3411,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 }
                 else
                 {
-                    by0 = gridi->c0[YY] + (ci_y  )*gridi->sy + shy;
-                    by1 = gridi->c0[YY] + (ci_y+1)*gridi->sy + shy;
+                    by0 = gridi->c0[YY] + (ci_y  )*gridi->cellSize[YY] + shy;
+                    by1 = gridi->c0[YY] + (ci_y+1)*gridi->cellSize[YY] + shy;
                 }
 
-                get_cell_range(by0, by1,
-                               gridj->ncy, gridj->c0[YY], gridj->sy, gridj->inv_sy,
-                               d2z_cx, rlist2,
-                               &cyf, &cyl);
+                get_cell_range<YY>(by0, by1,
+                                   *gridj,
+                                   d2z_cx, rlist2,
+                                   &cyf, &cyl);
 
                 if (cyf > cyl)
                 {
@@ -3449,14 +3453,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
                     else
                     {
-                        bx0 = gridi->c0[XX] + (ci_x  )*gridi->sx + shx;
-                        bx1 = gridi->c0[XX] + (ci_x+1)*gridi->sx + shx;
+                        bx0 = gridi->c0[XX] + (ci_x  )*gridi->cellSize[XX] + shx;
+                        bx1 = gridi->c0[XX] + (ci_x+1)*gridi->cellSize[XX] + shx;
                     }
 
-                    get_cell_range(bx0, bx1,
-                                   gridj->ncx, gridj->c0[XX], gridj->sx, gridj->inv_sx,
-                                   d2z_cy, rlist2,
-                                   &cxf, &cxl);
+                    get_cell_range<XX>(bx0, bx1,
+                                       *gridj,
+                                       d2z_cy, rlist2,
+                                       &cxf, &cxl);
 
                     if (cxf > cxl)
                     {
@@ -3505,13 +3509,13 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     for (int cx = cxf; cx <= cxl; cx++)
                     {
                         d2zx = d2z;
-                        if (gridj->c0[XX] + cx*gridj->sx > bx1)
+                        if (gridj->c0[XX] + cx*gridj->cellSize[XX] > bx1)
                         {
-                            d2zx += gmx::square(gridj->c0[XX] + cx*gridj->sx - bx1);
+                            d2zx += gmx::square(gridj->c0[XX] + cx*gridj->cellSize[XX] - bx1);
                         }
-                        else if (gridj->c0[XX] + (cx+1)*gridj->sx < bx0)
+                        else if (gridj->c0[XX] + (cx+1)*gridj->cellSize[XX] < bx0)
                         {
-                            d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
+                            d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->cellSize[XX] - bx0);
                         }
 
                         if (gridi == gridj &&
@@ -3531,17 +3535,17 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                         for (int cy = cyf_x; cy <= cyl; cy++)
                         {
-                            const int columnStart = gridj->cxy_ind[cx*gridj->ncy + cy];
-                            const int columnEnd   = gridj->cxy_ind[cx*gridj->ncy + cy + 1];
+                            const int columnStart = gridj->cxy_ind[cx*gridj->numCells[YY] + cy];
+                            const int columnEnd   = gridj->cxy_ind[cx*gridj->numCells[YY] + cy + 1];
 
                             d2zxy = d2zx;
-                            if (gridj->c0[YY] + cy*gridj->sy > by1)
+                            if (gridj->c0[YY] + cy*gridj->cellSize[YY] > by1)
                             {
-                                d2zxy += gmx::square(gridj->c0[YY] + cy*gridj->sy - by1);
+                                d2zxy += gmx::square(gridj->c0[YY] + cy*gridj->cellSize[YY] - by1);
                             }
-                            else if (gridj->c0[YY] + (cy+1)*gridj->sy < by0)
+                            else if (gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] < by0)
                             {
-                                d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->sy - by0);
+                                d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->cellSize[YY] - by0);
                             }
                             if (columnStart < columnEnd && d2zxy < rlist2)
                             {

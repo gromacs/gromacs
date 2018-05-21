@@ -163,14 +163,11 @@ struct nbnxn_grid_t
     int           na_sc;            /* Number of atoms per super-cluster           */
     int           na_c_2log;        /* 2log of na_c                                */
 
-    int           ncx;              /* Number of (super-)cells along x             */
-    int           ncy;              /* Number of (super-)cells along y             */
-    int           nc;               /* Total number of (super-)cells               */
+    int           numCells[2];      /* Number of cells along x/y                   */
+    int           nc;               /* Total number of cells                       */
 
-    real          sx;               /* x-size of a (super-)cell                    */
-    real          sy;               /* y-size of a (super-)cell                    */
-    real          inv_sx;           /* 1/sx                                        */
-    real          inv_sy;           /* 1/sy                                        */
+    real          cellSize[2];      /* size of a cell                              */
+    real          invCellSize[2];   /* 1/cellSize                                  */
 
     int           cell0;            /* Index in nbs->cell corresponding to cell 0  */
 
