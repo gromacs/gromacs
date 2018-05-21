@@ -303,7 +303,7 @@ static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
     int                nviol, nrestr;
     int                i, kkk;
 
-    for (bCore = FALSE; (bCore <= TRUE); bCore++)
+    for (bCore = FALSE; !bCore; bCore = TRUE)
     {
         for (kkk = 0; (kkk < 3); kkk++)
         {

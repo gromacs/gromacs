@@ -810,12 +810,7 @@ gmx_bool is_dummymass(const char *nm)
     std::strcpy(buf, nm);
     trim(buf);
 
-    if ((buf[0] == 'M') && std::isdigit(buf[strlen(buf)-1]))
-    {
-        return TRUE;
-    }
-
-    return FALSE;
+    return (buf[0] == 'M') && std::isdigit(buf[strlen(buf)-1]);
 }
 
 static void gmx_conect_addline(gmx_conect_t *con, char *line)

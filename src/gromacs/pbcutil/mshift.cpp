@@ -48,6 +48,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 /************************************************************
@@ -367,8 +368,8 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
         }
         if (debug)
         {
-            fprintf(debug, "graph part[] nchanged=%d, bMultiPart=%d\n",
-                    nchanged, bMultiPart);
+            fprintf(debug, "graph part[] nchanged=%d, bMultiPart=%s\n",
+                    nchanged, gmx::boolToString(bMultiPart));
         }
     }
     while (nchanged > 0);

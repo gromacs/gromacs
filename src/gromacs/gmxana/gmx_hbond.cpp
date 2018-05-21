@@ -975,7 +975,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
         DBB(dum);
 
         /* put atoms in grid cells */
-        for (bAcc = FALSE; (bAcc <= TRUE); bAcc++)
+        for (bAcc = FALSE; !bAcc; bAcc = true)
         {
             if (bAcc)
             {
@@ -987,7 +987,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                 nr = hb->d.nrd;
                 ad = hb->d.don;
             }
-            DBB(bAcc);
+            DBB(int(bAcc));
             for (i = 0; (i < nr); i++)
             {
                 /* check if we are inside the shell */
@@ -1108,11 +1108,11 @@ static void count_da_grid(const ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline int grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static inline int grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
