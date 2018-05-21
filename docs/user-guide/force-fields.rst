@@ -53,7 +53,7 @@ Older GROMACS versions need a separate installation of the ffamber ports:
 CHARMM
 ^^^^^^
 
-`CHARMM`_ (Chemistry at HARvard Macromolecular Mechanics) is a both a set of force fields and 
+`CHARMM`_ (Chemistry at HARvard Macromolecular Mechanics) is a both a set of force fields and
 a software package for :ref:`molecular dynamics <gmx-md>` simulations and analysis. Includes united atom
 (CHARMM19) and all atom (CHARMM22, CHARMM27, CHARMM36) :ref:`force fields <gmx-force-field>`.  The CHARMM27 force field
 has been ported to GROMACS and is officially supported as of version 4.5.  CHARMM36 force field files can be
@@ -97,8 +97,8 @@ nucleotides, sugars etc. and can be applied to chemical and physical systems ran
 glasses and liquid crystals, to polymers and crystals and solutions of biomolecules.
 
 |Gromacs| supports the GROMOS force fields, with all parameters provided in the distribution
-for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are `united atom force fields <gmx-force-field>`,
-i.e. without explicit aliphatic (non-polar) hydrogens.
+for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are
+:ref:`united atom force fields <gmx-force-field>`, i.e. without explicit aliphatic (non-polar) hydrogens.
 
 * GROMOS 53a6 - in GROMACS format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
 * GROMOS 53a5 - in GROMACS format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
@@ -123,7 +123,7 @@ being `OPLS-AA/M <http://zarbi.chem.yale.edu/oplsaam.html>`__.
 The standard implementations for those force fields are the *BOSS* and *MCPRO*
 programs developed by the `Jorgensen group <http://zarbi.chem.yale.edu/software.html>`__
 
-As there is no central web-page to point to, the user is advised to consult the 
+As there is no central web-page to point to, the user is advised to consult the
 original literature for the `united atom (OPLS-UA) <https://doi.org/10.1021%2Fja00214a001>`__
 and `all atom (OPLS-AA) <https://doi.org/10.1021%2Fja9621760>`__ force fields, as well as the
 Jorgensen group `page <http://zarbi.chem.yale.edu/>`__

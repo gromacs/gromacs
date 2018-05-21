@@ -110,9 +110,9 @@ Controlling the length of the simulation
 ----------------------------------------
 
 Normally, the length of an MD simulation is best managed through the
-[.mdp] option [nsteps](#nsteps), however there are situations where
-more control is useful. `gmx mdrun -nsteps 100` overrides the [.mdp] file
-and executes 100 steps. `gmx mdrun -maxh 2.5` will terminate the
+:ref:`mdp` option :mdp:`nsteps`, however there are situations where
+more control is useful. :samp:`gmx mdrun -nsteps 100` overrides the :ref:`mdp`
+file and executes 100 steps. :samp:`gmx mdrun -maxh 2.5` will terminate the
 simulation shortly before 2.5 hours elapse, which can be useful when
 running under cluster queues (as long as the queuing system does not
 ever suspend the simulation).
@@ -121,12 +121,12 @@ Running a membrane protein embedding simulation
 -----------------------------------------------
 
 This is a module to help embed a membrane protein into an equilibrated
-lipid bilayer at a position and orientation specified by the user. 
+lipid bilayer at a position and orientation specified by the user.
 
-This method was initially described as a ProtSqueeze technique 
-(`Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94`_) and 
-later implemented in |Gromacs| as g_membed tool (`Wolf et al, J Comp Chem 31 (2010) 2169-2174`_). 
-Currently the functionality of g_membed is available in mdrun if 
+This method was initially described as a ProtSqueeze technique
+(`Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94`_) and
+later implemented in |Gromacs| as g_membed tool (`Wolf et al, J Comp Chem 31 (2010) 2169-2174`_).
+Currently the functionality of g_membed is available in mdrun if
 ``-membed`` option is specified (see below).
 
 .. _Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94: https://dx.doi.org/10.1021/ci600553y

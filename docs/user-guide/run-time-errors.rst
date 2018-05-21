@@ -24,21 +24,21 @@ Possible solutions are:
 
 * reduce the scope of the number of atoms selected for analysis.
 * reduce the length of trajectory file being processed.
-* in some cases confusion between Ångström and nm may lead to users wanting to generate a 
+* in some cases confusion between Ångström and nm may lead to users generating a
   :ref:`pdb2gmx <gmx pdb2gmx>` water box that is |10to3| times larger than what they think it is (e.g. :ref:`gmx solvate`).
 * use a computer with more memory.
 * install more memory in the computer.
 
 .. |10to3| replace:: 10\ :sup:`3`
 
-The user should bear in mind that the cost in time and/or memory for various activities will 
+The user should bear in mind that the cost in time and/or memory for various activities will
 scale with the number of atoms/groups/residues *N* or the simulation length *T* as order N,
 NlogN, or |Nsquared| (or maybe worse!) and the same for *T*, depending on the type of activity.
 If it takes a long time, have a think about what you are doing, and the underlying algorithm
 (see the `Reference manual`_, man page, or use the -h flag for the utility), and
 see if there's something sensible you can do that has better scaling properties.
 
-.. _Reference manual: `gmx-manual-parent-dir`_ 
+.. _Reference manual: `gmx-manual-parent-dir`_
 .. |Nsquared| replace:: N\ :sup:`2`
 
 .. _pdb2gmx-errors:
@@ -103,7 +103,7 @@ Chain identifier 'X' was used in two non-sequential blocks
 This means that within the :ref:`coordinate file<gmx-structure-files>` fed to :ref:`pdb2gmx<gmx pdb2gmx>`, the X
 chain has been split, possibly by the incorrect insertion of one molecule within another.
 The solution is simple: move the inserted molecule to a location within the file so that it is not splitting another molecule.
-This message may also mean that the same chain identifier has been used for two 
+This message may also mean that the same chain identifier has been used for two
 separate chains. In that case, rename the second chain to a unique identifier.
 
 .. _gmx-atom-missing:
@@ -111,8 +111,8 @@ separate chains. In that case, rename the second chain to a unique identifier.
 WARNING: atom X is missing in residue XXX Y in the pdb file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Related to the long bonds/missing atoms error above, this error is usually quite 
-obvious in its meaning. That is, :ref:`pdb2gmx<gmx pdb2gmx>` expects certain atoms within 
+Related to the long bonds/missing atoms error above, this error is usually quite
+obvious in its meaning. That is, :ref:`pdb2gmx<gmx pdb2gmx>` expects certain atoms within
 the given residue, based on the entries in the force field :ref:`rtp` file.
 There are several cases to which this error applies:
 
@@ -121,7 +121,7 @@ There are several cases to which this error applies:
   what is expected by the :ref:`rtp` entry.  In this case, use ``-ignh`` to
   allow :ref:`pdb2gmx<gmx pdb2gmx>` to add the correct hydrogens for you,
   or re-name the problematic atoms.
-* A terminal residue (usually the N-terminus) is missing H atoms; this usually suggests 
+* A terminal residue (usually the N-terminus) is missing H atoms; this usually suggests
   that the proper ``-ter`` option has not been supplied or chosen properly. In the case of
   the :ref:`AMBER force fields<gmx-amber-ff>`, nomenclature is typically the problem.
   N-terminal and C-terminal residues must be prefixed by N and C, respectively.
@@ -135,7 +135,7 @@ There are several cases to which this error applies:
 
 Contrary to what the error message says, the use of the option ``-missing``
 is almost always inappropriate.  The ``-missing`` option should only be used to
-generate specialized topologies for amino acid-like molecules to take 
+generate specialized topologies for amino acid-like molecules to take
 advantage of :ref:`rtp` entries.  If you find yourself using ``-missing``
 in order to generate a topology for a protein or nucleic acid,
 don't; the topology produced is likely physically unrealistic.
@@ -148,9 +148,9 @@ are expected to match those found in the :ref:`rtp` file that define the buildin
 block(s) in your structure.  In most cases, the problem arises from a naming mismatch,
 so simply re-name the atoms in your :ref:`coordinate file <gmx-structure-files>` appropriately.
 In other cases, you may be supplying a structure that has residues that do not conform
-to the expectations of the `force field <gmx-force-field>`, in which case you should
+to the expectations of the :ref:`force field <gmx-force-field>`, in which case you should
 investigate why such a difference is occurring and make a decision based on what you
-find - use a different `force field <gmx-force-field>`, manually edit the structure, etc.
+find - use a different :ref:`force field <gmx-force-field>`, manually edit the structure, etc.
 
 No force fields found (files with name 'forcefield.itp' in subdirectories ending on '.ff')
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -165,7 +165,7 @@ or re-install |Gromacs| before doing so.
 Errors in :ref:`grompp <gmx grompp>`
 ------------------------------------
 
-Found a second defaults directive file 
+Found a second defaults directive file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is caused by the ``[defaults]`` directive appearing more than once in the :ref:`topology <top>` or
@@ -250,7 +250,7 @@ RIGHT::
 
 Further, the atom index of each ``[position_restraint]`` must be relative to the
 ``[moleculetype]``, not relative to the system (because the parsing has not reached
-``[molecules]`` yet, there is no such concept as "system"). So you cannot use the output 
+``[molecules]`` yet, there is no such concept as "system"). So you cannot use the output
 of a tool like :ref:`genrestr <gmx genrestr>` blindly (as ``genrestr -h`` warns).
 
 System has non-zero total charge
@@ -270,7 +270,7 @@ If the charge is already close to an integer, then the difference is caused by
 :ref:`rounding errors <gmx-floating-point>` and not a major problem.
 
 Note for PME users: It is possible to use a uniform neutralizing background
-charge in PME to compensate for a system with a net background charge. 
+charge in PME to compensate for a system with a net background charge.
 This may however, especially for non-homogeneous systems, lead to unwanted artifacts, as
 shown in `Hub, J. S., de Groot, B. L., Grubmüller, H. & Groenhof, G. Quantifying
 artifacts in Ewald simulations of inhomogeneous systems with a net charge.
@@ -348,7 +348,7 @@ This kind of error looks like::
     [ file spc.itp, line 32 ]
     Atom index (1) in bonds out of bounds (1-0).
     This probably means that you have inserted topology
-    section "settles" in a part belonging to a different 
+    section "settles" in a part belonging to a different
     molecule than you intended to. in that case move the
     "settles" section to the right molecule.
 
@@ -373,7 +373,7 @@ of the :ref:`coordinate file <gmx-structure-files>`.  When running :ref:`grompp 
 program reads through the :ref:`topology <top>`, mapping the supplied parameters to the atoms in
 the :ref:`coordinate <gmx-structure-files>` file.  If there is a mismatch, this error is generated.
 To remedy the problem, make sure that the contents of your ``[ molecules ]`` directive
-matches the exact order of the atoms in the coordinate file.  
+matches the exact order of the atoms in the coordinate file.
 
 In some cases, the error is harmless. For example, when running simulations with the
 `MARTINI force field <http://cgmartini.nl/>`_, the workflow relies on :ref:`grompp <gmx grompp>` to apply the
@@ -437,7 +437,7 @@ making use of double precision-enabled |Gromacs|.
 LINCS/SETTLE/SHAKE warnings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sometimes, when running dynamics, :ref:`mdrun <gmx mdrun>` may suddenly stop (perhaps after writing 
+Sometimes, when running dynamics, :ref:`mdrun <gmx mdrun>` may suddenly stop (perhaps after writing
 several :ref:`pdb` files) after a series of warnings about the constraint algorithms
 (e.g. LINCS, SETTLE or SHAKE) are written to the :ref:`log` file. These algorithms often
 used to constrain bond lengths and/or angles. When a system is :ref:`blowing up <blowing-up>`
@@ -473,9 +473,9 @@ written to the output files. There are a number of reasons why this may occur:
 * Your simulation might simply be (very) :ref:`slow <gmx-performance>`, and since output is buffered, it can take quite
   some time for output to appear in the respective files. If you are trying to fix some problems
   and you want to get output as fast as possible, you can set the environment variable ``GMX_LOG_BUFFER`` to 0.
-* Something might be going wrong in your simulation, causing e.g. not-a-numbers (NAN) to be 
-  generated (these are the result of e.g. division by zero). Subsequent calculations 
-  with NAN's will generate floating point exceptions which slow everything down by orders of 
+* Something might be going wrong in your simulation, causing e.g. not-a-numbers (NAN) to be
+  generated (these are the result of e.g. division by zero). Subsequent calculations
+  with NAN's will generate floating point exceptions which slow everything down by orders of
   magnitude.
 * You might have all ``nst*`` parameters (see your :ref:`mdp` file) set to 0, this will suppress most output.
 * Your disk might be full. Eventually this will lead to :ref:`mdrun <gmx mdrun>` crashing, but
