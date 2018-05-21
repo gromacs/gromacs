@@ -47,6 +47,11 @@ PmeGpuContext::PmeGpuContext(const gmx_device_info_t *deviceInfo) :
 
 PmeGpuContextStorage buildPmeGpuContext(const gmx_device_info_t *deviceInfo)
 {
+    if (!deviceInfo)
+    {
+        // This is only needed for emptyContext on CPU path of Ewald unit tests
+        return nullptr;
+    }
     PmeGpuContextStorage result(new PmeGpuContext(deviceInfo));
     return result;
 }

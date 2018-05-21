@@ -44,8 +44,6 @@
 
 #include "testhardwarecontexts.h"
 
-#include "config.h"
-
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
@@ -110,9 +108,7 @@ void PmeTestEnvironment::SetUp()
         std::string description = "(GPU " + std::string(stmp) + ") ";
         gpuContexts.emplace_back(TestHardwareContext(description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
     }
-#if GMX_GPU == GMX_GPU_CUDA
     hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
-#endif
 }
 
 void PmeTestEnvironment::TearDown()
