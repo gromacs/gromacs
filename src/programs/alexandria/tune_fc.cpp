@@ -964,7 +964,7 @@ class Optimization : public MolGen
                           const gmx_output_env_t *oenv,
                           bool                    bCheckOutliers);
 
-        double calcDeviation();
+        void calcDeviation();
 
         double objFunction(const double v[]);
 
@@ -1545,7 +1545,7 @@ void Optimization::Print(FILE *fp)
     }
 }
 
-double Optimization::calcDeviation()
+void Optimization::calcDeviation()
 {
     int     j;
     FILE   *dbcopy;
@@ -1579,7 +1579,6 @@ double Optimization::calcDeviation()
         fflush(debug);
     }
     resetEnergies();
-
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
@@ -1680,49 +1679,29 @@ double Optimization::calcDeviation()
             }
         }
     }
-    /* Compute E-bounds */
-    if (MASTER(commrec()))
-    {
-        for (size_t j = 0; j < param_.size(); j++)
-        {
-            if (param_[j] < lower_[j])
-            {
-                increaseEnergy(ermsBOUNDS, gmx::square(param_[j]-lower_[j]));
-            }
-            else if (param_[j] > upper_[j])
-            {
-                increaseEnergy(ermsBOUNDS, gmx::square(param_[j]-upper_[j]));
-            }
-        }
-    }
-    /* Global sum energies */
     sumEnergies();
     normalizeEnergies();
     printEnergies(debug);
-    return energy(ermsTOT);
 }
 
 double Optimization::objFunction(const double v[])
 {
-    double rms = 0;
-    size_t np  = param_.size();
-
+    size_t np     = param_.size();
     for (size_t i = 0; i < np; i++)
     {
         param_[i] = v[i];
     }
-
-    tuneFc2PolData(); /* Copy parameters to topologies */
-    rms = calcDeviation();
-
-    return rms;
+    tuneFc2PolData();    
+    calcDeviation();
+    return energy(ermsTOT);
 }
 
-void Optimization::optRun(FILE *fp, FILE *fplog,
-                          int nrun,
+void Optimization::optRun(FILE                   *fp, 
+                          FILE                   *fplog, 
+                          int                     nrun,
                           const gmx_output_env_t *oenv,
-                          const char *xvgconv,
-                          const char *xvgepot)
+                          const char             *xvgconv,
+                          const char             *xvgepot)
 {
 
     std::vector<double> optx, opts, optm;
@@ -1791,13 +1770,13 @@ void Optimization::optRun(FILE *fp, FILE *fplog,
         int niter = gmx_recv_int(commrec(), 0);
         for (int n = 0; n < niter + 2; n++)
         {
-            chi2 = calcDeviation();
+            calcDeviation();
         }
     }
     setFinal();
     if (MASTER(commrec()))
     {
-        chi2 = calcDeviation();
+        chi2 = objFunction(best_.data());;
         printEnergies(fp);
         printEnergies(fplog);
     }
@@ -1870,6 +1849,7 @@ void Optimization::printResults(FILE                   *fp,
     if (nullptr != HF_xvg)
     {
         hfp = xvgropen(HF_xvg, "Eenergy", "B3LYP/aug-cc-pVTZ (kJ/mol)", "Alexandria (kJ/mol)", oenv);
+        xvgr_view(hfp, 0.15, 0.15, 0.75, 0.85, oenv);
     }
     fprintf(fp, "%s\n", title);
     fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n", "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
@@ -1899,6 +1879,8 @@ void Optimization::printResults(FILE                   *fp,
             double   deltaEn  = 0;
             gmx_bool bpolar   = (mi->shellfc_ != nullptr);
             mi->molProp()->getOptHF(&optHF);
+            fprintf(hfp, "@ s%d legend \"%s\"\n", i, mi->molProp()->getMolname().c_str());
+            fprintf(hfp, "@type xy\n");
             for (auto ei = mi->molProp()->BeginExperiment(); ei < mi->molProp()->EndExperiment(); ++ei)
             {
                 auto jtype = ei->getJobtype();
@@ -1913,6 +1895,7 @@ void Optimization::printResults(FILE                   *fp,
                     fprintf(hfp, "%10g  %10g\n", mi->Emol_ + deltaEn, mi->enerd_->term[F_EPOT]);
                 }
             }
+            fprintf(hfp, "&\n");
         }
     }
 
@@ -2077,13 +2060,13 @@ int alex_tune_fc(int argc, char *argv[])
              bZPE,
              false,
              tabfn);
+             
     
     opt.checkSupport(fp);
     
     if (nullptr != fp)
     {
-        fprintf(fp, "In the total data set of %d molecules we have:\n",
-                static_cast<int>(opt.mymols().size()));
+        fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymols().size());
     }
    
     if (MASTER(opt.commrec()))

@@ -1410,13 +1410,15 @@ void MyMol::CalcDipole()
 
 void MyMol::CalcDipole(rvec mu)
 {
+    rvec   r; /* distance of atoms to center of charge */
     clear_rvec(mu);
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
+        rvec_sub(state_->x[i], coc_, r);
         auto q = e2d(topology_->atoms.atom[i].q);
         for (auto m = 0; m < DIM; m++)
         {
-            mu[m] += state_->x[i][m]*q;
+            mu[m] += r[m]*q;
         }
     }
 }
@@ -1460,7 +1462,7 @@ void MyMol::CalcQMbasedMoments(double *q, rvec mu, tensor Q)
             r2       = iprod(r, r);
             for (auto m = 0; m < DIM; m++)
             {
-                mu[m] += (state_->x[i][m]*e2d(q[j]));
+                mu[m] += (r[m]*e2d(q[j]));
                 for (auto n = 0; n < DIM; n++)
                 {
                     Q[m][n] += 0.5*q[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;

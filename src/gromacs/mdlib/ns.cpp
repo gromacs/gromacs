@@ -259,11 +259,11 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         init_nblist(log, &nbl->nlist_sr[eNL_VDW],
                     maxsr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ],
-                    maxsr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
+                    maxsr,GMX_NBKERNEL_VDW_NONE , eintmodNONE, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATER],
                     maxsr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATER],
-                    maxsr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
+                    maxsr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers); 
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATERWATER],
                     maxsr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATERWATER],
@@ -362,6 +362,10 @@ static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int 
         {
             /* If so increase the counter */
             nlist->nri++;
+            if (debug)
+            {
+                fprintf(debug, "nri increased from %d to %d ivdw: %d ielec: %d\n", nri, nlist->nri, nlist->ivdw, nlist->ielec);
+            }
             nri++;
             if (nlist->nri >= nlist->maxnri)
             {
