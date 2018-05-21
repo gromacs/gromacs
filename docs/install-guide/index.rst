@@ -21,7 +21,7 @@ Quick and dirty installation
 1. Get the latest version of your C and C++ compilers.
 2. Check that you have CMake version |CMAKE_MINIMUM_REQUIRED_VERSION| or later.
 3. Get and unpack the latest version of the |Gromacs| tarball.
-4. Make a separate build directory and change to it. 
+4. Make a separate build directory and change to it.
 5. Run ``cmake`` with the path to the source as an argument
 6. Run ``make``, ``make check``, and ``make install``
 7. Source ``GMXRC`` to get access to |Gromacs|
@@ -80,7 +80,7 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
 * ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a `non-standard location`_ (default ``/usr/local/gromacs``)
 * ``-DBUILD_SHARED_LIBS=off`` to turn off the building of shared libraries to help with `static linking`_
-* ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
+* ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
 Building older versions
@@ -256,7 +256,7 @@ Many simulations in |Gromacs| make extensive use of fast Fourier
 transforms, and a software library to perform these is always
 required. We recommend FFTW_ (version 3 or higher only) or Intel
 MKL_. The choice of library can be set with ``cmake
--DGMX_FFT_LIBRARY=<name>``, where ``<name>`` is one of ``fftw``,
+-DGMX_FFT_LIBRARY=<name>``, where ``<name>`` is one of ``fftw3``,
 ``mkl``, or ``fftpack``. FFTPACK is bundled with |Gromacs| as a
 fallback, and is acceptable if simulation performance is not a
 priority. When choosing MKL, |Gromacs| will also use MKL for BLAS and
@@ -344,12 +344,12 @@ Other optional build components
   source already.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
-  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx 
+  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx
   |EXPECTED_SPHINX_VERSION|, and pygments.
 * The |Gromacs| utility programs often write data files in formats
   suitable for the Grace plotting tool, but it is straightforward to
   use these files in other plotting programs, too.
-  
+
 Doing a build of |Gromacs|
 --------------------------
 
@@ -645,7 +645,7 @@ However, to reduce build time and binary size we do not generate code for
 every single possible architecture, which in rare cases (say, Tegra systems)
 can result in the default build not being able to use some GPUs.
 If this happens, or if you want to remove some architectures to reduce
-binary size and build time, you can alter the target CUDA architectures. 
+binary size and build time, you can alter the target CUDA architectures.
 This can be done either with the ``GMX_CUDA_TARGET_SM`` or
 ``GMX_CUDA_TARGET_COMPUTE`` CMake variables, which take a semicolon delimited
 string with the two digit suffixes of CUDA (virtual) architectures names, for
@@ -926,7 +926,7 @@ from your shell:
 It will detect what kind of shell you are running and set up your
 environment for using |Gromacs|. You may wish to arrange for your
 login scripts to do this automatically; please search the web for
-instructions on how to do this for your shell. 
+instructions on how to do this for your shell.
 
 Many of the |Gromacs| programs rely on data installed in the
 ``share/gromacs`` subdirectory of the installation directory. By

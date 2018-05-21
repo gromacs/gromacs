@@ -1596,7 +1596,7 @@ applicable pulling coordinate.
    .. mdp-value:: no
 
       only print the distance for each pull coordinate
-   
+
    .. mdp-value:: yes
 
       print the distance and Cartesian components selected in
@@ -2941,7 +2941,7 @@ Non-equilibrium MD
    Groups that are to be frozen (*i.e.* their X, Y, and/or Z position
    will not be updated; *e.g.* ``Lipid SOL``). :mdp:`freezedim`
    specifies for which dimension the freezing applies. To avoid
-   spurious contibrutions to the virial and pressure due to large
+   spurious contributions to the virial and pressure due to large
    forces between completely frozen atoms you need to use energy group
    exclusions, this also saves computing time. Note that coordinates
    of frozen atoms are not scaled by pressure-coupling algorithms.
@@ -2992,7 +2992,7 @@ Electric fields
    E(t) = E0 exp ( -(t-t0)^2/(2 sigma^2) ) cos(omega (t-t0))
 
    For example, the four parameters for direction x are set in the
-   three fields of :mdp:`electric-field-x` (and similar for y and z) 
+   three fields of :mdp:`electric-field-x` (and similar for y and z)
    like
 
    electric-field-x  = E0 omega t0 sigma

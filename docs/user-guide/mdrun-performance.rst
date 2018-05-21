@@ -426,8 +426,8 @@ cases.
 ``-gcom``
     During the simulation :ref:`gmx mdrun` must communicate between all ranks to
     compute quantities such as kinetic energy. By default, this
-    happens whenever plausible, and is influenced by a lot of :ref:`[.mdp]
-    options. <mdp-general>` The period between communication phases
+    happens whenever plausible, and is influenced by a lot of
+    :ref:`mdp options. <mdp-general>` The period between communication phases
     must be a multiple of :mdp:`nstlist`, and defaults to
     the minimum of :mdp:`nstcalcenergy` and :mdp:`nstlist`.
     ``mdrun -gcom`` sets the number of steps that must elapse between
@@ -571,7 +571,7 @@ parallel hardware.
 
 ``-rcon``
     When constraints are present, option ``-rcon`` influences
-    the cell size limit as well.  
+    the cell size limit as well.
     Particles connected by NC constraints, where NC is the LINCS order
     plus 1, should not be beyond the smallest cell size. A error
     message is generated when this happens, and the user should change
@@ -832,7 +832,7 @@ One overview over the possible task assignments is given below:
   task can run wholly on the GPU, or have its latter stages run only on the CPU.
 
   Limitations are that PME on GPU does not support PME domain decomposition,
-  so that only one PME task can be offloaded to a single GPU 
+  so that only one PME task can be offloaded to a single GPU
   assigned to a separate PME rank, while NB can be decomposed and offloaded to multiple GPUs.
 
 .. Future |Gromacs| versions past 2018:
@@ -885,8 +885,8 @@ Delays in CPU execution are caused by the latency of launching GPU tasks,
 an overhead that can become significant as simulation ns/day increases
 (i.e. with shorter wall-time per step).
 The overhead is measured by :ref:`gmx mdrun` and reported in the performance
-summary section of the log file ("Launch GPU ops" row). 
-A few percent of runtime spent in this category is normal, 
+summary section of the log file ("Launch GPU ops" row).
+A few percent of runtime spent in this category is normal,
 but in fast-iterating and multi-GPU parallel runs 10% or larger overheads can be observed.
 In general, there a user can do little to avoid such overheads, but there
 are a few cases where tweaks can give performance benefits.

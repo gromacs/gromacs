@@ -123,7 +123,7 @@ How to use the Verlet scheme
 ----------------------------
 
 The Verlet scheme is enabled by default with option :mdp:`cutoff-scheme`.
-The value of [.mdp] option :mdp:`verlet-buffer-tolerance` will add a
+The value of :ref:`mdp` option :mdp:`verlet-buffer-tolerance` will add a
 pair-list buffer whose size is tuned for the given energy drift (in
 kJ/mol/ns per particle). The effective drift is usually much lower, as
 :ref:`gmx grompp` assumes constant particle velocities. (Note that in single
@@ -142,7 +142,7 @@ to -1 and a buffer set manually by specifying :mdp:`rlist` greater than
 the larger of :mdp:`rcoulomb` and :mdp:`rvdw`. The simplest way to get a
 reasonable buffer size is to use an NVT mdp file with the target
 temperature set to what you expect in your NVE simulation, and
-transfer the buffer size printed by :ref:`gmx grompp` to your NVE [.mdp] file.
+transfer the buffer size printed by :ref:`gmx grompp` to your NVE :ref:`mdp` file.
 
 When a GPU is used, nstlist is automatically increased by :ref:`gmx mdrun`,
 usually to 20 or more; rlist is increased along to stay below the

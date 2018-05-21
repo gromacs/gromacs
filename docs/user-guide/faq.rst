@@ -13,7 +13,7 @@ Questions regarding |Gromacs| installation
 ------------------------------------------
 
 #. Do I need to compile all utilities with MPI?
-   
+
    With one rarely-used exception (:ref:`pme_error <gmx pme_error>`), only the
    :ref:`mdrun <gmx mdrun>` binary is able to use the :ref:`MPI <mpi-support>`
    parallelism. So you only need to use the ``-DGMX_MPI=on`` flag
@@ -33,7 +33,7 @@ Questions concerning system preparation and preprocessing
 
 #. Where can I find a solvent :ref:`coordinate file <gmx-structure-files>` for use with :ref:`solvate <gmx solvate>`?
 
-   Suitable equilibrated boxes of solvent :ref:`structure files <gmx-structure-files>` can be found 
+   Suitable equilibrated boxes of solvent :ref:`structure files <gmx-structure-files>` can be found
    in the ``$GMXDIR/share/gromacs/top`` directory. That location will be searched by default
    by :ref:`solvate <gmx solvate>`, for example by using ``-cs spc216.gro`` as an argument.
    Other solvent boxes can be prepared by the user as described
@@ -77,7 +77,7 @@ Questions concerning system preparation and preprocessing
 
    You don't need to prepare additional files if you already have all :ref:`itp` and :ref:`top` files prepared through other tools.
 
-   Examples for those are `CHARMM-GUI <http://www.charmm-gui.org/>`__, `ATB (Automated Topology Builder <https://atb.uq.edu.au/>`__,
+   Examples for those are `CHARMM-GUI <http://www.charmm-gui.org/>`__, `ATB (Automated Topology Builder) <https://atb.uq.edu.au/>`__,
    `pmx <http://pmx.mpibpc.mpg.de/instructions.html>`__. and `PRODRG <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`__.
 
 #. How can I build in missing atoms?
@@ -128,9 +128,9 @@ Questions regarding simulation methodology
 
 #.  How do I extend a completed a simulation to longer times?
 
-    Please see the section on `managing long simulations`.
+    Please see the section on :ref:`managing long simulations`.
     You can either prepare a new :ref:`mdp` file, or extend the simulation time
-    in the original :ref:`tpr` file using :ref:`convert-tpr`<gmx convert-tpr>`.
+    in the original :ref:`tpr` file using :ref:`convert-tpr <gmx convert-tpr>`.
 
     .. TODO #.  How do I complete a crashed simulation?
 
@@ -156,7 +156,7 @@ Parameterization and Force Fields
     Parameters for these exotic species aren't available in force field X.
     What should I do?
 
-    First, you should consider on how well :ref:`MD <gmx-md>` will actually describe your
+    First, you should consider how well :ref:`MD <gmx-md>` will actually describe your
     system (e.g. see some of the `recent literature <https://dx.doi.org/10.1021%2Facs.chemrev.6b00440>`__).
     Many species are infeasible to model without either atomic polarizability, or QM treatments.
     Then you need to prepare your own set of parameters and add a new residue
@@ -170,7 +170,7 @@ Parameterization and Force Fields
     **NO**. Molecules parametrized for a given
     :ref:`force field <gmx-force-field>` will not behave in a physical manner when interacting with
     other molecules that have been parametrized according to different standards. If your
-    required molecule is not included in the force field you need to use, you will 
+    required molecule is not included in the force field you need to use, you will
     have to parametrize it yourself according to the methodology of this force field.
 
 Analysis and Visualization
@@ -183,7 +183,7 @@ Analysis and Visualization
 
 #.  Why am I seeing bonds being created when I watch the trajectory?
 
-    Most visualization software determines the bond status of atoms depending
+    Most visualization softwares determine the bond status of atoms depending
     on a set of predefined distances. So the bonding pattern created by them
     might not be the one defined in your :ref:`topology <top>` file. What
     matters is the information encoded in there. If the software has read
@@ -201,5 +201,3 @@ Analysis and Visualization
 
     As the simulation time is calculated using :ref:`floating point arithmetic <gmx-floating-point>`,
     rounding errors can occur but are not of concern.
-
-
