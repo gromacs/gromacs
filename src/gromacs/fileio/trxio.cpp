@@ -109,14 +109,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 
     iq = (int)((a - b + tol*a)/c);
 
-    if (fabs(a - b - c*iq) <= tol*fabs(a))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return fabs(a - b - c*iq) <= tol*fabs(a);
 }
 
 
@@ -250,7 +243,7 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
 {
     t_fileio *stfio    = trx_get_fileio(status);
     int       filetype = gmx_fio_getftp(stfio);
-    int       bOK;
+    gmx_bool  bOK;
     float     lasttime = -1;
 
     if (filetype == efXTC)

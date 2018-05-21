@@ -569,7 +569,7 @@ WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
         // TODO this code is used only at the end of the run, so we
         // can just do a simple reduce of haveInvalidCount in
         // wallcycle_print, and avoid bugs
-        cycles_n[nsum] = (wc->haveInvalidCount > 0 ? 1 : 0);
+        cycles_n[nsum] = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
         MPI_Allreduce(cycles_n, buf, nsum + 1, MPI_DOUBLE, MPI_MAX,
                       cr->mpi_comm_mysim);

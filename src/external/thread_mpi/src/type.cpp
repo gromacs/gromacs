@@ -63,6 +63,11 @@
 /* this is where all the tMPI_Reduce ops are included from tmpi_ops.h */
 #define THREAD_MPI_OPS 1
 
+#define TYPE bool
+#define TYPENM C_BOOL
+#define INTTYPE 1
+#include "tmpi_ops.h"
+
 #define TYPE char
 #define TYPENM CHAR
 #define INTTYPE 1
@@ -163,6 +168,7 @@
 
 /* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
+tmpi_dt tmpi_c_bool  = {sizeof(bool),              oplist_C_BOOL,   0, NULL, TRUE};
 tmpi_dt tmpi_short   = {sizeof(short),             oplist_SHORT,    0, NULL, TRUE};
 tmpi_dt tmpi_int     = {sizeof(int),               oplist_INT,      0, NULL, TRUE};
 tmpi_dt tmpi_long    = {sizeof(long),              oplist_LONG,     0, NULL, TRUE};
@@ -187,6 +193,7 @@ tmpi_dt tmpi_int64_t = {8,                         oplist_INT64_T,  0, NULL, TRU
 
 
 /* the variable types as they are referred to from MPI */
+const tMPI_Datatype TMPI_C_BOOL             = &tmpi_c_bool;
 const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
 const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
 const tMPI_Datatype TMPI_INT                = &tmpi_int;
