@@ -209,7 +209,7 @@ typedef struct
 } t_coordselection;
 
 //! Parameters of WHAM
-typedef struct
+typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /*!
      * \name Input stuff
