@@ -84,6 +84,14 @@ struct PmeGpuContextImpl
     using PmeKernelHandle = cl_kernel;
 #endif
 
+    /*! \brief
+     * Maximum synchronous GPU thread group execution width.
+     * "Warp" is a CUDA term which we end up reusing in OpenCL kernels as well.
+     * For CUDA, this is a static value that comes from gromacs/gpu_utils/cuda_arch_utils.cuh;
+     * for OpenCL, we have to query it dynamically.
+     */
+    size_t warpSize;
+
     //@{
     /**
      * Spread/spline kernels are compiled only for order of 4.

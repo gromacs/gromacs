@@ -124,6 +124,8 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
     float * __restrict__ gm_dtheta          = kernelParams.atoms.d_dtheta;
     int * __restrict__   gm_gridlineIndices = kernelParams.atoms.d_gridlineIndices;
 
+    const int            atomsPerWarp = PME_SPREADGATHER_ATOMS_PER_WARP;
+
     /* Fractional coordinates */
     __shared__ float sm_fractCoords[atomsPerBlock * DIM];
 
@@ -135,16 +137,16 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
     /* Thread index w.r.t. warp */
     const int threadWarpIndex = threadLocalId % warp_size;
     /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-    const int atomWarpIndex = threadWarpIndex % PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int atomWarpIndex = threadWarpIndex % atomsPerWarp;
     /* Atom index w.r.t. block/shared memory */
-    const int atomIndexLocal = warpIndex * PME_SPREADGATHER_ATOMS_PER_WARP + atomWarpIndex;
+    const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
 
     /* Atom index w.r.t. global memory */
     const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
     /* Spline contribution index in one dimension */
-    const int orderIndex = threadWarpIndex / (PME_SPREADGATHER_ATOMS_PER_WARP * DIM);
+    const int orderIndex = threadWarpIndex / (atomsPerWarp * DIM);
     /* Dimension index */
-    const int dimIndex = (threadWarpIndex - orderIndex * (PME_SPREADGATHER_ATOMS_PER_WARP * DIM)) / PME_SPREADGATHER_ATOMS_PER_WARP;
+    const int dimIndex = (threadWarpIndex - orderIndex * (atomsPerWarp * DIM)) / atomsPerWarp;
 
     /* Multi-purpose index of rvec/ivec atom data */
     const int sharedMemoryIndex = atomIndexLocal * DIM + dimIndex;
@@ -258,7 +260,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
                 *SPLINE_DATA_PTR(0) = div * (1.0f - dr) * SPLINE_DATA(0);
             }
 
-            const int thetaIndexBase        = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
+            const int thetaIndexBase        = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
             const int thetaGlobalOffsetBase = atomIndexOffset * DIM * order;
 
             /* Differentiation and storing the spline derivatives (dtheta) */
@@ -269,7 +271,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             for (o = 0; o < order; o++)
 #endif
             {
-                const int   thetaIndex       = getSplineParamIndex<order>(thetaIndexBase, dimIndex, o);
+                const int   thetaIndex       = getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
                 const int   thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;
 
                 const float dtheta = ((o > 0) ? SPLINE_DATA(o - 1) : 0.0f) - SPLINE_DATA(o);
@@ -293,7 +295,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams  
             for (o = 0; o < order; o++)
 #endif
             {
-                const int thetaIndex       = getSplineParamIndex<order>(thetaIndexBase, dimIndex, o);
+                const int thetaIndex       = getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
                 const int thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;
 
                 sm_theta[thetaIndex]       = SPLINE_DATA(o);
@@ -329,20 +331,21 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
     /* Global memory pointer to the output grid */
     float * __restrict__ gm_grid = kernelParams.grid.d_realGrid;
 
+    const int            atomsPerWarp = PME_SPREADGATHER_ATOMS_PER_WARP;
 
-    const int nx  = kernelParams.grid.realGridSize[XX];
-    const int ny  = kernelParams.grid.realGridSize[YY];
-    const int nz  = kernelParams.grid.realGridSize[ZZ];
-    const int pny = kernelParams.grid.realGridSizePadded[YY];
-    const int pnz = kernelParams.grid.realGridSizePadded[ZZ];
+    const int            nx  = kernelParams.grid.realGridSize[XX];
+    const int            ny  = kernelParams.grid.realGridSize[YY];
+    const int            nz  = kernelParams.grid.realGridSize[ZZ];
+    const int            pny = kernelParams.grid.realGridSizePadded[YY];
+    const int            pnz = kernelParams.grid.realGridSizePadded[ZZ];
 
-    const int offx = 0, offy = 0, offz = 0; // unused for now
+    const int            offx = 0, offy = 0, offz = 0; // unused for now
 
-    const int atomIndexLocal  = threadIdx.z;
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
+    const int            atomIndexLocal  = threadIdx.z;
+    const int            atomIndexGlobal = atomIndexOffset + atomIndexLocal;
 
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
-    const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
+    const int            globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
+    const int            chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
     if (chargeCheck & globalCheck)
     {
         // Spline Y/Z coordinates
@@ -361,14 +364,14 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
         }
 
         /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-        const int    atomWarpIndex   = atomIndexLocal % PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    atomWarpIndex   = atomIndexLocal % atomsPerWarp;
         /* Warp index w.r.t. block - could probably be obtained easier? */
-        const int    warpIndex       = atomIndexLocal / PME_SPREADGATHER_ATOMS_PER_WARP;
+        const int    warpIndex       = atomIndexLocal / atomsPerWarp;
 
-        const int    splineIndexBase = getSplineParamIndexBase<order>(warpIndex, atomWarpIndex);
-        const int    splineIndexZ    = getSplineParamIndex<order>(splineIndexBase, ZZ, ithz);
+        const int    splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
+        const int    splineIndexZ    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
         const float  thetaZ          = sm_theta[splineIndexZ];
-        const int    splineIndexY    = getSplineParamIndex<order>(splineIndexBase, YY, ithy);
+        const int    splineIndexY    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
         const float  thetaY          = sm_theta[splineIndexY];
         const float  constVal        = thetaZ * thetaY * sm_coefficients[atomIndexLocal];
         assert(isfinite(constVal));
@@ -383,7 +386,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
                 ix -= nx;
             }
             const int   gridIndexGlobal = ix * pny * pnz + constOffset;
-            const int   splineIndexX    = getSplineParamIndex<order>(splineIndexBase, XX, ithx);
+            const int   splineIndexX    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float thetaX          = sm_theta[splineIndexX];
             assert(isfinite(thetaX));
             assert(isfinite(gm_grid[gridIndexGlobal]));
