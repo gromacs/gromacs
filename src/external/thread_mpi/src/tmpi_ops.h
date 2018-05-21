@@ -89,6 +89,7 @@
 
 
 /* these are the function prototypes + definitions: */
+#if TYPECATEGORY!=LOGICALTYPE
 #define MAX(a, b)  (( (a) > (b) ) ? (a) : (b))
 FN(TYPENM, max, MAX)
 #undef MAX
@@ -97,15 +98,18 @@ FN(TYPENM, min, MIN)
 #undef MIN
 OPFN(TYPENM, sum, +)
 OPFN(TYPENM, prod, *)
-#if INTTYPE != 0
+#endif
+#if TYPECATEGORY!=FLOATTYPE
 OPFN(TYPENM, land, &&)
-OPFN(TYPENM, band, &)
 OPFN(TYPENM, lor, ||)
-OPFN(TYPENM, bor, |)
-OPFN(TYPENM, bxor, ^)
 #define XOR(a, b)  ( (!a) ^ (!b) )
 FN(TYPENM, lxor, XOR)
 #undef XOR
+#endif
+#if TYPECATEGORY==INTTYPE
+OPFN(TYPENM, band, &)
+OPFN(TYPENM, bor, |)
+OPFN(TYPENM, bxor, ^)
 #endif
 
 #define OPARRAYr(tp) oplist_ ## tp
@@ -113,11 +117,23 @@ FN(TYPENM, lxor, XOR)
 
 tMPI_Op_fn OPARRAY(TYPENM)[] =
 {
+#if TYPECATEGORY==LOGICALTYPE
+    0,
+    0,
+    0,
+    0,
+    FNAME(TYPENM, land),
+    0,
+    FNAME(TYPENM, lor),
+    0,
+    FNAME(TYPENM, lxor),
+    0,
+#else
     FNAME(TYPENM, max),
     FNAME(TYPENM, min),
     FNAME(TYPENM, sum),
     FNAME(TYPENM, prod),
-#if INTTYPE
+#if TYPECATEGORY==INTTYPE
     FNAME(TYPENM, land),
     FNAME(TYPENM, band),
     FNAME(TYPENM, lor),
@@ -131,6 +147,7 @@ tMPI_Op_fn OPARRAY(TYPENM)[] =
     0,
     0,
     0
+#endif
 #endif
 };
 
@@ -146,6 +163,5 @@ tMPI_Op_fn OPARRAY(TYPENM)[] =
 
 #undef TYPE
 #undef TYPENM
-#undef INTTYPE
-
+#undef TYPECATEGORY
 #endif

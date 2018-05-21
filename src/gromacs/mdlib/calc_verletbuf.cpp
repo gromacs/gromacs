@@ -56,6 +56,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 
 /* The code in this file estimates a pairlist buffer length
  * given a target energy drift per atom per picosecond.
@@ -450,9 +451,9 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
     {
         for (a = 0; a < natt; a++)
         {
-            fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d con_m %5.3f con_l %5.3f n %d\n",
+            fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %s con_m %5.3f con_l %5.3f n %d\n",
                     a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
-                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len,
+                    gmx::boolToString(att[a].prop.bConstr), att[a].prop.con_mass, att[a].prop.con_len,
                     att[a].n);
         }
     }

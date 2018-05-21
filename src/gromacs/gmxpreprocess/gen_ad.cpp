@@ -153,28 +153,14 @@ static int dcomp(const void *d1, const void *d2)
 
 static bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 {
-    if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
-        ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return ((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
+           ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj()));
 }
 
 
 static bool preq(t_param *p1, t_param *p2)
 {
-    if ((p1->ai() == p2->ai()) && (p1->aj() == p2->aj()))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
+    return (p1->ai() == p2->ai()) && (p1->aj() == p2->aj());
 }
 
 static void rm2par(t_param p[], int *np, peq eq)

@@ -251,7 +251,7 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
                                         size_t                     name_length)
 {
     size_t len;
-    if (index >= lc->N)
+    if (!lc || index >= lc->N)
     {
         return FALSE;
     }
@@ -268,11 +268,7 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
     {
         return FALSE;
     }
-    if (std::strncmp(lc->names[index], name, name_length) == 0)
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return std::strncmp(lc->names[index], name, name_length) == 0;
 }
 
 /* Find the index of a given lambda component name, or -1 if not found */
@@ -453,8 +449,8 @@ static gmx_bool lambda_vec_same(const lambda_vec_t *a, const lambda_vec_t *b)
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
-                                       const lambda_vec_t *b)
+static int lambda_vec_cmp_foreign(const lambda_vec_t *a,
+                                  const lambda_vec_t *b)
 {
     int      i;
     double   norm_a    = 0, norm_b = 0;
@@ -507,8 +503,8 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
     returns 1 if a is 'bigger' than b,
     returns 0 if they're the same,
     returns -1 if a is 'smaller' than b.*/
-static gmx_bool lambda_vec_cmp_native(const lambda_vec_t *a,
-                                      const lambda_vec_t *b)
+static int lambda_vec_cmp_native(const lambda_vec_t *a,
+                                 const lambda_vec_t *b)
 {
     if (a->lc != b->lc)
     {
@@ -2807,11 +2803,10 @@ static void read_bar_xvg_lowlevel(const char *fn, const real *temp, xvg_t *ba,
     {
         for (i = 0; i < ba->nset; )
         {
-            gmx_bool use = FALSE;
             /* Read lambda from the legend */
             lambda_vec_init( &(ba->lambda[i]), lc );
             lambda_vec_copy( &(ba->lambda[i]), &(ba->native_lambda));
-            use = legend2lambda(fn, legend[i], &(ba->lambda[i]));
+            gmx_bool use = legend2lambda(fn, legend[i], &(ba->lambda[i]));
             if (use)
             {
                 lambda_vec_print(&(ba->lambda[i]), buf, FALSE);

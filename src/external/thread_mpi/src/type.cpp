@@ -63,92 +63,101 @@
 /* this is where all the tMPI_Reduce ops are included from tmpi_ops.h */
 #define THREAD_MPI_OPS 1
 
+#define FLOATTYPE 0
+#define INTTYPE 1
+#define LOGICALTYPE 2
+
+#define TYPE bool
+#define TYPENM C_BOOL
+#define TYPECATEGORY LOGICALTYPE
+#include "tmpi_ops.h"
+
 #define TYPE char
 #define TYPENM CHAR
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE short
 #define TYPENM SHORT
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE int
 #define TYPENM INT
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE long
 #define TYPENM LONG
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE long long
 #define TYPENM L_LONG
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE long long int
 #define TYPENM L_L_INT
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #endif
 
 #define TYPE signed char
 #define TYPENM S_CHAR
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE unsigned char
 #define TYPENM U_CHAR
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE unsigned short
 #define TYPENM U_SHORT
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE unsigned
 #define TYPENM UNSIGNED
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #define TYPE unsigned long
 #define TYPENM U_LONG
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE unsigned long long
 #define TYPENM U_L_LONG
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #endif
 
 #define TYPE float
 #define TYPENM FLOAT
-#define INTTYPE 0
+#define TYPECATEGORY FLOATTYPE
 #include "tmpi_ops.h"
 
 #define TYPE double
 #define TYPENM DOUBLE
-#define INTTYPE 0
+#define TYPECATEGORY FLOATTYPE
 #include "tmpi_ops.h"
 
 #define TYPE long double
 #define TYPENM L_DOUBLE
-#define INTTYPE 0
+#define TYPECATEGORY FLOATTYPE
 #include "tmpi_ops.h"
 
 #define TYPE char
 #define TYPENM BYTE
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 #ifdef _MSC_VER
@@ -157,12 +166,13 @@
 #define TYPE int64_t
 #endif
 #define TYPENM INT64_T
-#define INTTYPE 1
+#define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
 
 /* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
+tmpi_dt tmpi_c_bool  = {sizeof(bool),              oplist_C_BOOL,   0, NULL, TRUE};
 tmpi_dt tmpi_short   = {sizeof(short),             oplist_SHORT,    0, NULL, TRUE};
 tmpi_dt tmpi_int     = {sizeof(int),               oplist_INT,      0, NULL, TRUE};
 tmpi_dt tmpi_long    = {sizeof(long),              oplist_LONG,     0, NULL, TRUE};
@@ -187,6 +197,7 @@ tmpi_dt tmpi_int64_t = {8,                         oplist_INT64_T,  0, NULL, TRU
 
 
 /* the variable types as they are referred to from MPI */
+const tMPI_Datatype TMPI_C_BOOL             = &tmpi_c_bool;
 const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
 const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
 const tMPI_Datatype TMPI_INT                = &tmpi_int;

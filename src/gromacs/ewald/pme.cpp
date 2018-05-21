@@ -1041,7 +1041,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     {
         gmx_incons("gmx_pme_calc_energy called in parallel");
     }
-    if (pme->bFEP_q > 1)
+    if (pme->bFEP_q)
     {
         gmx_incons("gmx_pme_calc_energy with free energy");
     }
