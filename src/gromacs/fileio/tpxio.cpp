@@ -386,7 +386,7 @@ static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals
         gmx_fio_do_int(fio, expand->lmc_forced_nstart);
         gmx_fio_do_int(fio, expand->lmc_seed);
         gmx_fio_do_real(fio, expand->mc_temp);
-        gmx_fio_do_int(fio, expand->bSymmetrizedTMatrix);
+        gmx_fio_do_gmx_bool(fio, expand->bSymmetrizedTMatrix);
         gmx_fio_do_int(fio, expand->nstTij);
         gmx_fio_do_int(fio, expand->minvarmin);
         gmx_fio_do_int(fio, expand->c_range);
@@ -474,7 +474,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
                     snew(fepvals->all_lambda[g], fepvals->n_lambda);
                 }
                 gmx_fio_ndo_double(fio, fepvals->all_lambda[g], fepvals->n_lambda);
-                gmx_fio_ndo_int(fio, fepvals->separate_dvdl, efptNR);
+                gmx_fio_ndo_gmx_bool(fio, fepvals->separate_dvdl, efptNR);
             }
             else if (fepvals->init_lambda >= 0)
             {
@@ -558,7 +558,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
     if (file_version >= 79)
     {
-        gmx_fio_do_int(fio, fepvals->bScCoul);
+        gmx_fio_do_gmx_bool(fio, fepvals->bScCoul);
     }
     else
     {
@@ -723,20 +723,20 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM);
+        gmx_fio_do_gmx_bool(fio, pull->bPrintCOM);
         /* With file_version < 95 this value is set below */
     }
     if (file_version >= tpxv_ReplacePullPrintCOM12)
     {
-        gmx_fio_do_int(fio, pull->bPrintRefValue);
-        gmx_fio_do_int(fio, pull->bPrintComp);
+        gmx_fio_do_gmx_bool(fio, pull->bPrintRefValue);
+        gmx_fio_do_gmx_bool(fio, pull->bPrintComp);
     }
     else if (file_version >= tpxv_PullCoordTypeGeom)
     {
         int idum;
         gmx_fio_do_int(fio, idum); /* used to be bPrintCOM2 */
-        gmx_fio_do_int(fio, pull->bPrintRefValue);
-        gmx_fio_do_int(fio, pull->bPrintComp);
+        gmx_fio_do_gmx_bool(fio, pull->bPrintRefValue);
+        gmx_fio_do_gmx_bool(fio, pull->bPrintComp);
     }
     else
     {
@@ -891,8 +891,8 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
         {
             do_swapgroup(fio, &swap->grp[ig], bRead);
         }
-        gmx_fio_do_int(fio, swap->massw_split[eChannel0]);
-        gmx_fio_do_int(fio, swap->massw_split[eChannel1]);
+        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel0]);
+        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel1]);
         gmx_fio_do_int(fio, swap->nstswap);
         gmx_fio_do_int(fio, swap->nAverage);
         gmx_fio_do_real(fio, swap->threshold);
@@ -920,9 +920,9 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
         gmx_fio_do_int(fio, swap->grp[3].nat);
         gmx_fio_do_int(fio, swap->grp[eGrpSolvent].nat);
         gmx_fio_do_int(fio, swap->grp[eGrpSplit0].nat);
-        gmx_fio_do_int(fio, swap->massw_split[eChannel0]);
+        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel0]);
         gmx_fio_do_int(fio, swap->grp[eGrpSplit1].nat);
-        gmx_fio_do_int(fio, swap->massw_split[eChannel1]);
+        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel1]);
         gmx_fio_do_int(fio, swap->nstswap);
         gmx_fio_do_int(fio, swap->nAverage);
         gmx_fio_do_real(fio, swap->threshold);
@@ -1464,7 +1464,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     /* Enforced rotation */
     if (file_version >= 74)
     {
-        gmx_fio_do_int(fio, ir->bRot);
+        gmx_fio_do_gmx_bool(fio, ir->bRot);
         if (ir->bRot == TRUE)
         {
             if (bRead)
@@ -1482,7 +1482,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     /* Interactive molecular dynamics */
     if (file_version >= tpxv_InteractiveMolecularDynamics)
     {
-        gmx_fio_do_int(fio, ir->bIMD);
+        gmx_fio_do_gmx_bool(fio, ir->bIMD);
         if (TRUE == ir->bIMD)
         {
             if (bRead)
@@ -1623,8 +1623,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
              * changing the tpr format for every QMMM change.
              */
             std::vector<int> dummy(ir->opts.ngQM, 0);
-            gmx_fio_ndo_gmx_bool(fio, dummy.data(), ir->opts.ngQM);
-            gmx_fio_ndo_gmx_bool(fio, dummy.data(), ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, dummy.data(), ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, dummy.data(), ir->opts.ngQM);
         }
         /* end of QMMM stuff */
     }

@@ -975,7 +975,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
         DBB(dum);
 
         /* put atoms in grid cells */
-        for (bAcc = FALSE; (bAcc <= TRUE); bAcc++)
+        for (bAcc = FALSE; !bAcc; bAcc = true)
         {
             if (bAcc)
             {

@@ -250,7 +250,7 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
 {
     t_fileio *stfio    = trx_get_fileio(status);
     int       filetype = gmx_fio_getftp(stfio);
-    int       bOK;
+    gmx_bool  bOK;
     float     lasttime = -1;
 
     if (filetype == efXTC)
