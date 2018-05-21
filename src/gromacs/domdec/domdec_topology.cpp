@@ -78,6 +78,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "domdec_constraints.h"
@@ -2152,8 +2153,8 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             if (debug)
             {
                 fprintf(debug,
-                        "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
-                        d, cellsize_min[d], d, rcheck[d], bRCheck2B);
+                        "dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %s\n",
+                        d, cellsize_min[d], d, rcheck[d], gmx::boolToString(bRCheck2B));
             }
         }
         if (bRCheckMB || bRCheck2B)

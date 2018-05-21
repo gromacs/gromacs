@@ -56,7 +56,7 @@ int pr_indent(FILE *fp, int n)
     return n;
 }
 
-int available(FILE *fp, const void *p, int indent, const char *title)
+bool available(FILE *fp, const void *p, int indent, const char *title)
 {
     if (!p)
     {

@@ -1836,14 +1836,7 @@ static gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_
 
     if (0 == std::strncmp(opt, "-b", 2) || 0 == std::strncmp(opt, "-s", 2))
     {
-        if (!bOptional || bSet)
-        {
-            return TRUE;
-        }
-        else
-        {
-            return FALSE;
-        }
+        return !bOptional || bSet;
     }
     else
     {
@@ -1853,14 +1846,7 @@ static gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_
         }
         else
         {
-            if (bSet) /* These are additional input files like -cpi -ei */
-            {
-                return TRUE;
-            }
-            else
-            {
-                return FALSE;
-            }
+            return bSet; /* These are additional input files like -cpi -ei */
         }
     }
 }

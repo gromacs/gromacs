@@ -109,12 +109,7 @@ gmx_bool get_header(char line[], char *header)
         return FALSE;
     }
     dum[0] = '\0';
-    if (sscanf(temp, "%s%*s", header) != 1)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
+    return sscanf(temp, "%s%*s", header) == 1;
 }
 
 int search_str(int nstr, char **str, char *key)
