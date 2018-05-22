@@ -251,3 +251,13 @@ number of ranks, but it's safer to ask the user to explicity set
 always worked correctly.
 
 Fixes :issue:`2348`
+
+Fix PQR file output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+PQR files from gmx editconf violated the standard for the format because
+they were always written in fixed format. This commit fixes the issue by
+introducing a different output method for PQR files that follows the
+standard.
+
+Fixes :issue:`2511`
+
