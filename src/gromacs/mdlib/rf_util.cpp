@@ -56,6 +56,7 @@ real RF_excl_correction(const t_forcerec *fr,
                         const t_graph    *g,
                         const t_mdatoms  *mdatoms,
                         const t_blocka   *excl,
+                        bool              usingDomainDecomposition,
                         rvec              x[],
                         rvec              f[],
                         rvec             *fshift,
@@ -92,7 +93,7 @@ real RF_excl_correction(const t_forcerec *fr,
     AA      = excl->a;
     ki      = CENTRAL;
 
-    if (fr->bDomDec)
+    if (usingDomainDecomposition)
     {
         niat = excl->nr;
     }

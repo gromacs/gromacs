@@ -549,7 +549,8 @@ void do_force_lowlevel(t_forcerec           *fr,
         {
             real dvdl_rf_excl      = 0;
             enerd->term[F_RF_EXCL] =
-                RF_excl_correction(fr, graph, md, excl, x, forceForUseWithShiftForces,
+                RF_excl_correction(fr, graph, md, excl, DOMAINDECOMP(cr),
+                                   x, forceForUseWithShiftForces,
                                    fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
             enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;

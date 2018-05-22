@@ -1197,7 +1197,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         box_diag[ZZ] = box[ZZ][ZZ];
 
         wallcycle_start(wcycle, ewcNS);
-        if (!fr->bDomDec)
+        if (!DOMAINDECOMP(cr))
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
             nbnxn_put_on_grid(nbv->nbs.get(), fr->ePBC, box,

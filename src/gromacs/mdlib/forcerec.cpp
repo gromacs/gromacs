@@ -2337,8 +2337,6 @@ void init_forcerec(FILE                             *fp,
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
 
-    fr->bDomDec = DOMAINDECOMP(cr);
-
     if (check_box(ir->ePBC, box))
     {
         gmx_fatal(FARGS, check_box(ir->ePBC, box));

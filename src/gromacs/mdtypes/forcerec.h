@@ -157,11 +157,9 @@ struct ewald_corr_thread_t;
 struct t_forcerec {
     struct interaction_const_t *ic;
 
-    /* Domain Decomposition */
-    gmx_bool bDomDec;
-
     /* PBC stuff */
     int                         ePBC;
+    //! Whether PBC must be considered for bonded interactions.
     gmx_bool                    bMolPBC;
     int                         rc_scaling;
     rvec                        posres_com;
