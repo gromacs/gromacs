@@ -563,7 +563,7 @@ void QgenEem::copyChargesToAtoms(t_atoms *atoms)
     }
 }
 
-void QgenEem::setPositions(PaddedRVecVector x,
+void QgenEem::updatePositions(PaddedRVecVector x,
                            t_atoms         *atoms)
 {
     for (auto i = 0; i < atoms->nr; i++)
@@ -738,7 +738,7 @@ int QgenEem::generateChargesSm(FILE              *fp,
     if (eQGEN_OK == eQGEN_)
     {
         updateInfo(pd);
-        setPositions(x, atoms);
+        updatePositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);     
         if (debug)

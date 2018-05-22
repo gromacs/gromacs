@@ -147,7 +147,7 @@ class QgenEem
 
         void solveQEem(FILE *fp);
         
-        void setPositions(PaddedRVecVector x, t_atoms *atoms);
+        void updatePositions(PaddedRVecVector x, t_atoms *atoms);
 
         double calcSij(int i, int j);
 
