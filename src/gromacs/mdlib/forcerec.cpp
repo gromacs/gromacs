@@ -2194,11 +2194,10 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
                                 nbv->listParams.get());
 
-    nbnxn_init_search(&nbv->nbs,
-                      DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                      bFEP_NonBonded,
-                      gmx_omp_nthreads_get(emntPairsearch));
+    nbv->nbs = nbnxn_init_search(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+                                 DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                 bFEP_NonBonded,
+                                 gmx_omp_nthreads_get(emntPairsearch));
 
     gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,
                                  &nb_alloc, &nb_free);
