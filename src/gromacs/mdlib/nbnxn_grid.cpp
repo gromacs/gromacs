@@ -149,13 +149,9 @@ static void set_grid_size_xy(const nbnxn_search_t  nbs,
     grid->cxy_na.resize(grid->ncx*grid->ncy + 1);
     grid->cxy_ind.resize(grid->ncx*grid->ncy + 2);
 
-    for (int t = 0; t < nbs->nthread_max; t++)
+    for (nbnxn_search_work_t &work : nbs->work)
     {
-        if (grid->ncx*grid->ncy+1 > nbs->work[t].cxy_na_nalloc)
-        {
-            nbs->work[t].cxy_na_nalloc = over_alloc_large(grid->ncx*grid->ncy+1);
-            srenew(nbs->work[t].cxy_na, nbs->work[t].cxy_na_nalloc);
-        }
+        work.cxy_na.resize(grid->ncx*grid->ncy + 1);
     }
 
     /* Worst case scenario of 1 atom in each last cell */
@@ -241,7 +237,7 @@ static void sort_atoms(int dim, gmx_bool Backwards,
                        int gmx_unused dd_zone,
                        int *a, int n, const rvec *x,
                        real h0, real invh, int n_per_h,
-                       int *sort)
+                       gmx::ArrayRef<int> sort)
 {
     if (n <= 1)
     {
@@ -933,7 +929,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
                                 const rvec *x,
                                 nbnxn_atomdata_t *nbat,
                                 int cxy_start, int cxy_end,
-                                int *sort_work)
+                                gmx::ArrayRef<int> sort_work)
 {
     if (debug)
     {
@@ -997,7 +993,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   const rvec *x,
                                   nbnxn_atomdata_t *nbat,
                                   int cxy_start, int cxy_end,
-                                  int *sort_work)
+                                  gmx::ArrayRef<int> sort_work)
 {
     nbnxn_bb_t  bb_work_array[2];
     nbnxn_bb_t *bb_work_aligned = reinterpret_cast<nbnxn_bb_t *>((reinterpret_cast<std::size_t>(bb_work_array + 1)) & (~(static_cast<std::size_t>(15))));
@@ -1107,7 +1103,7 @@ static void calc_column_indices(nbnxn_grid_t *grid,
                                 int dd_zone, const int *move,
                                 int thread, int nthread,
                                 gmx::ArrayRef<int> cell,
-                                int *cxy_na)
+                                gmx::ArrayRef<int> cxy_na)
 {
     /* We add one extra cell for particles which moved during DD */
     for (int i = 0; i < grid->ncx*grid->ncy+1; i++)
@@ -1299,19 +1295,12 @@ static void calc_cell_indices(const nbnxn_search_t  nbs,
     }
 
     /* Make sure the work array for sorting is large enough */
-    if (ncz_max*grid->na_sc*SGSF > nbs->work[0].sort_work_nalloc)
+    if (static_cast<size_t>(ncz_max*grid->na_sc*SGSF) > nbs->work[0].sortBuffer.size())
     {
-        for (int thread = 0; thread < nbs->nthread_max; thread++)
+        for (nbnxn_search_work_t &work : nbs->work)
         {
-            nbs->work[thread].sort_work_nalloc =
-                over_alloc_large(ncz_max*grid->na_sc*SGSF);
-            srenew(nbs->work[thread].sort_work,
-                   nbs->work[thread].sort_work_nalloc);
-            /* When not in use, all elements should be -1 */
-            for (int i = 0; i < nbs->work[thread].sort_work_nalloc; i++)
-            {
-                nbs->work[thread].sort_work[i] = -1;
-            }
+            /* Elements not in use should be -1 */
+            work.sortBuffer.resize(ncz_max*grid->na_sc*SGSF, -1);
         }
     }
 
@@ -1350,14 +1339,14 @@ static void calc_cell_indices(const nbnxn_search_t  nbs,
                 sort_columns_simple(nbs, ddZone, grid, atomStart, atomEnd, atinfo, x, nbat,
                                     ((thread+0)*grid->ncx*grid->ncy)/nthread,
                                     ((thread+1)*grid->ncx*grid->ncy)/nthread,
-                                    nbs->work[thread].sort_work);
+                                    nbs->work[thread].sortBuffer);
             }
             else
             {
                 sort_columns_supersub(nbs, ddZone, grid, atomStart, atomEnd, atinfo, x, nbat,
                                       ((thread+0)*grid->ncx*grid->ncy)/nthread,
                                       ((thread+1)*grid->ncx*grid->ncy)/nthread,
-                                      nbs->work[thread].sort_work);
+                                      nbs->work[thread].sortBuffer);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

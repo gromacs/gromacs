@@ -36,6 +36,7 @@
 #ifndef _nbnxn_internal_h
 #define _nbnxn_internal_h
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
@@ -243,35 +244,55 @@ enum {
 };
 
 /* Thread-local work struct, contains part of nbnxn_grid_t */
-typedef struct {
-    gmx_cache_protect_t  cp0;
+struct nbnxn_search_work_t
+{
+    /* Constructor */
+    nbnxn_search_work_t();
 
-    int                 *cxy_na;
-    int                  cxy_na_nalloc;
+    /* Destructor */
+    ~nbnxn_search_work_t();
 
-    int                 *sort_work;
-    int                  sort_work_nalloc;
+    gmx_cache_protect_t       cp0;          /* Buffer to avoid cache polution */
 
-    nbnxn_buffer_flags_t buffer_flags; /* Flags for force buffer access */
+    std::vector<int>          cxy_na;       /* Grid column atom counts temporary buffer */
 
-    int                  ndistc;       /* Number of distance checks for flop counting */
+    std::vector<int>          sortBuffer;   /* Temporary buffer for sorting atoms within a grid column */
 
-    t_nblist            *nbl_fep;      /* Temporary FEP list for load balancing */
+    nbnxn_buffer_flags_t      buffer_flags; /* Flags for force buffer access */
 
-    nbnxn_cycle_t        cc[enbsCCnr];
+    int                       ndistc;       /* Number of distance checks for flop counting */
 
-    gmx_cache_protect_t  cp1;
-} nbnxn_search_work_t;
+
+    std::unique_ptr<t_nblist> nbl_fep;      /* Temporary FEP list for load balancing */
+
+    nbnxn_cycle_t             cc[enbsCCnr]; /* Counters for thread-local cycles */
+
+    gmx_cache_protect_t       cp1;          /* Buffer to avoid cache polution */
+};
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
-typedef struct nbnxn_search {
+struct nbnxn_search
+{
+    /* \brief Constructor
+     *
+     * \param[in] n_dd_cells   The number of domain decomposition cells per dimension, without DD nullptr should be passed
+     * \param[in] zones        The domain decomposition zone setup, without DD nullptr should be passed
+     * \param[in] bFEP         Tells whether non-bonded interactions are perturbed
+     * \param[in] nthread_max  The maximum number of threads used in the search
+     */
+
+    nbnxn_search(const ivec               *n_dd_cells,
+                 const gmx_domdec_zones_t *zones,
+                 gmx_bool                  bFEP,
+                 int                       nthread_max);
+
     gmx_bool                   bFEP;            /* Do we have perturbed atoms? */
     int                        ePBC;            /* PBC type enum                              */
     matrix                     box;             /* The periodic unit-cell                     */
 
     gmx_bool                   DomDec;          /* Are we doing domain decomposition?         */
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
-    struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
+    const gmx_domdec_zones_t  *zones;           /* The domain decomposition zones        */
 
     std::vector<nbnxn_grid_t>  grid;            /* Array of grids, size ngrid                 */
     std::vector<int>           cell;            /* Actual allocated cell array for all grids  */
@@ -287,9 +308,9 @@ typedef struct nbnxn_search {
 
     gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
 
-    int                  nthread_max; /* Maximum number of threads for pair-search  */
-    nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
-} nbnxn_search_t_t;
+    /* Thread-local work data */
+    std::vector<nbnxn_search_work_t> work;      /* Work array, one entry for each thread */
+};
 
 
 static inline void nbs_cycle_start(nbnxn_cycle_t *cc)
