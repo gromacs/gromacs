@@ -105,7 +105,7 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
             Mcyc_av(&nbs->cc[enbsCCsearch]),
             Mcyc_av(&nbs->cc[enbsCCreducef]));
 
-    if (nbs->nthread_max > 1)
+    if (nbs->work.size() > 1)
     {
         if (nbs->cc[enbsCCcombine].count > 0)
         {
@@ -113,10 +113,10 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
                     Mcyc_av(&nbs->cc[enbsCCcombine]));
         }
         fprintf(fp, " s. th");
-        for (int t = 0; t < nbs->nthread_max; t++)
+        for (const nbnxn_search_work_t &work : nbs->work)
         {
             fprintf(fp, " %4.1f",
-                    Mcyc_av(&nbs->work[t].cc[enbsCCsearch]));
+                    Mcyc_av(&work.cc[enbsCCsearch]));
         }
     }
     fprintf(fp, "\n");
@@ -268,62 +268,79 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
 
 }
 
-void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
-                       ivec                      *n_dd_cells,
-                       struct gmx_domdec_zones_t *zones,
-                       gmx_bool                   bFEP,
-                       int                        nthread_max)
+static void free_nblist(t_nblist *nl)
 {
-    nbnxn_search_t nbs = new nbnxn_search;
+    sfree(nl->iinr);
+    sfree(nl->gid);
+    sfree(nl->shift);
+    sfree(nl->jindex);
+    sfree(nl->jjnr);
+    sfree(nl->excl_fep);
+}
 
-    *nbs_ptr = nbs;
+nbnxn_search_work_t::nbnxn_search_work_t() :
+    cp0({0}
+        ),
+    buffer_flags({0, nullptr, 0}),
+    ndistc(0),
+    nbl_fep(new t_nblist),
+    cp1({0})
+{
+    nbnxn_init_pairlist_fep(nbl_fep.get());
 
-    nbs->bFEP   = bFEP;
+    nbs_cycle_clear(cc);
+}
 
-    nbs->DomDec = (n_dd_cells != nullptr);
+nbnxn_search_work_t::~nbnxn_search_work_t()
+{
+    sfree(buffer_flags.flag);
 
-    clear_ivec(nbs->dd_dim);
+    free_nblist(nbl_fep.get());
+}
+
+nbnxn_search::nbnxn_search(const ivec               *n_dd_cells,
+                           const gmx_domdec_zones_t *zones,
+                           gmx_bool                  bFEP,
+                           int                       nthread_max) :
+    bFEP(bFEP),
+    ePBC(epbcNONE), // The correct value will be set during the gridding
+    DomDec(n_dd_cells != nullptr),
+    zones(zones),
+    natoms_local(0),
+    natoms_nonlocal(0),
+    search_count(0),
+    work(nthread_max)
+{
+    // The correct value will be set during the gridding
+    clear_mat(box);
+    clear_ivec(dd_dim);
     int numGrids = 1;
-    if (nbs->DomDec)
+    if (DomDec)
     {
-        nbs->zones = zones;
-
         for (int d = 0; d < DIM; d++)
         {
             if ((*n_dd_cells)[d] > 1)
             {
-                nbs->dd_dim[d] = 1;
+                dd_dim[d] = 1;
                 /* Each grid matches a DD zone */
                 numGrids *= 2;
             }
         }
     }
 
-    nbs->grid.resize(numGrids);
-
-    nbs->nthread_max = nthread_max;
-
-    /* Initialize the work data structures for each thread */
-    snew(nbs->work, nbs->nthread_max);
-    for (int t = 0; t < nbs->nthread_max; t++)
-    {
-        nbs->work[t].cxy_na           = nullptr;
-        nbs->work[t].cxy_na_nalloc    = 0;
-        nbs->work[t].sort_work        = nullptr;
-        nbs->work[t].sort_work_nalloc = 0;
-
-        snew(nbs->work[t].nbl_fep, 1);
-        nbnxn_init_pairlist_fep(nbs->work[t].nbl_fep);
-    }
+    grid.resize(numGrids);
 
     /* Initialize detailed nbsearch cycle counting */
-    nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
-    nbs->search_count = 0;
-    nbs_cycle_clear(nbs->cc);
-    for (int t = 0; t < nbs->nthread_max; t++)
-    {
-        nbs_cycle_clear(nbs->work[t].cc);
-    }
+    print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
+    nbs_cycle_clear(cc);
+}
+
+nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
+                                const gmx_domdec_zones_t  *zones,
+                                gmx_bool                   bFEP,
+                                int                        nthread_max)
+{
+    return new nbnxn_search(n_dd_cells, zones, bFEP, nthread_max);
 }
 
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
@@ -2957,9 +2974,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     {
         try
         {
-            t_nblist *nbl;
-
-            nbl = nbs->work[th].nbl_fep;
+            t_nblist *nbl = nbs->work[th].nbl_fep.get();
 
             /* Note that here we allocate for the total size, instead of
              * a per-thread esimate (which is hard to obtain).
@@ -2983,7 +2998,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
 
     /* Loop over the source lists and assign and copy i-entries */
     th_dest = 0;
-    nbld    = nbs->work[th_dest].nbl_fep;
+    nbld    = nbs->work[th_dest].nbl_fep.get();
     for (int th = 0; th < nnbl; th++)
     {
         t_nblist *nbls;
@@ -3004,7 +3019,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
                 nbld->nrj + nrj - nrj_target > nrj_target - nbld->nrj)
             {
                 th_dest++;
-                nbld = nbs->work[th_dest].nbl_fep;
+                nbld = nbs->work[th_dest].nbl_fep.get();
             }
 
             nbld->iinr[nbld->nri]  = nbls->iinr[i];
@@ -3025,11 +3040,9 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     /* Swap the list pointers */
     for (int th = 0; th < nnbl; th++)
     {
-        t_nblist *nbl_tmp;
-
-        nbl_tmp                = nbl_lists->nbl_fep[th];
-        nbl_lists->nbl_fep[th] = nbs->work[th].nbl_fep;
-        nbs->work[th].nbl_fep  = nbl_tmp;
+        t_nblist *nbl_tmp      = nbs->work[th].nbl_fep.release();
+        nbs->work[th].nbl_fep.reset(nbl_lists->nbl_fep[th]);
+        nbl_lists->nbl_fep[th] = nbl_tmp;
 
         if (debug)
         {
@@ -3912,10 +3925,10 @@ static void copySelectedListRange(const nbnxn_ci_t * gmx_restrict srcCi,
  * to reduction of parts of the force buffer that could be avoided. But since
  * the original lists are quite balanced, this will only give minor overhead.
  */
-static void rebalanceSimpleLists(int                              numLists,
-                                 nbnxn_pairlist_t * const * const srcSet,
-                                 nbnxn_pairlist_t               **destSet,
-                                 nbnxn_search_work_t             *searchWork)
+static void rebalanceSimpleLists(int                                  numLists,
+                                 nbnxn_pairlist_t * const * const     srcSet,
+                                 nbnxn_pairlist_t                   **destSet,
+                                 gmx::ArrayRef<nbnxn_search_work_t>   searchWork)
 {
     int ncjTotal = 0;
     for (int s = 0; s < numLists; s++)

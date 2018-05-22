@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,11 +54,10 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 
 /* Allocates and initializes a pair search data structure */
-void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
-                       ivec                      *n_dd_cells,
-                       struct gmx_domdec_zones_t *zones,
-                       gmx_bool                   bFEP,
-                       int                        nthread_max);
+nbnxn_search_t nbnxn_init_search(const ivec                *n_dd_cells,
+                                 const gmx_domdec_zones_t  *zones,
+                                 gmx_bool                   bFEP,
+                                 int                        nthread_max);
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
