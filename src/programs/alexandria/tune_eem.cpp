@@ -284,10 +284,10 @@ void OptEEM::calcDeviation()
                         {
                             increaseEnergy(ermsCHARGE, gmx::square(qq));
                         }
-                        if (nullptr != mymol.shellfc_)
-                        {
-                            qq += mymol.topology_->atoms.atom[j+1].q;
-                        }
+                        //if (nullptr != mymol.shellfc_)
+                        //{
+                        //    qq += mymol.topology_->atoms.atom[j+1].q;
+                        //}
                         //increaseEnergy(ermsCHARGE,
                         //             gmx::square(qq - mymol.chargeQM(qtCM5)[i++]));
                     }                   
