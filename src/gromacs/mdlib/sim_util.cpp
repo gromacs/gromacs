@@ -1002,7 +1002,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t             *nbv,
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
                                                nbv->nbat, as_rvec_array(force->data()), wcycle);
             }
         }
@@ -1200,7 +1200,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         if (!fr->bDomDec)
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
-            nbnxn_put_on_grid(nbv->nbs, fr->ePBC, box,
+            nbnxn_put_on_grid(nbv->nbs.get(), fr->ePBC, box,
                               0, vzero, box_diag,
                               0, mdatoms->homenr, -1, fr->cginfo, as_rvec_array(x.data()),
                               0, nullptr,
@@ -1211,14 +1211,14 @@ static void do_force_cutsVERLET(FILE *fplog,
         else
         {
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_NONLOCAL);
-            nbnxn_put_on_grid_nonlocal(nbv->nbs, domdec_zones(cr->dd),
+            nbnxn_put_on_grid_nonlocal(nbv->nbs.get(), domdec_zones(cr->dd),
                                        fr->cginfo, as_rvec_array(x.data()),
                                        nbv->grp[eintNonlocal].kernel_type,
                                        nbv->nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        nbnxn_atomdata_set(nbv->nbat, nbv->nbs, mdatoms, fr->cginfo);
+        nbnxn_atomdata_set(nbv->nbat, nbv->nbs.get(), mdatoms, fr->cginfo);
         wallcycle_stop(wcycle, ewcNS);
     }
 
@@ -1244,7 +1244,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
-        nbnxn_make_pairlist(nbv->nbs, nbv->nbat,
+        nbnxn_make_pairlist(nbv->nbs.get(), nbv->nbat,
                             &top->excls,
                             nbv->listParams->rlistOuter,
                             nbv->min_ci_balanced,
@@ -1270,7 +1270,7 @@ static void do_force_cutsVERLET(FILE *fplog,
     }
     else
     {
-        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, as_rvec_array(x.data()),
+        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.data()),
                                         nbv->nbat, wcycle);
     }
 
@@ -1308,7 +1308,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            nbnxn_make_pairlist(nbv->nbs, nbv->nbat,
+            nbnxn_make_pairlist(nbv->nbs.get(), nbv->nbat,
                                 &top->excls,
                                 nbv->listParams->rlistOuter,
                                 nbv->min_ci_balanced,
@@ -1336,7 +1336,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_x(cr->dd, box, as_rvec_array(x.data()), wcycle);
 
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, as_rvec_array(x.data()),
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
                                             nbv->nbat, wcycle);
         }
 
@@ -1514,7 +1514,7 @@ static void do_force_cutsVERLET(FILE *fplog,
          */
         wallcycle_stop(wcycle, ewcFORCE);
 
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->nbat, f, wcycle);
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatAll, nbv->nbat, f, wcycle);
 
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
@@ -1574,7 +1574,7 @@ static void do_force_cutsVERLET(FILE *fplog,
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
+                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
                                                nbv->nbat, f, wcycle);
             }
         }
@@ -1684,7 +1684,7 @@ static void do_force_cutsVERLET(FILE *fplog,
      * on the non-alternating path. */
     if (bUseOrEmulGPU && !alternateGpuWait)
     {
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatLocal,
                                        nbv->nbat, f, wcycle);
     }
 
