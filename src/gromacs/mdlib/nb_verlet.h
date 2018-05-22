@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,7 +190,7 @@ typedef struct nonbonded_verlet_group_t {
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
     std::unique_ptr<NbnxnListParameters> listParams;      /**< Parameters for the search and list pruning setup */
-    nbnxn_search_t                       nbs;             /**< n vs n atom pair searching data       */
+    std::unique_ptr<nbnxn_search>        nbs;             /**< n vs n atom pair searching data       */
     int                                  ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
     nbnxn_atomdata_t                    *nbat;            /**< atom data                             */

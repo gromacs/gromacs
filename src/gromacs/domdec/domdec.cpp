@@ -6143,7 +6143,7 @@ static int dd_sort_order_nbnxn(gmx_domdec_t *dd, t_forcerec *fr)
 
     sort = dd->comm->sort->sort;
 
-    nbnxn_get_atomorder(fr->nbv->nbs, &a, &na);
+    nbnxn_get_atomorder(fr->nbv->nbs.get(), &a, &na);
 
     ncg_new = 0;
     for (i = 0; i < na; i++)
@@ -6268,7 +6268,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         /* The atoms are now exactly in grid order, update the grid order */
-        nbnxn_set_atomorder(fr->nbv->nbs);
+        nbnxn_set_atomorder(fr->nbv->nbs.get());
     }
     else
     {
@@ -6746,7 +6746,7 @@ void dd_partition_system(FILE                *fplog,
                        fr->rlist, grid_density);
             break;
         case ecutsVERLET:
-            nbnxn_get_ncells(fr->nbv->nbs, &ncells_old[XX], &ncells_old[YY]);
+            nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
             break;
         default:
             gmx_incons("unimplemented");
@@ -6774,7 +6774,7 @@ void dd_partition_system(FILE                *fplog,
             case ecutsVERLET:
                 set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-                nbnxn_put_on_grid(fr->nbv->nbs, fr->ePBC, state_local->box,
+                nbnxn_put_on_grid(fr->nbv->nbs.get(), fr->ePBC, state_local->box,
                                   0,
                                   comm->zones.size[0].bb_x0,
                                   comm->zones.size[0].bb_x1,
@@ -6786,7 +6786,7 @@ void dd_partition_system(FILE                *fplog,
                                   fr->nbv->grp[eintLocal].kernel_type,
                                   fr->nbv->nbat);
 
-                nbnxn_get_ncells(fr->nbv->nbs, &ncells_new[XX], &ncells_new[YY]);
+                nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
                 break;
             case ecutsGROUP:
                 fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
