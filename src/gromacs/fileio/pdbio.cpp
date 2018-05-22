@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,11 +259,56 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
     }
 }
 
+static int
+gmx_fprintf_pqr_atomline(FILE *            fp,
+                         enum PDB_record   record,
+                         int               atom_seq_number,
+                         const char *      atom_name,
+                         const char *      res_name,
+                         char              chain_id,
+                         int               res_seq_number,
+                         real              x,
+                         real              y,
+                         real              z,
+                         real              occupancy,
+                         real              b_factor)
+{
+    GMX_RELEASE_ASSERT(record == epdbATOM || record == epdbHETATM,
+                       "Can only print PQR atom lines as ATOM or HETATM records");
+
+    /* Check atom name */
+    GMX_RELEASE_ASSERT(atom_name != nullptr,
+                       "Need atom information to print pqr");
+
+    /* Check residue name */
+    GMX_RELEASE_ASSERT(res_name != nullptr,
+                       "Need residue information to print pqr");
+
+    /* Truncate integers so they fit */
+    atom_seq_number = atom_seq_number % 100000;
+    res_seq_number  = res_seq_number % 10000;
+
+    int n = fprintf(fp,
+                    "%s %d %s %s %c %d %8.3f %8.3f %8.3f %6.2f %6.2f\n",
+                    pdbtp[record],
+                    atom_seq_number,
+                    atom_name,
+                    res_name,
+                    chain_id,
+                    res_seq_number,
+                    x, y, z,
+                    occupancy,
+                    b_factor);
+
+    return n;
+}
+
 void write_pdbfile_indexed(FILE *out, const char *title,
                            const t_atoms *atoms, const rvec x[],
                            int ePBC, const matrix box, char chainid,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains)
+                           gmx_conect conect, gmx_bool bTerSepChains,
+                           bool usePqrFormat)
 {
     gmx_conect_t     *gc = (gmx_conect_t *)conect;
     char              resnm[6], nm[6];
@@ -370,29 +415,44 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         }
         occup = bOccup ? 1.0 : pdbinfo.occup;
         bfac  = pdbinfo.bfac;
-
-        gmx_fprintf_pdb_atomline(out,
-                                 type,
-                                 i+1,
-                                 nm,
-                                 altloc,
-                                 resnm,
-                                 ch,
-                                 resnr,
-                                 resic,
-                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
-                                 occup,
-                                 bfac,
-                                 atoms->atom[i].elem);
-
-        if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
+        if (!usePqrFormat)
         {
-            fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
-                    (i+1)%100000, nm, resnm, ch, resnr,
-                    (resic == '\0') ? ' ' : resic,
-                    atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
-                    atoms->pdbinfo[i].uij[2], atoms->pdbinfo[i].uij[3],
-                    atoms->pdbinfo[i].uij[4], atoms->pdbinfo[i].uij[5]);
+            gmx_fprintf_pdb_atomline(out,
+                                     type,
+                                     i+1,
+                                     nm,
+                                     altloc,
+                                     resnm,
+                                     ch,
+                                     resnr,
+                                     resic,
+                                     10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
+                                     occup,
+                                     bfac,
+                                     atoms->atom[i].elem);
+
+            if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
+            {
+                fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
+                        (i+1)%100000, nm, resnm, ch, resnr,
+                        (resic == '\0') ? ' ' : resic,
+                        atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
+                        atoms->pdbinfo[i].uij[2], atoms->pdbinfo[i].uij[3],
+                        atoms->pdbinfo[i].uij[4], atoms->pdbinfo[i].uij[5]);
+            }
+        }
+        else
+        {
+            gmx_fprintf_pqr_atomline(out,
+                                     type,
+                                     i+1,
+                                     nm,
+                                     resnm,
+                                     ch,
+                                     resnr,
+                                     10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
+                                     occup,
+                                     bfac);
         }
     }
 
@@ -422,7 +482,7 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rve
         index[i] = i;
     }
     write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr,
-                          atoms->nr, index, conect, bTerSepChains);
+                          atoms->nr, index, conect, bTerSepChains, false);
     sfree(index);
 }
 
