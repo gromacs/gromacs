@@ -40,6 +40,15 @@ Fixed enemat when the .edr file had no matching energy groups
 
 :issue:`2508`
 
+Fix PQR file output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+PQR files from gmx editconf violated the standard for the format because
+they were always written in fixed format. This commit fixes the issue by
+introducing a different output method for PQR files that follows the
+standard.
+
+:issue:`2511`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
