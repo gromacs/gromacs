@@ -1275,11 +1275,18 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            Qgeem_.setInfo(pd, &topology_->atoms,
+            Qgeem_.setInfo(pd, 
+                           &topology_->atoms,
                            iChargeDistributionModel,
                            hfac, molProp()->getCharge(),
                            bHaveShells_);
-                                       
+            
+            Qgeem_.generateCharges(nullptr,
+                                   molProp()->getMolname().c_str(),
+                                   pd, 
+                                   &topology_->atoms,
+                                   state_->x);
+                                                                                  
             auto q     = Qgeem_.q();
             auto natom = Qgeem_.natom();
             
@@ -1290,21 +1297,22 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }               
             iter = 0;
             do
-            {                
+            {         
+                for (auto i = 0; i < mtop_->natoms; i++)
+                {
+                    mtop_->moltype[0].atoms.atom[i].q = 
+                        mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                         
+                }                                                        
+                if (nullptr != shellfc_)
+                {
+                    computeForces(nullptr, cr);
+                }
                 if (eQGEN_OK == Qgeem_.generateCharges(nullptr,
                                                        molProp()->getMolname().c_str(),
-                                                       pd, &topology_->atoms,
+                                                       pd, 
+                                                       &topology_->atoms,
                                                        state_->x))
-                {   
-                    for (auto i = 0; i < mtop_->natoms; i++)
-                    {
-                        mtop_->moltype[0].atoms.atom[i].q = 
-                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;                         
-                    }                                                        
-                    if (nullptr != shellfc_)
-                    {
-                        computeForces(nullptr, cr);
-                    }                    
+                {                       
                     q       = Qgeem_.q(); 
                     EemRms_ = 0;                  
                     for (auto i = 0; i < natom + 1; i++)

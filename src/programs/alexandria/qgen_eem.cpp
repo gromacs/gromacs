@@ -141,11 +141,11 @@ void QgenEem::setInfo(const Poldata            &pd,
                     q_[j][k]    = eem->getQ(k);
                     zeta_[j][k] = eem->getZeta(k);
                     row_[j][k]  = eem->getRow(k);
-                    //char buf[256];
-                    //snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
-                    //         atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
-                    //         getEemtypeName(iChargeDistributionModel_));
-                    //GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
+                    char buf[256];
+                    snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
+                             atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
+                             getEemtypeName(iChargeDistributionModel_));
+                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -409,9 +409,12 @@ void QgenEem::calcJcc(t_atoms *atoms)
                     {
                         j++;
                         Jcc = calcJ(iChargeDistributionModel_,
-                                    x_[n], x_[m],
-                                    zeta_[i][0], zeta_[j][0],
-                                    row_[i][0], row_[j][0]);
+                                    x_[n], 
+                                    x_[m],
+                                    zeta_[i][0], 
+                                    zeta_[j][0],
+                                    row_[i][0], 
+                                    row_[j][0]);
                         if (iChargeDistributionModel_ == eqdYang)
                         {
                             Jcc *= calcSij(i, j);
@@ -458,9 +461,12 @@ void QgenEem::calcJcs(t_atoms *atoms,
             {
                 k++;
                 Jcs = calcJ(iChargeDistributionModel_,
-                            x_[top_ndx], x_[l],
-                            zeta_[eem_ndx][0], zeta_[k][1],
-                            row_[eem_ndx][0], row_[k][1]);
+                            x_[top_ndx], 
+                            x_[l],
+                            zeta_[eem_ndx][0], 
+                            zeta_[k][1],
+                            row_[eem_ndx][0], 
+                            row_[k][1]);
                 if (iChargeDistributionModel_ == eqdYang)
                 {
                     Jcs *= calcSij(eem_ndx, k);
@@ -489,9 +495,12 @@ void QgenEem::calcJss(t_atoms *atoms,
             {
                 k++;
                 Jss = calcJ(iChargeDistributionModel_,
-                            x_[top_ndx], x_[l],
-                            zeta_[eem_ndx][1], zeta_[k][1],
-                            row_[eem_ndx][1], row_[k][1]);
+                            x_[top_ndx], 
+                            x_[l],
+                            zeta_[eem_ndx][1], 
+                            zeta_[k][1],
+                            row_[eem_ndx][1], 
+                            row_[k][1]);
                 if (iChargeDistributionModel_ == eqdYang)
                 {
                     Jss *= calcSij(eem_ndx, k);
@@ -518,7 +527,7 @@ void QgenEem::calcRhs(t_atoms *atoms)
             calcJcs(atoms, coreIndex_[i], i);
             calcJss(atoms, shellIndex_[i], i);
             rhs_[i]   -= j00_[i]*hardnessFactor_*q_[i][1];
-            rhs_[i]   -= Jcs_;
+            rhs_[i]   += Jcs_;
             rhs_[i]   -= Jss_;
             qshell    += q_[i][1];
         }       
