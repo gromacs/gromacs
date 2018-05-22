@@ -27,6 +27,15 @@ during make check/test.
 
 :issue:`2465`
 
+Fix PQR file output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+PQR files from gmx editconf violated the standard for the format because
+they were always written in fixed format. This commit fixes the issue by
+introducing a different output method for PQR files that follows the
+standard.
+
+:issue:`2511`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
