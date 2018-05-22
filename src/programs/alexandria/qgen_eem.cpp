@@ -761,7 +761,7 @@ int QgenEem::generateChargesBultinck(FILE              *fp,
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)
     {
-        setPositions(x, atoms);
+        updatePositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);
         if (debug)
