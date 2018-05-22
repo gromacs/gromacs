@@ -190,7 +190,7 @@ typedef struct nonbonded_verlet_group_t {
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
     std::unique_ptr<NbnxnListParameters> listParams;      /**< Parameters for the search and list pruning setup */
-    nbnxn_search_t                       nbs;             /**< n vs n atom pair searching data       */
+    std::unique_ptr<nbnxn_search>        nbs;             /**< n vs n atom pair searching data       */
     int                                  ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
     nbnxn_atomdata_t                    *nbat;            /**< atom data                             */
