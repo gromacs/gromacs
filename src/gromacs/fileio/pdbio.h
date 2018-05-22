@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,6 +77,24 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
                          real              b_factor,
                          const char *      element);
 
+/* Write a PQR line with an ATOM or HETATM record directly to a file pointer.
+ *
+ * Returns the number of characters printed.
+ */
+int
+gmx_fprintf_pqr_atomline(FILE *            fp,
+                         enum PDB_record   record,
+                         int               atom_seq_number,
+                         const char *      atom_name,
+                         const char *      res_name,
+                         char              chain_id,
+                         int               res_seq_number,
+                         real              x,
+                         real              y,
+                         real              z,
+                         real              occupancy,
+                         real              b_factor);
+
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum {
     U11, U22, U33, U12, U13, U23
@@ -95,7 +113,8 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
 void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
-                           gmx_conect conect, gmx_bool bTerSepChains);
+                           gmx_conect conect, gmx_bool bTerSepChains,
+                           bool bPqr);
 /* REALLY low level */
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
