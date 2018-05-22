@@ -30,6 +30,10 @@ during make check/test.
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed CUDA compilation on Windows.
+
+:issue:`2509`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

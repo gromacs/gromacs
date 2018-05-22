@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -482,10 +482,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         t->nb_k[iloc].closeTimingRegion(stream);
     }
 
-#if (defined(WIN32) || defined( _WIN32 ))
-    /* Windows: force flushing WDDM queue */
-    stat = cudaStreamQuery(stream);
-#endif
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
@@ -641,10 +642,11 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         timer->closeTimingRegion(stream);
     }
 
-#if (defined(WIN32) || defined( _WIN32 ))
-    /* Windows: force flushing WDDM queue */
-    stat = cudaStreamQuery(stream);
-#endif
+    if (GMX_NATIVE_WINDOWS)
+    {
+        /* Windows: force flushing WDDM queue */
+        cudaStreamQuery(stream);
+    }
 }
 
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
