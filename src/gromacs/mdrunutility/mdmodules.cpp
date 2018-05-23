@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,12 +135,17 @@ IMDOutputProvider *MDModules::outputProvider()
     return impl_.get();
 }
 
-ForceProviders *MDModules::initForceProviders()
+ForceProviders *MDModules::initForceProviders(const t_inputrec *ir, const gmx_mtop_t *mtop)
 {
     GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
                        "Force providers initialized multiple times");
+
+    // Fill the options struct with data needed by some force providers
+    GMX_RELEASE_ASSERT(ir != nullptr, "Need inputrec data to properly initialize all force providers");
+    ForceProviderInitOptions initOptions(ir, mtop);
+
     impl_->forceProviders_.reset(new ForceProviders);
-    impl_->field_->initForceProviders(impl_->forceProviders_.get());
+    impl_->field_->initForceProviders(impl_->forceProviders_.get(), &initOptions);
     return impl_->forceProviders_.get();
 }
 

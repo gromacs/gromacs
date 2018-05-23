@@ -105,7 +105,7 @@ class ElectricFieldTest : public ::testing::Test
             gmx::assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
 
             ForceProviders forceProviders;
-            module->initForceProviders(&forceProviders);
+            module->initForceProviders(&forceProviders, nullptr);
 
             t_mdatoms            md;
             PaddedRVecVector     f = { { 0, 0, 0 } };
