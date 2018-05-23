@@ -532,15 +532,13 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         {
             /* Merge consecutive blocks with the same molecule type */
             sys->molblock.back().nmol += molb.nmol;
-            sys->natoms += molb.nmol*sys->moltype[sys->molblock.back().type].atoms.nr;
         }
         else if (molb.nmol > 0)
         {
             /* Add a new molblock to the topology */
             sys->molblock.push_back(molb);
-            gmx_molblock_t &molbs  = sys->molblock.back();
-            sys->natoms           += molbs.nmol*molinfo[molbs.type].atoms.nr;
         }
+        sys->natoms += molb.nmol*molinfo[sys->molblock.back().type].atoms.nr;
     }
     if (sys->molblock.empty())
     {
