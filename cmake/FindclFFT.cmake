@@ -1,0 +1,98 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2018, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+# - Find clFFT, AMD's OpenCL FFT library
+
+# This script defines the following variables:
+# CLFFT_INCLUDE_DIRS    - Location of clFFT's include directory.
+# CLFFT_LIBRARIES       - Location of clFFT's libraries
+# CLFFT_FOUND           - True if clFFT has been located
+#
+# If your clFFT installation is not in a standard installation directory, you
+# may provide a hint to where it may be found. Simply set the value CLFFT_ROOT
+# to the directory containing 'include/clFFT.h" prior to calling this script.
+#
+# By default this script will attempt to find the 32-bit version of clFFT.
+# If you desire to use the 64-bit version instead, set
+#   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+# prior to calling this script.
+
+if(clFFT_INCLUDE_DIRS)
+  # Already in cache, be silent
+  set (clFFT_FIND_QUIETLY TRUE)
+endif (clFFT_INCLUDE_DIRS)
+
+find_package(PkgConfig)
+pkg_check_modules(PC_clFFT QUIET clFFT)
+
+set(clFFT_VERSION "${PC_clFFT_VERSION}")
+
+find_path(clFFT_ROOT_DIR
+    NAMES include/clFFT.h
+    HINTS ${clFFT_ROOT}
+    DOC "clFFT root directory.")
+
+find_path(clFFT_INCLUDE_DIR
+    NAMES clFFT.h
+    HINTS
+    ${clFFT_ROOT_DIR}/include
+    ${PC_clFFT_INCLUDE_DIRS}
+    DOC "clFFT Include directory")
+
+find_library(clFFT_LIBRARY
+    NAMES clFFT
+    HINTS
+    ${clFFT_ROOT_DIR}/lib64
+    ${clFFT_ROOT_DIR}/lib
+    ${PC_clFFT_LIBRARY_DIRS}
+    )
+
+# handle the QUIETLY and REQUIRED arguments and set clFFT_FOUND to TRUE if
+# all listed variables are TRUE
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(clFFT
+    REQUIRED_VARS clFFT_INCLUDE_DIR clFFT_LIBRARY
+    VERSION_VAR clFFT_VERSION
+)
+
+mark_as_advanced(clFFT_ROOT_DIR clFFT_LIBRARY clFFT_INCLUDE_DIR clFFT_VERSION)
+
+# Prepare a link target that can be used as if the found clFFT was
+# built in this project.
+if(clFFT_FOUND)
+    add_library(clFFT INTERFACE IMPORTED)
+    target_include_directories(clFFT INTERFACE "${clFFT_INCLUDE_DIR}")
+    target_link_libraries(clFFT INTERFACE "${clFFT_LIBRARY}" "${CMAKE_DL_LIBS}")
+endif()
+

@@ -15,10 +15,14 @@ src/statTimer/
 src/clFFTConfig.cmake.in
 src/clFFTConfigVersion.cmake.in
 src/CMakeLists.txt
-src/FindclFFT.cmake
 
 The file src/CMakeLists.txt is part of the GROMACS build system and
 has been written from scratch to produce a static build of clFFT.
+
+The GROMACS top-level cmake/FindclFFT.cmake has been written to
+conform to modern CMake standards and provide a simple implementation
+of our default behaviour to link to external clFFT if it is found.
+The version of this file from the git repo has been omitted.
 
 The file src/include/clFFT.version.h is copied from src/include/clFFT.version.h.in,
 substituting the version number placeholders with version 2.14.0
