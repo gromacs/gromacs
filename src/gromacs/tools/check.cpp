@@ -188,79 +188,6 @@ static void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *
     }
 }
 
-static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
-{
-    int                       nmol, nvsite = 0;
-    gmx_mtop_atomloop_block_t aloop;
-    const t_atom             *atom;
-
-    fprintf(fp, "\\subsection{Simulation system}\n");
-    aloop = gmx_mtop_atomloop_block_init(mtop);
-    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
-    {
-        if (atom->ptype == eptVSite)
-        {
-            nvsite += nmol;
-        }
-    }
-    fprintf(fp, "A system of %d molecules (%d atoms) was simulated.\n",
-            gmx_mtop_num_molecules(*mtop), mtop->natoms-nvsite);
-    if (nvsite)
-    {
-        fprintf(fp, "Virtual sites were used in some of the molecules.\n");
-    }
-    fprintf(fp, "\n\n");
-}
-
-static void tpx2params(FILE *fp, const t_inputrec *ir)
-{
-    fprintf(fp, "\\subsection{Simulation settings}\n");
-    fprintf(fp, "A total of %g ns were simulated with a time step of %g fs.\n",
-            ir->nsteps*ir->delta_t*0.001, 1000*ir->delta_t);
-    fprintf(fp, "Neighbor searching was performed every %d steps.\n", ir->nstlist);
-    fprintf(fp, "The %s algorithm was used for electrostatic interactions.\n",
-            EELTYPE(ir->coulombtype));
-    fprintf(fp, "with a cut-off of %g nm.\n", ir->rcoulomb);
-    if (ir->coulombtype == eelPME)
-    {
-        fprintf(fp, "A reciprocal grid of %d x %d x %d cells was used with %dth order B-spline interpolation.\n", ir->nkx, ir->nky, ir->nkz, ir->pme_order);
-    }
-    if (ir->rvdw > ir->rlist)
-    {
-        fprintf(fp, "A twin-range Van der Waals cut-off (%g/%g nm) was used, where the long range forces were updated during neighborsearching.\n", ir->rlist, ir->rvdw);
-    }
-    else
-    {
-        fprintf(fp, "A single cut-off of %g was used for Van der Waals interactions.\n", ir->rlist);
-    }
-    if (ir->etc != 0)
-    {
-        fprintf(fp, "Temperature coupling was done with the %s algorithm.\n",
-                etcoupl_names[ir->etc]);
-    }
-    if (ir->epc != 0)
-    {
-        fprintf(fp, "Pressure coupling was done with the %s algorithm.\n",
-                epcoupl_names[ir->epc]);
-    }
-    fprintf(fp, "\n\n");
-}
-
-static void tpx2methods(const char *tpx, const char *tex)
-{
-    FILE          *fp;
-    t_state        state;
-    gmx_mtop_t     mtop;
-
-    t_inputrec     ir;
-    read_tpx_state(tpx, &ir, &state, &mtop);
-    fp = gmx_fio_fopen(tex, "w");
-    fprintf(fp, "\\section{Methods}\n");
-    tpx2system(fp, &mtop);
-    tpx2params(fp, &ir);
-    gmx_fio_fclose(fp);
-}
-
 static void chk_coords(int frame, int natoms, rvec *x, matrix box, real fac, real tol)
 {
     int  i, j;
@@ -839,9 +766,7 @@ int gmx_check(int argc, char *argv[])
         "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
         "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
         "For free energy simulations the A and B state topology from one",
-        "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt].[PAR]",
-        "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
-        "consisting of a rough outline for a methods section for a paper."
+        "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt].[PAR]"
     };
     t_filenm          fnm[] = {
         { efTRX, "-f",  nullptr, ffOPTRD },
@@ -894,6 +819,12 @@ int gmx_check(int argc, char *argv[])
     fn1 = opt2fn_null("-f", NFILE, fnm);
     fn2 = opt2fn_null("-f2", NFILE, fnm);
     tex = opt2fn_null("-m", NFILE, fnm);
+
+    if (tex)
+    {
+        fprintf(stderr, "LaTeX file writing has been removed from gmx check. "
+                "Please use gmx report instead for it.\n");
+    }
     if (fn1 && fn2)
     {
         comp_trx(oenv, fn1, fn2, bRMSD, ftol, abstol);
@@ -931,14 +862,9 @@ int gmx_check(int argc, char *argv[])
         }
         comp_tpx(fn1, fn2, bRMSD, ftol, abstol);
     }
-    else if (fn1 && tex)
-    {
-        tpx2methods(fn1, tex);
-    }
     else if ((fn1 && !opt2fn_null("-f", NFILE, fnm)) || (!fn1 && fn2))
     {
-        fprintf(stderr, "Please give me TWO run input (.tpr) files\n"
-                "or specify the -m flag to generate a methods.tex file\n");
+        fprintf(stderr, "Please give me TWO run input (.tpr) files\n");
     }
 
     fn1 = opt2fn_null("-e", NFILE, fnm);
