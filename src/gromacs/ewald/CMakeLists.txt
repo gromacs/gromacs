@@ -32,21 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB EWALD_SOURCES *.cpp)
-file(GLOB EWALD_GPU_SHARED_SOURCES pme-gpu*.cpp)
-file(GLOB EWALD_CUDA_SOURCES *.cu)
-
+gmx_add_libgromacs_sources(
+    calculate-spline-moduli.cpp
+    ewald.cpp
+    ewald-utils.cpp
+    long-range-correction.cpp
+    pme.cpp
+    pme-gather.cpp
+    pme-grid.cpp
+    pme-load-balancing.cpp
+    pme-only.cpp
+    pme-pp.cpp
+    pme-redistribute.cpp
+    pme-solve.cpp
+    pme-spline-work.cpp
+    pme-spread.cpp
+    )
 if (GMX_USE_CUDA)
-    gmx_add_libgromacs_sources(${EWALD_CUDA_SOURCES})
-else ()
-    # Removing the GPU PME plain C++ fles from the build target
-    # TODO: not remove them for GMX_USE_OPENCL.
-    foreach (GPU_ONLY_SOURCE ${EWALD_GPU_SHARED_SOURCES})
-        list(REMOVE_ITEM EWALD_SOURCES ${GPU_ONLY_SOURCE})
-    endforeach()
+    gmx_add_libgromacs_sources(
+        # CUDA-specific sources
+        pme.cu
+        pme-3dfft.cu
+        pme-gather.cu
+        pme-solve.cu
+        pme-spread.cu
+        pme-timings.cu
+        # GPU-specific sources
+        pme-gpu.cpp
+        pme-gpu-internal.cpp
+        )
 endif()
-
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
