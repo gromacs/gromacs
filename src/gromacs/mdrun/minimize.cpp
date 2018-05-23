@@ -147,10 +147,29 @@ static void sp_header(FILE *out, const char *minimizer, real ftol, int nsteps)
 }
 
 //! Print warning message
-static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstrain)
+static void warn_step(FILE     *fp,
+                      real      ftol,
+                      real      fmax,
+                      gmx_bool  bLastStep,
+                      gmx_bool  bConstrain)
 {
-    char buffer[2048];
-    if (bLastStep)
+    constexpr bool realIsDouble = GMX_DOUBLE;
+    char           buffer[2048];
+
+    if (!std::isfinite(fmax))
+    {
+        sprintf(buffer,
+                "\nEnergy minimization has stopped because the force "
+                "on at least one atom is not finite. This usually means "
+                "atom are overlapping. Modify the input coordinates to "
+                "remove atom overlap or use soft-core potentials with "
+                "the free energy code to avoid infinite forces.\n%s",
+                !realIsDouble ?
+                "You could also be lucky that switching to double precsion "
+                "is sufficient to obtain finite forces.\n" :
+                "");
+    }
+    else if (bLastStep)
     {
         sprintf(buffer,
                 "\nEnergy minimization reached the maximum number "
@@ -169,7 +188,7 @@ static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstra
                 "converged to within the available machine precision, "
                 "given your starting configuration and EM parameters.\n%s%s",
                 ftol,
-                sizeof(real) < sizeof(double) ?
+                !realIsDouble ?
                 "\nDouble precision normally gives you higher accuracy, but "
                 "this is often not needed for preparing to run molecular "
                 "dynamics.\n" :
@@ -179,6 +198,8 @@ static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstra
                 "off constraints altogether (set constraints = none in mdp file)\n" :
                 "");
     }
+
+    fputs(wrap_lines(buffer, 78, 0, FALSE), stderr);
     fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
 }
 
@@ -1582,8 +1603,8 @@ Integrator::do_cg()
     {
         if (MASTER(cr))
         {
-            warn_step(stderr, inputrec->em_tol, step-1 == number_steps, FALSE);
-            warn_step(fplog, inputrec->em_tol, step-1 == number_steps, FALSE);
+            warn_step(fplog, inputrec->em_tol, s_min->fmax,
+                      step-1 == number_steps, FALSE);
         }
         converged = FALSE;
     }
@@ -2315,8 +2336,8 @@ Integrator::do_lbfgs()
     {
         if (MASTER(cr))
         {
-            warn_step(stderr, inputrec->em_tol, step-1 == number_steps, FALSE);
-            warn_step(fplog, inputrec->em_tol, step-1 == number_steps, FALSE);
+            warn_step(fplog, inputrec->em_tol, ems.fmax,
+                      step-1 == number_steps, FALSE);
         }
         converged = FALSE;
     }
@@ -2559,8 +2580,8 @@ Integrator::do_steep()
         {
             if (MASTER(cr))
             {
-                warn_step(stderr, inputrec->em_tol, count == nsteps, constr != nullptr);
-                warn_step(fplog, inputrec->em_tol, count == nsteps, constr != nullptr);
+                warn_step(fplog, inputrec->em_tol, s_min->fmax,
+                          count == nsteps, constr != nullptr);
             }
             bAbort = TRUE;
         }
