@@ -196,16 +196,19 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
-# TODO: installed clFFT should be preferred, if possible;
-# src/external/src/clFFT/FindclFFT.cmake should help with that.
-# Redmine issue #2500
 if (GMX_USE_OPENCL)
-    set (_clFFT_dir ../external/clFFT/src)
-    add_subdirectory(${_clFFT_dir} clFFT-build)
-    target_sources(libgromacs PRIVATE
-        $<TARGET_OBJECTS:clFFT>
-        )
-    target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
+    include (../external/clFFT/src/FindclFFT.cmake)
+    if (NOT CLFFT_FOUND)
+        # linking own clFFT
+        set (_clFFT_dir ../external/clFFT/src)
+        add_subdirectory(${_clFFT_dir} clFFT-build)
+        target_sources(libgromacs PRIVATE
+            $<TARGET_OBJECTS:clFFT>
+            )
+        target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
+    else()
+        target_link_libraries(libgromacs PRIVATE ${CLFFT_LIBRARIES})
+    endif()
     target_link_libraries(libgromacs PRIVATE dl)
 endif()
 
