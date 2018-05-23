@@ -419,9 +419,8 @@ Errors in :ref:`mdrun <gmx mdrun>`
 Stepsize too small, or no change in energy. Converged to machine precision, but not to the requested precision
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is not an error as such. It is simply informing you that during the
-energy minimization process
-it reached the limit possible to minimize the structure with your current parameters. It does not
+This may not be an error as such. It is simply informing you that during the
+energy minimization process mdrun reached the limit possible to minimize the structure with your current parameters. It does not
 mean that the system has not been minimized fully, but in some situations that may be the case.
 If the system has a significant amount of water present, then an E\ :sub:`pot` of the order
 of -10\ :sup:`5` to -10\ :sup:`6` (in conjunction with an F\ :sub:`max` between 10
@@ -430,9 +429,17 @@ starting most MD simulations from the resulting structure. The most important re
 likely the value of F\ :sub:`max`, as it describes the slope of the potential energy
 surface, i.e. how far from an energy minimum your structure lies. Only for special
 purposes, such as normal mode analysis type of calculations, it may be necessary to minimize further.
-
 Further minimization may be achieved by using a different energy minimization method or by
 making use of double precision-enabled |Gromacs|.
+
+One case in which this message is more likely a true error is if the F\ :sub:`max` is infinity.
+This likely indicates that (at least) two atoms are too close in the input coordinates, and
+the forces exerted on each other are greater in magnitude than can be expressed to
+the extent of the precision of |Gromacs|, and therefore minimization cannot proceed. It
+is sometimes possible to minimize systems that have infinite forces with the use
+of soft-core potentials, which scale down the magnitude of Lennard-Jones interactions
+with the use of the |Gromacs| free energy code. This approach is suggested for
+equilibration of some coarse-grained systems such as Martini.
 
 LINCS/SETTLE/SHAKE warnings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
