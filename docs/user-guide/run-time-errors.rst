@@ -375,9 +375,7 @@ the :ref:`coordinate <gmx-structure-files>` file.  If there is a mismatch, this 
 To remedy the problem, make sure that the contents of your ``[ molecules ]`` directive
 matches the exact order of the atoms in the coordinate file.
 
-In some cases, the error is harmless. For example, when running simulations with the
-`MARTINI force field <http://cgmartini.nl/>`_, the workflow relies on :ref:`grompp <gmx grompp>` to apply the
-correct names, which are not previously assigned.  Also, perhaps you are using a
+In a few cases, the error is harmless. Perhaps you are using a
 :ref:`coordinate <gmx-structure-files>` file that has the old (pre-4.5) ion nomenclature.
 In this case, allowing :ref:`grompp <gmx grompp>` to re-assign names is harmless.
 For just about any other situation, when this error comes up, **it should not be ignored**.
