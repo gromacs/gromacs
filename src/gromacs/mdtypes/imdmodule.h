@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,24 @@
 #define GMX_MDTYPES_IMDMODULE_H
 
 struct ForceProviders;
+struct gmx_mtop_t;
+struct t_inputrec;
 
 namespace gmx
 {
 
 class IMDOutputProvider;
 class IMdpOptionProvider;
+
+/* Temporary structure with data that some force providers need during init */
+struct ForceProviderInitOptions
+{
+    const t_inputrec *inputrec;    /* Complete input record */
+    const gmx_mtop_t *mtop;       /* Global, complete system topology struct */
+
+    ForceProviderInitOptions(const t_inputrec *inputrec, const gmx_mtop_t *mtop) :
+        inputrec(inputrec), mtop(mtop) { }
+};
 
 /*! \libinternal \brief
  * Extension module for \Gromacs simulations.
@@ -72,7 +84,8 @@ class IMDModule
         //! Returns an interface for handling output files during simulation.
         virtual IMDOutputProvider *outputProvider()     = 0;
         //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders) = 0;
+        virtual void initForceProviders(ForceProviders *forceProviders,
+                                        ForceProviderInitOptions *options) = 0;
 };
 
 } // namespace gmx
