@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/utility/classhelpers.h"
 
 struct ForceProviders;
-
+struct gmx_mtop_t;
 struct t_inputrec;
 
 namespace gmx
@@ -142,7 +142,7 @@ class MDModules
         /*! \brief
          * Returns an object for computing forces from the modules.
          */
-        ForceProviders *initForceProviders();
+        ForceProviders *initForceProviders(const t_inputrec *ir, const gmx_mtop_t *mtop);
 
     private:
         class Impl;

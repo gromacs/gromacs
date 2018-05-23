@@ -1109,7 +1109,7 @@ int Mdrunner::mdrunner()
     {
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
-        fr->forceProviders = mdModules->initForceProviders();
+        fr->forceProviders = mdModules->initForceProviders(inputrec, &mtop);
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, &mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
