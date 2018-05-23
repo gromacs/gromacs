@@ -714,6 +714,15 @@ To trigger an OpenCL_ build the following CMake flags must be set
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
 
+By default, any clFFT library on the system will be used with
+|Gromacs|, but if none is found then the code will fall back on a
+version bundled with |Gromacs|. To require |Gromacs| to link with an
+external library, use
+
+::
+
+    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON -DclFFT_ROOT_DIR=/path/to/your/clFFT -DGMX_EXTERNAL_CLFFT=TRUE
+
 Static linking
 ~~~~~~~~~~~~~~
 
