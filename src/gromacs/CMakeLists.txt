@@ -196,20 +196,31 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
-# TODO: installed clFFT should be preferred, if possible;
-# src/external/src/clFFT/FindclFFT.cmake should help with that.
-# Redmine issue #2500
 if (GMX_USE_OPENCL)
-    set (_clFFT_dir ../external/clFFT/src)
-    add_subdirectory(${_clFFT_dir} clFFT-build)
-    target_sources(libgromacs PRIVATE
-        $<TARGET_OBJECTS:clFFT>
+    option(GMX_EXTERNAL_CLFFT "True if an external clFFT is required to be used" FALSE)
+    mark_as_advanced(GMX_EXTERNAL_CLFFT)
+
+    # Default to using clFFT found on the system
+    find_package(clFFT)
+    if (NOT clFFT_FOUND)
+        if (GMX_EXTERNAL_CLFFT)
+            message(FATAL_ERROR "Did not find required external clFFT library, consider setting clFFT_ROOT_DIR")
+        endif()
+
+        # Fall back on the internal version
+        set (_clFFT_dir ../external/clFFT/src)
+        add_subdirectory(${_clFFT_dir} clFFT-build)
+        target_sources(libgromacs PRIVATE
+            $<TARGET_OBJECTS:clFFT>
         )
-    target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
-    # Use the magic variable for how to link any library needed for
-    # dlopen, etc.  which is -ldl where needed, and empty otherwise
-    # (e.g. Windows, BSD, Mac).
-    target_link_libraries(libgromacs PRIVATE "${CMAKE_DL_LIBS}")
+        target_include_directories(libgromacs PRIVATE ${_clFFT_dir}/include)
+        # Use the magic variable for how to link any library needed for
+        # dlopen, etc.  which is -ldl where needed, and empty otherwise
+        # (e.g. Windows, BSD, Mac).
+        target_link_libraries(libgromacs PRIVATE "${CMAKE_DL_LIBS}")
+    else()
+        target_link_libraries(libgromacs PRIVATE clFFT)
+    endif()
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
