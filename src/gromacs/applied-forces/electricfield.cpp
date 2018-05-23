@@ -174,7 +174,8 @@ class ElectricField final : public IMDModule,
         // From IMDModule
         IMdpOptionProvider *mdpOptionProvider() override { return this; }
         IMDOutputProvider *outputProvider() override { return this; }
-        void initForceProviders(ForceProviders *forceProviders) override
+        void initForceProviders(ForceProviders *forceProvidersJoe,
+                                gmx_unused struct ForceProviderInitOptions *options) override
         {
             if (isActive())
             {
