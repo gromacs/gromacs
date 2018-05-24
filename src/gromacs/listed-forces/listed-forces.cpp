@@ -295,6 +295,8 @@ calc_one_bond(int thread,
     nbonds    = idef->il[ftype].nr/nat1;
     iatoms    = idef->il[ftype].iatoms;
 
+    GMX_ASSERT(idef->il_thread_division[ftype*(idef->nthreads + 1) + idef->nthreads] == idef->il[ftype].nr, "The thread division should match the topology");
+
     nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
     nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
 
@@ -608,7 +610,6 @@ void calc_listed_lambda(const t_idef *idef,
                         t_fcdata *fcd,
                         int *global_atom_index)
 {
-    int           ftype, nr_nonperturbed, nr;
     real          v;
     real          dvdl_dum[efptNR] = {0};
     rvec4        *f;
@@ -635,20 +636,21 @@ void calc_listed_lambda(const t_idef *idef,
     snew(fshift, SHIFTS);
 
     /* Loop over all bonded force types to calculate the bonded energies */
-    for (ftype = 0; (ftype < F_NRE); ftype++)
+    for (int ftype = 0; (ftype < F_NRE); ftype++)
     {
         if (ftype_is_bonded_potential(ftype))
         {
-            /* Set the work range of thread 0 to the perturbed bondeds only */
-            nr_nonperturbed                       = idef->il[ftype].nr_nonperturbed;
-            nr                                    = idef->il[ftype].nr;
-            idef_fe.il_thread_division[ftype*2+0] = nr_nonperturbed;
-            idef_fe.il_thread_division[ftype*2+1] = nr;
+            const t_ilist &ilist     = idef->il[ftype];
+            /* Create a temporary t_ilist with only perturbed interactions */
+            t_ilist       &ilist_fe  = idef_fe.il[ftype];
+            ilist_fe.iatoms          = ilist.iatoms + ilist.nr_nonperturbed*(1 + NRAL(ftype));
+            ilist_fe.nr_nonperturbed = 0;
+            ilist_fe.nr              = ilist.nr - ilist.nr_nonperturbed;
+            /* Set the work range of thread 0 to the perturbed bondeds */
+            idef_fe.il_thread_division[ftype*2 + 0] = 0;
+            idef_fe.il_thread_division[ftype*2 + 1] = ilist_fe.nr;
 
-            /* This is only to get the flop count correct */
-            idef_fe.il[ftype].nr = nr - nr_nonperturbed;
-
-            if (nr - nr_nonperturbed > 0)
+            if (ilist_fe.nr > 0)
             {
                 v = calc_one_bond(0, ftype, &idef_fe,
                                   x, f, fshift, fr, pbc_null, g,
