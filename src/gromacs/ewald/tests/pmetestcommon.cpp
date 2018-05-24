@@ -108,13 +108,6 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       )
 {
     const MDLogger dummyLogger;
-    // this const_cast is only needed because of NVML handling in init_gpu(),
-    // and PME unit tests coudln't possibly care for NVML
-    auto *gpuInfo = const_cast<gmx_device_info_t *>(pmeGpuProgram ? pmeGpuProgram->getDeviceInfo() : nullptr);
-    if (gpuInfo)
-    {
-        init_gpu(dummyLogger, gpuInfo);
-    }
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed; //FIXME clFFT plannign failure 4097
     t_commrec      dummyCommrec  = {0};
     NumPmeDomains  numPmeDomains = { 1, 1 };

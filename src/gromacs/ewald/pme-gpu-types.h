@@ -57,7 +57,7 @@
  * as it appears to not be POD.
  * We don't have to specify the alignment for CUDA, but it doesn't disturb anything.
  */
-#define GMX_GPU_ALIGNED __attribute__ ((aligned(8)))
+#define GMX_GPU_ALIGNED
 
 #ifndef __OPENCL_C_VERSION__
 #include "gromacs/gpu_utils/devicebuffer.h"

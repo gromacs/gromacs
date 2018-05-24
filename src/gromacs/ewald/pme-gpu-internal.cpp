@@ -517,6 +517,14 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
     // TODO: this is just a convenient reuse because programHandle_ currently is in charge of creating context
     pmeGpu->archSpecific->context = pmeGpu->programHandle_->impl_->context;
 
+    /* init_gpu() should have been called outside by someone wiser, but we still need to switch to our GPU.
+     * With no PME decomposition, this is only needed for unit tests iterating over GPUs,
+     * and with no multiple GPUs per process (e.g. NB on another GPU), it's sufficient to call it once on PME init.
+     */
+#if GMX_GPU == GMX_GPU_CUDA
+    CU_RET_ERR(cudaSetDevice(pmeGpu->programHandle_->getDeviceInfo()->id), "Switching to PME CUDA device");
+#endif
+
 #if GMX_GPU == GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = pmeGpu->programHandle_->getDeviceInfo()->prop.maxGridSize[0];
 #elif GMX_GPU == GMX_GPU_OPENCL
