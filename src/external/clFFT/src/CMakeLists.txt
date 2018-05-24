@@ -12,3 +12,4 @@ set_source_files_properties(${CLFFT_SOURCES} PROPERTIES COMPILE_FLAGS "${COMPILE
 add_library(clFFT STATIC ${CLFFT_SOURCES})
 target_include_directories(clFFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_property(TARGET clFFT PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(clFFT PRIVATE "dl")
