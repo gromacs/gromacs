@@ -243,11 +243,19 @@ behavior.
     are no separate PME ranks.
 
 ``-nb``
-    Used to set where to execute the non-bonded interactions.
+    Used to set where to execute the short-range non-bonded interactions.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which uses a compatible GPU if available.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
     that a compatible GPU be available and will be used.
+
+``-pme``
+    Used to set where to execute the long-range non-bonded interactions.
+    Can be set to "auto", "cpu", "gpu."
+    Defaults to "auto," which uses a compatible GPU if available.
+    Setting "gpu" requires that a compatible GPU be available and will be used.
+    Multiple PME ranks are not supported with PME on GPU, so if a GPU is used
+    for the PME calculation -npme must be set to 1.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
@@ -346,20 +354,44 @@ a multiple of the number of threads per rank.
 
 ::
 
+    gmx mdrun -ntmpi 4 -nb gpu -pme cpu -gputasks 0011
+
+Starts :ref:`mdrun <gmx mdrun>` using four thread-MPI ranks, and maps them
+to GPUs with IDs 0 and 1. The CPU cores available will be split evenly between
+the ranks using OpenMP threads, with the first two ranks offloading short-range
+nonbonded force calculations to GPU 0, and the last two ranks offloading to GPU 1.
+The long-range component of the forces are calculated on CPUs. This may be optimal
+on hardware with slower GPUs and/or faster CPUs.
+
+::
+
+    gmx mdrun -ntmpi 4 -nb gpu -pme gpu -npme 1 -gputasks 0001
+
+Starts :ref:`mdrun <gmx mdrun>` using four thread-MPI ranks, one of which is
+dedicated to the long-range PME calculation. The first 3 threads offload their
+short-range non-bonded calculations to the GPU with ID 0, the 4th (PME) thread
+offloads its calculations to the GPU with ID 1.
+
+::
+
+    gmx mdrun -ntmpi 4 -nb gpu -pme gpu -npme 1 -gputasks 0011
+
+Similar to the above example, with 3 ranks assigned to calculating short-range
+non-bonded forces, and one rank assigned to calculate the long-range forces.
+In this case, 2 of the 3 short-range ranks offload their nonbonded force
+calculations to GPU 0. The GPU with ID 1 calculates the short-ranged forces of
+the 3rd short-range rank, as well as the long-range forces of the PME-dedicated
+rank. Whether this or the above example is optimal will depend on the capabilities
+of the individual GPUs and the system composition.
+
+::
+
     gmx mdrun -gpu_id 12
 
 Starts :ref:`mdrun <gmx mdrun>` using GPUs with IDs 1 and 2 (e.g. because
 GPU 0 is dedicated to running a display). This requires
 two thread-MPI ranks, and will split the available
 CPU cores between them using OpenMP threads.
-
-::
-
-    gmx mdrun -ntmpi 4 -nb gpu -gputasks 1122
-
-Starts :ref:`mdrun <gmx mdrun>` using four thread-MPI ranks, and maps them
-to GPUs with IDs 1 and 2. The CPU cores available will
-be split evenly between the ranks using OpenMP threads.
 
 ::
 
