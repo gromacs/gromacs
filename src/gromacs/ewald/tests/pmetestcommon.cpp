@@ -109,10 +109,6 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       )
 {
     const MDLogger dummyLogger;
-    if (gpuInfo)
-    {
-        init_gpu(dummyLogger, gpuInfo);
-    }
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::GPU;
     t_commrec      dummyCommrec  = {0};
     NumPmeDomains  numPmeDomains = { 1, 1 };

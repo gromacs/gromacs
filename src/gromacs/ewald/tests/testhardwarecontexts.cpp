@@ -114,14 +114,18 @@ void PmeTestEnvironment::SetUp()
         // PME can only run on the CPU, so don't make any more test contexts.
         return;
     }
+    const MDLogger dummyLogger;
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
     {
+        gmx_device_info_t *deviceInfo = getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
+        init_gpu(dummyLogger, deviceInfo);
+
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
         // TODO should this be CodePath::GPU?
-        hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CUDA, description.c_str(), getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex)));
+        hardwareContexts_.emplace_back(TestHardwareContext(CodePath::CUDA, description.c_str(), deviceInfo));
     }
 }
 

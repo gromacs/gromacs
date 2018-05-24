@@ -458,6 +458,9 @@ void pme_gpu_init_internal(PmeGpu *pmeGpu)
     // TODO: Consider turning on by default when we can detect nr of streams.
     pmeGpu->archSpecific->useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
 
+    // Prepare to use the device that this PME task was assigned earlier.
+    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
+
     pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
 
     /* Creating a PME CUDA stream */
