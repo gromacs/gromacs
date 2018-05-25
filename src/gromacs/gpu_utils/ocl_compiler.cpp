@@ -203,24 +203,24 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
     return compilerOptions;
 }
 
-/*! \brief Get the path to the folder storing an OpenCL kernel.
+/*! \brief Get the path to the folder storing an OpenCL source file.
  *
  * By default, this function constructs the full path to the OpenCL from
  * the known location of the binary that is running, so that we handle
  * both in-source and installed builds. The user can override this
  * behavior by defining GMX_OCL_FILE_PATH environment variable.
  *
- * \param[in] kernelRelativePath    Relative path to the kernel in the source tree,
+ * \param[in] sourceRelativePath    Relative path to the kernel or other file in the source tree,
  *                                  e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
- * \return OS-normalized path string to the folder storing OpenCL kernel
+ * \return OS-normalized path string to the folder storing OpenCL source file
  *
  * \throws std::bad_alloc    if out of memory.
  *         FileIOError  if GMX_OCL_FILE_PATH does not specify a readable path
  */
 static std::string
-getKernelRootPath(const std::string &kernelRelativePath)
+getSourceRootPath(const std::string &sourceRelativePath)
 {
-    std::string kernelRootPath;
+    std::string sourceRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
     const char *gmxOclFilePath = getenv("GMX_OCL_FILE_PATH");
 
@@ -230,9 +230,9 @@ getKernelRootPath(const std::string &kernelRelativePath)
            root path from the path to the binary that is running. */
         InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
         std::string                 dataPathSuffix = (info.bSourceLayout ?
-                                                      kernelRelativePath :
+                                                      sourceRelativePath :
                                                       OCL_INSTALL_DIR);
-        kernelRootPath = Path::join(info.path, dataPathSuffix);
+        sourceRootPath = Path::join(info.path, dataPathSuffix);
     }
     else
     {
@@ -241,11 +241,11 @@ getKernelRootPath(const std::string &kernelRelativePath)
             GMX_THROW(FileIOError(formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
                                                "kernels are found, but '%s' does not exist", gmxOclFilePath)));
         }
-        kernelRootPath = gmxOclFilePath;
+        sourceRootPath = gmxOclFilePath;
     }
 
     // Make sure we return an OS-correct path format
-    return Path::normalize(kernelRootPath);
+    return Path::normalize(sourceRootPath);
 }
 
 /*!  \brief Get the warp size reported by device
@@ -390,6 +390,7 @@ removeExtraSpaces(std::string *str)
  * \throws std::bad_alloc  if out of memory. */
 static std::string
 makePreprocessorOptions(const std::string   &kernelRootPath,
+                        const std::string   &includeRootPath,
                         size_t               warpSize,
                         ocl_vendor_id_t      deviceVendorId,
                         const std::string   &extraDefines)
@@ -406,6 +407,8 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
     preprocessorOptions += selectCompilerOptions(deviceVendorId);
     preprocessorOptions += ' ';
     preprocessorOptions += makeKernelIncludePathOption(kernelRootPath);
+    preprocessorOptions += ' ';
+    preprocessorOptions += makeKernelIncludePathOption(includeRootPath);
 
     // Mac OS (and maybe some other implementations) does not accept double spaces in options
     removeExtraSpaces(&preprocessorOptions);
@@ -423,7 +426,8 @@ compileProgram(FILE              *fplog,
                ocl_vendor_id_t    deviceVendorId)
 {
     cl_int      cl_error;
-    std::string kernelRootPath = getKernelRootPath(kernelRelativePath);
+    std::string kernelRootPath  = getSourceRootPath(kernelRelativePath);
+    std::string includeRootPath = getSourceRootPath("src/gromacs/gpu_utils");
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
@@ -433,6 +437,7 @@ compileProgram(FILE              *fplog,
 
     /* Make the build options */
     std::string preprocessorOptions = makePreprocessorOptions(kernelRootPath,
+                                                              includeRootPath,
                                                               getWarpSize(context, deviceId),
                                                               deviceVendorId,
                                                               extraDefines);
