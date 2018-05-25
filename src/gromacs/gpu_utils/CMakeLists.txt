@@ -57,7 +57,10 @@ else()
 endif()
 
 if(GMX_USE_OPENCL)
-    file(GLOB OPENCL_COMMON_HEADERS vectype_ops.clh)
+    file(GLOB OPENCL_COMMON_HEADERS
+            vectype_ops.clh
+            device_utils.clh
+        )
     set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} ${OPENCL_COMMON_HEADERS} PARENT_SCOPE)
 endif()
 
