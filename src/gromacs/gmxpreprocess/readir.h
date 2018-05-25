@@ -133,9 +133,9 @@ void do_index(const char* mdparin,
 
 /* Routines In readpull.c */
 
-char **read_pullparams(int *ninp_p, t_inpfile **inp,
-                       pull_params_t *pull,
-                       warninp_t wi);
+char **read_pullparams(std::vector<t_inpfile> *inp,
+                       pull_params_t          *pull,
+                       warninp_t               wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
 void make_pull_groups(pull_params_t *pull,
@@ -157,7 +157,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 int str_nelem(const char *str, int maxptr, char *ptr[]);
 /* helper function from readir.c to convert strings */
 
-char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
+char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 
 void make_rotation_groups(t_rot *rot, char **rotgnames,
