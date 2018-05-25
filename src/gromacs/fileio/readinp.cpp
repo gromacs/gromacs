@@ -57,10 +57,11 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
-t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
-                        warninp_t wi)
+std::vector<t_inpfile>
+read_inpfile(gmx::TextInputStream *stream, const char *fn,
+             warninp_t wi)
 {
-    t_inpfile *inp = nullptr;
+    std::vector<t_inpfile> inp;
 
     if (debug)
     {
@@ -125,19 +126,20 @@ t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
         }
 
         /* Now finally something sensible; check for duplicates */
-        int found_index = search_einp(countOfUniqueKeysFound, inp, tokens[0].c_str());
+        int found_index = search_einp(inp, tokens[0].c_str());
 
         if (found_index == -1)
         {
             /* add a new item */
-            srenew(inp, ++countOfUniqueKeysFound);
-            inp[countOfUniqueKeysFound-1].inp_count              = 1;
-            inp[countOfUniqueKeysFound-1].count                  = 0;
-            inp[countOfUniqueKeysFound-1].bObsolete              = FALSE;
-            inp[countOfUniqueKeysFound-1].bHandledAsKeyValueTree = FALSE;
-            inp[countOfUniqueKeysFound-1].bSet                   = FALSE;
-            inp[countOfUniqueKeysFound-1].name                   = gmx_strdup(tokens[0].c_str());
-            inp[countOfUniqueKeysFound-1].value                  = gmx_strdup(tokens[1].c_str());
+            t_inpfile local;
+            local.inp_count              = 1;
+            local.count                  = 0;
+            local.bObsolete              = FALSE;
+            local.bHandledAsKeyValueTree = FALSE;
+            local.bSet                   = FALSE;
+            local.name                   = gmx_strdup(tokens[0].c_str());
+            local.value                  = gmx_strdup(tokens[1].c_str());
+            inp.push_back(local);
         }
         else
         {
@@ -158,19 +160,17 @@ t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
                 countOfUniqueKeysFound);
     }
 
-    *ninp = countOfUniqueKeysFound;
-
     return inp;
 }
 
-gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(int ninp, t_inpfile inp[])
+gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(std::vector<t_inpfile> &inp)
 {
     gmx::KeyValueTreeBuilder  builder;
     auto                      root = builder.rootObject();
-    for (int i = 0; i < ninp; ++i)
+    for (auto &local : inp)
     {
-        const char *value = inp[i].value;
-        root.addValue<std::string>(inp[i].name, value != nullptr ? value : "");
+        const char *value = local.value;
+        root.addValue<std::string>(local.name, value != nullptr ? value : "");
     }
     return builder.build();
 }
@@ -181,33 +181,33 @@ static int inp_comp(const void *a, const void *b)
     return (reinterpret_cast<const t_inpfile *>(a))->count - (reinterpret_cast<const t_inpfile *>(b))->count;
 }
 
-static void sort_inp(int ninp, t_inpfile inp[])
+static void sort_inp(std::vector<t_inpfile> &inp)
 {
-    int i, mm;
+    int mm;
 
     mm = -1;
-    for (i = 0; (i < ninp); i++)
+    for (auto local : inp)
     {
-        mm = std::max(mm, inp[i].count);
+        mm = std::max(mm, local.count);
     }
-    for (i = 0; (i < ninp); i++)
+    for (auto &local : inp)
     {
-        if (inp[i].count == 0)
+        if (local.count == 0)
         {
-            inp[i].count = mm++;
+            local.count = mm++;
         }
     }
-    gmx_qsort(inp, ninp, static_cast<size_t>(sizeof(inp[0])), inp_comp);
+    gmx_qsort(inp.data(), inp.size(), static_cast<size_t>(sizeof(inp[0])), inp_comp);
 }
 
-void write_inpfile(gmx::TextOutputStream *stream, const char *fn, int ninp, t_inpfile inp[],
+void write_inpfile(gmx::TextOutputStream *stream, const char *fn, std::vector<t_inpfile> inp,
                    gmx_bool bHaltOnUnknown,
                    WriteMdpHeader writeHeader,
                    warninp_t wi)
 {
     using gmx::formatString;
 
-    sort_inp(ninp, inp);
+    sort_inp(inp);
 
     gmx::TextWriter writer(stream);
     if (writeHeader == WriteMdpHeader::yes)
@@ -220,26 +220,26 @@ void write_inpfile(gmx::TextOutputStream *stream, const char *fn, int ninp, t_in
         gmx::printBinaryInformation(&writer, gmx::getProgramContext(), settings);
     }
 
-    for (int i = 0; (i < ninp); i++)
+    for (auto local : inp)
     {
-        if (inp[i].bHandledAsKeyValueTree)
+        if (local.bHandledAsKeyValueTree)
         {
         }
-        else if (inp[i].bSet)
+        else if (local.bSet)
         {
-            if (inp[i].name[0] == ';' || (strlen(inp[i].name) > 2 && inp[i].name[1] == ';'))
+            if (local.name[0] == ';' || (strlen(local.name) > 2 && local.name[1] == ';'))
             {
-                writer.writeLine(formatString("%-24s", inp[i].name));
+                writer.writeLine(formatString("%-24s", local.name));
             }
             else
             {
-                writer.writeLine(formatString("%-24s = %s", inp[i].name, inp[i].value ? inp[i].value : ""));
+                writer.writeLine(formatString("%-24s = %s", local.name, local.value ? local.value : ""));
             }
         }
-        else if (!inp[i].bObsolete)
+        else if (!local.bObsolete)
         {
             auto message = formatString("Unknown left-hand '%s' in parameter file\n",
-                                        inp[i].name);
+                                        local.name);
             if (bHaltOnUnknown)
             {
                 warning_error(wi, message.c_str());
@@ -254,47 +254,43 @@ void write_inpfile(gmx::TextOutputStream *stream, const char *fn, int ninp, t_in
     check_warning_error(wi, FARGS);
 }
 
-void replace_inp_entry(int ninp, t_inpfile *inp, const char *old_entry, const char *new_entry)
+void replace_inp_entry(std::vector<t_inpfile> &inp, const char *old_entry, const char *new_entry)
 {
-    int  i;
-
-    for (i = 0; (i < ninp); i++)
+    for (auto &local : inp)
     {
-        if (gmx_strcasecmp_min(old_entry, inp[i].name) == 0)
+        if (gmx_strcasecmp_min(old_entry, local.name) == 0)
         {
             if (new_entry)
             {
                 fprintf(stderr, "Replacing old mdp entry '%s' by '%s'\n",
-                        inp[i].name, new_entry);
+                        local.name, new_entry);
 
-                int foundIndex = search_einp(ninp, inp, new_entry);
+                int foundIndex = search_einp(inp, new_entry);
                 if (foundIndex >= 0)
                 {
-                    gmx_fatal(FARGS, "A parameter is present with both the old name '%s' and the new name '%s'.", inp[i].name, inp[foundIndex].name);
+                    gmx_fatal(FARGS, "A parameter is present with both the old name '%s' and the new name '%s'.", local.name, inp[foundIndex].name);
                 }
 
-                sfree(inp[i].name);
-                inp[i].name = gmx_strdup(new_entry);
+                sfree(local.name);
+                local.name = gmx_strdup(new_entry);
             }
             else
             {
                 fprintf(stderr, "Ignoring obsolete mdp entry '%s'\n",
-                        inp[i].name);
-                inp[i].bObsolete = TRUE;
+                        local.name);
+                local.bObsolete = TRUE;
             }
         }
     }
 }
 
-int search_einp(int ninp, const t_inpfile *inp, const char *name)
+int search_einp(const std::vector<t_inpfile>  &inp, const char *name)
 {
-    int i;
-
-    if (inp == nullptr)
+    if (inp.empty())
     {
         return -1;
     }
-    for (i = 0; i < ninp; i++)
+    for (size_t i = 0; i < inp.size(); i++)
     {
         if (gmx_strcasecmp_min(name, inp[i].name) == 0)
         {
@@ -304,9 +300,9 @@ int search_einp(int ninp, const t_inpfile *inp, const char *name)
     return -1;
 }
 
-void mark_einp_set(int ninp, t_inpfile *inp, const char *name)
+void mark_einp_set(std::vector<t_inpfile> &inp, const char *name)
 {
-    int i = search_einp(ninp, inp, name);
+    int i = search_einp(inp, name);
     if (i != -1)
     {
         inp[i].count = inp[0].inp_count++;
@@ -314,34 +310,34 @@ void mark_einp_set(int ninp, t_inpfile *inp, const char *name)
         /* Prevent mdp lines being written twice for
            options that are handled via key-value trees. */
         inp[i].bHandledAsKeyValueTree = TRUE;
-
     }
 }
 
-static int get_einp(int *ninp, t_inpfile **inp, const char *name)
+static int get_einp(std::vector<t_inpfile> &inp, const char *name)
 {
-    int    i;
-    int    notfound = FALSE;
+    bool   notfound = false;
 
-    i = search_einp(*ninp, *inp, name);
+    int    i = search_einp(inp, name);
+
     if (i == -1)
     {
-        notfound = TRUE;
-        i        = (*ninp)++;
-        srenew(*inp, (*ninp));
-        (*inp)[i].name                   = gmx_strdup(name);
-        (*inp)[i].bSet                   = TRUE;
-        (*inp)[i].bHandledAsKeyValueTree = FALSE;
+        notfound = true;
+        t_inpfile local;
+        local.name                   = gmx_strdup(name);
+        local.bSet                   = TRUE;
+        local.bHandledAsKeyValueTree = FALSE;
+        inp.push_back(local);
+        i = inp.size() - 1;
         if (i == 0)
         {
-            (*inp)[i].inp_count = 1;
+            inp[0].inp_count = 1;
         }
     }
-    (*inp)[i].count = (*inp)[0].inp_count++;
-    (*inp)[i].bSet  = TRUE;
+    inp[i].count = inp[0].inp_count++;
+    inp[i].bSet  = TRUE;
     if (debug)
     {
-        fprintf(debug, "Inp %d = %s\n", (*inp)[i].count, (*inp)[i].name);
+        fprintf(debug, "Inp %d = %s\n", inp[i].count, inp[i].name);
     }
 
     /*if (i == (*ninp)-1)*/
@@ -355,29 +351,27 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
     }
 }
 
-/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
-int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
+/* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
+int get_eint(std::vector<t_inpfile> &inp, const char *name, int def,
              warninp_t wi)
 {
     char buf[32], *ptr, warn_buf[STRLEN];
-    int  ii;
-    int  ret;
 
-    ii = get_einp(ninp, inp, name);
+    int  ii = get_einp(inp, name);
 
     if (ii == -1)
     {
         sprintf(buf, "%d", def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        inp[inp.size()-1].value = gmx_strdup(buf);
 
         return def;
     }
     else
     {
-        ret = std::strtol((*inp)[ii].value, &ptr, 10);
+        int ret = std::strtol(inp[ii].value, &ptr, 10);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
+            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inp[ii].value, inp[ii].name);
             warning_error(wi, warn_buf);
         }
 
@@ -385,30 +379,28 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     }
 }
 
-/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
-gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
+/* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
+gmx_int64_t get_eint64(std::vector<t_inpfile> &inp,
                        const char *name, gmx_int64_t def,
                        warninp_t wi)
 {
     char            buf[32], *ptr, warn_buf[STRLEN];
-    int             ii;
-    gmx_int64_t     ret;
 
-    ii = get_einp(ninp, inp, name);
+    int             ii = get_einp(inp, name);
 
     if (ii == -1)
     {
         sprintf(buf, "%" GMX_PRId64, def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        inp[inp.size()-1].value = gmx_strdup(buf);
 
         return def;
     }
     else
     {
-        ret = str_to_int64_t((*inp)[ii].value, &ptr);
+        gmx_int64_t ret = str_to_int64_t(inp[ii].value, &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
+            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inp[ii].value, inp[ii].name);
             warning_error(wi, warn_buf);
         }
 
@@ -416,29 +408,27 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
     }
 }
 
-/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
-double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
+/* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
+double get_ereal(std::vector<t_inpfile> &inp, const char *name, double def,
                  warninp_t wi)
 {
     char   buf[32], *ptr, warn_buf[STRLEN];
-    int    ii;
-    double ret;
 
-    ii = get_einp(ninp, inp, name);
+    int    ii = get_einp(inp, name);
 
     if (ii == -1)
     {
         sprintf(buf, "%g", def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        inp[inp.size()-1].value = gmx_strdup(buf);
 
         return def;
     }
     else
     {
-        ret = strtod((*inp)[ii].value, &ptr);
+        double ret = strtod(inp[ii].value, &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", (*inp)[ii].value, (*inp)[ii].name);
+            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", inp[ii].value, inp[ii].name);
             warning_error(wi, warn_buf);
         }
 
@@ -446,54 +436,52 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     }
 }
 
-/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
-const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *def)
+/* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
+const char *get_estr(std::vector<t_inpfile> &inp, const char *name, const char *def)
 {
     char buf[32];
-    int  ii;
 
-    ii = get_einp(ninp, inp, name);
+    int  ii = get_einp(inp, name);
 
     if (ii == -1)
     {
         if (def)
         {
             sprintf(buf, "%s", def);
-            (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+            inp[inp.size()-1].value = gmx_strdup(buf);
         }
         else
         {
-            (*inp)[(*ninp)-1].value = nullptr;
+            inp[inp.size()-1].value = nullptr;
         }
 
         return def;
     }
     else
     {
-        return (*inp)[ii].value;
+        return inp[ii].value;
     }
 }
 
-/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
-int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
+/* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
+int get_eeenum(std::vector<t_inpfile> &inp, const char *name, const char **defs,
                warninp_t wi)
 {
-    int  ii, i, j;
     int  n = 0;
     char buf[STRLEN];
 
-    ii = get_einp(ninp, inp, name);
+    int  ii = get_einp(inp, name);
 
     if (ii == -1)
     {
-        (*inp)[(*ninp)-1].value = gmx_strdup(defs[0]);
+        inp[inp.size()-1].value = gmx_strdup(defs[0]);
 
         return 0;
     }
-
+    int i = 0;
     for (i = 0; (defs[i] != nullptr); i++)
     {
-        if (gmx_strcasecmp_min(defs[i], (*inp)[ii].value) == 0)
+        if (gmx_strcasecmp_min(defs[i], inp[ii].value) == 0)
         {
             break;
         }
@@ -502,9 +490,9 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
     if (defs[i] == nullptr)
     {
         n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
-                     (*inp)[ii].value, name, defs[0]);
+                     inp[ii].value, name, defs[0]);
         n += sprintf(buf+n, "Next time use one of:");
-        j  = 0;
+        int j  = 0;
         while (defs[j])
         {
             n += sprintf(buf+n, " '%s'", defs[j]);
@@ -519,7 +507,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
             fprintf(stderr, "%s\n", buf);
         }
 
-        (*inp)[ii].value = gmx_strdup(defs[0]);
+        inp[ii].value = gmx_strdup(defs[0]);
 
         return 0;
     }
@@ -527,7 +515,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
     return i;
 }
 
-int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs)
+int get_eenum(std::vector<t_inpfile> &inp, const char *name, const char **defs)
 {
-    return get_eeenum(ninp, inp, name, defs, nullptr);
+    return get_eeenum(inp, name, defs, nullptr);
 }

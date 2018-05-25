@@ -215,15 +215,14 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
                       int *it_xy, int *it_z, real *probe_rad, int *low_up_rm, int *maxwarn,
                       int *pieces, gmx_bool *bALLOW_ASYMMETRY)
 {
-    warninp_t  wi;
-    t_inpfile *inp;
-    int        ninp;
+    warninp_t               wi;
+    std::vector <t_inpfile> inp;
 
     wi = init_warning(TRUE, 0);
 
     {
         gmx::TextInputFile stream(membed_input);
-        inp = read_inpfile(&stream, membed_input, &ninp, wi);
+        inp = read_inpfile(&stream, membed_input, wi);
         stream.close();
     }
     ITYPE ("nxy", *it_xy, 1000);
@@ -241,7 +240,7 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     check_warning_error(wi, FARGS);
     {
         gmx::TextOutputFile stream(membed_input);
-        write_inpfile(&stream, membed_input, ninp, inp, FALSE, WriteMdpHeader::yes, wi);
+        write_inpfile(&stream, membed_input, inp, FALSE, WriteMdpHeader::yes, wi);
         stream.close();
     }
     done_warning(wi, FARGS);

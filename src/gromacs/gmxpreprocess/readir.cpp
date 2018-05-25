@@ -1663,14 +1663,12 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
     }
 }
 
-static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
+static void read_expandedparams(std::vector<t_inpfile> &inp_p,
                                 t_expanded *expand, warninp_t wi)
 {
-    int        ninp;
-    t_inpfile *inp;
+    std::vector<t_inpfile> inp;
 
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    inp    = inp_p;
 
     /* read expanded ensemble parameters */
     CCTYPE ("expanded ensemble variables");
@@ -1697,9 +1695,6 @@ static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
     RTYPE ("wl-ratio", expand->wl_ratio, 0.8);
     RTYPE ("init-wl-delta", expand->init_wl_delta, 1.0);
     EETYPE("wl-oneovert", expand->bWLoneovert, yesno_names);
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return;
 }
@@ -1764,25 +1759,25 @@ void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
             WriteMdpHeader writeMdpHeader, warninp_t wi)
 {
-    char       *dumstr[2];
-    double      dumdub[2][6];
-    t_inpfile  *inp;
-    const char *tmp;
-    int         i, j, m, ninp;
-    char        warn_buf[STRLEN];
-    t_lambda   *fep    = ir->fepvals;
-    t_expanded *expand = ir->expandedvals;
+    char                  *dumstr[2];
+    double                 dumdub[2][6];
+    std::vector<t_inpfile> inp;
+    const char            *tmp;
+    int                    i, j, m;
+    char                   warn_buf[STRLEN];
+    t_lambda              *fep    = ir->fepvals;
+    t_expanded            *expand = ir->expandedvals;
 
-    const char *no_names[] = { "no", nullptr };
+    const char            *no_names[] = { "no", nullptr };
 
     init_inputrec_strings();
     gmx::TextInputFile stream(mdparin);
-    inp = read_inpfile(&stream, mdparin, &ninp, wi);
+    inp = read_inpfile(&stream, mdparin, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
 
-    if (-1 == search_einp(ninp, inp, "cutoff-scheme"))
+    if (-1 == search_einp(inp, "cutoff-scheme"))
     {
         sprintf(warn_buf,
                 "%s did not specify a value for the .mdp option "
@@ -2075,7 +2070,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     if (ir->bPull)
     {
         snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&ninp, &inp, ir->pull, wi);
+        is->pull_grp = read_pullparams(inp, ir->pull, wi);
     }
 
     /* AWH biasing
@@ -2086,7 +2081,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         if (ir->bPull)
         {
-            ir->awhParams = gmx::readAndCheckAwhParams(&ninp, &inp, ir, wi);
+            ir->awhParams = gmx::readAndCheckAwhParams(inp, ir, wi);
         }
         else
         {
@@ -2101,7 +2096,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     if (ir->bRot)
     {
         snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
+        is->rot_grp = read_rotparams(inp, ir->rot, wi);
     }
 
     /* Interactive MD */
@@ -2191,12 +2186,12 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* expanded ensemble variables */
     if (ir->efep == efepEXPANDED || ir->bSimTemp)
     {
-        read_expandedparams(&ninp, &inp, expand, wi);
+        read_expandedparams(inp, expand, wi);
     }
 
     /* Electric fields */
     {
-        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
+        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(inp);
         gmx::KeyValueTreeTransformer transform;
         transform.rules()->addRule()
             .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
@@ -2204,7 +2199,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         for (const auto &path : transform.mappedPaths())
         {
             GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
-            mark_einp_set(ninp, inp, path[0].c_str());
+            mark_einp_set(inp, path[0].c_str());
         }
         MdpErrorHandler              errorHandler(wi);
         auto                         result
@@ -2314,7 +2309,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     {
         gmx::TextOutputFile stream(mdparout);
-        write_inpfile(&stream, mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
+        write_inpfile(&stream, mdparout, inp, FALSE, writeMdpHeader, wi);
 
         // Transform module data into a flat key-value tree for output.
         gmx::KeyValueTreeBuilder       builder;
@@ -2327,12 +2322,11 @@ void get_ir(const char *mdparin, const char *mdparout,
         stream.close();
     }
 
-    for (i = 0; (i < ninp); i++)
+    for (auto &local : inp)
     {
-        sfree(inp[i].name);
-        sfree(inp[i].value);
+        sfree(local.name);
+        sfree(local.value);
     }
-    sfree(inp);
 
     /* Process options if necessary */
     for (m = 0; m < 2; m++)

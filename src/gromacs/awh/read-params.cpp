@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,6 @@ const char *eawhcoordprovider_names[eawhcoordproviderNR+1] = {
 /*! \brief
  * Read parameters of an AWH bias dimension.
  *
- * \param[in,out] ninp_p     Number of read input file entries.
  * \param[in,out] inp_p      Input file entries.
  * \param[in] prefix         Prefix for dimension parameters.
  * \param[in,out] dimParams  AWH dimensional parameters.
@@ -88,14 +87,13 @@ const char *eawhcoordprovider_names[eawhcoordproviderNR+1] = {
  * \param[in,out] wi         Struct for bookeeping warnings.
  * \param[in] bComment       True if comments should be printed.
  */
-static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
+static void readDimParams(std::vector<t_inpfile> &inp_p, const char *prefix,
                           AwhDimParams *dimParams, const pull_params_t *pull_params,
                           warninp_t wi, bool bComment)
 {
-    char       warningmsg[STRLEN];
+    char                    warningmsg[STRLEN];
 
-    int        ninp = *ninp_p;
-    t_inpfile *inp  = *inp_p;
+    std::vector<t_inpfile> &inp  = inp_p;
 
     if (bComment)
     {
@@ -227,9 +225,6 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
         gmx_fatal(FARGS, "%s (%g) cannot be negative.",
                   opt, dimParams->coverDiameter);
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 }
 
 /*! \brief
@@ -255,7 +250,6 @@ static void checkInputConsistencyAwhBias(const AwhBiasParams &awhBiasParams,
 /*! \brief
  * Read parameters of an AWH bias.
  *
- * \param[in,out] ninp_p         Number of read input file entries.
  * \param[in,out] inp_p          Input file entries.
  * \param[in,out] awhBiasParams  AWH dimensional parameters.
  * \param[in]     prefix         Prefix for bias parameters.
@@ -263,17 +257,14 @@ static void checkInputConsistencyAwhBias(const AwhBiasParams &awhBiasParams,
  * \param[in,out] wi             Struct for bookeeping warnings.
  * \param[in]     bComment       True if comments should be printed.
  */
-static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhBiasParams, const char *prefix,
+static void read_bias_params(std::vector<t_inpfile> &inp_p, AwhBiasParams *awhBiasParams, const char *prefix,
                              const t_inputrec *ir, warninp_t wi, bool bComment)
 {
-    int        ninp;
-    t_inpfile *inp;
     char       opt[STRLEN], prefixdim[STRLEN];
     char       warningmsg[STRLEN];
 
     /* These are assumed to be declared by the gromacs reading functions */
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    std::vector<t_inpfile> &inp    = inp_p;
 
     if (bComment)
     {
@@ -417,14 +408,11 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
     {
         bComment = bComment && d == 0;
         sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
-        readDimParams(&ninp, &inp, prefixdim, &awhBiasParams->dimParams[d], ir->pull, wi, bComment);
+        readDimParams(inp, prefixdim, &awhBiasParams->dimParams[d], ir->pull, wi, bComment);
     }
 
     /* Check consistencies here that cannot be checked at read time at a lower level. */
     checkInputConsistencyAwhBias(*awhBiasParams, wi);
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 }
 
 /*! \brief
@@ -485,15 +473,14 @@ static void checkInputConsistencyAwh(const AwhParams &awhParams,
     }
 }
 
-AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *ir, warninp_t wi)
+AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> &inp_p, const t_inputrec *ir, warninp_t wi)
 {
     char       opt[STRLEN], prefix[STRLEN], prefixawh[STRLEN];
 
     AwhParams *awhParams;
     snew(awhParams, 1);
 
-    int        ninp = *ninp_p;
-    t_inpfile *inp  = *inp_p;
+    std::vector<t_inpfile> &inp  = inp_p;
 
     sprintf(prefix, "%s", "awh");
 
@@ -558,7 +545,7 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
     {
         bool bComment = (k == 0);
         sprintf(prefixawh, "%s%d", prefix, k + 1);
-        read_bias_params(&ninp, &inp, &awhParams->awhBiasParams[k], prefixawh, ir, wi, bComment);
+        read_bias_params(inp, &awhParams->awhBiasParams[k], prefixawh, ir, wi, bComment);
     }
 
     /* Do a final consistency check before returning */
@@ -568,9 +555,6 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
     {
         warning_error(wi, "With AWH init-step should be 0");
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return awhParams;
 }

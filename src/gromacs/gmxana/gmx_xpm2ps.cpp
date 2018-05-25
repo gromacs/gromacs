@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,24 +116,23 @@ enum {
 
 static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 {
-    static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
+    static const char     *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
     /* this must correspond to t_rgb *linecolors[] below */
-    static const char *colors[] = { "none", "black", "white", nullptr };
-    warninp_t          wi;
-    t_inpfile         *inp;
-    const char        *tmp;
-    int                ninp = 0;
+    static const char     *colors[] = { "none", "black", "white", nullptr };
+    warninp_t              wi;
+    std::vector<t_inpfile> inp;
+    const char            *tmp;
 
     wi = init_warning(FALSE, 0);
 
     if (mpin != nullptr)
     {
         gmx::TextInputFile stream(mpin);
-        inp = read_inpfile(&stream, mpin, &ninp, wi);
+        inp = read_inpfile(&stream, mpin, wi);
     }
     else
     {
-        inp = nullptr;
+        inp.clear();
     }
     ETYPE("black&white",    psr->bw,             gmx_bools);
     RTYPE("linewidth",      psr->linewidth,      1.0);
@@ -182,7 +181,7 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     if (mpout != nullptr)
     {
         gmx::TextOutputFile stream(mpout);
-        write_inpfile(&stream, mpout, ninp, inp, TRUE, WriteMdpHeader::yes, wi);
+        write_inpfile(&stream, mpout, inp, TRUE, WriteMdpHeader::yes, wi);
         stream.close();
     }
 

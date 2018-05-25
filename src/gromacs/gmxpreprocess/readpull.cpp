@@ -263,23 +263,22 @@ static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
     }
 }
 
-char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
-                       pull_params_t *pull,
-                       warninp_t wi)
+char **read_pullparams(std::vector<t_inpfile> &inp_p,
+                       pull_params_t          *pull,
+                       warninp_t               wi)
 {
-    int           ninp, nscan, idum;
-    t_inpfile    *inp;
-    const char   *tmp;
-    char        **grpbuf;
-    char          buf[STRLEN];
-    char          provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
-    char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
+    int                    nscan, idum;
+    std::vector<t_inpfile> inp;
+    const char            *tmp;
+    char                 **grpbuf;
+    char                   buf[STRLEN];
+    char                   provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char                   wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
-    t_pull_group *pgrp;
-    t_pull_coord *pcrd;
+    t_pull_group          *pgrp;
+    t_pull_coord          *pcrd;
 
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    inp   = inp_p;
 
     /* read pull parameters */
     CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
@@ -397,9 +396,6 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         /* Initialize the pull coordinate */
         init_pull_coord(pcrd, coordNum, dim_buf, origin_buf, vec_buf, wi);
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return grpbuf;
 }
