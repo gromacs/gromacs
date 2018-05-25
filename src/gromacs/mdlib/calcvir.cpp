@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,14 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "calcvir.h"
+
 #include "config.h" /* for GMX_MAX_OPENMP_THREADS */
 
 #include <algorithm>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -102,7 +103,7 @@ static void calc_x_times_f(int nxf, const rvec x[], const rvec f[],
 }
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
-              gmx_bool bScrewPBC, matrix box)
+              bool bScrewPBC, matrix box)
 {
     matrix x_times_f;
 

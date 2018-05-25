@@ -37,6 +37,8 @@
 
 #include "gmxpre.h"
 
+#include "wall.h"
+
 #include <string.h>
 
 #include <algorithm>
@@ -45,7 +47,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
