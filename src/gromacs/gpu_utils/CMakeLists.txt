@@ -56,6 +56,11 @@ else()
         )
 endif()
 
+if(GMX_USE_OPENCL)
+    file(GLOB OPENCL_COMMON_HEADERS vectype_ops.clh)
+    set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} ${OPENCL_COMMON_HEADERS} PARENT_SCOPE)
+endif()
+
 # workaround for the state - host allocator dependency
 gmx_install_headers(hostallocator.h)
 
