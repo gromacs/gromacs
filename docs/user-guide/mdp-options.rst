@@ -201,7 +201,7 @@ Run control
 .. mdp:: init-step
 
         (0)
-        The starting step. The time at an step i in a run is
+        The starting step. The time at step i in a run is
         calculated as: t = :mdp:`tinit` + :mdp:`dt` *
         (:mdp:`init-step` + i). The free-energy lambda is calculated
         as: lambda = :mdp:`init-lambda` + :mdp:`delta-lambda` *
@@ -228,15 +228,14 @@ Run control
 
    .. mdp-value:: Angular
 
-      Remove center of mass translational and rotational velocity around
-      the center of mass
+      Remove center of mass translational and rotational velocity
 
    .. mdp-value:: Linear-acceleration-correction
 
       Remove center of mass translational velocity. Correct the center of
       mass position assuming linear acceleration over :mdp:`nstcomm` steps.
       This is useful for cases where an acceleration is expected on the
-      center of mass which is nearly constant over mdp:`nstcomm` steps.
+      center of mass which is nearly constant over :mdp:`nstcomm` steps.
       This can occur for example when pulling on a group using an absolute
       reference.
 
@@ -347,20 +346,20 @@ Output control
 .. mdp:: nstxout
 
    (0) \[steps\]
-   number of steps that elapse between writing coordinates to output
-   trajectory file, the last coordinates are always written
+   number of steps that elapse between writing coordinates to the output
+   trajectory file (:ref:`trr`), the last coordinates are always written
 
 .. mdp:: nstvout
 
    (0) \[steps\]
-   number of steps that elapse between writing velocities to output
-   trajectory, the last velocities are always written
+   number of steps that elapse between writing velocities to the output
+   trajectory file (:ref:`trr`), the last velocities are always written
 
 .. mdp:: nstfout
 
    (0) \[steps\]
-   number of steps that elapse between writing forces to output
-   trajectory.
+   number of steps that elapse between writing forces to the output
+   trajectory file (:ref:`trr`), the last forces are always written.
 
 .. mdp:: nstlog
 
@@ -380,7 +379,7 @@ Output control
 .. mdp:: nstenergy
 
    (1000) \[steps\]
-   number of steps that else between writing energies to energy file,
+   number of steps that elapse between writing energies to energy file,
    the last energies are always written, should be a multiple of
    :mdp:`nstcalcenergy`. Note that the exact sums and fluctuations
    over all MD steps modulo :mdp:`nstcalcenergy` are stored in the
@@ -391,7 +390,7 @@ Output control
 
    (0) \[steps\]
    number of steps that elapse between writing position coordinates
-   using lossy compression
+   using lossy compression (:ref:`xtc` file)
 
 .. mdp:: compressed-x-precision
 
@@ -497,12 +496,12 @@ Neighbor searching
       Use no periodic boundary conditions, ignore the box. To simulate
       without cut-offs, set all cut-offs and :mdp:`nstlist` to 0. For
       best performance without cut-offs on a single MPI rank, set
-      :mdp:`nstlist` to zero and :mdp:`ns-type` =simple.
+      :mdp:`nstlist` to zero and :mdp-value:`ns-type=simple`.
 
    .. mdp-value:: xy
 
       Use periodic boundary conditions in x and y directions
-      only. This works only with :mdp:`ns-type` =grid and can be used
+      only. This works only with :mdp-value:`ns-type=grid` and can be used
       in combination with walls_. Without walls or with only one wall
       the system size is infinite in the z direction. Therefore
       pressure coupling or Ewald summation methods can not be
@@ -626,16 +625,16 @@ Electrostatics
    .. mdp-value:: Reaction-Field-zero
 
       In |Gromacs|, normal reaction-field electrostatics with
-      :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=group` leads to bad energy
+      :mdp-value:`cutoff-scheme=group` leads to bad energy
       conservation. :mdp-value:`coulombtype=Reaction-Field-zero` solves this by making
       the potential zero beyond the cut-off. It can only be used with
       an infinite dielectric constant (:mdp:`epsilon-rf` =0), because
       only for that value the force vanishes at the
       cut-off. :mdp:`rlist` should be 0.1 to 0.3 nm larger than
-      :mdp:`rcoulomb` to accommodate for the size of charge groups
+      :mdp:`rcoulomb` to accommodate the size of charge groups
       and diffusion between neighbor list updates. This, and the fact
       that table lookups are used instead of analytical functions make
-      :mdp-value:`coulombtype=Reaction-Field-zero` computationally more expensive than
+      reaction-field-zero computationally more expensive than
       normal reaction-field.
 
    .. mdp-value:: Shift
@@ -685,7 +684,7 @@ Electrostatics
       A combination of PME and a switch function for the direct-space
       part (see above). :mdp:`rcoulomb` is allowed to be smaller than
       :mdp:`rlist`. This is mainly useful constant energy simulations
-      (note that using PME with :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=Verlet`
+      (note that using PME with :mdp-value:`cutoff-scheme=Verlet`
       will be more efficient).
 
    .. mdp-value:: PME-User
@@ -769,26 +768,26 @@ Van der Waals
 
    .. mdp-value:: Shift
 
-      This functionality is deprecated and replaced by
-      :mdp:`vdw-modifier` = Force-switch. The LJ (not Buckingham)
-      potential is decreased over the whole range and the forces decay
-      smoothly to zero between :mdp:`rvdw-switch` and
+      This functionality is deprecated and replaced by using
+      :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Force-switch`.
+      The LJ (not Buckingham) potential is decreased over the whole range and
+      the forces decay smoothly to zero between :mdp:`rvdw-switch` and
       :mdp:`rvdw`. The neighbor search cut-off :mdp:`rlist` should
-      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate for the
+      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
       size of charge groups and diffusion between neighbor list
       updates.
 
    .. mdp-value:: Switch
 
-      This functionality is deprecated and replaced by
-      :mdp:`vdw-modifier` = Potential-switch. The LJ (not Buckingham)
-      potential is normal out to :mdp:`rvdw-switch`, after which it
-      is switched off to reach zero at :mdp:`rvdw`. Both the
+      This functionality is deprecated and replaced by using
+      :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Potential-switch`.
+      The LJ (not Buckingham) potential is normal out to :mdp:`rvdw-switch`, after
+      which it is switched off to reach zero at :mdp:`rvdw`. Both the
       potential and force functions are continuously smooth, but be
       aware that all switch functions will give rise to a bulge
       (increase) in the force (since we are switching the
       potential). The neighbor search cut-off :mdp:`rlist` should be
-      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate for the
+      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
       size of charge groups and diffusion between neighbor list
       updates.
 
@@ -845,7 +844,6 @@ Van der Waals
 .. mdp:: rvdw-switch
 
    (0) \[nm\]
-
    where to start switching the LJ force and possibly the potential,
    only relevant when force or potential switching is used
 
@@ -1003,7 +1001,7 @@ Temperature coupling
 
    .. mdp-value:: berendsen
 
-      Temperature coupling with a Berendsen-thermostat to a bath with
+      Temperature coupling with a Berendsen thermostat to a bath with
       temperature :mdp:`ref-t`, with time constant
       :mdp:`tau-t`. Several groups can be coupled separately, these
       are specified in the :mdp:`tc-grps` field separated by spaces.
@@ -1015,11 +1013,11 @@ Temperature coupling
       but in this case :mdp:`tau-t` controls the period of the
       temperature fluctuations at equilibrium, which is slightly
       different from a relaxation time. For NVT simulations the
-      conserved energy quantity is written to energy and log file.
+      conserved energy quantity is written to the energy and log files.
 
    .. mdp-value:: andersen
 
-      Temperature coupling by randomizing a fraction of the particles
+      Temperature coupling by randomizing a fraction of the particle velocities
       at each timestep. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the average time between
       randomization of each molecule. Inhibits particle dynamics
@@ -1029,8 +1027,8 @@ Temperature coupling
 
    .. mdp-value:: andersen-massive
 
-      Temperature coupling by randomizing all particles at infrequent
-      timesteps. Reference temperature and coupling groups are
+      Temperature coupling by randomizing velocities of all particles at
+      infrequent timesteps. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the time between
       randomization of all molecules. Inhibits particle dynamics
       somewhat, but little or no ergodicity issues. Currently only
@@ -1119,7 +1117,7 @@ Pressure coupling
       equilibrium. This is probably a better method when you want to
       apply pressure scaling during data collection, but beware that
       you can get very large oscillations if you are starting from a
-      different pressure. For simulations where the exact fluctation
+      different pressure. For simulations where the exact fluctations
       of the NPT ensemble are important, or if the pressure coupling
       time is very short it may not be appropriate, as the previous
       time step pressure is used in some steps of the |Gromacs|
@@ -1318,7 +1316,7 @@ Velocity generation
         Generate velocities in :ref:`gmx grompp` according to a
         Maxwell distribution at temperature :mdp:`gen-temp`, with
         random seed :mdp:`gen-seed`. This is only meaningful with
-        integrator :mdp-value:`integrator=md`.
+        :mdp-value:`integrator=md`.
 
 .. mdp:: gen-temp
 
@@ -1474,7 +1472,7 @@ Walls
    (0)
    When set to 1 there is a wall at ``z=0``, when set to 2 there is
    also a wall at ``z=z-box``. Walls can only be used with :mdp:`pbc`
-   ``=xy``. When set to 2 pressure coupling and Ewald summation can be
+   ``=xy``. When set to 2, pressure coupling and Ewald summation can be
    used (it is usually best to use semiisotropic pressure coupling
    with the ``x/y`` compressibility set to 0, as otherwise the surface
    area will change). Walls interact wit the rest of the system
@@ -1541,7 +1539,7 @@ Walls
 COM pulling
 ^^^^^^^^^^^
 
-Note that where pulling coordinate are applicable, there can be more
+Note that where pulling coordinates are applicable, there can be more
 than one (set with :mdp:`pull-ncoords`) and multiple related :ref:`mdp`
 variables will exist accordingly. Documentation references to things
 like :mdp:`pull-coord1-vec` should be understood to apply to to the
@@ -1563,8 +1561,7 @@ applicable pulling coordinate.
 .. mdp:: pull-cylinder-r
 
    (1.5) \[nm\]
-   the radius of the cylinder for
-   :mdp:`pull-coord1-geometry` = :mdp-value:`pull-coord1-geometry=cylinder`
+   the radius of the cylinder for :mdp-value:`pull-coord1-geometry=cylinder`
 
 .. mdp:: pull-constr-tol
 
@@ -2940,7 +2937,7 @@ Non-equilibrium MD
 
    Groups that are to be frozen (*i.e.* their X, Y, and/or Z position
    will not be updated; *e.g.* ``Lipid SOL``). :mdp:`freezedim`
-   specifies for which dimension the freezing applies. To avoid
+   specifies for which dimension(s) the freezing applies. To avoid
    spurious contributions to the virial and pressure due to large
    forces between completely frozen atoms you need to use energy group
    exclusions, this also saves computing time. Note that coordinates
@@ -3002,7 +2999,7 @@ Electric fields
    electric field is applied.
 
    More details in Carl Caleman and David van der Spoel: Picosecond
-   Melting of Ice by an Infrared Laser Pulse - A Simulation Study
+   Melting of Ice by an Infrared Laser Pulse - A Simulation Study.
    Angew. Chem. Intl. Ed. 47 pp. 14 17-1420 (2008)
 
 
