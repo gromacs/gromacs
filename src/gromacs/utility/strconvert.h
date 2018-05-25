@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,6 +144,13 @@ double fromString<double>(const char *str) { return doubleFromString(str); }
 static inline const char *boolToString(bool value)
 {
     return value ? "true" : "false";
+}
+/*! \brief
+ * Converts mdp file boolean to a "yes"/"no" string.
+ */
+static inline const char *mdpBoolToString(bool value)
+{
+    return value ? "yes" : "no";
 }
 /*! \brief
  * Returns a string containing the value of \c t.
