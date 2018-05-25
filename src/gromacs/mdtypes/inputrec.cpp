@@ -61,7 +61,7 @@
 #include "gromacs/utility/txtdump.h"
 
 //! Macro to select a bool name
-#define EBOOL(e)       gmx::boolToString(e)
+#define EBOOL(e)       gmx::mdpBoolToString(e)
 
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.

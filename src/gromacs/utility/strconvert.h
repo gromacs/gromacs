@@ -146,6 +146,13 @@ static inline const char *boolToString(bool value)
     return value ? "true" : "false";
 }
 /*! \brief
+ * Converts mdp file boolean to a "yes"/"no" string.
+ */
+static inline const char *mdpBoolToString(bool value)
+{
+    return value ? "yes" : "no";
+}
+/*! \brief
  * Returns a string containing the value of \c t.
  *
  * \throws std::bad_alloc if out of memory.
