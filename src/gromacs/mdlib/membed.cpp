@@ -215,33 +215,32 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
                       int *it_xy, int *it_z, real *probe_rad, int *low_up_rm, int *maxwarn,
                       int *pieces, gmx_bool *bALLOW_ASYMMETRY)
 {
-    warninp_t  wi;
-    t_inpfile *inp;
-    int        ninp;
+    warninp_t               wi;
+    std::vector <t_inpfile> inp;
 
     wi = init_warning(TRUE, 0);
 
     {
         gmx::TextInputFile stream(membed_input);
-        inp = read_inpfile(&stream, membed_input, &ninp, wi);
+        inp = read_inpfile(&stream, membed_input, wi);
         stream.close();
     }
-    *it_xy            = get_eint(&ninp, &inp, "nxy", 1000, wi);
-    *it_z             = get_eint(&ninp, &inp, "nz", 0, wi);
-    *xy_fac           = get_ereal(&ninp, &inp, "xyinit", 0.5, wi);
-    *xy_max           = get_ereal(&ninp, &inp, "xyend", 1.0, wi);
-    *z_fac            = get_ereal(&ninp, &inp, "zinit", 1.0, wi);
-    *z_max            = get_ereal(&ninp, &inp, "zend", 1.0, wi);
-    *probe_rad        = get_ereal(&ninp, &inp, "rad", 0.22, wi);
-    *low_up_rm        = get_eint(&ninp, &inp, "ndiff", 0, wi);
-    *maxwarn          = get_eint(&ninp, &inp, "maxwarn", 0, wi);
-    *pieces           = get_eint(&ninp, &inp, "pieces", 1, wi);
-    *bALLOW_ASYMMETRY = get_eeenum(&ninp, &inp, "asymmetry", yesno_names, wi);
+    *it_xy            = get_eint(&inp, "nxy", 1000, wi);
+    *it_z             = get_eint(&inp, "nz", 0, wi);
+    *xy_fac           = get_ereal(&inp, "xyinit", 0.5, wi);
+    *xy_max           = get_ereal(&inp, "xyend", 1.0, wi);
+    *z_fac            = get_ereal(&inp, "zinit", 1.0, wi);
+    *z_max            = get_ereal(&inp, "zend", 1.0, wi);
+    *probe_rad        = get_ereal(&inp, "rad", 0.22, wi);
+    *low_up_rm        = get_eint(&inp, "ndiff", 0, wi);
+    *maxwarn          = get_eint(&inp, "maxwarn", 0, wi);
+    *pieces           = get_eint(&inp, "pieces", 1, wi);
+    *bALLOW_ASYMMETRY = get_eeenum(&inp, "asymmetry", yesno_names, wi);
 
     check_warning_error(wi, FARGS);
     {
         gmx::TextOutputFile stream(membed_input);
-        write_inpfile(&stream, membed_input, ninp, inp, FALSE, WriteMdpHeader::yes, wi);
+        write_inpfile(&stream, membed_input, &inp, FALSE, WriteMdpHeader::yes, wi);
         stream.close();
     }
     done_warning(wi, FARGS);
