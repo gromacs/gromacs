@@ -182,13 +182,13 @@ Run control
 
 .. mdp:: tinit
 
-        (0) \[ps\]
+        (0) [ps]
         starting time for your run (only makes sense for time-based
         integrators)
 
 .. mdp:: dt
 
-        (0.001) \[ps\]
+        (0.001) [ps]
         time step for integration (only makes sense for time-based
         integrators)
 
@@ -201,7 +201,7 @@ Run control
 .. mdp:: init-step
 
         (0)
-        The starting step. The time at an step i in a run is
+        The starting step. The time at step i in a run is
         calculated as: t = :mdp:`tinit` + :mdp:`dt` *
         (:mdp:`init-step` + i). The free-energy lambda is calculated
         as: lambda = :mdp:`init-lambda` + :mdp:`delta-lambda` *
@@ -228,15 +228,14 @@ Run control
 
    .. mdp-value:: Angular
 
-      Remove center of mass translational and rotational velocity around
-      the center of mass
+      Remove center of mass translational and rotational velocity
 
    .. mdp-value:: Linear-acceleration-correction
 
       Remove center of mass translational velocity. Correct the center of
       mass position assuming linear acceleration over :mdp:`nstcomm` steps.
       This is useful for cases where an acceleration is expected on the
-      center of mass which is nearly constant over mdp:`nstcomm` steps.
+      center of mass which is nearly constant over :mdp:`nstcomm` steps.
       This can occur for example when pulling on a group using an absolute
       reference.
 
@@ -246,7 +245,7 @@ Run control
 
 .. mdp:: nstcomm
 
-   (100) \[steps\]
+   (100) [steps]
    frequency for center of mass motion removal
 
 .. mdp:: comm-grps
@@ -260,14 +259,14 @@ Langevin dynamics
 
 .. mdp:: bd-fric
 
-   (0) \[amu ps-1\]
+   (0) [amu ps\ :sup:`-1`]
    Brownian dynamics friction coefficient. When :mdp:`bd-fric` is 0,
    the friction coefficient for each particle is calculated as mass/
    :mdp:`tau-t`.
 
 .. mdp:: ld-seed
 
-   (-1) \[integer\]
+   (-1) [integer]
    used to initialize random generator for thermal noise for
    stochastic and Brownian dynamics. When :mdp:`ld-seed` is set to -1,
    a pseudo random seed is used. When running BD or SD on multiple
@@ -280,18 +279,18 @@ Energy minimization
 
 .. mdp:: emtol
 
-   (10.0) \[kJ mol-1 nm-1\]
+   (10.0) [kJ mol\ :sup:`-1` nm\ :sup:`-1`]
    the minimization is converged when the maximum force is smaller
    than this value
 
 .. mdp:: emstep
 
-   (0.01) \[nm\]
+   (0.01) [nm]
    initial step-size
 
 .. mdp:: nstcgsteep
 
-   (1000) \[steps\]
+   (1000) [steps]
    frequency of performing 1 steepest descent step while doing
    conjugate gradient energy minimization.
 
@@ -321,7 +320,7 @@ value should be 1.0 at most.
 
 .. mdp:: fcstep
 
-   (0) \[ps^2\]
+   (0) [ps\ :sup:`2`]
    the step size for optimizing the flexible constraints. Should be
    chosen as mu/(d2V/dq2) where mu is the reduced mass of two
    particles in a flexible constraint and d2V/dq2 is the second
@@ -336,7 +335,7 @@ Test particle insertion
 
 .. mdp:: rtpi
 
-   (0.05) \[nm\]
+   (0.05) [nm]
    the test particle insertion radius, see integrators
    :mdp-value:`integrator=tpi` and :mdp-value:`integrator=tpic`
 
@@ -346,25 +345,25 @@ Output control
 
 .. mdp:: nstxout
 
-   (0) \[steps\]
-   number of steps that elapse between writing coordinates to output
-   trajectory file, the last coordinates are always written
+   (0) [steps]
+   number of steps that elapse between writing coordinates to the output
+   trajectory file (:ref:`trr`), the last coordinates are always written
 
 .. mdp:: nstvout
 
-   (0) \[steps\]
-   number of steps that elapse between writing velocities to output
-   trajectory, the last velocities are always written
+   (0) [steps]
+   number of steps that elapse between writing velocities to the output
+   trajectory file (:ref:`trr`), the last velocities are always written
 
 .. mdp:: nstfout
 
-   (0) \[steps\]
-   number of steps that elapse between writing forces to output
-   trajectory.
+   (0) [steps]
+   number of steps that elapse between writing forces to the output
+   trajectory file (:ref:`trr`), the last forces are always written.
 
 .. mdp:: nstlog
 
-   (1000) \[steps\]
+   (1000) [steps]
    number of steps that elapse between writing energies to the log
    file, the last energies are always written
 
@@ -379,8 +378,8 @@ Output control
 
 .. mdp:: nstenergy
 
-   (1000) \[steps\]
-   number of steps that else between writing energies to energy file,
+   (1000) [steps]
+   number of steps that elapse between writing energies to energy file,
    the last energies are always written, should be a multiple of
    :mdp:`nstcalcenergy`. Note that the exact sums and fluctuations
    over all MD steps modulo :mdp:`nstcalcenergy` are stored in the
@@ -389,13 +388,13 @@ Output control
 
 .. mdp:: nstxout-compressed
 
-   (0) \[steps\]
+   (0) [steps]
    number of steps that elapse between writing position coordinates
-   using lossy compression
+   using lossy compression (:ref:`xtc` file)
 
 .. mdp:: compressed-x-precision
 
-   (1000) \[real\]
+   (1000) [real]
    precision with which to write to the compressed trajectory file
 
 .. mdp:: compressed-x-grps
@@ -445,7 +444,7 @@ Neighbor searching
 
 .. mdp:: nstlist
 
-   \(10) \[steps\]
+   (\10) [steps]
 
    .. mdp-value:: >0
 
@@ -497,12 +496,12 @@ Neighbor searching
       Use no periodic boundary conditions, ignore the box. To simulate
       without cut-offs, set all cut-offs and :mdp:`nstlist` to 0. For
       best performance without cut-offs on a single MPI rank, set
-      :mdp:`nstlist` to zero and :mdp:`ns-type` =simple.
+      :mdp:`nstlist` to zero and :mdp-value:`ns-type=simple`.
 
    .. mdp-value:: xy
 
       Use periodic boundary conditions in x and y directions
-      only. This works only with :mdp:`ns-type` =grid and can be used
+      only. This works only with :mdp-value:`ns-type=grid` and can be used
       in combination with walls_. Without walls or with only one wall
       the system size is infinite in the z direction. Therefore
       pressure coupling or Ewald summation methods can not be
@@ -522,7 +521,7 @@ Neighbor searching
 
 .. mdp:: verlet-buffer-tolerance
 
-   (0.005) \[kJ/mol/ps\]
+   (0.005) [kJ mol\ :sup:`-1` ps\ :sup:`-1`]
 
    Useful only with the :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`. This sets
    the maximum allowed error for pair interactions per particle caused
@@ -553,7 +552,7 @@ Neighbor searching
 
 .. mdp:: rlist
 
-   (1) \[nm\]
+   (1) [nm]
    Cut-off distance for the short-range neighbor list. With the
    :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`, this is by default set by the
    :mdp:`verlet-buffer-tolerance` option and the value of
@@ -580,7 +579,7 @@ Electrostatics
       :mdp:`fourierspacing`. The relative accuracy of
       direct/reciprocal space is controlled by :mdp:`ewald-rtol`.
 
-      NOTE: Ewald scales as O(N^3/2) and is thus extremely slow for
+      NOTE: Ewald scales as O(N\ :sup:`3/2`) and is thus extremely slow for
       large systems. It is included mainly for reference - in most
       cases PME will perform much better.
 
@@ -592,7 +591,7 @@ Electrostatics
       :mdp:`fourierspacing` and the interpolation order with
       :mdp:`pme-order`. With a grid spacing of 0.1 nm and cubic
       interpolation the electrostatic forces have an accuracy of
-      2-3*10^-4. Since the error from the vdw-cutoff is larger than
+      2-3*10\ :sup:`-4`. Since the error from the vdw-cutoff is larger than
       this you might try 0.15 nm. When running in parallel the
       interpolation parallelizes better than the FFT, so try
       decreasing grid dimensions while increasing interpolation.
@@ -626,16 +625,16 @@ Electrostatics
    .. mdp-value:: Reaction-Field-zero
 
       In |Gromacs|, normal reaction-field electrostatics with
-      :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=group` leads to bad energy
+      :mdp-value:`cutoff-scheme=group` leads to bad energy
       conservation. :mdp-value:`coulombtype=Reaction-Field-zero` solves this by making
       the potential zero beyond the cut-off. It can only be used with
       an infinite dielectric constant (:mdp:`epsilon-rf` =0), because
       only for that value the force vanishes at the
       cut-off. :mdp:`rlist` should be 0.1 to 0.3 nm larger than
-      :mdp:`rcoulomb` to accommodate for the size of charge groups
+      :mdp:`rcoulomb` to accommodate the size of charge groups
       and diffusion between neighbor list updates. This, and the fact
       that table lookups are used instead of analytical functions make
-      :mdp-value:`coulombtype=Reaction-Field-zero` computationally more expensive than
+      reaction-field-zero computationally more expensive than
       normal reaction-field.
 
    .. mdp-value:: Shift
@@ -685,7 +684,7 @@ Electrostatics
       A combination of PME and a switch function for the direct-space
       part (see above). :mdp:`rcoulomb` is allowed to be smaller than
       :mdp:`rlist`. This is mainly useful constant energy simulations
-      (note that using PME with :mdp:`cutoff-scheme` = :mdp-value:`cutoff-scheme=Verlet`
+      (note that using PME with :mdp-value:`cutoff-scheme=Verlet`
       will be more efficient).
 
    .. mdp-value:: PME-User
@@ -725,13 +724,13 @@ Electrostatics
 
 .. mdp:: rcoulomb-switch
 
-   (0) \[nm\]
+   (0) [nm]
    where to start switching the Coulomb potential, only relevant
    when force or potential switching is used
 
 .. mdp:: rcoulomb
 
-   (1) \[nm\]
+   (1) [nm]
    distance for the Coulomb cut-off
 
 .. mdp:: epsilon-r
@@ -769,26 +768,26 @@ Van der Waals
 
    .. mdp-value:: Shift
 
-      This functionality is deprecated and replaced by
-      :mdp:`vdw-modifier` = Force-switch. The LJ (not Buckingham)
-      potential is decreased over the whole range and the forces decay
-      smoothly to zero between :mdp:`rvdw-switch` and
+      This functionality is deprecated and replaced by using
+      :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Force-switch`.
+      The LJ (not Buckingham) potential is decreased over the whole range and
+      the forces decay smoothly to zero between :mdp:`rvdw-switch` and
       :mdp:`rvdw`. The neighbor search cut-off :mdp:`rlist` should
-      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate for the
+      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
       size of charge groups and diffusion between neighbor list
       updates.
 
    .. mdp-value:: Switch
 
-      This functionality is deprecated and replaced by
-      :mdp:`vdw-modifier` = Potential-switch. The LJ (not Buckingham)
-      potential is normal out to :mdp:`rvdw-switch`, after which it
-      is switched off to reach zero at :mdp:`rvdw`. Both the
+      This functionality is deprecated and replaced by using
+      :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Potential-switch`.
+      The LJ (not Buckingham) potential is normal out to :mdp:`rvdw-switch`, after
+      which it is switched off to reach zero at :mdp:`rvdw`. Both the
       potential and force functions are continuously smooth, but be
       aware that all switch functions will give rise to a bulge
       (increase) in the force (since we are switching the
       potential). The neighbor search cut-off :mdp:`rlist` should be
-      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate for the
+      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
       size of charge groups and diffusion between neighbor list
       updates.
 
@@ -844,14 +843,13 @@ Van der Waals
 
 .. mdp:: rvdw-switch
 
-   (0) \[nm\]
-
+   (0) [nm]
    where to start switching the LJ force and possibly the potential,
    only relevant when force or potential switching is used
 
 .. mdp:: rvdw
 
-   (1) \[nm\]
+   (1) [nm]
    distance for the LJ or Buckingham cut-off
 
 .. mdp:: DispCorr
@@ -874,7 +872,7 @@ Tables
 
 .. mdp:: table-extension
 
-   (1) \[nm\]
+   (1) [nm]
    Extension of the non-bonded potential lookup tables beyond the
    largest cut-off distance. The value should be large enough to
    account for charge group sizes and the diffusion between
@@ -903,7 +901,7 @@ Ewald
 
 .. mdp:: fourierspacing
 
-   (0.12) \[nm\]
+   (0.12) [nm]
    For ordinary Ewald, the ratio of the box dimensions and the spacing
    determines a lower bound for the number of wave vectors to use in
    each (signed) direction. For PME and P3M, that ratio determines a
@@ -935,7 +933,7 @@ Ewald
 
 .. mdp:: ewald-rtol
 
-   (1e-5)
+   (10\ :sup:`-5`)
    The relative strength of the Ewald-shifted direct potential at
    :mdp:`rcoulomb` is given by :mdp:`ewald-rtol`. Decreasing this
    will give a more accurate direct sum, but then you need more wave
@@ -943,7 +941,7 @@ Ewald
 
 .. mdp:: ewald-rtol-lj
 
-   (1e-3)
+   (10\ :sup:`-3`)
    When doing PME for VdW-interactions, :mdp:`ewald-rtol-lj` is used
    to control the relative strength of the dispersion potential at
    :mdp:`rvdw` in the same way as :mdp:`ewald-rtol` controls the
@@ -1003,7 +1001,7 @@ Temperature coupling
 
    .. mdp-value:: berendsen
 
-      Temperature coupling with a Berendsen-thermostat to a bath with
+      Temperature coupling with a Berendsen thermostat to a bath with
       temperature :mdp:`ref-t`, with time constant
       :mdp:`tau-t`. Several groups can be coupled separately, these
       are specified in the :mdp:`tc-grps` field separated by spaces.
@@ -1015,11 +1013,11 @@ Temperature coupling
       but in this case :mdp:`tau-t` controls the period of the
       temperature fluctuations at equilibrium, which is slightly
       different from a relaxation time. For NVT simulations the
-      conserved energy quantity is written to energy and log file.
+      conserved energy quantity is written to the energy and log files.
 
    .. mdp-value:: andersen
 
-      Temperature coupling by randomizing a fraction of the particles
+      Temperature coupling by randomizing a fraction of the particle velocities
       at each timestep. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the average time between
       randomization of each molecule. Inhibits particle dynamics
@@ -1029,8 +1027,8 @@ Temperature coupling
 
    .. mdp-value:: andersen-massive
 
-      Temperature coupling by randomizing all particles at infrequent
-      timesteps. Reference temperature and coupling groups are
+      Temperature coupling by randomizing velocities of all particles at
+      infrequent timesteps. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the time between
       randomization of all molecules. Inhibits particle dynamics
       somewhat, but little or no ergodicity issues. Currently only
@@ -1081,13 +1079,13 @@ Temperature coupling
 
 .. mdp:: tau-t
 
-   \[ps\]
+   [ps]
    time constant for coupling (one for each group in
    :mdp:`tc-grps`), -1 means no temperature coupling
 
 .. mdp:: ref-t
 
-   \[K\]
+   [K]
    reference temperature for coupling (one for each group in
    :mdp:`tc-grps`)
 
@@ -1119,7 +1117,7 @@ Pressure coupling
       equilibrium. This is probably a better method when you want to
       apply pressure scaling during data collection, but beware that
       you can get very large oscillations if you are starting from a
-      different pressure. For simulations where the exact fluctation
+      different pressure. For simulations where the exact fluctations
       of the NPT ensemble are important, or if the pressure coupling
       time is very short it may not be appropriate, as the previous
       time step pressure is used in some steps of the |Gromacs|
@@ -1191,20 +1189,20 @@ Pressure coupling
 
 .. mdp:: tau-p
 
-   (1) \[ps\]
+   (1) [ps]
    The time constant for pressure coupling (one value for all
    directions).
 
 .. mdp:: compressibility
 
-   \[bar^-1\]
-   The compressibility (NOTE: this is now really in bar^-1) For water at 1
-   atm and 300 K the compressibility is 4.5e-5 bar^-1. The number of
+   [bar\ :sup:`-1`]
+   The compressibility (NOTE: this is now really in bar\ :sup:`-1`) For water at 1
+   atm and 300 K the compressibility is 4.5e-5 bar\ :sup:`-1`. The number of
    required values is implied by :mdp:`pcoupltype`.
 
 .. mdp:: ref-p
 
-   \[bar\]
+   [bar]
    The reference pressure for coupling. The number of required values
    is implied by :mdp:`pcoupltype`.
 
@@ -1318,16 +1316,16 @@ Velocity generation
         Generate velocities in :ref:`gmx grompp` according to a
         Maxwell distribution at temperature :mdp:`gen-temp`, with
         random seed :mdp:`gen-seed`. This is only meaningful with
-        integrator :mdp-value:`integrator=md`.
+        :mdp-value:`integrator=md`.
 
 .. mdp:: gen-temp
 
-   (300) \[K\]
+   (300) [K]
    temperature for Maxwell distribution
 
 .. mdp:: gen-seed
 
-   (-1) \[integer\]
+   (-1) [integer]
    used to initialize random generator for random velocities,
    when :mdp:`gen-seed` is set to -1, a pseudo random seed is
    used.
@@ -1438,7 +1436,7 @@ Bonds
 
 .. mdp:: lincs-warnangle
 
-   (30) \[deg\]
+   (30) [deg]
    maximum angle that a bond can rotate before LINCS will complain
 
 .. mdp:: morse
@@ -1474,7 +1472,7 @@ Walls
    (0)
    When set to 1 there is a wall at ``z=0``, when set to 2 there is
    also a wall at ``z=z-box``. Walls can only be used with :mdp:`pbc`
-   ``=xy``. When set to 2 pressure coupling and Ewald summation can be
+   ``=xy``. When set to 2, pressure coupling and Ewald summation can be
    used (it is usually best to use semiisotropic pressure coupling
    with the ``x/y`` compressibility set to 0, as otherwise the surface
    area will change). Walls interact wit the rest of the system
@@ -1514,7 +1512,7 @@ Walls
 
 .. mdp:: wall-r-linpot
 
-   (-1) \[nm\]
+   (-1) [nm]
    Below this distance from the wall the potential is continued
    linearly and thus the force is constant. Setting this option to a
    postive value is especially useful for equilibration when some
@@ -1524,7 +1522,7 @@ Walls
 
 .. mdp:: wall-density
 
-   \[nm^-3/nm^-2\]
+   [nm\ :sup:`-3`] / [nm\ :sup:`-2`]
    the number density of the atoms for each wall for wall types 9-3
    and 10-4
 
@@ -1541,11 +1539,12 @@ Walls
 COM pulling
 ^^^^^^^^^^^
 
-Note that where pulling coordinate are applicable, there can be more
+Note that where pulling coordinates are applicable, there can be more
 than one (set with :mdp:`pull-ncoords`) and multiple related :ref:`mdp`
 variables will exist accordingly. Documentation references to things
 like :mdp:`pull-coord1-vec` should be understood to apply to to the
-applicable pulling coordinate.
+applicable pulling coordinate, eg. the second pull coordinate is described by
+pull-coord2-vec, pull-coord2-k, and so on.
 
 .. mdp:: pull
 
@@ -1562,13 +1561,12 @@ applicable pulling coordinate.
 
 .. mdp:: pull-cylinder-r
 
-   (1.5) \[nm\]
-   the radius of the cylinder for
-   :mdp:`pull-coord1-geometry` = :mdp-value:`pull-coord1-geometry=cylinder`
+   (1.5) [nm]
+   the radius of the cylinder for :mdp-value:`pull-coord1-geometry=cylinder`
 
 .. mdp:: pull-constr-tol
 
-   (1e-6)
+   (10\ :sup:`-6`)
    the relative constraint tolerance for constraint pulling
 
 .. mdp:: pull-print-com
@@ -1816,27 +1814,31 @@ applicable pulling coordinate.
 
 .. mdp:: pull-coord1-init
 
-   (0.0) \[nm\] / \[deg\]
-   The reference distance at t=0.
+   (0.0) [nm] or [deg]
+   The reference distance or reference angle at t=0.
 
 .. mdp:: pull-coord1-rate
 
-   (0) \[nm/ps\] / \[deg/ps\]
-   The rate of change of the reference position.
+   (0) [nm/ps] or [deg/ps]
+   The rate of change of the reference position or reference angle.
 
 .. mdp:: pull-coord1-k
 
-   (0) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
+   (0) [kJ mol\ :sup:`-1` nm\ :sup:`-2`] or [kJ mol\ :sup:`-1` nm\ :sup:`-1`] or
+   [kJ mol\ :sup:`-1` rad\ :sup:`-2`] or [kJ mol\ :sup:`-1` rad\ :sup:`-1`]
    The force constant. For umbrella pulling this is the harmonic force
-   constant in kJ mol-1 nm-2 (or kJ mol-1 rad-2 for angles). For constant force pulling this is the
+   constant in kJ mol\ :sup:`-1` nm\ :sup:`-2` (or kJ mol\ :sup:`-1` rad\ :sup:`-2`
+   for angles). For constant force pulling this is the
    force constant of the linear potential, and thus the negative (!)
-   of the constant force in kJ mol-1 nm-1 (or kJ mol-1 rad-1 for angles).
+   of the constant force in kJ mol\ :sup:`-1` nm\ :sup:`-1`
+   (or kJ mol\ :sup:`-1` rad\ :sup:`-1` for angles).
    Note that for angles the force constant is expressed in terms of radians
    (while :mdp:`pull-coord1-init` and :mdp:`pull-coord1-rate` are expressed in degrees).
 
 .. mdp:: pull-coord1-kB
 
-   (pull-k1) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
+   (pull-k1) [kJ mol\ :sup:`-1` nm\ :sup:`-2`] or [kJ mol\ :sup:`-1` nm\ :sup:`-1`]
+   or [kJ mol\ :sup:`-1` rad\ :sup:`-2`] or [kJ mol\ :sup:`-1` rad\ :sup:`-1`]
    As :mdp:`pull-coord1-k`, but for state B. This is only used when
    :mdp:`free-energy` is turned on. The force constant is then (1 -
    lambda) * :mdp:`pull-coord1-k` + lambda * :mdp:`pull-coord1-kB`.
@@ -1930,7 +1932,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-error-init
 
-   (10.0) \[kJ mol-1\]
+   (10.0) [kJ mol\ :sup:`-1`]
    Estimated initial average error of the PMF for this bias. This value together with the
    given diffusion constant(s) :mdp:`awh1-dim1-diffusion` determine the initial biasing rate.
    The error is obviously not known *a priori*. Only a rough estimate of :mdp:`awh1-error-init`
@@ -1979,7 +1981,7 @@ AWH adaptive biasing
    .. mdp-value:: constant
 
       The bias is tuned towards a constant (uniform) coordinate distribution
-      in the defined sampling interval (defined by  \[:mdp:`awh1-dim1-start`, :mdp:`awh1-dim1-end`\]).
+      in the defined sampling interval (defined by  [:mdp:`awh1-dim1-start`, :mdp:`awh1-dim1-end`]).
 
    .. mdp-value:: cutoff
 
@@ -2007,13 +2009,13 @@ AWH adaptive biasing
 
 .. mdp:: awh1-target-beta-scaling
 
-   [0] \[\]
+   (0)
    For :mdp-value:`awh1-target=boltzmann` and :mdp-value:`awh1-target=local-boltzmann`
    it is the unitless beta scaling factor taking values in (0,1).
 
 .. mdp:: awh1-target-cutoff
 
-   [0] \[kJ mol-1\]
+   (0) [kJ mol\ :sup:`-1`]
    For :mdp-value:`awh1-target=cutoff` this is the cutoff, should be > 0.
 
 .. mdp:: awh1-user-data
@@ -2054,7 +2056,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-ndim
 
-   (1) \[integer\]
+   (1) [integer]
    Number of dimensions of the coordinate, each dimension maps to 1 pull coordinate.
    The following options should be specified for each such dimension. Below only
    the options for dimension number 1 is shown. Options for other dimension indices are
@@ -2074,13 +2076,13 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-force-constant
 
-   (0) \[kJ/mol/nm^2\] or \[kJ/mol/rad^2\]
+   (0) [kJ mol\ :sup:`-1` nm\ :sup:`-2`] or [kJ mol\ :sup:`-1` rad\ :sup:`-2`]
    Force constant for the (convolved) umbrella potential(s) along this
    coordinate dimension.
 
 .. mdp:: awh1-dim1-start
 
-   (0.0) \[nm\]/\[rad\]
+   (0.0) [nm] or [rad]
    Start value of the sampling interval along this dimension. The range of allowed
    values depends on the relevant pull geometry (see :mdp:`pull-coord1-geometry`).
    For periodic geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
@@ -2088,17 +2090,17 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-end
 
-   (0.0) \[nm\]/\[rad\]
+   (0.0) [nm] or [rad]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
 
 .. mdp:: awh1-dim1-period
 
-   (0.0) \[nm\]/\[rad\]
+   (0.0) [nm] or [rad]
    The period of this reaction coordinate, use 0 when the coordinate is not periodic.
 
 .. mdp:: awh1-dim1-diffusion
 
-   (1e-5) \[nm^2/ps\]/\[rad^2/ps\]
+   (10\ :sup:`-5`) [nm\ :sup:`2`/ps] or [rad\ :sup:`2`/ps]
    Estimated diffusion constant for this coordinate dimension determining the initial
    biasing rate. This needs only be a rough estimate and should not critically
    affect the results unless it is set to something very low, leading to slow convergence,
@@ -2107,7 +2109,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-cover-diameter
 
-   (0.0)) \[nm\]/\[rad\]
+   (0.0) [nm] or [rad]
    Diameter that needs to be sampled by a single simulation around a coordinate value
    before the point is considered covered in the initial stage (see :mdp-value:`awh1-growth=exp-linear`).
    A value > 0  ensures that for each covering there is a continuous transition of this diameter
@@ -2167,23 +2169,23 @@ that can be used to achieve such a rotation.
 
 .. mdp:: rot-pivot0
 
-   (0.0 0.0 0.0)
-   Pivot point (nm) for the potentials ``iso``, ``pm``, ``rm``, and ``rm2``.
+   (0.0 0.0 0.0) [nm]
+   Pivot point for the potentials ``iso``, ``pm``, ``rm``, and ``rm2``.
 
 .. mdp:: rot-rate0
 
-   (0)
-   Reference rotation rate (degree/ps) of group 0.
+   (0) [degree ps\ :sup:`-1`]
+   Reference rotation rate of group 0.
 
 .. mdp:: rot-k0
 
-   (0)
-   Force constant (kJ/(mol*nm^2)) for group 0.
+   (0) [kJ mol\ :sup:`-1` nm\ :sup:`-2`]
+   Force constant for group 0.
 
 .. mdp:: rot-slab-dist0
 
-   (1.5)
-   Slab distance (nm), if a flexible axis rotation type was chosen.
+   (1.5) [nm]
+   Slab distance, if a flexible axis rotation type was chosen.
 
 .. mdp:: rot-min-gauss0
 
@@ -2193,8 +2195,8 @@ that can be used to achieve such a rotation.
 
 .. mdp:: rot-eps0
 
-   (0.0001)
-   Value of additive constant epsilon' (nm^2) for ``rm2*`` and ``flex2*`` potentials.
+   (0.0001) [nm\ :sup:`2`]
+   Value of additive constant epsilon for ``rm2*`` and ``flex2*`` potentials.
 
 .. mdp:: rot-fit-method0
 
@@ -2277,20 +2279,20 @@ NMR refinement
 
 .. mdp:: disre-fc
 
-   (1000) \[kJ mol-1 nm-2\]
+   (1000) [kJ mol\ :sup:`-1` nm\ :sup:`-2`]
    force constant for distance restraints, which is multiplied by a
    (possibly) different factor for each restraint given in the `fac`
    column of the interaction in the topology file.
 
 .. mdp:: disre-tau
 
-   (0) \[ps\]
+   (0) [ps]
    time constant for distance restraints running average. A value of
    zero turns off time averaging.
 
 .. mdp:: nstdisreout
 
-   (100) \[steps\]
+   (100) [steps]
    period between steps when the running time-averaged and
    instantaneous distances of all atom pairs involved in restraints
    are written to the energy file (can make the energy file very
@@ -2309,14 +2311,14 @@ NMR refinement
 
 .. mdp:: orire-fc
 
-   (0) \[kJ mol\]
+   (0) [kJ mol\ :sup:`-1`]
    force constant for orientation restraints, which is multiplied by a
    (possibly) different weight factor for each restraint, can be set
    to zero to obtain the orientations from a free simulation
 
 .. mdp:: orire-tau
 
-   (0) \[ps\]
+   (0) [ps]
    time constant for orientation restraints running average. A value
    of zero turns off time averaging.
 
@@ -2330,7 +2332,7 @@ NMR refinement
 
 .. mdp:: nstorireout
 
-   (100) \[steps\]
+   (100) [steps]
    period between steps when the running time-averaged and
    instantaneous orientations for all restraints, and the molecular
    order tensor are written to the energy file (can make the energy
@@ -2394,7 +2396,7 @@ Free energy calculations
 
 .. mdp:: fep-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Free energy differences
@@ -2406,7 +2408,7 @@ Free energy calculations
 
 .. mdp:: coul-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the electrostatic
@@ -2416,7 +2418,7 @@ Free energy calculations
 
 .. mdp:: vdw-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the van der Waals
@@ -2425,7 +2427,7 @@ Free energy calculations
 
 .. mdp:: bonded-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the bonded interactions
@@ -2433,7 +2435,7 @@ Free energy calculations
 
 .. mdp:: restraint-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the restraint
@@ -2442,7 +2444,7 @@ Free energy calculations
 
 .. mdp:: mass-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the particle masses are
@@ -2450,7 +2452,7 @@ Free energy calculations
 
 .. mdp:: temperature-lambdas
 
-   \[array\]
+   [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
    steps. Values must be between 0 and 1. Only the temperatures
@@ -2505,7 +2507,7 @@ Free energy calculations
 
 .. mdp:: sc-sigma
 
-   (0.3) \[nm\]
+   (0.3) [nm]
    the soft-core sigma for particles which have a C6 or C12 parameter
    equal to zero or a sigma smaller than :mdp:`sc-sigma`
 
@@ -2878,12 +2880,12 @@ Expanded Ensemble calculations
 
 .. mdp:: sim-temp-low
 
-   (300) \[K\]
+   (300) [K]
    Low temperature for simulated tempering.
 
 .. mdp:: sim-temp-high
 
-   (300) \[K\]
+   (300) [K]
    High temperature for simulated tempering.
 
 .. mdp:: simulated-tempering-scaling
@@ -2930,17 +2932,17 @@ Non-equilibrium MD
 
 .. mdp:: accelerate
 
-   (0) \[nm ps^-2\]
+   (0) [nm ps\ :sup:`-2`]
    acceleration for :mdp:`acc-grps`; x, y and z for each group
    (*e.g.* ``0.1 0.0 0.0 -0.1 0.0 0.0`` means that first group has
-   constant acceleration of 0.1 nm ps-2 in X direction, second group
+   constant acceleration of 0.1 nm ps\ :sup:`-2` in X direction, second group
    the opposite).
 
 .. mdp:: freezegrps
 
    Groups that are to be frozen (*i.e.* their X, Y, and/or Z position
    will not be updated; *e.g.* ``Lipid SOL``). :mdp:`freezedim`
-   specifies for which dimension the freezing applies. To avoid
+   specifies for which dimension(s) the freezing applies. To avoid
    spurious contributions to the virial and pressure due to large
    forces between completely frozen atoms you need to use energy group
    exclusions, this also saves computing time. Note that coordinates
@@ -2956,7 +2958,7 @@ Non-equilibrium MD
 
 .. mdp:: cos-acceleration
 
-   (0) \[nm ps^-2\]
+   (0) [nm ps\ :sup:`-2`]
    the amplitude of the acceleration profile for calculating the
    viscosity. The acceleration is in the X-direction and the magnitude
    is :mdp:`cos-acceleration` cos(2 pi z/boxheight). Two terms are
@@ -2965,7 +2967,7 @@ Non-equilibrium MD
 
 .. mdp:: deform
 
-   (0 0 0 0 0 0) \[nm ps-1\]
+   (0 0 0 0 0 0) [nm ps\ :sup:`-1`]
    The velocities of deformation for the box elements: a(x) b(y) c(z)
    b(x) c(x) c(y). Each step the box elements for which :mdp:`deform`
    is non-zero are calculated as: box(ts)+(t-ts)*deform, off-diagonal
@@ -2989,7 +2991,7 @@ Electric fields
    alternating and pulsed. The general expression for the field
    has the form of a gaussian laser pulse:
 
-   E(t) = E0 exp ( -(t-t0)^2/(2 sigma^2) ) cos(omega (t-t0))
+   E(t) = E0 exp ( -(t-t0)\ :sup:`2`/(2 sigma\ :sup:`2`) ) cos(omega (t-t0))
 
    For example, the four parameters for direction x are set in the
    three fields of :mdp:`electric-field-x` (and similar for y and z)
@@ -3002,7 +3004,7 @@ Electric fields
    electric field is applied.
 
    More details in Carl Caleman and David van der Spoel: Picosecond
-   Melting of Ice by an Infrared Laser Pulse - A Simulation Study
+   Melting of Ice by an Infrared Laser Pulse - A Simulation Study.
    Angew. Chem. Intl. Ed. 47 pp. 14 17-1420 (2008)
 
 
@@ -3066,27 +3068,27 @@ Mixed quantum/classical molecular dynamics
 
 .. mdp:: QMcharge
 
-   (0) \[integer\]
+   (0) [integer]
    The total charge in `e` of the :mdp:`QMMM-grps`. In case there are
    more than one :mdp:`QMMM-grps`, the total charge of each ONIOM
    layer needs to be specified separately.
 
 .. mdp:: QMmult
 
-   (1) \[integer\]
+   (1) [integer]
    The multiplicity of the :mdp:`QMMM-grps`. In case there are more
    than one :mdp:`QMMM-grps`, the multiplicity of each ONIOM layer
    needs to be specified separately.
 
 .. mdp:: CASorbitals
 
-   (0) \[integer\]
+   (0) [integer]
    The number of orbitals to be included in the active space when
    doing a CASSCF computation.
 
 .. mdp:: CASelectrons
 
-   (0) \[integer\]
+   (0) [integer]
    The number of electrons to be included in the active space when
    doing a CASSCF computation.
 
@@ -3164,7 +3166,7 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
 .. mdp:: coupl-steps
 
-   (\10) Average the number of ions per compartment over these many swap attempt steps.
+   (10) Average the number of ions per compartment over these many swap attempt steps.
    This can be used to prevent that ions near a compartment boundary
    (diffusing through a channel, e.g.) lead to unwanted back and forth swaps.
 
@@ -3206,7 +3208,7 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
 .. mdp:: cyl0-r
 
-   (2.0) \[nm\] Radius of the split cylinder #0.
+   (2.0) [nm] Radius of the split cylinder #0.
    Two split cylinders (mimicking the channel pores) can optionally be defined
    relative to the center of the split group. With the help of these cylinders
    it can be counted which ions have passed which channel. The split cylinder
@@ -3214,23 +3216,23 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
 .. mdp:: cyl0-up
 
-   (1.0) \[nm\] Upper extension of the split cylinder #0.
+   (1.0) [nm] Upper extension of the split cylinder #0.
 
 .. mdp:: cyl0-down
 
-   (1.0) \[nm\] Lower extension of the split cylinder #0.
+   (1.0) [nm] Lower extension of the split cylinder #0.
 
 .. mdp:: cyl1-r
 
-   (2.0) \[nm\] Radius of the split cylinder #1.
+   (2.0) [nm] Radius of the split cylinder #1.
 
 .. mdp:: cyl1-up
 
-   (1.0) \[nm\] Upper extension of the split cylinder #1.
+   (1.0) [nm] Upper extension of the split cylinder #1.
 
 .. mdp:: cyl1-down
 
-   (1.0) \[nm\] Lower extension of the split cylinder #1.
+   (1.0) [nm] Lower extension of the split cylinder #1.
 
 
 User defined thingies
