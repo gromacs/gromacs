@@ -116,72 +116,71 @@ enum {
 
 static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 {
-    static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
+    static const char     *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
     /* this must correspond to t_rgb *linecolors[] below */
-    static const char *colors[] = { "none", "black", "white", nullptr };
-    warninp_t          wi;
-    t_inpfile         *inp;
-    int                ninp = 0;
+    static const char     *colors[] = { "none", "black", "white", nullptr };
+    warninp_t              wi;
+    std::vector<t_inpfile> inp;
 
     wi = init_warning(FALSE, 0);
 
     if (mpin != nullptr)
     {
         gmx::TextInputFile stream(mpin);
-        inp = read_inpfile(&stream, mpin, &ninp, wi);
+        inp = read_inpfile(&stream, mpin, wi);
     }
     else
     {
-        inp = nullptr;
+        inp.clear();
     }
-    psr->bw        = get_eenum(&ninp, &inp, "black&white",             gmx_bools);
-    psr->linewidth = get_ereal(&ninp, &inp, "linewidth",      1.0, wi);
-    findOldEntry(&ninp, &inp, "titlefont",      psr->titfont,        "Helvetica");
-    psr->titfontsize = get_ereal(&ninp, &inp, "titlefontsize",    20.0, wi);
-    psr->legend      = get_eenum(&ninp, &inp, "legend",         gmx_bools);
-    findOldEntry(&ninp, &inp, "legendfont",     psr->legfont,        psr->titfont);
-    findOldEntry(&ninp, &inp, "legendlabel",    psr->leglabel,       "");
-    findOldEntry(&ninp, &inp, "legend2label",   psr->leg2label,      psr->leglabel);
-    psr->legfontsize    = get_ereal(&ninp, &inp, "legendfontsize",    14.0, wi);
-    psr->xboxsize       = get_ereal(&ninp, &inp, "xbox",       0.0, wi);
-    psr->yboxsize       = get_ereal(&ninp, &inp, "ybox",       0.0, wi);
-    psr->boxspacing     = get_ereal(&ninp, &inp, "matrixspacing",     20.0, wi);
-    psr->xoffs          = get_ereal(&ninp, &inp, "xoffset",          0.0, wi);
-    psr->yoffs          = get_ereal(&ninp, &inp, "yoffset",          psr->xoffs, wi);
-    psr->boxlinewidth   = get_ereal(&ninp, &inp, "boxlinewidth",   psr->linewidth, wi);
-    psr->ticklinewidth  = get_ereal(&ninp, &inp, "ticklinewidth",  psr->linewidth, wi);
-    psr->zerolinewidth  = get_ereal(&ninp, &inp, "zerolinewidth",  psr->ticklinewidth, wi);
-    psr->X.lineatzero   = get_eenum(&ninp, &inp, "x-lineat0value",   colors);
-    psr->X.major        = get_ereal(&ninp, &inp, "x-major",        1, wi);
-    psr->X.minor        = get_ereal(&ninp, &inp, "x-minor",        1, wi);
-    psr->X.offset       = get_ereal(&ninp, &inp, "x-firstmajor",       0.0, wi);
-    psr->X.first        = get_eenum(&ninp, &inp, "x-majorat0",        gmx_bools);
-    psr->X.majorticklen = get_ereal(&ninp, &inp, "x-majorticklen", 8.0, wi);
-    psr->X.minorticklen = get_ereal(&ninp, &inp, "x-minorticklen", 4.0, wi);
-    findOldEntry(&ninp, &inp, "x-label",        psr->X.label,        "");
-    psr->X.fontsize = get_ereal(&ninp, &inp, "x-fontsize",     16.0, wi);
-    findOldEntry(&ninp, &inp, "x-font",         psr->X.font,         psr->titfont);
-    psr->X.tickfontsize = get_ereal(&ninp, &inp, "x-tickfontsize", 10.0, wi);
-    findOldEntry(&ninp, &inp, "x-tickfont",     psr->X.tickfont,     psr->X.font);
-    psr->Y.lineatzero   = get_eenum(&ninp, &inp, "y-lineat0value",   colors);
-    psr->Y.major        = get_ereal(&ninp, &inp, "y-major",        psr->X.major, wi);
-    psr->Y.minor        = get_ereal(&ninp, &inp, "y-minor",        psr->X.minor, wi);
-    psr->Y.offset       = get_ereal(&ninp, &inp, "y-firstmajor",       psr->X.offset, wi);
-    psr->Y.first        = get_eenum(&ninp, &inp, "y-majorat0",        gmx_bools);
-    psr->Y.majorticklen = get_ereal(&ninp, &inp, "y-majorticklen", psr->X.majorticklen, wi);
-    psr->Y.minorticklen = get_ereal(&ninp, &inp, "y-minorticklen", psr->X.minorticklen, wi);
-    findOldEntry(&ninp, &inp, "y-label",        psr->Y.label,        psr->X.label);
-    psr->Y.fontsize = get_ereal(&ninp, &inp, "y-fontsize",     psr->X.fontsize, wi);
-    findOldEntry(&ninp, &inp, "y-font",         psr->Y.font,         psr->X.font);
-    psr->Y.tickfontsize = get_ereal(&ninp, &inp, "y-tickfontsize", psr->X.tickfontsize, wi);
-    findOldEntry(&ninp, &inp, "y-tickfont",     psr->Y.tickfont,     psr->Y.font);
+    psr->bw        = get_eenum(&inp, "black&white",             gmx_bools);
+    psr->linewidth = get_ereal(&inp, "linewidth",      1.0, wi);
+    setStringEntry(&inp, "titlefont",      psr->titfont,        "Helvetica");
+    psr->titfontsize = get_ereal(&inp, "titlefontsize",    20.0, wi);
+    psr->legend      = get_eenum(&inp, "legend",         gmx_bools);
+    setStringEntry(&inp, "legendfont",     psr->legfont,        psr->titfont);
+    setStringEntry(&inp, "legendlabel",    psr->leglabel,       "");
+    setStringEntry(&inp, "legend2label",   psr->leg2label,      psr->leglabel);
+    psr->legfontsize    = get_ereal(&inp, "legendfontsize",    14.0, wi);
+    psr->xboxsize       = get_ereal(&inp, "xbox",       0.0, wi);
+    psr->yboxsize       = get_ereal(&inp, "ybox",       0.0, wi);
+    psr->boxspacing     = get_ereal(&inp, "matrixspacing",     20.0, wi);
+    psr->xoffs          = get_ereal(&inp, "xoffset",          0.0, wi);
+    psr->yoffs          = get_ereal(&inp, "yoffset",          psr->xoffs, wi);
+    psr->boxlinewidth   = get_ereal(&inp, "boxlinewidth",   psr->linewidth, wi);
+    psr->ticklinewidth  = get_ereal(&inp, "ticklinewidth",  psr->linewidth, wi);
+    psr->zerolinewidth  = get_ereal(&inp, "zerolinewidth",  psr->ticklinewidth, wi);
+    psr->X.lineatzero   = get_eenum(&inp, "x-lineat0value",   colors);
+    psr->X.major        = get_ereal(&inp, "x-major",        1, wi);
+    psr->X.minor        = get_ereal(&inp, "x-minor",        1, wi);
+    psr->X.offset       = get_ereal(&inp, "x-firstmajor",       0.0, wi);
+    psr->X.first        = get_eenum(&inp, "x-majorat0",        gmx_bools);
+    psr->X.majorticklen = get_ereal(&inp, "x-majorticklen", 8.0, wi);
+    psr->X.minorticklen = get_ereal(&inp, "x-minorticklen", 4.0, wi);
+    setStringEntry(&inp, "x-label",        psr->X.label,        "");
+    psr->X.fontsize = get_ereal(&inp, "x-fontsize",     16.0, wi);
+    setStringEntry(&inp, "x-font",         psr->X.font,         psr->titfont);
+    psr->X.tickfontsize = get_ereal(&inp, "x-tickfontsize", 10.0, wi);
+    setStringEntry(&inp, "x-tickfont",     psr->X.tickfont,     psr->X.font);
+    psr->Y.lineatzero   = get_eenum(&inp, "y-lineat0value",   colors);
+    psr->Y.major        = get_ereal(&inp, "y-major",        psr->X.major, wi);
+    psr->Y.minor        = get_ereal(&inp, "y-minor",        psr->X.minor, wi);
+    psr->Y.offset       = get_ereal(&inp, "y-firstmajor",       psr->X.offset, wi);
+    psr->Y.first        = get_eenum(&inp, "y-majorat0",        gmx_bools);
+    psr->Y.majorticklen = get_ereal(&inp, "y-majorticklen", psr->X.majorticklen, wi);
+    psr->Y.minorticklen = get_ereal(&inp, "y-minorticklen", psr->X.minorticklen, wi);
+    setStringEntry(&inp, "y-label",        psr->Y.label,        psr->X.label);
+    psr->Y.fontsize = get_ereal(&inp, "y-fontsize",     psr->X.fontsize, wi);
+    setStringEntry(&inp, "y-font",         psr->Y.font,         psr->X.font);
+    psr->Y.tickfontsize = get_ereal(&inp, "y-tickfontsize", psr->X.tickfontsize, wi);
+    setStringEntry(&inp, "y-tickfont",     psr->Y.tickfont,     psr->Y.font);
 
     check_warning_error(wi, FARGS);
 
     if (mpout != nullptr)
     {
         gmx::TextOutputFile stream(mpout);
-        write_inpfile(&stream, mpout, ninp, inp, TRUE, WriteMdpHeader::yes, wi);
+        write_inpfile(&stream, mpout, &inp, TRUE, WriteMdpHeader::yes, wi);
         stream.close();
     }
 
