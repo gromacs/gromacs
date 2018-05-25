@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,16 +60,14 @@ struct AwhParams;
 
 /*! \brief Allocate, initialize and check the AWH parameters with values from the input file.
  *
- * \param[in,out] ninp_p       Number of read input file entries.
- * \param[in,out] inp_p        Input file entries.
+ * \param[in,out] inp          Input file entries.
  * \param[in]     inputrec     Input parameter struct.
  * \param[in,out] wi           Struct for bookeeping warnings.
  * \returns AWH parameters.
  */
-AwhParams *readAndCheckAwhParams(int               *ninp_p,
-                                 t_inpfile        **inp_p,
-                                 const t_inputrec  *inputrec,
-                                 warninp_t          wi);
+AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp,
+                                 const t_inputrec       *inputrec,
+                                 warninp_t               wi);
 
 
 /*! \brief
