@@ -28,7 +28,7 @@ gcc-4.8 gpu cuda-7.0 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 # Test thread-MPI with CUDA
 # Test older cmake version (< 3.7)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-6 gpu gpu_id=1 cuda-9.1 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
+gcc-7 gpu gpu_id=1 cuda-9.2 thread-mpi openmp cmake-3.6.1 release-with-assert simd=avx2_256
 
 # Test newest cmake at time of release
 # Test with ThreadSanitizer (compiled without OpenMP, even though
@@ -43,7 +43,7 @@ gcc-7 tsan no-openmp fftpack cmake-3.10.0
 # Test 128-bit SIMD in double precision (to cover SimdInt32 support better)
 gcc-7 double mpi simd=avx_128_fma
 
-# Test on MacOS (because gcc-6 is only available there)
+# Test on MacOS
 # Test X11 build
 gcc-6 x11
 
