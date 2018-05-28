@@ -71,14 +71,16 @@ msvc-2015 openmp release-with-assert
 icc-18 no-thread-mpi double openmp mkl cmake-3.9.6 simd=none release
 
 # Test NVIDIA OpenCL
+# Test external clFFT (for build speed)
 # Test MPI + OpenCL
 # Test AVX2_256 SIMD
 # Test icc with SIMD in mixed precision in release mode
-icc-18 openmp opencl cuda-7.5 mpi release simd=avx2_256
+icc-18 openmp opencl clFFT-2.14 cuda-7.5 mpi release simd=avx2_256
 
 # Test AMD OpenCL
+# Test external clFFT (for build speed)
 # Test AVX_128_FMA SIMD
-gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
+gcc-5 openmp simd=avx_128_fma opencl clFFT-2.14 amdappsdk-3.0
 
 # TODO
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
