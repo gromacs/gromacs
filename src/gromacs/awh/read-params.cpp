@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,24 +94,24 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 {
     char       warningmsg[STRLEN];
 
-    int        ninp = *ninp_p;
-    t_inpfile *inp  = *inp_p;
+    int ninp = *ninp_p;
+    t_inpfile *inp = *inp_p;
 
     if (bComment)
     {
-        CTYPE("The provider of the reaction coordinate, currently only pull is supported");
+        printStringNoNewline(&ninp, &inp, "The provider of the reaction coordinate, currently only pull is supported");
     }
     char opt[STRLEN];
     sprintf(opt, "%s-coord-provider", prefix);
-    EETYPE(opt, dimParams->eCoordProvider, eawhcoordprovider_names);
+    dimParams->eCoordProvider = get_eeenum(&ninp, &inp, opt, eawhcoordprovider_names, wi);
 
     if (bComment)
     {
-        CTYPE("The coordinate index for this dimension");
+        printStringNoNewline(&ninp, &inp, "The coordinate index for this dimension");
     }
     sprintf(opt, "%s-coord-index", prefix);
     int coordIndexInput;
-    ITYPE(opt, coordIndexInput, 1);
+    coordIndexInput = get_eint(&ninp, &inp, opt, 1, wi);
     if (coordIndexInput <  1)
     {
         gmx_fatal(FARGS, "Failed to read a valid coordinate index for %s. "
@@ -144,14 +144,14 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 
     if (bComment)
     {
-        CTYPE("Start and end values for each coordinate dimension");
+        printStringNoNewline(&ninp, &inp, "Start and end values for each coordinate dimension");
     }
 
     sprintf(opt, "%s-start", prefix);
-    RTYPE(opt, dimParams->origin, 0.);
+    dimParams->origin = get_ereal(&ninp, &inp, opt, 0., wi);
 
     sprintf(opt, "%s-end", prefix);
-    RTYPE(opt, dimParams->end, 0.);
+    dimParams->end = get_ereal(&ninp, &inp, opt, 0., wi);
 
     if (gmx_within_tol(dimParams->end - dimParams->origin, 0, GMX_REAL_EPS))
     {
@@ -189,10 +189,10 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 
     if (bComment)
     {
-        CTYPE("The force constant for this coordinate (kJ/mol/nm^2 or kJ/mol/rad^2)");
+        printStringNoNewline(&ninp, &inp, "The force constant for this coordinate (kJ/mol/nm^2 or kJ/mol/rad^2)");
     }
     sprintf(opt, "%s-force-constant", prefix);
-    RTYPE(opt, dimParams->forceConstant, 0);
+    dimParams->forceConstant = get_ereal(&ninp, &inp, opt, 0, wi);
     if (dimParams->forceConstant <= 0)
     {
         warning_error(wi, "The force AWH bias force constant should be > 0");
@@ -200,10 +200,10 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 
     if (bComment)
     {
-        CTYPE("Estimated diffusion constant (nm^2/ps or rad^2/ps)");
+        printStringNoNewline(&ninp, &inp, "Estimated diffusion constant (nm^2/ps or rad^2/ps)");
     }
     sprintf(opt, "%s-diffusion", prefix);
-    RTYPE(opt, dimParams->diffusion, 0);
+    dimParams->diffusion = get_ereal(&ninp, &inp, opt, 0, wi);
 
     if (dimParams->diffusion <= 0)
     {
@@ -217,10 +217,10 @@ static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 
     if (bComment)
     {
-        CTYPE("Diameter that needs to be sampled around a point before it is considered covered.");
+        printStringNoNewline(&ninp, &inp, "Diameter that needs to be sampled around a point before it is considered covered.");
     }
     sprintf(opt, "%s-cover-diameter", prefix);
-    RTYPE(opt, dimParams->coverDiameter, 0);
+    dimParams->coverDiameter = get_ereal(&ninp, &inp, opt, 0, wi);
 
     if (dimParams->coverDiameter < 0)
     {
@@ -266,23 +266,19 @@ static void checkInputConsistencyAwhBias(const AwhBiasParams &awhBiasParams,
 static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhBiasParams, const char *prefix,
                              const t_inputrec *ir, warninp_t wi, bool bComment)
 {
-    int        ninp;
-    t_inpfile *inp;
+    int ninp = *ninp_p;
+    t_inpfile *inp = *inp_p;
     char       opt[STRLEN], prefixdim[STRLEN];
     char       warningmsg[STRLEN];
 
-    /* These are assumed to be declared by the gromacs reading functions */
-    ninp   = *ninp_p;
-    inp    = *inp_p;
-
     if (bComment)
     {
-        CTYPE("Estimated initial PMF error (kJ/mol)");
+        printStringNoNewline(&ninp, &inp, "Estimated initial PMF error (kJ/mol)");
     }
     sprintf(opt, "%s-error-init", prefix);
 
     /* We allow using a default value here without warning (but warn the user if the diffusion constant is not set). */
-    RTYPE(opt, awhBiasParams->errorInitial, 10);
+    awhBiasParams->errorInitial = get_ereal(&ninp, &inp, opt, 10, wi);
     if (awhBiasParams->errorInitial <= 0)
     {
         gmx_fatal(FARGS, "%s (%d) needs to be > 0.", opt);
@@ -290,17 +286,17 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Growth rate of the reference histogram determining the bias update size: exp-linear or linear");
+        printStringNoNewline(&ninp, &inp, "Growth rate of the reference histogram determining the bias update size: exp-linear or linear");
     }
     sprintf(opt, "%s-growth", prefix);
-    EETYPE(opt, awhBiasParams->eGrowth, eawhgrowth_names);
+    awhBiasParams->eGrowth = get_eeenum(&ninp, &inp, opt, eawhgrowth_names, wi);
 
     if (bComment)
     {
-        CTYPE("Start the simulation by equilibrating histogram towards the target distribution: no or yes");
+        printStringNoNewline(&ninp, &inp, "Start the simulation by equilibrating histogram towards the target distribution: no or yes");
     }
     sprintf(opt, "%s-equilibrate-histogram", prefix);
-    EETYPE(opt, awhBiasParams->equilibrateHistogram, yesno_names);
+    awhBiasParams->equilibrateHistogram = get_eeenum(&ninp, &inp, opt, yesno_names, wi);
     if (awhBiasParams->equilibrateHistogram && awhBiasParams->eGrowth != eawhgrowthEXP_LINEAR)
     {
         sprintf(warningmsg, "Option %s will only have an effect for histogram growth type '%s'.",
@@ -310,10 +306,10 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Target distribution type: constant, cutoff, boltzmann or local-boltzmann");
+        printStringNoNewline(&ninp, &inp, "Target distribution type: constant, cutoff, boltzmann or local-boltzmann");
     }
     sprintf(opt, "%s-target", prefix);
-    EETYPE(opt, awhBiasParams->eTarget, eawhtarget_names);
+    awhBiasParams->eTarget = get_eeenum(&ninp, &inp, opt, eawhtarget_names, wi);
 
     if ((awhBiasParams->eTarget == eawhtargetLOCALBOLTZMANN) &&
         (awhBiasParams->eGrowth == eawhgrowthEXP_LINEAR))
@@ -328,10 +324,10 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Boltzmann beta scaling factor for target distribution types 'boltzmann' and 'boltzmann-local'");
+        printStringNoNewline(&ninp, &inp, "Boltzmann beta scaling factor for target distribution types 'boltzmann' and 'boltzmann-local'");
     }
     sprintf(opt, "%s-target-beta-scaling", prefix);
-    RTYPE(opt, awhBiasParams->targetBetaScaling, 0);
+    awhBiasParams->targetBetaScaling = get_ereal(&ninp, &inp, opt, 0, wi);
 
     switch (awhBiasParams->eTarget)
     {
@@ -354,10 +350,10 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Free energy cutoff value for target distribution type 'cutoff'");
+        printStringNoNewline(&ninp, &inp, "Free energy cutoff value for target distribution type 'cutoff'");
     }
     sprintf(opt, "%s-target-cutoff", prefix);
-    RTYPE(opt, awhBiasParams->targetCutoff, 0);
+    awhBiasParams->targetCutoff = get_ereal(&ninp, &inp, opt, 0, wi);
 
     switch (awhBiasParams->eTarget)
     {
@@ -379,17 +375,17 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Initialize PMF and target with user data: no or yes");
+        printStringNoNewline(&ninp, &inp, "Initialize PMF and target with user data: no or yes");
     }
     sprintf(opt, "%s-user-data", prefix);
-    EETYPE(opt, awhBiasParams->bUserData, yesno_names);
+    awhBiasParams->bUserData = get_eeenum(&ninp, &inp, opt, yesno_names, wi);
 
     if (bComment)
     {
-        CTYPE("Group index to share the bias with, 0 means not shared");
+        printStringNoNewline(&ninp, &inp, "Group index to share the bias with, 0 means not shared");
     }
     sprintf(opt, "%s-share-group", prefix);
-    ITYPE(opt, awhBiasParams->shareGroup, 0);
+    awhBiasParams->shareGroup = get_eint(&ninp, &inp, opt, 0, wi);
     if (awhBiasParams->shareGroup < 0)
     {
         warning_error(wi, "AWH bias share-group should be >= 0");
@@ -397,10 +393,10 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhB
 
     if (bComment)
     {
-        CTYPE("Dimensionality of the coordinate");
+        printStringNoNewline(&ninp, &inp, "Dimensionality of the coordinate");
     }
     sprintf(opt, "%s-ndim", prefix);
-    ITYPE(opt, awhBiasParams->ndim, 0);
+    awhBiasParams->ndim = get_eint(&ninp, &inp, opt, 0, wi);
 
     if (awhBiasParams->ndim <= 0 ||
         awhBiasParams->ndim > c_biasMaxNumDim)
@@ -499,22 +495,22 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
 
     /* Parameters common for all biases */
 
-    CTYPE("The way to apply the biasing potential: convolved or umbrella");
+    printStringNoNewline(&ninp, &inp, "The way to apply the biasing potential: convolved or umbrella");
     sprintf(opt, "%s-potential", prefix);
-    EETYPE(opt, awhParams->ePotential, eawhpotential_names);
+    awhParams->ePotential = get_eeenum(&ninp, &inp, opt, eawhpotential_names, wi);
 
-    CTYPE("The random seed used for sampling the umbrella center in the case of umbrella type potential");
+    printStringNoNewline(&ninp, &inp, "The random seed used for sampling the umbrella center in the case of umbrella type potential");
     sprintf(opt, "%s-seed", prefix);
-    ITYPE(opt, awhParams->seed, -1);
+    awhParams->seed = get_eint(&ninp, &inp, opt, -1, wi);
     if (awhParams->seed == -1)
     {
         awhParams->seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awhParams->seed);
     }
 
-    CTYPE("Data output interval in number of steps");
+    printStringNoNewline(&ninp, &inp, "Data output interval in number of steps");
     sprintf(opt, "%s-nstout", prefix);
-    ITYPE(opt, awhParams->nstOut, 100000);
+    awhParams->nstOut = get_eint(&ninp, &inp, opt, 100000, wi);
     if (awhParams->nstOut <= 0)
     {
         char buf[STRLEN];
@@ -531,21 +527,21 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
         warning_error(wi, buf);
     }
 
-    CTYPE("Coordinate sampling interval in number of steps");
+    printStringNoNewline(&ninp, &inp, "Coordinate sampling interval in number of steps");
     sprintf(opt, "%s-nstsample", prefix);
-    ITYPE(opt, awhParams->nstSampleCoord, 10);
+    awhParams->nstSampleCoord = get_eint(&ninp, &inp, opt, 10, wi);
 
-    CTYPE("Free energy and bias update interval in number of samples");
+    printStringNoNewline(&ninp, &inp, "Free energy and bias update interval in number of samples");
     sprintf(opt, "%s-nsamples-update", prefix);
-    ITYPE(opt, awhParams->numSamplesUpdateFreeEnergy, 10);
+    awhParams->numSamplesUpdateFreeEnergy = get_eint(&ninp, &inp, opt, 10, wi);
 
-    CTYPE("When true, biases with share-group>0 are shared between multiple simulations");
+    printStringNoNewline(&ninp, &inp, "When true, biases with share-group>0 are shared between multiple simulations");
     sprintf(opt, "%s-share-multisim", prefix);
-    EETYPE(opt, awhParams->shareBiasMultisim, yesno_names);
+    awhParams->shareBiasMultisim = get_eeenum(&ninp, &inp, opt, yesno_names, wi);
 
-    CTYPE("The number of independent AWH biases");
+    printStringNoNewline(&ninp, &inp, "The number of independent AWH biases");
     sprintf(opt, "%s-nbias", prefix);
-    ITYPE(opt, awhParams->numBias, 1);
+    awhParams->numBias = get_eint(&ninp, &inp, opt, 1, wi);
     if (awhParams->numBias <= 0)
     {
         gmx_fatal(FARGS, "%s needs to be an integer > 0", opt);
