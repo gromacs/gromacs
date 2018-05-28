@@ -40,7 +40,6 @@
 
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 
 #include "gromacs/fileio/warninp.h"
@@ -530,4 +529,30 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs)
 {
     return get_eeenum(ninp, inp, name, defs, nullptr);
+}
+
+void
+printStringNewline(int *ninp, t_inpfile **inp, const char *line)
+{
+    std::string tmp("\n; ");
+    tmp.append(line);
+    get_estr(ninp, inp, tmp.c_str(), NULL);
+}
+
+void
+printStringNoNewline(int *ninp, t_inpfile **inp, const char *line)
+{
+    std::string tmp("; ");
+    tmp.append(line);
+    get_estr(ninp, inp, tmp.c_str(), NULL);
+}
+void
+findOldEntry(int *ninp, t_inpfile **inp, const char *name, char *newName, const char *def)
+{
+    const char *found = nullptr;
+    found = get_estr(ninp, inp, name, def);
+    if (found != nullptr)
+    {
+        std::strcpy(newName, found);
+    }
 }

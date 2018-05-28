@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,7 +121,6 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     static const char *colors[] = { "none", "black", "white", nullptr };
     warninp_t          wi;
     t_inpfile         *inp;
-    const char        *tmp;
     int                ninp = 0;
 
     wi = init_warning(FALSE, 0);
@@ -135,47 +134,47 @@ static void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     {
         inp = nullptr;
     }
-    ETYPE("black&white",    psr->bw,             gmx_bools);
-    RTYPE("linewidth",      psr->linewidth,      1.0);
-    STYPE("titlefont",      psr->titfont,        "Helvetica");
-    RTYPE("titlefontsize",  psr->titfontsize,    20.0);
-    ETYPE("legend",         psr->legend,         gmx_bools);
-    STYPE("legendfont",     psr->legfont,        psr->titfont);
-    STYPE("legendlabel",    psr->leglabel,       "");
-    STYPE("legend2label",   psr->leg2label,      psr->leglabel);
-    RTYPE("legendfontsize", psr->legfontsize,    14.0);
-    RTYPE("xbox",           psr->xboxsize,       0.0);
-    RTYPE("ybox",           psr->yboxsize,       0.0);
-    RTYPE("matrixspacing",  psr->boxspacing,     20.0);
-    RTYPE("xoffset",        psr->xoffs,          0.0);
-    RTYPE("yoffset",        psr->yoffs,          psr->xoffs);
-    RTYPE("boxlinewidth",   psr->boxlinewidth,   psr->linewidth);
-    RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
-    RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
-    ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
-    RTYPE("x-major",        psr->X.major,        1);
-    RTYPE("x-minor",        psr->X.minor,        1);
-    RTYPE("x-firstmajor",   psr->X.offset,       0.0);
-    ETYPE("x-majorat0",     psr->X.first,        gmx_bools);
-    RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);
-    RTYPE("x-minorticklen", psr->X.minorticklen, 4.0);
-    STYPE("x-label",        psr->X.label,        "");
-    RTYPE("x-fontsize",     psr->X.fontsize,     16.0);
-    STYPE("x-font",         psr->X.font,         psr->titfont);
-    RTYPE("x-tickfontsize", psr->X.tickfontsize, 10.0);
-    STYPE("x-tickfont",     psr->X.tickfont,     psr->X.font);
-    ETYPE("y-lineat0value", psr->Y.lineatzero,   colors);
-    RTYPE("y-major",        psr->Y.major,        psr->X.major);
-    RTYPE("y-minor",        psr->Y.minor,        psr->X.minor);
-    RTYPE("y-firstmajor",   psr->Y.offset,       psr->X.offset);
-    ETYPE("y-majorat0",     psr->Y.first,        gmx_bools);
-    RTYPE("y-majorticklen", psr->Y.majorticklen, psr->X.majorticklen);
-    RTYPE("y-minorticklen", psr->Y.minorticklen, psr->X.minorticklen);
-    STYPE("y-label",        psr->Y.label,        psr->X.label);
-    RTYPE("y-fontsize",     psr->Y.fontsize,     psr->X.fontsize);
-    STYPE("y-font",         psr->Y.font,         psr->X.font);
-    RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
-    STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
+    psr->bw        = get_eenum(&ninp, &inp, "black&white",             gmx_bools);
+    psr->linewidth = get_ereal(&ninp, &inp, "linewidth",      1.0, wi);
+    findOldEntry(&ninp, &inp, "titlefont",      psr->titfont,        "Helvetica");
+    psr->titfontsize = get_ereal(&ninp, &inp, "titlefontsize",    20.0, wi);
+    psr->legend      = get_eenum(&ninp, &inp, "legend",         gmx_bools);
+    findOldEntry(&ninp, &inp, "legendfont",     psr->legfont,        psr->titfont);
+    findOldEntry(&ninp, &inp, "legendlabel",    psr->leglabel,       "");
+    findOldEntry(&ninp, &inp, "legend2label",   psr->leg2label,      psr->leglabel);
+    psr->legfontsize    = get_ereal(&ninp, &inp, "legendfontsize",    14.0, wi);
+    psr->xboxsize       = get_ereal(&ninp, &inp, "xbox",       0.0, wi);
+    psr->yboxsize       = get_ereal(&ninp, &inp, "ybox",       0.0, wi);
+    psr->boxspacing     = get_ereal(&ninp, &inp, "matrixspacing",     20.0, wi);
+    psr->xoffs          = get_ereal(&ninp, &inp, "xoffset",          0.0, wi);
+    psr->yoffs          = get_ereal(&ninp, &inp, "yoffset",          psr->xoffs, wi);
+    psr->boxlinewidth   = get_ereal(&ninp, &inp, "boxlinewidth",   psr->linewidth, wi);
+    psr->ticklinewidth  = get_ereal(&ninp, &inp, "ticklinewidth",  psr->linewidth, wi);
+    psr->zerolinewidth  = get_ereal(&ninp, &inp, "zerolinewidth",  psr->ticklinewidth, wi);
+    psr->X.lineatzero   = get_eenum(&ninp, &inp, "x-lineat0value",   colors);
+    psr->X.major        = get_ereal(&ninp, &inp, "x-major",        1, wi);
+    psr->X.minor        = get_ereal(&ninp, &inp, "x-minor",        1, wi);
+    psr->X.offset       = get_ereal(&ninp, &inp, "x-firstmajor",       0.0, wi);
+    psr->X.first        = get_eenum(&ninp, &inp, "x-majorat0",        gmx_bools);
+    psr->X.majorticklen = get_ereal(&ninp, &inp, "x-majorticklen", 8.0, wi);
+    psr->X.minorticklen = get_ereal(&ninp, &inp, "x-minorticklen", 4.0, wi);
+    findOldEntry(&ninp, &inp, "x-label",        psr->X.label,        "");
+    psr->X.fontsize = get_ereal(&ninp, &inp, "x-fontsize",     16.0, wi);
+    findOldEntry(&ninp, &inp, "x-font",         psr->X.font,         psr->titfont);
+    psr->X.tickfontsize = get_ereal(&ninp, &inp, "x-tickfontsize", 10.0, wi);
+    findOldEntry(&ninp, &inp, "x-tickfont",     psr->X.tickfont,     psr->X.font);
+    psr->Y.lineatzero   = get_eenum(&ninp, &inp, "y-lineat0value",   colors);
+    psr->Y.major        = get_ereal(&ninp, &inp, "y-major",        psr->X.major, wi);
+    psr->Y.minor        = get_ereal(&ninp, &inp, "y-minor",        psr->X.minor, wi);
+    psr->Y.offset       = get_ereal(&ninp, &inp, "y-firstmajor",       psr->X.offset, wi);
+    psr->Y.first        = get_eenum(&ninp, &inp, "y-majorat0",        gmx_bools);
+    psr->Y.majorticklen = get_ereal(&ninp, &inp, "y-majorticklen", psr->X.majorticklen, wi);
+    psr->Y.minorticklen = get_ereal(&ninp, &inp, "y-minorticklen", psr->X.minorticklen, wi);
+    findOldEntry(&ninp, &inp, "y-label",        psr->Y.label,        psr->X.label);
+    psr->Y.fontsize = get_ereal(&ninp, &inp, "y-fontsize",     psr->X.fontsize, wi);
+    findOldEntry(&ninp, &inp, "y-font",         psr->Y.font,         psr->X.font);
+    psr->Y.tickfontsize = get_ereal(&ninp, &inp, "y-tickfontsize", psr->X.tickfontsize, wi);
+    findOldEntry(&ninp, &inp, "y-tickfont",     psr->Y.tickfont,     psr->Y.font);
 
     check_warning_error(wi, FARGS);
 
