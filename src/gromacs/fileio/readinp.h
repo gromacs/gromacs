@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,21 +131,11 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
 /* defs must be NULL terminated */
 
-/* Here are some dirty macros to extract data from the inp structures.
- * Most macros assume the variables ninp, inp and wi are present.
- * Elements are removed from the list after reading.
- */
-#define REM_TYPE(name)       replace_inp_entry(ninp, inp, name, NULL)
-#define REPL_TYPE(old, new)   replace_inp_entry(ninp, inp, old, new)
-#define STYPE(name, var, def)  if ((tmp = get_estr(&ninp, &inp, name, def)) != NULL) std::strcpy(var, tmp)
-#define STYPENC(name, def) get_estr(&ninp, &inp, name, def)
-#define ITYPE(name, var, def)  var    = get_eint(&ninp, &inp, name, def, wi)
-#define STEPTYPE(name, var, def)  var = get_eint64(&ninp, &inp, name, def, wi)
-#define RTYPE(name, var, def)  var    = get_ereal(&ninp, &inp, name, def, wi)
-#define ETYPE(name, var, defs) var    = get_eenum(&ninp, &inp, name, defs)
-#define EETYPE(name, var, defs) var   = get_eeenum(&ninp, &inp, name, defs, wi)
-#define CCTYPE(s) STYPENC("\n; " s, NULL)
-#define CTYPE(s)  STYPENC("; " s, NULL)
-/* This last one prints a comment line where you can add some explanation */
+//! Replace for macro CCTYPE, prints comment string after newline
+void printStringNewline(int *ninp, t_inpfile **inp, const char *line);
+//! Replace for macro CTYPE, prints comment string
+void printStringNoNewline(int *ninp, t_inpfile **inp, const char *line);
+//! Replace for macro STYPE, checks for existing string entry and if possible replaces it
+void setStringEntry(int *ninp, t_inpfile **inp, const char *name, char *newName, const char *def);
 
 #endif

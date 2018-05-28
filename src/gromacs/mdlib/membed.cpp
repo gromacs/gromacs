@@ -226,17 +226,17 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
         inp = read_inpfile(&stream, membed_input, &ninp, wi);
         stream.close();
     }
-    ITYPE ("nxy", *it_xy, 1000);
-    ITYPE ("nz", *it_z, 0);
-    RTYPE ("xyinit", *xy_fac, 0.5);
-    RTYPE ("xyend", *xy_max, 1.0);
-    RTYPE ("zinit", *z_fac, 1.0);
-    RTYPE ("zend", *z_max, 1.0);
-    RTYPE ("rad", *probe_rad, 0.22);
-    ITYPE ("ndiff", *low_up_rm, 0);
-    ITYPE ("maxwarn", *maxwarn, 0);
-    ITYPE ("pieces", *pieces, 1);
-    EETYPE("asymmetry", *bALLOW_ASYMMETRY, yesno_names);
+    *it_xy            = get_eint(&ninp, &inp, "nxy", 1000, wi);
+    *it_z             = get_eint(&ninp, &inp, "nz", 0, wi);
+    *xy_fac           = get_ereal(&ninp, &inp, "xyinit", 0.5, wi);
+    *xy_max           = get_ereal(&ninp, &inp, "xyend", 1.0, wi);
+    *z_fac            = get_ereal(&ninp, &inp, "zinit", 1.0, wi);
+    *z_max            = get_ereal(&ninp, &inp, "zend", 1.0, wi);
+    *probe_rad        = get_ereal(&ninp, &inp, "rad", 0.22, wi);
+    *low_up_rm        = get_eint(&ninp, &inp, "ndiff", 0, wi);
+    *maxwarn          = get_eint(&ninp, &inp, "maxwarn", 0, wi);
+    *pieces           = get_eint(&ninp, &inp, "pieces", 1, wi);
+    *bALLOW_ASYMMETRY = get_eeenum(&ninp, &inp, "asymmetry", yesno_names, wi);
 
     check_warning_error(wi, FARGS);
     {
