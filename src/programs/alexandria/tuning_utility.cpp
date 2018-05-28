@@ -251,7 +251,7 @@ void print_electric_props(FILE                           *fp,
 {
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
-    real           sse  = 0, rms   = 0, sigma = 0;
+    real           sse  = 0, sigma = 0;
     real           aver = 0, error = 0, qCalc = 0;
 
     FILE          *dipc, *muc,  *Qc;
@@ -343,8 +343,9 @@ void print_electric_props(FILE                           *fp,
                 }
             }
 
-            rms = mol.espRms();
-            fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);
+            mol.Qgresp_.updateAtomCharges(&mol.topology_->atoms);
+            mol.Qgresp_.calcPot();
+            fprintf(fp,   "ESP rms: %g (Hartree/e) %s\n", mol.espRms(), (mol.espRms() > 3e-3) ? "XXX" : "");
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
