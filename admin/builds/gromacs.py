@@ -121,6 +121,9 @@ def do_build(context):
     if context.opts.mkl or context.opts.atlas:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
+    if context.opts.clfft:
+        cmake_opts['GMX_EXTERNAL_CLFFT'] = 'ON'
+        cmake_opts['clFFT_ROOT'] = context.env.clFFT_root
 
     if context.opts.hwloc is False:
         cmake_opts['GMX_HWLOC'] = 'OFF'
