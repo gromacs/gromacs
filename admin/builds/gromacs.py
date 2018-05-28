@@ -99,6 +99,8 @@ def do_build(context):
             context.env.set_env_var('CUDA_PATH', context.env.cuda_root)
             context.env.set_env_var('AMDAPPSDKROOT', context.env.amdappsdk_root)
             cmake_opts['GMX_USE_OPENCL'] = 'ON'
+            cmake_opts['GMX_EXTERNAL_CLFFT'] = 'ON'
+            cmake_opts['clFFT_ROOT'] = context.env.clFFT_root
         else:
             cmake_opts['CUDA_TOOLKIT_ROOT_DIR'] = context.env.cuda_root
             if context.opts.clang_cuda:
