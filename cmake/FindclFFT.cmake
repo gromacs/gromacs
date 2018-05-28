@@ -88,7 +88,9 @@ mark_as_advanced(clFFT_ROOT_DIR clFFT_LIBRARY clFFT_INCLUDE_DIR)
 # built in this project.
 if(clFFT_FOUND)
     add_library(clFFT INTERFACE IMPORTED)
-    target_include_directories(clFFT INTERFACE "${clFFT_INCLUDE_DIR}")
+    set_target_properties(clFFT PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${clFFT_INCLUDE_DIR}"
+        )
     target_link_libraries(clFFT INTERFACE "${clFFT_LIBRARY}" "${CMAKE_DL_LIBS}")
 endif()
 

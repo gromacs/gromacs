@@ -49,7 +49,9 @@ clang-5 openmp simd=avx_128_fma npme=1 nranks=2 mpi
 
 # Test SSE2 SIMD
 # Test CMAKE_BUILD_TYPE=Release
-gcc-4.8 gpu npme=1 nranks=2 cuda-7.5 simd=sse2 release
+# Test OpenCL
+# Test bundled clFFT (developed by AMD) on NVIDA OpenCL
+gcc-4.8 gpu npme=1 nranks=2 opencl cuda-7.5 simd=sse2 release
 
 # Test non-default use of mdrun -gpu_id
 # Test GPU-sharing among 4 PP ranks
