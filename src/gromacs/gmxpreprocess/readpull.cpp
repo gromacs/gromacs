@@ -267,9 +267,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
                        pull_params_t *pull,
                        warninp_t wi)
 {
-    int           ninp, nscan, idum;
-    t_inpfile    *inp;
-    const char   *tmp;
+    int           nscan, idum;
     char        **grpbuf;
     char          buf[STRLEN];
     char          provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
@@ -278,22 +276,19 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     t_pull_group *pgrp;
     t_pull_coord *pcrd;
 
-    ninp   = *ninp_p;
-    inp    = *inp_p;
-
     /* read pull parameters */
-    CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
-    RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
-    RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-print-com", pull->bPrintCOM, yesno_names);
-    EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
-    EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
-    ITYPE("pull-nstxout",     pull->nstxout, 50);
-    ITYPE("pull-nstfout",     pull->nstfout, 50);
-    CTYPE("Number of pull groups");
-    ITYPE("pull-ngroups",     pull->ngroup, 1);
-    CTYPE("Number of pull coordinates");
-    ITYPE("pull-ncoords",     pull->ncoord, 1);
+    printStringNoNewline(ninp_p, inp_p, "Cylinder radius for dynamic reaction force groups (nm)");
+    pull->cylinder_r     = get_ereal(ninp_p, inp_p, "pull-cylinder-r", 1.5, wi);
+    pull->constr_tol     = get_ereal(ninp_p, inp_p, "pull-constr-tol", 1E-6, wi);
+    pull->bPrintCOM      = get_eeenum(ninp_p, inp_p, "pull-print-com", yesno_names, wi);
+    pull->bPrintRefValue = get_eeenum(ninp_p, inp_p, "pull-print-ref-value", yesno_names, wi);
+    pull->bPrintComp     = get_eeenum(ninp_p, inp_p, "pull-print-components", yesno_names, wi);
+    pull->nstxout        = get_eint(ninp_p, inp_p, "pull-nstxout", 50, wi);
+    pull->nstfout        = get_eint(ninp_p, inp_p, "pull-nstfout", 50, wi);
+    printStringNoNewline(ninp_p, inp_p, "Number of pull groups");
+    pull->ngroup = get_eint(ninp_p, inp_p, "pull-ngroups", 1, wi);
+    printStringNoNewline(ninp_p, inp_p, "Number of pull coordinates");
+    pull->ncoord = get_eint(ninp_p, inp_p, "pull-ncoords", 1, wi);
 
     if (pull->ngroup < 1)
     {
@@ -312,7 +307,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     snew(pull->coord, pull->ncoord);
 
     /* pull group options */
-    CTYPE("Group and coordinate parameters");
+    printStringNoNewline(ninp_p, inp_p, "Group and coordinate parameters");
 
     /* Read the pull groups */
     snew(grpbuf, pull->ngroup);
@@ -322,11 +317,11 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         pgrp = &pull->group[groupNum];
         snew(grpbuf[groupNum], STRLEN);
         sprintf(buf, "pull-group%d-name", groupNum);
-        STYPE(buf,              grpbuf[groupNum], "");
+        setStringEntry(ninp_p, inp_p, buf, grpbuf[groupNum], "");
         sprintf(buf, "pull-group%d-weights", groupNum);
-        STYPE(buf,              wbuf, "");
+        setStringEntry(ninp_p, inp_p, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
-        ITYPE(buf,              pgrp->pbcatom, 0);
+        pgrp->pbcatom = get_eint(ninp_p, inp_p, buf, 0, wi);
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);
@@ -337,14 +332,14 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     {
         pcrd = &pull->coord[coordNum - 1];
         sprintf(buf, "pull-coord%d-type", coordNum);
-        EETYPE(buf,             pcrd->eType, epull_names);
+        pcrd->eType = get_eeenum(ninp_p, inp_p, buf, epull_names, wi);
         sprintf(buf, "pull-coord%d-potential-provider", coordNum);
-        STYPE(buf,              provider, "");
+        setStringEntry(ninp_p, inp_p, buf, provider, "");
         pcrd->externalPotentialProvider = gmx_strdup(provider);
         sprintf(buf, "pull-coord%d-geometry", coordNum);
-        EETYPE(buf,             pcrd->eGeom, epullg_names);
+        pcrd->eGeom = get_eeenum(ninp_p, inp_p, buf, epullg_names, wi);
         sprintf(buf, "pull-coord%d-groups", coordNum);
-        STYPE(buf,              groups, "");
+        setStringEntry(ninp_p, inp_p, buf, groups, "");
 
         switch (pcrd->eGeom)
         {
@@ -378,28 +373,25 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         }
 
         sprintf(buf, "pull-coord%d-dim", coordNum);
-        STYPE(buf,              dim_buf,     "Y Y Y");
+        setStringEntry(ninp_p, inp_p, buf, dim_buf, "Y Y Y");
         sprintf(buf, "pull-coord%d-origin", coordNum);
-        STYPE(buf,              origin_buf,  "0.0 0.0 0.0");
+        setStringEntry(ninp_p, inp_p, buf, origin_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-vec", coordNum);
-        STYPE(buf,              vec_buf,     "0.0 0.0 0.0");
+        setStringEntry(ninp_p, inp_p, buf, vec_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-start", coordNum);
-        EETYPE(buf,             pcrd->bStart, yesno_names);
+        pcrd->bStart = get_eeenum(ninp_p, inp_p, buf, yesno_names, wi);
         sprintf(buf, "pull-coord%d-init", coordNum);
-        RTYPE(buf,              pcrd->init,  0.0);
+        pcrd->init = get_ereal(ninp_p, inp_p, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-rate", coordNum);
-        RTYPE(buf,              pcrd->rate,  0.0);
+        pcrd->rate = get_ereal(ninp_p, inp_p, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-k", coordNum);
-        RTYPE(buf,              pcrd->k,     0.0);
+        pcrd->k = get_ereal(ninp_p, inp_p, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-kB", coordNum);
-        RTYPE(buf,              pcrd->kB,    pcrd->k);
+        pcrd->kB = get_ereal(ninp_p, inp_p, buf, pcrd->k, wi);
 
         /* Initialize the pull coordinate */
         init_pull_coord(pcrd, coordNum, dim_buf, origin_buf, vec_buf, wi);
     }
-
-    *ninp_p   = ninp;
-    *inp_p    = inp;
 
     return grpbuf;
 }

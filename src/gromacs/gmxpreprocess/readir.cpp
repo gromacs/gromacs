@@ -1673,30 +1673,30 @@ static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
     inp    = *inp_p;
 
     /* read expanded ensemble parameters */
-    CCTYPE ("expanded ensemble variables");
-    ITYPE ("nstexpanded", expand->nstexpanded, -1);
-    EETYPE("lmc-stats", expand->elamstats, elamstats_names);
-    EETYPE("lmc-move", expand->elmcmove, elmcmove_names);
-    EETYPE("lmc-weights-equil", expand->elmceq, elmceq_names);
-    ITYPE ("weight-equil-number-all-lambda", expand->equil_n_at_lam, -1);
-    ITYPE ("weight-equil-number-samples", expand->equil_samples, -1);
-    ITYPE ("weight-equil-number-steps", expand->equil_steps, -1);
-    RTYPE ("weight-equil-wl-delta", expand->equil_wl_delta, -1);
-    RTYPE ("weight-equil-count-ratio", expand->equil_ratio, -1);
-    CCTYPE("Seed for Monte Carlo in lambda space");
-    ITYPE ("lmc-seed", expand->lmc_seed, -1);
-    RTYPE ("mc-temperature", expand->mc_temp, -1);
-    ITYPE ("lmc-repeats", expand->lmc_repeats, 1);
-    ITYPE ("lmc-gibbsdelta", expand->gibbsdeltalam, -1);
-    ITYPE ("lmc-forced-nstart", expand->lmc_forced_nstart, 0);
-    EETYPE("symmetrized-transition-matrix", expand->bSymmetrizedTMatrix, yesno_names);
-    ITYPE("nst-transition-matrix", expand->nstTij, -1);
-    ITYPE ("mininum-var-min", expand->minvarmin, 100); /*default is reasonable */
-    ITYPE ("weight-c-range", expand->c_range, 0);      /* default is just C=0 */
-    RTYPE ("wl-scale", expand->wl_scale, 0.8);
-    RTYPE ("wl-ratio", expand->wl_ratio, 0.8);
-    RTYPE ("init-wl-delta", expand->init_wl_delta, 1.0);
-    EETYPE("wl-oneovert", expand->bWLoneovert, yesno_names);
+    printStringNewline(&ninp, &inp, "expanded ensemble variables");
+    expand->nstexpanded    = get_eint(&ninp, &inp, "nstexpanded", -1, wi);
+    expand->elamstats      = get_eeenum(&ninp, &inp, "lmc-stats", elamstats_names, wi);
+    expand->elmcmove       = get_eeenum(&ninp, &inp, "lmc-move", elmcmove_names, wi);
+    expand->elmceq         = get_eeenum(&ninp, &inp, "lmc-weights-equil", elmceq_names, wi);
+    expand->equil_n_at_lam = get_eint(&ninp, &inp, "weight-equil-number-all-lambda", -1, wi);
+    expand->equil_samples  = get_eint(&ninp, &inp, "weight-equil-number-samples", -1, wi);
+    expand->equil_steps    = get_eint(&ninp, &inp, "weight-equil-number-steps", -1, wi);
+    expand->equil_wl_delta = get_ereal(&ninp, &inp, "weight-equil-wl-delta", -1, wi);
+    expand->equil_ratio    = get_ereal(&ninp, &inp, "weight-equil-count-ratio", -1, wi);
+    printStringNewline(&ninp, &inp, "Seed for Monte Carlo in lambda space");
+    expand->lmc_seed            = get_eint(&ninp, &inp, "lmc-seed", -1, wi);
+    expand->mc_temp             = get_ereal(&ninp, &inp, "mc-temperature", -1, wi);
+    expand->lmc_repeats         = get_eint(&ninp, &inp, "lmc-repeats", 1, wi);
+    expand->gibbsdeltalam       = get_eint(&ninp, &inp, "lmc-gibbsdelta", -1, wi);
+    expand->lmc_forced_nstart   = get_eint(&ninp, &inp, "lmc-forced-nstart", 0, wi);
+    expand->bSymmetrizedTMatrix = get_eeenum(&ninp, &inp, "symmetrized-transition-matrix", yesno_names, wi);
+    expand->nstTij              = get_eint(&ninp, &inp, "nst-transition-matrix", -1, wi);
+    expand->minvarmin           = get_eint(&ninp, &inp, "mininum-var-min", 100, wi); /*default is reasonable */
+    expand->c_range             = get_eint(&ninp, &inp, "weight-c-range", 0, wi);    /* default is just C=0 */
+    expand->wl_scale            = get_ereal(&ninp, &inp, "wl-scale", 0.8, wi);
+    expand->wl_ratio            = get_ereal(&ninp, &inp, "wl-ratio", 0.8, wi);
+    expand->init_wl_delta       = get_ereal(&ninp, &inp, "init-wl-delta", 1.0, wi);
+    expand->bWLoneovert         = get_eeenum(&ninp, &inp, "wl-oneovert", yesno_names, wi);
 
     *ninp_p   = ninp;
     *inp_p    = inp;
@@ -1767,7 +1767,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     char       *dumstr[2];
     double      dumdub[2][6];
     t_inpfile  *inp;
-    const char *tmp;
     int         i, j, m, ninp;
     char        warn_buf[STRLEN];
     t_lambda   *fep    = ir->fepvals;
@@ -1795,283 +1794,283 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* ignore the following deprecated commands */
-    REM_TYPE("title");
-    REM_TYPE("cpp");
-    REM_TYPE("domain-decomposition");
-    REM_TYPE("andersen-seed");
-    REM_TYPE("dihre");
-    REM_TYPE("dihre-fc");
-    REM_TYPE("dihre-tau");
-    REM_TYPE("nstdihreout");
-    REM_TYPE("nstcheckpoint");
-    REM_TYPE("optimize-fft");
-    REM_TYPE("adress_type");
-    REM_TYPE("adress_const_wf");
-    REM_TYPE("adress_ex_width");
-    REM_TYPE("adress_hy_width");
-    REM_TYPE("adress_ex_forcecap");
-    REM_TYPE("adress_interface_correction");
-    REM_TYPE("adress_site");
-    REM_TYPE("adress_reference_coords");
-    REM_TYPE("adress_tf_grp_names");
-    REM_TYPE("adress_cg_grp_names");
-    REM_TYPE("adress_do_hybridpairs");
-    REM_TYPE("rlistlong");
-    REM_TYPE("nstcalclr");
-    REM_TYPE("pull-print-com2");
-    REM_TYPE("gb-algorithm");
-    REM_TYPE("nstgbradii");
-    REM_TYPE("rgbradii");
-    REM_TYPE("gb-epsilon-solvent");
-    REM_TYPE("gb-saltconc");
-    REM_TYPE("gb-obc-alpha");
-    REM_TYPE("gb-obc-beta");
-    REM_TYPE("gb-obc-gamma");
-    REM_TYPE("gb-dielectric-offset");
-    REM_TYPE("sa-algorithm");
-    REM_TYPE("sa-surface-tension");
+    replace_inp_entry(ninp, inp, "title", NULL);
+    replace_inp_entry(ninp, inp, "cpp", NULL);
+    replace_inp_entry(ninp, inp, "domain-decomposition", NULL);
+    replace_inp_entry(ninp, inp, "andersen-seed", NULL);
+    replace_inp_entry(ninp, inp, "dihre", NULL);
+    replace_inp_entry(ninp, inp, "dihre-fc", NULL);
+    replace_inp_entry(ninp, inp, "dihre-tau", NULL);
+    replace_inp_entry(ninp, inp, "nstdihreout", NULL);
+    replace_inp_entry(ninp, inp, "nstcheckpoint", NULL);
+    replace_inp_entry(ninp, inp, "optimize-fft", NULL);
+    replace_inp_entry(ninp, inp, "adress_type", NULL);
+    replace_inp_entry(ninp, inp, "adress_const_wf", NULL);
+    replace_inp_entry(ninp, inp, "adress_ex_width", NULL);
+    replace_inp_entry(ninp, inp, "adress_hy_width", NULL);
+    replace_inp_entry(ninp, inp, "adress_ex_forcecap", NULL);
+    replace_inp_entry(ninp, inp, "adress_interface_correction", NULL);
+    replace_inp_entry(ninp, inp, "adress_site", NULL);
+    replace_inp_entry(ninp, inp, "adress_reference_coords", NULL);
+    replace_inp_entry(ninp, inp, "adress_tf_grp_names", NULL);
+    replace_inp_entry(ninp, inp, "adress_cg_grp_names", NULL);
+    replace_inp_entry(ninp, inp, "adress_do_hybridpairs", NULL);
+    replace_inp_entry(ninp, inp, "rlistlong", NULL);
+    replace_inp_entry(ninp, inp, "nstcalclr", NULL);
+    replace_inp_entry(ninp, inp, "pull-print-com2", NULL);
+    replace_inp_entry(ninp, inp, "gb-algorithm", NULL);
+    replace_inp_entry(ninp, inp, "nstgbradii", NULL);
+    replace_inp_entry(ninp, inp, "rgbradii", NULL);
+    replace_inp_entry(ninp, inp, "gb-epsilon-solvent", NULL);
+    replace_inp_entry(ninp, inp, "gb-saltconc", NULL);
+    replace_inp_entry(ninp, inp, "gb-obc-alpha", NULL);
+    replace_inp_entry(ninp, inp, "gb-obc-beta", NULL);
+    replace_inp_entry(ninp, inp, "gb-obc-gamma", NULL);
+    replace_inp_entry(ninp, inp, "gb-dielectric-offset", NULL);
+    replace_inp_entry(ninp, inp, "sa-algorithm", NULL);
+    replace_inp_entry(ninp, inp, "sa-surface-tension", NULL);
 
     /* replace the following commands with the clearer new versions*/
-    REPL_TYPE("unconstrained-start", "continuation");
-    REPL_TYPE("foreign-lambda", "fep-lambdas");
-    REPL_TYPE("verlet-buffer-drift", "verlet-buffer-tolerance");
-    REPL_TYPE("nstxtcout", "nstxout-compressed");
-    REPL_TYPE("xtc-grps", "compressed-x-grps");
-    REPL_TYPE("xtc-precision", "compressed-x-precision");
-    REPL_TYPE("pull-print-com1", "pull-print-com");
+    replace_inp_entry(ninp, inp, "unconstrained-start", "continuation");
+    replace_inp_entry(ninp, inp, "foreign-lambda", "fep-lambdas");
+    replace_inp_entry(ninp, inp, "verlet-buffer-drift", "verlet-buffer-tolerance");
+    replace_inp_entry(ninp, inp, "nstxtcout", "nstxout-compressed");
+    replace_inp_entry(ninp, inp, "xtc-grps", "compressed-x-grps");
+    replace_inp_entry(ninp, inp, "xtc-precision", "compressed-x-precision");
+    replace_inp_entry(ninp, inp, "pull-print-com1", "pull-print-com");
 
-    CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
-    CTYPE ("Preprocessor information: use cpp syntax.");
-    CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
-    STYPE ("include", opts->include,  nullptr);
-    CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
-    STYPE ("define",  opts->define,   nullptr);
+    printStringNewline(&ninp, &inp, "VARIOUS PREPROCESSING OPTIONS");
+    printStringNoNewline(&ninp, &inp, "Preprocessor information: use cpp syntax.");
+    printStringNoNewline(&ninp, &inp, "e.g.: -I/home/joe/doe -I/home/mary/roe");
+    setStringEntry(&ninp, &inp, "include", opts->include,  nullptr);
+    printStringNoNewline(&ninp, &inp, "e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
+    setStringEntry(&ninp, &inp, "define",  opts->define,   nullptr);
 
-    CCTYPE ("RUN CONTROL PARAMETERS");
-    EETYPE("integrator",  ir->eI,         ei_names);
-    CTYPE ("Start time and timestep in ps");
-    RTYPE ("tinit",   ir->init_t, 0.0);
-    RTYPE ("dt",      ir->delta_t,    0.001);
-    STEPTYPE ("nsteps",   ir->nsteps,     0);
-    CTYPE ("For exact run continuation or redoing part of a run");
-    STEPTYPE ("init-step", ir->init_step,  0);
-    CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
-    ITYPE ("simulation-part", ir->simulation_part, 1);
-    CTYPE ("mode for center of mass motion removal");
-    EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
-    CTYPE ("number of steps for center of mass motion removal");
-    ITYPE ("nstcomm", ir->nstcomm,    100);
-    CTYPE ("group(s) for center of mass motion removal");
-    STYPE ("comm-grps",   is->vcm,            nullptr);
+    printStringNewline(&ninp, &inp, "RUN CONTROL PARAMETERS");
+    ir->eI = get_eeenum(&ninp, &inp, "integrator",         ei_names, wi);
+    printStringNoNewline(&ninp, &inp, "Start time and timestep in ps");
+    ir->init_t  = get_ereal(&ninp, &inp, "tinit", 0.0, wi);
+    ir->delta_t = get_ereal(&ninp, &inp, "dt",    0.001, wi);
+    ir->nsteps  = get_eint64(&ninp, &inp, "nsteps",     0, wi);
+    printStringNoNewline(&ninp, &inp, "For exact run continuation or redoing part of a run");
+    ir->init_step = get_eint64(&ninp, &inp, "init-step",  0, wi);
+    printStringNoNewline(&ninp, &inp, "Part index is updated automatically on checkpointing (keeps files separate)");
+    ir->simulation_part = get_eint(&ninp, &inp, "simulation-part", 1, wi);
+    printStringNoNewline(&ninp, &inp, "mode for center of mass motion removal");
+    ir->comm_mode = get_eeenum(&ninp, &inp, "comm-mode",  ecm_names, wi);
+    printStringNoNewline(&ninp, &inp, "number of steps for center of mass motion removal");
+    ir->nstcomm = get_eint(&ninp, &inp, "nstcomm",    100, wi);
+    printStringNoNewline(&ninp, &inp, "group(s) for center of mass motion removal");
+    setStringEntry(&ninp, &inp, "comm-grps",   is->vcm,            nullptr);
 
-    CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
-    CTYPE ("Friction coefficient (amu/ps) and random seed");
-    RTYPE ("bd-fric",     ir->bd_fric,    0.0);
-    STEPTYPE ("ld-seed",  ir->ld_seed,    -1);
+    printStringNewline(&ninp, &inp, "LANGEVIN DYNAMICS OPTIONS");
+    printStringNoNewline(&ninp, &inp, "Friction coefficient (amu/ps) and random seed");
+    ir->bd_fric = get_ereal(&ninp, &inp, "bd-fric",    0.0, wi);
+    ir->ld_seed = get_eint64(&ninp, &inp, "ld-seed",    -1, wi);
 
     /* Em stuff */
-    CCTYPE ("ENERGY MINIMIZATION OPTIONS");
-    CTYPE ("Force tolerance and initial step-size");
-    RTYPE ("emtol",       ir->em_tol,     10.0);
-    RTYPE ("emstep",      ir->em_stepsize, 0.01);
-    CTYPE ("Max number of iterations in relax-shells");
-    ITYPE ("niter",       ir->niter,      20);
-    CTYPE ("Step size (ps^2) for minimization of flexible constraints");
-    RTYPE ("fcstep",      ir->fc_stepsize, 0);
-    CTYPE ("Frequency of steepest descents steps when doing CG");
-    ITYPE ("nstcgsteep",  ir->nstcgsteep, 1000);
-    ITYPE ("nbfgscorr",   ir->nbfgscorr,  10);
+    printStringNewline(&ninp, &inp, "ENERGY MINIMIZATION OPTIONS");
+    printStringNoNewline(&ninp, &inp, "Force tolerance and initial step-size");
+    ir->em_tol      = get_ereal(&ninp, &inp, "emtol",     10.0, wi);
+    ir->em_stepsize = get_ereal(&ninp, &inp, "emstep", 0.01, wi);
+    printStringNoNewline(&ninp, &inp, "Max number of iterations in relax-shells");
+    ir->niter = get_eint(&ninp, &inp, "niter",      20, wi);
+    printStringNoNewline(&ninp, &inp, "Step size (ps^2) for minimization of flexible constraints");
+    ir->fc_stepsize = get_ereal(&ninp, &inp, "fcstep", 0, wi);
+    printStringNoNewline(&ninp, &inp, "Frequency of steepest descents steps when doing CG");
+    ir->nstcgsteep = get_eint(&ninp, &inp, "nstcgsteep", 1000, wi);
+    ir->nbfgscorr  = get_eint(&ninp, &inp, "nbfgscorr",  10, wi);
 
-    CCTYPE ("TEST PARTICLE INSERTION OPTIONS");
-    RTYPE ("rtpi",    ir->rtpi,   0.05);
+    printStringNewline(&ninp, &inp, "TEST PARTICLE INSERTION OPTIONS");
+    ir->rtpi = get_ereal(&ninp, &inp, "rtpi",   0.05, wi);
 
     /* Output options */
-    CCTYPE ("OUTPUT CONTROL OPTIONS");
-    CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
-    ITYPE ("nstxout", ir->nstxout,    0);
-    ITYPE ("nstvout", ir->nstvout,    0);
-    ITYPE ("nstfout", ir->nstfout,    0);
-    CTYPE ("Output frequency for energies to log file and energy file");
-    ITYPE ("nstlog",  ir->nstlog, 1000);
-    ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
-    ITYPE ("nstenergy",   ir->nstenergy,  1000);
-    CTYPE ("Output frequency and precision for .xtc file");
-    ITYPE ("nstxout-compressed", ir->nstxout_compressed,  0);
-    RTYPE ("compressed-x-precision", ir->x_compression_precision, 1000.0);
-    CTYPE ("This selects the subset of atoms for the compressed");
-    CTYPE ("trajectory file. You can select multiple groups. By");
-    CTYPE ("default, all atoms will be written.");
-    STYPE ("compressed-x-grps", is->x_compressed_groups, nullptr);
-    CTYPE ("Selection of energy groups");
-    STYPE ("energygrps",  is->energy,         nullptr);
+    printStringNewline(&ninp, &inp, "OUTPUT CONTROL OPTIONS");
+    printStringNoNewline(&ninp, &inp, "Output frequency for coords (x), velocities (v) and forces (f)");
+    ir->nstxout = get_eint(&ninp, &inp, "nstxout",    0, wi);
+    ir->nstvout = get_eint(&ninp, &inp, "nstvout",    0, wi);
+    ir->nstfout = get_eint(&ninp, &inp, "nstfout",    0, wi);
+    printStringNoNewline(&ninp, &inp, "Output frequency for energies to log file and energy file");
+    ir->nstlog        = get_eint(&ninp, &inp, "nstlog", 1000, wi);
+    ir->nstcalcenergy = get_eint(&ninp, &inp, "nstcalcenergy", 100, wi);
+    ir->nstenergy     = get_eint(&ninp, &inp, "nstenergy",  1000, wi);
+    printStringNoNewline(&ninp, &inp, "Output frequency and precision for .xtc file");
+    ir->nstxout_compressed      = get_eint(&ninp, &inp, "nstxout-compressed",  0, wi);
+    ir->x_compression_precision = get_ereal(&ninp, &inp, "compressed-x-precision", 1000.0, wi);
+    printStringNoNewline(&ninp, &inp, "This selects the subset of atoms for the compressed");
+    printStringNoNewline(&ninp, &inp, "trajectory file. You can select multiple groups. By");
+    printStringNoNewline(&ninp, &inp, "default, all atoms will be written.");
+    setStringEntry(&ninp, &inp, "compressed-x-grps", is->x_compressed_groups, nullptr);
+    printStringNoNewline(&ninp, &inp, "Selection of energy groups");
+    setStringEntry(&ninp, &inp, "energygrps",  is->energy,         nullptr);
 
     /* Neighbor searching */
-    CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-    CTYPE ("cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
-    EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
-    CTYPE ("nblist update frequency");
-    ITYPE ("nstlist", ir->nstlist,    10);
-    CTYPE ("ns algorithm (simple or grid)");
-    EETYPE("ns-type",     ir->ns_type,    ens_names);
-    CTYPE ("Periodic boundary conditions: xyz, no, xy");
-    EETYPE("pbc",         ir->ePBC,       epbc_names);
-    EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
-    CTYPE ("Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
-    CTYPE ("a value of -1 means: use rlist");
-    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    0.005);
-    CTYPE ("nblist cut-off");
-    RTYPE ("rlist",   ir->rlist,  1.0);
-    CTYPE ("long-range cut-off for switched potentials");
+    printStringNewline(&ninp, &inp, "NEIGHBORSEARCHING PARAMETERS");
+    printStringNoNewline(&ninp, &inp, "cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
+    ir->cutoff_scheme = get_eeenum(&ninp, &inp, "cutoff-scheme",    ecutscheme_names, wi);
+    printStringNoNewline(&ninp, &inp, "nblist update frequency");
+    ir->nstlist = get_eint(&ninp, &inp, "nstlist",    10, wi);
+    printStringNoNewline(&ninp, &inp, "ns algorithm (simple or grid)");
+    ir->ns_type = get_eeenum(&ninp, &inp, "ns-type",    ens_names, wi);
+    printStringNoNewline(&ninp, &inp, "Periodic boundary conditions: xyz, no, xy");
+    ir->ePBC          = get_eeenum(&ninp, &inp, "pbc",       epbc_names, wi);
+    ir->bPeriodicMols = get_eeenum(&ninp, &inp, "periodic-molecules", yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
+    printStringNoNewline(&ninp, &inp, "a value of -1 means: use rlist");
+    ir->verletbuf_tol = get_ereal(&ninp, &inp, "verlet-buffer-tolerance",    0.005, wi);
+    printStringNoNewline(&ninp, &inp, "nblist cut-off");
+    ir->rlist = get_ereal(&ninp, &inp, "rlist",  1.0, wi);
+    printStringNoNewline(&ninp, &inp, "long-range cut-off for switched potentials");
 
     /* Electrostatics */
-    CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
-    CTYPE ("Method for doing electrostatics");
-    EETYPE("coulombtype", ir->coulombtype,    eel_names);
-    EETYPE("coulomb-modifier",    ir->coulomb_modifier,    eintmod_names);
-    CTYPE ("cut-off lengths");
-    RTYPE ("rcoulomb-switch", ir->rcoulomb_switch,    0.0);
-    RTYPE ("rcoulomb",    ir->rcoulomb,   1.0);
-    CTYPE ("Relative dielectric constant for the medium and the reaction field");
-    RTYPE ("epsilon-r",   ir->epsilon_r,  1.0);
-    RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
-    CTYPE ("Method for doing Van der Waals");
-    EETYPE("vdw-type",    ir->vdwtype,    evdw_names);
-    EETYPE("vdw-modifier",    ir->vdw_modifier,    eintmod_names);
-    CTYPE ("cut-off lengths");
-    RTYPE ("rvdw-switch", ir->rvdw_switch,    0.0);
-    RTYPE ("rvdw",    ir->rvdw,   1.0);
-    CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
-    EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
-    CTYPE ("Extension of the potential lookup tables beyond the cut-off");
-    RTYPE ("table-extension", ir->tabext, 1.0);
-    CTYPE ("Separate tables between energy group pairs");
-    STYPE ("energygrp-table", is->egptable,   nullptr);
-    CTYPE ("Spacing for the PME/PPPM FFT grid");
-    RTYPE ("fourierspacing", ir->fourier_spacing, 0.12);
-    CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
-    ITYPE ("fourier-nx",  ir->nkx,         0);
-    ITYPE ("fourier-ny",  ir->nky,         0);
-    ITYPE ("fourier-nz",  ir->nkz,         0);
-    CTYPE ("EWALD/PME/PPPM parameters");
-    ITYPE ("pme-order",   ir->pme_order,   4);
-    RTYPE ("ewald-rtol",  ir->ewald_rtol, 0.00001);
-    RTYPE ("ewald-rtol-lj", ir->ewald_rtol_lj, 0.001);
-    EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
-    EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
-    RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
+    printStringNewline(&ninp, &inp, "OPTIONS FOR ELECTROSTATICS AND VDW");
+    printStringNoNewline(&ninp, &inp, "Method for doing electrostatics");
+    ir->coulombtype      = get_eeenum(&ninp, &inp, "coulombtype",    eel_names, wi);
+    ir->coulomb_modifier = get_eeenum(&ninp, &inp, "coulomb-modifier",    eintmod_names, wi);
+    printStringNoNewline(&ninp, &inp, "cut-off lengths");
+    ir->rcoulomb_switch = get_ereal(&ninp, &inp, "rcoulomb-switch",    0.0, wi);
+    ir->rcoulomb        = get_ereal(&ninp, &inp, "rcoulomb",   1.0, wi);
+    printStringNoNewline(&ninp, &inp, "Relative dielectric constant for the medium and the reaction field");
+    ir->epsilon_r  = get_ereal(&ninp, &inp, "epsilon-r",  1.0, wi);
+    ir->epsilon_rf = get_ereal(&ninp, &inp, "epsilon-rf", 0.0, wi);
+    printStringNoNewline(&ninp, &inp, "Method for doing Van der Waals");
+    ir->vdwtype      = get_eeenum(&ninp, &inp, "vdw-type",    evdw_names, wi);
+    ir->vdw_modifier = get_eeenum(&ninp, &inp, "vdw-modifier",    eintmod_names, wi);
+    printStringNoNewline(&ninp, &inp, "cut-off lengths");
+    ir->rvdw_switch = get_ereal(&ninp, &inp, "rvdw-switch",    0.0, wi);
+    ir->rvdw        = get_ereal(&ninp, &inp, "rvdw",   1.0, wi);
+    printStringNoNewline(&ninp, &inp, "Apply long range dispersion corrections for Energy and Pressure");
+    ir->eDispCorr = get_eeenum(&ninp, &inp, "DispCorr",  edispc_names, wi);
+    printStringNoNewline(&ninp, &inp, "Extension of the potential lookup tables beyond the cut-off");
+    ir->tabext = get_ereal(&ninp, &inp, "table-extension", 1.0, wi);
+    printStringNoNewline(&ninp, &inp, "Separate tables between energy group pairs");
+    setStringEntry(&ninp, &inp, "energygrp-table", is->egptable,   nullptr);
+    printStringNoNewline(&ninp, &inp, "Spacing for the PME/PPPM FFT grid");
+    ir->fourier_spacing = get_ereal(&ninp, &inp, "fourierspacing", 0.12, wi);
+    printStringNoNewline(&ninp, &inp, "FFT grid size, when a value is 0 fourierspacing will be used");
+    ir->nkx = get_eint(&ninp, &inp, "fourier-nx",         0, wi);
+    ir->nky = get_eint(&ninp, &inp, "fourier-ny",         0, wi);
+    ir->nkz = get_eint(&ninp, &inp, "fourier-nz",         0, wi);
+    printStringNoNewline(&ninp, &inp, "EWALD/PME/PPPM parameters");
+    ir->pme_order              = get_eint(&ninp, &inp, "pme-order",   4, wi);
+    ir->ewald_rtol             = get_ereal(&ninp, &inp, "ewald-rtol", 0.00001, wi);
+    ir->ewald_rtol_lj          = get_ereal(&ninp, &inp, "ewald-rtol-lj", 0.001, wi);
+    ir->ljpme_combination_rule = get_eeenum(&ninp, &inp, "lj-pme-comb-rule", eljpme_names, wi);
+    ir->ewald_geometry         = get_eeenum(&ninp, &inp, "ewald-geometry", eewg_names, wi);
+    ir->epsilon_surface        = get_ereal(&ninp, &inp, "epsilon-surface", 0.0, wi);
 
     /* Implicit solvation is no longer supported, but we need grompp
        to be able to refuse old .mdp files that would have built a tpr
        to run it. Thus, only "no" is accepted. */
-    EETYPE("implicit-solvent", ir->implicit_solvent, no_names);
+    ir->implicit_solvent = get_eeenum(&ninp, &inp, "implicit-solvent", no_names, wi);
 
     /* Coupling stuff */
-    CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
-    CTYPE ("Temperature coupling");
-    EETYPE("tcoupl",  ir->etc,        etcoupl_names);
-    ITYPE ("nsttcouple", ir->nsttcouple,  -1);
-    ITYPE("nh-chain-length",     ir->opts.nhchainlength, 10);
-    EETYPE("print-nose-hoover-chain-variables", ir->bPrintNHChains, yesno_names);
-    CTYPE ("Groups to couple separately");
-    STYPE ("tc-grps",     is->tcgrps,         nullptr);
-    CTYPE ("Time constant (ps) and reference temperature (K)");
-    STYPE ("tau-t",   is->tau_t,      nullptr);
-    STYPE ("ref-t",   is->ref_t,      nullptr);
-    CTYPE ("pressure coupling");
-    EETYPE("pcoupl",  ir->epc,        epcoupl_names);
-    EETYPE("pcoupltype",  ir->epct,       epcoupltype_names);
-    ITYPE ("nstpcouple", ir->nstpcouple,  -1);
-    CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
-    RTYPE ("tau-p",   ir->tau_p,  1.0);
-    STYPE ("compressibility", dumstr[0],  nullptr);
-    STYPE ("ref-p",       dumstr[1],      nullptr);
-    CTYPE ("Scaling of reference coordinates, No, All or COM");
-    EETYPE ("refcoord-scaling", ir->refcoord_scaling, erefscaling_names);
+    printStringNewline(&ninp, &inp, "OPTIONS FOR WEAK COUPLING ALGORITHMS");
+    printStringNoNewline(&ninp, &inp, "Temperature coupling");
+    ir->etc                = get_eeenum(&ninp, &inp, "tcoupl",        etcoupl_names, wi);
+    ir->nsttcouple         = get_eint(&ninp, &inp, "nsttcouple",  -1, wi);
+    ir->opts.nhchainlength = get_eint(&ninp, &inp, "nh-chain-length", 10, wi);
+    ir->bPrintNHChains     = get_eeenum(&ninp, &inp, "print-nose-hoover-chain-variables", yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Groups to couple separately");
+    setStringEntry(&ninp, &inp, "tc-grps",     is->tcgrps,         nullptr);
+    printStringNoNewline(&ninp, &inp, "Time constant (ps) and reference temperature (K)");
+    setStringEntry(&ninp, &inp, "tau-t",   is->tau_t,      nullptr);
+    setStringEntry(&ninp, &inp, "ref-t",   is->ref_t,      nullptr);
+    printStringNoNewline(&ninp, &inp, "pressure coupling");
+    ir->epc        = get_eeenum(&ninp, &inp, "pcoupl",        epcoupl_names, wi);
+    ir->epct       = get_eeenum(&ninp, &inp, "pcoupltype",       epcoupltype_names, wi);
+    ir->nstpcouple = get_eint(&ninp, &inp, "nstpcouple",  -1, wi);
+    printStringNoNewline(&ninp, &inp, "Time constant (ps), compressibility (1/bar) and reference P (bar)");
+    ir->tau_p = get_ereal(&ninp, &inp, "tau-p",  1.0, wi);
+    setStringEntry(&ninp, &inp, "compressibility", dumstr[0],  nullptr);
+    setStringEntry(&ninp, &inp, "ref-p",       dumstr[1],      nullptr);
+    printStringNoNewline(&ninp, &inp, "Scaling of reference coordinates, No, All or COM");
+    ir->refcoord_scaling = get_eeenum(&ninp, &inp, "refcoord-scaling", erefscaling_names, wi);
 
     /* QMMM */
-    CCTYPE ("OPTIONS FOR QMMM calculations");
-    EETYPE("QMMM", ir->bQMMM, yesno_names);
-    CTYPE ("Groups treated Quantum Mechanically");
-    STYPE ("QMMM-grps",  is->QMMM,          nullptr);
-    CTYPE ("QM method");
-    STYPE("QMmethod",     is->QMmethod, nullptr);
-    CTYPE ("QMMM scheme");
-    EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names);
-    CTYPE ("QM basisset");
-    STYPE("QMbasis",      is->QMbasis, nullptr);
-    CTYPE ("QM charge");
-    STYPE ("QMcharge",    is->QMcharge, nullptr);
-    CTYPE ("QM multiplicity");
-    STYPE ("QMmult",      is->QMmult, nullptr);
-    CTYPE ("Surface Hopping");
-    STYPE ("SH",          is->bSH, nullptr);
-    CTYPE ("CAS space options");
-    STYPE ("CASorbitals",      is->CASorbitals,   nullptr);
-    STYPE ("CASelectrons",     is->CASelectrons,  nullptr);
-    STYPE ("SAon", is->SAon, nullptr);
-    STYPE ("SAoff", is->SAoff, nullptr);
-    STYPE ("SAsteps", is->SAsteps, nullptr);
-    CTYPE ("Scale factor for MM charges");
-    RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
+    printStringNewline(&ninp, &inp, "OPTIONS FOR QMMM calculations");
+    ir->bQMMM = get_eeenum(&ninp, &inp, "QMMM", yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Groups treated Quantum Mechanically");
+    setStringEntry(&ninp, &inp, "QMMM-grps",  is->QMMM,          nullptr);
+    printStringNoNewline(&ninp, &inp, "QM method");
+    setStringEntry(&ninp, &inp, "QMmethod",     is->QMmethod, nullptr);
+    printStringNoNewline(&ninp, &inp, "QMMM scheme");
+    ir->QMMMscheme = get_eeenum(&ninp, &inp, "QMMMscheme",    eQMMMscheme_names, wi);
+    printStringNoNewline(&ninp, &inp, "QM basisset");
+    setStringEntry(&ninp, &inp, "QMbasis",      is->QMbasis, nullptr);
+    printStringNoNewline(&ninp, &inp, "QM charge");
+    setStringEntry(&ninp, &inp, "QMcharge",    is->QMcharge, nullptr);
+    printStringNoNewline(&ninp, &inp, "QM multiplicity");
+    setStringEntry(&ninp, &inp, "QMmult",      is->QMmult, nullptr);
+    printStringNoNewline(&ninp, &inp, "Surface Hopping");
+    setStringEntry(&ninp, &inp, "SH",          is->bSH, nullptr);
+    printStringNoNewline(&ninp, &inp, "CAS space options");
+    setStringEntry(&ninp, &inp, "CASorbitals",      is->CASorbitals,   nullptr);
+    setStringEntry(&ninp, &inp, "CASelectrons",     is->CASelectrons,  nullptr);
+    setStringEntry(&ninp, &inp, "SAon", is->SAon, nullptr);
+    setStringEntry(&ninp, &inp, "SAoff", is->SAoff, nullptr);
+    setStringEntry(&ninp, &inp, "SAsteps", is->SAsteps, nullptr);
+    printStringNoNewline(&ninp, &inp, "Scale factor for MM charges");
+    ir->scalefactor = get_ereal(&ninp, &inp, "MMChargeScaleFactor", 1.0, wi);
 
     /* Simulated annealing */
-    CCTYPE("SIMULATED ANNEALING");
-    CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
-    STYPE ("annealing",   is->anneal,      nullptr);
-    CTYPE ("Number of time points to use for specifying annealing in each group");
-    STYPE ("annealing-npoints", is->anneal_npoints, nullptr);
-    CTYPE ("List of times at the annealing points for each group");
-    STYPE ("annealing-time",       is->anneal_time,       nullptr);
-    CTYPE ("Temp. at each annealing point, for each group.");
-    STYPE ("annealing-temp",  is->anneal_temp,  nullptr);
+    printStringNewline(&ninp, &inp, "SIMULATED ANNEALING");
+    printStringNoNewline(&ninp, &inp, "Type of annealing for each temperature group (no/single/periodic)");
+    setStringEntry(&ninp, &inp, "annealing",   is->anneal,      nullptr);
+    printStringNoNewline(&ninp, &inp, "Number of time points to use for specifying annealing in each group");
+    setStringEntry(&ninp, &inp, "annealing-npoints", is->anneal_npoints, nullptr);
+    printStringNoNewline(&ninp, &inp, "List of times at the annealing points for each group");
+    setStringEntry(&ninp, &inp, "annealing-time",       is->anneal_time,       nullptr);
+    printStringNoNewline(&ninp, &inp, "Temp. at each annealing point, for each group.");
+    setStringEntry(&ninp, &inp, "annealing-temp",  is->anneal_temp,  nullptr);
 
     /* Startup run */
-    CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
-    EETYPE("gen-vel",     opts->bGenVel,  yesno_names);
-    RTYPE ("gen-temp",    opts->tempi,    300.0);
-    ITYPE ("gen-seed",    opts->seed,     -1);
+    printStringNewline(&ninp, &inp, "GENERATE VELOCITIES FOR STARTUP RUN");
+    opts->bGenVel = get_eeenum(&ninp, &inp, "gen-vel",  yesno_names, wi);
+    opts->tempi   = get_ereal(&ninp, &inp, "gen-temp",    300.0, wi);
+    opts->seed    = get_eint(&ninp, &inp, "gen-seed",     -1, wi);
 
     /* Shake stuff */
-    CCTYPE ("OPTIONS FOR BONDS");
-    EETYPE("constraints", opts->nshake,   constraints);
-    CTYPE ("Type of constraint algorithm");
-    EETYPE("constraint-algorithm",  ir->eConstrAlg, econstr_names);
-    CTYPE ("Do not constrain the start configuration");
-    EETYPE("continuation", ir->bContinuation, yesno_names);
-    CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
-    EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names);
-    CTYPE ("Relative tolerance of shake");
-    RTYPE ("shake-tol", ir->shake_tol, 0.0001);
-    CTYPE ("Highest order in the expansion of the constraint coupling matrix");
-    ITYPE ("lincs-order", ir->nProjOrder, 4);
-    CTYPE ("Number of iterations in the final step of LINCS. 1 is fine for");
-    CTYPE ("normal simulations, but use 2 to conserve energy in NVE runs.");
-    CTYPE ("For energy minimization with constraints it should be 4 to 8.");
-    ITYPE ("lincs-iter", ir->nLincsIter, 1);
-    CTYPE ("Lincs will write a warning to the stderr if in one step a bond");
-    CTYPE ("rotates over more degrees than");
-    RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
-    CTYPE ("Convert harmonic bonds to morse potentials");
-    EETYPE("morse",       opts->bMorse, yesno_names);
+    printStringNewline(&ninp, &inp, "OPTIONS FOR BONDS");
+    opts->nshake = get_eeenum(&ninp, &inp, "constraints",   constraints, wi);
+    printStringNoNewline(&ninp, &inp, "Type of constraint algorithm");
+    ir->eConstrAlg = get_eeenum(&ninp, &inp, "constraint-algorithm", econstr_names, wi);
+    printStringNoNewline(&ninp, &inp, "Do not constrain the start configuration");
+    ir->bContinuation = get_eeenum(&ninp, &inp, "continuation", yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Use successive overrelaxation to reduce the number of shake iterations");
+    ir->bShakeSOR = get_eeenum(&ninp, &inp, "Shake-SOR", yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Relative tolerance of shake");
+    ir->shake_tol = get_ereal(&ninp, &inp, "shake-tol", 0.0001, wi);
+    printStringNoNewline(&ninp, &inp, "Highest order in the expansion of the constraint coupling matrix");
+    ir->nProjOrder = get_eint(&ninp, &inp, "lincs-order", 4, wi);
+    printStringNoNewline(&ninp, &inp, "Number of iterations in the final step of LINCS. 1 is fine for");
+    printStringNoNewline(&ninp, &inp, "normal simulations, but use 2 to conserve energy in NVE runs.");
+    printStringNoNewline(&ninp, &inp, "For energy minimization with constraints it should be 4 to 8.");
+    ir->nLincsIter = get_eint(&ninp, &inp, "lincs-iter", 1, wi);
+    printStringNoNewline(&ninp, &inp, "Lincs will write a warning to the stderr if in one step a bond");
+    printStringNoNewline(&ninp, &inp, "rotates over more degrees than");
+    ir->LincsWarnAngle = get_ereal(&ninp, &inp, "lincs-warnangle", 30.0, wi);
+    printStringNoNewline(&ninp, &inp, "Convert harmonic bonds to morse potentials");
+    opts->bMorse = get_eeenum(&ninp, &inp, "morse", yesno_names, wi);
 
     /* Energy group exclusions */
-    CCTYPE ("ENERGY GROUP EXCLUSIONS");
-    CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
-    STYPE ("energygrp-excl", is->egpexcl,     nullptr);
+    printStringNewline(&ninp, &inp, "ENERGY GROUP EXCLUSIONS");
+    printStringNoNewline(&ninp, &inp, "Pairs of energy groups for which all non-bonded interactions are excluded");
+    setStringEntry(&ninp, &inp, "energygrp-excl", is->egpexcl,     nullptr);
 
     /* Walls */
-    CCTYPE ("WALLS");
-    CTYPE ("Number of walls, type, atom types, densities and box-z scale factor for Ewald");
-    ITYPE ("nwall", ir->nwall, 0);
-    EETYPE("wall-type",     ir->wall_type,   ewt_names);
-    RTYPE ("wall-r-linpot", ir->wall_r_linpot, -1);
-    STYPE ("wall-atomtype", is->wall_atomtype, nullptr);
-    STYPE ("wall-density",  is->wall_density,  nullptr);
-    RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
+    printStringNewline(&ninp, &inp, "WALLS");
+    printStringNoNewline(&ninp, &inp, "Number of walls, type, atom types, densities and box-z scale factor for Ewald");
+    ir->nwall         = get_eint(&ninp, &inp, "nwall", 0, wi);
+    ir->wall_type     = get_eeenum(&ninp, &inp, "wall-type",   ewt_names, wi);
+    ir->wall_r_linpot = get_ereal(&ninp, &inp, "wall-r-linpot", -1, wi);
+    setStringEntry(&ninp, &inp, "wall-atomtype", is->wall_atomtype, nullptr);
+    setStringEntry(&ninp, &inp, "wall-density",  is->wall_density,  nullptr);
+    ir->wall_ewald_zfac = get_ereal(&ninp, &inp, "wall-ewald-zfac", 3, wi);
 
     /* COM pulling */
-    CCTYPE("COM PULLING");
-    EETYPE("pull",          ir->bPull, yesno_names);
+    printStringNewline(&ninp, &inp, "COM PULLING");
+    ir->bPull = get_eeenum(&ninp, &inp, "pull", yesno_names, wi);
     if (ir->bPull)
     {
         snew(ir->pull, 1);
@@ -2080,8 +2079,8 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* AWH biasing
        NOTE: needs COM pulling input */
-    CCTYPE("AWH biasing");
-    EETYPE("awh", ir->bDoAwh, yesno_names);
+    printStringNewline(&ninp, &inp, "AWH biasing");
+    ir->bDoAwh = get_eeenum(&ninp, &inp, "awh", yesno_names, wi);
     if (ir->bDoAwh)
     {
         if (ir->bPull)
@@ -2095,9 +2094,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Enforced rotation */
-    CCTYPE("ENFORCED ROTATION");
-    CTYPE("Enforced rotation: No or Yes");
-    EETYPE("rotation",       ir->bRot, yesno_names);
+    printStringNewline(&ninp, &inp, "ENFORCED ROTATION");
+    printStringNoNewline(&ninp, &inp, "Enforced rotation: No or Yes");
+    ir->bRot = get_eeenum(&ninp, &inp, "rotation", yesno_names, wi);
     if (ir->bRot)
     {
         snew(ir->rot, 1);
@@ -2106,8 +2105,8 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Interactive MD */
     ir->bIMD = FALSE;
-    CCTYPE("Group to display and/or manipulate in interactive MD session");
-    STYPE ("IMD-group", is->imd_grp, nullptr);
+    printStringNewline(&ninp, &inp, "Group to display and/or manipulate in interactive MD session");
+    setStringEntry(&ninp, &inp, "IMD-group", is->imd_grp, nullptr);
     if (is->imd_grp[0] != '\0')
     {
         snew(ir->imd, 1);
@@ -2115,78 +2114,77 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Refinement */
-    CCTYPE("NMR refinement stuff");
-    CTYPE ("Distance restraints type: No, Simple or Ensemble");
-    EETYPE("disre",       ir->eDisre,     edisre_names);
-    CTYPE ("Force weighting of pairs in one distance restraint: Conservative or Equal");
-    EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names);
-    CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
-    EETYPE("disre-mixed", ir->bDisreMixed, yesno_names);
-    RTYPE ("disre-fc",    ir->dr_fc,  1000.0);
-    RTYPE ("disre-tau",   ir->dr_tau, 0.0);
-    CTYPE ("Output frequency for pair distances to energy file");
-    ITYPE ("nstdisreout", ir->nstdisreout, 100);
-    CTYPE ("Orientation restraints: No or Yes");
-    EETYPE("orire",       opts->bOrire,   yesno_names);
-    CTYPE ("Orientation restraints force constant and tau for time averaging");
-    RTYPE ("orire-fc",    ir->orires_fc,  0.0);
-    RTYPE ("orire-tau",   ir->orires_tau, 0.0);
-    STYPE ("orire-fitgrp", is->orirefitgrp,    nullptr);
-    CTYPE ("Output frequency for trace(SD) and S to energy file");
-    ITYPE ("nstorireout", ir->nstorireout, 100);
+    printStringNewline(&ninp, &inp, "NMR refinement stuff");
+    printStringNoNewline(&ninp, &inp, "Distance restraints type: No, Simple or Ensemble");
+    ir->eDisre = get_eeenum(&ninp, &inp, "disre",     edisre_names, wi);
+    printStringNoNewline(&ninp, &inp, "Force weighting of pairs in one distance restraint: Conservative or Equal");
+    ir->eDisreWeighting = get_eeenum(&ninp, &inp, "disre-weighting", edisreweighting_names, wi);
+    printStringNoNewline(&ninp, &inp, "Use sqrt of the time averaged times the instantaneous violation");
+    ir->bDisreMixed = get_eeenum(&ninp, &inp, "disre-mixed", yesno_names, wi);
+    ir->dr_fc       = get_ereal(&ninp, &inp, "disre-fc",  1000.0, wi);
+    ir->dr_tau      = get_ereal(&ninp, &inp, "disre-tau", 0.0, wi);
+    printStringNoNewline(&ninp, &inp, "Output frequency for pair distances to energy file");
+    ir->nstdisreout = get_eint(&ninp, &inp, "nstdisreout", 100, wi);
+    printStringNoNewline(&ninp, &inp, "Orientation restraints: No or Yes");
+    opts->bOrire = get_eeenum(&ninp, &inp, "orire",   yesno_names, wi);
+    printStringNoNewline(&ninp, &inp, "Orientation restraints force constant and tau for time averaging");
+    ir->orires_fc  = get_ereal(&ninp, &inp, "orire-fc",  0.0, wi);
+    ir->orires_tau = get_ereal(&ninp, &inp, "orire-tau", 0.0, wi);
+    setStringEntry(&ninp, &inp, "orire-fitgrp", is->orirefitgrp,    nullptr);
+    printStringNoNewline(&ninp, &inp, "Output frequency for trace(SD) and S to energy file");
+    ir->nstorireout = get_eint(&ninp, &inp, "nstorireout", 100, wi);
 
     /* free energy variables */
-    CCTYPE ("Free energy variables");
-    EETYPE("free-energy", ir->efep, efep_names);
-    STYPE ("couple-moltype",  is->couple_moltype,  nullptr);
-    EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
-    EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
-    EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
+    printStringNewline(&ninp, &inp, "Free energy variables");
+    ir->efep = get_eeenum(&ninp, &inp, "free-energy", efep_names, wi);
+    setStringEntry(&ninp, &inp, "couple-moltype",  is->couple_moltype,  nullptr);
+    opts->couple_lam0  = get_eeenum(&ninp, &inp, "couple-lambda0", couple_lam, wi);
+    opts->couple_lam1  = get_eeenum(&ninp, &inp, "couple-lambda1", couple_lam, wi);
+    opts->bCoupleIntra = get_eeenum(&ninp, &inp, "couple-intramol", yesno_names, wi);
 
-    RTYPE ("init-lambda", fep->init_lambda, -1); /* start with -1 so
-                                                    we can recognize if
-                                                    it was not entered */
-    ITYPE ("init-lambda-state", fep->init_fep_state, -1);
-    RTYPE ("delta-lambda", fep->delta_lambda, 0.0);
-    ITYPE ("nstdhdl", fep->nstdhdl, 50);
-    STYPE ("fep-lambdas", is->fep_lambda[efptFEP], nullptr);
-    STYPE ("mass-lambdas", is->fep_lambda[efptMASS], nullptr);
-    STYPE ("coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
-    STYPE ("vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
-    STYPE ("bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
-    STYPE ("restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
-    STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
-    ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
-    STYPE ("init-lambda-weights", is->lambda_weights, nullptr);
-    EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
-    RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
-    ITYPE ("sc-power", fep->sc_power, 1);
-    RTYPE ("sc-r-power", fep->sc_r_power, 6.0);
-    RTYPE ("sc-sigma", fep->sc_sigma, 0.3);
-    EETYPE("sc-coul", fep->bScCoul, yesno_names);
-    ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
-    RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
-    EETYPE("separate-dhdl-file", fep->separate_dhdl_file,
-           separate_dhdl_file_names);
-    EETYPE("dhdl-derivatives", fep->dhdl_derivatives, dhdl_derivatives_names);
-    ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
-    RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
+    fep->init_lambda    = get_ereal(&ninp, &inp, "init-lambda", -1, wi); /* start with -1 so
+                                                                            we can recognize if
+                                                                            it was not entered */
+    fep->init_fep_state = get_eint(&ninp, &inp, "init-lambda-state", -1, wi);
+    fep->delta_lambda   = get_ereal(&ninp, &inp, "delta-lambda", 0.0, wi);
+    fep->nstdhdl        = get_eint(&ninp, &inp, "nstdhdl", 50, wi);
+    setStringEntry(&ninp, &inp, "fep-lambdas", is->fep_lambda[efptFEP], nullptr);
+    setStringEntry(&ninp, &inp, "mass-lambdas", is->fep_lambda[efptMASS], nullptr);
+    setStringEntry(&ninp, &inp, "coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
+    setStringEntry(&ninp, &inp, "vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
+    setStringEntry(&ninp, &inp, "bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
+    setStringEntry(&ninp, &inp, "restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
+    setStringEntry(&ninp, &inp, "temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
+    fep->lambda_neighbors = get_eint(&ninp, &inp, "calc-lambda-neighbors", 1, wi);
+    setStringEntry(&ninp, &inp, "init-lambda-weights", is->lambda_weights, nullptr);
+    fep->edHdLPrintEnergy   = get_eeenum(&ninp, &inp, "dhdl-print-energy", edHdLPrintEnergy_names, wi);
+    fep->sc_alpha           = get_ereal(&ninp, &inp, "sc-alpha", 0.0, wi);
+    fep->sc_power           = get_eint(&ninp, &inp, "sc-power", 1, wi);
+    fep->sc_r_power         = get_ereal(&ninp, &inp, "sc-r-power", 6.0, wi);
+    fep->sc_sigma           = get_ereal(&ninp, &inp, "sc-sigma", 0.3, wi);
+    fep->bScCoul            = get_eeenum(&ninp, &inp, "sc-coul", yesno_names, wi);
+    fep->dh_hist_size       = get_eint(&ninp, &inp, "dh_hist_size", 0, wi);
+    fep->dh_hist_spacing    = get_ereal(&ninp, &inp, "dh_hist_spacing", 0.1, wi);
+    fep->separate_dhdl_file = get_eeenum(&ninp, &inp, "separate-dhdl-file", separate_dhdl_file_names, wi);
+    fep->dhdl_derivatives   = get_eeenum(&ninp, &inp, "dhdl-derivatives", dhdl_derivatives_names, wi);
+    fep->dh_hist_size       = get_eint(&ninp, &inp, "dh_hist_size", 0, wi);
+    fep->dh_hist_spacing    = get_ereal(&ninp, &inp, "dh_hist_spacing", 0.1, wi);
 
     /* Non-equilibrium MD stuff */
-    CCTYPE("Non-equilibrium MD stuff");
-    STYPE ("acc-grps",    is->accgrps,        nullptr);
-    STYPE ("accelerate",  is->acc,            nullptr);
-    STYPE ("freezegrps",  is->freeze,         nullptr);
-    STYPE ("freezedim",   is->frdim,          nullptr);
-    RTYPE ("cos-acceleration", ir->cos_accel, 0);
-    STYPE ("deform",      is->deform,         nullptr);
+    printStringNewline(&ninp, &inp, "Non-equilibrium MD stuff");
+    setStringEntry(&ninp, &inp, "acc-grps",    is->accgrps,        nullptr);
+    setStringEntry(&ninp, &inp, "accelerate",  is->acc,            nullptr);
+    setStringEntry(&ninp, &inp, "freezegrps",  is->freeze,         nullptr);
+    setStringEntry(&ninp, &inp, "freezedim",   is->frdim,          nullptr);
+    ir->cos_accel = get_ereal(&ninp, &inp, "cos-acceleration", 0, wi);
+    setStringEntry(&ninp, &inp, "deform",      is->deform,         nullptr);
 
     /* simulated tempering variables */
-    CCTYPE("simulated tempering variables");
-    EETYPE("simulated-tempering", ir->bSimTemp, yesno_names);
-    EETYPE("simulated-tempering-scaling", ir->simtempvals->eSimTempScale, esimtemp_names);
-    RTYPE("sim-temp-low", ir->simtempvals->simtemp_low, 300.0);
-    RTYPE("sim-temp-high", ir->simtempvals->simtemp_high, 300.0);
+    printStringNewline(&ninp, &inp, "simulated tempering variables");
+    ir->bSimTemp                   = get_eeenum(&ninp, &inp, "simulated-tempering", yesno_names, wi);
+    ir->simtempvals->eSimTempScale = get_eeenum(&ninp, &inp, "simulated-tempering-scaling", esimtemp_names, wi);
+    ir->simtempvals->simtemp_low   = get_ereal(&ninp, &inp, "sim-temp-low", 300.0, wi);
+    ir->simtempvals->simtemp_high  = get_ereal(&ninp, &inp, "sim-temp-high", 300.0, wi);
 
     /* expanded ensemble variables */
     if (ir->efep == efepEXPANDED || ir->bSimTemp)
@@ -2216,9 +2214,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */
-    CCTYPE("Ion/water position swapping for computational electrophysiology setups");
-    CTYPE("Swap positions along direction: no, X, Y, Z");
-    EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
+    printStringNewline(&ninp, &inp, "Ion/water position swapping for computational electrophysiology setups");
+    printStringNoNewline(&ninp, &inp, "Swap positions along direction: no, X, Y, Z");
+    ir->eSwapCoords = get_eeenum(&ninp, &inp, "swapcoords", eSwapTypes_names, wi);
     if (ir->eSwapCoords != eswapNO)
     {
         char buf[STRLEN];
@@ -2226,10 +2224,10 @@ void get_ir(const char *mdparin, const char *mdparout,
 
 
         snew(ir->swap, 1);
-        CTYPE("Swap attempt frequency");
-        ITYPE("swap-frequency", ir->swap->nstswap, 1);
-        CTYPE("Number of ion types to be controlled");
-        ITYPE("iontypes", nIonTypes, 1);
+        printStringNoNewline(&ninp, &inp, "Swap attempt frequency");
+        ir->swap->nstswap = get_eint(&ninp, &inp, "swap-frequency", 1, wi);
+        printStringNoNewline(&ninp, &inp, "Number of ion types to be controlled");
+        nIonTypes = get_eint(&ninp, &inp, "iontypes", 1, wi);
         if (nIonTypes < 1)
         {
             warning_error(wi, "You need to provide at least one ion type for position exchanges.");
@@ -2240,76 +2238,76 @@ void get_ir(const char *mdparin, const char *mdparout,
         {
             snew(ir->swap->grp[i].molname, STRLEN);
         }
-        CTYPE("Two index groups that contain the compartment-partitioning atoms");
-        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
-        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
-        CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
-        EETYPE("massw-split0", ir->swap->massw_split[0], yesno_names);
-        EETYPE("massw-split1", ir->swap->massw_split[1], yesno_names);
+        printStringNoNewline(&ninp, &inp, "Two index groups that contain the compartment-partitioning atoms");
+        setStringEntry(&ninp, &inp, "split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
+        setStringEntry(&ninp, &inp, "split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
+        printStringNoNewline(&ninp, &inp, "Use center of mass of split groups (yes/no), otherwise center of geometry is used");
+        ir->swap->massw_split[0] = get_eeenum(&ninp, &inp, "massw-split0", yesno_names, wi);
+        ir->swap->massw_split[1] = get_eeenum(&ninp, &inp, "massw-split1", yesno_names, wi);
 
-        CTYPE("Name of solvent molecules");
-        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
+        printStringNoNewline(&ninp, &inp, "Name of solvent molecules");
+        setStringEntry(&ninp, &inp, "solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
 
-        CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
-        CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        CTYPE("however, if correctly defined, the permeation events are recorded per channel");
-        RTYPE("cyl0-r", ir->swap->cyl0r, 2.0);
-        RTYPE("cyl0-up", ir->swap->cyl0u, 1.0);
-        RTYPE("cyl0-down", ir->swap->cyl0l, 1.0);
-        RTYPE("cyl1-r", ir->swap->cyl1r, 2.0);
-        RTYPE("cyl1-up", ir->swap->cyl1u, 1.0);
-        RTYPE("cyl1-down", ir->swap->cyl1l, 1.0);
+        printStringNoNewline(&ninp, &inp, "Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
+        printStringNoNewline(&ninp, &inp, "Note that the split cylinder settings do not have an influence on the swapping protocol,");
+        printStringNoNewline(&ninp, &inp, "however, if correctly defined, the permeation events are recorded per channel");
+        ir->swap->cyl0r = get_ereal(&ninp, &inp, "cyl0-r", 2.0, wi);
+        ir->swap->cyl0u = get_ereal(&ninp, &inp, "cyl0-up", 1.0, wi);
+        ir->swap->cyl0l = get_ereal(&ninp, &inp, "cyl0-down", 1.0, wi);
+        ir->swap->cyl1r = get_ereal(&ninp, &inp, "cyl1-r", 2.0, wi);
+        ir->swap->cyl1u = get_ereal(&ninp, &inp, "cyl1-up", 1.0, wi);
+        ir->swap->cyl1l = get_ereal(&ninp, &inp, "cyl1-down", 1.0, wi);
 
-        CTYPE("Average the number of ions per compartment over these many swap attempt steps");
-        ITYPE("coupl-steps", ir->swap->nAverage, 10);
+        printStringNoNewline(&ninp, &inp, "Average the number of ions per compartment over these many swap attempt steps");
+        ir->swap->nAverage = get_eint(&ninp, &inp, "coupl-steps", 10, wi);
 
-        CTYPE("Names of the ion types that can be exchanged with solvent molecules,");
-        CTYPE("and the requested number of ions of this type in compartments A and B");
-        CTYPE("-1 means fix the numbers as found in step 0");
+        printStringNoNewline(&ninp, &inp, "Names of the ion types that can be exchanged with solvent molecules,");
+        printStringNoNewline(&ninp, &inp, "and the requested number of ions of this type in compartments A and B");
+        printStringNoNewline(&ninp, &inp, "-1 means fix the numbers as found in step 0");
         for (i = 0; i < nIonTypes; i++)
         {
             int ig = eSwapFixedGrpNR + i;
 
             sprintf(buf, "iontype%d-name", i);
-            STYPE(buf, ir->swap->grp[ig].molname, nullptr);
+            setStringEntry(&ninp, &inp, buf, ir->swap->grp[ig].molname, nullptr);
             sprintf(buf, "iontype%d-in-A", i);
-            ITYPE(buf, ir->swap->grp[ig].nmolReq[0], -1);
+            ir->swap->grp[ig].nmolReq[0] = get_eint(&ninp, &inp, buf, -1, wi);
             sprintf(buf, "iontype%d-in-B", i);
-            ITYPE(buf, ir->swap->grp[ig].nmolReq[1], -1);
+            ir->swap->grp[ig].nmolReq[1] = get_eint(&ninp, &inp, buf, -1, wi);
         }
 
-        CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
-        CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
-        CTYPE("an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
-        CTYPE("towards one of the compartment-partitioning layers (at +/- 1.0).");
-        RTYPE("bulk-offsetA", ir->swap->bulkOffset[0], 0.0);
-        RTYPE("bulk-offsetB", ir->swap->bulkOffset[1], 0.0);
+        printStringNoNewline(&ninp, &inp, "By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
+        printStringNoNewline(&ninp, &inp, "at maximum distance (= bulk concentration) to the split group layers. However,");
+        printStringNoNewline(&ninp, &inp, "an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
+        printStringNoNewline(&ninp, &inp, "towards one of the compartment-partitioning layers (at +/- 1.0).");
+        ir->swap->bulkOffset[0] = get_ereal(&ninp, &inp, "bulk-offsetA", 0.0, wi);
+        ir->swap->bulkOffset[1] = get_ereal(&ninp, &inp, "bulk-offsetB", 0.0, wi);
         if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
             || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
         {
             warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
         }
 
-        CTYPE("Start to swap ions if threshold difference to requested count is reached");
-        RTYPE("threshold", ir->swap->threshold, 1.0);
+        printStringNoNewline(&ninp, &inp, "Start to swap ions if threshold difference to requested count is reached");
+        ir->swap->threshold = get_ereal(&ninp, &inp, "threshold", 1.0, wi);
     }
 
     /* AdResS is no longer supported, but we need grompp to be able to
        refuse to process old .mdp files that used it. */
-    EETYPE("adress", ir->bAdress, no_names);
+    ir->bAdress = get_eeenum(&ninp, &inp, "adress", no_names, wi);
 
     /* User defined thingies */
-    CCTYPE ("User defined thingies");
-    STYPE ("user1-grps",  is->user1,          nullptr);
-    STYPE ("user2-grps",  is->user2,          nullptr);
-    ITYPE ("userint1",    ir->userint1,   0);
-    ITYPE ("userint2",    ir->userint2,   0);
-    ITYPE ("userint3",    ir->userint3,   0);
-    ITYPE ("userint4",    ir->userint4,   0);
-    RTYPE ("userreal1",   ir->userreal1,  0);
-    RTYPE ("userreal2",   ir->userreal2,  0);
-    RTYPE ("userreal3",   ir->userreal3,  0);
-    RTYPE ("userreal4",   ir->userreal4,  0);
+    printStringNewline(&ninp, &inp, "User defined thingies");
+    setStringEntry(&ninp, &inp, "user1-grps",  is->user1,          nullptr);
+    setStringEntry(&ninp, &inp, "user2-grps",  is->user2,          nullptr);
+    ir->userint1  = get_eint(&ninp, &inp, "userint1",   0, wi);
+    ir->userint2  = get_eint(&ninp, &inp, "userint2",   0, wi);
+    ir->userint3  = get_eint(&ninp, &inp, "userint3",   0, wi);
+    ir->userint4  = get_eint(&ninp, &inp, "userint4",   0, wi);
+    ir->userreal1 = get_ereal(&ninp, &inp, "userreal1",  0, wi);
+    ir->userreal2 = get_ereal(&ninp, &inp, "userreal2",  0, wi);
+    ir->userreal3 = get_ereal(&ninp, &inp, "userreal3",  0, wi);
+    ir->userreal4 = get_ereal(&ninp, &inp, "userreal4",  0, wi);
 #undef CTYPE
 
     {
