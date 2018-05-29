@@ -82,12 +82,13 @@
  */
 struct gmx_tng_trajectory
 {
-    tng_trajectory_t tng;                 //!< Actual TNG handle (pointer)
-    bool             lastStepDataIsValid; //!< True if lastStep has been set
-    std::int64_t     lastStep;            //!< Index/step used for last frame
-    bool             lastTimeDataIsValid; //!< True if lastTime has been set
-    double           lastTime;            //!< Time of last frame (TNG unit is seconds)
-    bool             timePerFrameIsSet;   //!< True if we have set the time per frame
+    tng_trajectory_t tng;                      //!< Actual TNG handle (pointer)
+    bool             lastStepDataIsValid;      //!< True if lastStep has been set
+    std::int64_t     lastStep;                 //!< Index/step used for last frame
+    bool             lastTimeDataIsValid;      //!< True if lastTime has been set
+    double           lastTime;                 //!< Time of last frame (TNG unit is seconds)
+    bool             timePerFrameIsSet;        //!< True if we have set the time per frame
+    int              outputIntervalBoxLambdas; //!< Number of steps between the output of box size and lambdas
 };
 
 static const char *modeToVerb(char mode)
@@ -542,6 +543,7 @@ static void set_writing_intervals(gmx_tng_trajectory_t  gmx_tng,
         set_writing_interval(tng, gcd, 9, TNG_TRAJ_BOX_SHAPE,
                              "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
+        gmx_tng->outputIntervalBoxLambdas = gcd;
         if (gcd < lowest / 10)
         {
             gmx_warning("The lowest common denominator of trajectory output is "
@@ -1090,11 +1092,13 @@ void gmx_prepare_tng_writing(const char              *filename,
                         set_writing_interval(*output, interval, 9, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
+                        (*gmx_tng_output)->outputIntervalBoxLambdas = interval;
                         break;
                     case TNG_GMX_LAMBDA:
                         set_writing_interval(*output, interval, 1, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
+                        (*gmx_tng_output)->outputIntervalBoxLambdas = interval;
                         break;
                     default:
                         continue;
@@ -1900,5 +1904,14 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t gmx_tng_
     GMX_UNUSED_VALUE(maxLen);
     GMX_UNUSED_VALUE(bOK);
     return FALSE;
+#endif
+}
+
+int gmx_tng_get_output_interval_box_lambdas(gmx_tng_trajectory_t gmx_tng)
+{
+#if GMX_USE_TNG
+    return gmx_tng->outputIntervalBoxLambdas;
+#else
+    GMX_UNUSED_VALUE(gmx_tng);
 #endif
 }

@@ -390,6 +390,26 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                 sfree(xxtc);
             }
         }
+        if (mdof_flags & MDOF_BOX_LAMBDAS && !(mdof_flags & (MDOF_X | MDOF_V | MDOF_F)) )
+        {
+            if (of->tng)
+            {
+                gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
+                               state_local->box,
+                               top_global->natoms,
+                               nullptr, nullptr, nullptr);
+            }
+        }
+        if (mdof_flags & MDOF_BOX_LAMBDAS_COMPRESSED && !(mdof_flags & (MDOF_X_COMPRESSED)) )
+        {
+            if (of->tng_low_prec)
+            {
+                gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
+                               state_local->box,
+                               top_global->natoms,
+                               nullptr, nullptr, nullptr);
+            }
+        }
     }
 }
 
@@ -432,4 +452,21 @@ void done_mdoutf(gmx_mdoutf_t of)
     gmx_tng_close(&of->tng_low_prec);
 
     sfree(of);
+}
+
+int mdoutf_get_tng_output_interval_box_lambdas(gmx_mdoutf_t of)
+{
+    if (of->tng)
+    {
+        return gmx_tng_get_output_interval_box_lambdas(of->tng);
+    }
+    return 0;
+}
+int mdoutf_get_tng_output_interval_box_lambdas_compressed(gmx_mdoutf_t of)
+{
+    if (of->tng_low_prec)
+    {
+        return gmx_tng_get_output_interval_box_lambdas(of->tng_low_prec);
+    }
+    return 0;
 }

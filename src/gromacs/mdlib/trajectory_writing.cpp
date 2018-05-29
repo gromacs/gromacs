@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -100,6 +101,14 @@ do_md_trajectory_writing(FILE                    *fplog,
     if (bCPT)
     {
         mdof_flags |= MDOF_CPT;
+    }
+    if (do_per_step(step, mdoutf_get_tng_output_interval_box_lambdas(outf)))
+    {
+        mdof_flags |= MDOF_BOX_LAMBDAS;
+    }
+    if (do_per_step(step, mdoutf_get_tng_output_interval_box_lambdas_compressed(outf)))
+    {
+        mdof_flags |= MDOF_BOX_LAMBDAS_COMPRESSED;
     }
     ;
 
