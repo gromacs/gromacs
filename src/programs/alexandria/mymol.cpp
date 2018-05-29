@@ -1292,7 +1292,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             iter = 0;
             do
             {         
-                if (eQGEN_OK == Qgeem_.generateCharges(nullptr,
+                if (eQGEN_OK == Qgeem_.generateCharges(debug,
                                                        molProp()->getMolname().c_str(),
                                                        pd, 
                                                        &topology_->atoms,

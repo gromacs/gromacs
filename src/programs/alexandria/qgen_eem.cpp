@@ -475,7 +475,11 @@ void QgenEem::calcJcs(t_atoms *atoms,
                 Jcs_  += Jcs;
             }
         }
-        Jcs_ *= 0.5;
+        //Jcs_ *= 0.5;
+    }
+    else
+    {
+        gmx_fatal(FARGS, "atom %d must be eptAtom, but it is not\n", top_ndx);
     }
 }
 
@@ -510,6 +514,10 @@ void QgenEem::calcJss(t_atoms *atoms,
             }
         }
         Jss_ *= 0.5;
+    }
+    else
+    {
+        gmx_fatal(FARGS, "atom %d must be eptShell, but it is not\n", top_ndx);
     }
 }
 
@@ -581,7 +589,8 @@ void QgenEem::print(FILE *fp, t_atoms *atoms)
     {
         if (fp)
         {
-            fprintf(fp, "Res  Atom   Nr       J0     _chi0 row        q zeta (1/nm)\n");
+            fprintf(fp, "                                          Core                 Shell\n");
+            fprintf(fp, "Res  Atom   Nr       J0    _chi0  row   q   zeta        row    q     zeta\n");
         }
         for (i = j = 0; i < atoms->nr; i++)
         {
@@ -598,8 +607,7 @@ void QgenEem::print(FILE *fp, t_atoms *atoms)
                             *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
                     for (auto k = 0; k < nZeta_[j]; k++)
                     {
-                        fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k],
-                                zeta_[j][k]);
+                        fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k], zeta_[j][k]);
                     }
                     fprintf(fp, "\n");
                 }
@@ -608,7 +616,7 @@ void QgenEem::print(FILE *fp, t_atoms *atoms)
         }
         if (fp)
         {
-            fprintf(fp, "<chieq> = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
+            fprintf(fp, "chieq = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
                     chieq_, norm(mu), mu[XX], mu[YY], mu[ZZ]);
         }
     }
@@ -741,11 +749,11 @@ int QgenEem::generateChargesSm(FILE              *fp,
         updatePositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);     
-        if (debug)
+        if (fp)
         {
-            debugFun(debug);
+            debugFun(fp);
         }
-        solveQEem(debug);
+        solveQEem(fp);
         *chieq = chieq_;
         copyChargesToAtoms(atoms);
         print(fp, atoms);
@@ -764,11 +772,11 @@ int QgenEem::generateChargesBultinck(FILE              *fp,
         updatePositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);
-        if (debug)
+        if (fp)
         {
-            debugFun(debug);
+            debugFun(fp);
         }
-        solveQEem(debug);
+        solveQEem(fp);
         copyChargesToAtoms(atoms);
         print(fp, atoms);
     }

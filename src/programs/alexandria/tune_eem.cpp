@@ -494,27 +494,25 @@ void OptEEM::InitOpt(real  factor)
 double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
-    double         ref_chi = 0;
     const double         p = 1e2;
     const Poldata &pd      = poldata();
     
-    if (strlen(fixchi()) != 0)
-    {
-        ref_chi = pd.getChi0(iChargeDistributionModel(), fixchi());
-    }
-     
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
     auto ai_elem = pd.ztype2elem(ei->getName());
     auto ai_row  = ei->getRow(0);
     auto ai_chi  = ei->getChi0();
     auto ai_J0   = ei->getJ0();
     auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
-
-    if (ai_chi < ref_chi)
+    
+    if (strlen(fixchi()) != 0)
     {
-        penalty += p;
+        const auto ref_eem = pd.findEem(iChargeDistributionModel(), fixchi());       
+        if (ai_chi < ref_eem->getChi0())
+        {
+            penalty += p;
+        }
     }
-
+     
     auto *ic = indexCount();    
     for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
     {
