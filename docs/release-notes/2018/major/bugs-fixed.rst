@@ -251,3 +251,11 @@ number of ranks, but it's safer to ask the user to explicity set
 always worked correctly.
 
 Fixes :issue:`2348`
+
+Disallow use of empty box information in gmx solvate
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When provided with a PDB file that had no box information for the solvent,
+gmx solvate could be stuck in an infinite loop.
+Fixed by disallowing empty boxes for solvent PDB files.
+
+Fixes :issue:`2523`
