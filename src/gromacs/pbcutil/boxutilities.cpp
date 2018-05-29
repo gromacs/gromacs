@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,6 +102,16 @@ bool boxesAreEqual(const matrix box1, const matrix box2)
            && boxElementEqual(box1[ZZ][XX], box2[ZZ][XX])
            && boxElementEqual(box1[ZZ][YY], box2[ZZ][YY])
            && boxElementEqual(box1[ZZ][ZZ], box2[ZZ][ZZ]);
+}
+
+bool boxIsZero(const matrix box)
+{
+    return boxElementEqual(box[XX][XX], 0.0)
+           && boxElementEqual(box[YY][XX], 0.0)
+           && boxElementEqual(box[YY][YY], 0.0)
+           && boxElementEqual(box[ZZ][XX], 0.0)
+           && boxElementEqual(box[ZZ][YY], 0.0)
+           && boxElementEqual(box[ZZ][ZZ], 0.0);
 }
 
 } // namespace gmx
