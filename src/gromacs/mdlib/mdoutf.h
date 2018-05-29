@@ -111,11 +111,35 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 
-#define MDOF_X            (1<<0)
-#define MDOF_V            (1<<1)
-#define MDOF_F            (1<<2)
-#define MDOF_X_COMPRESSED (1<<3)
-#define MDOF_CPT          (1<<4)
-#define MDOF_IMD          (1<<5)
+/*! \brief Get the output interval of box size of uncompressed TNG output.
+ * Returns 0 if no uncompressed TNG file is open.
+ */
+int mdoutf_get_tng_box_output_interval(gmx_mdoutf_t of);
+
+/*! \brief Get the output interval of lambda of uncompressed TNG output.
+ * Returns 0 if no uncompressed TNG file is open.
+ */
+int mdoutf_get_tng_lambda_output_interval(gmx_mdoutf_t of);
+
+/*! \brief Get the output interval of box size of compressed TNG output.
+ * Returns 0 if no compressed TNG file is open.
+ */
+int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
+
+/*! \brief Get the output interval of lambda of compressed TNG output.
+ * Returns 0 if no compressed TNG file is open.
+ */
+int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
+
+#define MDOF_X                 (1<<0)
+#define MDOF_V                 (1<<1)
+#define MDOF_F                 (1<<2)
+#define MDOF_X_COMPRESSED      (1<<3)
+#define MDOF_CPT               (1<<4)
+#define MDOF_IMD               (1<<5)
+#define MDOF_BOX               (1<<6)
+#define MDOF_LAMBDA            (1<<7)
+#define MDOF_BOX_COMPRESSED    (1<<8)
+#define MDOF_LAMBDA_COMPRESSED (1<<9)
 
 #endif
