@@ -494,7 +494,7 @@ void OptEEM::InitOpt(real  factor)
 double OptEEM::calcPenalty(AtomIndexIterator ai)
 {
     double         penalty = 0;
-    const double         p = 1e2;
+    const double         p = 1e1;
     const Poldata &pd      = poldata();
     
     auto ei      = pd.findEem(iChargeDistributionModel(), ai->name());
@@ -594,7 +594,7 @@ double OptEEM::objFunction(const double v[])
     calcDeviation(); 
     increaseEnergy(ermsBOUNDS, bound);
     increaseEnergy(ermsTOT, bound);
-    //increaseEnergy(ermsTOT, penalty);
+    increaseEnergy(ermsTOT, penalty);
     return energy(ermsTOT);
 }
 
