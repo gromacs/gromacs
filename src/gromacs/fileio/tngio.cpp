@@ -82,12 +82,14 @@
  */
 struct gmx_tng_trajectory
 {
-    tng_trajectory_t tng;                 //!< Actual TNG handle (pointer)
-    bool             lastStepDataIsValid; //!< True if lastStep has been set
-    std::int64_t     lastStep;            //!< Index/step used for last frame
-    bool             lastTimeDataIsValid; //!< True if lastTime has been set
-    double           lastTime;            //!< Time of last frame (TNG unit is seconds)
-    bool             timePerFrameIsSet;   //!< True if we have set the time per frame
+    tng_trajectory_t tng;                  //!< Actual TNG handle (pointer)
+    bool             lastStepDataIsValid;  //!< True if lastStep has been set
+    std::int64_t     lastStep;             //!< Index/step used for last frame
+    bool             lastTimeDataIsValid;  //!< True if lastTime has been set
+    double           lastTime;             //!< Time of last frame (TNG unit is seconds)
+    bool             timePerFrameIsSet;    //!< True if we have set the time per frame
+    int              boxOutputInterval;    //!< Number of steps between the output of box size
+    int              lambdaOutputInterval; //!< Number of steps between the output of lambdas
 };
 
 static const char *modeToVerb(char mode)
@@ -542,6 +544,8 @@ static void set_writing_intervals(gmx_tng_trajectory_t  gmx_tng,
         set_writing_interval(tng, gcd, 9, TNG_TRAJ_BOX_SHAPE,
                              "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
+        gmx_tng->lambdaOutputInterval = gcd;
+        gmx_tng->boxOutputInterval    = gcd;
         if (gcd < lowest / 10)
         {
             gmx_warning("The lowest common denominator of trajectory output is "
@@ -928,24 +932,32 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t gmx_tng,
         }
     }
 
-    /* TNG-MF1 compression only compresses positions and velocities. Use lossless
-     * compression for lambdas and box shape regardless of output mode */
-    if (write_data(tng, step, elapsedSeconds,
-                   reinterpret_cast<const real *>(box),
-                   9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
-                   TNG_NON_PARTICLE_BLOCK_DATA,
-                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+    if (box)
     {
-        gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+        /* TNG-MF1 compression only compresses positions and velocities. Use lossless
+         * compression for box shape regardless of output mode */
+        if (write_data(tng, step, elapsedSeconds,
+                       reinterpret_cast<const real *>(box),
+                       9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
+                       TNG_NON_PARTICLE_BLOCK_DATA,
+                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+        {
+            gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+        }
     }
 
-    if (write_data(tng, step, elapsedSeconds,
-                   reinterpret_cast<const real *>(&lambda),
-                   1, TNG_GMX_LAMBDA, "LAMBDAS",
-                   TNG_NON_PARTICLE_BLOCK_DATA,
-                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+    if (lambda >= 0)
     {
-        gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+        /* TNG-MF1 compression only compresses positions and velocities. Use lossless
+         * compression for lambda regardless of output mode */
+        if (write_data(tng, step, elapsedSeconds,
+                       reinterpret_cast<const real *>(&lambda),
+                       1, TNG_GMX_LAMBDA, "LAMBDAS",
+                       TNG_NON_PARTICLE_BLOCK_DATA,
+                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+        {
+            gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+        }
     }
 
     // Update the data in the wrapper
@@ -1090,11 +1102,13 @@ void gmx_prepare_tng_writing(const char              *filename,
                         set_writing_interval(*output, interval, 9, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
+                        (*gmx_tng_output)->boxOutputInterval = interval;
                         break;
                     case TNG_GMX_LAMBDA:
                         set_writing_interval(*output, interval, 1, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
+                        (*gmx_tng_output)->lambdaOutputInterval = interval;
                         break;
                     default:
                         continue;
@@ -1900,5 +1914,23 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t gmx_tng_
     GMX_UNUSED_VALUE(maxLen);
     GMX_UNUSED_VALUE(bOK);
     return FALSE;
+#endif
+}
+
+int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng)
+{
+#if GMX_USE_TNG
+    return gmx_tng->boxOutputInterval;
+#else
+    GMX_UNUSED_VALUE(gmx_tng);
+#endif
+}
+
+int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
+{
+#if GMX_USE_TNG
+    return gmx_tng->lambdaOutputInterval;
+#else
+    GMX_UNUSED_VALUE(gmx_tng);
 #endif
 }
