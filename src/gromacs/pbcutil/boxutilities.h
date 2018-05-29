@@ -55,6 +55,11 @@ namespace gmx
  */
 bool boxesAreEqual(const matrix box1, const matrix box2);
 
+/*! \brief
+ * Returns whether a box is properly set or not.
+ */
+bool boxIsZero(const matrix box);
+
 } // namespace gmx
 
 #endif

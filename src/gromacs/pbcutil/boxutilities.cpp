@@ -104,4 +104,15 @@ bool boxesAreEqual(const matrix box1, const matrix box2)
            && boxElementEqual(box1[ZZ][ZZ], box2[ZZ][ZZ]);
 }
 
+//! Whether a box is all zeros and thus invalid
+bool boxIsZero(const matrix box)
+{
+    return boxElementEqual(box[XX][XX], 0.0)
+           && boxElementEqual(box[YY][XX], 0.0)
+           && boxElementEqual(box[YY][YY], 0.0)
+           && boxElementEqual(box[ZZ][XX], 0.0)
+           && boxElementEqual(box[ZZ][YY], 0.0)
+           && boxElementEqual(box[ZZ][ZZ], 0.0);
+}
+
 } // namespace gmx

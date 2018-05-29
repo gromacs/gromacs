@@ -654,6 +654,11 @@ static void add_solv(const char *fn, t_topology *top,
     snew(top_solvt, 1);
     readConformation(filename, top_solvt, &x_solvt, !v->empty() ? &v_solvt : nullptr,
                      &ePBC_solvt, box_solvt, "solvent");
+    if (gmx::boxIsZero(box_solvt))
+    {
+        gmx_fatal(FARGS, "No box information for solvent in %s, please use a properly formatted file\n",
+                  filename);
+    }
     t_atoms *atoms_solvt = &top_solvt->atoms;
     if (0 == atoms_solvt->nr)
     {
