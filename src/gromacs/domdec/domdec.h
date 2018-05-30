@@ -114,6 +114,9 @@ struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
 void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
                       int *jcg0, int *jcg1, ivec shift0, ivec shift1);
 
+/*! \brief Returns the number of home atoms */
+int dd_numHomeAtoms(const gmx_domdec_t &dd);
+
 /*! \brief Returns the atom range in the local state for atoms that need to be present in mdatoms */
 int dd_natoms_mdatoms(const gmx_domdec_t *dd);
 
