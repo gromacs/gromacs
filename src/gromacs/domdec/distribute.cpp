@@ -108,7 +108,8 @@ static void distributeVecSendrecv(gmx_domdec_t                   *dd,
     else
     {
 #if GMX_MPI
-        MPI_Recv(localVec.data(), dd->nat_home*sizeof(gmx::RVec), MPI_BYTE, dd->masterrank,
+        int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
+        MPI_Recv(localVec.data(), numHomeAtoms*sizeof(gmx::RVec), MPI_BYTE, dd->masterrank,
                  MPI_ANY_TAG, dd->mpi_comm_all, MPI_STATUS_IGNORE);
 #endif
     }
@@ -143,9 +144,10 @@ static void distributeVecScatterv(gmx_domdec_t                   *dd,
         }
     }
 
+    int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
     dd_scatterv(dd, sendCounts, displacements,
                 DDMASTER(dd) ? dd->ma->rvecBuffer.data() : nullptr,
-                dd->nat_home*sizeof(gmx::RVec), localVec.data());
+                numHomeAtoms*sizeof(gmx::RVec), localVec.data());
 }
 
 static void distributeVec(gmx_domdec_t                   *dd,
@@ -259,7 +261,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, const t_block *cgs,
     /* communicate df_history -- required for restarting from checkpoint */
     dd_distribute_dfhist(dd, state_local->dfhist);
 
-    dd_resize_state(state_local, f, dd->nat_home);
+    dd_resize_state(state_local, f, dd->comm->atomRanges.numHomeAtoms());
 
     if (state_local->flags & (1 << estX))
     {
@@ -460,9 +462,9 @@ static void distributeAtomGroups(FILE *fplog, gmx_domdec_t *dd,
     dd_scatter(dd, 2*sizeof(int), ibuf, buf2);
 
     dd->ncg_home = buf2[0];
-    dd->nat_home = buf2[1];
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, buf2[1]);
     dd->globalAtomGroupIndices.resize(dd->ncg_home);
-    dd->globalAtomIndices.resize(dd->nat_home);
+    dd->globalAtomIndices.resize(dd->comm->atomRanges.numHomeAtoms());
 
     if (bMaster)
     {

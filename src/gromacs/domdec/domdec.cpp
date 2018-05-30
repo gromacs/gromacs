@@ -232,9 +232,9 @@ int ddglatnr(const gmx_domdec_t *dd, int i)
     }
     else
     {
-        if (i >= dd->comm->nat[ddnatNR-1])
+        if (i >= dd->comm->atomRanges.numAtomsTotal())
         {
-            gmx_fatal(FARGS, "glatnr called with %d, which is larger than the local number of atoms (%d)", i, dd->comm->nat[ddnatNR-1]);
+            gmx_fatal(FARGS, "glatnr called with %d, which is larger than the local number of atoms (%d)", i, dd->comm->atomRanges.numAtomsTotal());
         }
         atnr = dd->globalAtomIndices[i] + 1;
     }
@@ -320,24 +320,29 @@ void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
     }
 }
 
+int dd_numHomeAtoms(const gmx_domdec_t &dd)
+{
+    return dd.comm->atomRanges.numHomeAtoms();
+}
+
 int dd_natoms_mdatoms(const gmx_domdec_t *dd)
 {
     /* We currently set mdatoms entries for all atoms:
      * local + non-local + communicated for vsite + constraints
      */
 
-    return dd->comm->nat[ddnatNR - 1];
+    return dd->comm->atomRanges.numAtomsTotal();
 }
 
 int dd_natoms_vsite(const gmx_domdec_t *dd)
 {
-    return dd->comm->nat[ddnatVSITE];
+    return dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites);
 }
 
 void dd_get_constraint_range(const gmx_domdec_t *dd, int *at_start, int *at_end)
 {
-    *at_start = dd->comm->nat[ddnatCON-1];
-    *at_end   = dd->comm->nat[ddnatCON];
+    *at_start = dd->comm->atomRanges.start(DDAtomRanges::Type::Constraints);
+    *at_end   = dd->comm->atomRanges.end(DDAtomRanges::Type::Constraints);
 }
 
 void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
@@ -357,7 +362,7 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
     buf = comm->vbuf.v;
 
     nzone   = 1;
-    nat_tot = dd->nat_home;
+    nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
     {
         bPBC   = (dd->ci[dd->dim[d]] == 0);
@@ -471,7 +476,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
     buf = comm->vbuf.v;
 
     nzone   = comm->zones.n/2;
-    nat_tot = comm->nat[ddnatZONE];
+    nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim-1; d >= 0; d--)
     {
         /* Only forces in domains near the PBC boundaries need to
@@ -588,7 +593,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
     buf = &comm->vbuf.v[0][0];
 
     nzone   = 1;
-    nat_tot = dd->nat_home;
+    nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
     {
         cd = &comm->cd[d];
@@ -652,7 +657,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
     buf = &comm->vbuf.v[0][0];
 
     nzone   = comm->zones.n/2;
-    nat_tot = comm->nat[ddnatZONE];
+    nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim-1; d >= 0; d--)
     {
         cd = &comm->cd[d];
@@ -1112,7 +1117,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     dd = cr->dd;
     if (natoms == -1)
     {
-        natoms = dd->comm->nat[ddnatVSITE];
+        natoms = dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites);
     }
 
     sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), cr->sim_nodeid);
@@ -1128,7 +1133,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
         mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         int  c;
         real b;
-        if (i < dd->comm->nat[ddnatZONE])
+        if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
             while (i >= dd->atomGroups().index[dd->comm->zones.cg_range[c+1]])
@@ -1137,7 +1142,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
             }
             b = c;
         }
-        else if (i < dd->comm->nat[ddnatVSITE])
+        else if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites))
         {
             b = dd->comm->zones.n;
         }
@@ -1518,7 +1523,7 @@ static void restoreAtomGroups(gmx_domdec_t *dd,
     atomGroups.index[atomGroupsState.size()] = atomIndex;
 
     dd->ncg_home = atomGroupsState.size();
-    dd->nat_home = atomIndex;
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, atomIndex);
 
     set_zones_ncg_home(dd);
 }
@@ -1651,7 +1656,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
 {
     int       nerr = 0;
 
-    const int numAtomsInZones = dd->comm->nat[ddnatZONE];
+    const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
 
     if (dd->comm->DD_debug > 1)
     {
@@ -1733,7 +1738,8 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
     }
     else
     {
-        for (int i = 0; i < dd->comm->nat[ddnatZONE]; i++)
+        const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
+        for (int i = 0; i < numAtomsInZones; i++)
         {
             ga2la_del(dd->ga2la, dd->globalAtomIndices[i]);
         }
@@ -3505,7 +3511,7 @@ static gmx_domdec_comm_t *init_dd_comm()
     comm->n_load_have    = 0;
     comm->n_load_collect = 0;
 
-    for (i = 0; i < ddnatNR-ddnatZONE; i++)
+    for (int i = 0; i < static_cast<int>(DDAtomRanges::Type::Number); i++)
     {
         comm->sum_nat[i] = 0;
     }
@@ -5281,7 +5287,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     comm->zone_ncg1[0] = dd->ncg_home;
     pos_cg             = dd->ncg_home;
 
-    nat_tot = dd->nat_home;
+    nat_tot = comm->atomRanges.numHomeAtoms();
     nzone   = 1;
     for (dim_ind = 0; dim_ind < dd->ndim; dim_ind++)
     {
@@ -5611,11 +5617,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         nzone += nzone;
     }
 
-    comm->nat[ddnatHOME] = dd->nat_home;
-    for (i = ddnatZONE; i < ddnatNR; i++)
-    {
-        comm->nat[i] = nat_tot;
-    }
+    comm->atomRanges.setEnd(DDAtomRanges::Type::Zones, nat_tot);
 
     if (!bBondComm)
     {
@@ -6244,7 +6246,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
         }
     }
     /* Set the home atom number */
-    dd->nat_home = dd->atomGroups().index[dd->ncg_home];
+    dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGroups().index[dd->ncg_home]);
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
@@ -6264,30 +6266,25 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
 
 static void add_dd_statistics(gmx_domdec_t *dd)
 {
-    gmx_domdec_comm_t *comm;
-    int                ddnat;
+    gmx_domdec_comm_t *comm = dd->comm;
 
-    comm = dd->comm;
-
-    for (ddnat = ddnatZONE; ddnat < ddnatNR; ddnat++)
+    for (int i = 0; i < static_cast<int>(DDAtomRanges::Type::Number); i++)
     {
-        comm->sum_nat[ddnat-ddnatZONE] +=
-            comm->nat[ddnat] - comm->nat[ddnat-1];
+        auto range = static_cast<DDAtomRanges::Type>(i);
+        comm->sum_nat[i] +=
+            comm->atomRanges.end(range) - comm->atomRanges.start(range);
     }
     comm->ndecomp++;
 }
 
 void reset_dd_statistics_counters(gmx_domdec_t *dd)
 {
-    gmx_domdec_comm_t *comm;
-    int                ddnat;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t *comm = dd->comm;
 
     /* Reset all the statistics and counters for total run counting */
-    for (ddnat = ddnatZONE; ddnat < ddnatNR; ddnat++)
+    for (int i = 0; i < static_cast<int>(DDAtomRanges::Type::Number); i++)
     {
-        comm->sum_nat[ddnat-ddnatZONE] = 0;
+        comm->sum_nat[i] = 0;
     }
     comm->ndecomp   = 0;
     comm->nload     = 0;
@@ -6301,13 +6298,10 @@ void reset_dd_statistics_counters(gmx_domdec_t *dd)
 
 void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 {
-    gmx_domdec_comm_t *comm;
-    int                ddnat;
-    double             av;
+    gmx_domdec_comm_t *comm      = cr->dd->comm;
 
-    comm = cr->dd->comm;
-
-    gmx_sumd(ddnatNR-ddnatZONE, comm->sum_nat, cr);
+    const int          numRanges = static_cast<int>(DDAtomRanges::Type::Number);
+    gmx_sumd(numRanges, comm->sum_nat, cr);
 
     if (fplog == nullptr)
     {
@@ -6316,17 +6310,18 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 
     fprintf(fplog, "\n    D O M A I N   D E C O M P O S I T I O N   S T A T I S T I C S\n\n");
 
-    for (ddnat = ddnatZONE; ddnat < ddnatNR; ddnat++)
+    for (int i = static_cast<int>(DDAtomRanges::Type::Zones); i < numRanges; i++)
     {
-        av = comm->sum_nat[ddnat-ddnatZONE]/comm->ndecomp;
-        switch (ddnat)
+        auto   range = static_cast<DDAtomRanges::Type>(i);
+        double av    = comm->sum_nat[i]/comm->ndecomp;
+        switch (range)
         {
-            case ddnatZONE:
+            case DDAtomRanges::Type::Zones:
                 fprintf(fplog,
                         " av. #atoms communicated per step for force:  %d x %.1f\n",
                         2, av);
                 break;
-            case ddnatVSITE:
+            case DDAtomRanges::Type::Vsites:
                 if (cr->dd->vsite_comm)
                 {
                     fprintf(fplog,
@@ -6335,7 +6330,7 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
                             av);
                 }
                 break;
-            case ddnatCON:
+            case DDAtomRanges::Type::Constraints:
                 if (cr->dd->constraint_comm)
                 {
                     fprintf(fplog,
@@ -6380,7 +6375,7 @@ void dd_partition_system(FILE                *fplog,
     t_block           *cgs_gl;
     gmx_int64_t        step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
-    int                i, n, ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
+    int                ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
     gmx_bool           bRedist, bSortCG, bResortAll;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
@@ -6404,7 +6399,7 @@ void dd_partition_system(FILE                *fplog,
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */
-        n = ir->nstpcouple;
+        int n = ir->nstpcouple;
         if (n == 1)
         {
             step_pcoupl = step - 1;
@@ -6613,7 +6608,7 @@ void dd_partition_system(FILE                *fplog,
                       &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
-        inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
+        inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
     }
@@ -6644,7 +6639,7 @@ void dd_partition_system(FILE                *fplog,
                       &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
-        inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
+        inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
         dd_set_cginfo(dd->globalAtomGroupIndices, 0, dd->ncg_home, fr, comm->bLocalCG);
 
@@ -6658,7 +6653,7 @@ void dd_partition_system(FILE                *fplog,
         /* We have the full state, only redistribute the cgs */
 
         /* Clear the non-home indices */
-        clearDDStateIndices(dd, dd->ncg_home, dd->nat_home);
+        clearDDStateIndices(dd, dd->ncg_home, comm->atomRanges.numHomeAtoms());
         ncgindex_set = 0;
 
         /* Avoid global communication for dim's without pbc and -gcom */
@@ -6800,7 +6795,7 @@ void dd_partition_system(FILE                *fplog,
                       bResortAll ? -1 : ncg_home_old);
 
         /* After sorting and compacting we set the correct size */
-        dd_resize_state(state_local, f, dd->nat_home);
+        dd_resize_state(state_local, f, comm->atomRanges.numHomeAtoms());
 
         /* Rebuild all the indices */
         ga2la_clear(dd->ga2la);
@@ -6837,7 +6832,7 @@ void dd_partition_system(FILE                *fplog,
     wallcycle_sub_start(wcycle, ewcsDD_MAKETOP);
 
     /* Extract a local topology from the global topology */
-    for (i = 0; i < dd->ndim; i++)
+    for (int i = 0; i < dd->ndim; i++)
     {
         np[dd->dim[i]] = comm->cd[i].np;
     }
@@ -6852,18 +6847,19 @@ void dd_partition_system(FILE                *fplog,
     wallcycle_sub_start(wcycle, ewcsDD_MAKECONSTR);
 
     /* Set up the special atom communication */
-    n = comm->nat[ddnatZONE];
-    for (i = ddnatZONE+1; i < ddnatNR; i++)
+    int n = comm->atomRanges.end(DDAtomRanges::Type::Zones);
+    for (int i = static_cast<int>(DDAtomRanges::Type::Zones) + 1; i < static_cast<int>(DDAtomRanges::Type::Number); i++)
     {
-        switch (i)
+        auto range = static_cast<DDAtomRanges::Type>(i);
+        switch (range)
         {
-            case ddnatVSITE:
+            case DDAtomRanges::Type::Vsites:
                 if (vsite && vsite->n_intercg_vsite)
                 {
                     n = dd_make_local_vsites(dd, n, top_local->idef.il);
                 }
                 break;
-            case ddnatCON:
+            case DDAtomRanges::Type::Constraints:
                 if (dd->bInterCGcons || dd->bInterCGsettles)
                 {
                     /* Only for inter-cg constraints we need special code */
@@ -6875,7 +6871,7 @@ void dd_partition_system(FILE                *fplog,
             default:
                 gmx_incons("Unknown special atom type setup");
         }
-        comm->nat[i] = n;
+        comm->atomRanges.setEnd(range, n);
     }
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKECONSTR);
@@ -6885,7 +6881,7 @@ void dd_partition_system(FILE                *fplog,
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.
      */
-    state_local->natoms = comm->nat[ddnatNR-1];
+    state_local->natoms = comm->atomRanges.numAtomsTotal();
 
     dd_resize_state(state_local, f, state_local->natoms);
 
@@ -6893,17 +6889,17 @@ void dd_partition_system(FILE                *fplog,
     {
         if (vsite && vsite->n_intercg_vsite)
         {
-            nat_f_novirsum = comm->nat[ddnatVSITE];
+            nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
         }
         else
         {
             if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0)
             {
-                nat_f_novirsum = comm->nat[ddnatZONE];
+                nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
             }
             else
             {
-                nat_f_novirsum = dd->nat_home;
+                nat_f_novirsum = comm->atomRanges.numHomeAtoms();
             }
         }
     }
@@ -6919,7 +6915,9 @@ void dd_partition_system(FILE                *fplog,
      * the complications and checking.
      */
     forcerec_set_ranges(fr, dd->ncg_home, dd->globalAtomGroupIndices.size(),
-                        comm->nat[ddnatZONE], comm->nat[ddnatCON], nat_f_novirsum);
+                        comm->atomRanges.end(DDAtomRanges::Type::Zones),
+                        comm->atomRanges.end(DDAtomRanges::Type::Constraints),
+                        nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,

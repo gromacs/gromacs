@@ -603,7 +603,7 @@ void make_local_shells(const t_commrec *cr,
     {
         dd = cr->dd;
         a0 = 0;
-        a1 = dd->nat_home;
+        a1 = dd_numHomeAtoms(*dd);
     }
     else
     {

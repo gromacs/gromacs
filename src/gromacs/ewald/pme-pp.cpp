@@ -52,6 +52,7 @@
 
 #include <cstring>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
@@ -102,7 +103,7 @@ static void gmx_pme_send_coeffs_coords(const t_commrec *cr, unsigned int flags,
     int                   n;
 
     dd = cr->dd;
-    n  = dd->nat_home;
+    n  = dd_numHomeAtoms(*dd);
 
     if (debug)
     {
@@ -372,7 +373,7 @@ void gmx_pme_receive_f(const t_commrec *cr,
         gmx_pme_send_coeffs_coords_wait(cr->dd);
     }
 
-    int natoms = cr->dd->nat_home;
+    int natoms = dd_numHomeAtoms(*cr->dd);
 
     if (natoms > cr->dd->pme_recv_f_alloc)
     {
