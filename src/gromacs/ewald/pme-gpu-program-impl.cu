@@ -45,33 +45,12 @@
 
 #include "pme-gpu-program-impl.h"
 
+#include "pme-gather.cuh"
 #include "pme-gpu-constants.h"
 #include "pme-gpu-internal.h"                    // for GridOrdering enum
 #include "pme-gpu-types-host.h"
-
-//! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
-template <
-    const int order,
-    const bool computeSplines,
-    const bool spreadCharges,
-    const bool wrapX,
-    const bool wrapY
-    >
-void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
-
-template<
-    GridOrdering gridOrdering,
-    bool computeEnergyAndVirial
-    >
-void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
-
-template <
-    const int order,
-    const bool overwriteForces,
-    const bool wrapX,
-    const bool wrapY
-    >
-void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
+#include "pme-solve.cuh"
+#include "pme-spread.cuh"
 
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
