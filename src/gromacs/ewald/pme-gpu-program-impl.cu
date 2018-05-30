@@ -77,7 +77,11 @@ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
 {
-    warpSize = warp_size;
+    // kernel parameters
+    warpSize              = warp_size;
+    spreadWorkGroupSize   = c_spreadMaxThreadsPerBlock;
+    solveMaxWorkGroupSize = c_solveMaxThreadsPerBlock;
+    gatherWorkGroupSize   = c_spreadMaxThreadsPerBlock;
 
     // PME interpolation order
     constexpr int  pmeOrder = 4;

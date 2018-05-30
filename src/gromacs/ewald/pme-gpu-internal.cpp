@@ -993,15 +993,10 @@ void pme_gpu_spread(const PmeGpu    *pmeGpu,
     const auto   *kernelParamsPtr = pmeGpu->kernelParams.get();
     GMX_ASSERT(kernelParamsPtr->atoms.nAtoms > 0, "No atom data in PME GPU spread");
 
-    const size_t threadsPerBlockKernelLimit = c_spreadMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-#if GMX_GPU == GMX_GPU_OPENCL
-    const size_t threadsPerBlockFinal = std::min(threadsPerBlockKernelLimit, pmeGpu->deviceInfo->maxWorkGroupSize);
-#else
-    const size_t threadsPerBlockFinal = threadsPerBlockKernelLimit;
-#endif
+    const size_t blockSize  = pmeGpu->programHandle_->impl_->spreadWorkGroupSize;
 
-    const int order         = pmeGpu->common->pme_order;
-    const int atomsPerBlock = threadsPerBlockFinal / PME_SPREADGATHER_THREADS_PER_ATOM;
+    const int    order         = pmeGpu->common->pme_order;
+    const int    atomsPerBlock = blockSize / PME_SPREADGATHER_THREADS_PER_ATOM;
     // TODO: pick smaller block size in runtime if needed
     // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
     // If doing so, change atomsPerBlock in the kernels as well.
@@ -1112,15 +1107,11 @@ void pme_gpu_solve(const PmeGpu *pmeGpu, t_complex *h_grid,
             GMX_ASSERT(false, "Implement grid ordering here and below for the kernel launch");
     }
 
-    const size_t threadsPerBlockKernelLimit = c_solveMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-#if GMX_GPU == GMX_GPU_OPENCL
-    const size_t threadsPerBlockFinal = std::min(threadsPerBlockKernelLimit, pmeGpu->deviceInfo->maxWorkGroupSize);
-#else
-    const size_t threadsPerBlockFinal = threadsPerBlockKernelLimit;
-#endif
+    const size_t maxBlockSize      = pmeGpu->programHandle_->impl_->solveMaxWorkGroupSize;
+
     const int    gridLineSize       = pmeGpu->kernelParams->grid.complexGridSize[minorDim];
-    const int    gridLinesPerBlock  = std::max(threadsPerBlockFinal / gridLineSize, 1UL);
-    const int    blocksPerGridLine  = (gridLineSize + threadsPerBlockFinal - 1) / threadsPerBlockFinal;
+    const int    gridLinesPerBlock  = std::max(maxBlockSize / gridLineSize, 1UL);
+    const int    blocksPerGridLine  = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
     const int    cellsPerBlock      = gridLineSize * gridLinesPerBlock;
     const size_t warpSize           = pmeGpu->programHandle_->impl_->warpSize;
     const int    blockSize          = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
@@ -1201,13 +1192,8 @@ void pme_gpu_gather(PmeGpu                *pmeGpu,
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
     }
 
-    const size_t threadsPerBlockKernelLimit = c_gatherMaxWarpsPerBlock * pmeGpu->programHandle_->impl_->warpSize;
-#if GMX_GPU == GMX_GPU_OPENCL
-    const size_t threadsPerBlockFinal = std::min(threadsPerBlockKernelLimit, pmeGpu->deviceInfo->maxWorkGroupSize);
-#else
-    const size_t threadsPerBlockFinal = threadsPerBlockKernelLimit;
-#endif
-    const int    atomsPerBlock =  threadsPerBlockFinal / PME_SPREADGATHER_THREADS_PER_ATOM;
+    const size_t blockSize     = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
+    const int    atomsPerBlock = blockSize / PME_SPREADGATHER_THREADS_PER_ATOM;
     GMX_ASSERT(!c_usePadding || !(PME_ATOM_DATA_ALIGNMENT % atomsPerBlock), "inconsistent atom data padding vs. gathering block size");
 
     const int          blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;

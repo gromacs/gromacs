@@ -72,7 +72,14 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo)
         GMX_THROW(gmx::InternalError(errorString));
     }
 
-    warpSize = gmx::ocl::getWarpSize(context, deviceId);
+    // kernel parameters
+    warpSize            = gmx::ocl::getWarpSize(context, deviceId);
+    spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize,
+                                   deviceInfo->maxWorkGroupSize);
+    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize,
+                                     deviceInfo->maxWorkGroupSize);
+    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize,
+                                   deviceInfo->maxWorkGroupSize);
 
     compileKernels(deviceInfo);
 }
@@ -109,13 +116,6 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
 
         constexpr int order = 4;
         //FIXME the spline indcies shoudl go into an inlien function like they did in CUDA kernels
-        //FIXME thsi is duplicated in pme-gpu-internal.cpp and should be a method
-        const int c_gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize,
-                                                   deviceInfo->maxWorkGroupSize);
-        const int c_spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize,
-                                                   deviceInfo->maxWorkGroupSize);
-        const int c_solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize,
-                                                     deviceInfo->maxWorkGroupSize);
 
         const std::string commonDefines = gmx::formatString(
                     "-Dwarp_size=%d "
@@ -144,9 +144,9 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t *deviceInfo)
                     c_usePadding,
                     c_skipNeutralAtoms,
                     c_virialAndEnergyCount,
-                    c_spreadWorkGroupSize,
-                    c_solveMaxWorkGroupSize,
-                    c_gatherWorkGroupSize,
+                    spreadWorkGroupSize,
+                    solveMaxWorkGroupSize,
+                    gatherWorkGroupSize,
                     DIM, XX, YY, ZZ);
         try
         {

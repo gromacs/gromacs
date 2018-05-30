@@ -35,7 +35,7 @@
 
 /*! \internal \file
  *  \brief Top-level file for generating PME OpenCL kernels.
- * This file incldues all the PME OpenCL kernel files multiple times, with additional defines.
+ * This file includes all the PME OpenCL kernel files multiple times, with additional defines.
  * Plenty of common constants/macros are also expected to be already defined by the compiler
  * (such as "order" which is PME interpolation order).
  * For details, please see how pme-program.cl is compiled in pme-gpu-program-impl-ocl.cpp.

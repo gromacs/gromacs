@@ -110,6 +110,8 @@ struct PmeGpuProgramImpl
      * Spreading kernels also have hardcoded X/Y indices wrapping parameters,
      * as a placeholder for implementing 1/2D decomposition.
      */
+    size_t          spreadWorkGroupSize;
+
     PmeKernelHandle splineKernel;
     PmeKernelHandle spreadKernel;
     PmeKernelHandle splineAndSpreadKernel;
@@ -119,6 +121,8 @@ struct PmeGpuProgramImpl
     /** Same for gather: hardcoded X/Y unwrap parameters, order of 4, plus
      * it can either reduce with previous forces in the host buffer, or ignore them.
      */
+    size_t          gatherWorkGroupSize;
+
     PmeKernelHandle gatherReduceWithInputKernel;
     PmeKernelHandle gatherKernel;
     //@}
@@ -127,6 +131,8 @@ struct PmeGpuProgramImpl
     /** Solve kernel doesn't care about the interpolation order, but can optionally
      * compute energy and virial, and supports XYZ and YZX grid orderings.
      */
+    size_t          solveMaxWorkGroupSize;
+
     PmeKernelHandle solveYZXKernel;
     PmeKernelHandle solveXYZKernel;
     PmeKernelHandle solveYZXEnergyKernel;
