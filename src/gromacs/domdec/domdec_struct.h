@@ -192,8 +192,6 @@ struct gmx_domdec_t {
     /* Local atom to local atom-group index, only used for checking bondeds */
     std::vector<int> localAtomGroupFromAtom;
 
-    /* The number of home atoms */
-    int              nat_home = 0;
     /* Index from the local atoms to the global atoms, covers home and received zones */
     std::vector<int> globalAtomIndices;
 
