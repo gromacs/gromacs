@@ -256,7 +256,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     {
         if (dd != nullptr)
         {
-            if (i >= dd->nat_home && i < dd_ac0)
+            if (i >= dd_numHomeAtoms(*dd) && i < dd_ac0)
             {
                 continue;
             }

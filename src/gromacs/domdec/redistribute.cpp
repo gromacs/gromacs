@@ -659,7 +659,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
     }
 
-    inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
+    inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
     inc_nrnb(nrnb, eNR_RESETX, dd->ncg_home);
 
     *ncg_moved = 0;
@@ -1010,12 +1010,12 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
     }
     dd->ncg_home = home_pos_cg;
-    dd->nat_home = home_pos_at;
+    comm->atomRanges.setEnd(DDAtomRanges::Type::Home, home_pos_at);
 
     if (fr->cutoff_scheme == ecutsGROUP && !bCompact)
     {
         /* We overallocated before, we need to set the right size here */
-        dd_resize_state(state, f, dd->nat_home);
+        dd_resize_state(state, f, comm->atomRanges.numHomeAtoms());
     }
 
     if (debug)

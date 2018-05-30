@@ -80,7 +80,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     {
         numAtomIndex = dd_natoms_mdatoms(cr->dd);
         atomIndex    = cr->dd->globalAtomIndices.data();
-        numHomeAtoms = cr->dd->nat_home;
+        numHomeAtoms = dd_numHomeAtoms(*cr->dd);
     }
     else
     {

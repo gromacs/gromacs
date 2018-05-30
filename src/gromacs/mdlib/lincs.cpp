@@ -2028,7 +2028,7 @@ void set_lincs(const t_idef         &idef,
         }
         else
         {
-            natoms = cr->dd->nat_home;
+            natoms = dd_numHomeAtoms(*cr->dd);
         }
     }
     else
