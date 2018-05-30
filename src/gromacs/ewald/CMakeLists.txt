@@ -53,10 +53,7 @@ gmx_add_libgromacs_sources(
 if (GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
-        pme-gather.cu
         pme-gpu-3dfft.cu
-        pme-solve.cu
-        pme-spread.cu
         pme-gpu-program-impl.cu
         # GPU-specific sources
         pme-gpu.cpp
