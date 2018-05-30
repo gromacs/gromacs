@@ -72,7 +72,7 @@ static void dd_collect_cg(gmx_domdec_t  *dd,
     {
         /* The local state and DD are in sync, use the DD indices */
         atomGroups = gmx::constArrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home);
-        nat_home   = dd->nat_home;
+        nat_home   = dd->comm->atomRanges.numHomeAtoms();
     }
     else if (state_local->ddp_count_cg_gl == state_local->ddp_count)
     {
@@ -153,7 +153,8 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t                  *dd,
     if (!DDMASTER(dd))
     {
 #if GMX_MPI
-        MPI_Send(const_cast<void *>(static_cast<const void *>(lv.data())), dd->nat_home*sizeof(rvec), MPI_BYTE,
+        const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
+        MPI_Send(const_cast<void *>(static_cast<const void *>(lv.data())), numHomeAtoms*sizeof(rvec), MPI_BYTE,
                  dd->masterrank, dd->rank, dd->mpi_comm_all);
 #endif
     }
@@ -219,7 +220,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t                  *dd,
         get_commbuffer_counts(dd->ma.get(), &recvCounts, &displacements);
     }
 
-    dd_gatherv(dd, dd->nat_home*sizeof(rvec), lv.data(), recvCounts, displacements,
+    const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
+    dd_gatherv(dd, numHomeAtoms*sizeof(rvec), lv.data(), recvCounts, displacements,
                DDMASTER(dd) ? dd->ma->rvecBuffer.data() : nullptr);
 
     if (DDMASTER(dd))

@@ -138,14 +138,74 @@ typedef struct
     int   nalloc; /**< The allocation size of \p v */
 } vec_rvec_t;
 
-/*! \brief The x-vector content order
- *
- * This enum determines the order of the coordinates.
- * ddnatHOME and ddnatZONE should be first and second,
- * the others can be ordered as wanted.
- */
-enum {
-    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
+/*! \brief Manages atom ranges and order for the local state atom vectors */
+class DDAtomRanges
+{
+    public:
+        /*! \brief The local state atom order
+         *
+         * This enum determines the order of the atoms in the local state.
+         * ddnatHOME and ddnatZONE should be first and second,
+         * the others can be ordered as wanted.
+         */
+        enum class Type : int
+        {
+            Home,        /**< The home atoms */
+            Zones,       /**< All zones in the eighth shell */
+            Vsites,      /**< Atoms communicated for virtual sites */
+            Constraints, /**< Atoms communicated for constraints */
+            Number       /**< Not a count, only present for convenience */
+        };
+
+        /*! \brief Returns the start atom index for range \p rangeType */
+        int start(Type rangeType) const
+        {
+            if (rangeType == Type::Home)
+            {
+                return 0;
+            }
+            else
+            {
+                return end_[static_cast<int>(rangeType) - 1];
+            }
+        };
+
+        /*! \brief Returns the end atom index for range \p rangeType */
+        int end(Type rangeType) const
+        {
+            return end_[static_cast<int>(rangeType)];
+        };
+
+        /*! \brief Returns the number of home atoms */
+        int numHomeAtoms() const
+        {
+            return end_[static_cast<int>(Type::Home)];
+        };
+
+        /*! \brief Returns the total number of atoms */
+        int numAtomsTotal() const
+        {
+            return end_[static_cast<int>(Type::Number) - 1];
+        }
+
+        /*! \brief Sets the end index of range \p rangeType to \p end
+         *
+         * This should be called either with Type::Home or with a type
+         * that is larger than that passed in the previous cal to setEnd.
+         * \todo: Add an assertion for this condition.
+         */
+        void setEnd(Type rangeType,
+                    int  end)
+        {
+            for (int i = static_cast<int>(rangeType); i < static_cast<int>(Type::Number); i++)
+            {
+                end_[i] = end;
+            }
+        };
+
+    private:
+        /*! \brief The list of end atom indices */
+        std::array<int, static_cast<int>(Type::Number)> end_;
 };
 
 /*! \brief Enum of dynamic load balancing states
@@ -310,8 +370,8 @@ struct gmx_domdec_comm_t
     /** The number of cg's received from the direct neighbors */
     int  zone_ncg1[DD_MAXZONE];
 
-    /** The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-    int  nat[ddnatNR];
+    /** The atom ranges in the local state */
+    DDAtomRanges atomRanges;
 
     /** Array for signalling if atoms have moved to another domain */
     int  *moved;
@@ -380,8 +440,10 @@ struct gmx_domdec_comm_t
     bool        haveTurnedOffDlb;           /**< Have we turned off DLB (after turning DLB on)? */
     gmx_int64_t dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
 
-    /* Statistics */
-    double sum_nat[ddnatNR-ddnatZONE]; /**< The atoms per zone, summed over the steps */
+    /* Statistics for atoms */
+    double sum_nat[static_cast<int>(DDAtomRanges::Type::Number)]; /**< The atoms per range, summed over the steps */
+
+    /* Statistics for calls and times */
     int    ndecomp;                    /**< The number of partioning calls */
     int    nload;                      /**< The number of load recordings */
     double load_step;                  /**< Total MD step time */
