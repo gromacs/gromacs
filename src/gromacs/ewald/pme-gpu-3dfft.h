@@ -49,10 +49,13 @@
 
 #if GMX_GPU == GMX_GPU_CUDA
 #include <cufft.h>
+
+#include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include <clFFT.h>
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/gpu_utils/gputraits_ocl.h"
 #endif
 
 #include "gromacs/fft/fft.h"        // for the enum gmx_fft_direction
@@ -74,8 +77,13 @@ class GpuParallel3dFft
         GpuParallel3dFft(const PmeGpu *pmeGpu);
         /*! \brief Destroys the FFT plans. */
         ~GpuParallel3dFft();
-        /*! \brief Performs the FFT transform in given direction */
-        void perform3dFft(gmx_fft_direction dir);
+        /*! \brief Performs the FFT transform in given direction
+         *
+         * \param[in]  dir           FFT transform direction specifier
+         * \param[out] timingEvent   pointer to the timing event where timing data is recorded
+         */
+        void perform3dFft(gmx_fft_direction  dir,
+                          CommandEvent      *timingEvent);
 
     private:
 #if GMX_GPU == GMX_GPU_CUDA
