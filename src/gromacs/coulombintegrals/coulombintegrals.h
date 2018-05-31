@@ -46,6 +46,7 @@
 #define _COULOMBINTEGRALS_H
 
 #define SLATER_MAX 3
+#define SLATER_MAX_CLN 5
 
 #ifdef __cplusplus
 extern "C" {

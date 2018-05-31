@@ -47,7 +47,7 @@
 
 #if HAVE_LIBCLN
 
-#define SLATER_MAX_CLN 4
+#define SLATER_MAX_CLN 5
 
 cl_R Nuclear_1S(cl_R r, cl_R xi)
 {
@@ -244,29 +244,29 @@ cl_R DNuclear_6S(cl_R r, cl_R xi)
 typedef cl_R t_slater_SS_func (cl_R r, cl_R xi, cl_R xj);
 typedef cl_R t_slater_NS_func (cl_R r, cl_R xi);
 t_slater_SS_func (*Slater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
-    {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S ,  Slater_1S_4S}, // Slater_1S_5S,  Slater_1S_6S},
-    {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S ,  Slater_2S_4S}, // Slater_2S_5S,  Slater_2S_6S},
-    {  Slater_3S_1S,  Slater_3S_2S,  Slater_3S_3S ,  Slater_3S_4S}, // Slater_3S_5S,  Slater_3S_6S},
-    {  Slater_4S_1S,  Slater_4S_2S,  Slater_4S_3S,   Slater_4S_4S}  //  Slater_4S_5S, Slater_4S_6S},
-    //{  Slater_5S_1S,  Slater_5S_2S,  Slater_5S_3S,   Slater_5S_4S,  Slater_5S_5S,  Slater_5S_6S},
+    {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S ,  Slater_1S_4S, Slater_1S_5S}, // Slater_1S_6S},
+    {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S ,  Slater_2S_4S, Slater_2S_5S}, // Slater_2S_6S},
+    {  Slater_3S_1S,  Slater_3S_2S,  Slater_3S_3S ,  Slater_3S_4S, Slater_3S_5S}, // Slater_3S_6S},
+    {  Slater_4S_1S,  Slater_4S_2S,  Slater_4S_3S,   Slater_4S_4S, Slater_4S_5S}, // Slater_4S_6S},
+    {  Slater_5S_1S,  Slater_5S_2S,  Slater_5S_3S,   Slater_5S_4S, Slater_5S_5S}  // Slater_5S_6S},
     //{  Slater_6S_1S,  Slater_6S_2S,  Slater_6S_3S,   Slater_6S_4S,  Slater_6S_5S,  Slater_6S_6S}
 };
 
 t_slater_SS_func (*DSlater_SS[SLATER_MAX_CLN][SLATER_MAX_CLN]) = {
-    {  DSlater_1S_1S,  DSlater_1S_2S,  DSlater_1S_3S ,  DSlater_1S_4S},//  DSlater_1S_5S, DSlater_1S_6S},
-    {  DSlater_2S_1S,  DSlater_2S_2S,  DSlater_2S_3S ,  DSlater_2S_4S},//  DSlater_2S_5S, DSlater_2S_6S},
-    {  DSlater_3S_1S,  DSlater_3S_2S,  DSlater_3S_3S ,  DSlater_3S_4S},//  DSlater_3S_5S, DSlater_3S_6S},
-    {  DSlater_4S_1S,  DSlater_4S_2S,  DSlater_4S_3S,   DSlater_4S_4S} //  DSlater_4S_5S  DSlater_4S_6S},
-    //{  DSlater_5S_1S,  DSlater_5S_2S,  DSlater_5S_3S,   DSlater_5S_4S,  DSlater_5S_5S,  DSlater_5S_6S},
+    {  DSlater_1S_1S,  DSlater_1S_2S,  DSlater_1S_3S ,  DSlater_1S_4S, DSlater_1S_5S},  //DSlater_1S_6S},
+    {  DSlater_2S_1S,  DSlater_2S_2S,  DSlater_2S_3S ,  DSlater_2S_4S, DSlater_2S_5S},  //DSlater_2S_6S},
+    {  DSlater_3S_1S,  DSlater_3S_2S,  DSlater_3S_3S ,  DSlater_3S_4S, DSlater_3S_5S},  //DSlater_3S_6S},
+    {  DSlater_4S_1S,  DSlater_4S_2S,  DSlater_4S_3S,   DSlater_4S_4S, DSlater_4S_5S},  //DSlater_4S_6S},
+    {  DSlater_5S_1S,  DSlater_5S_2S,  DSlater_5S_3S,   DSlater_5S_4S, DSlater_5S_5S}  //DSlater_5S_6S},
     //{  DSlater_6S_1S,  DSlater_6S_2S,  DSlater_6S_3S,   DSlater_6S_4S,  DSlater_6S_5S,  DSlater_6S_6S}
 };
 
 t_slater_NS_func (*Slater_NS[SLATER_MAX_CLN]) = {
-    Nuclear_1S,  Nuclear_2S,  Nuclear_3S ,  Nuclear_4S //   Nuclear_5S  Nuclear_6S
+    Nuclear_1S,  Nuclear_2S,  Nuclear_3S ,  Nuclear_4S ,   Nuclear_5S  //Nuclear_6S
 };
 
 t_slater_NS_func (*DSlater_NS[SLATER_MAX_CLN]) = {
-    DNuclear_1S,  DNuclear_2S,  DNuclear_3S ,  DNuclear_4S //  DNuclear_5S  DNuclear_6S
+    DNuclear_1S,  DNuclear_2S,  DNuclear_3S ,  DNuclear_4S,  DNuclear_5S // DNuclear_6S
 };
 
 static char *my_ftoa(double d)

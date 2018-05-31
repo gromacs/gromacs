@@ -146,6 +146,19 @@ void QgenEem::setInfo(const Poldata            &pd,
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
                              getEemtypeName(iChargeDistributionModel_));
                     GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
+                    #if HAVE_LIBCLN
+                    if (row_[j][k] > SLATER_MAX_CLN)
+                    {
+                        if (debug)
+                        {
+                            fprintf(debug, "Cannot handle higher slaters than %d for atom %s %s\n",
+                                    SLATER_MAX_CLN,
+                                    *(atoms->resinfo[i].name),
+                                    *(atoms->atomname[j]));
+                        }
+                        row_[j][k] = SLATER_MAX_CLN;
+                    }
+                    #else
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -157,6 +170,7 @@ void QgenEem::setInfo(const Poldata            &pd,
                         }
                         row_[j][k] = SLATER_MAX;
                     }
+                    #endif
                 }
                 j++;
             }

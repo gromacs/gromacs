@@ -36,7 +36,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 #include <vector>
 
@@ -783,14 +782,23 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
 {
     zindex_ = -1;
     char buf[256];
+    #if HAVE_LIBCLN
+    row_ = std::min(row_, SLATER_MAX_CLN);
+    if (row_ < row && debug)
+    {
+        fprintf(debug, "Reducing row from %d to %d\n", row, row_);
+    }
+    snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)", row_, SLATER_MAX_CLN);
+    GMX_RELEASE_ASSERT(row_ <= SLATER_MAX_CLN, buf);
+    #else
     row_ = std::min(row_, SLATER_MAX);
     if (row_ < row && debug)
     {
         fprintf(debug, "Reducing row from %d to %d\n", row, row_);
     }
-    snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)",
-             row_, SLATER_MAX);
+    snprintf(buf, sizeof(buf), "Row (%d) is bigger than Slater Max (%d)", row_, SLATER_MAX);
     GMX_RELEASE_ASSERT(row_ <= SLATER_MAX, buf);
+    #endif
     fixedQ_ = (q != 0);
 }
 
