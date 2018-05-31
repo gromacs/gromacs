@@ -56,30 +56,33 @@ struct t_commrec;
 
 struct BalanceRegion;
 
-typedef struct
+struct gmx_domdec_ind_t
 {
     /* The numbers of charge groups to send and receive for each cell
      * that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
      */
-    int  nsend[DD_MAXIZONE+2];
-    int  nrecv[DD_MAXIZONE+2];
-    /* The charge groups to send */
-    int *index;
-    int  nalloc;
+    int              nsend[DD_MAXIZONE+2];
+    int              nrecv[DD_MAXIZONE+2];
+    /* The atom groups to send */
+    std::vector<int> index;
     /* The atom range for non-in-place communication */
-    int  cell2at0[DD_MAXIZONE];
-    int  cell2at1[DD_MAXIZONE];
-} gmx_domdec_ind_t;
+    int              cell2at0[DD_MAXIZONE];
+    int              cell2at1[DD_MAXIZONE];
+};
 
-typedef struct
+struct gmx_domdec_comm_dim_t
 {
-    int               np;       /* Number of grid pulses in this dimension */
-    int               np_dlb;   /* For dlb, for use with edlbAUTO          */
-    gmx_domdec_ind_t *ind;      /* The indices to communicate, size np     */
-    int               np_nalloc;
-    gmx_bool          bInPlace; /* Can we communicate in place?            */
-} gmx_domdec_comm_dim_t;
+    /* Returns the number of grid pulses (the number of domains in the halo along this dimension */
+    int numPulses() const
+    {
+        return ind.size();
+    }
+
+    int                           np_dlb;   /* For dlb, for use with edlbAUTO          */
+    std::vector<gmx_domdec_ind_t> ind;      /* The indices to communicate, size np     */
+    gmx_bool                      bInPlace; /* Can we communicate in place?            */
+};
 
 /*! \brief Struct for load balancing along a dim on the root rank of that dim */
 typedef struct
@@ -130,13 +133,6 @@ typedef struct
     int          *ibuf;             /**< Integer buffer used for sorting */
     int           ibuf_nalloc;      /**< Number of elements allocated in the buffer */
 } gmx_domdec_sort_t;
-
-/*! \brief rvec array with allocation size, used for DD communication */
-typedef struct
-{
-    rvec *v;      /**< The rvec array              */
-    int   nalloc; /**< The allocation size of \p v */
-} vec_rvec_t;
 
 /*! \brief Manages atom ranges and order for the local state atom vectors */
 class DDAtomRanges
@@ -256,16 +252,101 @@ typedef struct
     real p1_1;    /* The top value of the first cell in this zone           */
 } gmx_ddzone_t;
 
-typedef struct
+/*! \brief Forward declaration */
+template<typename T> class DDBufferAccess;
+
+/*! \brief Temporary storage container that minimizes (re)allocation and clearing
+ *
+ * This is only the storage, actual access happens through DDBufferAccess.
+ * All methods check if the buffer is (not) in use.
+ */
+template<typename T>
+class DDBuffer
 {
-    gmx_domdec_ind_t ind;
-    int             *ibuf;
-    int              ibuf_nalloc;
-    vec_rvec_t       vbuf;
-    int              nsend;
-    int              nat;
-    int              nsend_zone;
-} dd_comm_setup_work_t;
+    private:
+        /*! \brief Returns a buffer of size \p numElements, does not clear elements */
+        gmx::ArrayRef<T> resize(size_t numElements)
+        {
+            GMX_ASSERT(isInUse_, "Should only operate on acquired buffers");
+
+            if (numElements > buffer_.size())
+            {
+                buffer_.resize(numElements);
+            }
+
+            return gmx::arrayRefFromArray(buffer_.data(), numElements);
+        }
+
+        /*! \brief Acquire the buffer for use with size set to \p numElements, does not clear elements */
+        gmx::ArrayRef<T> acquire(size_t numElements)
+        {
+            GMX_RELEASE_ASSERT(!isInUse_, "Should only request free buffers");
+            isInUse_ = true;
+
+            return resize(numElements);
+        }
+
+        /*! \brief Releases the buffer, it can no longer be used */
+        void release()
+        {
+            GMX_RELEASE_ASSERT(isInUse_, "Should only release buffers in use");
+            isInUse_ = false;
+        }
+
+        std::vector<T> buffer_;          /**< The actual memory buffer */
+        bool           isInUse_ = false; /**< Flag that tells whether the buffer is in use */
+
+        friend class DDBufferAccess<T>;
+};
+
+/*! \brief Class that manages access to a temporary memory buffer */
+template<typename T>
+class DDBufferAccess
+{
+    public:
+        /*! \brief Constructor, returns a buffer of size \p numElements, elements are not cleared
+         *
+         * \note The actual memory buffer \p ddBuffer can not be used to
+         *       create other DDBufferAccess objects until the one created
+         *       here is destroyed.
+         */
+        DDBufferAccess(DDBuffer<T> &ddBuffer,
+                       size_t       numElements) :
+            ddBuffer_(ddBuffer)
+        {
+            buffer = ddBuffer_.acquire(numElements);
+        }
+
+        /*! \brief Destructor */
+        ~DDBufferAccess()
+        {
+            ddBuffer_.release();
+        }
+
+        /*! \brief Resizes the buffer to \p numElements, does not clear elements
+         *
+         * \note The buffer arrayref is updated after this call.
+         */
+        void resize(size_t numElements)
+        {
+            buffer = ddBuffer_.resize(numElements);
+        }
+
+    private:
+        DDBuffer<T>      &ddBuffer_; /**< Reference to the storage class */
+    public:
+        gmx::ArrayRef<T>  buffer;    /**< The access to the memory buffer */
+};
+
+struct dd_comm_setup_work_t
+{
+    std::vector<int>       localAtomGroupBuffer;
+    std::vector<int>       atomGroupBuffer;
+    std::vector<gmx::RVec> positionBuffer;
+    int                    nsend;
+    int                    nat;
+    int                    nsend_zone;
+};
 
 /*! \brief Struct for domain decomposition communication
  *
@@ -317,7 +398,7 @@ struct gmx_domdec_comm_t
     /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
     /* The first DD count since we are running without DLB */
-    int      ddPartioningCountFirstDlbOff;
+    int      ddPartioningCountFirstDlbOff = 0;
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
@@ -374,30 +455,23 @@ struct gmx_domdec_comm_t
     DDAtomRanges atomRanges;
 
     /** Array for signalling if atoms have moved to another domain */
-    int  *moved;
-    int   moved_nalloc;                /**< Allocation size for \p moved */
+    std::vector<int> movedBuffer;
 
     /** Communication int buffer for general use */
-    int  *buf_int;
-    int   nalloc_int;                  /**< Allocation size for \p buf_int */
+    DDBuffer<int> intBuffer;
 
     /** Communication rvec buffer for general use */
-    vec_rvec_t vbuf;
+    DDBuffer<gmx::RVec> rvecBuffer;
 
     /* Temporary storage for thread parallel communication setup */
-    int                   nth;         /**< The number of threads to be used */
-    dd_comm_setup_work_t *dth;         /**< Thread-local work data */
+    std::vector<dd_comm_setup_work_t> dth; /**< Thread-local work data */
 
-    /* Communication buffers only used with multiple grid pulses */
-    int       *buf_int2;               /**< Another integer comm. buffer */
-    int        nalloc_int2;            /**< Allocation size of \p buf_int2 */
-    vec_rvec_t vbuf2;                  /**< Another rvec comm. buffer */
+    /* Communication buffer only used with multiple grid pulses */
+    DDBuffer<gmx::RVec> rvecBuffer2; /**< Another rvec comm. buffer */
 
     /* Communication buffers for local redistribution */
-    int  **cggl_flag;                  /**< Charge group flag comm. buffers */
-    int    cggl_flag_nalloc[DIM*2];    /**< Allocation sizes of \p *cggl_flag */
-    rvec **cgcm_state;                 /**< Charge group center comm. buffers */
-    int    cgcm_state_nalloc[DIM*2];   /**< Allocation sizes of \p *ccgm_state */
+    std::array<std::vector<int>, DIM*2>       cggl_flag;  /**< Charge group flag comm. buffers */
+    std::array<std::vector<gmx::RVec>, DIM*2> cgcm_state; /**< Charge group center comm. buffers */
 
     /* Cell sizes for dynamic load balancing */
     domdec_root_t **root;              /**< Cell row root struct pointer, per dd DIM */

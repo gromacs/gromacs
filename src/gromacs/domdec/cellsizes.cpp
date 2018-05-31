@@ -169,7 +169,7 @@ real grid_jump_limit(const gmx_domdec_comm_t *comm,
             cutoff = std::max(cutoff, comm->PMELoadBal_max_cutoff);
         }
         grid_jump_limit = std::max(grid_jump_limit,
-                                   cutoff/comm->cd[dim_ind].np);
+                                   cutoff/comm->cd[dim_ind].numPulses());
     }
 
     return grid_jump_limit;
@@ -872,33 +872,23 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 
 static void realloc_comm_ind(gmx_domdec_t *dd, ivec npulse)
 {
-    int                    d, np, i;
-    gmx_domdec_comm_dim_t *cd;
-
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        cd = &dd->comm->cd[d];
-        np = npulse[dd->dim[d]];
-        if (np > cd->np_nalloc)
+        gmx_domdec_comm_dim_t *cd        = &dd->comm->cd[d];
+        int                    numPulses = npulse[dd->dim[d]];
+        if (static_cast<size_t>(numPulses) > cd->ind.size())
         {
             if (debug)
             {
                 fprintf(debug, "(Re)allocing cd for %c to %d pulses\n",
-                        dim2char(dd->dim[d]), np);
+                        dim2char(dd->dim[d]), numPulses);
             }
-            if (DDMASTER(dd) && cd->np_nalloc > 0)
+            if (DDMASTER(dd) && cd->ind.size() > 0)
             {
-                fprintf(stderr, "\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n", dim2char(dd->dim[d]), np);
+                fprintf(stderr, "\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n", dim2char(dd->dim[d]), numPulses);
             }
-            srenew(cd->ind, np);
-            for (i = cd->np_nalloc; i < np; i++)
-            {
-                cd->ind[i].index  = nullptr;
-                cd->ind[i].nalloc = 0;
-            }
-            cd->np_nalloc = np;
         }
-        cd->np = np;
+        cd->ind.resize(numPulses);
     }
 }
 
