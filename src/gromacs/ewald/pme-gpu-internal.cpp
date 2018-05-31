@@ -412,8 +412,10 @@ void pme_gpu_reinit_atoms(PmeGpu *pmeGpu, const int nAtoms, const real *charges)
 
 void pme_gpu_3dfft(const PmeGpu *pmeGpu, gmx_fft_direction dir, int grid_index)
 {
-    int timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
+    int   timerId = (dir == GMX_FFT_REAL_TO_COMPLEX) ? gtPME_FFT_R2C : gtPME_FFT_C2R;
+
+    auto *timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timerId);
     pme_gpu_start_timing(pmeGpu, timerId);
-    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir);
+    pmeGpu->archSpecific->fftSetup[grid_index]->perform3dFft(dir, timingEvent);
     pme_gpu_stop_timing(pmeGpu, timerId);
 }
