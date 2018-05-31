@@ -336,16 +336,26 @@ static void rotate_state_atom(t_state *state, int a)
     }
 }
 
-static int *get_moved(gmx_domdec_comm_t *comm, int natoms)
+/* Returns a pointer to a buffer of size \p numAtomsNew with contents 0 from numAtomsOld upwards
+ *
+ * Note: numAtomsOld should either be 0 or match the current buffer size.
+ */
+static int *getMovedBuffer(gmx_domdec_comm_t *comm,
+                           size_t             numAtomsOld,
+                           size_t             numAtomsNew)
 {
-    if (natoms > comm->moved_nalloc)
-    {
-        /* Contents should be preserved here */
-        comm->moved_nalloc = over_alloc_dd(natoms);
-        srenew(comm->moved, comm->moved_nalloc);
-    }
+    std::vector<int> &movedBuffer = comm->movedBuffer;
 
-    return comm->moved;
+    GMX_RELEASE_ASSERT(numAtomsOld == 0 || movedBuffer.size() == numAtomsOld, "numAtomsOld should either be 0 or match the current size");
+
+    /* Contents up to numAtomsOld should be preserved, clear from numAtomsOld */
+    if (numAtomsOld == 0)
+    {
+        movedBuffer.clear();
+    }
+    movedBuffer.resize(numAtomsNew);
+
+    return movedBuffer.data();
 }
 
 static void calc_cg_move(FILE *fplog, gmx_int64_t step,
@@ -537,11 +547,10 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     int               *move;
     int                npbcdim;
     int                ncg[DIM*2] = { 0 }, nat[DIM*2] = { 0 };
-    int                i, cg, k, d, dim, dim2, dir, d2, d3;
-    int                mc, cdd, nrcg, ncg_recv, nvs, nvr, nvec, vec;
+    int                i, cg, d, dim, dim2, dir, d2, d3;
+    int                mc, cdd, nrcg, ncg_recv, nvs, nvec, vec;
     int                sbuf[2], rbuf[2];
     int                home_pos_cg, home_pos_at, buf_pos;
-    int                flag;
     real               pos_d;
     matrix             tcm;
     rvec              *cg_cm = nullptr, cell_x0, cell_x1, limitd, limit0, limit1;
@@ -565,12 +574,8 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     bool bV   = state->flags & (1<<estV);
     bool bCGP = state->flags & (1<<estCGP);
 
-    if (dd->globalAtomGroupIndices.size() > static_cast<size_t>(comm->nalloc_int))
-    {
-        comm->nalloc_int = over_alloc_dd(dd->globalAtomGroupIndices.size());
-        srenew(comm->buf_int, comm->nalloc_int);
-    }
-    move = comm->buf_int;
+    DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->globalAtomGroupIndices.size());
+    move = moveBuffer.buffer.data();
 
     npbcdim = dd->npbcdim;
 
@@ -638,22 +643,24 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         if (move[cg] >= 0)
         {
             mc       = move[cg];
-            flag     = mc & ~DD_FLAG_NRCG;
+            int flag = mc & ~DD_FLAG_NRCG;
             mc       = mc & DD_FLAG_NRCG;
             move[cg] = mc;
 
-            if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc])
+            std::vector<int> &cggl_flag = comm->cggl_flag[mc];
+
+            /* TODO: See if we can use push_back instead */
+            if (static_cast<size_t>((ncg[mc] + 1)*DD_CGIBS) > cggl_flag.size())
             {
-                comm->cggl_flag_nalloc[mc] = over_alloc_dd(ncg[mc]+1);
-                srenew(comm->cggl_flag[mc], comm->cggl_flag_nalloc[mc]*DD_CGIBS);
+                cggl_flag.resize((ncg[mc] + 1)*DD_CGIBS);
             }
-            comm->cggl_flag[mc][ncg[mc]*DD_CGIBS  ] = dd->globalAtomGroupIndices[cg];
+            cggl_flag[ncg[mc]*DD_CGIBS  ] = dd->globalAtomGroupIndices[cg];
             /* We store the cg size in the lower 16 bits
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
             nrcg = atomGroups.index[cg+1] - atomGroups.index[cg];
-            comm->cggl_flag[mc][ncg[mc]*DD_CGIBS+1] = nrcg | flag;
+            cggl_flag[ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
         }
@@ -681,11 +688,10 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     /* Make sure the communication buffers are large enough */
     for (mc = 0; mc < dd->ndim*2; mc++)
     {
-        nvr = ncg[mc] + nat[mc]*nvec;
-        if (nvr > comm->cgcm_state_nalloc[mc])
+        size_t nvr = ncg[mc] + nat[mc]*nvec;
+        if (nvr > comm->cgcm_state[mc].size())
         {
-            comm->cgcm_state_nalloc[mc] = over_alloc_dd(nvr);
-            srenew(comm->cgcm_state[mc], comm->cgcm_state_nalloc[mc]);
+            comm->cgcm_state[mc].resize(nvr);
         }
     }
 
@@ -746,12 +752,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     {
         if (fr->cutoff_scheme == ecutsVERLET)
         {
-            moved = get_moved(comm, dd->ncg_home);
-
-            for (k = 0; k < dd->ncg_home; k++)
-            {
-                moved[k] = 0;
-            }
+            moved = getMovedBuffer(comm, 0, dd->ncg_home);
         }
         else
         {
@@ -768,14 +769,19 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     dd->globalAtomGroupIndices.resize(home_pos_cg);
     dd->atomGroups_.index.resize(home_pos_cg + 1);
 
+    /* We reuse the intBuffer without reacquiring since we are in the same scope */
+    DDBufferAccess<int> &flagBuffer = moveBuffer;
+
     cginfo_mb = fr->cginfo_mb;
 
     *ncg_stay_home = home_pos_cg;
     for (d = 0; d < dd->ndim; d++)
     {
+        DDBufferAccess<gmx::RVec> rvecBuffer(comm->rvecBuffer, 0);
+
         dim      = dd->dim[d];
         ncg_recv = 0;
-        nvr      = 0;
+        int nvr  = 0;
         for (dir = 0; dir < (dd->nc[dim] == 2 ? 1 : 2); dir++)
         {
             cdd = d*2 + dir;
@@ -789,25 +795,21 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             }
             dd_sendrecv_int(dd, d, dir, sbuf, 2, rbuf, 2);
 
-            if ((ncg_recv+rbuf[0])*DD_CGIBS > comm->nalloc_int)
-            {
-                comm->nalloc_int = over_alloc_dd((ncg_recv+rbuf[0])*DD_CGIBS);
-                srenew(comm->buf_int, comm->nalloc_int);
-            }
+            flagBuffer.ensureSize((ncg_recv + rbuf[0])*DD_CGIBS);
 
             /* Communicate the charge group indices, sizes and flags */
             dd_sendrecv_int(dd, d, dir,
-                            comm->cggl_flag[cdd], sbuf[0]*DD_CGIBS,
-                            comm->buf_int+ncg_recv*DD_CGIBS, rbuf[0]*DD_CGIBS);
+                            comm->cggl_flag[cdd].data(), sbuf[0]*DD_CGIBS,
+                            flagBuffer.buffer.data() + ncg_recv*DD_CGIBS, rbuf[0]*DD_CGIBS);
 
             nvs = ncg[cdd] + nat[cdd]*nvec;
             i   = rbuf[0]  + rbuf[1] *nvec;
-            vec_rvec_check_alloc(&comm->vbuf, nvr+i);
+            rvecBuffer.ensureSize(nvr + i);
 
             /* Communicate cgcm and state */
             dd_sendrecv_rvec(dd, d, dir,
-                             comm->cgcm_state[cdd], nvs,
-                             comm->vbuf.v+nvr, i);
+                             as_rvec_array(comm->cgcm_state[cdd].data()), nvs,
+                             as_rvec_array(rvecBuffer.buffer.data()) + nvr, i);
             ncg_recv += rbuf[0];
             nvr      += i;
         }
@@ -823,24 +825,25 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         buf_pos = 0;
         for (cg = 0; cg < ncg_recv; cg++)
         {
-            flag = comm->buf_int[cg*DD_CGIBS+1];
+            int   flag = flagBuffer.buffer[cg*DD_CGIBS + 1];
+            rvec &pos  = as_rvec_array(rvecBuffer.buffer.data())[buf_pos];
 
             if (dim >= npbcdim && dd->nc[dim] > 2)
             {
+                rvec &pos = as_rvec_array(rvecBuffer.buffer.data())[buf_pos];
+
                 /* No pbc in this dim and more than one domain boundary.
                  * We do a separate check if a charge group didn't move too far.
                  */
                 if (((flag & DD_FLAG_FW(d)) &&
-                     comm->vbuf.v[buf_pos][dim] > cell_x1[dim]) ||
+                     pos[dim] > cell_x1[dim]) ||
                     ((flag & DD_FLAG_BW(d)) &&
-                     comm->vbuf.v[buf_pos][dim] < cell_x0[dim]))
+                     pos[dim] < cell_x0[dim]))
                 {
                     cg_move_error(fplog, dd, step, cg, dim,
                                   (flag & DD_FLAG_FW(d)) ? 1 : 0,
                                   fr->cutoff_scheme == ecutsGROUP, 0,
-                                  comm->vbuf.v[buf_pos],
-                                  comm->vbuf.v[buf_pos],
-                                  comm->vbuf.v[buf_pos][dim]);
+                                  pos, pos, pos[dim]);
                 }
             }
 
@@ -872,13 +875,12 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                             /* Determine the location of this cg
                              * in lattice coordinates
                              */
-                            pos_d = comm->vbuf.v[buf_pos][dim2];
+                            pos_d = rvecBuffer.buffer[buf_pos][dim2];
                             if (tric_dir[dim2])
                             {
                                 for (d3 = dim2+1; d3 < DIM; d3++)
                                 {
-                                    pos_d +=
-                                        comm->vbuf.v[buf_pos][d3]*tcm[d3][dim2];
+                                    pos_d += pos[d3]*tcm[d3][dim2];
                                 }
                             }
 
@@ -899,7 +901,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                             {
                                 flag |= DD_FLAG_BW(d2);
                             }
-                            comm->buf_int[cg*DD_CGIBS+1] = flag;
+                            flagBuffer.buffer[cg*DD_CGIBS + 1] = flag;
                         }
                     }
                     /* Set to which neighboring cell this cg should go */
@@ -925,14 +927,14 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             if (mc == -1)
             {
                 /* Set the global charge group index and size */
-                const int globalAtomGroupIndex = comm->buf_int[cg*DD_CGIBS];
+                const int globalAtomGroupIndex = flagBuffer.buffer[cg*DD_CGIBS];
                 dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
                 dd->atomGroups_.index.push_back(dd->atomGroups_.index[home_pos_cg] + nrcg);
                 /* Copy the state from the buffer */
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {
                     cg_cm = fr->cg_cm;
-                    copy_rvec(comm->vbuf.v[buf_pos], cg_cm[home_pos_cg]);
+                    copy_rvec(pos, cg_cm[home_pos_cg]);
                 }
                 buf_pos++;
 
@@ -944,16 +946,17 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                     comm->bLocalCG[globalAtomGroupIndex] = TRUE;
                 }
 
+                rvec *rvecPtr = as_rvec_array(rvecBuffer.buffer.data());
                 for (i = 0; i < nrcg; i++)
                 {
-                    copy_rvec(comm->vbuf.v[buf_pos++],
+                    copy_rvec(rvecPtr[buf_pos++],
                               state->x[home_pos_at+i]);
                 }
                 if (bV)
                 {
                     for (i = 0; i < nrcg; i++)
                     {
-                        copy_rvec(comm->vbuf.v[buf_pos++],
+                        copy_rvec(rvecPtr[buf_pos++],
                                   state->v[home_pos_at+i]);
                     }
                 }
@@ -961,7 +964,7 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 {
                     for (i = 0; i < nrcg; i++)
                     {
-                        copy_rvec(comm->vbuf.v[buf_pos++],
+                        copy_rvec(rvecPtr[buf_pos++],
                                   state->cg_p[home_pos_at+i]);
                     }
                 }
@@ -971,24 +974,22 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             else
             {
                 /* Reallocate the buffers if necessary  */
-                if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc])
+                if (static_cast<size_t>((ncg[mc] + 1)*DD_CGIBS) > comm->cggl_flag[mc].size())
                 {
-                    comm->cggl_flag_nalloc[mc] = over_alloc_dd(ncg[mc]+1);
-                    srenew(comm->cggl_flag[mc], comm->cggl_flag_nalloc[mc]*DD_CGIBS);
+                    comm->cggl_flag[mc].resize((ncg[mc] + 1)*DD_CGIBS);
                 }
-                nvr = ncg[mc] + nat[mc]*nvec;
-                if (nvr + 1 + nrcg*nvec > comm->cgcm_state_nalloc[mc])
+                size_t nvr = ncg[mc] + nat[mc]*nvec;
+                if (nvr + 1 + nrcg*nvec > comm->cgcm_state[mc].size())
                 {
-                    comm->cgcm_state_nalloc[mc] = over_alloc_dd(nvr + 1 + nrcg*nvec);
-                    srenew(comm->cgcm_state[mc], comm->cgcm_state_nalloc[mc]);
+                    comm->cgcm_state[mc].resize(nvr + 1 + nrcg*nvec);
                 }
                 /* Copy from the receive to the send buffers */
-                memcpy(comm->cggl_flag[mc] + ncg[mc]*DD_CGIBS,
-                       comm->buf_int + cg*DD_CGIBS,
+                memcpy(comm->cggl_flag[mc].data() + ncg[mc]*DD_CGIBS,
+                       flagBuffer.buffer.data() + cg*DD_CGIBS,
                        DD_CGIBS*sizeof(int));
                 memcpy(comm->cgcm_state[mc][nvr],
-                       comm->vbuf.v[buf_pos],
-                       (1+nrcg*nvec)*sizeof(rvec));
+                       rvecBuffer.buffer.data() + buf_pos,
+                       (1 + nrcg*nvec)*sizeof(rvec));
                 buf_pos += 1 + nrcg*nvec;
                 ncg[mc] += 1;
                 nat[mc] += nrcg;
@@ -1002,13 +1003,9 @@ void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
      */
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        moved = get_moved(comm, home_pos_cg);
-
-        for (i = dd->ncg_home; i < home_pos_cg; i++)
-        {
-            moved[i] = 0;
-        }
+        moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
     }
+
     dd->ncg_home = home_pos_cg;
     comm->atomRanges.setEnd(DDAtomRanges::Type::Home, home_pos_at);
 
