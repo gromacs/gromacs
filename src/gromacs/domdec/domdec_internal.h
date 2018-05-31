@@ -188,20 +188,25 @@ class DDAtomRanges
          *
          * This should be called either with Type::Home or with a type
          * that is larger than that passed in the previous cal to setEnd.
-         * \todo: Add an assertion for this condition.
+         * Release assertion for these conditions are present.
          */
         void setEnd(Type rangeType,
                     int  end)
         {
+            GMX_RELEASE_ASSERT(rangeType == Type::Home || rangeType > lastTypeSet_, "Can only set either home or a larger type than the last one");
+
             for (int i = static_cast<int>(rangeType); i < static_cast<int>(Type::Number); i++)
             {
                 end_[i] = end;
             }
+
+            lastTypeSet_ = rangeType;
         };
 
     private:
         /*! \brief The list of end atom indices */
         std::array<int, static_cast<int>(Type::Number)> end_;
+        Type                                            lastTypeSet_ = Type::Number;
 };
 
 /*! \brief Enum of dynamic load balancing states
