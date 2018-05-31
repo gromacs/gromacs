@@ -247,12 +247,6 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
     return &dd->comm->cgs_gl;
 }
 
-static void vec_rvec_init(vec_rvec_t *v)
-{
-    v->nalloc = 0;
-    v->v      = nullptr;
-}
-
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
 {
     int i;
@@ -352,14 +346,12 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
     int                    nzone, nat_tot;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_comm_dim_t *cd;
-    rvec                   shift = {0, 0, 0}, *buf, *rbuf;
+    rvec                   shift = {0, 0, 0}, *rbuf;
     gmx_bool               bPBC, bScrew;
 
     comm = dd->comm;
 
     const BlockRanges &atomGroups = dd->atomGroups();
-
-    buf = comm->vbuf.v;
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
@@ -372,14 +364,15 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
             copy_rvec(box[dd->dim[d]], shift);
         }
         cd = &comm->cd[d];
-        for (int p = 0; p < cd->np; p++)
+        for (const gmx_domdec_ind_t &ind : cd->ind)
         {
-            const gmx_domdec_ind_t *ind   = &cd->ind[p];
-            const int              *index = ind->index;
-            int                     n     = 0;
+            gmx::ArrayRef<const int>   index = ind.index;
+            DDBufferAccess<gmx::RVec>  rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
+            rvec                      *buf   = as_rvec_array(rvecBuf.buffer.data());
+            int                        n     = 0;
             if (!bPBC)
             {
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i] + 1];
@@ -392,7 +385,7 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
             }
             else if (!bScrew)
             {
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i] + 1];
@@ -406,7 +399,7 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
             }
             else
             {
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i]+1];
@@ -425,31 +418,33 @@ void dd_move_x(gmx_domdec_t *dd, matrix box, rvec x[], gmx_wallcycle *wcycle)
                 }
             }
 
-            if (cd->bInPlace)
+            DDBufferAccess<gmx::RVec> rvecBuffer2(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
+
+            if (cd->receiveInPlace)
             {
                 rbuf = x + nat_tot;
             }
             else
             {
-                rbuf = comm->vbuf2.v;
+                rbuf = as_rvec_array(rvecBuffer2.buffer.data());
             }
             /* Send and receive the coordinates */
             dd_sendrecv_rvec(dd, d, dddirBackward,
-                             buf,  ind->nsend[nzone+1],
-                             rbuf, ind->nrecv[nzone+1]);
-            if (!cd->bInPlace)
+                             buf,  ind.nsend[nzone+1],
+                             rbuf, ind.nrecv[nzone+1]);
+            if (!cd->receiveInPlace)
             {
                 int j = 0;
                 for (int zone = 0; zone < nzone; zone++)
                 {
-                    for (int i = ind->cell2at0[zone]; i < ind->cell2at1[zone]; i++)
+                    for (int i = ind.cell2at0[zone]; i < ind.cell2at1[zone]; i++)
                     {
                         copy_rvec(rbuf[j], x[i]);
                         j++;
                     }
                 }
             }
-            nat_tot += ind->nrecv[nzone+1];
+            nat_tot += ind.nrecv[nzone+1];
         }
         nzone += nzone;
     }
@@ -464,7 +459,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
     int                    nzone, nat_tot;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_comm_dim_t *cd;
-    rvec                  *buf, *sbuf;
+    rvec                  *sbuf;
     ivec                   vis;
     int                    is;
     gmx_bool               bShiftForcesNeedPbc, bScrew;
@@ -472,8 +467,6 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
     comm = dd->comm;
 
     const BlockRanges &atomGroups = dd->atomGroups();
-
-    buf = comm->vbuf.v;
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
@@ -493,21 +486,26 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
         is              = IVEC2IS(vis);
 
         cd = &comm->cd[d];
-        for (int p = cd->np-1; p >= 0; p--)
+        for (int p = cd->numPulses() - 1; p >= 0; p--)
         {
-            const gmx_domdec_ind_t *ind  = &cd->ind[p];
-            nat_tot                     -= ind->nrecv[nzone+1];
-            if (cd->bInPlace)
+            const gmx_domdec_ind_t    &ind  = cd->ind[p];
+            DDBufferAccess<gmx::RVec>  rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
+            rvec                      *buf  = as_rvec_array(rvecBuf.buffer.data());
+            nat_tot                        -= ind.nrecv[nzone+1];
+
+            DDBufferAccess<gmx::RVec>  rvecBuf2(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
+
+            if (cd->receiveInPlace)
             {
                 sbuf = f + nat_tot;
             }
             else
             {
-                sbuf  = comm->vbuf2.v;
+                sbuf  = as_rvec_array(rvecBuf2.buffer.data());
                 int j = 0;
                 for (int zone = 0; zone < nzone; zone++)
                 {
-                    for (int i = ind->cell2at0[zone]; i < ind->cell2at1[zone]; i++)
+                    for (int i = ind.cell2at0[zone]; i < ind.cell2at1[zone]; i++)
                     {
                         copy_rvec(f[i], sbuf[j]);
                         j++;
@@ -516,14 +514,14 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
             }
             /* Communicate the forces */
             dd_sendrecv_rvec(dd, d, dddirForward,
-                             sbuf, ind->nrecv[nzone+1],
-                             buf,  ind->nsend[nzone+1]);
-            const int *index = ind->index;
+                             sbuf, ind.nrecv[nzone+1],
+                             buf,  ind.nsend[nzone+1]);
+            gmx::ArrayRef<const int> index = ind.index;
             /* Add the received forces */
-            int        n = 0;
+            int                      n = 0;
             if (!bShiftForcesNeedPbc)
             {
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i] + 1];
@@ -539,7 +537,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
                 /* fshift should always be defined if this function is
                  * called when bShiftForcesNeedPbc is true */
                 assert(NULL != fshift);
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i] + 1];
@@ -554,7 +552,7 @@ void dd_move_f(gmx_domdec_t *dd, rvec f[], rvec *fshift, gmx_wallcycle *wcycle)
             }
             else
             {
-                for (int i = 0; i < ind->nsend[nzone]; i++)
+                for (int i = 0; i < ind.nsend[nzone]; i++)
                 {
                     int at0 = atomGroups.index[index[i]];
                     int at1 = atomGroups.index[index[i] + 1];
@@ -584,25 +582,24 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
     int                    nzone, nat_tot;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_comm_dim_t *cd;
-    real                  *buf, *rbuf;
+    real                  *rbuf;
 
     comm = dd->comm;
 
     const BlockRanges &atomGroups = dd->atomGroups();
-
-    buf = &comm->vbuf.v[0][0];
 
     nzone   = 1;
     nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
     {
         cd = &comm->cd[d];
-        for (int p = 0; p < cd->np; p++)
+        for (const gmx_domdec_ind_t &ind : cd->ind)
         {
-            const gmx_domdec_ind_t *ind   = &cd->ind[p];
-            const int              *index = ind->index;
-            int                     n     = 0;
-            for (int i = 0; i < ind->nsend[nzone]; i++)
+            gmx::ArrayRef<const int>    index = ind.index;
+            DDBufferAccess<gmx::RVec>   rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
+            real                       *buf  = as_rvec_array(rvecBuf.buffer.data())[0];
+            int                         n    = 0;
+            for (int i = 0; i < ind.nsend[nzone]; i++)
             {
                 int at0 = atomGroups.index[index[i]];
                 int at1 = atomGroups.index[index[i] + 1];
@@ -613,31 +610,37 @@ void dd_atom_spread_real(gmx_domdec_t *dd, real v[])
                 }
             }
 
-            if (cd->bInPlace)
+            /* Note: We provision for RVec instead of real, so a factor of 3
+             * more than needed. The buffer actually already has this size
+             * and we pass a plain pointer below, so this does not matter.
+             */
+            DDBufferAccess<gmx::RVec> rvecBuffer2(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
+
+            if (cd->receiveInPlace)
             {
                 rbuf = v + nat_tot;
             }
             else
             {
-                rbuf = &comm->vbuf2.v[0][0];
+                rbuf = as_rvec_array(rvecBuffer2.buffer.data())[0];
             }
-            /* Send and receive the coordinates */
+            /* Send and receive the data */
             dd_sendrecv_real(dd, d, dddirBackward,
-                             buf,  ind->nsend[nzone+1],
-                             rbuf, ind->nrecv[nzone+1]);
-            if (!cd->bInPlace)
+                             buf,  ind.nsend[nzone + 1],
+                             rbuf, ind.nrecv[nzone + 1]);
+            if (!cd->receiveInPlace)
             {
                 int j = 0;
                 for (int zone = 0; zone < nzone; zone++)
                 {
-                    for (int i = ind->cell2at0[zone]; i < ind->cell2at1[zone]; i++)
+                    for (int i = ind.cell2at0[zone]; i < ind.cell2at1[zone]; i++)
                     {
                         v[i] = rbuf[j];
                         j++;
                     }
                 }
             }
-            nat_tot += ind->nrecv[nzone+1];
+            nat_tot += ind.nrecv[nzone+1];
         }
         nzone += nzone;
     }
@@ -648,34 +651,41 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
     int                    nzone, nat_tot;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_comm_dim_t *cd;
-    real                  *buf, *sbuf;
+    real                  *sbuf;
 
     comm = dd->comm;
 
     const gmx::BlockRanges &atomGroups = dd->atomGroups();
-
-    buf = &comm->vbuf.v[0][0];
 
     nzone   = comm->zones.n/2;
     nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim-1; d >= 0; d--)
     {
         cd = &comm->cd[d];
-        for (int p = cd->np-1; p >= 0; p--)
+        for (int p = cd->numPulses() - 1; p >= 0; p--)
         {
-            const gmx_domdec_ind_t *ind  = &cd->ind[p];
-            nat_tot                     -= ind->nrecv[nzone+1];
-            if (cd->bInPlace)
+            const gmx_domdec_ind_t   &ind  = cd->ind[p];
+            DDBufferAccess<gmx::RVec> rvecBuf(comm->rvecBuffer, ind.nsend[nzone + 1]);
+            real                     *buf  = as_rvec_array(rvecBuf.buffer.data())[0];
+            nat_tot                       -= ind.nrecv[nzone + 1];
+
+            /* Note: real we provision for RVec instead of real, so a factor
+             * of 3 more than needed. The buffer actually already has this
+             * size and we pass a plain pointer below, so this does not matter.
+             */
+            DDBufferAccess<gmx::RVec> rvecBuffer2(comm->rvecBuffer2, cd->receiveInPlace ? 0 : ind.nrecv[nzone + 1]);
+
+            if (cd->receiveInPlace)
             {
                 sbuf = v + nat_tot;
             }
             else
             {
-                sbuf  = &comm->vbuf2.v[0][0];
+                sbuf  = as_rvec_array(rvecBuffer2.buffer.data())[0];
                 int j = 0;
                 for (int zone = 0; zone < nzone; zone++)
                 {
-                    for (int i = ind->cell2at0[zone]; i < ind->cell2at1[zone]; i++)
+                    for (int i = ind.cell2at0[zone]; i < ind.cell2at1[zone]; i++)
                     {
                         sbuf[j] = v[i];
                         j++;
@@ -684,12 +694,12 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[])
             }
             /* Communicate the forces */
             dd_sendrecv_real(dd, d, dddirForward,
-                             sbuf, ind->nrecv[nzone+1],
-                             buf,  ind->nsend[nzone+1]);
-            const int *index = ind->index;
+                             sbuf, ind.nrecv[nzone + 1],
+                             buf,  ind.nsend[nzone + 1]);
+            gmx::ArrayRef<const int> index = ind.index;
             /* Add the received forces */
-            int        n = 0;
-            for (int i = 0; i < ind->nsend[nzone]; i++)
+            int                      n = 0;
+            for (int i = 0; i < ind.nsend[nzone]; i++)
             {
                 int at0 = atomGroups.index[index[i]];
                 int at1 = atomGroups.index[index[i] + 1];
@@ -829,7 +839,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         /* We only need to communicate the extremes
          * in the forward direction
          */
-        npulse = comm->cd[d].np;
+        npulse = comm->cd[d].numPulses();
         if (bPBC)
         {
             /* Take the minimum to avoid double communication */
@@ -3491,22 +3501,7 @@ static void set_dd_dim(FILE *fplog, gmx_domdec_t *dd)
 
 static gmx_domdec_comm_t *init_dd_comm()
 {
-    gmx_domdec_comm_t *comm;
-    int                i;
-
-    snew(comm, 1);
-    snew(comm->cggl_flag, DIM*2);
-    snew(comm->cgcm_state, DIM*2);
-    for (i = 0; i < DIM*2; i++)
-    {
-        comm->cggl_flag_nalloc[i]  = 0;
-        comm->cgcm_state_nalloc[i] = 0;
-    }
-
-    comm->nalloc_int = 0;
-    comm->buf_int    = nullptr;
-
-    vec_rvec_init(&comm->vbuf);
+    gmx_domdec_comm_t *comm = new gmx_domdec_comm_t;
 
     comm->n_load_have    = 0;
     comm->n_load_collect = 0;
@@ -3543,9 +3538,6 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     real               r_bonded_limit   = -1;
     const real         tenPercentMargin = 1.1;
     gmx_domdec_comm_t *comm             = dd->comm;
-
-    snew(comm->cggl_flag, DIM*2);
-    snew(comm->cgcm_state, DIM*2);
 
     dd->npbcdim   = ePBC2npbcdim(ir->ePBC);
     dd->bScrewPBC = (ir->ePBC == epbcSCREW);
@@ -3919,11 +3911,11 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 static void set_dlb_limits(gmx_domdec_t *dd)
 
 {
-    int d;
-
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dd->comm->cd[d].np                 = dd->comm->cd[d].np_dlb;
+        /* Set the number of pulses to the value for DLB */
+        dd->comm->cd[d].ind.resize(dd->comm->cd[d].np_dlb);
+
         dd->comm->cellsize_min[dd->dim[d]] =
             dd->comm->cellsize_min_dlb[dd->dim[d]];
     }
@@ -4250,9 +4242,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     for (d = 0; d < dd->ndim; d++)
     {
         comm->cd[d].np_dlb    = std::min(npulse, dd->nc[dd->dim[d]]-1);
-        comm->cd[d].np_nalloc = comm->cd[d].np_dlb;
-        snew(comm->cd[d].ind, comm->cd[d].np_nalloc);
-        comm->maxpulse = std::max(comm->maxpulse, comm->cd[d].np_dlb);
+        comm->maxpulse        = std::max(comm->maxpulse, comm->cd[d].np_dlb);
         if (comm->cd[d].np_dlb < dd->nc[dd->dim[d]]-1)
         {
             comm->bVacDLBNoLimit = FALSE;
@@ -4463,9 +4453,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc_dd(TRUE);
-
-    /* We currently don't know the number of threads yet, we set this later */
-    dd->comm->nth = 0;
 
     clear_dd_cycle_counts(dd);
 
@@ -4766,18 +4753,16 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t *cd,
                                int                    cg0,
                                const BlockRanges     &atomGroups)
 {
-    int cg, zone, p;
-
     /* Store the atom block boundaries for easy copying of communication buffers
      */
-    cg = cg0;
-    for (zone = 0; zone < nzone; zone++)
+    int cg = cg0;
+    for (int zone = 0; zone < nzone; zone++)
     {
-        for (p = 0; p < cd->np; p++)
+        for (gmx_domdec_ind_t &ind : cd->ind)
         {
-            cd->ind[p].cell2at0[zone] = atomGroups.index[cg];
-            cg += cd->ind[p].nrecv[zone];
-            cd->ind[p].cell2at1[zone] = atomGroups.index[cg];
+            ind.cell2at0[zone]  = atomGroups.index[cg];
+            cg                 += ind.nrecv[zone];
+            ind.cell2at1[zone]  = atomGroups.index[cg];
         }
     }
 }
@@ -4907,7 +4892,9 @@ set_dd_corners(const gmx_domdec_t *dd,
     }
 }
 
-/* Determine which cg's we need to send in this pulse from this zone */
+/* Add the atom groups we need to send in this pulse from this zone to
+ * \p localAtomGroups and \p work
+ */
 static void
 get_zone_pulse_cgs(gmx_domdec_t *dd,
                    int zonei, int zone,
@@ -4930,12 +4917,8 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                    gmx_bool bDistMB,
                    rvec *cg_cm,
                    int *cginfo,
-                   gmx_domdec_ind_t *ind,
-                   int **ibuf, int *ibuf_nalloc,
-                   vec_rvec_t *vbuf,
-                   int *nsend_ptr,
-                   int *nat_ptr,
-                   int *nsend_z_ptr)
+                   std::vector<int>     *localAtomGroups,
+                   dd_comm_setup_work_t *work)
 {
     gmx_domdec_comm_t *comm;
     gmx_bool           bScrew;
@@ -4944,7 +4927,7 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
     real               r2, rb2, r, tric_sh;
     rvec               rn, rb;
     int                dimd;
-    int                nsend_z, nsend, nat;
+    int                nsend_z, nat;
 
     comm = dd->comm;
 
@@ -4952,9 +4935,11 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
 
     bDistMB_pulse = (bDistMB && bDistBonded);
 
-    nsend_z = 0;
-    nsend   = *nsend_ptr;
-    nat     = *nat_ptr;
+    /* Unpack the work data */
+    std::vector<int>       &ibuf = work->atomGroupBuffer;
+    std::vector<gmx::RVec> &vbuf = work->positionBuffer;
+    nsend_z                      = 0;
+    nat                          = work->nat;
 
     for (cg = cg0; cg < cg1; cg++)
     {
@@ -5134,44 +5119,43 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
                missing_link(comm->cglink, globalAtomGroupIndices[cg],
                             comm->bLocalCG)))))
         {
-            /* Make an index to the local charge groups */
-            if (nsend+1 > ind->nalloc)
-            {
-                ind->nalloc = over_alloc_large(nsend+1);
-                srenew(ind->index, ind->nalloc);
-            }
-            if (nsend+1 > *ibuf_nalloc)
-            {
-                *ibuf_nalloc = over_alloc_large(nsend+1);
-                srenew(*ibuf, *ibuf_nalloc);
-            }
-            ind->index[nsend] = cg;
-            (*ibuf)[nsend]    = globalAtomGroupIndices[cg];
+            /* Store the local and global atom group indices and position */
+            localAtomGroups->push_back(cg);
+            ibuf.push_back(globalAtomGroupIndices[cg]);
             nsend_z++;
-            vec_rvec_check_alloc(vbuf, nsend+1);
 
+            rvec posPbc;
             if (dd->ci[dim] == 0)
             {
                 /* Correct cg_cm for pbc */
-                rvec_add(cg_cm[cg], box[dim], vbuf->v[nsend]);
+                rvec_add(cg_cm[cg], box[dim], posPbc);
                 if (bScrew)
                 {
-                    vbuf->v[nsend][YY] = box[YY][YY] - vbuf->v[nsend][YY];
-                    vbuf->v[nsend][ZZ] = box[ZZ][ZZ] - vbuf->v[nsend][ZZ];
+                    posPbc[YY] = box[YY][YY] - posPbc[YY];
+                    posPbc[ZZ] = box[ZZ][ZZ] - posPbc[ZZ];
                 }
             }
             else
             {
-                copy_rvec(cg_cm[cg], vbuf->v[nsend]);
+                copy_rvec(cg_cm[cg], posPbc);
             }
-            nsend++;
+            vbuf.emplace_back(posPbc[XX], posPbc[YY], posPbc[ZZ]);
+
             nat += atomGroups.index[cg+1] - atomGroups.index[cg];
         }
     }
 
-    *nsend_ptr   = nsend;
-    *nat_ptr     = nat;
-    *nsend_z_ptr = nsend_z;
+    work->nat        = nat;
+    work->nsend_zone = nsend_z;
+}
+
+static void clearCommSetupData(dd_comm_setup_work_t *work)
+{
+    work->localAtomGroupBuffer.clear();
+    work->atomGroupBuffer.clear();
+    work->positionBuffer.clear();
+    work->nat        = 0;
+    work->nsend_zone = 0;
 }
 
 static void setup_dd_communication(gmx_domdec_t *dd,
@@ -5179,14 +5163,13 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                    t_forcerec *fr,
                                    t_state *state, PaddedRVecVector *f)
 {
-    int                    dim_ind, dim, dim0, dim1, dim2, dimd, p, nat_tot;
+    int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
     int                    c, i, cg, cg_gl, nrcg;
     int                   *zone_cg_range, pos_cg;
     gmx_domdec_comm_t     *comm;
     gmx_domdec_zones_t    *zones;
     gmx_domdec_comm_dim_t *cd;
-    gmx_domdec_ind_t      *ind;
     cginfo_mb_t           *cginfo_mb;
     gmx_bool               bBondComm, bDist2B, bDistMB, bDistBonded;
     real                   r_comm2, r_bcomm2;
@@ -5194,8 +5177,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     rvec                  *cg_cm, *normal, *v_d, *v_0 = nullptr, *v_1 = nullptr, *recv_vr;
     real                   skew_fac2_d, skew_fac_01;
     rvec                   sf2_round;
-    int                    nsend, nat;
-    int                    th;
 
     if (debug)
     {
@@ -5204,17 +5185,14 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 
     comm  = dd->comm;
 
-    if (comm->nth == 0)
+    if (comm->dth.empty())
     {
         /* Initialize the thread data.
          * This can not be done in init_domain_decomposition,
          * as the numbers of threads is determined later.
          */
-        comm->nth = gmx_omp_nthreads_get(emntDomdec);
-        if (comm->nth > 1)
-        {
-            snew(comm->dth, comm->nth);
-        }
+        int numThreads = gmx_omp_nthreads_get(emntDomdec);
+        comm->dth.resize(numThreads);
     }
 
     switch (fr->cutoff_scheme)
@@ -5314,20 +5292,23 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             nzone_send = nzone;
         }
 
-        v_d         = ddbox->v[dim];
-        skew_fac2_d = gmx::square(ddbox->skew_fac[dim]);
+        v_d                = ddbox->v[dim];
+        skew_fac2_d        = gmx::square(ddbox->skew_fac[dim]);
 
-        cd->bInPlace = TRUE;
-        for (p = 0; p < cd->np; p++)
+        cd->receiveInPlace = true;
+        for (int p = 0; p < cd->numPulses(); p++)
         {
             /* Only atoms communicated in the first pulse are used
              * for multi-body bonded interactions or for bBondComm.
              */
             bDistBonded = ((bDistMB || bDist2B) && p == 0);
 
-            ind   = &cd->ind[p];
-            nsend = 0;
-            nat   = 0;
+            gmx_domdec_ind_t *ind = &cd->ind[p];
+
+            /* Thread 0 writes in the global index array */
+            ind->index.clear();
+            clearCommSetupData(&comm->dth[0]);
+
             for (zone = 0; zone < nzone_send; zone++)
             {
                 if (dim_ind > 0 && distanceIsTriclinic)
@@ -5377,55 +5358,22 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     cg0 = cg1 - cd->ind[p-1].nrecv[zone];
                 }
 
-#pragma omp parallel for num_threads(comm->nth) schedule(static)
-                for (th = 0; th < comm->nth; th++)
+                const int numThreads = static_cast<int>(comm->dth.size());
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+                for (int th = 0; th < numThreads; th++)
                 {
                     try
                     {
-                        gmx_domdec_ind_t *ind_p;
-                        int             **ibuf_p, *ibuf_nalloc_p;
-                        vec_rvec_t       *vbuf_p;
-                        int              *nsend_p, *nat_p;
-                        int              *nsend_zone_p;
-                        int               cg0_th, cg1_th;
+                        dd_comm_setup_work_t &work = comm->dth[th];
 
-                        if (th == 0)
+                        /* Retain data accumulated into buffers of thread 0 */
+                        if (th > 0)
                         {
-                            /* Thread 0 writes in the comm buffers */
-                            ind_p         = ind;
-                            ibuf_p        = &comm->buf_int;
-                            ibuf_nalloc_p = &comm->nalloc_int;
-                            vbuf_p        = &comm->vbuf;
-                            nsend_p       = &nsend;
-                            nat_p         = &nat;
-                            nsend_zone_p  = &ind->nsend[zone];
-                        }
-                        else
-                        {
-                            /* Other threads write into temp buffers */
-                            ind_p         = &comm->dth[th].ind;
-                            ibuf_p        = &comm->dth[th].ibuf;
-                            ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
-                            vbuf_p        = &comm->dth[th].vbuf;
-                            nsend_p       = &comm->dth[th].nsend;
-                            nat_p         = &comm->dth[th].nat;
-                            nsend_zone_p  = &comm->dth[th].nsend_zone;
-
-                            comm->dth[th].nsend      = 0;
-                            comm->dth[th].nat        = 0;
-                            comm->dth[th].nsend_zone = 0;
+                            clearCommSetupData(&work);
                         }
 
-                        if (comm->nth == 1)
-                        {
-                            cg0_th = cg0;
-                            cg1_th = cg1;
-                        }
-                        else
-                        {
-                            cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
-                            cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
-                        }
+                        int cg0_th = cg0 + ((cg1 - cg0)* th   )/numThreads;
+                        int cg1_th = cg0 + ((cg1 - cg0)*(th+1))/numThreads;
 
                         /* Get the cg's for this pulse in this zone */
                         get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
@@ -5439,50 +5387,25 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                            bDistBonded, bBondComm,
                                            bDist2B, bDistMB,
                                            cg_cm, fr->cginfo,
-                                           ind_p,
-                                           ibuf_p, ibuf_nalloc_p,
-                                           vbuf_p,
-                                           nsend_p, nat_p,
-                                           nsend_zone_p);
+                                           th == 0 ? &ind->index : &work.localAtomGroupBuffer,
+                                           &work);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 } // END
 
+                std::vector<int>       &atomGroups = comm->dth[0].atomGroupBuffer;
+                std::vector<gmx::RVec> &positions  = comm->dth[0].positionBuffer;
+                ind->nsend[zone]  = comm->dth[0].nsend_zone;
                 /* Append data of threads>=1 to the communication buffers */
-                for (th = 1; th < comm->nth; th++)
+                for (int th = 1; th < numThreads; th++)
                 {
-                    dd_comm_setup_work_t *dth;
-                    int                   i, ns1;
+                    const dd_comm_setup_work_t &dth = comm->dth[th];
 
-                    dth = &comm->dth[th];
-
-                    ns1 = nsend + dth->nsend_zone;
-                    if (ns1 > ind->nalloc)
-                    {
-                        ind->nalloc = over_alloc_dd(ns1);
-                        srenew(ind->index, ind->nalloc);
-                    }
-                    if (ns1 > comm->nalloc_int)
-                    {
-                        comm->nalloc_int = over_alloc_dd(ns1);
-                        srenew(comm->buf_int, comm->nalloc_int);
-                    }
-                    if (ns1 > comm->vbuf.nalloc)
-                    {
-                        comm->vbuf.nalloc = over_alloc_dd(ns1);
-                        srenew(comm->vbuf.v, comm->vbuf.nalloc);
-                    }
-
-                    for (i = 0; i < dth->nsend_zone; i++)
-                    {
-                        ind->index[nsend]    = dth->ind.index[i];
-                        comm->buf_int[nsend] = dth->ibuf[i];
-                        copy_rvec(dth->vbuf.v[i],
-                                  comm->vbuf.v[nsend]);
-                        nsend++;
-                    }
-                    nat              += dth->nat;
-                    ind->nsend[zone] += dth->nsend_zone;
+                    ind->index.insert(ind->index.end(), dth.localAtomGroupBuffer.begin(), dth.localAtomGroupBuffer.end());
+                    atomGroups.insert(atomGroups.end(), dth.atomGroupBuffer.begin(), dth.atomGroupBuffer.end());
+                    positions.insert(positions.end(), dth.positionBuffer.begin(), dth.positionBuffer.end());
+                    comm->dth[0].nat += dth.nat;
+                    ind->nsend[zone] += dth.nsend_zone;
                 }
             }
             /* Clear the counts in case we do not have pbc */
@@ -5490,17 +5413,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             {
                 ind->nsend[zone] = 0;
             }
-            ind->nsend[nzone]   = nsend;
-            ind->nsend[nzone+1] = nat;
+            ind->nsend[nzone]     = ind->index.size();
+            ind->nsend[nzone + 1] = comm->dth[0].nat;
             /* Communicate the number of cg's and atoms to receive */
             dd_sendrecv_int(dd, dim_ind, dddirBackward,
                             ind->nsend, nzone+2,
                             ind->nrecv, nzone+2);
-
-            /* The rvec buffer is also required for atom buffers of size nsend
-             * in dd_move_x and dd_move_f.
-             */
-            vec_rvec_check_alloc(&comm->vbuf, ind->nsend[nzone+1]);
 
             if (p > 0)
             {
@@ -5509,24 +5427,27 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                 {
                     if (ind->nrecv[zone] > 0)
                     {
-                        cd->bInPlace = FALSE;
+                        cd->receiveInPlace = FALSE;
                     }
-                }
-                if (!cd->bInPlace)
-                {
-                    /* The int buffer is only required here for the cg indices */
-                    if (ind->nrecv[nzone] > comm->nalloc_int2)
-                    {
-                        comm->nalloc_int2 = over_alloc_dd(ind->nrecv[nzone]);
-                        srenew(comm->buf_int2, comm->nalloc_int2);
-                    }
-                    /* The rvec buffer is also required for atom buffers
-                     * of size nrecv in dd_move_x and dd_move_f.
-                     */
-                    i = std::max(cd->ind[0].nrecv[nzone+1], ind->nrecv[nzone+1]);
-                    vec_rvec_check_alloc(&comm->vbuf2, i);
                 }
             }
+
+            int globalAtomGroupIndexSize = 0;
+            int rvecBufferSize           = 0;
+            if (!cd->receiveInPlace)
+            {
+                globalAtomGroupIndexSize = ind->nrecv[nzone];
+                /* The rvec buffer is also required for atom buffers
+                 * of size nrecv in dd_move_x and dd_move_f.
+                 */
+                rvecBufferSize = std::max(cd->ind[0].nrecv[nzone + 1],
+                                          ind->nrecv[nzone + 1]);
+            }
+            /* These buffer are actually only needed with in-place */
+            DDBufferAccess<int>       globalAtomGroupBuffer(comm->intBuffer, globalAtomGroupIndexSize);
+            DDBufferAccess<gmx::RVec> rvecBuffer(comm->rvecBuffer, rvecBufferSize);
+
+            dd_comm_setup_work_t     &work = comm->dth[0];
 
             /* Make space for the global cg indices */
             int numAtomGroupsNew = pos_cg + ind->nrecv[nzone];
@@ -5534,16 +5455,16 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             dd->atomGroups_.index.resize(numAtomGroupsNew + 1);
             /* Communicate the global cg indices */
             int *recv_i;
-            if (cd->bInPlace)
+            if (cd->receiveInPlace)
             {
-                recv_i =  dd->globalAtomGroupIndices.data() + pos_cg;
+                recv_i = dd->globalAtomGroupIndices.data() + pos_cg;
             }
             else
             {
-                recv_i = comm->buf_int2;
+                recv_i = globalAtomGroupBuffer.buffer.data();
             }
             dd_sendrecv_int(dd, dim_ind, dddirBackward,
-                            comm->buf_int, nsend,
+                            work.atomGroupBuffer.data(), work.atomGroupBuffer.size(),
                             recv_i,        ind->nrecv[nzone]);
 
             /* Make space for cg_cm */
@@ -5557,20 +5478,20 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                 cg_cm = as_rvec_array(state->x.data());
             }
             /* Communicate cg_cm */
-            if (cd->bInPlace)
+            if (cd->receiveInPlace)
             {
                 recv_vr = cg_cm + pos_cg;
             }
             else
             {
-                recv_vr = comm->vbuf2.v;
+                recv_vr = as_rvec_array(rvecBuffer.buffer.data());
             }
             dd_sendrecv_rvec(dd, dim_ind, dddirBackward,
-                             comm->vbuf.v, nsend,
+                             as_rvec_array(work.positionBuffer.data()), work.positionBuffer.size(),
                              recv_vr,      ind->nrecv[nzone]);
 
             /* Make the charge group index */
-            if (cd->bInPlace)
+            if (cd->receiveInPlace)
             {
                 zone = (p == 0 ? 0 : nzone - 1);
                 while (zone < nzone)
@@ -5609,7 +5530,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             }
             nat_tot += ind->nrecv[nzone+1];
         }
-        if (!cd->bInPlace)
+        if (!cd->receiveInPlace)
         {
             /* Store the atom block for easy copying of communication buffers */
             make_cell2at_index(cd, nzone, zone_cg_range[nzone], dd->atomGroups());
@@ -5792,7 +5713,9 @@ static void set_zones_size(gmx_domdec_t *dd,
         {
             if (zones->shift[zi][dim] == 0)
             {
-                for (z = zones->izone[zi].j0; z < zones->izone[zi].j1; z++)
+                /* We should only use zones up to zone_end */
+                int jZoneEnd = std::min(zones->izone[zi].j1, zone_end);
+                for (z = zones->izone[zi].j0; z < jZoneEnd; z++)
                 {
                     if (zones->shift[z][dim] > 0)
                     {
@@ -5946,34 +5869,40 @@ static void order_int_cg(int n, const gmx_cgsort_t *sort,
     }
 }
 
-static void order_vec_cg(int n, const gmx_cgsort_t *sort,
-                         rvec *v, rvec *buf)
+static void order_vec_cg(int                      n,
+                         const gmx_cgsort_t      *sort,
+                         rvec                    *v,
+                         gmx::ArrayRef<gmx::RVec> sortBuffer)
 {
-    int i;
+    GMX_ASSERT(sortBuffer.size() >= static_cast<size_t>(n), "Need a sufficiently large sorting buffer");
+
+    rvec *buf = as_rvec_array(sortBuffer.data());
 
     /* Order the data */
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         copy_rvec(v[sort[i].ind], buf[i]);
     }
 
     /* Copy back to the original array */
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         copy_rvec(buf[i], v[i]);
     }
 }
 
-static void order_vec_atom(int ncg, const gmx::BlockRanges *atomGroups,
-                           const gmx_cgsort_t *sort,
-                           rvec *v, rvec *buf)
+static void order_vec_atom(int                       ncg,
+                           const gmx::BlockRanges   *atomGroups,
+                           const gmx_cgsort_t       *sort,
+                           gmx::ArrayRef<gmx::RVec>  v,
+                           gmx::ArrayRef<gmx::RVec>  buf)
 {
     int a, atot, cg, cg0, cg1, i;
 
     if (atomGroups == nullptr)
     {
         /* Avoid the useless loop of the atoms within a cg */
-        order_vec_cg(ncg, sort, v, buf);
+        order_vec_cg(ncg, sort, as_rvec_array(v.data()), buf);
 
         return;
     }
@@ -6153,7 +6082,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t      *cgsort;
     int                ncg_new, i, *ibuf, cgsize;
-    rvec              *vbuf;
 
     sort = dd->comm->sort;
 
@@ -6181,10 +6109,9 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     const gmx::BlockRanges &atomGroups = dd->atomGroups();
 
     /* We alloc with the old size, since cgindex is still old */
-    vec_rvec_check_alloc(&dd->comm->vbuf, atomGroups.index[dd->ncg_home]);
-    vbuf = dd->comm->vbuf.v;
+    DDBufferAccess<gmx::RVec>  rvecBuffer(dd->comm->rvecBuffer, atomGroups.index[dd->ncg_home]);
 
-    const gmx::BlockRanges *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
+    const gmx::BlockRanges    *atomGroupsPtr = (dd->comm->bCGs ? &atomGroups : nullptr);
 
     /* Remove the charge groups which are no longer at home here */
     dd->ncg_home = ncg_new;
@@ -6197,21 +6124,21 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     /* Reorder the state */
     if (state->flags & (1 << estX))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, as_rvec_array(state->x.data()), vbuf);
+        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->x, rvecBuffer.buffer);
     }
     if (state->flags & (1 << estV))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, as_rvec_array(state->v.data()), vbuf);
+        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->v, rvecBuffer.buffer);
     }
     if (state->flags & (1 << estCGP))
     {
-        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
+        order_vec_atom(dd->ncg_home, atomGroupsPtr, cgsort, state->cg_p, rvecBuffer.buffer);
     }
 
     if (fr->cutoff_scheme == ecutsGROUP)
     {
         /* Reorder cgcm */
-        order_vec_cg(dd->ncg_home, cgsort, cgcm, vbuf);
+        order_vec_cg(dd->ncg_home, cgsort, cgcm, rvecBuffer.buffer);
     }
 
     if (dd->ncg_home+1 > sort->ibuf_nalloc)
@@ -6760,7 +6687,7 @@ void dd_partition_system(FILE                *fplog,
                                   comm->zones.dens_zone0,
                                   fr->cginfo,
                                   as_rvec_array(state_local->x.data()),
-                                  ncg_moved, bRedist ? comm->moved : nullptr,
+                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
                                   fr->nbv->grp[eintLocal].kernel_type,
                                   fr->nbv->nbat);
 
@@ -6836,7 +6763,7 @@ void dd_partition_system(FILE                *fplog,
     /* Extract a local topology from the global topology */
     for (int i = 0; i < dd->ndim; i++)
     {
-        np[dd->dim[i]] = comm->cd[i].np;
+        np[dd->dim[i]] = comm->cd[i].numPulses();
     }
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,

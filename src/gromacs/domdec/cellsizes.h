@@ -80,7 +80,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t      *dd,
 
 /*! \brief General cell size adjustment, possibly applying dynamic load balancing */
 void set_dd_cell_sizes(gmx_domdec_t *dd,
-                       gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
+                       const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                        gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
                        gmx_wallcycle_t wcycle);
 

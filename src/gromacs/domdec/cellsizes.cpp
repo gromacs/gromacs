@@ -131,7 +131,8 @@ static void set_pme_maxshift(gmx_domdec_t *dd, gmx_ddpme_t *ddpme,
     }
 }
 
-static void check_box_size(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
+static void check_box_size(const gmx_domdec_t *dd,
+                           const gmx_ddbox_t  *ddbox)
 {
     int d, dim;
 
@@ -169,7 +170,7 @@ real grid_jump_limit(const gmx_domdec_comm_t *comm,
             cutoff = std::max(cutoff, comm->PMELoadBal_max_cutoff);
         }
         grid_jump_limit = std::max(grid_jump_limit,
-                                   cutoff/comm->cd[dim_ind].np);
+                                   cutoff/comm->cd[dim_ind].numPulses());
     }
 
     return grid_jump_limit;
@@ -870,48 +871,12 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
     }
 }
 
-static void realloc_comm_ind(gmx_domdec_t *dd, ivec npulse)
-{
-    int                    d, np, i;
-    gmx_domdec_comm_dim_t *cd;
-
-    for (d = 0; d < dd->ndim; d++)
-    {
-        cd = &dd->comm->cd[d];
-        np = npulse[dd->dim[d]];
-        if (np > cd->np_nalloc)
-        {
-            if (debug)
-            {
-                fprintf(debug, "(Re)allocing cd for %c to %d pulses\n",
-                        dim2char(dd->dim[d]), np);
-            }
-            if (DDMASTER(dd) && cd->np_nalloc > 0)
-            {
-                fprintf(stderr, "\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n", dim2char(dd->dim[d]), np);
-            }
-            srenew(cd->ind, np);
-            for (i = cd->np_nalloc; i < np; i++)
-            {
-                cd->ind[i].index  = nullptr;
-                cd->ind[i].nalloc = 0;
-            }
-            cd->np_nalloc = np;
-        }
-        cd->np = np;
-    }
-}
-
 void set_dd_cell_sizes(gmx_domdec_t *dd,
-                       gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
+                       const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                        gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
                        gmx_wallcycle_t wcycle)
 {
-    gmx_domdec_comm_t *comm;
-    int                d;
-    ivec               npulse;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t *comm = dd->comm;
 
     /* Copy the old cell boundaries for the cg displacement check */
     copy_rvec(comm->cell_x0, comm->old_cell_x0);
@@ -927,13 +892,31 @@ void set_dd_cell_sizes(gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, npulse);
-        realloc_comm_ind(dd, npulse);
+        ivec numPulses;
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, numPulses);
+
+        /* Check if the change in cell size requires a different number
+         * of communication pulses and if so change the number.
+         */
+        for (int d = 0; d < dd->ndim; d++)
+        {
+            gmx_domdec_comm_dim_t &cd           = comm->cd[d];
+            int                    numPulsesNew = npulse[dd->dim[d]];
+            if (cd.numPulses() != numPulsesNew)
+            {
+                if (debug)
+                {
+                    fprintf(debug, "Changing the number of halo communication pulses along dim %c from %d to %d\n",
+                            dim2char(dd->dim[d]), cd.numPulses(), numPulsesNew);
+                }
+                cd.ind.resize(numPulsesNew);
+            }
+        }
     }
 
     if (debug)
     {
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             fprintf(debug, "cell_x[%d] %f - %f skew_fac %f\n",
                     d, comm->cell_x0[d], comm->cell_x1[d], ddbox->skew_fac[d]);
