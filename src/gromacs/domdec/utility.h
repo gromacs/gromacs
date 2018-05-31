@@ -84,20 +84,6 @@ static inline int ddcginfo(const cginfo_mb_t *cginfo_mb,
     return cginfo_mb->cginfo[(cg - cginfo_mb->cg_start) % cginfo_mb->cg_mod];
 };
 
-/*! \brief Ensure v has sufficient space for n elements
- *
- * TODO: Remove when replacing vec_rvec_t by std::vector
- */
-static inline void vec_rvec_check_alloc(vec_rvec_t *v,
-                                        int         n)
-{
-    if (n > v->nalloc)
-    {
-        v->nalloc = over_alloc_dd(n);
-        srenew(v->v, v->nalloc);
-    }
-};
-
 /*! \brief Returns the number of MD steps for which load has been recorded */
 static inline int dd_load_count(const gmx_domdec_comm_t *comm)
 {
