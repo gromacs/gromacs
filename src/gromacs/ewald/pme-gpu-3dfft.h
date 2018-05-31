@@ -52,6 +52,7 @@
 #elif GMX_GPU == GMX_GPU_OPENCL
 #include <clFFT.h>
 
+#include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #endif
 
@@ -75,7 +76,8 @@ class GpuParallel3dFft
         /*! \brief Destroys the FFT plans. */
         ~GpuParallel3dFft();
         /*! \brief Performs the FFT transform in given direction */
-        void perform3dFft(gmx_fft_direction dir);
+        void perform3dFft(gmx_fft_direction  dir,
+                          CommandEvent      *timingEvent);
 
     private:
 #if GMX_GPU == GMX_GPU_CUDA
