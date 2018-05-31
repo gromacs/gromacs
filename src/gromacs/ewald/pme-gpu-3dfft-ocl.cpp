@@ -134,11 +134,11 @@ GpuParallel3dFft::~GpuParallel3dFft()
     clfftDestroyPlan(&planC2R_);
 }
 
-void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir)
+void GpuParallel3dFft::perform3dFft(gmx_fft_direction  dir,
+                                    CommandEvent      *timingEvent)
 {
     constexpr cl_mem                  tempBuffer = nullptr;
     constexpr std::array<cl_event, 0> waitEvents {{}};
-    constexpr cl_event               *outEvents = nullptr;
 
     clfftPlanHandle                   plan;
     clfftDirection                    direction;
@@ -167,6 +167,6 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir)
     }
     handleClfftError(clfftEnqueueTransform(plan, direction,
                                            commandStreams_.size(), commandStreams_.data(),
-                                           waitEvents.size(), waitEvents.data(), outEvents,
+                                           waitEvents.size(), waitEvents.data(), timingEvent,
                                            inputGrids, outputGrids, tempBuffer), "clFFT execution failure");
 }
