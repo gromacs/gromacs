@@ -197,15 +197,20 @@ class DDAtomRanges
         void setEnd(Type rangeType,
                     int  end)
         {
+            GMX_RELEASE_ASSERT(rangeType == Type::Home || rangeType > lastTypeSet_, "Can only set either home or a larger type than the last one");
+
             for (int i = static_cast<int>(rangeType); i < static_cast<int>(Type::Number); i++)
             {
                 end_[i] = end;
             }
+
+            lastTypeSet_ = rangeType;
         };
 
     private:
         /*! \brief The list of end atom indices */
         std::array<int, static_cast<int>(Type::Number)> end_;
+        Type                                            lastTypeSet_ = Type::Number;
 };
 
 /*! \brief Enum of dynamic load balancing states
