@@ -1337,7 +1337,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
         else
         {
-            dd_move_x(cr->dd, box, as_rvec_array(x.data()), wcycle);
+            dd_move_x(cr->dd, box, x, wcycle);
 
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatNonlocal, FALSE, as_rvec_array(x.data()),
                                             nbv->nbat, wcycle);
@@ -1596,7 +1596,7 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
         if (bDoForces)
         {
-            dd_move_f(cr->dd, f, fr->fshift, wcycle);
+            dd_move_f(cr->dd, force, fr->fshift, wcycle);
         }
     }
 
@@ -1869,7 +1869,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* Communicate coordinates and sum dipole if necessary */
     if (DOMAINDECOMP(cr))
     {
-        dd_move_x(cr->dd, box, as_rvec_array(x.data()), wcycle);
+        dd_move_x(cr->dd, box, x, wcycle);
 
         /* No GPU support, no move_x overlap, so reopen the balance region here */
         if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
@@ -2015,7 +2015,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
         {
-            dd_move_f(cr->dd, f, fr->fshift, wcycle);
+            dd_move_f(cr->dd, force, fr->fshift, wcycle);
             /* Do we need to communicate the separate force array
              * for terms that do not contribute to the single sum virial?
              * Position restraints and electric fields do not introduce
@@ -2026,7 +2026,7 @@ static void do_force_cutsGROUP(FILE *fplog,
             if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
                 (flags & GMX_FORCE_VIRIAL))
             {
-                dd_move_f(cr->dd, as_rvec_array(forceWithVirial.force_.data()), nullptr, wcycle);
+                dd_move_f(cr->dd, forceWithVirial.force_, nullptr, wcycle);
             }
         }
 
