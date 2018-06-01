@@ -68,8 +68,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                t_graph          **graph,
                                gmx::MDAtoms      *mdAtoms,
                                gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc)
+                               gmx_vsite_t       *vsite)
 {
     bool  usingDomDec = DOMAINDECOMP(cr);
 
@@ -133,25 +132,19 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     {
         *graph = nullptr;
     }
-
-    /* Note that with DD only flexible constraints, not shells, are supported
-     * and these don't require setup in make_local_shells().
-     */
-    if (!usingDomDec && shellfc)
+    if (usingDomDec)
     {
-        make_local_shells(cr, mdatoms, shellfc);
+        setup_bonded_threading(fr->bondedThreading,
+                               fr->natoms_force,
+                               &top->idef);
+
+        gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
+        /* This handles the PP+PME rank case where fr->pmedata is valid.
+         * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+         * TODO: this only handles the GPU logic so far, should handle CPU as well.
+         * TODO: this also does not account for TPI.
+         */
     }
-
-    setup_bonded_threading(fr->bondedThreading,
-                           fr->natoms_force,
-                           &top->idef);
-
-    gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
-    /* This handles the PP+PME rank case where fr->pmedata is valid.
-     * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
-     * TODO: this only handles the GPU logic so far, should handle CPU as well.
-     * TODO: this also does not account for TPI.
-     */
 
     if (constr)
     {
