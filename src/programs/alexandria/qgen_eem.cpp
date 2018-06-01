@@ -552,7 +552,7 @@ void QgenEem::calcRhs(t_atoms *atoms)
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i);
-            calcJss(atoms, shellIndex_[i], i);
+            //calcJss(atoms, shellIndex_[i], i);
             rhs_[i]   -= (2*j00_[i])*hardnessFactor_*q_[i][1];
             rhs_[i]   -= Jcs_;
             //rhs_[i]   -= Jss_;
