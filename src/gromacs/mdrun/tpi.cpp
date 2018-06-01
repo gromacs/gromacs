@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -176,6 +177,8 @@ Integrator::do_tpi()
 
     nnodes = cr->nnodes;
 
+    forcerec_set_ranges(fr, ncg_mtop(top_global), ncg_mtop(top_global),
+                        top_global->natoms, top_global->natoms, top_global->natoms);
     top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
 
     groups = &top_global->groups;

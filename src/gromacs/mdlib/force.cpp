@@ -54,14 +54,17 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -71,6 +74,8 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -135,6 +140,28 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t *ewc_t)
         m_add(dest.vir_q,  ewc_t[t].vir_q,  dest.vir_q);
         m_add(dest.vir_lj, ewc_t[t].vir_lj, dest.vir_lj);
     }
+}
+
+void
+prepareForSingleDomainForceCalculation(const t_commrec  *cr,
+                                       t_forcerec       *fr,
+                                       const t_mdatoms  &mdatoms,
+                                       const gmx_mtop_t *top_global,
+                                       gmx_shellfc_t    *shellfc,
+                                       const t_idef     *idef)
+{
+    forcerec_set_ranges(fr, ncg_mtop(top_global), ncg_mtop(top_global),
+                        top_global->natoms, top_global->natoms, top_global->natoms);
+    if (shellfc != nullptr)
+    {
+        make_local_shells(cr, &mdatoms, shellfc);
+    }
+
+    setup_bonded_threading(fr->bondedThreading,
+                           fr->natoms_force,
+                           idef);
+
+    gmx_pme_reinit_atoms(fr->pmedata, mdatoms.homenr, mdatoms.chargeA);
 }
 
 void do_force_lowlevel(t_forcerec           *fr,

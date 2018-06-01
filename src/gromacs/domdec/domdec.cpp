@@ -6942,7 +6942,7 @@ void dd_partition_system(FILE                *fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdAtoms, constr, vsite, nullptr);
+                              nullptr, mdAtoms, constr, vsite);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))

@@ -3034,12 +3034,6 @@ void init_forcerec(FILE                             *fp,
         fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
     }
 
-    if (!DOMAINDECOMP(cr))
-    {
-        forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
-                            mtop->natoms, mtop->natoms, mtop->natoms);
-    }
-
     fr->print_force = print_force;
 
 

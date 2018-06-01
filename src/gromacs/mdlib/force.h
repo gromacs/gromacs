@@ -47,7 +47,9 @@ struct gmx_enerdata_t;
 struct gmx_groups_t;
 struct gmx_grppairener_t;
 struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct gmx_shellfc_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
@@ -136,6 +138,14 @@ void ns(FILE               *fplog,
         t_nrnb             *nrnb,
         gmx_bool            bFillGrid);
 /* Call the neighborsearcher */
+
+void
+prepareForSingleDomainForceCalculation(const t_commrec  *cr,
+                                       t_forcerec       *fr,
+                                       const t_mdatoms  &mdatoms,
+                                       const gmx_mtop_t *top_global,
+                                       gmx_shellfc_t    *shellfc,
+                                       const t_idef     *idef);
 
 void do_force_lowlevel(t_forcerec   *fr,
                        const t_inputrec *ir,

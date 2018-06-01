@@ -413,12 +413,9 @@ static void init_em(FILE *fplog, const char *title,
         snew(*top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
                                   graph, mdAtoms,
-                                  constr, vsite, shellfc ? *shellfc : nullptr);
-
-        if (vsite)
-        {
-            set_vsite_top(vsite, *top, mdatoms);
-        }
+                                  constr, vsite);
+        prepareForSingleDomainForceCalculation(cr, fr, *mdAtoms->mdatoms(),
+                                               top_global, *shellfc, &(*top)->idef);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[efptMASS]);

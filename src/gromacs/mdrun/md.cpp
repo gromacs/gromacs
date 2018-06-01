@@ -512,8 +512,9 @@ void gmx::Integrator::do_md()
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
-                                  &graph, mdAtoms, constr, vsite, shellfc);
-
+                                  &graph, mdAtoms, constr, vsite);
+        prepareForSingleDomainForceCalculation(cr, fr, *mdAtoms->mdatoms(),
+                                               top_global, shellfc, &top->idef);
         update_realloc(upd, state->natoms);
     }
 

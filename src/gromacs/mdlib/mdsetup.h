@@ -35,10 +35,8 @@
 #ifndef GMX_MDLIB_MDSETUP_H
 #define GMX_MDLIB_MDSETUP_H
 
-struct bonded_threading_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
-struct gmx_shellfc_t;
 struct gmx_vsite_t;
 struct t_commrec;
 struct t_forcerec;
@@ -67,7 +65,6 @@ class MDAtoms;
  * \param[out]    mdAtoms    The MD atom data
  * \param[in,out] constr     The constraints handler, can be NULL
  * \param[in,out] vsite      The virtual site data, can be NULL
- * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
 void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                const t_inputrec  *ir,
@@ -77,7 +74,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                t_graph          **graph,
                                gmx::MDAtoms      *mdAtoms,
                                gmx::Constraints  *constr,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc);
+                               gmx_vsite_t       *vsite);
 
 #endif
