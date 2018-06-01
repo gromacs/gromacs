@@ -487,7 +487,7 @@ void gmx::Integrator::do_md()
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
-                                  &graph, mdAtoms, vsite, shellfc);
+                                  &graph, mdAtoms, constr, vsite, shellfc);
 
         update_realloc(upd, state->natoms);
     }
@@ -533,12 +533,6 @@ void gmx::Integrator::do_md()
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
-    }
-
-    /* Initialize constraints (when DD is inactive, this is only done once). */
-    if (constr && !DOMAINDECOMP(cr))
-    {
-        constr->setConstraints(*top, *mdatoms);
     }
 
     // TODO: Remove this by converting AWH into a ForceProvider
