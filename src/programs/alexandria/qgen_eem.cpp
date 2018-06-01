@@ -489,7 +489,7 @@ void QgenEem::calcJcs(t_atoms *atoms,
                 Jcs_  += Jcs;
             }
         }
-        //Jcs_ *= 0.5;
+        Jcs_ *= 2;
     }
     else
     {
