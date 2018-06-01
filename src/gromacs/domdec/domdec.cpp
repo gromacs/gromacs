@@ -6942,7 +6942,7 @@ void dd_partition_system(FILE                *fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdAtoms, vsite, nullptr);
+                              nullptr, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
@@ -6955,14 +6955,6 @@ void dd_partition_system(FILE                *fplog,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
-    }
-
-    // TODO constr should probably be a member of the object that
-    // manages work on a PP rank. Or this and similar code should be
-    // structured as callbacks.
-    if (constr)
-    {
-        constr->setConstraints(*top_local, *mdatoms);
     }
 
     if (ir->bPull)
