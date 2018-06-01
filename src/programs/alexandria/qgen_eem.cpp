@@ -448,8 +448,13 @@ void QgenEem::calcJcc(t_atoms *atoms)
                             {
                                 bWarned_ = true;
                             }
+                            Jcc_[i][i] = (j0 > 0) ? j0 : 0;
                         }
-                        Jcc_[i][i] = (j0 > 0) ? j0 : 0;
+                        else
+                        {
+                            Jcc_[i][i] = (j0 > 0) ? (2*j0) : 0;
+                        }
+                        
                     }
                 }                
             }
@@ -489,7 +494,7 @@ void QgenEem::calcJcs(t_atoms *atoms,
                 Jcs_  += Jcs;
             }
         }
-        Jcs_ *= 2;
+        Jcs_ *= 1;
     }
     else
     {
@@ -543,12 +548,12 @@ void QgenEem::calcRhs(t_atoms *atoms)
     for (auto i = 0; i < natom_; i++)
     {   
         rhs_[i]   = 0;
-        rhs_[i]  -= chi0_[i];
+        rhs_[i]  -= (2*chi0_[i]);
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i);
             calcJss(atoms, shellIndex_[i], i);
-            rhs_[i]   -= j00_[i]*hardnessFactor_*q_[i][1];
+            rhs_[i]   -= (2*j00_[i])*hardnessFactor_*q_[i][1];
             rhs_[i]   -= Jcs_;
             //rhs_[i]   -= Jss_;
             qshell    += q_[i][1];
@@ -696,7 +701,7 @@ void QgenEem::solveQEem(FILE *fp)
     }
     for (i = 0; i < natom_; i++)
     {
-        lhs[i][natom_] = -1;
+        lhs[i][natom_] = -2;
     }    
     lhs[natom_][natom_] = 0;
     if (matrix_invert(fp, n, lhs) == 0)
@@ -722,7 +727,7 @@ void QgenEem::solveQEem(FILE *fp)
             q_[i][0] = 1;
         }
     }
-    chieq_      = q_[natom_][0];
+    chieq_      = (q_[natom_][0]/2);
     
     qtot        = 0;
     if (bHaveShell_)
