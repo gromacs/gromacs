@@ -6942,7 +6942,7 @@ void dd_partition_system(FILE                *fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdAtoms, vsite, nullptr);
+                              nullptr, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
@@ -6955,11 +6955,6 @@ void dd_partition_system(FILE                *fplog,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
-    }
-
-    if (constr)
-    {
-        set_constraints(constr, top_local, ir, mdatoms, cr);
     }
 
     if (ir->bPull)

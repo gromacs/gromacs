@@ -512,7 +512,7 @@ void gmx::Integrator::do_md()
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
-                                  &graph, mdAtoms, vsite, shellfc);
+                                  &graph, mdAtoms, constr, vsite, shellfc);
 
         update_realloc(upd, state->natoms);
     }
@@ -558,12 +558,6 @@ void gmx::Integrator::do_md()
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
-    }
-
-    /* Initialize constraints */
-    if (constr && !DOMAINDECOMP(cr))
-    {
-        set_constraints(constr, top, ir, mdatoms, cr);
     }
 
     /* Initialize AWH and restore state from history in checkpoint if needed. */

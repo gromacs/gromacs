@@ -413,7 +413,7 @@ static void init_em(FILE *fplog, const char *title,
         snew(*top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
                                   graph, mdAtoms,
-                                  vsite, shellfc ? *shellfc : nullptr);
+                                  constr, vsite, shellfc ? *shellfc : nullptr);
 
         if (vsite)
         {
@@ -430,11 +430,6 @@ static void init_em(FILE *fplog, const char *title,
         {
             gmx_fatal(FARGS, "Can not do energy minimization with %s, use %s\n",
                       econstr_names[econtSHAKE], econstr_names[econtLINCS]);
-        }
-
-        if (!DOMAINDECOMP(cr))
-        {
-            set_constraints(constr, *top, ir, mdatoms, cr);
         }
 
         if (!ir->bContinuation)
