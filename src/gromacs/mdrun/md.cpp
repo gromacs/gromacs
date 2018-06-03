@@ -53,8 +53,6 @@
 #include <algorithm>
 #include <memory>
 
-#include "thread_mpi/threads.h"
-
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
@@ -77,7 +75,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/deform.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/force.h"
@@ -418,7 +415,7 @@ void gmx::Integrator::do_md()
     /* Initial values */
     init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
             &t, &t0, state_global, lam0,
-            nrnb, top_global, &upd,
+            nrnb, top_global, &upd, deform,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, wcycle);
 
@@ -441,15 +438,6 @@ void gmx::Integrator::do_md()
     shellfc = init_shell_flexcon(fplog,
                                  top_global, constr ? constr->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
-
-    if (inputrecDeform(ir))
-    {
-        tMPI_Thread_mutex_lock(&deform_init_box_mutex);
-        set_deform_reference_box(upd,
-                                 deform_init_init_step_tpx,
-                                 deform_init_box_tpx);
-        tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
-    }
 
     {
         double io = compute_io(ir, top_global->natoms, groups, mdebin->ebin->nener, 1);

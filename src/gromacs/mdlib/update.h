@@ -61,11 +61,13 @@ struct gmx_update_t;
 
 namespace gmx
 {
+class BoxDeformation;
 class Constraints;
 }
 
 /* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(const t_inputrec *ir);
+gmx_update_t *init_update(const t_inputrec    *ir,
+                          gmx::BoxDeformation *deform);
 
 /* Update pre-computed constants that depend on the reference
  * temperature for coupling.

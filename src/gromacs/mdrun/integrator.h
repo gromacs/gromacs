@@ -69,6 +69,7 @@ class t_state;
 namespace gmx
 {
 
+class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
 class MDLogger;
@@ -124,6 +125,8 @@ struct Integrator
     gmx_vsite_t                     *vsite;
     //! Handles constraints.
     Constraints                     *constr;
+    //! Handles box deformation.
+    BoxDeformation                  *deform;
     //! Handles writing output files.
     IMDOutputProvider               *outputProvider;
     //! Contains user input mdp options.
