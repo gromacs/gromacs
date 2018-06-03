@@ -75,9 +75,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/deform.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/main.h"
@@ -131,13 +131,6 @@
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
-
-//! First step used in pressure scaling
-gmx_int64_t         deform_init_init_step_tpx;
-//! Initial box for pressure scaling
-matrix              deform_init_box_tpx;
-//! MPI variable for use in pressure scaling
-tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 namespace gmx
 {
@@ -760,28 +753,7 @@ int Mdrunner::mdrunner()
 
     init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
-    if (inputrecDeform(inputrec))
-    {
-        /* Store the deform reference box before reading the checkpoint */
-        if (SIMMASTER(cr))
-        {
-            copy_mat(globalState->box, box);
-        }
-        if (PAR(cr))
-        {
-            gmx_bcast(sizeof(box), box, cr);
-        }
-        /* Because we do not have the update struct available yet
-         * in which the reference values should be stored,
-         * we store them temporarily in static variables.
-         * This should be thread safe, since they are only written once
-         * and with identical values.
-         */
-        tMPI_Thread_mutex_lock(&deform_init_box_mutex);
-        deform_init_init_step_tpx = inputrec->init_step;
-        copy_mat(box, deform_init_box_tpx);
-        tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
-    }
+    auto                 deform = prepareBoxDeformation(&globalState->box, cr, *inputrec);
 
     ObservablesHistory   observablesHistory = {};
 
@@ -1317,6 +1289,7 @@ int Mdrunner::mdrunner()
             oenv,
             mdrunOptions,
             vsite, constr,
+            deform.get(),
             mdModules->outputProvider(),
             inputrec, &mtop,
             fcd,
