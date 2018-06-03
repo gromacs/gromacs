@@ -56,6 +56,7 @@ struct t_nrnb;
 
 namespace gmx
 {
+class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
 class MDLogger;
@@ -152,6 +153,7 @@ void init_md(FILE *fplog,
              t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
+             gmx::BoxDeformation *deform,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
