@@ -401,4 +401,40 @@ void Awh::writeToEnergyFrame(gmx_int64_t  step,
     }
 }
 
+std::unique_ptr<Awh>
+prepareAwhModule(FILE                 *fplog,
+                 const t_inputrec     &inputRecord,
+                 t_state              *stateGlobal,
+                 const t_commrec      *commRecord,
+                 const gmx_multisim_t *multiSimRecord,
+                 const bool            startingFromCheckpoint,
+                 const bool            usingShellParticles,
+                 const std::string    &biasInitFilename,
+                 pull_t               *pull_work)
+{
+    if (!inputRecord.bDoAwh)
+    {
+        return nullptr;
+    }
+    if (usingShellParticles)
+    {
+        GMX_THROW(InvalidInputError("AWH biasing does not support shell particles."));
+    }
+
+    auto awh = compat::make_unique<Awh>(fplog, inputRecord, commRecord, multiSimRecord, *inputRecord.awhParams,
+                                        biasInitFilename, pull_work);
+
+    if (startingFromCheckpoint)
+    {
+        // Restore the AWH history read from checkpoint
+        awh->restoreStateFromHistory(MASTER(commRecord) ? stateGlobal->awhHistory.get() : nullptr);
+    }
+    else if (MASTER(commRecord))
+    {
+        // Initialize the AWH history here
+        stateGlobal->awhHistory = awh->initHistoryFromState();
+    }
+    return awh;
+}
+
 } // namespace gmx
