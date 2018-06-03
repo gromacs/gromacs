@@ -56,6 +56,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -112,6 +113,9 @@ struct gmx_update_t
     /* Variables for the deform algorithm */
     gmx_int64_t       deformref_step;
     matrix            deformref_box;
+
+    //! Box deformation handler (or nullptr if inactive).
+    gmx::BoxDeformation *deform;
 };
 
 static bool isTemperatureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
@@ -849,7 +853,8 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
     }
 }
 
-gmx_update_t *init_update(const t_inputrec *ir)
+gmx_update_t *init_update(const t_inputrec    *ir,
+                          gmx::BoxDeformation *deform)
 {
     gmx_update_t *upd = new(gmx_update_t);
 
@@ -861,6 +866,8 @@ gmx_update_t *init_update(const t_inputrec *ir)
     update_temperature_constants(upd, ir);
 
     upd->xp.resize(0);
+
+    upd->deform = deform;
 
     return upd;
 }
@@ -1331,63 +1338,6 @@ void restore_ekinstate_from_state(const t_commrec *cr,
     }
 }
 
-void set_deform_reference_box(gmx_update_t *upd, gmx_int64_t step, matrix box)
-{
-    upd->deformref_step = step;
-    copy_mat(box, upd->deformref_box);
-}
-
-static void deform(gmx_update_t *upd,
-                   int start, int homenr, rvec x[], matrix box,
-                   const t_inputrec *ir, gmx_int64_t step)
-{
-    matrix bnew, invbox, mu;
-    real   elapsed_time;
-    int    i, j;
-
-    elapsed_time = (step + 1 - upd->deformref_step)*ir->delta_t;
-    copy_mat(box, bnew);
-    for (i = 0; i < DIM; i++)
-    {
-        for (j = 0; j < DIM; j++)
-        {
-            if (ir->deform[i][j] != 0)
-            {
-                bnew[i][j] =
-                    upd->deformref_box[i][j] + elapsed_time*ir->deform[i][j];
-            }
-        }
-    }
-    /* We correct the off-diagonal elements,
-     * which can grow indefinitely during shearing,
-     * so the shifts do not get messed up.
-     */
-    for (i = 1; i < DIM; i++)
-    {
-        for (j = i-1; j >= 0; j--)
-        {
-            while (bnew[i][j] - box[i][j] > 0.5*bnew[j][j])
-            {
-                rvec_dec(bnew[i], bnew[j]);
-            }
-            while (bnew[i][j] - box[i][j] < -0.5*bnew[j][j])
-            {
-                rvec_inc(bnew[i], bnew[j]);
-            }
-        }
-    }
-    gmx::invertBoxMatrix(box, invbox);
-    copy_mat(bnew, box);
-    mmul_ur0(box, invbox, mu);
-
-    for (i = start; i < start+homenr; i++)
-    {
-        x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
-        x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
-        x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
-    }
-}
-
 void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
@@ -1846,9 +1796,10 @@ void update_pcouple_after_coordinates(FILE             *fplog,
             break;
     }
 
-    if (inputrecDeform(inputrec))
+    if (upd->deform)
     {
-        deform(upd, start, homenr, as_rvec_array(state->x.data()), state->box, inputrec, step);
+        auto localX = gmx::ArrayRef<gmx::RVec>(state->x).subArray(start, homenr);
+        upd->deform->apply(localX, state->box, step);
     }
 }
 

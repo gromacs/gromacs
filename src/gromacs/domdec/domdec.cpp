@@ -6411,6 +6411,8 @@ void dd_partition_system(FILE                *fplog,
     dd   = cr->dd;
     comm = dd->comm;
 
+    // TODO if the update code becomes accessible here, use
+    // upd->deform for this logic.
     bBoxChanged = (bMasterState || inputrecDeform(ir));
     if (ir->epc != epcNO)
     {
