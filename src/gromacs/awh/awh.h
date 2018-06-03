@@ -249,6 +249,35 @@ class Awh
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 
+/*! \brief Makes an Awh and prepares to use it if the user input
+ * requests that
+ *
+ * Restores state from history in checkpoint if needed.
+ *
+ * \param[in,out] fplog                   General output file, normally md.log, can be nullptr.
+ * \param[in]     inputRecord             General input parameters (as set up by grompp).
+ * \param[in]     stateGlobal             A pointer to the global state structure.
+ * \param[in]     commRecord              Struct for communication, can be nullptr.
+ * \param[in]     multiSimRecord          Multi-sim handler
+ * \param[in]     startingFromCheckpoint  Whether the simulation is starting from a checkpoint
+ * \param[in]     usingShellParticles     Whether the user requested shell particles (which is unsupported)
+ * \param[in]     biasInitFilename        Name of file to read PMF and target from.
+ * \param[in,out] pull_work               Pointer to a pull struct which AWH will couple to, has to be initialized,
+ *                                        is assumed not to change during the lifetime of the Awh object.
+ * \returns       An initialized Awh module, or nullptr if none was requested.
+ * \throws        InvalidInputError       If another active module is not supported.
+ */
+std::unique_ptr<Awh>
+prepareAwhModule(FILE                 *fplog,
+                 const t_inputrec     &inputRecord,
+                 t_state              *stateGlobal,
+                 const t_commrec      *commRecord,
+                 const gmx_multisim_t *multiSimRecord,
+                 const bool            startingFromCheckpoint,
+                 const bool            usingShellParticles,
+                 const std::string    &biasInitFilename,
+                 pull_t               *pull_work);
+
 }      // namespace gmx
 
 #endif /* GMX_AWH_H */

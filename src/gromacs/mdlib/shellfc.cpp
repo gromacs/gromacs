@@ -1137,7 +1137,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
     {
         pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(state->x.data()), homenr);
     }
-    do_force(fplog, cr, ms, inputrec, mdstep, nrnb, wcycle, top, groups,
+    do_force(fplog, cr, ms, inputrec, nullptr,
+             mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
@@ -1240,7 +1241,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
             pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
         }
         /* Try the new positions */
-        do_force(fplog, cr, ms, inputrec, 1, nrnb, wcycle,
+        do_force(fplog, cr, ms, inputrec, nullptr, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,

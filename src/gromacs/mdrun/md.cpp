@@ -442,11 +442,6 @@ void gmx::Integrator::do_md()
                                  top_global, n_flexible_constraints(constr),
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
-    if (shellfc && ir->bDoAwh)
-    {
-        gmx_fatal(FARGS, "AWH biasing does not support shell particles.");
-    }
-
     if (inputrecDeform(ir))
     {
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
@@ -561,22 +556,10 @@ void gmx::Integrator::do_md()
         set_constraints(constr, top, ir, mdatoms, cr);
     }
 
-    /* Initialize AWH and restore state from history in checkpoint if needed. */
-    if (ir->bDoAwh)
-    {
-        ir->awh = new gmx::Awh(fplog, *ir, cr, ms, *ir->awhParams, opt2fn("-awh", nfile, fnm), ir->pull_work);
-
-        if (startingFromCheckpoint)
-        {
-            /* Restore the AWH history read from checkpoint */
-            ir->awh->restoreStateFromHistory(MASTER(cr) ? state_global->awhHistory.get() : nullptr);
-        }
-        else if (MASTER(cr))
-        {
-            /* Initialize the AWH history here */
-            state_global->awhHistory = ir->awh->initHistoryFromState();
-        }
-    }
+    // TODO: Remove this by converting AWH into a ForceProvider
+    auto awh = prepareAwhModule(fplog, *ir, state_global, cr, ms, startingFromCheckpoint,
+                                shellfc != nullptr,
+                                opt2fn("-awh", nfile, fnm), ir->pull_work);
 
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
     if (useReplicaExchange && MASTER(cr))
@@ -1173,9 +1156,9 @@ void gmx::Integrator::do_md()
                do_md_trajectory_writing (then containing update_awh_history).
                The checkpointing will in the future probably moved to the start of the md loop which will
                rid of this issue. */
-            if (ir->bDoAwh && bCPT && MASTER(cr))
+            if (awh && bCPT && MASTER(cr))
             {
-                ir->awh->updateHistory(state_global->awhHistory.get());
+                awh->updateHistory(state_global->awhHistory.get());
             }
 
             /* The coordinates (x) are shifted (to get whole molecules)
@@ -1183,7 +1166,8 @@ void gmx::Integrator::do_md()
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ms, ir, step, nrnb, wcycle, top, groups,
+            do_force(fplog, cr, ms, ir, awh.get(),
+                     step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -1753,7 +1737,7 @@ void gmx::Integrator::do_md()
 
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : nullptr,
                        step, t,
-                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), ir->awh);
+                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), awh.get());
 
             if (ir->bPull)
             {
@@ -1944,7 +1928,7 @@ void gmx::Integrator::do_md()
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
             print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
-                       eprAVER, mdebin, fcd, groups, &(ir->opts), ir->awh);
+                       eprAVER, mdebin, fcd, groups, &(ir->opts), awh.get());
         }
     }
     done_mdebin(mdebin);
@@ -1960,11 +1944,6 @@ void gmx::Integrator::do_md()
     if (useReplicaExchange && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog, repl_ex);
-    }
-
-    if (ir->bDoAwh)
-    {
-        delete ir->awh;
     }
 
     // Clean up swapcoords

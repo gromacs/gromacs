@@ -353,8 +353,6 @@ struct t_inputrec
     /* AWH bias data */
     gmx_bool                 bDoAwh;    /* Use awh biasing for PMF calculations?        */
     gmx::AwhParams          *awhParams; /* AWH biasing parameters                       */
-    // TODO: Remove this by converting AWH into a ForceProvider
-    gmx::Awh                *awh;       /* AWH work object */
 
     /* Enforced rotation data */
     gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
