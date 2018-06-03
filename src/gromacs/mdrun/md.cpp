@@ -442,14 +442,6 @@ void gmx::Integrator::do_md()
                                  top_global, n_flexible_constraints(constr),
                                  ir->nstcalcenergy, DOMAINDECOMP(cr));
 
-    if (shellfc && ir->nstcalcenergy != 1)
-    {
-        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
-    }
-    if (shellfc && DOMAINDECOMP(cr))
-    {
-        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
-    }
     if (shellfc && ir->bDoAwh)
     {
         gmx_fatal(FARGS, "AWH biasing does not support shell particles.");
