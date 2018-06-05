@@ -224,14 +224,16 @@ int gmx_rmsf(int argc, char *argv[])
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
     };
-    static gmx_bool   bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
+    static gmx_bool   bRes    = FALSE, bAniso = FALSE, bFit = TRUE, bPBC = TRUE;
     t_pargs           pargs[] = {
         { "-res", FALSE, etBOOL, {&bRes},
           "Calculate averages for each residue" },
         { "-aniso", FALSE, etBOOL, {&bAniso},
           "Compute anisotropic termperature factors" },
         { "-fit", FALSE, etBOOL, {&bFit},
-          "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
+          "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." },
+        { "-pbc", FALSE, etBOOL, {&bPBC},
+          "Make the reference structure whole again before fitting" }
     };
     int               natom;
     int               i, m, teller = 0;
@@ -356,6 +358,10 @@ int gmx_rmsf(int argc, char *argv[])
     if (bFit)
     {
         gpbc = gmx_rmpbc_init(&top.idef, ePBC, natom);
+        if (bPBC)
+        {
+            gmx_rmpbc(gpbc, natom, box, xref);
+        }
     }
 
     /* Now read the trj again to compute fluctuations */
