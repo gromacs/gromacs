@@ -17,9 +17,16 @@ When using OpenCL builds and timing, a memory leak would lead to all system memo
 :issue:`2470`
 
 Fix MPI error after constraint failure during energy minimization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2540`
+
+Fix moving frozen atoms with constraints
+""""""""""""""""""""""""""""""""""""""""
+
+Frozen atoms which also had bond constraints could move.
+
+:issue:`2542`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
