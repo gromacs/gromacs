@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -679,6 +679,17 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                       s2->lambda[efptBONDED], &dvdl_constr,
                       nullptr, nullptr, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
+
+        if (cr->nnodes > 1)
+        {
+            /* This global reduction will affect performance at high
+             * parallelization, but we can not really avoid it.
+             * But usually EM is not run at high parallelization.
+             */
+            int reductionBuffer = !validStep;
+            gmx_sumi(1, &reductionBuffer, cr);
+            validStep           = (reductionBuffer == 0);
+        }
 
         // We should move this check to the different minimizers
         if (!validStep && ir->eI != eiSteep)
