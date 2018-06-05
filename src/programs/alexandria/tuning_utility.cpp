@@ -354,7 +354,7 @@ void print_electric_props(FILE                           *fp,
             }
 
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
-            auto qesp = mol.chargeQM(qtESP);
+            auto qcm5 = mol.chargeQM(qtCM5);
             auto x    = mol.x();
             double qrmsd = 0;
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
@@ -378,16 +378,16 @@ void print_electric_props(FILE                           *fp,
                             {
                                 qCalc += mol.topology_->atoms.atom[j+1].q;
                             }
-                            gmx_stats_add_point(k->lsq, qesp[i], qCalc, 0, 0);
-                            gmx_stats_add_point(lsq_charge, qesp[i], qCalc, 0, 0);
-                            qrmsd += gmx::square(qesp[i]-qCalc);
+                            gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
+                            gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
+                            qrmsd += gmx::square(qcm5[i]-qCalc);
                         }
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                                 mol.topology_->atoms.atom[j].atomnumber,
                                 j+1,
                                 *(mol.topology_->atoms.atomtype[j]),
                                 qCalc,
-                                qesp[i],
+                                mol.chargeQM(qtESP)[i],
                                 mol.chargeQM(qtCM5)[i],
                                 mol.chargeQM(qtHirshfeld)[i],
                                 mol.chargeQM(qtMulliken)[i],
