@@ -16,6 +16,11 @@ When using OpenCL builds and timing, a memory leak would lead to all system memo
 
 :issue:`2470`
 
+Fix MPI error after constraint failure during energy minimization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:issue:`2540`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
