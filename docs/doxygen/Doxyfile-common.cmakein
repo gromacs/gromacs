@@ -74,5 +74,7 @@ DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
+# MathJax enables beautiful math rendering
+USE_MATHJAX            = YES
 
 OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
