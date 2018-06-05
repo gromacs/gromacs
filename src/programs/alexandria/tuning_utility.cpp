@@ -415,7 +415,7 @@ void print_electric_props(FILE                           *fp,
     print_stats(fp, "ESP  (Hartree/e)",  lsq_esp, true,  "Electronic", "Calculated");
     fprintf(fp, "\n");
     
-    print_stats(fp, "Atomic Partial Charge  (e)",  lsq_charge, true,  "g16 ESP", "Calculated");
+    print_stats(fp, "Atomic Partial Charge  (e)",  lsq_charge, true,  "CM5", "Calculated");
     fprintf(fp, "\n");
     
     for (int i = 0; i < qtElec; i++)
