@@ -897,7 +897,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
         wallcycle_start(wcycle, ewcMoveE);
 
         global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                    inputrec, nullptr, nullptr, nullptr, 1, &terminate,
+                    inputrec, nullptr, nullptr, 1, &terminate,
                     accumulateGlobals_.getReductionView(),
                     nullptr, FALSE,
                     CGLO_ENERGY |

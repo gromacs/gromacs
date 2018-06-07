@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -87,6 +88,19 @@
 namespace gmx
 {
 
+namespace
+{
+
+//! Helper constant to organize debug-only behaviour.
+constexpr bool c_debugBuild =
+#ifndef NDEBUG
+    true;
+#else
+    false;
+#endif
+
+}   // namespace
+
 /* \brief Impl class for Constraints
  *
  * \todo Members like md, idef are valid only for the lifetime of a
@@ -99,17 +113,18 @@ namespace gmx
 class Constraints::Impl
 {
     public:
-        Impl(const gmx_mtop_t     &mtop_p,
-             const t_inputrec     &ir_p,
-             FILE                 *log_p,
-             const t_mdatoms      &md_p,
-             const t_commrec      *cr_p,
-             const gmx_multisim_t &ms,
-             t_nrnb               *nrnb,
-             gmx_wallcycle        *wcycle_p,
-             bool                  pbcHandlingRequired,
-             int                   numConstraints,
-             int                   numSettles);
+        Impl(compat::not_null<Constraints *> constraints_p,
+             const gmx_mtop_t               &mtop_p,
+             const t_inputrec               &ir_p,
+             FILE                           *log_p,
+             const t_mdatoms                &md_p,
+             const t_commrec                *cr_p,
+             const gmx_multisim_t           &ms,
+             t_nrnb                         *nrnb,
+             gmx_wallcycle                  *wcycle_p,
+             bool                            pbcHandlingRequired,
+             int                             numConstraints,
+             int                             numSettles);
         ~Impl();
         void setConstraints(const gmx_localtop_t &top,
                             const t_mdatoms      &md);
@@ -127,12 +142,14 @@ class Constraints::Impl
                    rvec                 *v,
                    tensor               *vir,
                    ConstraintVariable    econq);
+        //! The owner of this Impl, to use when preparing callbacks.
+        compat::not_null<Constraints *> constraints_;
         //! The total number of constraints.
-        int                   ncon_tot = 0;
+        int                             ncon_tot = 0;
         //! The number of flexible constraints.
-        int                   nflexcon = 0;
+        int                             nflexcon = 0;
         //! A list of atoms to constraints for each moleculetype.
-        std::vector<t_blocka> at2con_mt;
+        std::vector<t_blocka>           at2con_mt;
         //! A list of atoms to settles for each moleculetype
         std::vector < std::vector < int>> at2settle_mt;
         //! Whether any SETTLES cross charge-group boundaries.
@@ -175,11 +192,15 @@ class Constraints::Impl
         /*!\brief Input options.
          *
          * \todo Replace with IMdpOptions */
-        const t_inputrec &ir;
+        const t_inputrec  &ir;
         //! Flop counting support.
-        t_nrnb           *nrnb = nullptr;
+        t_nrnb            *nrnb = nullptr;
         //! Tracks wallcycle usage.
-        gmx_wallcycle    *wcycle;
+        gmx_wallcycle     *wcycle;
+        //! Handler for accumulating globals, e.g. for RMSD violation reporting.
+        AccumulateGlobals *accumulateGlobals = nullptr;
+        //! Tracks (in debug builds) whether the rmsd is safe to report
+        bool               rmsdIsValid_ = false;
 };
 
 Constraints::~Constraints() = default;
@@ -446,12 +467,31 @@ Constraints::Impl::apply(bool                  bLog,
 
     if (lincsd != nullptr)
     {
-        bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md, cr, ms,
+        bool computeRmsd = bLog || bEner;
+        bOK = constrain_lincs(computeRmsd, ir, step, lincsd, md, cr, ms,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != nullptr, vir_r_m_dr,
                               econq, nrnb,
                               maxwarn, &warncount_lincs);
+        if (computeRmsd)
+        {
+            if (DOMAINDECOMP(cr))
+            {
+                GMX_ASSERT(accumulateGlobals != nullptr, "This client of AccumulateGlobals has not been properly prepared");
+                accumulateGlobals->notifyReductionRequired(constraints_);
+                if (c_debugBuild)
+                {
+                    rmsdIsValid_ = false;
+                }
+            }
+            else if (c_debugBuild)
+            {
+                // The RMSD is already valid when there's a single
+                // rank doing the constraints.
+                rmsdIsValid_ = true;
+            }
+        }
         if (!bOK && maxwarn < INT_MAX)
         {
             if (log != nullptr)
@@ -703,15 +743,33 @@ Constraints::Impl::apply(bool                  bLog,
     return bOK;
 }
 
-ArrayRef<real> Constraints::rmsdData() const
+int Constraints::getNumGlobalsRequired() const
 {
     if (impl_->lincsd)
     {
-        return lincs_rmsdData(impl_->lincsd);
+        return lincs_getNumGlobalsRequired();
     }
     else
     {
-        return EmptyArrayRef();
+        return 0;
+    }
+}
+
+void Constraints::setViewForGlobals(AccumulateGlobals *accumulateGlobals,
+                                    ArrayRef<double>   view)
+{
+    impl_->accumulateGlobals = accumulateGlobals;
+    if (impl_->lincsd)
+    {
+        lincs_setViewForRmsd(impl_->lincsd, view);
+    }
+}
+
+void Constraints::notifyAfterCommunication()
+{
+    if (c_debugBuild)
+    {
+        impl_->rmsdIsValid_ = true;
     }
 }
 
@@ -719,6 +777,7 @@ real Constraints::rmsd() const
 {
     if (impl_->lincsd)
     {
+        GMX_ASSERT(impl_->rmsdIsValid_, "Cannot return constraint RMSD until after reduction");
         return lincs_rmsd(impl_->lincsd);
     }
     else
@@ -964,7 +1023,8 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
                          bool                  pbcHandlingRequired,
                          int                   numConstraints,
                          int                   numSettles)
-    : impl_(new Impl(mtop,
+    : impl_(new Impl(compat::not_null<Constraints *>(this),
+                     mtop,
                      ir,
                      log,
                      md,
@@ -978,18 +1038,20 @@ Constraints::Constraints(const gmx_mtop_t     &mtop,
 {
 }
 
-Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
-                        const t_inputrec     &ir_p,
-                        FILE                 *log_p,
-                        const t_mdatoms      &md_p,
-                        const t_commrec      *cr_p,
-                        const gmx_multisim_t &ms_p,
-                        t_nrnb               *nrnb_p,
-                        gmx_wallcycle        *wcycle_p,
-                        bool                  pbcHandlingRequired,
-                        int                   numConstraints,
-                        int                   numSettles)
-    : ncon_tot(numConstraints),
+Constraints::Impl::Impl(compat::not_null<Constraints *> constraints_p,
+                        const gmx_mtop_t               &mtop_p,
+                        const t_inputrec               &ir_p,
+                        FILE                           *log_p,
+                        const t_mdatoms                &md_p,
+                        const t_commrec                *cr_p,
+                        const gmx_multisim_t           &ms_p,
+                        t_nrnb                         *nrnb_p,
+                        gmx_wallcycle                  *wcycle_p,
+                        bool                            pbcHandlingRequired,
+                        int                             numConstraints,
+                        int                             numSettles)
+    : constraints_(constraints_p),
+      ncon_tot(numConstraints),
       mtop(mtop_p),
       md(md_p),
       pbcHandlingRequired_(pbcHandlingRequired),
@@ -998,7 +1060,8 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
       ms(ms_p),
       ir(ir_p),
       nrnb(nrnb_p),
-      wcycle(wcycle_p)
+      wcycle(wcycle_p),
+      accumulateGlobals(nullptr)
 {
     if (numConstraints + numSettles > 0 && ir.epc == epcMTTK)
     {
@@ -1118,6 +1181,7 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
     }
     warncount_lincs  = 0;
     warncount_settle = 0;
+
 }
 
 Constraints::Impl::~Impl()
