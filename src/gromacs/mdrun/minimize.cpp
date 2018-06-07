@@ -83,6 +83,7 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -786,39 +787,41 @@ class EnergyEvaluator
                  tensor vir, tensor pres,
                  int64_t count, gmx_bool bFirst);
         //! Handles logging (deprecated).
-        FILE                 *fplog;
+        FILE                   *fplog;
         //! Handles logging.
-        const gmx::MDLogger  &mdlog;
+        const gmx::MDLogger    &mdlog;
         //! Handles communication.
-        const t_commrec      *cr;
+        const t_commrec        *cr;
         //! Coordinates multi-simulations.
-        const gmx_multisim_t *ms;
+        const gmx_multisim_t   *ms;
         //! Holds the simulation topology.
-        gmx_mtop_t           *top_global;
+        gmx_mtop_t             *top_global;
         //! Holds the domain topology.
-        gmx_localtop_t       *top;
+        gmx_localtop_t         *top;
         //! User input options.
-        t_inputrec           *inputrec;
+        t_inputrec             *inputrec;
         //! Manages flop accounting.
-        t_nrnb               *nrnb;
+        t_nrnb                 *nrnb;
         //! Manages wall cycle accounting.
-        gmx_wallcycle_t       wcycle;
+        gmx_wallcycle_t         wcycle;
         //! Coordinates global reduction.
-        gmx_global_stat_t     gstat;
+        gmx_global_stat_t       gstat;
+        //! Accumulates globals;
+        gmx::AccumulateGlobals  accumulateGlobals_;
         //! Handles virtual sites.
-        gmx_vsite_t          *vsite;
+        gmx_vsite_t            *vsite;
         //! Handles constraints.
-        gmx::Constraints     *constr;
+        gmx::Constraints       *constr;
         //! Handles strange things.
-        t_fcdata             *fcd;
+        t_fcdata               *fcd;
         //! Molecular graph for SHAKE.
-        t_graph              *graph;
+        t_graph                *graph;
         //! Per-atom data for this domain.
-        gmx::MDAtoms         *mdAtoms;
+        gmx::MDAtoms           *mdAtoms;
         //! Handles how to calculate the forces.
-        t_forcerec           *fr;
+        t_forcerec             *fr;
         //! Stores the computed energies.
-        gmx_enerdata_t       *enerd;
+        gmx_enerdata_t         *enerd;
 };
 
 void
@@ -895,6 +898,7 @@ EnergyEvaluator::run(em_state_t *ems, rvec mu_tot,
 
         global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                     inputrec, nullptr, nullptr, nullptr, 1, &terminate,
+                    accumulateGlobals_.getReductionView(),
                     nullptr, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
@@ -1152,6 +1156,7 @@ Integrator::do_cg()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
+        accumulateGlobalsBuilder_->build(),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -1824,6 +1829,7 @@ Integrator::do_lbfgs()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
+        accumulateGlobalsBuilder_->build(),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -2473,6 +2479,7 @@ Integrator::do_steep()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
+        accumulateGlobalsBuilder_->build(),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
@@ -2769,6 +2776,7 @@ Integrator::do_nm()
         fplog, mdlog, cr, ms,
         top_global, top,
         inputrec, nrnb, wcycle, gstat,
+        accumulateGlobalsBuilder_->build(),
         vsite, constr, fcd, graph,
         mdAtoms, fr, enerd
     };
