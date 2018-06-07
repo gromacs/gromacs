@@ -95,6 +95,7 @@ void global_stat(const gmx_global_stat *gs,
                  gmx_ekindata_t *ekind,
                  const gmx::Constraints *constr, t_vcm *vcm,
                  int nsig, real *sig,
+                 gmx::ArrayRef<double> accumulateGlobals,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
 /* All-reduce energy-like quantities over cr->mpi_comm_mysim */

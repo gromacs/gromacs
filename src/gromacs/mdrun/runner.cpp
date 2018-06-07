@@ -97,6 +97,7 @@
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1319,6 +1320,8 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
+        auto accumulateGlobalsBuilder = compat::make_unique<AccumulateGlobalsBuilder>();
+
         /* Create StopHandlerBuilder (could be moved earlier if needed - currently nobody register here */
         auto stopHandlerBuilder = compat::make_unique<StopHandlerBuilder>();
 
@@ -1338,6 +1341,7 @@ int Mdrunner::mdrunner()
             mdAtoms.get(), nrnb, wcycle, fr,
             replExParams,
             membed,
+            accumulateGlobalsBuilder.get(),
             walltime_accounting,
             std::move(stopHandlerBuilder)
         };
