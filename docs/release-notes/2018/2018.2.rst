@@ -28,6 +28,14 @@ Frozen atoms which also had bond constraints could move.
 
 :issue:`2542`
 
+Fix COM removal moving frozen atoms
+"""""""""""""""""""""""""""""""""""
+
+When frozen atoms were part of center of mass motion removal groups,
+they could accumulate momentum and move.
+
+:issue:`2551`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
