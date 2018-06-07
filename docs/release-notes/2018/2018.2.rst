@@ -74,6 +74,16 @@ Fix crash in gmx solvate
 gmx solvate would crash due to memory corruption when using multiple solvent
 molecule types.
 
+Added check for unallowed periodic setups
+"""""""""""""""""""""""""""""""""""""""""
+
+Long distances between atoms in bonded interactions could lead to incorrect
+periodicity removal. In such cases an inconsistent shift message was printed,
+but the run or analysis was not terminated and other, confusing, errors
+could be issued. Now an informative fatal error is issued.
+
+:issue:`2549`
+
 Fixes to improve portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
