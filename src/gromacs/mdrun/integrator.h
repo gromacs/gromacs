@@ -70,6 +70,7 @@ class t_state;
 namespace gmx
 {
 
+class AccumulateGlobalsBuilder;
 class BoxDeformation;
 class Constraints;
 class IMDOutputProvider;
@@ -154,6 +155,8 @@ struct Integrator
     const ReplicaExchangeParameters &replExParams;
     //! Parameters for membrane embedding.
     gmx_membed_t                    *membed;
+    //! Builds an object that will accumulates globals for modules that require that.
+    AccumulateGlobalsBuilder        *accumulateGlobalsBuilder_;
     //! Manages wall time accounting.
     gmx_walltime_accounting         *walltime_accounting;
     //! Implements the normal MD integrators.

@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdrunutility/accumulateglobals.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -157,7 +158,9 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx::Constraints *constr,
                      gmx::SimulationSignaller *signalCoordinator,
-                     matrix box, int *totalNumberOfBondedInteractions,
+                     matrix box,
+                     gmx::AccumulateGlobals *accumulateGlobals,
+                     int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
     tensor   corr_vir, corr_pres;
@@ -228,8 +231,10 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : nullptr,
                             signalBuffer.size(), signalBuffer.data(),
+                            accumulateGlobals->getReductionView(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
+                accumulateGlobals->notifyClientsAfterCommunication();
                 wallcycle_stop(wcycle, ewcMoveE);
             }
             signalCoordinator->finalizeSignals();
